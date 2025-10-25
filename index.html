@@ -3,406 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Mishell Boutique</title>
+    <title>Mishell Boutique - Catálogo</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
-    <style>
-        #inventory-view, #sales-list-view, .delivery-fields, #delivery-history-view, #closing-history-view { display: none; } /* Oculta vistas */
-        .add-supplier-btn, .add-client-btn { padding: 0.375rem 0.5rem; line-height: 1; }
-        .client-info-display { background-color: #e9ecef; opacity: 1; } /* Estilo para campos de cliente autollenados */
-        /* Estilo para botones de acción en tablas */
-        .action-buttons button { margin-right: 5px; }
-        .action-buttons button:last-child { margin-right: 0; }
-        .text-danger { color: #dc3545 !important; } /* Para deudas o saldos negativos */
-        .text-success { color: #198754 !important; } /* Para saldos 0 o positivos */
-    </style>
+
 </head>
 <body>
 
-    <nav class="admin-navbar navbar navbar-expand-lg">
-        <div class="container-fluid">
-            <a class="admin-brand navbar-brand" href="admin.html"><span>Mishell</span></a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbarContent"><span class="navbar-toggler-icon"></span></button>
-            <div class="collapse navbar-collapse" id="adminNavbarContent">
-                <ul class="nav nav-pills navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item"> <a href="#dashboard" class="nav-link active" data-bs-toggle="pill"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a> </li>
-                    <li class="nav-item"> <a href="#productos" class="nav-link" data-bs-toggle="pill"><i class="bi bi-box-seam-fill"></i> Productos</a> </li>
-                    <li class="nav-item"> <a href="#ventas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-cart-check-fill"></i> Ventas</a> </li>
-                    <li class="nav-item"> <a href="#apartados" class="nav-link" data-bs-toggle="pill"><i class="bi bi-calendar-heart-fill"></i> Apartados</a> </li>
-                    <li class="nav-item"> <a href="#clientes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-people-fill"></i> Clientes</a> </li>
-                    <li class="nav-item"> <a href="#repartidores" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bicycle"></i> Repartidores</a> </li>
-                    <li class="nav-item"> <a href="#reportes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-clipboard-data-fill"></i> Reportes</a> </li>
-                    <li class="nav-item"> <a href="#finanzas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-cash-coin"></i> Finanzas</a> </li>
-                    <li class="nav-item"> <a href="#categorias" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-tags-fill"></i> Categorías </a> </li>
-                    <li class="nav-item"> <a href="#proveedores" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-truck"></i> Proveedores </a> </li>
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                Mishell
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarMenu">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="index.html">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#productos">Productos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#novedades">Novedades</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="contacto.html">Contacto</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="politicas.html">Política de compras</a>
+                    </li>
                 </ul>
-                <a href="index.html" target="_blank" class="admin-logout d-flex align-items-center ms-lg-auto"> Ver Catálogo Público ↗ </a>
+                
+                <a href="#carrito" class="cart-icon" data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart">
+                    <i class="bi bi-bag"></i>
+                    <span id="cart-counter" class="cart-counter">0</span> 
+                </a>
             </div>
         </div>
     </nav>
 
-    <main class="admin-main">
-        <div class="tab-content">
-            <div class="tab-pane fade show active" id="dashboard">
-                 <h1 class="h2">Dashboard</h1>
-                 <p>Resumen de tu boutique.</p>
-                 <div class="row g-4">
-                     <div class="col-md-4"> <div class="card p-3"> <h5 class="card-title">Ventas de Hoy</h5> <p class="card-text h2">$0.00</p> </div> </div>
-                     <div class="col-md-4"> <div class="card p-3"> <h5 class="card-title">Productos Bajo Stock</h5> <p class="card-text h2">0</p> </div> </div>
-                     <div class="col-md-4"> <div class="card p-3"> <h5 class="card-title">Apartados por Vencer</h5> <p class="card-text h2">0</p> </div> </div>
-                 </div>
-            </div>
-
-            <div class="tab-pane fade" id="productos">
-                 <div class="d-flex justify-content-between align-items-center mb-3">
-                     <h1 class="h2 mb-0">Productos (Inventario)</h1>
-                     <button type="button" id="toggle-inventory-view-btn" class="btn btn-outline-secondary btn-sm"> <i class="bi bi-list-ul me-1"></i> Ver Inventario </button>
-                     <button type="button" id="toggle-form-view-btn" class="btn btn-outline-secondary btn-sm d-none"> <i class="bi bi-plus-circle-fill me-1"></i> Agregar/Editar </button>
-                 </div>
-
-                <div id="form-view">
-                    <div class="card mb-4">
-                        <div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Agregar/Editar Producto</h3> </div>
-                        <div class="card-body">
-                            <form id="form-producto">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div>
-                                    <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="00001" readonly disabled> </div>
-                                    <div class="col-md-3 mb-3"> <label for="proveedor-producto" class="form-label">Proveedor:</label> <div class="input-group"> <input type="text" class="form-control" id="proveedor-producto" list="lista-proveedores" placeholder="Buscar..."> <datalist id="lista-proveedores"><option value="Proveedor A"><option value="Proveedor B"></datalist> <button class="btn btn-outline-secondary add-supplier-btn" type="button" id="add-new-supplier-btn" title="Agregar Proveedor">+</button> </div> </div>
-                                </div>
-                                <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div>
-                                <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div>
-                                <hr class="my-4"> <h5 class="mb-3">Precios</h5>
-                                <div class="row">
-                                    <div class="col-md-4 mb-3"> <label for="costo-compra" class="form-label">Costo ($):</label> <input type="number" class="form-control" id="costo-compra" step="0.01" min="0" required> </div>
-                                    <div class="col-md-4 mb-3"> <label for="precio-detal" class="form-label">P. Detal ($):</label> <input type="number" class="form-control" id="precio-detal" step="0.01" min="0" required> <small id="margen-detal-info" class="form-text text-muted"></small> </div>
-                                    <div class="col-md-4 mb-3"> <label for="precio-mayor" class="form-label">P. Mayor ($):</label> <input type="number" class="form-control" id="precio-mayor" step="0.01" min="0"> <small id="margen-mayor-info" class="form-text text-muted"></small> </div>
-                                </div>
-                                <hr class="my-4"> <h5 class="mb-3">Variaciones (Talla/Color/Stock)</h5>
-                                <div id="variaciones-container">
-                                    <div class="row align-items-center mb-2 variation-row d-none" id="variation-template">
-                                         <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_talla[]" placeholder="Talla"> </div>
-                                         <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_color[]" placeholder="Color"> </div>
-                                         <div class="col-md-3"> <input type="number" class="form-control form-control-sm" name="variation_stock[]" min="0" value="1" placeholder="Stock"> </div>
-                                         <div class="col-md-1 text-end"> <button type="button" class="btn btn-sm btn-outline-danger remove-variation-btn p-1" aria-label="Eliminar"> <i class="bi bi-x" style="font-size: 1.2rem; line-height: 1; vertical-align: middle;"></i> </button> </div>
-                                    </div>
-                                </div>
-                                <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir Variación </button>
-                                <hr class="my-4">
-                                <div class="row">
-                                    <div class="col-md-8 mb-3"> <label for="imagen" class="form-label">Fotos (selecciona varias):</label> <input type="file" class="form-control" id="imagen" accept="image/*" multiple> </div>
-                                    <div class="col-md-4 d-flex align-items-center"> <div class="form-check form-switch fs-5 w-100"> <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked> <label class="form-check-label" for="visibilidad">Visible</label> </div> </div>
-                                </div>
-                                <hr class="my-4">
-                                <button type="submit" class="btn btn-primary">Guardar Producto</button>
-                            </form>
-                        </div>
-                    </div>
-                </div> <div id="inventory-view">
-                     <div class="input-group mb-3">
-                          <span class="input-group-text"><i class="bi bi-search"></i></span>
-                          <input type="search" id="search-inventory" class="form-control" placeholder="Buscar por nombre o código...">
-                     </div>
-                    <div class="card">
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Foto</th> <th>Nombre</th> <th>P. Detal</th> <th>P. Mayor</th>
-                                            <th>Margen Detal</th> <th>Margen Mayor</th> <th>Stock</th> <th>Estado</th> <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="lista-inventario-productos">
-                                        <tr id="empty-inventory-row"> <td colspan="9" class="text-center text-muted p-4"> Aún no hay productos. </td> </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div> </div>
-
-            <div class="tab-pane fade" id="ventas">
-                   <div class="d-flex justify-content-between align-items-center mb-3">
-                       <h1 class="h2 mb-0">Ventas</h1>
-                       <button type="button" id="toggle-sales-list-view-btn" class="btn btn-outline-secondary btn-sm"> <i class="bi bi-list-check me-1"></i> Ver Ventas </button>
-                       <button type="button" id="toggle-sales-form-view-btn" class="btn btn-outline-secondary btn-sm d-none"> <i class="bi bi-plus-circle-fill me-1"></i> Registrar Venta </button>
-                   </div>
-                   <div id="sales-form-view">
-                       <div class="card">
-                           <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Registrar Venta</h3></div>
-                           <div class="card-body">
-                               <form id="form-venta">
-                                   <div class="row align-items-end">
-                                       <div class="col-md-5 mb-3">
-                                           <label for="venta-cliente" class="form-label">Cliente (Cédula o Nombre):</label>
-                                           <div class="input-group">
-                                                <input type="text" id="venta-cliente" class="form-control" list="lista-clientes-venta" placeholder="Buscar o Cliente General...">
-                                                <datalist id="lista-clientes-venta"> <option value="Cliente General"> <option value="12345678 - Cliente Ejemplo 1"> <option value="Cliente Ejemplo 2"> </datalist>
-                                                <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar Nuevo Cliente">+</button>
-                                           </div>
-                                           <div class="row mt-2 gx-2">
-                                               <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div>
-                                               <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div>
-                                           </div>
-                                       </div>
-                                       <div class="col-md-2 mb-3">
-                                           <label for="tipo-venta-select" class="form-label">Tipo Venta:</label>
-                                           <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select>
-                                       </div>
-                                       <div class="col-md-3 mb-3">
-                                           <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label>
-                                           <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select>
-                                       </div>
-                                       <div class="col-md-2 mb-3"> <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> </div>
-                                   </div>
-                                   <div class="row delivery-fields">
-                                        <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div>
-                                       <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div>
-                                       <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> </div>
-                                   </div>
-                                   <label for="venta-producto" class="form-label">Buscar Producto:</label> <input type="text" id="venta-producto" class="form-control" placeholder="Escribe nombre o código...">
-                                   <table class="table my-3"> <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead> <tbody id="venta-carrito"></tbody> </table> <hr>
-                                   <div class="row">
-                                        <div class="col-md-6"> <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> </div>
-                                        <div class="col-md-6"> <div class="row"> <div class="col-7"> <label for="venta-descuento" class="form-label">Descuento:</label> <input type="number" id="venta-descuento" class="form-control" value="0"> </div> <div class="col-5"> <label class="form-label">&nbsp;</label> <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> </div> </div> <label class="form-label mt-3">Pago:</label> <div class="input-group mb-2"> <span class="input-group-text">Efectivo $</span> <input type="number" id="pago-efectivo" class="form-control" value="0"> </div> <div class="input-group mb-3"> <span class="input-group-text">Transf. $</span> <input type="number" id="pago-transferencia" class="form-control" value="0"> </div> <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> <button type="submit" class="btn btn-primary w-100 mt-2">Registrar Venta</button> </div>
-                                   </div>
-                               </form>
-                           </div>
-                       </div>
-                   </div>
-                   <div id="sales-list-view">
-                        <div class="card">
-                            <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Ventas Anteriores</h3></div>
-                            <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"> <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> </thead><tbody id="lista-ventas-anteriores"> <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">No hay ventas.</td></tr> </tbody></table></div></div>
-                        </div>
-                   </div>
-              </div>
-            <div class="tab-pane fade" id="apartados">
-                <h1 class="h2">Gestión de Apartados</h1>
-                <div class="card">
-                    <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Pendientes</h3></div>
-                    <div class="card-body p-0">
-                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light"><tr><th>Cliente</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Vence</th><th>Acciones</th></tr></thead>
-                                <tbody id="lista-apartados">
-                                    <tr><td>Cliente Ejemplo 1</td><td>$100.00</td><td>$50.00</td><td>$50.00</td><td>2025-11-15</td><td class="action-buttons"><button class="btn btn-sm btn-outline-success py-0 px-1" title="Abono"><i class="bi bi-cash-coin"></i></button> <button class="btn btn-sm btn-outline-secondary py-0 px-1" title="Editar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1" title="Cancelar"><i class="bi bi-trash"></i></button></td></tr>
-                                    <tr><td colspan="6" class="text-center text-muted">No hay apartados pendientes.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+    <main class="container my-5">
+    
+        <section class="catalog-filters mb-4">
+            <div class="d-flex flex-wrap gap-2">
+                
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle filter-group" type="button" data-bs-toggle="dropdown">
+                        Categoría
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Todas</a></li>
+                        <li><a class="dropdown-item" href="#">Blusas</a></li>
+                        <li><a class="dropdown-item" href="#">Vestidos</a></li>
+                        <li><a class="dropdown-item" href="#">Jeans</a></li>
+                    </ul>
                 </div>
-            </div>
-            <div class="tab-pane fade" id="clientes">
-                 <h1 class="h2">Clientes</h1>
-                 <div class="card">
-                     <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
-                         <h3 class="h5 mb-0">Lista de Clientes</h3>
-                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClientModal"> <i class="bi bi-plus-lg"></i> Nuevo Cliente </button>
-                     </div>
-                     <div class="card-body p-0">
-                         <div class="table-responsive">
-                             <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light"><tr><th>Nombre</th><th>Cédula</th><th>WhatsApp</th><th>Dirección</th><th>Última Compra</th><th>Acciones</th></tr></thead>
-                                <tbody id="lista-clientes">
-                                    <tr><td>Cliente Ejemplo 1</td><td>12345678</td><td>3001234567</td><td>Calle Falsa 123</td><td>2025-10-24</td><td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1" title="Modificar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1" title="Eliminar"><i class="bi bi-trash"></i></button></td></tr>
-                                    <tr><td colspan="6" class="text-center text-muted">No hay clientes registrados.</td></tr>
-                                </tbody>
-                            </table>
-                         </div>
-                     </div>
-                 </div>
-            </div>
-            <div class="tab-pane fade" id="repartidores">
-                 <div class="d-flex justify-content-between align-items-center mb-3">
-                     <h1 class="h2 mb-0">Control de Repartidores</h1>
-                     <button type="button" id="toggle-delivery-history-btn" class="btn btn-outline-secondary btn-sm"> <i class="bi bi-calendar-week me-1"></i> Ver Historial </button>
-                     <button type="button" id="toggle-delivery-today-btn" class="btn btn-outline-secondary btn-sm d-none"> <i class="bi bi-bicycle me-1"></i> Entregas de Hoy </button>
-                 </div>
-                 <div id="delivery-today-view">
-                     <div class="card">
-                        <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Liquidación del Día</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addRepartidorModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div>
-                         <div class="card-body p-0">
-                             <div class="table-responsive">
-                                  <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light"><tr><th>Repartidor</th><th># Entregas</th><th>Efectivo Recibido</th><th>Rutas ($)</th><th>Rutas Pagadas (Transf.) ($)</th><th>Efectivo a Entregar ($)</th><th>Efectivo Entregado ($)</th><th>Saldo Pendiente ($)</th><th>Acciones</th></tr></thead>
-                                    <tbody id="lista-repartidores">
-                                         <tr>
-                                             <td>Repartidor Ejemplo</td> <td>5</td> <td>$150.00</td> <td>$25.00</td> <td>$5.00</td> <td>$130.00</td>
-                                             <td> <input type="number" class="form-control form-control-sm w-75 d-inline-block" value="0.00" step="0.01"> </td>
-                                             <td><span class="text-danger fw-bold">$130.00</span></td>
-                                             <td class="action-buttons">
-                                                 <button class="btn btn-sm btn-success py-0 px-1" title="Liquidar"><i class="bi bi-check-circle"></i></button>
-                                                 <button class="btn btn-sm btn-outline-secondary py-0 px-1" title="Modificar"><i class="bi bi-pencil"></i></button>
-                                                 <button class="btn btn-sm btn-outline-danger py-0 px-1" title="Eliminar"><i class="bi bi-trash"></i></button>
-                                             </td>
-                                         </tr>
-                                        <tr><td colspan="9" class="text-center text-muted">No hay repartidores o entregas hoy.</td></tr>
-                                    </tbody>
-                                </table>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
-                 <div id="delivery-history-view">
-                     <div class="card">
-                         <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial de Liquidaciones</h3></div>
-                         <div class="card-body">
-                             <form id="form-filter-delivery-history" class="mb-3">
-                                 <div class="row">
-                                     <div class="col-md-4"><label for="history-repartidor" class="form-label">Repartidor:</label><select id="history-repartidor" class="form-select"></select></div>
-                                     <div class="col-md-3"><label for="history-desde" class="form-label">Desde:</label><input type="date" id="history-desde" class="form-control"></div>
-                                     <div class="col-md-3"><label for="history-hasta" class="form-label">Hasta:</label><input type="date" id="history-hasta" class="form-control"></div>
-                                     <div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Filtrar</button></div>
-                                 </div>
-                             </form>
-                             <div class="table-responsive">
-                                 <table class="table table-hover align-middle mb-0">
-                                     <thead class="table-light"><tr><th>Fecha</th><th>Repartidor</th><th>Efectivo Esperado</th><th>Efectivo Entregado</th><th>Diferencia</th></tr></thead>
-                                     <tbody id="lista-historial-repartidores"><tr><td colspan="5" class="text-center text-muted">Selecciona filtros.</td></tr></tbody>
-                                 </table>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
-            </div>
-            <div class="tab-pane fade" id="reportes"> <h1 class="h2">Reportes</h1> <div class="card"><div class="card-body"><form id="form-reporte"><div class="row"><div class="col-md-4"><label for="reporte-tipo" class="form-label">Tipo:</label><select id="reporte-tipo" class="form-select"><option value="ventas">Ventas</option><option value="utilidad">Utilidad</option><option value="mas-vendidos">Más Vendidos</option><option value="repartidor">Por Repartidor</option><option value="apartados">Apartados</option><option value="descuentos">Descuentos</option></select></div><div class="col-md-3"><label for="reporte-desde" class="form-label">Desde:</label><input type="date" id="reporte-desde" class="form-control"></div><div class="col-md-3"><label for="reporte-hasta" class="form-label">Hasta:</label><input type="date" id="reporte-hasta" class="form-control"></div><div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Generar</button></div></div></form><hr><div id="area-reporte" class="mt-4"><p class="text-muted text-center">Selecciona filtros.</p></div></div></div> </div>
-            <div class="tab-pane fade" id="finanzas">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                     <h1 class="h2 mb-0">Finanzas</h1>
-                     <div>
-                         <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#addIncomeModal"> <i class="bi bi-plus-circle"></i> Ingreso Extra </button>
-                         <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#addExpenseModal"> <i class="bi bi-dash-circle"></i> Gasto </button>
-                         <button type="button" id="toggle-closing-history-btn" class="btn btn-outline-secondary btn-sm"> <i class="bi bi-calendar-week me-1"></i> Historial Cierres </button>
-                         <button type="button" id="toggle-closing-today-btn" class="btn btn-outline-secondary btn-sm d-none"> <i class="bi bi-box-arrow-in-down me-1"></i> Cierre Hoy </button>
-                     </div>
-                 </div>
-                 <div id="closing-today-view">
-                     <div class="card">
-                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Cierre de Caja Diario</h3></div>
-                         <div class="card-body">
-                             <form id="form-cierre-caja">
-                                 <div class="row">
-                                     <div class="col-md-3"><label class="form-label">Ventas Efectivo:</label><input type="text" class="form-control" id="caja-efectivo" value="$0" readonly></div>
-                                     <div class="col-md-3"><label class="form-label">Abonos Efectivo:</label><input type="text" class="form-control" id="caja-abonos-efectivo" value="$0" readonly></div>
-                                     <div class="col-md-3"><label class="form-label">Recibido Repartidores:</label><input type="text" class="form-control" id="caja-recibido-repartidores" value="$0" readonly></div>
-                                     <div class="col-md-3"><label for="caja-egresos" class="form-label">Egresos/Gastos ($):</label><input type="number" class="form-control" id="caja-egresos" value="0" step="0.01"></div>
-                                 </div>
-                                 <div class="row mt-3">
-                                     <div class="col-md-9"><label for="caja-observaciones" class="form-label">Observaciones:</label><input type="text" class="form-control" id="caja-observaciones"></div>
-                                     <div class="col-md-3"><label class="form-label">Total Efectivo en Caja:</label><input type="text" class="form-control fw-bold" id="caja-total" value="$0" readonly></div>
-                                 </div>
-                                 <hr><p class="text-muted small">Nota: Las ventas/rutas por transferencia no afectan el efectivo en caja.</p>
-                                 <button type="submit" class="btn btn-primary mt-3">Realizar Cierre de Caja</button>
-                             </form>
-                         </div>
-                     </div>
-                 </div>
-                 <div id="closing-history-view">
-                     <div class="card">
-                         <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial de Cierres</h3></div>
-                         <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light"><tr><th>Fecha</th><th>Ventas Efec.</th><th>Abonos Efec.</th><th>Recibido Repart.</th><th>Gastos</th><th>Total Caja</th><th>Observaciones</th></tr></thead>
-                                    <tbody id="lista-historial-cierres"><tr><td colspan="7" class="text-center text-muted">No hay cierres.</td></tr></tbody>
-                                </table>
-                            </div>
-                         </div>
-                     </div>
-                 </div>
-            </div>
-             <div class="tab-pane fade" id="categorias"> <h1 class="h2">Gestionar Categorías</h1> <div class="row"><div class="col-md-6"><div class="card"><div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Agregar</h3> </div><div class="card-body"><form id="form-categoria"><div class="mb-3"> <label for="nombre-categoria" class="form-label">Nombre:</label> <input type="text" id="nombre-categoria" class="form-control" required> </div><button type="submit" class="btn btn-primary">Guardar</button></form></div></div></div><div class="col-md-6"><div class="card"><div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Existentes</h3> </div><div class="card-body p-0"><ul class="list-group list-group-flush" id="lista-categorias"><li class="list-group-item d-flex justify-content-between align-items-center"> Ejemplo <div> <button class="btn btn-sm btn-outline-secondary py-0 px-1 me-1"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1"><i class="bi bi-trash"></i></button> </div> </li><li class="list-group-item text-muted" id="loading-categories">Cargando...</li></ul></div></div></div></div> </div>
-             <div class="tab-pane fade" id="proveedores"> <h1 class="h2">Gestionar Proveedores</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Acciones</th></tr></thead><tbody id="lista-proveedores-tabla"><tr><td colspan="4" class="text-center text-muted">No hay proveedores.</td></tr></tbody></table></div></div></div> </div>
 
-        </div>
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle filter-group" type="button" data-bs-toggle="dropdown">
+                        Talla
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Todas</a></li>
+                        <li><a class="dropdown-item" href="#">S</a></li>
+                        <li><a class="dropdown-item" href="#">M</a></li>
+                        <li><a class="dropdown-item" href="#">L</a></li>
+                    </ul>
+                </div>
+                
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle filter-group" type="button" data-bs-toggle="dropdown">
+                        Color
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Todos</a></li>
+                        <li><a class="dropdown-item" href="#">Blanco</a></li>
+                        <li><a class="dropdown-item" href="#">Negro</a></li>
+                        <li><a class="dropdown-item" href="#">Rosado</a></li>
+                    </ul>
+                </div>
+
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle filter-group" type="button" data-bs-toggle="dropdown">
+                        Precios: Detal
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Ver al Detal</a></li>
+                        <li><a class="dropdown-item" href="#">Ver al por Mayor</a></li>
+                    </ul>
+                </div>
+                
+                <div class="dropdown ms-md-auto"> <button class="btn btn-light dropdown-toggle filter-group" type="button" data-bs-toggle="dropdown">
+                        Ordenar por: Novedades
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#">Novedades</a></li>
+                        <li><a class="dropdown-item" href="#">Menor precio</a></li>
+                        <li><a class="dropdown-item" href="#">Mayor precio</a></li>
+                    </ul>
+                </div>
+                
+            </div>
+        </section>
+
+        <div id="catalogo-productos" class="row g-4 row-cols-1 row-cols-md-2 row-cols-lg-4">
+            </div>
     </main>
+    
+    <footer class="footer-minimal">
+        <div class="container">
+            <p class="footer-slogan">"Mishell Boutique – Tu estilo, tu esencia."</p>
+            <div class="footer-links">
+                <a href="contacto.html">Contacto</a>
+                <a href="politicas.html">Políticas</a>
+                <a href="#">Redes Sociales</a>
+                <a href="https_//wa.me/TUNUMERO">WhatsApp Directo</a>
+            </div>
+        </div>
+    </footer>
 
-    <div class="modal fade" id="addClientModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-client"> <div class="mb-3"> <label for="new-client-cedula" class="form-label">Cédula:</label> <input type="text" class="form-control" id="new-client-cedula"> </div> <div class="mb-3"> <label for="new-client-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-client-nombre" required> </div> <div class="mb-3"> <label for="new-client-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-client-celular" required> </div> <div class="mb-3"> <label for="new-client-direccion" class="form-label">Dirección:</label> <input type="text" class="form-control" id="new-client-direccion"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-client" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
-
-    <div class="modal fade" id="addRepartidorModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Repartidor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-repartidor"> <div class="mb-3"> <label for="new-repartidor-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-repartidor-nombre" required> </div> <div class="mb-3"> <label for="new-repartidor-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-repartidor-celular" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-repartidor" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
-
-    <div class="modal fade" id="addIncomeModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Ingreso Extra</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-income"> <div class="mb-3"> <label for="income-amount" class="form-label">Monto ($):</label> <input type="number" step="0.01" class="form-control" id="income-amount" required> </div> <div class="mb-3"> <label for="income-description" class="form-label">Descripción:</label> <input type="text" class="form-control" id="income-description" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-income" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
-    <div class="modal fade" id="addExpenseModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Gasto</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-expense"> <div class="mb-3"> <label for="expense-amount" class="form-label">Monto ($):</label> <input type="number" step="0.01" class="form-control" id="expense-amount" required> </div> <div class="mb-3"> <label for="expense-description" class="form-label">Descripción:</label> <input type="text" class="form-control" id="expense-description" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-expense" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
+    
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasCart" aria-labelledby="offcanvasCartLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasCartLabel">Mi Carrito</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column">
+            <div id="cart-items-container" class="flex-grow-1">
+                <p class="text-muted text-center" id="cart-empty-msg">Tu carrito está vacío.</p>
+            </div>
+            <div class="mt-4 border-top pt-3">
+                <h6 class="d-flex justify-content-between h5">
+                    Total: <span id="cart-total-amount">$0.00</span>
+                </h6>
+                <button id="btn-finalizar-compra" class="btn btn-primary w-100 mt-3">
+                    <i class="bi bi-whatsapp me-2"></i> Enviar Pedido por WhatsApp
+                </button>
+                <button type="button" class="btn btn-outline-primary w-100 mt-2" data-bs-dismiss="offcanvas">
+                    Seguir Comprando
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const costoCompraInput=document.getElementById('costo-compra'); const precioDetalInput=document.getElementById('precio-detal'); const precioMayorInput=document.getElementById('precio-mayor'); const margenDetalInfo=document.getElementById('margen-detal-info'); const margenMayorInfo=document.getElementById('margen-mayor-info'); const formatoMoneda=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}); function calcularYMostrarMargenes(){const c=parseFloat(costoCompraInput.value)||0; const pD=parseFloat(precioDetalInput.value)||0; const pM=parseFloat(precioMayorInput.value)||0; let mDV=0,mDP=0;if(c>0&&pD>=c){mDV=pD-c;mDP=(mDV/c)*100;margenDetalInfo.textContent=`Margen: ${formatoMoneda.format(mDV)} (${mDP.toFixed(1)}%)`;margenDetalInfo.style.color='var(--color-texto-claro)';margenDetalInfo.style.fontWeight='normal';}else{margenDetalInfo.textContent='Margen: $0 (0.0%)';margenDetalInfo.style.color=(pD>0&&pD<c)?'red':'var(--color-texto-claro)';if(pD>0&&pD<c){margenDetalInfo.textContent='Margen Negativo';margenDetalInfo.style.fontWeight='bold';}else{margenDetalInfo.style.fontWeight='normal';}} let mMV=0,mMP=0;if(c>0&&pM>=c){mMV=pM-c;mMP=(mMV/c)*100;margenMayorInfo.textContent=`Margen: ${formatoMoneda.format(mMV)} (${mMP.toFixed(1)}%)`;margenMayorInfo.style.color='var(--color-texto-claro)';margenMayorInfo.style.fontWeight='normal';}else{margenMayorInfo.textContent='Margen: $0 (0.0%)';margenMayorInfo.style.color=(pM>0&&pM<c)?'red':'var(--color-texto-claro)';if(pM>0&&pM<c){margenMayorInfo.textContent='Margen Negativo';margenMayorInfo.style.fontWeight='bold';}else{margenMayorInfo.style.fontWeight='normal';}}} costoCompraInput.addEventListener('input',calcularYMostrarMargenes); precioDetalInput.addEventListener('input',calcularYMostrarMargenes); precioMayorInput.addEventListener('input',calcularYMostrarMargenes); calcularYMostrarMargenes();
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const vC=document.getElementById('variaciones-container'); const aVB=document.getElementById('add-variation-btn'); const vT=document.getElementById('variation-template'); function aVR(){const nR=vT.cloneNode(true);nR.classList.remove('d-none');nR.removeAttribute('id');const rB=nR.querySelector('.remove-variation-btn');rB.addEventListener('click',()=>{nR.remove(); if(vC.querySelectorAll('.variation-row:not(.d-none)').length===0){aVR();}});vC.appendChild(nR);} aVB.addEventListener('click',aVR); if(vC.querySelectorAll('.variation-row:not(.d-none)').length===0){aVR();}
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const fV=document.getElementById('form-view'); const iV=document.getElementById('inventory-view'); const tIB=document.getElementById('toggle-inventory-view-btn'); const tFB=document.getElementById('toggle-form-view-btn'); if(fV&&iV&&tIB&&tFB){tIB.addEventListener('click',()=>{fV.style.display='none';iV.style.display='block';tIB.classList.add('d-none');tFB.classList.remove('d-none');}); tFB.addEventListener('click',()=>{iV.style.display='none';fV.style.display='block';tFB.classList.add('d-none');tIB.classList.remove('d-none');}); fV.style.display='block';iV.style.display='none';tIB.classList.remove('d-none');tFB.classList.add('d-none');} else { console.error("Error: Product view toggle elements not found!"); }
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const sFV=document.getElementById('sales-form-view'); const sLV=document.getElementById('sales-list-view'); const tSLB=document.getElementById('toggle-sales-list-view-btn'); const tSFB=document.getElementById('toggle-sales-form-view-btn'); if(sFV&&sLV&&tSLB&&tSFB){tSLB.addEventListener('click',()=>{sFV.style.display='none';sLV.style.display='block';tSLB.classList.add('d-none');tSFB.classList.remove('d-none');}); tSFB.addEventListener('click',()=>{sLV.style.display='none';sFV.style.display='block';tSFB.classList.add('d-none');tSLB.classList.remove('d-none');}); sFV.style.display='block';sLV.style.display='none';tSLB.classList.remove('d-none');tSFB.classList.add('d-none');} else { console.error("Error: Sales view toggle elements not found!"); }
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const tipoEntregaSelect = document.getElementById('tipo-entrega-select');
-            const deliveryFieldsDiv = document.querySelector('.delivery-fields');
-            const costoRutaInput = document.getElementById('costo-ruta');
-            const ventaClienteInput = document.getElementById('venta-cliente');
-            const clienteCelularInput = document.getElementById('venta-cliente-celular');
-            const clienteDireccionInput = document.getElementById('venta-cliente-direccion');
-            const clientesData = { "12345678 - Cliente Ejemplo 1": { celular: "3001234567", direccion: "Calle Falsa 123" }, "Cliente Ejemplo 2": { celular: "3109876543", direccion: "Avenida Siempre Viva 742" }, "Cliente General": { celular: "", direccion: ""} };
-
-            function toggleDeliveryFields() { if (deliveryFieldsDiv && tipoEntregaSelect && costoRutaInput) { if (tipoEntregaSelect.value === 'domicilio') { deliveryFieldsDiv.style.display = 'flex'; } else { deliveryFieldsDiv.style.display = 'none'; costoRutaInput.value = 0; /* Recalcular total */ } } else { console.error("Error: Delivery fields elements not found!"); } }
-            function fillClientInfo() { if (!ventaClienteInput || !clienteCelularInput || !clienteDireccionInput) return; const selectedClientValue = ventaClienteInput.value; const clientData = clientesData[selectedClientValue]; let cedula = '', nombre = selectedClientValue; const match = selectedClientValue.match(/^(\d+)\s*-\s*(.*)$/); if (match) { cedula = match[1]; nombre = match[2]; } if (clientData) { clienteCelularInput.value = clientData.celular || ""; clienteDireccionInput.value = clientData.direccion || ""; } else { clienteCelularInput.value = ""; clienteDireccionInput.value = ""; } }
-            if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', toggleDeliveryFields);
-            if(ventaClienteInput) ventaClienteInput.addEventListener('input', fillClientInfo);
-            toggleDeliveryFields(); fillClientInfo();
-            if (costoRutaInput) { costoRutaInput.addEventListener('input', () => { /* Recalcular total venta */ }); }
-            const addClientForm = document.getElementById('form-add-client'); const addClientModalEl = document.getElementById('addClientModal'); if(addClientForm && addClientModalEl) { const addClientModal = new bootstrap.Modal(addClientModalEl); addClientForm.addEventListener('submit', (event) => { event.preventDefault(); console.log("Guardando cliente..."); const newCedula = document.getElementById('new-client-cedula').value; const newNombre = document.getElementById('new-client-nombre').value; const newCelular = document.getElementById('new-client-celular').value; const newDireccion = document.getElementById('new-client-direccion').value; /* --- GUARDAR --- */ const dataList = document.getElementById('lista-clientes-venta'); if(dataList){ const optionValue = newCedula ? `${newCedula} - ${newNombre}` : newNombre; const newOption = document.createElement('option'); newOption.value = optionValue; dataList.appendChild(newOption); clientesData[optionValue] = { celular: newCelular, direccion: newDireccion }; } ventaClienteInput.value = newCedula ? `${newCedula} - ${newNombre}` : newNombre; fillClientInfo(); addClientModal.hide(); addClientForm.reset(); }); } else { console.error("Error: Add client modal elements not found!");}
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const todayView = document.getElementById('delivery-today-view');
-            const historyView = document.getElementById('delivery-history-view');
-            const toggleHistoryBtn = document.getElementById('toggle-delivery-history-btn');
-            const toggleTodayBtn = document.getElementById('toggle-delivery-today-btn');
-
-            if (todayView && historyView && toggleHistoryBtn && toggleTodayBtn) {
-                toggleHistoryBtn.addEventListener('click', () => { todayView.style.display = 'none'; historyView.style.display = 'block'; toggleHistoryBtn.classList.add('d-none'); toggleTodayBtn.classList.remove('d-none'); });
-                toggleTodayBtn.addEventListener('click', () => { historyView.style.display = 'none'; todayView.style.display = 'block'; toggleTodayBtn.classList.add('d-none'); toggleHistoryBtn.classList.remove('d-none'); });
-                todayView.style.display = 'block'; historyView.style.display = 'none'; toggleHistoryBtn.classList.remove('d-none'); toggleTodayBtn.classList.add('d-none');
-            } else { console.error("Error: Delivery view toggle elements not found!"); }
-
-            const addRepartidorForm = document.getElementById('form-add-repartidor'); const addRepartidorModalEl = document.getElementById('addRepartidorModal'); if(addRepartidorForm && addRepartidorModalEl) { const addRepartidorModal = new bootstrap.Modal(addRepartidorModalEl); addRepartidorForm.addEventListener('submit', (event) => { event.preventDefault(); console.log("Guardando repartidor..."); /* --- GUARDAR --- */ addRepartidorModal.hide(); addRepartidorForm.reset(); /* Recargar lista */ }); } else { console.error("Error: Add repartidor modal elements not found!"); }
-        });
-    </script>
-    <script>
-         document.addEventListener('DOMContentLoaded', () => {
-            const todayClosingView = document.getElementById('closing-today-view');
-            const historyClosingView = document.getElementById('closing-history-view');
-            const toggleHistoryBtn = document.getElementById('toggle-closing-history-btn');
-            const toggleTodayBtn = document.getElementById('toggle-closing-today-btn');
-
-             if (todayClosingView && historyClosingView && toggleHistoryBtn && toggleTodayBtn) {
-                 toggleHistoryBtn.addEventListener('click', () => { todayClosingView.style.display = 'none'; historyClosingView.style.display = 'block'; toggleHistoryBtn.classList.add('d-none'); toggleTodayBtn.classList.remove('d-none'); });
-                 toggleTodayBtn.addEventListener('click', () => { historyClosingView.style.display = 'none'; todayClosingView.style.display = 'block'; toggleTodayBtn.classList.add('d-none'); toggleHistoryBtn.classList.remove('d-none'); });
-                 todayClosingView.style.display = 'block'; historyClosingView.style.display = 'none'; toggleHistoryBtn.classList.remove('d-none'); toggleTodayBtn.classList.add('d-none');
-            } else { console.error("Error: Finance closing view toggle elements not found!"); }
-
-             // Modales Ingreso/Gasto
-             const addIncomeForm = document.getElementById('form-add-income'); const addIncomeModalEl = document.getElementById('addIncomeModal'); if(addIncomeForm && addIncomeModalEl){ const addIncomeModal = new bootstrap.Modal(addIncomeModalEl); addIncomeForm.addEventListener('submit', (e) => { e.preventDefault(); console.log('Guardando ingreso...'); /* Guardar */ addIncomeModal.hide(); addIncomeForm.reset(); }); }
-             const addExpenseForm = document.getElementById('form-add-expense'); const addExpenseModalEl = document.getElementById('addExpenseModal'); if(addExpenseForm && addExpenseModalEl){ const addExpenseModal = new bootstrap.Modal(addExpenseModalEl); addExpenseForm.addEventListener('submit', (e) => { e.preventDefault(); console.log('Guardando gasto...'); /* Guardar */ addExpenseModal.hide(); addExpenseForm.reset(); }); }
-         });
-    </script>
 
 </body>
 </html>
