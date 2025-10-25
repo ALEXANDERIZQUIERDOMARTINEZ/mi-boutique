@@ -1,0 +1,284 @@
+/* --- style.css --- */
+
+/* 1. IMPORTACIÓN DE FUENTES Y ÍCONOS (DEBEN SER LAS PRIMERAS LÍNEAS) */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css');
+
+/* 2. VARIABLES GLOBALES (Tu Marca) */
+:root {
+    --color-primario: #D988B9;
+    --color-primario-claro: #F5E8ED;
+    --color-primario-hover: #E3B0CC;
+    --color-fondo: #ffffff;
+    --color-borde-sutil: #f0f0f0;
+    --color-texto: #333333;
+    --color-texto-claro: #777777;
+    --font-base: 'Poppins', sans-serif;
+    --border-radius: 8px;
+    --shadow-suave: 0 5px 15px rgba(0, 0, 0, 0.06);
+}
+
+/* 3. ESTILOS BASE */
+body {
+    font-family: var(--font-base);
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+}
+
+/* 4. COMPONENTES DE BOOTSTRAP */
+.btn {
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+.btn-primary {
+    background-color: var(--color-primario);
+    border-color: var(--color-primario);
+}
+.btn-primary:hover, .btn-primary:focus {
+    background-color: var(--color-primario-hover);
+    border-color: var(--color-primario-hover);
+    box-shadow: 0 6px 15px rgba(217, 136, 185, 0.3);
+}
+.form-control, .form-select {
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-borde-sutil);
+    padding: 10px 15px;
+    background-color: var(--color-fondo);
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 0.2rem rgba(217, 136, 185, 0.2);
+}
+.form-control:disabled, .form-control[readonly] {
+    background-color: #e9ecef;
+    opacity: 1;
+    cursor: default;
+}
+.form-switch .form-check-input:checked {
+    background-color: var(--color-primario);
+    border-color: var(--color-primario);
+}
+.dropdown-menu {
+    border: 1px solid var(--color-borde-sutil);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-suave);
+    padding: 0.5rem;
+}
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+}
+.dropdown-item:active {
+    background-color: var(--color-primario);
+    color: var(--color-fondo);
+}
+.dropdown-item:hover {
+    background-color: var(--color-primario-claro);
+    color: var(--color-texto);
+}
+
+/* 5. DISEÑO DEL CATÁLOGO PÚBLICO (index.html) */
+.navbar { /* Estilos para el navbar público */
+    background-color: var(--color-fondo) !important;
+    border-bottom: 1px solid var(--color-borde-sutil);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    padding: 1.25rem 0;
+}
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: var(--color-primario) !important;
+}
+.navbar-brand span {
+    color: var(--color-texto);
+}
+.navbar .navbar-nav { /* Navbar público */
+    margin-left: auto;
+}
+.navbar .navbar-nav .nav-link { /* Navbar público */
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: var(--color-texto-claro);
+    margin: 0 0.75rem;
+}
+.navbar .navbar-nav .nav-link:hover,
+.navbar .navbar-nav .nav-link.active { /* Navbar público */
+    color: var(--color-primario);
+}
+.cart-icon {
+    font-size: 1.5rem;
+    position: relative;
+    color: var(--color-texto);
+    margin-left: 1.5rem;
+}
+.cart-icon:hover { color: var(--color-primario); }
+.cart-icon .cart-counter {
+    background-color: var(--color-primario);
+    color: var(--color-fondo);
+    position: absolute; top: -8px; right: -10px;
+    font-size: 0.7rem; font-weight: 600; border-radius: 50%;
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+}
+
+main {
+    flex-grow: 1;
+}
+
+.catalog-filters {
+    background-color: var(--color-fondo);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-suave);
+}
+.filter-group {
+    border: 1px solid var(--color-borde-sutil);
+    background-color: var(--color-fondo);
+    color: var(--color-texto-claro);
+    border-radius: var(--border-radius);
+}
+.filter-group:hover {
+    border-color: var(--color-primario-claro);
+    color: var(--color-texto);
+    background-color: var(--color-primario-claro);
+}
+.product-card {
+    background: var(--color-fondo);
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-suave);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+}
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+.product-image-wrapper {
+    overflow: hidden;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+.product-card img {
+    width: 100%;
+    height: 320px;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+.product-card:hover img {
+    transform: scale(1.05);
+}
+.product-card-body {
+    padding: 1.5rem;
+    text-align: left;
+}
+.product-card .product-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--color-texto);
+}
+.product-card .product-price {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-primario);
+    margin-bottom: 1rem;
+}
+.footer-minimal {
+    padding: 4rem 0;
+    background-color: var(--color-fondo);
+    border-top: 1px solid var(--color-borde-sutil);
+    text-align: center;
+    margin-top: 5rem;
+}
+.footer-slogan {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--color-texto);
+    margin-bottom: 1.5rem;
+}
+.footer-links a {
+    margin: 0 1rem;
+    color: var(--color-texto-claro);
+    text-decoration: none;
+}
+.footer-links a:hover {
+    color: var(--color-primario);
+}
+
+/* 6. ESTILOS DEL PANEL ADMIN */
+.admin-navbar {
+    background-color: var(--color-fondo);
+    border-bottom: 1px solid var(--color-borde-sutil);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    padding: 0.75rem 1.5rem;
+}
+.admin-navbar .admin-brand {
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: var(--color-primario) !important;
+    text-decoration: none;
+    margin-right: 2rem;
+}
+.admin-navbar .admin-logout {
+    color: var(--color-texto-claro);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+.admin-navbar .admin-logout:hover {
+    color: var(--color-primario);
+}
+.admin-navbar .navbar-nav .nav-link {
+    color: var(--color-texto-claro);
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 6px;
+    margin: 0 0.2rem;
+    transition: all 0.2s ease;
+}
+.admin-navbar .navbar-nav .nav-link:hover {
+    color: var(--color-texto);
+    background-color: var(--color-primario-claro);
+}
+.admin-navbar .navbar-nav .nav-link.active {
+    color: var(--color-primario);
+    font-weight: 600;
+    background-color: var(--color-primario-claro);
+}
+.admin-main {
+    padding: 2rem;
+    background-color: #f9fafb;
+    flex-grow: 1;
+}
+.admin-main .card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-suave);
+}
+/* Estilo específico para el botón de eliminar variación */
+.remove-variation-btn {
+    padding: 0.25rem 0.5rem; /* Ajusta el padding para que sea pequeño */
+    line-height: 1; /* Asegura que el ícono no tenga espacio extra */
+}
+.remove-variation-btn i {
+    vertical-align: middle; /* Centra el ícono verticalmente */
+}
