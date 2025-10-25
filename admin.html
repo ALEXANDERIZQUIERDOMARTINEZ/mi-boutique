@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Mi Boutique</title>
+    
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0 auto;
+            max-width: 600px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 { color: #333; }
+        form {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: grid;
+            gap: 15px; /* Espacio entre campos */
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box; /* Importante para que el padding no rompa el ancho */
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Panel de Administración</h1>
+    <h2>Agregar Nuevo Producto</h2>
+
+    <form id="form-producto">
+        <div>
+            <label for="nombre">Nombre del Producto:</label>
+            <input type="text" id="nombre" name="nombre" required>
+        </div>
+        
+        <div>
+            <label for="descripcion">Descripción:</label>
+            <textarea id="descripcion" name="descripcion" rows="4"></textarea>
+        </div>
+        
+        <div>
+            <label for="precio-detal">Precio al Detal ($):</label>
+            <input type="number" id="precio-detal" name="precio-detal" step="0.01" min="0" required>
+        </div>
+        
+        <div>
+            <label for="precio-mayor">Precio al por Mayor ($):</label>
+            <input type="number" id="precio-mayor" name="precio-mayor" step="0.01" min="0">
+        </div>
+
+        <div>
+            <label for="stock">Stock (Inventario):</label>
+            <input type="number" id="stock" name="stock" min="0" value="1" required>
+        </div>
+        
+        <div>
+            <label for="imagen">Foto del Producto:</label>
+            <input type="file" id="imagen" name="imagen" accept="image/*" required>
+        </div>
+        
+        <button type="submit">Guardar Producto</button>
+    </form>
+
+    <h2>Productos Actuales</h2>
+    <div id="lista-productos">
+        <p>Cargando productos...</p>
+    </div>
+
+</body>
+</html>
+  
