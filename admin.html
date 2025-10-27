@@ -403,6 +403,140 @@
              const addExpenseForm = document.getElementById('form-add-expense'); const addExpenseModalEl = document.getElementById('addExpenseModal'); if(addExpenseForm && addExpenseModalEl){ const addExpenseModal = new bootstrap.Modal(addExpenseModalEl); addExpenseForm.addEventListener('submit', (e) => { e.preventDefault(); console.log('Guardando gasto...'); /* Guardar */ addExpenseModal.hide(); addExpenseForm.reset(); }); }
          });
     </script>
+    <script type="module"> // Use type="module" for import statements
+        // Import Firestore functions
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        // Get Firestore instance (already initialized globally, but good practice to get it here too)
+        const db = getFirestore();
+        const categoriesCollection = collection(db, 'categorias'); // Reference to the collection
+
+        // Elements
+        const categoryForm = document.getElementById('form-categoria');
+        const categoryNameInput = document.getElementById('nombre-categoria');
+        const categoryList = document.getElementById('lista-categorias');
+        const loadingCategories = document.getElementById('loading-categories');
+
+        // --- Function to Render Categories ---
+        const renderCategories = (categories) => {
+            categoryList.innerHTML = ''; // Clear current list
+            if (categories.empty) {
+                categoryList.innerHTML = '<li class="list-group-item text-muted">No hay categorías agregadas.</li>';
+                return;
+            }
+            categories.forEach(doc => {
+                const category = doc.data();
+                const categoryId = doc.id;
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.dataset.id = categoryId; // Store ID for deletion/editing
+                li.innerHTML = `
+                    <span>${category.nombre}</span>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-outline-secondary py-0 px-1 me-1 btn-edit-category" title="Modificar"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-category" title="Eliminar"><i class="bi bi-trash"></i></button>
+                    </div>
+                `;
+                categoryList.appendChild(li);
+            });
+        };
+
+        // --- Load Categories Initially & Listen for Realtime Updates ---
+        // Using onSnapshot for real-time updates (list updates automatically)
+        onSnapshot(categoriesCollection, (querySnapshot) => {
+            renderCategories(querySnapshot);
+             // Also update the dropdown in the Products form
+             updateCategoryDropdown(querySnapshot);
+        }, (error) => {
+            console.error("Error getting categories: ", error);
+            categoryList.innerHTML = '<li class="list-group-item text-danger">Error al cargar categorías.</li>';
+        });
+
+        // --- Handle Add Category Form Submission ---
+        if (categoryForm) {
+            categoryForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const categoryName = categoryNameInput.value.trim();
+                if (categoryName) {
+                    try {
+                        const docRef = await addDoc(categoriesCollection, {
+                            nombre: categoryName
+                            // You could add a timestamp here: createdAt: serverTimestamp()
+                        });
+                        console.log("Category added with ID: ", docRef.id);
+                        categoryNameInput.value = ''; // Clear input
+                        // No need to manually reload list due to onSnapshot
+                    } catch (error) {
+                        console.error("Error adding category: ", error);
+                        alert("Error al guardar la categoría.");
+                    }
+                }
+            });
+        }
+
+        // --- Handle Delete/Edit Buttons (Event Delegation) ---
+        if (categoryList) {
+            categoryList.addEventListener('click', async (e) => {
+                const target = e.target.closest('button'); // Find the clicked button
+                if (!target) return; // Exit if click wasn't on a button
+
+                const li = target.closest('li');
+                const categoryId = li.dataset.id;
+                const categoryNameSpan = li.querySelector('span'); // Get the span with the name
+
+                if (target.classList.contains('btn-delete-category')) {
+                    // Delete category
+                    if (confirm(`¿Seguro que quieres eliminar la categoría "${categoryNameSpan.textContent}"?`)) {
+                        try {
+                            await deleteDoc(doc(db, "categorias", categoryId));
+                            console.log("Category deleted");
+                            // List updates automatically via onSnapshot
+                        } catch (error) {
+                            console.error("Error deleting category: ", error);
+                            alert("Error al eliminar la categoría.");
+                        }
+                    }
+                } else if (target.classList.contains('btn-edit-category')) {
+                    // Edit category (Basic example: prompt for new name)
+                    const newName = prompt("Nuevo nombre para la categoría:", categoryNameSpan.textContent);
+                    if (newName && newName.trim() !== '' && newName !== categoryNameSpan.textContent) {
+                        try {
+                            // !!! IMPORTANT: Need 'updateDoc' import for editing !!!
+                            // import { ..., updateDoc } from "...";
+                            // await updateDoc(doc(db, "categorias", categoryId), {
+                            //    nombre: newName.trim()
+                            // });
+                            console.log("Category updated (simulated - uncomment updateDoc)");
+                             alert("Funcionalidad de editar aún no implementada completamente con updateDoc.");
+                            // List updates automatically via onSnapshot if updateDoc is used
+                        } catch (error) {
+                            console.error("Error updating category: ", error);
+                            alert("Error al modificar la categoría.");
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Function to Update Category Dropdown in Products Form ---
+        const categoryDropdown = document.getElementById('categoria-producto');
+        function updateCategoryDropdown(categoriesSnapshot) {
+            if (!categoryDropdown) return;
+            const currentSelection = categoryDropdown.value; // Save current selection if any
+            categoryDropdown.innerHTML = '<option value="">Selecciona...</option>'; // Reset dropdown
+             categoriesSnapshot.forEach(doc => {
+                 const category = doc.data();
+                 const option = document.createElement('option');
+                 option.value = doc.id; // Or category.nombre if you prefer saving the name
+                 option.textContent = category.nombre;
+                 categoryDropdown.appendChild(option);
+             });
+             categoryDropdown.value = currentSelection; // Try to restore selection
+        }
+
+    </script>
+    </body>
+</html>
 
 </body>
 </html>
