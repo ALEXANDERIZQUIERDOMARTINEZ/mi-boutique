@@ -9,16 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Estilos específicos mínimos necesarios aquí */
-        #inventory-view, #sales-list-view, .delivery-fields, #delivery-history-view, #closing-history-view { display: none; }
-        .add-supplier-btn, .add-client-btn { padding: 0.375rem 0.5rem; line-height: 1; }
-        .client-info-display { background-color: #e9ecef; opacity: 1; }
-        .action-buttons button { margin-right: 5px; }
-        .action-buttons button:last-child { margin-right: 0; }
-        .table-product-img { max-width: 50px; height: auto; max-height: 65px; object-fit: cover; border-radius: 4px;}
-        .modal-body form .form-label { font-weight: 500; }
-        .toast-container { z-index: 1100; }
-         /* Estilos base si style.css no existe o está incompleto */
+        /* Estilos base si style.css no existe o está incompleto */
         :root { --color-primario: #D988B9; --color-primario-claro: #F5E8ED; }
         body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; }
         .admin-navbar { background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,.05); }
@@ -34,9 +25,49 @@
         .btn-primary { background-color: var(--color-primario); border-color: var(--color-primario); }
         .btn-primary:hover { background-color: #c473a2; border-color: #c473a2; }
         .btn-outline-secondary { border-color: #ced4da; color: #6c757d; }
+        
+        /* Estilos UI Mínimos */
+        #inventory-view, #sales-list-view, .delivery-fields, #delivery-history-view, #closing-history-view { display: none; }
+        .add-supplier-btn, .add-client-btn { padding: 0.375rem 0.5rem; line-height: 1; }
+        .client-info-display { background-color: #e9ecef; opacity: 1; }
+        .action-buttons button { margin-right: 5px; }
+        .action-buttons button:last-child { margin-right: 0; }
+        .table-product-img { max-width: 50px; height: auto; max-height: 65px; object-fit: cover; border-radius: 4px;}
+        .toast-container { z-index: 1100; }
+        
+        /* === ESTILOS NUEVOS PARA MODALES === */
+        .modal-content {
+            border: none;
+            border-radius: 0.5rem; /* Igual que las cards */
+            box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        }
+        .modal-header {
+            background-color: var(--color-primario-claro); /* Rosa pálido */
+            color: var(--color-primario); /* Rosa oscuro */
+            border-bottom: none; /* Sin línea divisoria */
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+        .modal-header .btn-close {
+            filter: none; /* Asegura que el botón X sea visible */
+        }
+        /* Excepto el modal de eliminación */
+        #deleteConfirmModal .modal-header {
+            background-color: #dc3545; /* Rojo de Bootstrap */
+            color: white;
+        }
+        #deleteConfirmModal .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%); /* Botón X blanco */
+        }
+        .modal-footer {
+            border-top: 1px solid #eee; /* Línea sutil */
+        }
         /* Estilos para lista en modal de búsqueda */
         .search-modal-list .list-group-item { cursor: pointer; }
-        .search-modal-list .list-group-item:hover { background-color: #f8f9fa; }
+        .search-modal-list .list-group-item:hover { background-color: var(--color-primario-claro); }
+        .search-modal-list .list-group-item .stock-info { font-size: 0.85em; color: #6c757d; }
+        .search-modal-list .list-group-item .price-info { font-weight: 500; color: var(--color-primario); }
+
     </style>
 </head>
 <body>
@@ -79,16 +110,8 @@
     <main class="admin-main">
         <div class="tab-content">
             <div class="tab-pane fade show active" id="dashboard"> <h1 class="h2">Dashboard</h1> <p>Resumen...</p> <div class="row g-4"><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Ventas Hoy</h5><p class="card-text h2" id="db-ventas-hoy">$0</p></div></div><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Bajo Stock</h5><p class="card-text h2" id="db-bajo-stock">0</p></div></div><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Apartados Vencer</h5><p class="card-text h2" id="db-apartados-vencer">0</p></div></div></div> </div>
-            <div class="tab-pane fade" id="productos">
-                 <div class="d-flex justify-content-between align-items-center mb-3">
-                     <h1 class="h2 mb-0">Productos</h1>
-                     <div class="btn-group">
-                         <button type="button" id="toggle-inventory-view-btn" class="btn btn-sm btn-outline-secondary active"><i class="bi bi-list-ul me-1"></i><span class="d-none d-sm-inline"> Inventario</span></button>
-                         <button type="button" id="toggle-form-view-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-sm-inline"> Agregar/Editar</span></button>
-                     </div>
-                 </div>
-                <div id="form-view" style="display: none;"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Formulario Producto</h3></div> <div class="card-body"> <form id="form-producto"> <input type="hidden" id="producto-id"> <div class="row"> <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div> <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div> <div class="col-md-3 mb-3"> <label for="proveedor-producto" class="form-label">Proveedor:</label> <div class="input-group"> <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal"> <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button> </div> </div> </div> <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div> <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div> <hr class="my-4"> <h5 class="mb-3">Precios</h5> <div class="row"> <div class="col-md-4 mb-3"> <label for="costo-compra" class="form-label">Costo ($):</label> <input type="number" class="form-control" id="costo-compra" step="0.01" min="0" required> </div> <div class="col-md-4 mb-3"> <label for="precio-detal" class="form-label">P. Detal ($):</label> <input type="number" class="form-control" id="precio-detal" step="0.01" min="0" required> <small id="margen-detal-info" class="form-text text-muted"></small> </div> <div class="col-md-4 mb-3"> <label for="precio-mayor" class="form-label">P. Mayor ($):</label> <input type="number" class="form-control" id="precio-mayor" step="0.01" min="0"> <small id="margen-mayor-info" class="form-text text-muted"></small> </div> </div> <hr class="my-4"> <h5 class="mb-3">Variaciones</h5> <div id="variaciones-container"> <div class="row align-items-center mb-2 variation-row d-none" id="variation-template"> <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_talla[]" placeholder="Talla"> </div> <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_color[]" placeholder="Color"> </div> <div class="col-md-3"> <input type="number" class="form-control form-control-sm" name="variation_stock[]" min="0" value="1" placeholder="Stock"> </div> <div class="col-md-1 text-end"> <button type="button" class="btn btn-sm btn-outline-danger remove-variation-btn p-1"> <i class="bi bi-x"></i> </button> </div> </div> </div> <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir</button> <hr class="my-4"> <div class="row"> <div class="col-md-8 mb-3"> <label for="imagen" class="form-label">Fotos:</label> <input type="file" class="form-control" id="imagen" accept="image/*" multiple> <small class="text-muted">La 1ra será la principal.</small> </div> <div class="col-md-4 d-flex align-items-center"> <div class="form-check form-switch fs-5 w-100"> <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked> <label class="form-check-label" for="visibilidad">Visible</label> </div> </div> </div> <hr class="my-4"> <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> <button type="button" id="btn-clear-product-form" class="btn btn-outline-secondary ms-2">Limpiar</button> </form> </div> </div> </div> <div id="inventory-view"> <div class="input-group mb-3"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="search" id="search-inventory" class="form-control" placeholder="Buscar..."></div> <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr> <th>Foto</th> <th>Nombre</th> <th>P. Detal</th> <th>P. Mayor</th> <th>Stock</th> <th>Estado</th> <th>Acciones</th> </tr></thead><tbody id="lista-inventario-productos"><tr id="empty-inventory-row"><td colspan="7" class="text-center text-muted p-4">Cargando...</td></tr></tbody></table></div></div></div> </div> </div>
-            <div class="tab-pane fade" id="ventas"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Ventas</h1> <div class="btn-group"> <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle-fill me-1"></i> Registrar </button> <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-list-check me-1"></i> Historial </button> </div> </div> <div id="sales-form-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Registrar Venta</h3></div> <div class="card-body"> <form id="form-venta"> <div class="row align-items-end"> <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label> <div class="input-group"> <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal"> <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button> </div> <div class="row mt-2 gx-2"> <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div> <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div> </div> </div> <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div> <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div> <div class="col-md-2 mb-3"> <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> </div> </div> <div class="row delivery-fields"> <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div> <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div> <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> </div> </div> <label for="venta-producto" class="form-label">Buscar Producto:</label> <input type="text" id="venta-producto" class="form-control" placeholder="Escribe nombre o código..."> <table class="table my-3"> <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead> <tbody id="venta-carrito"></tbody> </table> <hr> <div class="row"> <div class="col-md-6"> <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> </div> <div class="col-md-6"> <div class="row"> <div class="col-7"> <label for="venta-descuento" class="form-label">Descuento:</label> <input type="number" id="venta-descuento" class="form-control" value="0"> </div> <div class="col-5"> <label class="form-label">&nbsp;</label> <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> </div> </div> <label class="form-label mt-3">Pago:</label> <div class="input-group mb-2"> <span class="input-group-text">Efectivo $</span> <input type="number" id="pago-efectivo" class="form-control" value="0"> </div> <div class="input-group mb-3"> <span class="input-group-text">Transf. $</span> <input type="number" id="pago-transferencia" class="form-control" value="0"> </div> <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> <button type="submit" class="btn btn-primary w-100 mt-2">Registrar Venta</button> </div> </div> </form> </div> </div> </div> <div id="sales-list-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div> <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"> <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> </thead><tbody id="lista-ventas-anteriores"> <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr> </tbody></table></div></div></div> </div> </div>
+            <div class="tab-pane fade" id="productos"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Productos</h1> <div class="btn-group"> <button type="button" id="toggle-inventory-view-btn" class="btn btn-sm btn-outline-secondary active"><i class="bi bi-list-ul me-1"></i><span class="d-none d-sm-inline"> Inventario</span></button> <button type="button" id="toggle-form-view-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-sm-inline"> Agregar/Editar</span></button> </div> </div> <div id="form-view" style="display: none;"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Formulario Producto</h3></div> <div class="card-body"> <form id="form-producto"> <input type="hidden" id="producto-id"> <div class="row"> <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div> <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div> <div class="col-md-3 mb-3"> <label for="proveedor-producto" class="form-label">Proveedor:</label> <div class="input-group"> <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal"> <input type="hidden" id="proveedor-producto-id"> <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button> </div> </div> </div> <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div> <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div> <hr class="my-4"> <h5 class="mb-3">Precios</h5> <div class="row"> <div class="col-md-4 mb-3"> <label for="costo-compra" class="form-label">Costo ($):</label> <input type="number" class="form-control" id="costo-compra" step="0.01" min="0" required> </div> <div class="col-md-4 mb-3"> <label for="precio-detal" class="form-label">P. Detal ($):</label> <input type="number" class="form-control" id="precio-detal" step="0.01" min="0" required> <small id="margen-detal-info" class="form-text text-muted"></small> </div> <div class="col-md-4 mb-3"> <label for="precio-mayor" class="form-label">P. Mayor ($):</label> <input type="number" class="form-control" id="precio-mayor" step="0.01" min="0"> <small id="margen-mayor-info" class="form-text text-muted"></small> </div> </div> <hr class="my-4"> <h5 class="mb-3">Variaciones</h5> <div id="variaciones-container"> <div class="row align-items-center mb-2 variation-row d-none" id="variation-template"> <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_talla[]" placeholder="Talla"> </div> <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_color[]" placeholder="Color"> </div> <div class="col-md-3"> <input type="number" class="form-control form-control-sm" name="variation_stock[]" min="0" value="1" placeholder="Stock"> </div> <div class="col-md-1 text-end"> <button type="button" class="btn btn-sm btn-outline-danger remove-variation-btn p-1"> <i class="bi bi-x"></i> </button> </div> </div> </div> <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir</button> <hr class="my-4"> <div class="row"> <div class="col-md-8 mb-3"> <label for="imagen" class="form-label">Fotos:</label> <input type="file" class="form-control" id="imagen" accept="image/*" multiple> <small class="text-muted">La 1ra será la principal.</small> </div> <div class="col-md-4 d-flex align-items-center"> <div class="form-check form-switch fs-5 w-100"> <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked> <label class="form-check-label" for="visibilidad">Visible</label> </div> </div> </div> <hr class="my-4"> <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> <button type="button" id="btn-clear-product-form" class="btn btn-outline-secondary ms-2">Limpiar</button> </form> </div> </div> </div> <div id="inventory-view"> <div class="input-group mb-3"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="search" id="search-inventory" class="form-control" placeholder="Buscar..."></div> <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr> <th>Foto</th> <th>Nombre</th> <th>P. Detal</th> <th>P. Mayor</th> <th>Stock</th> <th>Estado</th> <th>Acciones</th> </tr></thead><tbody id="lista-inventario-productos"><tr id="empty-inventory-row"><td colspan="7" class="text-center text-muted p-4">Cargando...</td></tr></tbody></table></div></div></div> </div> </div>
+            <div class="tab-pane fade" id="ventas"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Ventas</h1> <div class="btn-group"> <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle-fill me-1"></i> Registrar </button> <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-list-check me-1"></i> Historial </button> </div> </div> <div id="sales-form-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Registrar Venta</h3></div> <div class="card-body"> <form id="form-venta"> <input type="hidden" id="venta-cliente-id"> <div class="row align-items-end"> <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label> <div class="input-group"> <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal"> <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button> </div> <div class="row mt-2 gx-2"> <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div> <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div> </div> </div> <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div> <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div> <div class="col-md-2 mb-3"> <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> </div> </div> <div class="row delivery-fields"> <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div> <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div> <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> </div> </div> <label for="venta-producto" class="form-label">Buscar Producto:</label> <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal"> <table class="table my-3"> <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead> <tbody id="venta-carrito"></tbody> </table> <hr> <div class="row"> <div class="col-md-6"> <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> </div> <div class="col-md-6"> <div class="row"> <div class="col-7"> <label for="venta-descuento" class="form-label">Descuento:</label> <input type="number" id="venta-descuento" class="form-control" value="0"> </div> <div class="col-5"> <label class="form-label">&nbsp;</label> <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> </div> </div> <label class="form-label mt-3">Pago:</label> <div class="input-group mb-2"> <span class="input-group-text">Efectivo $</span> <input type="number" id="pago-efectivo" class="form-control" value="0"> </div> <div class="input-group mb-3"> <span class="input-group-text">Transf. $</span> <input type="number" id="pago-transferencia" class="form-control" value="0"> </div> <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> <button type="submit" class="btn btn-primary w-100 mt-2">Registrar Venta</button> </div> </div> </form> </div> </div> </div> <div id="sales-list-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div> <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"> <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> </thead><tbody id="lista-ventas-anteriores"> <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr> </tbody></table></div></div></div> </div> </div>
             <div class="tab-pane fade" id="apartados"> <h1 class="h2">Apartados</h1> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Pendientes</h3></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Cliente</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Vence</th><th>Acciones</th></tr></thead><tbody id="lista-apartados"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
             <div class="tab-pane fade" id="clientes"> <h1 class="h2">Clientes</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClientModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Nombre</th><th>Cédula</th><th>WhatsApp</th><th>Dirección</th><th>Última Compra</th><th>Acciones</th></tr></thead><tbody id="lista-clientes"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
             <div class="tab-pane fade" id="repartidores"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Repartidores</h1> <div class="btn-group"> <button type="button" id="toggle-delivery-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-bicycle me-1"></i><span class="d-none d-sm-inline"> Hoy</span></button> <button type="button" id="toggle-delivery-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-sm-inline"> Historial</span></button> </div> </div> <div id="delivery-today-view"> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Liquidación Hoy</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addRepartidorModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Repartidor</th><th># Ent.</th><th>Efec. Recibido</th><th>Rutas ($)</th><th>Rutas Transf. ($)</th><th>Efec. a Entregar ($)</th><th>Efec. Entregado ($)</th><th>Saldo ($)</th><th>Acciones</th></tr></thead><tbody id="lista-repartidores"><tr><td colspan="9" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div> <div id="delivery-history-view"> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div><div class="card-body"><form id="form-filter-delivery-history" class="mb-3"><div class="row"><div class="col-md-4"><label for="history-repartidor" class="form-label">Repartidor:</label><select id="history-repartidor" class="form-select"></select></div><div class="col-md-3"><label for="history-desde" class="form-label">Desde:</label><input type="date" id="history-desde" class="form-control"></div><div class="col-md-3"><label for="history-hasta" class="form-label">Hasta:</label><input type="date" id="history-hasta" class="form-control"></div><div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Filtrar</button></div></div></form><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Repartidor</th><th>Efec. Esperado</th><th>Efec. Entregado</th><th>Diferencia</th></tr></thead><tbody id="lista-historial-repartidores"><tr><td colspan="5" class="text-center text-muted">Filtra.</td></tr></tbody></table></div></div></div> </div> </div>
@@ -108,11 +131,11 @@
     <div class="modal fade" id="editSupplierModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Editar Proveedor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-edit-supplier"> <input type="hidden" id="edit-supplier-id"> <div class="mb-3"> <label for="edit-supplier-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="edit-supplier-nombre" required> </div> <div class="mb-3"> <label for="edit-supplier-contacto" class="form-label">Contacto:</label> <input type="text" class="form-control" id="edit-supplier-contacto"> </div> <div class="mb-3"> <label for="edit-supplier-telefono" class="form-label">Teléfono:</label> <input type="tel" class="form-control" id="edit-supplier-telefono"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-edit-supplier" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="editClientModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Editar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-edit-client"> <input type="hidden" id="edit-client-id"> <div class="mb-3"> <label for="edit-client-cedula" class="form-label">Cédula:</label> <input type="text" class="form-control" id="edit-client-cedula"> </div> <div class="mb-3"> <label for="edit-client-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="edit-client-nombre" required> </div> <div class="mb-3"> <label for="edit-client-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="edit-client-celular" required> </div> <div class="mb-3"> <label for="edit-client-direccion" class="form-label">Dirección:</label> <input type="text" class="form-control" id="edit-client-direccion"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-edit-client" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="deleteConfirmModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header bg-danger text-white"> <h1 class="modal-title fs-5">Confirmar</h1> <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <p>¿Estás seguro?</p> <p><strong id="delete-item-name"></strong></p> <small class="text-muted">No se puede deshacer.</small> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="button" class="btn btn-danger" id="confirm-delete-btn" data-delete-id="" data-delete-collection="">Confirmar</button> </div> </div> </div> </div>
-
-    <div class="modal fade" id="searchSupplierModal" tabindex="-1"> <div class="modal-dialog modal-dialog-centered"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Buscar Proveedor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <input type="search" class="form-control mb-3" id="supplier-modal-search" placeholder="Buscar por nombre..."> <ul class="list-group search-modal-list" id="supplier-modal-list"> </ul> </div> </div> </div> </div>
-    <div class="modal fade" id="searchClientModal" tabindex="-1"> <div class="modal-dialog modal-dialog-centered"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Buscar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <input type="search" class="form-control mb-3" id="client-modal-search" placeholder="Buscar por nombre o cédula..."> <ul class="list-group search-modal-list" id="client-modal-list"> </ul> </div> </div> </div> </div>
     <div class="modal fade" id="liquidateConfirmModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Confirmar Liquidación</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <p>¿Confirmas que recibiste <strong id="liquidate-amount" class="text-success"></strong> del repartidor <strong id="liquidate-name"></strong>?</p> <p id="liquidate-saldo-text" class="fw-bold"></p> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="button" class="btn btn-primary" id="confirm-liquidate-btn" data-liquidate-id="">Confirmar</button> </div> </div> </div> </div>
 
+    <div class="modal fade" id="searchSupplierModal" tabindex="-1"> <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Buscar Proveedor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <input type="search" class="form-control mb-3" id="supplier-modal-search" placeholder="Buscar por nombre..."> <ul class="list-group search-modal-list" id="supplier-modal-list"> </ul> </div> </div> </div> </div>
+    <div class="modal fade" id="searchClientModal" tabindex="-1"> <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Buscar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <input type="search" class="form-control mb-3" id="client-modal-search" placeholder="Buscar por nombre o cédula..."> <ul class="list-group search-modal-list" id="client-modal-list"> </ul> </div> </div> </div> </div>
+    <div class="modal fade" id="searchProductModal" tabindex="-1"> <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Buscar Producto</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <input type="search" class="form-control mb-3" id="product-modal-search" placeholder="Buscar por nombre..."> <ul class="list-group search-modal-list" id="product-modal-list"> </ul> </div> </div> </div> </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
@@ -177,7 +200,7 @@
         // --- Global Modal Instances ---
         let addClientModalInstance = null; let addRepartidorModalInstance = null; let addSupplierModalInstance = null; let addIncomeModalInstance = null; let addExpenseModalInstance = null; let editCategoryModalInstance = null; let deleteConfirmModalInstance = null;
         let editSupplierModalInstance = null; let editClientModalInstance = null;
-        let searchSupplierModalInstance = null; let searchClientModalInstance = null; let liquidateConfirmModalInstance = null; // Nuevos modales
+        let searchSupplierModalInstance = null; let searchClientModalInstance = null; let searchProductModalInstance = null; let liquidateConfirmModalInstance = null;
         let localClientsMap = new Map([["Cliente General", {id: null, celular: "", direccion: ""}]]);
 
         // ========================================================================
@@ -197,6 +220,7 @@
                 const editClientModalEl = document.getElementById('editClientModal'); if(editClientModalEl) editClientModalInstance = new bootstrap.Modal(editClientModalEl);
                 const searchSupplierModalEl = document.getElementById('searchSupplierModal'); if(searchSupplierModalEl) searchSupplierModalInstance = new bootstrap.Modal(searchSupplierModalEl);
                 const searchClientModalEl = document.getElementById('searchClientModal'); if(searchClientModalEl) searchClientModalInstance = new bootstrap.Modal(searchClientModalEl);
+                const searchProductModalEl = document.getElementById('searchProductModal'); if(searchProductModalEl) searchProductModalInstance = new bootstrap.Modal(searchProductModalEl);
                 const liquidateConfirmModalEl = document.getElementById('liquidateConfirmModal'); if(liquidateConfirmModalEl) liquidateConfirmModalInstance = new bootstrap.Modal(liquidateConfirmModalEl);
              } catch (e) { console.error("Error initializing Modals:", e); }
 
@@ -243,24 +267,16 @@
                 const listTable = document.getElementById('lista-proveedores-tabla');
                 const searchModalList = document.getElementById('supplier-modal-list'); // Lista en modal de búsqueda
                 const searchInput = document.getElementById('supplier-modal-search');
-                const productFormInput = document.getElementById('proveedor-producto');
+                const productFormInput = document.getElementById('proveedor-producto'); // Input en form de producto
                 let suppliersMap = new Map();
-                if (!addForm || !listTable || !searchModalList || !editForm) { console.warn("Elementos de Proveedores no encontrados."); return; }
+                if (!addForm || !listTable || !searchModalList || !editForm || !productFormInput) { console.warn("Elementos de Proveedores no encontrados."); return; }
 
                 const renderSuppliers = (snapshot) => { suppliersMap.clear(); listTable.innerHTML = ''; searchModalList.innerHTML = ''; if (snapshot.empty) { listTable.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay proveedores.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; suppliersMap.set(id, d); if (listTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="supplier-name">${d.nombre}</td> <td>${d.contacto || '-'}</td> <td>${d.telefono || '-'}</td> <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-supplier" title="Modificar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-supplier" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; listTable.appendChild(tr); }
-                    // Renderizar en lista de modal de búsqueda
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item list-group-item-action supplier-search-item';
-                    li.dataset.name = d.nombre;
-                    li.dataset.id = id;
-                    li.textContent = d.nombre;
-                    searchModalList.appendChild(li);
+                    const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action supplier-search-item'; li.dataset.name = d.nombre; li.dataset.id = id; li.textContent = d.nombre; searchModalList.appendChild(li);
                 }); };
                 onSnapshot(query(suppliersCollection, orderBy('nombre')), renderSuppliers, (e) => { console.error("Error suppliers:", e); if(listTable) listTable.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error.</td></tr>';});
-                
                 if (addForm && addSupplierModalInstance) addForm.addEventListener('submit', async (e) => { e.preventDefault(); const name = addNameInput.value.trim(); const contact = addContactInput.value.trim(); const phone = addPhoneInput.value.trim(); if (name) { try { await addDoc(suppliersCollection, { nombre: name, contacto: contact, telefono: phone, nombreLower: name.toLowerCase() }); showToast("Proveedor guardado!"); addSupplierModalInstance.hide(); addForm.reset(); } catch (err) { console.error("Err add supplier:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast("Nombre requerido.", 'warning'); }});
                 if (editForm && editSupplierModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const name = editNameInput.value.trim(); const contact = editContactInput.value.trim(); const phone = editPhoneInput.value.trim(); if (id && name) { try { await updateDoc(doc(db, "proveedores", id), { nombre: name, contacto: contact, telefono: phone, nombreLower: name.toLowerCase() }); showToast("Proveedor actualizado!"); editSupplierModalInstance.hide(); } catch (err) { console.error("Err update supplier:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast("Nombre requerido.", 'warning'); }});
-                
                 if (listTable) listTable.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.supplier-name'); if (!id || !nameTd) return;
                     if (target.classList.contains('btn-delete-supplier')) {
                          const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'proveedores'; deleteItemNameEl.textContent = `Proveedor: ${nameTd.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
@@ -272,21 +288,8 @@
                         } else { console.error("Edit supplier modal or data missing"); showToast("Error al abrir editor.", 'error'); }
                     }
                 });
-                
-                // Lógica de búsqueda y selección del modal
-                if (searchInput) searchInput.addEventListener('input', (e) => {
-                    const searchTerm = e.target.value.toLowerCase();
-                    const items = searchModalList.querySelectorAll('.supplier-search-item');
-                    items.forEach(item => {
-                        item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
-                    });
-                });
-                if (searchModalList && searchSupplierModalInstance) searchModalList.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('supplier-search-item')) {
-                        productFormInput.value = e.target.dataset.name;
-                        searchSupplierModalInstance.hide();
-                    }
-                });
+                if (searchInput) searchInput.addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); const items = searchModalList.querySelectorAll('.supplier-search-item'); items.forEach(item => { item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; }); });
+                if (searchModalList && searchSupplierModalInstance) searchModalList.addEventListener('click', (e) => { const target = e.target.closest('.supplier-search-item'); if (target) { productFormInput.value = target.dataset.name; searchSupplierModalInstance.hide(); } });
             })();
 
             // ========================================================================
@@ -302,13 +305,7 @@
                 if (!addForm || !editForm || !clientListTable || !searchModalList) { console.warn("Elementos de Clientes no encontrados."); return; }
                 
                 const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General"}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-client" title="Modificar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-client" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; clientListTable.appendChild(tr); }
-                    // Renderizar en lista de modal de búsqueda
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item list-group-item-action client-search-item';
-                    li.dataset.name = dataListValue; // Usar el nombre con cédula si existe
-                    li.dataset.id = id;
-                    li.textContent = dataListValue;
-                    searchModalList.appendChild(li);
+                    const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action client-search-item'; li.dataset.name = dataListValue; li.dataset.id = id; li.textContent = dataListValue; searchModalList.appendChild(li);
                 }); document.dispatchEvent(new CustomEvent('clientsLoaded', { detail: { clientsMap: localClientsMap } })); fillClientInfoSales(); };
                 function fillClientInfoSales() { if (!ventaClienteInput || !ventaCelularInput || !ventaDireccionInput) return; const selectedValue = ventaClienteInput.value; const clientInfo = localClientsMap.get(selectedValue); if (clientInfo) { ventaCelularInput.value = clientInfo.celular; ventaDireccionInput.value = clientInfo.direccion; } else { ventaCelularInput.value = ""; ventaDireccionInput.value = ""; } }
                 onSnapshot(query(clientsCollection, orderBy('nombre')), renderClients, (e) => { console.error("Error clients:", e); if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';});
@@ -322,22 +319,8 @@
                          const clientData = localClientsMap.get(id); if (clientData && editClientModalInstance && editIdInput && editCedulaInput && editNombreInput && editCelularInput && editDireccionInput) { editIdInput.value = id; editCedulaInput.value = clientData.cedula || ''; editNombreInput.value = clientData.nombre || ''; editCelularInput.value = clientData.celular || ''; editDireccionInput.value = clientData.direccion || ''; editClientModalInstance.show(); } else { console.error("Edit client modal or data missing"); showToast("Error al abrir editor.", 'error'); }
                     }
                 });
-                // Lógica de búsqueda y selección del modal
-                if (searchInput) searchInput.addEventListener('input', (e) => {
-                    const searchTerm = e.target.value.toLowerCase();
-                    const items = searchModalList.querySelectorAll('.client-search-item');
-                    items.forEach(item => {
-                        item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none';
-                    });
-                });
-                if (searchModalList && searchClientModalInstance) searchModalList.addEventListener('click', (e) => {
-                    const target = e.target.closest('.client-search-item');
-                    if (target) {
-                        ventaClienteInput.value = target.dataset.name;
-                        fillClientInfoSales(); // Actualizar campos de celular/dirección
-                        searchClientModalInstance.hide();
-                    }
-                });
+                if (searchInput) searchInput.addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); const items = searchModalList.querySelectorAll('.client-search-item'); items.forEach(item => { item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; }); });
+                if (searchModalList && searchClientModalInstance) searchModalList.addEventListener('click', (e) => { const target = e.target.closest('.client-search-item'); if (target) { ventaClienteInput.value = target.dataset.name; fillClientInfoSales(); searchClientModalInstance.hide(); } });
                 fillClientInfoSales();
             })();
 
@@ -351,46 +334,16 @@
                  const renderRepartidores = (snapshot) => { repartidoresMap.clear(); if(repartidorListTableBody) repartidorListTableBody.innerHTML = ''; if(repartidorSelectVenta) repartidorSelectVenta.innerHTML = '<option value="">Selecciona...</option>'; if(repartidorSelectHistory) repartidorSelectHistory.innerHTML = '<option value="">Todos</option>'; if (snapshot.empty) { if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No hay repartidores.</td></tr>'; return; } snapshot.forEach(docSnap => { const rep = docSnap.data(); const id = docSnap.id; repartidoresMap.set(id, rep); if (repartidorListTableBody) { const tr = document.createElement('tr'); tr.dataset.id = id; const efectivoRecibido = 0; const rutasTotal = 0; const rutasTransferencia = 0; const efectivoAEntregar = efectivoRecibido - (rutasTotal - rutasTransferencia); const saldoPendiente = efectivoAEntregar; tr.innerHTML = `<td class="repartidor-name">${rep.nombre}</td> <td>0</td> <td>${formatoMoneda.format(efectivoRecibido)}</td> <td>${formatoMoneda.format(rutasTotal)}</td> <td>${formatoMoneda.format(rutasTransferencia)}</td> <td>${formatoMoneda.format(efectivoAEntregar)}</td> <td><input type="number" class="form-control form-control-sm w-75 d-inline-block input-efectivo-entregado" value="0.00" step="0.01" data-expected="${efectivoAEntregar}"></td> <td class="saldo-pendiente ${saldoPendiente <= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatoMoneda.format(saldoPendiente)}</td> <td class="action-buttons"><button class="btn btn-sm btn-success py-0 px-1 btn-liquidar-repartidor" title="Liquidar"><i class="bi bi-check-circle"></i></button><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-repartidor" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-repartidor" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; repartidorListTableBody.appendChild(tr); } const option = document.createElement('option'); option.value = id; option.textContent = rep.nombre; if(repartidorSelectVenta) repartidorSelectVenta.appendChild(option.cloneNode(true)); if(repartidorSelectHistory) repartidorSelectHistory.appendChild(option.cloneNode(true)); }); };
                  onSnapshot(query(repartidoresCollection, orderBy('nombre')), renderRepartidores, (e) => { console.error("Error repartidores:", e); if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error.</td></tr>';});
                  if (repartidorForm && addRepartidorModalInstance) repartidorForm.addEventListener('submit', async (e) => { e.preventDefault(); const nom = nombreInput.value.trim(); const cel = celularInput.value.trim(); if (nom && cel) { try { await addDoc(repartidoresCollection, { nombre: nom, celular: cel }); showToast("Repartidor guardado!"); addRepartidorModalInstance.hide(); repartidorForm.reset(); } catch (err) { console.error("Err add repartidor:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
-                 // Confirmar Liquidación
                  const confirmLiquidateBtn = document.getElementById('confirm-liquidate-btn');
-                 if(confirmLiquidateBtn && liquidateConfirmModalInstance) {
-                    confirmLiquidateBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const id = confirmLiquidateBtn.dataset.liquidateId;
-                        console.log("Liquidando (simulado) repartidor ID:", id);
-                        showToast('Liquidación registrada (simulado).');
-                        liquidateConfirmModalInstance.hide();
-                        // Encontrar la fila y deshabilitar
-                        const tr = repartidorListTableBody.querySelector(`tr[data-id="${id}"]`);
-                        if(tr) {
-                            tr.querySelector('.input-efectivo-entregado').disabled = true;
-                            tr.querySelector('.btn-liquidar-repartidor').disabled = true;
-                        }
-                    });
-                 }
+                 if(confirmLiquidateBtn && liquidateConfirmModalInstance) { confirmLiquidateBtn.addEventListener('click', (e) => { e.preventDefault(); const id = confirmLiquidateBtn.dataset.liquidateId; console.log("Liquidando (simulado) repartidor ID:", id); showToast('Liquidación registrada (simulado).'); liquidateConfirmModalInstance.hide(); const tr = repartidorListTableBody.querySelector(`tr[data-id="${id}"]`); if(tr) { tr.querySelector('.input-efectivo-entregado').disabled = true; tr.querySelector('.btn-liquidar-repartidor').disabled = true; } }); }
                 if (repartidorListTableBody) { repartidorListTableBody.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.repartidor-name'); if (!id || !nameTd) return;
                     if (target.classList.contains('btn-delete-repartidor')) {
                         const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'repartidores'; deleteItemNameEl.textContent = `Repartidor: ${nameTd.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
                     } else if (target.classList.contains('btn-edit-repartidor')) { showToast('Editar repartidor: pendiente.', 'warning'); } 
                     else if (target.classList.contains('btn-liquidar-repartidor')) {
-                        const entregadoInput = tr.querySelector('.input-efectivo-entregado'); const saldoTd = tr.querySelector('.saldo-pendiente');
-                        const efectivoEntregado = parseFloat(entregadoInput.value) || 0;
-                        const saldoPendiente = parseFloat(saldoTd.textContent.replace(/[$.]/g, '')) || 0; // Limpiar formato moneda
-                        
-                        const amountEl = document.getElementById('liquidate-amount');
-                        const nameEl = document.getElementById('liquidate-name');
-                        const saldoTextEl = document.getElementById('liquidate-saldo-text');
-                        
-                        if (liquidateConfirmModalInstance && amountEl && nameEl && saldoTextEl && confirmLiquidateBtn) {
-                            amountEl.textContent = formatoMoneda.format(efectivoEntregado);
-                            nameEl.textContent = nameTd.textContent;
-                            saldoTextEl.textContent = `Saldo restante: ${formatoMoneda.format(saldoPendiente)}`;
-                            saldoTextEl.className = saldoPendiente <= 0 ? 'fw-bold text-success' : 'fw-bold text-danger';
-                            confirmLiquidateBtn.dataset.liquidateId = id;
-                            liquidateConfirmModalInstance.show();
-                        } else {
-                            console.error("Faltan elementos del modal de liquidación");
-                        }
+                        const entregadoInput = tr.querySelector('.input-efectivo-entregado'); const saldoTd = tr.querySelector('.saldo-pendiente'); const efectivoEntregado = parseFloat(entregadoInput.value) || 0; const saldoPendiente = parseFloat(saldoTd.textContent.replace(/[$.]/g, '')) || 0;
+                        const amountEl = document.getElementById('liquidate-amount'); const nameEl = document.getElementById('liquidate-name'); const saldoTextEl = document.getElementById('liquidate-saldo-text');
+                        if (liquidateConfirmModalInstance && amountEl && nameEl && saldoTextEl && confirmLiquidateBtn) { amountEl.textContent = formatoMoneda.format(efectivoEntregado); nameEl.textContent = nameTd.textContent; saldoTextEl.textContent = `Saldo restante: ${formatoMoneda.format(saldoPendiente)}`; saldoTextEl.className = saldoPendiente <= 0 ? 'fw-bold text-success' : 'fw-bold text-danger'; confirmLiquidateBtn.dataset.liquidateId = id; liquidateConfirmModalInstance.show(); } else { console.error("Faltan elementos del modal de liquidación"); }
                     }
                  }); repartidorListTableBody.addEventListener('input', (e) => { if (e.target.classList.contains('input-efectivo-entregado')) { const input = e.target; const tr = input.closest('tr'); const saldoTd = tr.querySelector('.saldo-pendiente'); const efectivoEntregado = parseFloat(input.value) || 0; const efectivoEsperado = parseFloat(input.dataset.expected) || 0; const diferencia = efectivoEsperado - efectivoEntregado; saldoTd.textContent = formatoMoneda.format(diferencia); saldoTd.className = `saldo-pendiente ${diferencia <= 0 ? 'text-success' : 'text-danger'} fw-bold`; } }); }
             })();
@@ -403,10 +356,48 @@
                 const saveProductBtn = document.getElementById('btn-save-product');
                 const saveProductBtnText = saveProductBtn ? saveProductBtn.querySelector('.save-text') : null;
                 const saveProductBtnSpinner = saveProductBtn ? saveProductBtn.querySelector('.spinner-border') : null;
+                const productSearchModalList = document.getElementById('product-modal-list'); // Lista en modal de búsqueda
+                const productSearchInput = document.getElementById('product-modal-search');
                 
-                if (!productForm) { console.warn("Formulario de producto no encontrado."); return; }
+                if (!productForm || !productListTableBody || !productSearchModalList) { console.warn("Elementos de Producto no encontrados."); return; }
+                let productsMap = new Map(); // Cache local de productos
 
-                const renderProducts = (snapshot) => { if(!productListTableBody) return; const emptyRow = document.getElementById('empty-inventory-row'); productListTableBody.innerHTML = ''; if (snapshot.empty) { if(emptyRow) { emptyRow.style.display = ''; productListTableBody.appendChild(emptyRow); } return; } if(emptyRow) emptyRow.style.display = 'none'; snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); tr.dataset.id = id; const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; const imagenUrl = d.imagenUrl || 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto'; tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img"></td><td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td><td>${formatoMoneda.format(d.precioDetal || 0)}</td><td>${formatoMoneda.format(d.precioMayor || 0)}</td><td>${stockTotal}</td><td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td><td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; productListTableBody.appendChild(tr); }); };
+                const renderProducts = (snapshot) => { 
+                    productsMap.clear();
+                    if(productListTableBody) productListTableBody.innerHTML = ''; 
+                    if(productSearchModalList) productSearchModalList.innerHTML = '';
+                    const emptyRow = document.getElementById('empty-inventory-row'); 
+                    if (snapshot.empty) { if(emptyRow) { emptyRow.style.display = ''; productListTableBody.appendChild(emptyRow); } return; } 
+                    if(emptyRow) emptyRow.style.display = 'none'; 
+                    
+                    snapshot.forEach(docSnap => { 
+                        const d = docSnap.data(); const id = docSnap.id; 
+                        productsMap.set(id, d); // Guardar en caché
+                        const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
+                        const imagenUrl = d.imagenUrl || 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto'; 
+                        // Renderizar tabla de inventario
+                        const tr = document.createElement('tr'); tr.dataset.id = id; 
+                        tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img"></td><td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td><td>${formatoMoneda.format(d.precioDetal || 0)}</td><td>${formatoMoneda.format(d.precioMayor || 0)}</td><td>${stockTotal}</td><td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td><td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; 
+                        if(productListTableBody) productListTableBody.appendChild(tr); 
+                        
+                        // Renderizar lista de modal de búsqueda
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item list-group-item-action product-search-item d-flex justify-content-between align-items-center';
+                        li.dataset.id = id;
+                        li.dataset.nombre = d.nombre;
+                        li.dataset.precio = d.precioDetal || 0; // Usar precio detal por defecto
+                        li.dataset.stock = stockTotal;
+                        li.innerHTML = `
+                            <div>
+                                ${d.nombre}
+                                <span class="stock-info d-block">Stock: ${stockTotal}</span>
+                            </div>
+                            <span class="price-info">${formatoMoneda.format(d.precioDetal || 0)}</span>
+                        `;
+                        if(stockTotal <= 0) li.classList.add('disabled'); // Deshabilitar si no hay stock
+                        if(productSearchModalList) productSearchModalList.appendChild(li);
+                    }); 
+                };
                 onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error.</td></tr>';});
                 
                 function clearProductForm() { productForm.reset(); productIdInput.value = ''; const margenDetalInfo = document.getElementById('margen-detal-info'); const margenMayorInfo = document.getElementById('margen-mayor-info'); if(margenDetalInfo) margenDetalInfo.textContent = ''; if(margenMayorInfo) margenMayorInfo.textContent = ''; const rows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)'); rows.forEach((row, index) => { if (index > 0) row.remove(); }); const event = new Event('input'); if(costoInput) costoInput.dispatchEvent(event); }
@@ -436,14 +427,11 @@
                         }
                         
                         if (productId) { 
-                            if (!productData.imagenUrl) { // Si no se subió imagen nueva
-                                // Mantener la URL existente si hay una, si no, borrarla
+                            if (files.length === 0) { // Si no se subió imagen nueva
                                 const docSnap = await getDoc(doc(db, "productos", productId));
                                 if(docSnap.exists() && docSnap.data().imagenUrl) {
                                     productData.imagenUrl = docSnap.data().imagenUrl;
-                                } else {
-                                    productData.imagenUrl = null;
-                                }
+                                } else { productData.imagenUrl = null; }
                             }
                             await updateDoc(doc(db, "productos", productId), productData); 
                             showToast("Producto actualizado!"); 
@@ -470,10 +458,8 @@
                      } else if (target.classList.contains('btn-edit-product')) {
                          showToast("Cargando datos...", 'info');
                          try {
-                            const docSnap = await getDoc(doc(db, "productos", id));
-                            if (docSnap.exists()) {
-                                const product = docSnap.data();
-                                // Llenar formulario
+                            const product = productsMap.get(id); // Usar caché
+                            if (product) {
                                 productIdInput.value = id;
                                 nombreInput.value = product.nombre || '';
                                 proveedorInput.value = product.proveedor || '';
@@ -484,70 +470,123 @@
                                 mayorInput.value = product.precioMayor || 0;
                                 visibleCheckbox.checked = product.visible;
                                 
-                                // Limpiar variaciones existentes y añadir las del producto
                                 variationsContainer.innerHTML = ''; // Limpiar
-                                if (product.variaciones && product.variaciones.length > 0) {
-                                    product.variaciones.forEach(v => {
-                                        const nR = document.getElementById('variation-template').cloneNode(true);
-                                        nR.classList.remove('d-none'); nR.removeAttribute('id');
-                                        nR.querySelector('[name="variation_talla[]"]').value = v.talla || '';
-                                        nR.querySelector('[name="variation_color[]"]').jvalue = v.color || '';
-                                        nR.querySelector('[name="variation_stock[]"]').value = v.stock || 0;
-                                        nR.querySelector('.remove-variation-btn').addEventListener('click', (e) => { e.preventDefault(); nR.remove(); });
-                                        variationsContainer.appendChild(nR);
-                                    });
-                                } else {
-                                    // Añadir una vacía si no hay
+                                (product.variaciones && product.variaciones.length > 0 ? product.variaciones : [{talla:'', color:'', stock:1}]).forEach(v => {
                                     const nR = document.getElementById('variation-template').cloneNode(true);
                                     nR.classList.remove('d-none'); nR.removeAttribute('id');
-                                    nR.querySelector('.remove-variation-btn').addEventListener('click', (e) => { e.preventDefault(); nR.remove(); });
+                                    nR.querySelector('[name="variation_talla[]"]').value = v.talla || '';
+                                    nR.querySelector('[name="variation_color[]"]').value = v.color || '';
+                                    nR.querySelector('[name="variation_stock[]"]').value = v.stock || 0;
+                                    nR.querySelector('.remove-variation-btn').addEventListener('click', (ev)=>{ ev.preventDefault(); nR.remove(); });
                                     variationsContainer.appendChild(nR);
-                                }
+                                });
                                 
-                                // Disparar cálculo de margen
-                                costoInput.dispatchEvent(new Event('input'));
-                                // Cambiar a la vista de formulario
-                                document.getElementById('toggle-form-view-btn').click();
+                                costoInput.dispatchEvent(new Event('input')); // Recalcular margen
+                                document.getElementById('toggle-form-view-btn').click(); // Cambiar a vista de formulario
+                            } else { showToast("Producto no encontrado.", 'error'); }
+                         } catch (err) { console.error("Error fetching product for edit:", err); showToast(`Error al cargar: ${err.message}`, 'error'); }
+                     }
+                 });
 
-                            } else {
-                                showToast("Producto no encontrado.", 'error');
-                            }
-                         } catch (err) {
-                             console.error("Error fetching product for edit:", err);
-                             showToast(`Error al cargar: ${err.message}`, 'error');
+                 // Lógica del modal de búsqueda de productos
+                if (productSearchInput) productSearchInput.addEventListener('input', (e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    const items = productSearchModalList.querySelectorAll('.product-search-item');
+                    items.forEach(item => {
+                        item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'flex'; // 'flex' por d-flex
+                    });
+                });
+                if (productSearchModalList && searchProductModalInstance) {
+                    productSearchModalList.addEventListener('click', (e) => {
+                        const target = e.target.closest('.product-search-item');
+                        if (target && !target.classList.contains('disabled')) {
+                            // Añadir al carrito de ventas
+                            window.dispatchEvent(new CustomEvent('addItemToCart', { detail: {
+                                id: target.dataset.id,
+                                nombre: target.dataset.nombre,
+                                precio: parseFloat(target.dataset.precio)
+                            }}));
+                            searchProductModalInstance.hide();
+                        }
+                    });
+                }
+            })();
+
+            // ========================================================================
+            // --- LÓGICA VENTAS (Funcional Add/Load, Placeholders) ---
+            // ========================================================================
+            (() => {
+                 const salesForm = document.getElementById('form-venta'); const ventaClienteInput = document.getElementById('venta-cliente'); const tipoVentaSelect = document.getElementById('tipo-venta-select'); const tipoEntregaSelect = document.getElementById('tipo-entrega-select'); const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp'); const ventaRepartidorSelect = document.getElementById('venta-repartidor'); const costoRutaInput = document.getElementById('costo-ruta'); const rutaPagadaCheckbox = document.getElementById('ruta-pagada-transferencia'); const ventaProductoInput = document.getElementById('venta-producto'); const ventaCarritoTbody = document.getElementById('venta-carrito'); const ventaObservaciones = document.getElementById('venta-observaciones'); const ventaDescuentoInput = document.getElementById('venta-descuento'); const ventaDescuentoTipo = document.getElementById('venta-descuento-tipo'); const pagoEfectivoInput = document.getElementById('pago-efectivo'); const pagoTransferenciaInput = document.getElementById('pago-transferencia'); const ventaTotalSpan = document.getElementById('venta-total'); const salesListTableBody = document.getElementById('lista-ventas-anteriores'); let ventaItems = [];
+                 if(!salesForm) { console.warn("Elementos de Ventas no encontrados."); return; }
+                 
+                 // Escuchar el evento personalizado para añadir item
+                 window.addEventListener('addItemToCart', (e) => {
+                     const { id, nombre, precio } = e.detail;
+                     agregarItemAlCarrito(id, nombre, 1, precio); // Añadir 1 por defecto
+                 });
+                 
+                 function agregarItemAlCarrito(productoId, nombre, cantidad, precio) { 
+                    // Comprobar si ya existe
+                    const existingItem = ventaItems.find(item => item.productoId === productoId);
+                    if (existingItem) {
+                        existingItem.cantidad += cantidad;
+                        existingItem.total = existingItem.cantidad * existingItem.precio;
+                    } else {
+                        const totalItem = cantidad * precio; 
+                        ventaItems.push({ productoId, nombre, cantidad, precio, total: totalItem }); 
+                    }
+                    renderCarrito(); 
+                    calcularTotalVentaGeneral(); 
+                 }
+                 function quitarItemDelCarrito(index) { ventaItems.splice(index, 1); renderCarrito(); calcularTotalVentaGeneral(); }
+                 function renderCarrito() { ventaCarritoTbody.innerHTML = ''; ventaItems.forEach((item, index) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${item.nombre}</td><td><input type="number" class="form-control form-control-sm item-qty-input" value="${item.cantidad}" min="1" data-index="${index}"></td><td>${formatoMoneda.format(item.precio)}</td><td>${formatoMoneda.format(item.total)}</td><td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 btn-quitar-item" data-index="${index}">&times;</button></td>`; ventaCarritoTbody.appendChild(tr); }); }
+                 // Listener para cambiar cantidad en carrito
+                 if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('change', (e) => {
+                     if (e.target.classList.contains('item-qty-input')) {
+                         const index = parseInt(e.target.dataset.index, 10);
+                         const newQty = parseInt(e.target.value, 10);
+                         if (newQty > 0 && ventaItems[index]) {
+                             ventaItems[index].cantidad = newQty;
+                             ventaItems[index].total = newQty * ventaItems[index].precio;
+                             renderCarrito(); // Re-renderizar para actualizar total
+                             calcularTotalVentaGeneral();
                          }
                      }
                  });
+                 if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('click', (e) => { e.preventDefault(); if (e.target.closest('.btn-quitar-item')) { quitarItemDelCarrito(parseInt(e.target.closest('.btn-quitar-item').dataset.index, 10)); } });
+                 
+                 function calcularTotalVentaGeneral() { let subtotalItems = ventaItems.reduce((sum, item) => sum + item.total, 0); let costoRuta = 0; if (tipoEntregaSelect.value === 'domicilio') { costoRuta = parseFloat(costoRutaInput.value) || 0; } let descuento = parseFloat(ventaDescuentoInput.value) || 0; if (ventaDescuentoTipo.value === 'porcentaje') { descuento = subtotalItems * (descuento / 100); } const totalFinal = subtotalItems - descuento + costoRuta; if(ventaTotalSpan) ventaTotalSpan.textContent = formatoMoneda.format(totalFinal); return totalFinal; }
+                 if(costoRutaInput) costoRutaInput.addEventListener('input', calcularTotalVentaGeneral); if(ventaDescuentoInput) ventaDescuentoInput.addEventListener('input', calcularTotalVentaGeneral); if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', calcularTotalVentaGeneral); if(ventaDescuentoTipo) ventaDescuentoTipo.addEventListener('change', calcularTotalVentaGeneral);
+                 
+                 const renderSales = (snapshot) => { if(!salesListTableBody) return; const emptyRow = document.getElementById('empty-sales-row'); salesListTableBody.innerHTML = ''; if (snapshot.empty) { if(emptyRow) { emptyRow.style.display = ''; salesListTableBody.appendChild(emptyRow); } return; } if(emptyRow) emptyRow.style.display = 'none'; snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); tr.dataset.id = id; const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A'; const pago = (d.pagoEfectivo>0?'Efec.':'') + (d.pagoTransferencia>0?(d.pagoEfectivo>0?'+':''):'') + (d.pagoTransferencia>0?'Transf.':''); const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge' : '-'); const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada'); tr.innerHTML = `<td>${fecha}</td><td>${d.clienteNombre || 'General'}</td><td>${d.tipoVenta}</td><td>${formatoMoneda.format(d.totalVenta||0)}</td><td>${pago||'-'}</td><td>${repartidor}</td><td><span class="badge ${estado==='Completada'?'bg-success':(estado==='Pendiente'?'bg-warning':'bg-danger')}">${estado}</span></td><td class="action-buttons"><button class="btn btn-sm btn-outline-primary py-0 px-1 btn-view-sale" title="Ver"><i class="bi bi-eye"></i></button>${d.tipoVenta === 'apartado' ? '<button class="btn btn-sm btn-outline-warning py-0 px-1 btn-manage-apartado" title="Gestionar"><i class="bi bi-calendar-heart"></i></button>' : ''}<button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-sale" title="Cancelar"><i class="bi bi-trash"></i></button></td>`; salesListTableBody.appendChild(tr); }); };
+                 onSnapshot(query(salesCollection, orderBy('timestamp', 'desc')), renderSales, e => { console.error("Error sales:", e); if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
+                if (salesForm) salesForm.addEventListener('submit', async (e) => { e.preventDefault(); if (ventaItems.length === 0) { showToast("Agrega productos.", 'warning'); return; } const totalCalculado = calcularTotalVentaGeneral(); const ventaData = { clienteNombre: ventaClienteInput.value || "Cliente General", tipoVenta: tipoVentaSelect.value, tipoEntrega: tipoEntregaSelect.value, pedidoWhatsapp: ventaWhatsappCheckbox.checked, repartidorId: tipoEntregaSelect.value === 'domicilio' ? ventaRepartidorSelect.value : null, costoRuta: tipoEntregaSelect.value === 'domicilio' ? (parseFloat(costoRutaInput.value) || 0) : 0, rutaPagadaTransferencia: tipoEntregaSelect.value === 'domicilio' ? rutaPagadaCheckbox.checked : false, items: ventaItems, observaciones: ventaObservaciones.value.trim(), descuento: parseFloat(ventaDescuentoInput.value) || 0, descuentoTipo: ventaDescuentoTipo.value, pagoEfectivo: parseFloat(pagoEfectivoInput.value) || 0, pagoTransferencia: parseFloat(pagoTransferenciaInput.value) || 0, totalVenta: totalCalculado, estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada', timestamp: serverTimestamp() }; if (ventaData.tipoVenta !== 'apartado' && (ventaData.pagoEfectivo + ventaData.pagoTransferencia < totalCalculado)) { showToast("El pago no cubre el total.", 'warning'); return; } try { const docRef = await addDoc(salesCollection, ventaData); showToast("Venta registrada!"); if (ventaData.tipoVenta === 'apartado') { const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia; try { await addDoc(apartadosCollection, { ventaId: docRef.id, clienteNombre: ventaData.clienteNombre, total: ventaData.totalVenta, abonado: abonoInicial, saldo: ventaData.totalVenta - abonoInicial, fechaCreacion: ventaData.timestamp, fechaVencimiento: null, estado: 'Pendiente' }); } catch(apErr) { console.error("Error creando apartado:", apErr); showToast("Venta guardada, error al crear apartado.", 'error'); } } console.warn("Actualización de stock pendiente."); salesForm.reset(); ventaItems = []; renderCarrito(); fillClientInfoSales(); tipoVentaSelect.value='detal'; tipoEntregaSelect.value='tienda'; toggleDeliveryFields(); calcularTotalVentaGeneral(); } catch (err) { console.error("Error saving sale:", err); showToast(`Error: ${err.message}`, 'error'); } });
+                if(salesListTableBody) salesListTableBody.addEventListener('click', (e)=>{ e.preventDefault(); const target = e.target.closest('button'); if (!target) return; const id = target.closest('tr')?.dataset.id; if (!id) return; if(target.classList.contains('btn-view-sale')) showToast(`Ver ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-cancel-sale')) showToast(`Cancelar ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-manage-apartado')) showToast(`Gestionar ${id} (Pendiente)`, 'warning'); });
+                calcularTotalVentaGeneral();
             })();
 
             // ========================================================================
-            // --- LÓGICA VENTAS (Placeholders) ---
-            // ========================================================================
-            (() => {
-                 const salesForm = document.getElementById('form-venta'); 
-                 if(!salesForm) { console.warn("Elementos de Ventas no encontrados."); return; }
-                 if (salesForm) salesForm.addEventListener('submit', async (e) => { e.preventDefault(); showToast("Guardar venta: Lógica pendiente.", 'warning'); });
-                 // ... Resto de la lógica de ventas (cálculos, etc.) ...
-            })();
-
-            // ========================================================================
-            // --- LÓGICA APARTADOS (Placeholders) ---
+            // --- LÓGICA APARTADOS (Cargar lista) ---
             // ========================================================================
             (() => {
                  const apartadosListTableBody = document.getElementById('lista-apartados');
                  if(!apartadosListTableBody) { console.warn("Elementos de Apartados no encontrados."); return; }
-                 onSnapshot(query(apartadosCollection, where('estado', '==', 'Pendiente')), (s) => { /* render */ }, e => console.error("Error apartados:", e));
+                 const renderApartados = (snapshot) => { apartadosListTableBody.innerHTML = ''; if (snapshot.empty) { apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay apartados pendientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const ap = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); tr.dataset.id = id; const vence = ap.fechaVencimiento?.toDate ? ap.fechaVencimiento.toDate().toLocaleDateString('es-CO') : 'N/A'; tr.innerHTML = `<td>${ap.clienteNombre || '?'}</td><td>${formatoMoneda.format(ap.total || 0)}</td><td>${formatoMoneda.format(ap.abonado || 0)}</td><td>${formatoMoneda.format(ap.saldo || 0)}</td><td>${vence}</td><td class="action-buttons"><button class="btn btn-sm btn-outline-success py-0 px-1 btn-abono-apartado" title="Abono"><i class="bi bi-cash-coin"></i></button><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-apartado" title="Editar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-apartado" title="Cancelar"><i class="bi bi-trash"></i></button></td>`; apartadosListTableBody.appendChild(tr); }); };
+                  const q = query(apartadosCollection, where('estado', '==', 'Pendiente'), orderBy('fechaVencimiento'));
+                  onSnapshot(q, renderApartados, e => { console.error("Error apartados:", e); if(apartadosListTableBody) apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';});
+                  if(apartadosListTableBody) apartadosListTableBody.addEventListener('click', (e)=>{ e.preventDefault(); const target = e.target.closest('button'); if (!target) return; const id = target.closest('tr')?.dataset.id; if(!id) return; if(target.classList.contains('btn-abono-apartado')) showToast(`Abono ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-edit-apartado')) showToast(`Editar ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-cancel-apartado')) showToast(`Cancelar ${id} (Pendiente)`, 'warning'); });
             })();
 
             // ========================================================================
-            // --- LÓGICA FINANZAS (Add/Load, Placeholders) ---
+            // --- LÓGICA FINANZAS (Ingreso/Gasto, Cierre Placeholder) ---
             // ========================================================================
             (() => {
                  const addIncomeForm = document.getElementById('form-add-income'); const incomeAmountInput = document.getElementById('income-amount'); const incomeDescInput = document.getElementById('income-description'); const addExpenseForm = document.getElementById('form-add-expense'); const expenseAmountInput = document.getElementById('expense-amount'); const expenseDescInput = document.getElementById('expense-description'); const closingForm = document.getElementById('form-cierre-caja'); const closingHistoryTableBody = document.getElementById('lista-historial-cierres');
                  if(addIncomeForm && addIncomeModalInstance) addIncomeForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(incomeAmountInput.value); const desc = incomeDescInput.value.trim(); if (amount && desc) { try { await addDoc(financesCollection, { tipo: 'ingreso', monto: amount, descripcion: desc, timestamp: serverTimestamp() }); showToast('Ingreso guardado!'); addIncomeModalInstance.hide(); addIncomeForm.reset(); } catch(err) { console.error("Err income:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Monto y descripción requeridos.', 'warning'); } });
                  if(addExpenseForm && addExpenseModalInstance) addExpenseForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(expenseAmountInput.value); const desc = expenseDescInput.value.trim(); if (amount && desc) { try { await addDoc(financesCollection, { tipo: 'gasto', monto: amount, descripcion: desc, timestamp: serverTimestamp() }); showToast('Gasto guardado!'); addExpenseModalInstance.hide(); addExpenseForm.reset(); } catch(err) { console.error("Err expense:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Monto y descripción requeridos.', 'warning'); } });
-                 if (closingForm) closingForm.addEventListener('submit', async (e) => { e.preventDefault(); showToast("Realizando cierre... (Lógica pendiente)", 'warning'); });
-                 onSnapshot(query(closingsCollection, orderBy('timestamp', 'desc')), (s) => { /* render */ }, e => console.error("Error closings:", e));
+                if (closingForm) closingForm.addEventListener('submit', async (e) => { e.preventDefault(); showToast("Realizando cierre... (Lógica pendiente)", 'warning'); const egresos = parseFloat(document.getElementById('caja-egresos').value) || 0; const obs = document.getElementById('caja-observaciones').value.trim(); /* --- FETCH DATA & CALCULATE --- */ const cierreData = { timestamp: serverTimestamp(), egresos, observaciones: obs, /* calculated fields */ }; try { /* await addDoc(closingsCollection, cierreData); */ showToast("Cierre guardado (simulado)!"); /* Reset form? */ } catch(err) { console.error("Err closing:", err); showToast(`Error: ${err.message}`, 'error'); } });
+                 const renderClosings = (snapshot) => { if(!closingHistoryTableBody) return; closingHistoryTableBody.innerHTML = ''; if (snapshot.empty) { closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay cierres.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A'; tr.innerHTML = `<td>${fecha}</td><td>${formatoMoneda.format(d.ventasEfectivo||0)}</td><td>${formatoMoneda.format(d.abonosEfectivo||0)}</td><td>${formatoMoneda.format(d.recibidoRepartidores||0)}</td><td>${formatoMoneda.format(d.egresos||0)}</td><td>${formatoMoneda.format(d.totalCaja||0)}</td><td>${d.observaciones||'-'}</td>`; closingHistoryTableBody.appendChild(tr); }); };
+                 onSnapshot(query(closingsCollection, orderBy('timestamp', 'desc')), renderClosings, e => { console.error("Error closings:", e); if(closingHistoryTableBody) closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error.</td></tr>';});
             })();
 
             // ========================================================================
@@ -557,7 +596,7 @@
                 // Toggles
                 const fV_prod = document.getElementById('form-view'); const iV_prod = document.getElementById('inventory-view'); const tIB_prod = document.getElementById('toggle-inventory-view-btn'); const tFB_prod = document.getElementById('toggle-form-view-btn'); if(fV_prod && iV_prod && tIB_prod && tFB_prod){ tIB_prod.addEventListener('click',(e)=>{ e.preventDefault(); fV_prod.style.display='none'; iV_prod.style.display='block'; tIB_prod.classList.add('active'); tFB_prod.classList.remove('active');}); tFB_prod.addEventListener('click',(e)=>{ e.preventDefault(); iV_prod.style.display='none'; fV_prod.style.display='block'; tFB_prod.classList.add('active'); tIB_prod.classList.remove('active');}); iV_prod.style.display='block'; tIB_prod.classList.add('active'); } else { console.warn("Product view toggle missing."); }
                 const sFV = document.getElementById('sales-form-view'); const sLV = document.getElementById('sales-list-view'); const tSLB = document.getElementById('toggle-sales-list-view-btn'); const tSFB = document.getElementById('toggle-sales-form-view-btn'); if(sFV && sLV && tSLB && tSFB){ tSLB.addEventListener('click',(e)=>{ e.preventDefault(); sFV.style.display='none'; sLV.style.display='block'; tSLB.classList.add('active'); tSFB.classList.remove('active'); }); tSFB.addEventListener('click',(e)=>{ e.preventDefault(); sLV.style.display='none'; sFV.style.display='block'; tSFB.classList.add('active'); tSLB.classList.remove('active'); }); sFV.style.display='block'; tSFB.classList.add('active'); } else { console.warn("Sales view toggle missing."); }
-                const todayViewR = document.getElementById('delivery-today-view'); const historyViewR = document.getElementById('delivery-history-view'); const toggleHistoryBtnR = document.getElementById('toggle-delivery-history-btn'); const toggleTodayBtnR = document.getElementById('toggle-delivery-today-btn'); if (todayViewR && historyViewR && toggleHistoryBtnR && toggleTodayBtnR) { toggleHistoryBtnR.addEventListener('click', (e) => { e.preventDefault(); todayViewR.style.display = 'none'; historyViewR.style.display = 'block'; toggleHistoryBtnR.classList.add('active'); toggleTodayBtnR.classList.remove('active'); }); toggleTodayBtnR.addEventListener('click', (e) => { e.preventDefault(); historyViewR.style.display = 'none'; todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); toggleHistoryBtnR.classList.remove('active'); }); todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); } else { console.warn("Delivery view toggle missing."); }
+                 const todayViewR = document.getElementById('delivery-today-view'); const historyViewR = document.getElementById('delivery-history-view'); const toggleHistoryBtnR = document.getElementById('toggle-delivery-history-btn'); const toggleTodayBtnR = document.getElementById('toggle-delivery-today-btn'); if (todayViewR && historyViewR && toggleHistoryBtnR && toggleTodayBtnR) { toggleHistoryBtnR.addEventListener('click', (e) => { e.preventDefault(); todayViewR.style.display = 'none'; historyViewR.style.display = 'block'; toggleHistoryBtnR.classList.add('active'); toggleTodayBtnR.classList.remove('active'); }); toggleTodayBtnR.addEventListener('click', (e) => { e.preventDefault(); historyViewR.style.display = 'none'; todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); toggleHistoryBtnR.classList.remove('active'); }); todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); } else { console.warn("Delivery view toggle missing."); }
                 const tCV = document.getElementById('closing-today-view'); const hCV = document.getElementById('closing-history-view'); const tHB = document.getElementById('toggle-closing-history-btn'); const tTB = document.getElementById('toggle-closing-today-btn'); if (tCV && hCV && tHB && tTB) { tHB.addEventListener('click', (e) => { e.preventDefault(); tCV.style.display = 'none'; hCV.style.display = 'block'; tHB.classList.add('active'); tTB.classList.remove('active'); }); tTB.addEventListener('click', (e) => { e.preventDefault(); hCV.style.display = 'none'; tCV.style.display = 'block'; tTB.classList.add('active'); tHB.classList.remove('active'); }); tCV.style.display = 'block'; tTB.classList.add('active'); } else { console.warn("Finance closing view toggle missing."); }
                 
                 // Cálculo Margen
