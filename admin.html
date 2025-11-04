@@ -9,16 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Estilos específicos mínimos necesarios aquí */
-        #inventory-view, #sales-list-view, .delivery-fields, #delivery-history-view, #closing-history-view { display: none; }
-        .add-supplier-btn, .add-client-btn { padding: 0.375rem 0.5rem; line-height: 1; }
-        .client-info-display { background-color: #e9ecef; opacity: 1; }
-        .action-buttons button { margin-right: 5px; }
-        .action-buttons button:last-child { margin-right: 0; }
-        .table-product-img { max-width: 50px; height: auto; max-height: 65px; object-fit: cover; border-radius: 4px;}
-        .modal-body form .form-label { font-weight: 500; }
-        .toast-container { z-index: 1100; }
-         /* Estilos base si style.css no existe o está incompleto */
+        /* Estilos base si style.css no existe o está incompleto */
         :root { --color-primario: #D988B9; --color-primario-claro: #F5E8ED; }
         body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; }
         .admin-navbar { background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,.05); }
@@ -34,6 +25,43 @@
         .btn-primary { background-color: var(--color-primario); border-color: var(--color-primario); }
         .btn-primary:hover { background-color: #c473a2; border-color: #c473a2; }
         .btn-outline-secondary { border-color: #ced4da; color: #6c757d; }
+        
+        /* Estilos UI Mínimos */
+        #inventory-view, #sales-list-view, .delivery-fields, #delivery-history-view, #closing-history-view { display: none; }
+        .add-supplier-btn, .add-client-btn { padding: 0.375rem 0.5rem; line-height: 1; }
+        .client-info-display { background-color: #e9ecef; opacity: 1; }
+        .action-buttons button { margin-right: 5px; }
+        .action-buttons button:last-child { margin-right: 0; }
+        .table-product-img { max-width: 50px; height: auto; max-height: 65px; object-fit: cover; border-radius: 4px;}
+        .toast-container { z-index: 1100; }
+        
+        /* === ESTILOS MODALES (Sobrio y Clásico) === */
+        .modal-content {
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        }
+        .modal-header {
+            background-color: var(--color-primario-claro); /* Rosa pálido */
+            color: var(--color-primario); /* Rosa oscuro */
+            border-bottom: none; 
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
+        }
+        .modal-header .btn-close { filter: none; }
+        /* Modal de Eliminar: Sobrio pero con advertencia */
+        #deleteConfirmModal .modal-header {
+            background-color: #fff; /* Fondo blanco */
+            color: #dc3545; /* Texto rojo */
+            border-bottom: 1px solid #eee;
+        }
+        .modal-footer { border-top: 1px solid #eee; }
+        
+        /* Estilos para lista en modal de búsqueda */
+        .search-modal-list .list-group-item { cursor: pointer; }
+        .search-modal-list .list-group-item:hover { background-color: var(--color-primario-claro); }
+        .search-modal-list .list-group-item .stock-info { font-size: 0.85em; color: #6c757d; }
+        .search-modal-list .list-group-item .price-info { font-weight: 500; color: var(--color-primario); }
     </style>
 </head>
 <body>
@@ -76,7 +104,16 @@
     <main class="admin-main">
         <div class="tab-content">
             <div class="tab-pane fade show active" id="dashboard"> <h1 class="h2">Dashboard</h1> <p>Resumen...</p> <div class="row g-4"><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Ventas Hoy</h5><p class="card-text h2" id="db-ventas-hoy">$0</p></div></div><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Bajo Stock</h5><p class="card-text h2" id="db-bajo-stock">0</p></div></div><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Apartados Vencer</h5><p class="card-text h2" id="db-apartados-vencer">0</p></div></div></div> </div>
-            <div class="tab-pane fade" id="productos"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Productos</h1> <div class="btn-group"> <button type="button" id="toggle-inventory-view-btn" class="btn btn-sm btn-outline-secondary active"><i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline"> Inventario</span></button> <button type="button" id="toggle-form-view-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Agregar/Editar</span></button> </div> </div> <div id="form-view" style="display: none;"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0" id="product-form-title">Formulario Producto</h3></div> <div class="card-body"> <form id="form-producto"> <input type="hidden" id="producto-id"> <div class="row"> <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div> <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div> <div class="col-md-3 mb-3"> <label for="proveedor-producto" class="form-label">Proveedor:</label> <div class="input-group"> <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal" style="cursor: pointer;"> <input type="hidden" id="proveedor-producto-id"> <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button> </div> </div> </div> <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div> <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div> <hr class="my-4"> <h5 class="mb-3">Precios</h5> <div class="row"> <div class="col-md-4 mb-3"> <label for="costo-compra" class="form-label">Costo ($):</label> <input type="number" class="form-control" id="costo-compra" step="0.01" min="0" required> </div> <div class="col-md-4 mb-3"> <label for="precio-detal" class="form-label">P. Detal ($):</label> <input type="number" class="form-control" id="precio-detal" step="0.01" min="0" required> <small id="margen-detal-info" class="form-text text-muted"></small> </div> <div class="col-md-4 mb-3"> <label for="precio-mayor" class="form-label">P. Mayor ($):</label> <input type="number" class="form-control" id="precio-mayor" step="0.01" min="0"> <small id="margen-mayor-info" class="form-text text-muted"></small> </div> </div> <hr class="my-4"> <h5 class="mb-3">Variaciones</h5> <div id="variaciones-container"> <div class="row align-items-center mb-2 variation-row d-none" id="variation-template"> <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_talla[]" placeholder="Talla"> </div> <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_color[]" placeholder="Color"> </div> <div class="col-md-3"> <input type="number" class="form-control form-control-sm" name="variation_stock[]" min="0" value="1" placeholder="Stock"> </div> <div class="col-md-1 text-end"> <button type="button" class="btn btn-sm btn-outline-danger remove-variation-btn p-1"> <i class="bi bi-x"></i> </button> </div> </div> </div> <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir</button> <hr class="my-4"> <div class="row"> <div class="col-md-8 mb-3"> <label for="imagen" class="form-label">Fotos:</label> <input type="file" class="form-control" id="imagen" accept="image/*" multiple> <small class="text-muted" id="image-upload-label">La 1ra será la principal. Si editas y no subes una nueva, se mantendrá la anterior.</small> </div> <div class="col-md-4 d-flex align-items-center"> <div class="form-check form-switch fs-5 w-100"> <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked> <label class="form-check-label" for="visibilidad">Visible</label> </div> </div> </div> <hr class="my-4"> <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> <button type="button" id="btn-clear-product-form" class="btn btn-outline-secondary ms-2">Limpiar</button> </form> </div> </div> </div> <div id="inventory-view"> <div class="input-group mb-3"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="search" id="search-inventory" class="form-control" placeholder="Buscar..."></div> <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr> <th>Foto</th> <th>Nombre</th> <th>P. Detal</th> <th>P. Mayor</th> <th>Stock</th> <th>Estado</th> <th>Acciones</th> </tr></thead><tbody id="lista-inventario-productos"><tr id="empty-inventory-row"><td colspan="7" class="text-center text-muted p-4">Cargando...</td></tr></tbody></table></div></div></div> </div> </div>
+            <div class="tab-pane fade" id="productos"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Productos</h1> <div class="btn-group"> <button type="button" id="toggle-inventory-view-btn" class="btn btn-sm btn-outline-secondary active"><i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline"> Inventario</span></button> <button type="button" id="toggle-form-view-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Agregar/Editar</span></button> </div> </div>
+                
+                <div class="row align-items-center mb-2 variation-row d-none" id="variation-template">
+                    <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_talla[]" placeholder="Talla"> </div>
+                    <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_color[]" placeholder="Color"> </div>
+                    <div class="col-md-3"> <input type="number" class="form-control form-control-sm" name="variation_stock[]" min="0" value="1" placeholder="Stock"> </div>
+                    <div class="col-md-1 text-end"> <button type="button" class="btn btn-sm btn-outline-danger remove-variation-btn p-1"> <i class="bi bi-x"></i> </button> </div>
+                </div>
+                
+                 <div id="form-view" style="display: none;"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0" id="product-form-title">Formulario Producto</h3></div> <div class="card-body"> <form id="form-producto"> <input type="hidden" id="producto-id"> <div class="row"> <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div> <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div> <div class="col-md-3 mb-3"> <label for="proveedor-producto" class="form-label">Proveedor:</label> <div class="input-group"> <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal" style="cursor: pointer;"> <input type="hidden" id="proveedor-producto-id"> <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button> </div> </div> </div> <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div> <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div> <hr class="my-4"> <h5 class="mb-3">Precios</h5> <div class="row"> <div class="col-md-4 mb-3"> <label for="costo-compra" class="form-label">Costo ($):</label> <input type="number" class="form-control" id="costo-compra" step="0.01" min="0" required> </div> <div class="col-md-4 mb-3"> <label for="precio-detal" class="form-label">P. Detal ($):</label> <input type="number" class="form-control" id="precio-detal" step="0.01" min="0" required> <small id="margen-detal-info" class="form-text text-muted"></small> </div> <div class="col-md-4 mb-3"> <label for="precio-mayor" class="form-label">P. Mayor ($):</label> <input type="number" class="form-control" id="precio-mayor" step="0.01" min="0"> <small id="margen-mayor-info" class="form-text text-muted"></small> </div> </div> <hr class="my-4"> <h5 class="mb-3">Variaciones</h5> <div id="variaciones-container"> </div> <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir</button> <hr class="my-4"> <div class="row"> <div class="col-md-8 mb-3"> <label for="imagen" class="form-label">Fotos:</label> <input type="file" class="form-control" id="imagen" accept="image/*" multiple> <small class="text-muted" id="image-upload-label">La 1ra será la principal. Si editas y no subes una nueva, se mantendrá la anterior.</small> </div> <div class="col-md-4 d-flex align-items-center"> <div class="form-check form-switch fs-5 w-100"> <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked> <label class="form-check-label" for="visibilidad">Visible</label> </div> </div> </div> <hr class="my-4"> <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> <button type="button" id="btn-clear-product-form" class="btn btn-outline-secondary ms-2">Limpiar</button> </form> </div> </div> </div> <div id="inventory-view"> <div class="input-group mb-3"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="search" id="search-inventory" class="form-control" placeholder="Buscar..."></div> <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr> <th>Foto</th> <th>Nombre</th> <th>Variaciones</th> <th>P. Detal</th> <th>P. Mayor</th> <th>Stock</th> <th>Estado</th> <th>Acciones</th> </tr></thead><tbody id="lista-inventario-productos"><tr id="empty-inventory-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr></tbody></table></div></div></div> </div> </div>
             <div class="tab-pane fade" id="ventas"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Ventas</h1> <div class="btn-group"> <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Registrar</span></button> <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-list-check me-1"></i><span class="d-none d-md-inline"> Historial</span></button> </div> </div> <div id="sales-form-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Registrar Venta</h3></div> <div class="card-body"> <form id="form-venta"> <input type="hidden" id="venta-cliente-id"> <div class="row align-items-end"> <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label> <div class="input-group"> <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;"> <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button> </div> <div class="row mt-2 gx-2"> <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div> <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div> </div> </div> <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div> <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div> <div class="col-md-2 mb-3"> <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> </div> </div> <div class="row delivery-fields"> <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div> <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div> <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> </div> </div> <label for="venta-producto" class="form-label">Buscar Producto:</label> <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;"> <table class="table my-3"> <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead> <tbody id="venta-carrito"></tbody> </table> <hr> <div class="row"> <div class="col-md-6"> <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> </div> <div class="col-md-6"> <div class="row"> <div class="col-7"> <label for="venta-descuento" class="form-label">Descuento:</label> <input type="number" id="venta-descuento" class="form-control" value="0"> </div> <div class="col-5"> <label class="form-label">&nbsp;</label> <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> </div> </div> <label class="form-label mt-3">Pago:</label> <div class="input-group mb-2"> <span class="input-group-text">Efectivo $</span> <input type="number" id="pago-efectivo" class="form-control" value="0"> </div> <div class="input-group mb-3"> <span class="input-group-text">Transf. $</span> <input type="number" id="pago-transferencia" class="form-control" value="0"> </div> <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> <button type="submit" class="btn btn-primary w-100 mt-2">Registrar Venta</button> </div> </div> </form> </div> </div> </div> <div id="sales-list-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div> <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"> <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> </thead><tbody id="lista-ventas-anteriores"> <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr> </tbody></table></div></div></div> </div> </div>
             <div class="tab-pane fade" id="apartados"> <h1 class="h2">Apartados</h1> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Pendientes</h3></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Cliente</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Vence</th><th>Acciones</th></tr></thead><tbody id="lista-apartados"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
             <div class="tab-pane fade" id="clientes"> <h1 class="h2">Clientes</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClientModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Nombre</th><th>Cédula</th><th>WhatsApp</th><th>Dirección</th><th>Última Compra</th><th>Acciones</th></tr></thead><tbody id="lista-clientes"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
@@ -112,7 +149,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
         // Import Storage
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -120,7 +157,7 @@
             authDomain: "mishell-boutique-admin.firebaseapp.com",
             projectId: "mishell-boutique-admin",
             // *** CORRECCIÓN CLAVE BASADA EN TUS IMÁGENES ***
-            storageBucket: "mishell-boutique-admin.appspot.com", 
+            storageBucket: "mishell-boutique-admin.firebasestorage.app", 
             messagingSenderId: "399662956877",
             appId: "1:399662956877:web:084236f5bb3cf6f0a8f704",
             measurementId: "G-TZ3WQ8LSXH"
@@ -197,14 +234,63 @@
              const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
              if (confirmDeleteBtn && deleteConfirmModalInstance) {
                  confirmDeleteBtn.addEventListener('click', async (e) => {
-                     e.preventDefault(); 
-                     const idToDelete = confirmDeleteBtn.dataset.deleteId;
-                     const collectionToDelete = confirmDeleteBtn.dataset.deleteCollection;
-                     if (idToDelete && collectionToDelete) {
-                         try { await deleteDoc(doc(db, collectionToDelete, idToDelete)); showToast("Elemento eliminado!"); }
-                         catch (err) { console.error(`Error deleting:`, err); showToast(`Error al eliminar: ${err.message}`, 'error'); }
-                         finally { deleteConfirmModalInstance.hide(); }
-                     } else { showToast("Error: No se identificó qué eliminar.", 'error'); deleteConfirmModalInstance.hide(); }
+                    e.preventDefault(); 
+                    const idToDelete = confirmDeleteBtn.dataset.deleteId;
+                    const collectionToDelete = confirmDeleteBtn.dataset.deleteCollection;
+                    
+                    if (!idToDelete || !collectionToDelete) {
+                        showToast("Error: No se identificó qué eliminar.", 'error');
+                        deleteConfirmModalInstance.hide();
+                        return;
+                    }
+
+                    // --- LÓGICA MEJORADA PARA BORRAR IMAGEN ---
+                    if (collectionToDelete === 'productos') {
+                        try {
+                            const productDocRef = doc(db, 'productos', idToDelete);
+                            const docSnap = await getDoc(productDocRef);
+                            
+                            if (docSnap.exists()) {
+                                const productData = docSnap.data();
+                                const imageUrl = productData.imagenUrl;
+                                
+                                // Si tiene imagen, borrarla de Storage
+                                if (imageUrl) {
+                                    try {
+                                        const imageRef = ref(storage, imageUrl);
+                                        await deleteObject(imageRef);
+                                        console.log("Imagen eliminada de Storage:", imageUrl);
+                                    } catch (storageErr) {
+                                        console.error("Error al eliminar imagen de Storage:", storageErr);
+                                        showToast("Producto eliminado, pero la imagen no se pudo borrar.", 'warning');
+                                    }
+                                }
+                            }
+                            
+                            // Borrar el documento de Firestore
+                            await deleteDoc(productDocRef);
+                            showToast("Producto e imagen eliminados!");
+                            
+                        } catch (err) {
+                            console.error(`Error deleting product:`, err); 
+                            showToast(`Error al eliminar: ${err.message}`, 'error'); 
+                        } finally {
+                            deleteConfirmModalInstance.hide();
+                        }
+                    } else {
+                        // --- Lógica de borrado normal para otras colecciones ---
+                        try { 
+                            await deleteDoc(doc(db, collectionToDelete, idToDelete)); 
+                            showToast("Elemento eliminado!"); 
+                        }
+                        catch (err) { 
+                            console.error(`Error deleting:`, err); 
+                            showToast(`Error al eliminar: ${err.message}`, 'error'); 
+                        }
+                        finally { 
+                            deleteConfirmModalInstance.hide(); 
+                        }
+                    }
                  });
              } else { console.error("Delete confirmation button or modal missing"); }
         
@@ -330,13 +416,16 @@
                 
                 if (!productForm) { console.warn("Formulario de producto no encontrado."); return; }
 
-                // --- GESTIONAR VARIACIONES (Movido aquí) ---
+                // --- GESTIONAR VARIACIONES (Movido aquí para arreglar `aVR not defined`) ---
                 const vC=document.getElementById('variaciones-container'); const aVB=document.getElementById('add-variation-btn'); const vT=document.getElementById('variation-template'); 
                 function aVR(){ if(!vT || !vC) return; const nR=vT.cloneNode(true);nR.classList.remove('d-none');nR.removeAttribute('id');const rB=nR.querySelector('.remove-variation-btn');rB.addEventListener('click',(e)=>{ e.preventDefault(); nR.remove(); if(vC.querySelectorAll('.variation-row:not(#variation-template):not(.d-none)').length===0){aVR();}});vC.appendChild(nR);} 
                 if(aVB)aVB.addEventListener('click',(e) => { e.preventDefault(); aVR(); }); 
                 if(vC && vC.querySelectorAll('.variation-row:not(#variation-template):not(.d-none)').length===0){aVR();}
-                // --- Fin Gestionar Variaciones ---
-
+                
+                // --- CÁLCULO DE MARGEN (Movido aquí) ---
+                const cI=document.getElementById('costo-compra'); const pDI=document.getElementById('precio-detal'); const pMI=document.getElementById('precio-mayor'); const mDI=document.getElementById('margen-detal-info'); const mMI=document.getElementById('margen-mayor-info'); const fM_margin=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}); function cYM(){ if(!cI || !pDI || !pMI || !mDI || !mMI) return; const c=parseFloat(cI.value)||0; const pD=parseFloat(pDI.value)||0; const pM=parseFloat(pMI.value)||0; let mDV=0,mDP=0;if(c>0&&pD>=c){mDV=pD-c;mDP=(mDV/c)*100;mDI.textContent=`Margen: ${fM_margin.format(mDV)} (${mDP.toFixed(1)}%)`;mDI.style.color='';mDI.style.fontWeight='';}else{mDI.textContent='Margen: $0 (0.0%)';mDI.style.color=(pD>0&&pD<c)?'red':'';mDI.style.fontWeight=(pD>0&&pD<c)?'bold':'';if(pD>0&&pD<c)mDI.textContent='Margen Negativo';} let mMV=0,mMP=0;if(c>0&&pM>=c){mMV=pM-c;mMP=(mMV/c)*100;mMI.textContent=`Margen: ${fM_margin.format(mMV)} (${mMP.toFixed(1)}%)`;mMI.style.color='';mMI.style.fontWeight='';}else{mMI.textContent='Margen: $0 (0.0%)';mMI.style.color=(pM>0&&pM<c)?'red':'';mMI.style.fontWeight=(pM>0&&pM<c)?'bold':'';if(pM>0&&pM<c)mMI.textContent='Margen Negativo';}} if(cI)cI.addEventListener('input',cYM); if(pDI)pDI.addEventListener('input',cYM); if(pMI)pMI.addEventListener('input',cYM); if(cI) cYM();
+                
+                // --- LÓGICA DE PRODUCTOS ---
                 const renderProducts = (snapshot) => { localProductsMap.clear(); if(!productListTableBody) return; const emptyRow = document.getElementById('empty-inventory-row'); productListTableBody.innerHTML = ''; if(productSearchModalList) productSearchModalList.innerHTML = ''; if (snapshot.empty) { if(emptyRow) { emptyRow.style.display = ''; productListTableBody.appendChild(emptyRow); } return; } if(emptyRow) emptyRow.style.display = 'none'; 
                     snapshot.forEach(docSnap => { 
                         const d = docSnap.data(); const id = docSnap.id; 
@@ -344,8 +433,21 @@
                         const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
                         const imagenUrl = d.imagenUrl || 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto'; 
                         
+                        // Añadir Tallas y Colores a la tabla
+                        let variacionesHtml = (d.variaciones || [])
+                            .map(v => `<span class="badge bg-light text-dark me-1">${v.talla || ''} / ${v.color || ''} (Stock: ${v.stock})</span>`)
+                            .join(' ');
+                        if (variacionesHtml === '') variacionesHtml = '<small class="text-muted">Sin variaciones</small>';
+                        
                         const tr = document.createElement('tr'); tr.dataset.id = id; 
-                        tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img"></td><td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td><td>${formatoMoneda.format(d.precioDetal || 0)}</td><td>${formatoMoneda.format(d.precioMayor || 0)}</td><td>${stockTotal}</td><td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td><td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; 
+                        tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img"></td>
+                                        <td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td>
+                                        <td>${variacionesHtml}</td>
+                                        <td>${formatoMoneda.format(d.precioDetal || 0)}</td>
+                                        <td>${formatoMoneda.format(d.precioMayor || 0)}</td>
+                                        <td>${stockTotal}</td>
+                                        <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
+                                        <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; 
                         if(productListTableBody) productListTableBody.appendChild(tr); 
                         
                         const li = document.createElement('li');
@@ -356,7 +458,7 @@
                         if(productSearchModalList) productSearchModalList.appendChild(li);
                     }); 
                 };
-                onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error.</td></tr>';});
+                onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
                 
                 function clearProductForm() { productForm.reset(); productIdInput.value = ''; const margenDetalInfo = document.getElementById('margen-detal-info'); const margenMayorInfo = document.getElementById('margen-mayor-info'); if(margenDetalInfo) margenDetalInfo.textContent = ''; if(margenMayorInfo) margenMayorInfo.textContent = ''; const rows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)'); rows.forEach((row) => { row.remove(); }); aVR(); document.getElementById('product-form-title').textContent = "Agregar Producto"; imagenInput.required = true; }
                 if (clearFormBtn) clearFormBtn.addEventListener('click', (e) => { e.preventDefault(); clearProductForm(); });
@@ -483,6 +585,15 @@
                  onSnapshot(query(salesCollection, orderBy('timestamp', 'desc')), renderSales, e => { console.error("Error sales:", e); if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
                 if (salesForm) salesForm.addEventListener('submit', async (e) => { e.preventDefault(); if (ventaItems.length === 0) { showToast("Agrega productos.", 'warning'); return; } const totalCalculado = calcularTotalVentaGeneral(); const ventaData = { clienteNombre: ventaClienteInput.value || "Cliente General", tipoVenta: tipoVentaSelect.value, tipoEntrega: tipoEntregaSelect.value, pedidoWhatsapp: ventaWhatsappCheckbox.checked, repartidorId: tipoEntregaSelect.value === 'domicilio' ? ventaRepartidorSelect.value : null, costoRuta: tipoEntregaSelect.value === 'domicilio' ? (parseFloat(costoRutaInput.value) || 0) : 0, rutaPagadaTransferencia: tipoEntregaSelect.value === 'domicilio' ? rutaPagadaCheckbox.checked : false, items: ventaItems, observaciones: ventaObservaciones.value.trim(), descuento: parseFloat(ventaDescuentoInput.value) || 0, descuentoTipo: ventaDescuentoTipo.value, pagoEfectivo: parseFloat(pagoEfectivoInput.value) || 0, pagoTransferencia: parseFloat(pagoTransferenciaInput.value) || 0, totalVenta: totalCalculado, estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada', timestamp: serverTimestamp() }; if (ventaData.tipoVenta !== 'apartado' && (ventaData.pagoEfectivo + ventaData.pagoTransferencia < totalCalculado)) { showToast("El pago no cubre el total.", 'warning'); return; } try { const docRef = await addDoc(salesCollection, ventaData); showToast("Venta registrada!"); if (ventaData.tipoVenta === 'apartado') { const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia; try { await addDoc(apartadosCollection, { ventaId: docRef.id, clienteNombre: ventaData.clienteNombre, total: ventaData.totalVenta, abonado: abonoInicial, saldo: ventaData.totalVenta - abonoInicial, fechaCreacion: ventaData.timestamp, fechaVencimiento: null, estado: 'Pendiente' }); } catch(apErr) { console.error("Error creando apartado:", apErr); showToast("Venta guardada, error al crear apartado.", 'error'); } } console.warn("Actualización de stock pendiente."); salesForm.reset(); ventaItems = []; renderCarrito(); fillClientInfoSales(); tipoVentaSelect.value='detal'; tipoEntregaSelect.value='tienda'; toggleDeliveryFields(); calcularTotalVentaGeneral(); } catch (err) { console.error("Error saving sale:", err); showToast(`Error: ${err.message}`, 'error'); } });
                 if(salesListTableBody) salesListTableBody.addEventListener('click', (e)=>{ e.preventDefault(); const target = e.target.closest('button'); if (!target) return; const id = target.closest('tr')?.dataset.id; if (!id) return; if(target.classList.contains('btn-view-sale')) showToast(`Ver ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-cancel-sale')) showToast(`Cancelar ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-manage-apartado')) showToast(`Gestionar ${id} (Pendiente)`, 'warning'); });
+                
+                function toggleDeliveryFields(){
+                    const tES = document.getElementById('tipo-entrega-select');
+                    const dFD = document.querySelector('.delivery-fields');
+                    const cRI = document.getElementById('costo-ruta');
+                    if (dFD && tES && cRI) { if (tES.value === 'domicilio') { dFD.style.display = 'flex'; } else { dFD.style.display = 'none'; cRI.value = 0; } }
+                }
+                document.getElementById('tipo-entrega-select').addEventListener('change', toggleDeliveryFields);
+                toggleDeliveryFields();
                 calcularTotalVentaGeneral();
             })();
 
@@ -511,20 +622,21 @@
             })();
 
             // ========================================================================
-            // --- SCRIPTS DE UI (Toggles, Cálculo Margen, Variaciones, Domicilio) ---
+            // --- SCRIPTS DE UI (Toggles, Domicilio) ---
             // ========================================================================
             (() => {
                 // Toggles
-                const fV_prod = document.getElementById('form-view'); const iV_prod = document.getElementById('inventory-view'); const tIB_prod = document.getElementById('toggle-inventory-view-btn'); const tFB_prod = document.getElementById('toggle-form-view-btn'); if(fV_prod && iV_prod && tIB_prod && tFB_prod){ tIB_prod.addEventListener('click',(e)=>{ e.preventDefault(); fV_prod.style.display='none'; iV_prod.style.display='block'; tIB_prod.classList.add('active'); tFB_prod.classList.remove('active');}); tFB_prod.addEventListener('click',(e)=>{ e.preventDefault(); iV_prod.style.display='none'; fV_prod.style.display='block'; tFB_prod.classList.add('active'); tIB_prod.classList.remove('active');}); iV_prod.style.display='block'; tIB_prod.classList.add('active'); } else { console.warn("Product view toggle missing."); }
+                const fV_prod = document.getElementById('form-view'); const iV_prod = document.getElementById('inventory-view'); const tIB_prod = document.getElementById('toggle-inventory-view-btn'); const tFB_prod = document.getElementById('toggle-form-view-btn'); if(fV_prod && iV_prod && tIB_prod && tFB_prod){ tIB_prod.addEventListener('click',(e)=>{ e.preventDefault(); fV_prod.style.display='none'; iV_prod.style.display='block'; tIB_prod.classList.add('active'); tFB_prod.classList.remove('active');}); tFB_prod.addEventListener('click',(e)=>{ e.preventDefault(); iV_prod.style.display='none'; fV_prod.style.display='block'; tFB_prod.classList.add('active'); tIB_prod.classList.remove('active'); clearProductForm(); }); iV_prod.style.display='block'; tIB_prod.classList.add('active'); } else { console.warn("Product view toggle missing."); }
                 const sFV = document.getElementById('sales-form-view'); const sLV = document.getElementById('sales-list-view'); const tSLB = document.getElementById('toggle-sales-list-view-btn'); const tSFB = document.getElementById('toggle-sales-form-view-btn'); if(sFV && sLV && tSLB && tSFB){ tSLB.addEventListener('click',(e)=>{ e.preventDefault(); sFV.style.display='none'; sLV.style.display='block'; tSLB.classList.add('active'); tSFB.classList.remove('active'); }); tSFB.addEventListener('click',(e)=>{ e.preventDefault(); sLV.style.display='none'; sFV.style.display='block'; tSFB.classList.add('active'); tSLB.classList.remove('active'); }); sFV.style.display='block'; tSFB.classList.add('active'); } else { console.warn("Sales view toggle missing."); }
                  const todayViewR = document.getElementById('delivery-today-view'); const historyViewR = document.getElementById('delivery-history-view'); const toggleHistoryBtnR = document.getElementById('toggle-delivery-history-btn'); const toggleTodayBtnR = document.getElementById('toggle-delivery-today-btn'); if (todayViewR && historyViewR && toggleHistoryBtnR && toggleTodayBtnR) { toggleHistoryBtnR.addEventListener('click', (e) => { e.preventDefault(); todayViewR.style.display = 'none'; historyViewR.style.display = 'block'; toggleHistoryBtnR.classList.add('active'); toggleTodayBtnR.classList.remove('active'); }); toggleTodayBtnR.addEventListener('click', (e) => { e.preventDefault(); historyViewR.style.display = 'none'; todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); toggleHistoryBtnR.classList.remove('active'); }); todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); } else { console.warn("Delivery view toggle missing."); }
                 const tCV = document.getElementById('closing-today-view'); const hCV = document.getElementById('closing-history-view'); const tHB = document.getElementById('toggle-closing-history-btn'); const tTB = document.getElementById('toggle-closing-today-btn'); if (tCV && hCV && tHB && tTB) { tHB.addEventListener('click', (e) => { e.preventDefault(); tCV.style.display = 'none'; hCV.style.display = 'block'; tHB.classList.add('active'); tTB.classList.remove('active'); }); tTB.addEventListener('click', (e) => { e.preventDefault(); hCV.style.display = 'none'; tCV.style.display = 'block'; tTB.classList.add('active'); tHB.classList.remove('active'); }); tCV.style.display = 'block'; tTB.classList.add('active'); } else { console.warn("Finance closing view toggle missing."); }
-                
-                // Cálculo Margen
-                const cI=document.getElementById('costo-compra'); const pDI=document.getElementById('precio-detal'); const pMI=document.getElementById('precio-mayor'); const mDI=document.getElementById('margen-detal-info'); const mMI=document.getElementById('margen-mayor-info'); const fM_margin=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}); function cYM(){ if(!cI || !pDI || !pMI || !mDI || !mMI) return; const c=parseFloat(cI.value)||0; const pD=parseFloat(pDI.value)||0; const pM=parseFloat(pMI.value)||0; let mDV=0,mDP=0;if(c>0&&pD>=c){mDV=pD-c;mDP=(mDV/c)*100;mDI.textContent=`Margen: ${fM_margin.format(mDV)} (${mDP.toFixed(1)}%)`;mDI.style.color='';mDI.style.fontWeight='';}else{mDI.textContent='Margen: $0 (0.0%)';mDI.style.color=(pD>0&&pD<c)?'red':'';mDI.style.fontWeight=(pD>0&&pD<c)?'bold':'';if(pD>0&&pD<c)mDI.textContent='Margen Negativo';} let mMV=0,mMP=0;if(c>0&&pM>=c){mMV=pM-c;mMP=(mMV/c)*100;mMI.textContent=`Margen: ${fM_margin.format(mMV)} (${mMP.toFixed(1)}%)`;mMI.style.color='';mMI.style.fontWeight='';}else{mMI.textContent='Margen: $0 (0.0%)';mMI.style.color=(pM>0&&pM<c)?'red':'';mMI.style.fontWeight=(pM>0&&pM<c)?'bold':'';if(pM>0&&pM<c)mMI.textContent='Margen Negativo';}} if(cI)cI.addEventListener('input',cYM); if(pDI)pDI.addEventListener('input',cYM); if(pMI)pMI.addEventListener('input',cYM); if(cI) cYM();
                                 
                 // Domicilio y Autollenar Cliente
-                const tES = document.getElementById('tipo-entrega-select'); const dFD = document.querySelector('.delivery-fields'); const cRI = document.getElementById('costo-ruta'); const vCI_fill = document.getElementById('venta-cliente'); const cCI_fill = document.getElementById('venta-cliente-celular'); const cDI_fill = document.getElementById('venta-cliente-direccion'); document.addEventListener('clientsLoaded', (event) => { localClientsMap = event.detail.clientsMap; fCIS_UI(); }); function tDF() { if (dFD && tES && cRI) { if (tES.value === 'domicilio') { dFD.style.display = 'flex'; } else { dFD.style.display = 'none'; cRI.value = 0; } } else { console.warn("Missing delivery elements."); } } function fCIS_UI() { if (!vCI_fill || !cCI_fill || !cDI_fill) return; const sV = vCI_fill.value; const cI = localClientsMap.get(sV); if (cI) { cCI_fill.value = cI.celular; cDI_fill.value = cI.direccion; } else { cCI_fill.value = ""; cDI_fill.value = ""; } } if(tES) tES.addEventListener('change', tDF); if(vCI_fill) vCI_fill.addEventListener('input', fCIS_UI); tDF(); fCIS_UI(); if (cRI) { cRI.addEventListener('input', () => { /* Recalcular total venta */ }); }
+                const tES = document.getElementById('tipo-entrega-select'); const dFD = document.querySelector('.delivery-fields'); const cRI = document.getElementById('costo-ruta'); const vCI_fill = document.getElementById('venta-cliente'); const cCI_fill = document.getElementById('venta-cliente-celular'); const cDI_fill = document.getElementById('venta-cliente-direccion'); 
+                document.addEventListener('clientsLoaded', (event) => { localClientsMap = event.detail.clientsMap; fCIS_UI(); }); 
+                function tDF() { if (dFD && tES && cRI) { if (tES.value === 'domicilio') { dFD.style.display = 'flex'; } else { dFD.style.display = 'none'; cRI.value = 0; } } else { console.warn("Missing delivery elements."); } } 
+                function fCIS_UI() { if (!vCI_fill || !cCI_fill || !cDI_fill) return; const sV = vCI_fill.value; const cI = localClientsMap.get(sV); if (cI) { cCI_fill.value = cI.celular; cDI_fill.value = cI.direccion; } else { cCI_fill.value = ""; cDI_fill.value = ""; } } 
+                if(tES) tES.addEventListener('change', tDF); if(vCI_fill) vCI_fill.addEventListener('input', fCIS_UI); tDF(); fCIS_UI();
 
                 // Navbar collapse on click
                 const navLinks = document.querySelectorAll('#adminNavbarContent .nav-link');
