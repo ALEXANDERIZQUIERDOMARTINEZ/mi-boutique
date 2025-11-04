@@ -19,24 +19,27 @@
         .card-header { background-color: white; border-bottom: 1px solid #eee; }
         .btn-primary { background-color: var(--color-primario); border-color: var(--color-primario); }
         .btn-primary:hover { background-color: #c473a2; border-color: #c473a2; }
+        .btn-outline-primary { color: var(--color-primario); border-color: var(--color-primario); }
+        .btn-outline-primary:hover { background-color: var(--color-primario); color: white; }
         
         /* Estilos específicos para el catálogo */
         .product-card {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
         }
         .product-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 20px rgba(0,0,0,.1);
         }
         .product-card .card-img-top {
-            height: 300px; /* Altura fija para uniformidad */
-            object-fit: cover; /* Asegura que la imagen cubra el espacio */
+            height: 300px; 
+            object-fit: cover;
         }
         .product-card .card-body {
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 180px; /* Alto mínimo para el cuerpo */
+            min-height: 150px; /* Alto mínimo para el cuerpo */
         }
         .product-card .card-title {
             font-weight: 600;
@@ -47,11 +50,7 @@
             color: var(--color-primario);
             font-size: 1.25rem;
             font-weight: bold;
-            margin-top: auto; /* Empuja el precio y botón al fondo */
-            margin-bottom: 0.75rem;
-        }
-        .product-card .btn-whatsapp {
-            font-weight: 500;
+            margin-top: auto; /* Empuja el precio al fondo */
         }
         .product-card.agotado .card-img-top {
             filter: grayscale(80%);
@@ -59,6 +58,47 @@
         .badge.bg-dark {
             z-index: 10;
         }
+
+        /* Estilos Modal Producto */
+        #productDetailModal .modal-img {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+        }
+        #productDetailModal .price-detal {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--color-primario);
+        }
+        #productDetailModal .price-mayor {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6c757d;
+        }
+        #stock-disponible {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        /* Estilos Carrito */
+        .cart-icon {
+            font-size: 1.5rem;
+            color: #333;
+        }
+        .cart-badge {
+            top: 0;
+            right: -5px;
+            font-size: 0.6em;
+            padding: 0.25em 0.45em;
+        }
+        .offcanvas-body .cart-item-img {
+            width: 50px;
+            height: 65px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+        }
+
     </style>
 </head>
 <body>
@@ -70,12 +110,18 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="publicNavbarContent">
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
                     <li class="nav-item">
                         <a class="nav-link" href="#"><i class="bi bi-instagram me-1"></i> Instagram</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="admin.html"><i class="bi bi-person-circle me-1"></i> Admin</a>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <a class="nav-link position-relative" href="#" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas" id="cart-button">
+                            <i class="bi bi-bag cart-icon"></i>
+                            <span class="position-absolute translate-middle badge rounded-pill bg-danger cart-badge" id="cart-badge" style="display: none;">0</span>
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -104,6 +150,80 @@
         <p class="mb-0">&copy; 2025 Mishell Boutique. Todos los derechos reservados.</p>
     </footer>
 
+    <div class="modal fade" id="productDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="product-modal-title">Nombre del Producto</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <img src="" id="product-modal-img" class="modal-img" alt="Producto">
+                        </div>
+                        <div class="col-md-6 d-flex flex-column">
+                            <p id="product-modal-desc">Descripción del producto...</p>
+                            <div class="mt-auto">
+                                <p class="price-detal mb-0" id="product-modal-price-detal">$0</p>
+                                <p class="price-mayor" id="product-modal-price-mayor">Mayor: $0</p>
+                                
+                                <input type="hidden" id="product-modal-id">
+
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label for="select-talla" class="form-label">Talla:</label>
+                                        <select class="form-select" id="select-talla" required>
+                                            <option value="">Selecciona...</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="select-color" class="form-label">Color:</label>
+                                        <select class="form-select" id="select-color" required disabled>
+                                            <option value="">Selecciona Talla</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <label for="select-cantidad" class="form-label mb-0">Cantidad:</label>
+                                    <input type="number" class="form-control w-50" id="select-cantidad" value="1" min="1" max="1">
+                                    <span id="stock-disponible" class="text-muted"></span>
+                                </div>
+
+                                <button class="btn btn-primary w-100" id="btn-add-to-cart" disabled>
+                                    <i class="bi bi-bag-plus-fill me-2"></i>Agregar al Carrito
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title" id="offcanvasLabel"><i class="bi bi-bag me-2"></i>Mi Carrito</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div id="cart-items-container">
+                <p class="text-center text-muted" id="cart-empty-msg">Tu carrito está vacío.</p>
+            </div>
+        </div>
+        <div class="offcanvas-footer border-top p-3" id="cart-footer" style="display: none;">
+            <p class="d-flex justify-content-between fs-5 fw-bold">
+                <span>Total:</span>
+                <span id="cart-total">$0</span>
+            </p>
+            <button class="btn btn-primary w-100" id="btn-whatsapp-order">
+                <i class="bi bi-whatsapp me-2"></i> Pedir por WhatsApp
+            </button>
+        </div>
+    </div>
+
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <script type="module">
@@ -116,7 +236,7 @@
             apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
             authDomain: "mishell-boutique-admin.firebaseapp.com",
             projectId: "mishell-boutique-admin",
-            storageBucket: "mishell-boutique-admin.appspot.com", // Usar .appspot.com
+            storageBucket: "mishell-boutique-admin.appspot.com",
             messagingSenderId: "399662956877",
             appId: "1:399662956877:web:084236f5bb3cf6f0a8f704",
             measurementId: "G-TZ3WQ8LSXH"
@@ -133,13 +253,39 @@
         // --- Elementos del DOM ---
         const productListContainer = document.getElementById('lista-productos-publica');
         const loadingEl = document.getElementById('loading-products');
+        
+        // --- Modal de Producto ---
+        const productDetailModalEl = document.getElementById('productDetailModal');
+        const productModal = new bootstrap.Modal(productDetailModalEl);
+        const modalTitle = document.getElementById('product-modal-title');
+        const modalImg = document.getElementById('product-modal-img');
+        const modalDesc = document.getElementById('product-modal-desc');
+        const modalPriceDetal = document.getElementById('product-modal-price-detal');
+        const modalPriceMayor = document.getElementById('product-modal-price-mayor');
+        const modalIdInput = document.getElementById('product-modal-id');
+        const selectTalla = document.getElementById('select-talla');
+        const selectColor = document.getElementById('select-color');
+        const selectCantidad = document.getElementById('select-cantidad');
+        const stockDisponible = document.getElementById('stock-disponible');
+        const btnAddToCart = document.getElementById('btn-add-to-cart');
+        
+        // --- Carrito ---
+        let cart = [];
+        let productsMap = new Map(); // Caché de productos
+        const cartOffcanvas = new bootstrap.Offcanvas(document.getElementById('cartOffcanvas'));
+        const cartItemsContainer = document.getElementById('cart-items-container');
+        const cartEmptyMsg = document.getElementById('cart-empty-msg');
+        const cartFooter = document.getElementById('cart-footer');
+        const cartTotalEl = document.getElementById('cart-total');
+        const cartBadge = document.getElementById('cart-badge');
+        const btnWhatsapp = document.getElementById('btn-whatsapp-order');
 
         // --- Función para renderizar productos ---
         const renderProducts = (snapshot) => {
             if (!productListContainer) return;
-            productListContainer.innerHTML = ''; // Limpiar lista
-            
-            if (loadingEl) loadingEl.style.display = 'none'; // Ocultar "Cargando"
+            productListContainer.innerHTML = ''; 
+            productsMap.clear();
+            if (loadingEl) loadingEl.style.display = 'none';
 
             if (snapshot.empty) {
                 productListContainer.innerHTML = '<p class="text-center text-muted">No hay productos en el catálogo por el momento.</p>';
@@ -149,25 +295,22 @@
             snapshot.forEach(doc => {
                 const product = doc.data();
                 const id = doc.id;
+                productsMap.set(id, product); // Guardar en caché
 
-                // Calcular stock total de las variaciones
                 const stockTotal = product.variaciones ? product.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
                 const isAgotado = stockTotal <= 0;
-                const imagenUrl = product.imagenUrl || 'https://via.placeholder.com/300x300/f0f0f0/cccccc?text=Foto'; // Placeholder
+                const imagenUrl = product.imagenUrl || 'https://via.placeholder.com/300x300/f0f0f0/cccccc?text=Foto';
                 
                 const col = document.createElement('div');
                 col.className = 'col-lg-3 col-md-4 col-sm-6 col-12';
                 
                 col.innerHTML = `
-                    <div class="card product-card h-100 ${isAgotado ? 'agotado' : ''}">
-                        ${isAgotado ? '<span class="badge bg-dark position-absolute top-0 end-0 m-2" style="z-index: 10;">Agotado</span>' : ''}
+                    <div class="card product-card h-100 ${isAgotado ? 'agotado' : ''}" data-bs-toggle="modal" data-bs-target="#productDetailModal" data-product-id="${id}">
+                        ${isAgotado ? '<span class="badge bg-dark position-absolute top-0 end-0 m-2">Agotado</span>' : ''}
                         <img src="${imagenUrl}" class="card-img-top" alt="${product.nombre}">
                         <div class="card-body d-flex flex-column">
                             <h5 class="card-title">${product.nombre}</h5>
                             <p class="card-price mt-auto">${formatoMoneda.format(product.precioDetal)}</p>
-                            <a href="#" class="btn btn-primary w-100 btn-whatsapp ${isAgotado ? 'disabled' : ''}">
-                                <i class="bi bi-whatsapp me-2"></i> Pedir
-                            </a>
                         </div>
                     </div>
                 `;
@@ -176,7 +319,249 @@
             });
         };
 
+        // --- Lógica del Modal de Producto ---
+        productDetailModalEl.addEventListener('show.bs.modal', (event) => {
+            const button = event.relatedTarget;
+            const productId = button.dataset.productId;
+            const product = productsMap.get(productId);
+
+            if (!product) {
+                console.error("Producto no encontrado en el caché");
+                return;
+            }
+
+            // Resetear modal
+            modalTitle.textContent = product.nombre;
+            modalImg.src = product.imagenUrl || 'https://via.placeholder.com/400x400/f0f0f0/cccccc?text=Foto';
+            modalDesc.textContent = product.descripcion || 'Sin descripción.';
+            modalPriceDetal.textContent = formatoMoneda.format(product.precioDetal);
+            modalPriceMayor.textContent = `Mayor: ${formatoMoneda.format(product.precioMayor)}`;
+            modalIdInput.value = productId;
+            
+            // Resetear selects
+            selectTalla.innerHTML = '<option value="">Selecciona Talla...</option>';
+            selectColor.innerHTML = '<option value="">Selecciona Talla</option>';
+            selectColor.disabled = true;
+            stockDisponible.textContent = '';
+            btnAddToCart.disabled = true;
+            selectCantidad.value = 1;
+            selectCantidad.max = 1;
+
+            // Poblar Tallas
+            const variaciones = product.variaciones || [];
+            const tallasUnicas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))]; // Filtra tallas vacías
+            
+            if (tallasUnicas.length === 0 && variaciones.length > 0) {
+                // Caso: Producto sin talla (ej. solo color)
+                selectTalla.innerHTML = '<option value="unica">Talla Única</option>';
+                selectTalla.value = "unica";
+                selectTalla.dispatchEvent(new Event('change')); // Disparar cambio
+            } else {
+                tallasUnicas.forEach(talla => {
+                    selectTalla.innerHTML += `<option value="${talla}">${talla}</option>`;
+                });
+            }
+        });
+
+        // --- Lógica Talla -> Color -> Stock ---
+        selectTalla.addEventListener('change', () => {
+            const selectedTalla = selectTalla.value;
+            const product = productsMap.get(modalIdInput.value);
+            if (!product || !selectedTalla) return;
+
+            // Resetear color y botón
+            selectColor.innerHTML = '<option value="">Selecciona Color...</option>';
+            selectColor.disabled = false;
+            stockDisponible.textContent = '';
+            btnAddToCart.disabled = true;
+            
+            const variaciones = product.variaciones || [];
+            let coloresDisponibles = [];
+
+            if (selectedTalla === 'unica') {
+                coloresDisponibles = [...new Set(variaciones.map(v => v.color).filter(Boolean))];
+            } else {
+                coloresDisponibles = [...new Set(variaciones
+                    .filter(v => v.talla === selectedTalla)
+                    .map(v => v.color)
+                    .filter(Boolean)
+                )];
+            }
+            
+            if (coloresDisponibles.length === 0 && variaciones.length > 0) {
+                 // Caso: Producto sin color (ej. solo talla)
+                 selectColor.innerHTML = '<option value="unico">Color Único</option>';
+                 selectColor.value = "unico";
+                 selectColor.dispatchEvent(new Event('change')); // Disparar cambio
+            } else {
+                coloresDisponibles.forEach(color => {
+                    selectColor.innerHTML += `<option value="${color}">${color}</option>`;
+                });
+            }
+        });
+
+        selectColor.addEventListener('change', () => {
+            const selectedTalla = selectTalla.value;
+            const selectedColor = selectColor.value;
+            const product = productsMap.get(modalIdInput.value);
+            if (!product || !selectedTalla || !selectedColor) return;
+            
+            const variaciones = product.variaciones || [];
+            
+            // Encontrar la variación exacta
+            let variacion;
+            if(selectedTalla === 'unica' && selectedColor === 'unico') {
+                variacion = variaciones[0];
+            } else if (selectedTalla === 'unica') {
+                variacion = variaciones.find(v => v.color === selectedColor);
+            } else if (selectedColor === 'unico') {
+                variacion = variaciones.find(v => v.talla === selectedTalla);
+            } else {
+                variacion = variaciones.find(v => v.talla === selectedTalla && v.color === selectedColor);
+            }
+            
+            if (variacion && variacion.stock > 0) {
+                stockDisponible.textContent = `${variacion.stock} disponibles`;
+                stockDisponible.className = "text-success";
+                selectCantidad.max = variacion.stock;
+                selectCantidad.value = 1;
+                btnAddToCart.disabled = false;
+            } else {
+                stockDisponible.textContent = 'Agotado';
+                stockDisponible.className = "text-danger";
+                selectCantidad.max = 0;
+                selectCantidad.value = 0;
+                btnAddToCart.disabled = true;
+            }
+        });
+        
+        // --- Lógica del Carrito ---
+        
+        function addToCart() {
+            const product = productsMap.get(modalIdInput.value);
+            const selectedTalla = selectTalla.value;
+            const selectedColor = selectColor.value;
+            const cantidad = parseInt(selectCantidad.value, 10);
+            
+            if (!product || !selectedTalla || !selectedColor || cantidad <= 0) {
+                showToast("Por favor selecciona talla, color y cantidad.", 'warning');
+                return;
+            }
+
+            // Crear un ID único para el item del carrito (producto + talla + color)
+            const cartItemId = `${product.id}-${selectedTalla}-${selectedColor}`;
+            const existingItem = cart.find(item => item.cartItemId === cartItemId);
+            
+            const variacion = product.variaciones.find(v => 
+                (v.talla || 'unica') === selectedTalla && 
+                (v.color || 'unico') === selectedColor
+            );
+            
+            const stock = variacion ? variacion.stock : 0;
+            
+            if (existingItem) {
+                if (existingItem.cantidad + cantidad > stock) {
+                    showToast(`No puedes agregar más. Solo hay ${stock} en stock.`, 'warning');
+                    return;
+                }
+                existingItem.cantidad += cantidad;
+                existingItem.total = existingItem.cantidad * existingItem.precio;
+            } else {
+                if (cantidad > stock) {
+                    showToast(`No puedes agregar ${cantidad}. Solo hay ${stock} en stock.`, 'warning');
+                    return;
+                }
+                cart.push({
+                    cartItemId: cartItemId,
+                    id: product.id,
+                    nombre: product.nombre,
+                    precio: product.precioDetal,
+                    talla: selectedTalla,
+                    color: selectedColor,
+                    cantidad: cantidad,
+                    total: cantidad * product.precioDetal,
+                    imagenUrl: product.imagenUrl
+                });
+            }
+            
+            showToast(`${product.nombre} (${selectedTalla}/${selectedColor}) añadido al carrito!`, 'success');
+            productModal.hide();
+            renderCart();
+        }
+        
+        function renderCart() {
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="text-center text-muted" id="cart-empty-msg">Tu carrito está vacío.</p>';
+                cartFooter.style.display = 'none';
+                cartBadge.style.display = 'none';
+            } else {
+                cartEmptyMsg.style.display = 'none';
+                cartFooter.style.display = 'block';
+                cartItemsContainer.innerHTML = '';
+                let totalGeneral = 0;
+                let itemCount = 0;
+                
+                cart.forEach((item, index) => {
+                    cartItemsContainer.innerHTML += `
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="${item.imagenUrl || 'https://via.placeholder.com/50x65'}" alt="${item.nombre}" class="cart-item-img me-2">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0 fs-sm">${item.nombre}</h6>
+                                <small class="text-muted d-block">${item.talla} / ${item.color}</small>
+                                <span class="fw-bold fs-sm">${formatoMoneda.format(item.precio)} x ${item.cantidad}</span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger btn-remove-from-cart" data-index="${index}" style="line-height: 1; padding: 0.2rem 0.4rem;">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </div>
+                    `;
+                    totalGeneral += item.total;
+                    itemCount += item.cantidad;
+                });
+                
+                cartTotalEl.textContent = formatoMoneda.format(totalGeneral);
+                cartBadge.textContent = itemCount;
+                cartBadge.style.display = 'block';
+            }
+        }
+        
+        // Evento para el botón de Agregar al Carrito
+        btnAddToCart.addEventListener('click', addToCart);
+
+        // Evento para remover items del carrito
+        cartItemsContainer.addEventListener('click', (e) => {
+            const target = e.target.closest('.btn-remove-from-cart');
+            if (target) {
+                e.preventDefault();
+                const index = parseInt(target.dataset.index, 10);
+                cart.splice(index, 1); // Quitar el item del array
+                renderCart(); // Volver a dibujar el carrito
+            }
+        });
+        
+        // Evento para Pedido por WhatsApp
+        btnWhatsapp.addEventListener('click', (e) => {
+            e.preventDefault();
+            let mensaje = "¡Hola Mishell Boutique! 👋 Me gustaría pedir lo siguiente:\n\n";
+            cart.forEach(item => {
+                mensaje += `*Producto:* ${item.nombre}\n`;
+                mensaje += `*Talla:* ${item.talla}\n`;
+                mensaje += `*Color:* ${item.color}\n`;
+                mensaje += `*Cantidad:* ${item.cantidad}\n`;
+                mensaje += `*Subtotal:* ${formatoMoneda.format(item.total)}\n`;
+                mensaje += `---------------------\n`;
+            });
+            const totalGeneral = cart.reduce((sum, item) => sum + item.total, 0);
+            mensaje += `\n*TOTAL DEL PEDIDO: ${formatoMoneda.format(totalGeneral)}*`;
+            
+            // Reemplaza 'TU_NUMERO' con tu número de WhatsApp con código de país (ej. 573046084971)
+            const numeroWhatsapp = "573046084971"; 
+            const url = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(mensaje)}`;
+            window.open(url, '_blank');
+        });
+
         // --- Crear la consulta a Firebase ---
+        // (La consulta que requiere el índice que debes crear)
         const q = query(productsCollection, 
                         where("visible", "==", true), 
                         orderBy("timestamp", "desc")
@@ -185,9 +570,16 @@
         // --- Escuchar cambios en tiempo real ---
         onSnapshot(q, renderProducts, (error) => {
             console.error("Error al cargar productos: ", error);
-            // ESTO ES IMPORTANTE: Si ves un error aquí, puede que te dé el enlace para crear el índice
             if (loadingEl) loadingEl.style.display = 'none';
-            productListContainer.innerHTML = `<p class="text-center text-danger">Error al cargar los productos. Revisa la consola (F12) para ver si falta un índice de Firestore.</p>`;
+            // Mensaje de error amigable que incluye el enlace para crear el índice
+            if (error.code === 'failed-precondition') {
+                 productListContainer.innerHTML = `<div class="col-12 text-center text-danger">
+                    <p><strong>Error de base de datos.</strong></p>
+                    <p>Parece que falta un índice de Firestore. Por favor, abre la consola (F12) y haz clic en el enlace que aparece en el error rojo para crearlo automáticamente.</p>
+                 </div>`;
+            } else {
+                productListContainer.innerHTML = `<p class="text-center text-danger">Error al cargar los productos.</p>`;
+            }
         });
 
     </script>
