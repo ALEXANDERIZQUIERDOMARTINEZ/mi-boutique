@@ -14,52 +14,81 @@
         body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; }
         .admin-navbar { background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,.05); }
         .admin-brand span { color: var(--color-primario); font-weight: bold; }
-        .admin-main { padding: 1.5rem; }
-        .card { border: none; box-shadow: 0 4px 12px rgba(0,0,0,.08); border-radius: 0.5rem; margin-bottom: 1.5rem; }
-        .card-header { background-color: white; border-bottom: 1px solid #eee; }
+        .admin-main { padding-top: 1rem; padding-bottom: 1rem; } /* Menos padding para móvil */
+        .card { border: none; box-shadow: 0 4px 12px rgba(0,0,0,.06); border-radius: 0.5rem; margin-bottom: 1rem; }
         .btn-primary { background-color: var(--color-primario); border-color: var(--color-primario); }
         .btn-primary:hover { background-color: #c473a2; border-color: #c473a2; }
         .btn-outline-primary { color: var(--color-primario); border-color: var(--color-primario); }
         .btn-outline-primary:hover { background-color: var(--color-primario); color: white; }
         
-        /* Estilos específicos para el catálogo */
+        /* Estilos específicos para el catálogo (Mobile-First) */
         .product-card {
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: pointer;
+            height: 100%;
         }
         .product-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 20px rgba(0,0,0,.1);
         }
         .product-card .card-img-top {
-            height: 300px; 
+            height: 200px; /* Altura optimizada para grid móvil */
             object-fit: cover;
+            border-top-left-radius: 0.5rem;
+            border-top-right-radius: 0.5rem;
         }
         .product-card .card-body {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            min-height: 150px; /* Alto mínimo para el cuerpo */
+            padding: 0.75rem;
         }
         .product-card .card-title {
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.9rem; /* Más pequeño para móvil */
             color: #333;
+            margin-bottom: 0.25rem;
+            line-height: 1.3;
         }
-        .product-card .card-price {
+        .product-card .card-price-detal {
             color: var(--color-primario);
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: bold;
-            margin-top: auto; /* Empuja el precio al fondo */
+        }
+        .product-card .card-price-mayor {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+        }
+        .product-card .card-variations {
+            font-size: 0.75rem;
+            color: #6c757d;
+            font-style: italic;
+            margin-bottom: 0.5rem;
+            min-height: 18px; /* Espacio reservado */
         }
         .product-card.agotado .card-img-top {
             filter: grayscale(80%);
         }
         .badge.bg-dark {
             z-index: 10;
+            font-size: 0.7em;
+        }
+        
+        /* Media query para pantallas más grandes */
+        @media (min-width: 768px) {
+            .admin-main { padding: 1.5rem; }
+            .product-card .card-img-top {
+                height: 300px; /* Más altura en pantallas grandes */
+            }
+            .product-card .card-body {
+                padding: 1rem;
+            }
+            .product-card .card-title {
+                font-size: 1rem;
+            }
         }
 
-        /* === ESTILOS NUEVOS PARA MODALES (Sobrio y Clásico) === */
+        /* === ESTILOS MODALES (Sobrio y Clásico) === */
         .modal-content, .offcanvas-content {
             border: none;
             border-radius: 0.5rem;
@@ -112,7 +141,6 @@
             object-fit: cover;
             border-radius: 0.25rem;
         }
-
     </style>
 </head>
 <body>
@@ -120,25 +148,17 @@
     <nav class="admin-navbar navbar navbar-expand-lg sticky-top">
         <div class="container-fluid">
             <a class="admin-brand navbar-brand" href="index.html"><span>Mishell</span> Boutique</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#publicNavbarContent">
+            
+            <a class="nav-link position-relative ms-auto" href="#" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas" id="cart-button-mobile">
+                <i class="bi bi-bag cart-icon"></i>
+                <span class="position-absolute translate-middle badge rounded-pill bg-danger cart-badge" id="cart-badge" style="display: none;">0</span>
+            </a>
+            
+            <button class="navbar-toggler d-none" type="button" data-bs-toggle="collapse" data-bs-target="#publicNavbarContent">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="publicNavbarContent">
-                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-center">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#"><i class="bi bi-instagram me-1"></i> Instagram</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="admin.html"><i class="bi bi-person-circle me-1"></i> Admin</a>
-                    </li>
-                    <li class="nav-item ms-2">
-                        <a class="nav-link position-relative" href="#" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas" id="cart-button">
-                            <i class="bi bi-bag cart-icon"></i>
-                            <span class="position-absolute translate-middle badge rounded-pill bg-danger cart-badge" id="cart-badge" style="display: none;">0</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
+                </div>
         </div>
     </nav>
 
@@ -150,14 +170,15 @@
             </div>
         </div>
 
-        <div class="row g-3 g-md-4" id="lista-productos-publica">
+        <div class="row g-3" id="lista-productos-publica">
             <div id="loading-products" class="col-12 text-center py-5">
                 <div class="spinner-border text-primary" role="status" style="color: var(--color-primario) !important;">
                     <span class="visually-hidden">Cargando...</span>
                 </div>
                 <p class="mt-2">Cargando productos...</p>
             </div>
-        </div>
+
+            </div>
     </main>
 
     <footer class="text-center py-4 text-muted border-top mt-4">
@@ -172,7 +193,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
+                    <div class="row g-3">
                         <div class="col-md-6">
                             <img src="" id="product-modal-img" class="modal-img" alt="Producto">
                         </div>
@@ -231,8 +252,8 @@
                 <span>Total:</span>
                 <span id="cart-total">$0</span>
             </p>
-            <button class="btn btn-primary w-100" id="btn-whatsapp-order" data-bs-toggle="modal" data-bs-target="#checkoutModal">
-                <i class="bi bi-whatsapp me-2"></i> Continuar Pedido
+            <button class="btn btn-primary w-100" id="btn-checkout" data-bs-toggle="modal" data-bs-target="#checkoutModal">
+                <i class="bi bi-bag-check-fill me-2"></i> Continuar Pedido
             </button>
         </div>
     </div>
@@ -329,7 +350,7 @@
         const cartEmptyMsg = document.getElementById('cart-empty-msg');
         const cartFooter = document.getElementById('cart-footer');
         const cartTotalEl = document.getElementById('cart-total');
-        const cartBadge = document.getElementById('cart-badge');
+        const cartBadge = document.getElementById('cart-badge'); // Badge unificado
         
         // --- Checkout ---
         const checkoutModalEl = document.getElementById('checkoutModal');
@@ -357,8 +378,14 @@
                 const isAgotado = stockTotal <= 0;
                 const imagenUrl = product.imagenUrl || 'https://via.placeholder.com/300x300/f0f0f0/cccccc?text=Foto';
                 
+                // Info de variaciones para la tarjeta
+                const tallasUnicas = [...new Set(product.variaciones.map(v => v.talla).filter(Boolean))];
+                const coloresUnicos = [...new Set(product.variaciones.map(v => v.color).filter(Boolean))];
+                let variationsText = [tallasUnicas.length > 0 ? 'Tallas' : '', coloresUnicos.length > 0 ? 'Colores' : ''].filter(Boolean).join(' y ');
+                if (variationsText) variationsText += " disponibles";
+
                 const col = document.createElement('div');
-                col.className = 'col-lg-3 col-md-4 col-sm-6 col-12';
+                col.className = 'col-6 col-md-4 col-lg-3'; // 2 columnas en móvil
                 
                 col.innerHTML = `
                     <div class="card product-card h-100 ${isAgotado ? 'agotado' : ''}" data-bs-toggle="modal" data-bs-target="#productDetailModal" data-product-id="${id}">
@@ -366,7 +393,11 @@
                         <img src="${imagenUrl}" class="card-img-top" alt="${product.nombre}">
                         <div class="card-body d-flex flex-column">
                             <h5 class="card-title">${product.nombre}</h5>
-                            <p class="card-price mt-auto">${formatoMoneda.format(product.precioDetal)}</p>
+                            <small class="card-variations">${variationsText || '&nbsp;'}</small>
+                            <div class="mt-auto">
+                                <p class="card-price-mayor mb-0">${formatoMoneda.format(product.precioMayor || 0)} (Mayor)</p>
+                                <p class="card-price-detal mb-0">${formatoMoneda.format(product.precioDetal)} (Detal)</p>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -393,7 +424,7 @@
             
             // Resetear selects y botón
             selectTalla.innerHTML = '<option value="">Selecciona Talla...</option>';
-            selectColor.innerHTML = '<option value="">Selecciona Talla</option>';
+            selectColor.innerHTML = '<option value="">Selecciona Color</option>';
             selectColor.disabled = true;
             stockDisponible.textContent = '';
             btnAddToCart.disabled = true;
@@ -405,7 +436,7 @@
             const coloresUnicos = [...new Set(variaciones.map(v => v.color).filter(Boolean))];
 
             // Lógica para poblar Tallas
-            if (tallasUnicas.length === 0) {
+            if (tallasUnicas.length === 0 && variaciones.length > 0) {
                 selectTalla.innerHTML = '<option value="unica">Única</option>';
                 selectTalla.value = "unica";
             } else {
@@ -415,16 +446,15 @@
             }
 
             // Lógica para poblar Colores
-            if (coloresUnicos.length === 0) {
+            if (coloresUnicos.length === 0 && variaciones.length > 0) {
                 selectColor.innerHTML = '<option value="unico">Único</option>';
                 selectColor.value = "unico";
                 selectColor.disabled = false;
             } else {
-                // Si hay tallas, los colores se poblarán en el 'change' de talla
                 if (tallasUnicas.length > 0) {
-                    selectColor.disabled = true;
+                    selectColor.disabled = true; // Esperar a que se seleccione talla
                 } else {
-                    // Si NO hay tallas, pero sí colores
+                    // Si NO hay tallas, pero SÍ colores
                     selectColor.innerHTML = '<option value="">Selecciona Color...</option>';
                     coloresUnicos.forEach(color => {
                         selectColor.innerHTML += `<option value="${color}">${color}</option>`;
@@ -433,11 +463,14 @@
                 }
             }
             
-            // Si Talla y Color son únicos, disparar el 'change' para buscar stock
-            if (tallasUnicas.length === 0 && coloresUnicos.length === 0) {
+            // Si no hay variaciones de talla ni color (solo stock general)
+            if (tallasUnicas.length === 0 && coloresUnicos.length === 0 && variaciones.length > 0) {
+                selectTalla.value = "unica";
+                selectColor.value = "unico";
+                selectColor.disabled = false;
                 selectColor.dispatchEvent(new Event('change'));
             } else if (tallasUnicas.length === 0) { // Si solo talla es única
-                 selectColor.dispatchEvent(new Event('change'));
+                 selectTalla.dispatchEvent(new Event('change')); // Disparar para poblar colores
             }
         });
 
@@ -478,7 +511,6 @@
             
             const variaciones = product.variaciones || [];
             
-            // Encontrar la variación exacta
             const variacion = variaciones.find(v => 
                 (v.talla || 'unica') === selectedTalla && 
                 (v.color || 'unico') === selectedColor
@@ -502,14 +534,14 @@
         // --- Lógica del Carrito ---
         
         function addToCart(e) {
-            e.preventDefault(); // Evitar que el formulario se envíe
+            e.preventDefault(); 
             const product = productsMap.get(modalIdInput.value);
             const selectedTalla = selectTalla.value;
             const selectedColor = selectColor.value;
             const cantidad = parseInt(selectCantidad.value, 10);
             
             if (!product || !selectedTalla || !selectedColor || cantidad <= 0) {
-                alert("Por favor selecciona talla, color y cantidad."); // Fallback
+                alert("Por favor selecciona talla, color y cantidad."); 
                 return;
             }
 
@@ -537,8 +569,9 @@
                 cart.push({
                     cartItemId: cartItemId,
                     id: product.id,
+                    codigo: product.codigo || 'N/A', // <-- CÓDIGO AÑADIDO
                     nombre: product.nombre,
-                    precio: product.precioDetal, // Usar precio detal
+                    precio: product.precioDetal, 
                     talla: selectedTalla === 'unica' ? 'Única' : selectedTalla,
                     color: selectedColor === 'unico' ? 'Único' : selectedColor,
                     cantidad: cantidad,
@@ -549,6 +582,7 @@
             
             productModal.hide();
             renderCart();
+            cartOffcanvas.show(); // Mostrar carrito al agregar
         }
         
         function renderCart() {
@@ -624,23 +658,23 @@
                 let mensaje = "¡Hola Mishell Boutique! 👋 Me gustaría confirmar mi pedido:\n\n";
                 mensaje += "*DATOS DE ENVÍO:*\n";
                 mensaje += `*Dirección:* ${direccion}\n`;
-                if(observaciones) mensaje += `*Observaciones:* ${observaciones}\n`;
-                mensaje += `*Método de Pago:* ${pago}\n`;
+                if(observaciones) mensaje += `*Obs:* ${observaciones}\n`;
+                mensaje += `*Pago:* ${pago}\n`;
                 mensaje += `---------------------\n`;
                 mensaje += "*PRODUCTOS:*\n\n";
 
                 cart.forEach(item => {
-                    mensaje += `*Producto:* ${item.nombre}\n`;
-                    mensaje += `*Talla:* ${item.talla} / *Color:* ${item.color}\n`;
-                    mensaje += `*Cantidad:* ${item.cantidad}\n`;
-                    mensaje += `*Subtotal:* ${formatoMoneda.format(item.total)}\n`;
+                    mensaje += `*${item.nombre}*\n`;
+                    mensaje += `(Cód: ${item.codigo})\n`; // <-- CÓDIGO AÑADIDO
+                    mensaje += `Talla: ${item.talla} / Color: ${item.color}\n`;
+                    mensaje += `Cant: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}\n`;
                     mensaje += `---------------------\n`;
                 });
                 
                 const totalGeneral = cart.reduce((sum, item) => sum + item.total, 0);
                 mensaje += `\n*TOTAL DEL PEDIDO: ${formatoMoneda.format(totalGeneral)}*`;
                 
-                // Reemplaza 'TU_NUMERO' con tu número
+                // TU NÚMERO DE WHATSAPP
                 const numeroWhatsapp = "573046084971"; 
                 const url = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(mensaje)}`;
                 
@@ -657,6 +691,7 @@
 
 
         // --- Crear la consulta a Firebase ---
+        // (Asegúrate de crear este índice en tu consola de Firebase)
         const q = query(productsCollection, 
                         where("visible", "==", true), 
                         orderBy("timestamp", "desc")
