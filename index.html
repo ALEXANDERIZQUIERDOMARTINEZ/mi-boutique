@@ -59,6 +59,20 @@
             z-index: 10;
         }
 
+        /* === ESTILOS NUEVOS PARA MODALES (Sobrio y Clásico) === */
+        .modal-content, .offcanvas-content {
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,.08);
+        }
+        .modal-header, .offcanvas-header {
+            background-color: var(--color-primario-claro); /* Rosa pálido */
+            color: var(--color-primario); /* Rosa oscuro */
+            border-bottom: none; 
+        }
+        .modal-header .btn-close, .offcanvas-header .btn-close { filter: none; }
+        .modal-footer, .offcanvas-footer { border-top: 1px solid #eee; }
+
         /* Estilos Modal Producto */
         #productDetailModal .modal-img {
             width: 100%;
@@ -147,7 +161,7 @@
     </main>
 
     <footer class="text-center py-4 text-muted border-top mt-4">
-        <p class="mb-0">&copy; 2025 Mishell Boutique. Todos los derechos reservados.</p>
+        <p class="mb-0">&copy; 2024 Mishell Boutique. Todos los derechos reservados.</p>
     </footer>
 
     <div class="modal fade" id="productDetailModal" tabindex="-1">
@@ -203,7 +217,7 @@
     </div>
     
     <div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas">
-        <div class="offcanvas-header border-bottom">
+        <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="offcanvasLabel"><i class="bi bi-bag me-2"></i>Mi Carrito</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
@@ -217,9 +231,46 @@
                 <span>Total:</span>
                 <span id="cart-total">$0</span>
             </p>
-            <button class="btn btn-primary w-100" id="btn-whatsapp-order">
-                <i class="bi bi-whatsapp me-2"></i> Pedir por WhatsApp
+            <button class="btn btn-primary w-100" id="btn-whatsapp-order" data-bs-toggle="modal" data-bs-target="#checkoutModal">
+                <i class="bi bi-whatsapp me-2"></i> Continuar Pedido
             </button>
+        </div>
+    </div>
+
+    <div class="modal fade" id="checkoutModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Finalizar Pedido</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-checkout">
+                        <div class="mb-3">
+                            <label for="checkout-direccion" class="form-label">Dirección de Envío:</label>
+                            <input type="text" class="form-control" id="checkout-direccion" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="checkout-observaciones" class="form-label">Observaciones (ej. cómo llegar, apto, etc.):</label>
+                            <textarea class="form-control" id="checkout-observaciones" rows="2"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="checkout-pago" class="form-label">Método de Pago:</label>
+                            <select class="form-select" id="checkout-pago" required>
+                                <option value="">Selecciona...</option>
+                                <option value="Efectivo">Efectivo (Pago contra entrega)</option>
+                                <option value="Transferencia">Transferencia (Nequi/Bancolombia)</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver al Carrito</button>
+                    <button type="submit" class="btn btn-primary" id="btn-confirm-order" form="form-checkout">
+                        <i class="bi bi-whatsapp me-2"></i>Confirmar Pedido por WhatsApp
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -272,13 +323,18 @@
         // --- Carrito ---
         let cart = [];
         let productsMap = new Map(); // Caché de productos
-        const cartOffcanvas = new bootstrap.Offcanvas(document.getElementById('cartOffcanvas'));
+        const cartOffcanvasEl = document.getElementById('cartOffcanvas');
+        const cartOffcanvas = new bootstrap.Offcanvas(cartOffcanvasEl);
         const cartItemsContainer = document.getElementById('cart-items-container');
         const cartEmptyMsg = document.getElementById('cart-empty-msg');
         const cartFooter = document.getElementById('cart-footer');
         const cartTotalEl = document.getElementById('cart-total');
         const cartBadge = document.getElementById('cart-badge');
-        const btnWhatsapp = document.getElementById('btn-whatsapp-order');
+        
+        // --- Checkout ---
+        const checkoutModalEl = document.getElementById('checkoutModal');
+        const checkoutModal = new bootstrap.Modal(checkoutModalEl);
+        const formCheckout = document.getElementById('form-checkout');
 
         // --- Función para renderizar productos ---
         const renderProducts = (snapshot) => {
@@ -325,12 +381,9 @@
             const productId = button.dataset.productId;
             const product = productsMap.get(productId);
 
-            if (!product) {
-                console.error("Producto no encontrado en el caché");
-                return;
-            }
+            if (!product) { console.error("Producto no encontrado"); return; }
 
-            // Resetear modal
+            // Llenar info
             modalTitle.textContent = product.nombre;
             modalImg.src = product.imagenUrl || 'https://via.placeholder.com/400x400/f0f0f0/cccccc?text=Foto';
             modalDesc.textContent = product.descripcion || 'Sin descripción.';
@@ -338,7 +391,7 @@
             modalPriceMayor.textContent = `Mayor: ${formatoMoneda.format(product.precioMayor)}`;
             modalIdInput.value = productId;
             
-            // Resetear selects
+            // Resetear selects y botón
             selectTalla.innerHTML = '<option value="">Selecciona Talla...</option>';
             selectColor.innerHTML = '<option value="">Selecciona Talla</option>';
             selectColor.disabled = true;
@@ -347,19 +400,44 @@
             selectCantidad.value = 1;
             selectCantidad.max = 1;
 
-            // Poblar Tallas
             const variaciones = product.variaciones || [];
-            const tallasUnicas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))]; // Filtra tallas vacías
-            
-            if (tallasUnicas.length === 0 && variaciones.length > 0) {
-                // Caso: Producto sin talla (ej. solo color)
-                selectTalla.innerHTML = '<option value="unica">Talla Única</option>';
+            const tallasUnicas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))];
+            const coloresUnicos = [...new Set(variaciones.map(v => v.color).filter(Boolean))];
+
+            // Lógica para poblar Tallas
+            if (tallasUnicas.length === 0) {
+                selectTalla.innerHTML = '<option value="unica">Única</option>';
                 selectTalla.value = "unica";
-                selectTalla.dispatchEvent(new Event('change')); // Disparar cambio
             } else {
                 tallasUnicas.forEach(talla => {
                     selectTalla.innerHTML += `<option value="${talla}">${talla}</option>`;
                 });
+            }
+
+            // Lógica para poblar Colores
+            if (coloresUnicos.length === 0) {
+                selectColor.innerHTML = '<option value="unico">Único</option>';
+                selectColor.value = "unico";
+                selectColor.disabled = false;
+            } else {
+                // Si hay tallas, los colores se poblarán en el 'change' de talla
+                if (tallasUnicas.length > 0) {
+                    selectColor.disabled = true;
+                } else {
+                    // Si NO hay tallas, pero sí colores
+                    selectColor.innerHTML = '<option value="">Selecciona Color...</option>';
+                    coloresUnicos.forEach(color => {
+                        selectColor.innerHTML += `<option value="${color}">${color}</option>`;
+                    });
+                    selectColor.disabled = false;
+                }
+            }
+            
+            // Si Talla y Color son únicos, disparar el 'change' para buscar stock
+            if (tallasUnicas.length === 0 && coloresUnicos.length === 0) {
+                selectColor.dispatchEvent(new Event('change'));
+            } else if (tallasUnicas.length === 0) { // Si solo talla es única
+                 selectColor.dispatchEvent(new Event('change'));
             }
         });
 
@@ -369,32 +447,24 @@
             const product = productsMap.get(modalIdInput.value);
             if (!product || !selectedTalla) return;
 
-            // Resetear color y botón
             selectColor.innerHTML = '<option value="">Selecciona Color...</option>';
             selectColor.disabled = false;
             stockDisponible.textContent = '';
             btnAddToCart.disabled = true;
             
             const variaciones = product.variaciones || [];
-            let coloresDisponibles = [];
+            const coloresParaTalla = [...new Set(variaciones
+                .filter(v => (v.talla || 'unica') === selectedTalla)
+                .map(v => v.color)
+                .filter(Boolean)
+            )];
 
-            if (selectedTalla === 'unica') {
-                coloresDisponibles = [...new Set(variaciones.map(v => v.color).filter(Boolean))];
+            if (coloresParaTalla.length === 0) {
+                selectColor.innerHTML = '<option value="unico">Único</option>';
+                selectColor.value = "unico";
+                selectColor.dispatchEvent(new Event('change'));
             } else {
-                coloresDisponibles = [...new Set(variaciones
-                    .filter(v => v.talla === selectedTalla)
-                    .map(v => v.color)
-                    .filter(Boolean)
-                )];
-            }
-            
-            if (coloresDisponibles.length === 0 && variaciones.length > 0) {
-                 // Caso: Producto sin color (ej. solo talla)
-                 selectColor.innerHTML = '<option value="unico">Color Único</option>';
-                 selectColor.value = "unico";
-                 selectColor.dispatchEvent(new Event('change')); // Disparar cambio
-            } else {
-                coloresDisponibles.forEach(color => {
+                coloresParaTalla.forEach(color => {
                     selectColor.innerHTML += `<option value="${color}">${color}</option>`;
                 });
             }
@@ -409,16 +479,10 @@
             const variaciones = product.variaciones || [];
             
             // Encontrar la variación exacta
-            let variacion;
-            if(selectedTalla === 'unica' && selectedColor === 'unico') {
-                variacion = variaciones[0];
-            } else if (selectedTalla === 'unica') {
-                variacion = variaciones.find(v => v.color === selectedColor);
-            } else if (selectedColor === 'unico') {
-                variacion = variaciones.find(v => v.talla === selectedTalla);
-            } else {
-                variacion = variaciones.find(v => v.talla === selectedTalla && v.color === selectedColor);
-            }
+            const variacion = variaciones.find(v => 
+                (v.talla || 'unica') === selectedTalla && 
+                (v.color || 'unico') === selectedColor
+            );
             
             if (variacion && variacion.stock > 0) {
                 stockDisponible.textContent = `${variacion.stock} disponibles`;
@@ -437,18 +501,18 @@
         
         // --- Lógica del Carrito ---
         
-        function addToCart() {
+        function addToCart(e) {
+            e.preventDefault(); // Evitar que el formulario se envíe
             const product = productsMap.get(modalIdInput.value);
             const selectedTalla = selectTalla.value;
             const selectedColor = selectColor.value;
             const cantidad = parseInt(selectCantidad.value, 10);
             
             if (!product || !selectedTalla || !selectedColor || cantidad <= 0) {
-                showToast("Por favor selecciona talla, color y cantidad.", 'warning');
+                alert("Por favor selecciona talla, color y cantidad."); // Fallback
                 return;
             }
 
-            // Crear un ID único para el item del carrito (producto + talla + color)
             const cartItemId = `${product.id}-${selectedTalla}-${selectedColor}`;
             const existingItem = cart.find(item => item.cartItemId === cartItemId);
             
@@ -456,35 +520,33 @@
                 (v.talla || 'unica') === selectedTalla && 
                 (v.color || 'unico') === selectedColor
             );
-            
             const stock = variacion ? variacion.stock : 0;
             
             if (existingItem) {
                 if (existingItem.cantidad + cantidad > stock) {
-                    showToast(`No puedes agregar más. Solo hay ${stock} en stock.`, 'warning');
+                    alert(`No puedes agregar más. Solo hay ${stock} en stock.`);
                     return;
                 }
                 existingItem.cantidad += cantidad;
                 existingItem.total = existingItem.cantidad * existingItem.precio;
             } else {
                 if (cantidad > stock) {
-                    showToast(`No puedes agregar ${cantidad}. Solo hay ${stock} en stock.`, 'warning');
+                    alert(`No puedes agregar ${cantidad}. Solo hay ${stock} en stock.`);
                     return;
                 }
                 cart.push({
                     cartItemId: cartItemId,
                     id: product.id,
                     nombre: product.nombre,
-                    precio: product.precioDetal,
-                    talla: selectedTalla,
-                    color: selectedColor,
+                    precio: product.precioDetal, // Usar precio detal
+                    talla: selectedTalla === 'unica' ? 'Única' : selectedTalla,
+                    color: selectedColor === 'unico' ? 'Único' : selectedColor,
                     cantidad: cantidad,
                     total: cantidad * product.precioDetal,
                     imagenUrl: product.imagenUrl
                 });
             }
             
-            showToast(`${product.nombre} (${selectedTalla}/${selectedColor}) añadido al carrito!`, 'success');
             productModal.hide();
             renderCart();
         }
@@ -525,6 +587,11 @@
             }
         }
         
+        function clearCart() {
+            cart = [];
+            renderCart();
+        }
+
         // Evento para el botón de Agregar al Carrito
         btnAddToCart.addEventListener('click', addToCart);
 
@@ -539,29 +606,57 @@
             }
         });
         
-        // Evento para Pedido por WhatsApp
-        btnWhatsapp.addEventListener('click', (e) => {
-            e.preventDefault();
-            let mensaje = "¡Hola Mishell Boutique! 👋 Me gustaría pedir lo siguiente:\n\n";
-            cart.forEach(item => {
-                mensaje += `*Producto:* ${item.nombre}\n`;
-                mensaje += `*Talla:* ${item.talla}\n`;
-                mensaje += `*Color:* ${item.color}\n`;
-                mensaje += `*Cantidad:* ${item.cantidad}\n`;
-                mensaje += `*Subtotal:* ${formatoMoneda.format(item.total)}\n`;
+        // Evento para Confirmar Pedido (Formulario de Checkout)
+        if (formCheckout) {
+            formCheckout.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const direccion = document.getElementById('checkout-direccion').value;
+                const observaciones = document.getElementById('checkout-observaciones').value;
+                const pago = document.getElementById('checkout-pago').value;
+                
+                if (!direccion || !pago) {
+                    alert("Por favor completa la dirección y el método de pago.");
+                    return;
+                }
+                
+                // Construir Mensaje de WhatsApp
+                let mensaje = "¡Hola Mishell Boutique! 👋 Me gustaría confirmar mi pedido:\n\n";
+                mensaje += "*DATOS DE ENVÍO:*\n";
+                mensaje += `*Dirección:* ${direccion}\n`;
+                if(observaciones) mensaje += `*Observaciones:* ${observaciones}\n`;
+                mensaje += `*Método de Pago:* ${pago}\n`;
                 mensaje += `---------------------\n`;
+                mensaje += "*PRODUCTOS:*\n\n";
+
+                cart.forEach(item => {
+                    mensaje += `*Producto:* ${item.nombre}\n`;
+                    mensaje += `*Talla:* ${item.talla} / *Color:* ${item.color}\n`;
+                    mensaje += `*Cantidad:* ${item.cantidad}\n`;
+                    mensaje += `*Subtotal:* ${formatoMoneda.format(item.total)}\n`;
+                    mensaje += `---------------------\n`;
+                });
+                
+                const totalGeneral = cart.reduce((sum, item) => sum + item.total, 0);
+                mensaje += `\n*TOTAL DEL PEDIDO: ${formatoMoneda.format(totalGeneral)}*`;
+                
+                // Reemplaza 'TU_NUMERO' con tu número
+                const numeroWhatsapp = "573046084971"; 
+                const url = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(mensaje)}`;
+                
+                // Abrir WhatsApp
+                window.open(url, '_blank');
+                
+                // Limpiar todo
+                checkoutModal.hide();
+                cartOffcanvas.hide();
+                clearCart();
+                formCheckout.reset();
             });
-            const totalGeneral = cart.reduce((sum, item) => sum + item.total, 0);
-            mensaje += `\n*TOTAL DEL PEDIDO: ${formatoMoneda.format(totalGeneral)}*`;
-            
-            // Reemplaza 'TU_NUMERO' con tu número de WhatsApp con código de país (ej. 573046084971)
-            const numeroWhatsapp = "573046084971"; 
-            const url = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(mensaje)}`;
-            window.open(url, '_blank');
-        });
+        }
+
 
         // --- Crear la consulta a Firebase ---
-        // (La consulta que requiere el índice que debes crear)
         const q = query(productsCollection, 
                         where("visible", "==", true), 
                         orderBy("timestamp", "desc")
@@ -571,11 +666,10 @@
         onSnapshot(q, renderProducts, (error) => {
             console.error("Error al cargar productos: ", error);
             if (loadingEl) loadingEl.style.display = 'none';
-            // Mensaje de error amigable que incluye el enlace para crear el índice
             if (error.code === 'failed-precondition') {
                  productListContainer.innerHTML = `<div class="col-12 text-center text-danger">
                     <p><strong>Error de base de datos.</strong></p>
-                    <p>Parece que falta un índice de Firestore. Por favor, abre la consola (F12) y haz clic en el enlace que aparece en el error rojo para crearlo automáticamente.</p>
+                    <p>Falta un índice de Firestore. Abre la consola (F12) y haz clic en el enlace del error para crearlo.</p>
                  </div>`;
             } else {
                 productListContainer.innerHTML = `<p class="text-center text-danger">Error al cargar los productos.</p>`;
