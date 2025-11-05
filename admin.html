@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Estilos base si style.css no existe o está incompleto */
         :root { --color-primario: #D988B9; --color-primario-claro: #F5E8ED; }
         body { font-family: 'Poppins', sans-serif; background-color: #f8f9fa; }
         .admin-navbar { background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,.05); }
@@ -26,42 +25,24 @@
         .btn-primary:hover { background-color: #c473a2; border-color: #c473a2; }
         .btn-outline-secondary { border-color: #ced4da; color: #6c757d; }
         
-        /* Estilos UI Mínimos */
         #inventory-view, #sales-list-view, .delivery-fields, #delivery-history-view, #closing-history-view { display: none; }
         .add-supplier-btn, .add-client-btn { padding: 0.375rem 0.5rem; line-height: 1; }
         .client-info-display { background-color: #e9ecef; opacity: 1; }
         .action-buttons button { margin-right: 5px; }
-        .action-buttons button:last-child { margin-right: 0; }
         .table-product-img { max-width: 50px; height: auto; max-height: 65px; object-fit: cover; border-radius: 4px;}
         .toast-container { z-index: 1100; }
         
-        /* === ESTILOS MODALES (Sobrio y Clásico) === */
-        .modal-content {
-            border: none;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,.08);
-        }
-        .modal-header {
-            background-color: var(--color-primario-claro); /* Rosa pálido */
-            color: var(--color-primario); /* Rosa oscuro */
-            border-bottom: none; 
-            border-top-left-radius: 0.5rem;
-            border-top-right-radius: 0.5rem;
-        }
+        .modal-content { border: none; border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+        .modal-header { background-color: var(--color-primario-claro); color: var(--color-primario); border-bottom: none; border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; }
         .modal-header .btn-close { filter: none; }
-        /* Modal de Eliminar: Sobrio pero con advertencia */
-        #deleteConfirmModal .modal-header {
-            background-color: #fff; /* Fondo blanco */
-            color: #dc3545; /* Texto rojo */
-            border-bottom: 1px solid #eee;
-        }
+        #deleteConfirmModal .modal-header { background-color: #fff; color: #dc3545; border-bottom: 1px solid #eee; }
         .modal-footer { border-top: 1px solid #eee; }
         
-        /* Estilos para lista en modal de búsqueda */
         .search-modal-list .list-group-item { cursor: pointer; }
         .search-modal-list .list-group-item:hover { background-color: var(--color-primario-claro); }
         .search-modal-list .list-group-item .stock-info { font-size: 0.85em; color: #6c757d; }
         .search-modal-list .list-group-item .price-info { font-weight: 500; color: var(--color-primario); }
+        #stock-disponible-admin { font-size: 0.9rem; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -114,7 +95,7 @@
                 </div>
                 
                  <div id="form-view" style="display: none;"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0" id="product-form-title">Formulario Producto</h3></div> <div class="card-body"> <form id="form-producto"> <input type="hidden" id="producto-id"> <div class="row"> <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div> <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div> <div class="col-md-3 mb-3"> <label for="proveedor-producto" class="form-label">Proveedor:</label> <div class="input-group"> <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal" style="cursor: pointer;"> <input type="hidden" id="proveedor-producto-id"> <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button> </div> </div> </div> <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div> <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div> <hr class="my-4"> <h5 class="mb-3">Precios</h5> <div class="row"> <div class="col-md-4 mb-3"> <label for="costo-compra" class="form-label">Costo ($):</label> <input type="number" class="form-control" id="costo-compra" step="0.01" min="0" required> </div> <div class="col-md-4 mb-3"> <label for="precio-detal" class="form-label">P. Detal ($):</label> <input type="number" class="form-control" id="precio-detal" step="0.01" min="0" required> <small id="margen-detal-info" class="form-text text-muted"></small> </div> <div class="col-md-4 mb-3"> <label for="precio-mayor" class="form-label">P. Mayor ($):</label> <input type="number" class="form-control" id="precio-mayor" step="0.01" min="0"> <small id="margen-mayor-info" class="form-text text-muted"></small> </div> </div> <hr class="my-4"> <h5 class="mb-3">Variaciones</h5> <div id="variaciones-container"> </div> <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir</button> <hr class="my-4"> <div class="row"> <div class="col-md-8 mb-3"> <label for="imagen" class="form-label">Fotos:</label> <input type="file" class="form-control" id="imagen" accept="image/*" multiple> <small class="text-muted" id="image-upload-label">La 1ra será la principal. Si editas y no subes una nueva, se mantendrá la anterior.</small> </div> <div class="col-md-4 d-flex align-items-center"> <div class="form-check form-switch fs-5 w-100"> <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked> <label class="form-check-label" for="visibilidad">Visible</label> </div> </div> </div> <hr class="my-4"> <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> <button type="button" id="btn-clear-product-form" class="btn btn-outline-secondary ms-2">Limpiar</button> </form> </div> </div> </div> <div id="inventory-view"> <div class="input-group mb-3"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="search" id="search-inventory" class="form-control" placeholder="Buscar..."></div> <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr> <th>Foto</th> <th>Nombre</th> <th>Variaciones</th> <th>P. Detal</th> <th>P. Mayor</th> <th>Stock</th> <th>Estado</th> <th>Acciones</th> </tr></thead><tbody id="lista-inventario-productos"><tr id="empty-inventory-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr></tbody></table></div></div></div> </div> </div>
-            <div class="tab-pane fade" id="ventas"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Ventas</h1> <div class="btn-group"> <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Registrar</span></button> <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-list-check me-1"></i><span class="d-none d-md-inline"> Historial</span></button> </div> </div> <div id="sales-form-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Registrar Venta</h3></div> <div class="card-body"> <form id="form-venta"> <input type="hidden" id="venta-cliente-id"> <div class="row align-items-end"> <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label> <div class="input-group"> <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;"> <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button> </div> <div class="row mt-2 gx-2"> <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div> <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div> </div> </div> <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div> <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div> <div class="col-md-2 mb-3"> <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> </div> </div> <div class="row delivery-fields"> <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div> <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div> <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> </div> </div> <label for="venta-producto" class="form-label">Buscar Producto:</label> <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;"> <table class="table my-3"> <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead> <tbody id="venta-carrito"></tbody> </table> <hr> <div class="row"> <div class="col-md-6"> <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> </div> <div class="col-md-6"> <div class="row"> <div class="col-7"> <label for="venta-descuento" class="form-label">Descuento:</label> <input type="number" id="venta-descuento" class="form-control" value="0"> </div> <div class="col-5"> <label class="form-label">&nbsp;</label> <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> </div> </div> <label class="form-label mt-3">Pago:</label> <div class="input-group mb-2"> <span class="input-group-text">Efectivo $</span> <input type="number" id="pago-efectivo" class="form-control" value="0"> </div> <div class="input-group mb-3"> <span class="input-group-text">Transf. $</span> <input type="number" id="pago-transferencia" class="form-control" value="0"> </div> <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> <button type="submit" class="btn btn-primary w-100 mt-2">Registrar Venta</button> </div> </div> </form> </div> </div> </div> <div id="sales-list-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div> <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"> <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> </thead><tbody id="lista-ventas-anteriores"> <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr> </tbody></table></div></div></div> </div> </div>
+            <div class="tab-pane fade" id="ventas"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Ventas</h1> <div class="btn-group"> <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Registrar</span></button> <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-list-check me-1"></i><span class="d-none d-md-inline"> Historial</span></button> </div> </div> <div id="sales-form-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Registrar Venta</h3></div> <div class="card-body"> <form id="form-venta"> <input type="hidden" id="venta-cliente-id"> <div class="row align-items-end"> <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label> <div class="input-group"> <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;"> <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button> </div> <div class="row mt-2 gx-2"> <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div> <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div> </div> </div> <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div> <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div> <div class="col-md-2 mb-3"> <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> </div> </div> <div class="row delivery-fields"> <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div> <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div> <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> </div> </div> <label for="venta-producto" class="form-label">Buscar Producto:</label> <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;"> <table class="table my-3"> <thead><tr><th>Producto</th><th>Variación</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead> <tbody id="venta-carrito"></tbody> </table> <hr> <div class="row"> <div class="col-md-6"> <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> </div> <div class="col-md-6"> <div class="row"> <div class="col-7"> <label for="venta-descuento" class="form-label">Descuento:</label> <input type="number" id="venta-descuento" class="form-control" value="0"> </div> <div class="col-5"> <label class="form-label">&nbsp;</label> <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> </div> </div> <label class="form-label mt-3">Pago:</label> <div class="input-group mb-2"> <span class="input-group-text">Efectivo $</span> <input type="number" id="pago-efectivo" class="form-control" value="0"> </div> <div class="input-group mb-3"> <span class="input-group-text">Transf. $</span> <input type="number" id="pago-transferencia" class="form-control" value="0"> </div> <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-registrar-venta"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Registrar Venta</span> </button> </div> </div> </form> </div> </div> </div> <div id="sales-list-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div> <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"> <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> </thead><tbody id="lista-ventas-anteriores"> <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr> </tbody></table></div></div></div> </div> </div>
             <div class="tab-pane fade" id="apartados"> <h1 class="h2">Apartados</h1> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Pendientes</h3></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Cliente</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Vence</th><th>Acciones</th></tr></thead><tbody id="lista-apartados"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
             <div class="tab-pane fade" id="clientes"> <h1 class="h2">Clientes</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClientModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Nombre</th><th>Cédula</th><th>WhatsApp</th><th>Dirección</th><th>Última Compra</th><th>Acciones</th></tr></thead><tbody id="lista-clientes"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
             <div class="tab-pane fade" id="repartidores"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Repartidores</h1> <div class="btn-group"> <button type="button" id="toggle-delivery-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-bicycle me-1"></i><span class="d-none d-md-inline"> Hoy</span></button> <button type="button" id="toggle-delivery-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-md-inline"> Historial</span></button> </div> </div> <div id="delivery-today-view"> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Liquidación Hoy</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addRepartidorModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Repartidor</th><th># Ent.</th><th>Efec. Recibido</th><th>Rutas ($)</th><th>Rutas Transf. ($)</th><th>Efec. a Entregar ($)</th><th>Efec. Entregado ($)</th><th>Saldo ($)</th><th>Acciones</th></tr></thead><tbody id="lista-repartidores"><tr><td colspan="9" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div> <div id="delivery-history-view"> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div><div class="card-body"><form id="form-filter-delivery-history" class="mb-3"><div class="row"><div class="col-md-4"><label for="history-repartidor" class="form-label">Repartidor:</label><select id="history-repartidor" class="form-select"></select></div><div class="col-md-3"><label for="history-desde" class="form-label">Desde:</label><input type="date" id="history-desde" class="form-control"></div><div class="col-md-3"><label for="history-hasta" class="form-label">Hasta:</label><input type="date" id="history-hasta" class="form-control"></div><div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Filtrar</button></div></div></form><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Repartidor</th><th>Efec. Esperado</th><th>Efec. Entregado</th><th>Diferencia</th></tr></thead><tbody id="lista-historial-repartidores"><tr><td colspan="5" class="text-center text-muted">Filtra.</td></tr></tbody></table></div></div></div> </div> </div>
@@ -140,6 +121,47 @@
     <div class="modal fade" id="searchSupplierModal" tabindex="-1"> <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Buscar Proveedor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <input type="search" class="form-control mb-3" id="supplier-modal-search" placeholder="Buscar por nombre..."> <ul class="list-group search-modal-list" id="supplier-modal-list"> </ul> </div> </div> </div> </div>
     <div class="modal fade" id="searchClientModal" tabindex="-1"> <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Buscar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <input type="search" class="form-control mb-3" id="client-modal-search" placeholder="Buscar por nombre o cédula..."> <ul class="list-group search-modal-list" id="client-modal-list"> </ul> </div> </div> </div> </div>
     <div class="modal fade" id="searchProductModal" tabindex="-1"> <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Buscar Producto</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <input type="search" class="form-control mb-3" id="product-modal-search" placeholder="Buscar por nombre..."> <ul class="list-group search-modal-list" id="product-modal-list"> </ul> </div> </div> </div> </div>
+    
+    <div class="modal fade" id="selectVariationModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="variation-modal-title">Seleccionar Variación</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="variation-product-id">
+                    <input type="hidden" id="variation-product-name">
+                    <input type="hidden" id="variation-product-price">
+                    
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="select-talla-admin" class="form-label">Talla:</label>
+                            <select class="form-select" id="select-talla-admin" required>
+                                <option value="">Selecciona...</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="select-color-admin" class="form-label">Color:</label>
+                            <select class="form-select" id="select-color-admin" required disabled>
+                                <option value="">Selecciona Talla</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <label for="select-cantidad-admin" class="form-label mb-0">Cantidad:</label>
+                        <input type="number" class="form-control w-50" id="select-cantidad-admin" value="1" min="1" max="1">
+                        <span id="stock-disponible-admin" class="text-muted"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btn-add-to-sale-cart" disabled>Añadir al Carrito</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
@@ -147,7 +169,7 @@
     <script type="module">
         // Import Firebase core and Firestore modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
         // Import Storage
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
@@ -206,6 +228,7 @@
         let addClientModalInstance = null; let addRepartidorModalInstance = null; let addSupplierModalInstance = null; let addIncomeModalInstance = null; let addExpenseModalInstance = null; let editCategoryModalInstance = null; let deleteConfirmModalInstance = null;
         let editSupplierModalInstance = null; let editClientModalInstance = null;
         let searchSupplierModalInstance = null; let searchClientModalInstance = null; let searchProductModalInstance = null; let liquidateConfirmModalInstance = null;
+        let selectVariationModalInstance = null; // Nuevo modal
         let localClientsMap = new Map([["Cliente General", {id: null, celular: "", direccion: ""}]]);
         let localProductsMap = new Map(); // Cache local para productos
 
@@ -228,6 +251,7 @@
                 const searchClientModalEl = document.getElementById('searchClientModal'); if(searchClientModalEl) searchClientModalInstance = new bootstrap.Modal(searchClientModalEl);
                 const searchProductModalEl = document.getElementById('searchProductModal'); if(searchProductModalEl) searchProductModalInstance = new bootstrap.Modal(searchProductModalEl);
                 const liquidateConfirmModalEl = document.getElementById('liquidateConfirmModal'); if(liquidateConfirmModalEl) liquidateConfirmModalInstance = new bootstrap.Modal(liquidateConfirmModalEl);
+                const selectVariationModalEl = document.getElementById('selectVariationModal'); if(selectVariationModalEl) selectVariationModalInstance = new bootstrap.Modal(selectVariationModalEl);
              } catch (e) { console.error("Error initializing Modals:", e); }
 
              // --- Lógica Modal de Confirmación de Borrado ---
@@ -261,15 +285,16 @@
                                         await deleteObject(imageRef);
                                         console.log("Imagen eliminada de Storage:", imageUrl);
                                     } catch (storageErr) {
+                                        // No detener el borrado si la imagen falla (podría no existir)
                                         console.error("Error al eliminar imagen de Storage:", storageErr);
-                                        showToast("Producto eliminado, pero la imagen no se pudo borrar.", 'warning');
+                                        showToast("Producto eliminado. La imagen no se encontró en Storage.", 'warning');
                                     }
                                 }
                             }
                             
                             // Borrar el documento de Firestore
                             await deleteDoc(productDocRef);
-                            showToast("Producto e imagen eliminados!");
+                            showToast("Producto eliminado!");
                             
                         } catch (err) {
                             console.error(`Error deleting product:`, err); 
@@ -426,16 +451,22 @@
                 const cI=document.getElementById('costo-compra'); const pDI=document.getElementById('precio-detal'); const pMI=document.getElementById('precio-mayor'); const mDI=document.getElementById('margen-detal-info'); const mMI=document.getElementById('margen-mayor-info'); const fM_margin=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}); function cYM(){ if(!cI || !pDI || !pMI || !mDI || !mMI) return; const c=parseFloat(cI.value)||0; const pD=parseFloat(pDI.value)||0; const pM=parseFloat(pMI.value)||0; let mDV=0,mDP=0;if(c>0&&pD>=c){mDV=pD-c;mDP=(mDV/c)*100;mDI.textContent=`Margen: ${fM_margin.format(mDV)} (${mDP.toFixed(1)}%)`;mDI.style.color='';mDI.style.fontWeight='';}else{mDI.textContent='Margen: $0 (0.0%)';mDI.style.color=(pD>0&&pD<c)?'red':'';mDI.style.fontWeight=(pD>0&&pD<c)?'bold':'';if(pD>0&&pD<c)mDI.textContent='Margen Negativo';} let mMV=0,mMP=0;if(c>0&&pM>=c){mMV=pM-c;mMP=(mMV/c)*100;mMI.textContent=`Margen: ${fM_margin.format(mMV)} (${mMP.toFixed(1)}%)`;mMI.style.color='';mMI.style.fontWeight='';}else{mMI.textContent='Margen: $0 (0.0%)';mMI.style.color=(pM>0&&pM<c)?'red':'';mMI.style.fontWeight=(pM>0&&pM<c)?'bold':'';if(pM>0&&pM<c)mMI.textContent='Margen Negativo';}} if(cI)cI.addEventListener('input',cYM); if(pDI)pDI.addEventListener('input',cYM); if(pMI)pMI.addEventListener('input',cYM); if(cI) cYM();
                 
                 // --- LÓGICA DE PRODUCTOS ---
-                const renderProducts = (snapshot) => { localProductsMap.clear(); if(!productListTableBody) return; const emptyRow = document.getElementById('empty-inventory-row'); productListTableBody.innerHTML = ''; if(productSearchModalList) productSearchModalList.innerHTML = ''; if (snapshot.empty) { if(emptyRow) { emptyRow.style.display = ''; productListTableBody.appendChild(emptyRow); } return; } if(emptyRow) emptyRow.style.display = 'none'; 
+                const renderProducts = (snapshot) => { 
+                    localProductsMap.clear(); 
+                    if(productListTableBody) productListTableBody.innerHTML = ''; 
+                    if(productSearchModalList) productSearchModalList.innerHTML = ''; 
+                    const emptyRow = document.getElementById('empty-inventory-row'); 
+                    if (snapshot.empty) { if(emptyRow) { emptyRow.style.display = ''; if(productListTableBody) productListTableBody.appendChild(emptyRow); } return; } 
+                    if(emptyRow) emptyRow.style.display = 'none'; 
+                    
                     snapshot.forEach(docSnap => { 
                         const d = docSnap.data(); const id = docSnap.id; 
                         localProductsMap.set(id, d);
                         const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
                         const imagenUrl = d.imagenUrl || 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto'; 
                         
-                        // Añadir Tallas y Colores a la tabla
                         let variacionesHtml = (d.variaciones || [])
-                            .map(v => `<span class="badge bg-light text-dark me-1">${v.talla || ''} / ${v.color || ''} (Stock: ${v.stock})</span>`)
+                            .map(v => `<span class="badge bg-light text-dark me-1">${v.talla || 'N/A'} / ${v.color || 'N/A'} (S: ${v.stock})</span>`)
                             .join(' ');
                         if (variacionesHtml === '') variacionesHtml = '<small class="text-muted">Sin variaciones</small>';
                         
@@ -487,10 +518,13 @@
                         }
                         
                         if (productId) { 
-                            if (!productData.imagenUrl) { // Si no se subió imagen nueva
-                                const existingDoc = localProductsMap.get(productId);
-                                productData.imagenUrl = existingDoc?.imagenUrl || null; // Mantener la URL anterior si existía
+                            const existingDoc = localProductsMap.get(productId);
+                            if (files.length === 0 && existingDoc && existingDoc.imagenUrl) { // Si no se subió imagen nueva
+                                productData.imagenUrl = existingDoc.imagenUrl; // Mantener la URL anterior
+                            } else if (files.length === 0 && (!existingDoc || !existingDoc.imagenUrl)) {
+                                productData.imagenUrl = null; // No había y no se subió
                             }
+                            
                             await updateDoc(doc(db, "productos", productId), productData); 
                             showToast("Producto actualizado!"); 
                         } else { 
@@ -554,44 +588,294 @@
                  });
                  // Lógica del modal de búsqueda de productos
                 if (productSearchInput) productSearchInput.addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); const items = productSearchModalList.querySelectorAll('.product-search-item'); items.forEach(item => { item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'flex'; }); });
-                if (productSearchModalList && searchProductModalInstance) {
+                
+                // *** NUEVO: Listener para abrir el modal de selección de variación ***
+                if (productSearchModalList && searchProductModalInstance && selectVariationModalInstance) {
                     productSearchModalList.addEventListener('click', (e) => {
                         const target = e.target.closest('.product-search-item');
                         if (target && !target.classList.contains('disabled')) {
-                            window.dispatchEvent(new CustomEvent('addItemToCart', { detail: { id: target.dataset.id, nombre: target.dataset.nombre, precio: parseFloat(target.dataset.precio) }}));
-                            searchProductModalInstance.hide();
+                            const productId = target.dataset.id;
+                            const product = localProductsMap.get(productId);
+                            if (product) {
+                                // Llenar el nuevo modal de variación
+                                document.getElementById('variation-modal-title').textContent = product.nombre;
+                                document.getElementById('variation-product-id').value = productId;
+                                document.getElementById('variation-product-name').value = product.nombre;
+                                document.getElementById('variation-product-price').value = product.precioDetal; // O precioMayor
+                                
+                                const selectTallaAdmin = document.getElementById('select-talla-admin');
+                                const selectColorAdmin = document.getElementById('select-color-admin');
+                                
+                                selectTallaAdmin.innerHTML = '<option value="">Talla...</option>';
+                                selectColorAdmin.innerHTML = '<option value="">Color...</option>';
+                                selectColorAdmin.disabled = true;
+                                document.getElementById('stock-disponible-admin').textContent = '';
+                                document.getElementById('btn-add-to-sale-cart').disabled = true;
+
+                                const variaciones = product.variaciones || [];
+                                const tallasUnicas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))];
+                                const coloresUnicos = [...new Set(variaciones.map(v => v.color).filter(Boolean))];
+
+                                if (tallasUnicas.length === 0 && variaciones.length > 0) {
+                                    selectTallaAdmin.innerHTML = '<option value="unica">Única</option>';
+                                    selectTallaAdmin.value = "unica";
+                                } else {
+                                    tallasUnicas.forEach(talla => { selectTallaAdmin.innerHTML += `<option value="${talla}">${talla}</option>`; });
+                                }
+
+                                if (coloresUnicos.length === 0 && variaciones.length > 0) {
+                                    selectColorAdmin.innerHTML = '<option value="unico">Único</option>';
+                                    selectColorAdmin.value = "unico";
+                                    selectColorAdmin.disabled = false;
+                                } else {
+                                    if (tallasUnicas.length > 0) selectColorAdmin.disabled = true;
+                                    else {
+                                        coloresUnicos.forEach(color => { selectColorAdmin.innerHTML += `<option value="${color}">${color}</option>`; });
+                                        selectColorAdmin.disabled = false;
+                                    }
+                                }
+                                
+                                if (tallasUnicas.length === 0 && coloresUnicos.length === 0 && variaciones.length > 0) {
+                                    selectTallaAdmin.value = "unica";
+                                    selectColorAdmin.value = "unico";
+                                    selectColorAdmin.disabled = false;
+                                    selectColorAdmin.dispatchEvent(new Event('change'));
+                                } else if (tallasUnicas.length === 0) {
+                                    selectTallaAdmin.dispatchEvent(new Event('change'));
+                                }
+                                
+                                searchProductModalInstance.hide();
+                                selectVariationModalInstance.show();
+                            }
                         }
                     });
                 }
             })();
 
             // ========================================================================
-            // --- LÓGICA VENTAS (Funcional Add/Load, Placeholders) ---
+            // --- LÓGICA VENTAS (CON DESCUENTO DE STOCK) ---
             // ========================================================================
             (() => {
                  const salesForm = document.getElementById('form-venta'); const ventaClienteInput = document.getElementById('venta-cliente'); const tipoVentaSelect = document.getElementById('tipo-venta-select'); const tipoEntregaSelect = document.getElementById('tipo-entrega-select'); const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp'); const ventaRepartidorSelect = document.getElementById('venta-repartidor'); const costoRutaInput = document.getElementById('costo-ruta'); const rutaPagadaCheckbox = document.getElementById('ruta-pagada-transferencia'); const ventaProductoInput = document.getElementById('venta-producto'); const ventaCarritoTbody = document.getElementById('venta-carrito'); const ventaObservaciones = document.getElementById('venta-observaciones'); const ventaDescuentoInput = document.getElementById('venta-descuento'); const ventaDescuentoTipo = document.getElementById('venta-descuento-tipo'); const pagoEfectivoInput = document.getElementById('pago-efectivo'); const pagoTransferenciaInput = document.getElementById('pago-transferencia'); const ventaTotalSpan = document.getElementById('venta-total'); const salesListTableBody = document.getElementById('lista-ventas-anteriores'); let ventaItems = [];
                  if(!salesForm) { console.warn("Elementos de Ventas no encontrados."); return; }
                  
-                 window.addEventListener('addItemToCart', (e) => { const { id, nombre, precio } = e.detail; agregarItemAlCarrito(id, nombre, 1, precio); });
+                 // --- Lógica del modal de selección de variación ---
+                const selectTallaAdmin = document.getElementById('select-talla-admin');
+                const selectColorAdmin = document.getElementById('select-color-admin');
+                const selectCantidadAdmin = document.getElementById('select-cantidad-admin');
+                const stockDisponibleAdmin = document.getElementById('stock-disponible-admin');
+                const btnAddToSaleCart = document.getElementById('btn-add-to-sale-cart');
+
+                selectTallaAdmin.addEventListener('change', () => {
+                    const selectedTalla = selectTallaAdmin.value;
+                    const product = localProductsMap.get(document.getElementById('variation-product-id').value);
+                    if (!product || !selectedTalla) return;
+                    selectColorAdmin.innerHTML = '<option value="">Color...</option>';
+                    selectColorAdmin.disabled = false;
+                    stockDisponibleAdmin.textContent = '';
+                    btnAddToSaleCart.disabled = true;
+                    const variaciones = product.variaciones || [];
+                    const coloresParaTalla = [...new Set(variaciones.filter(v => (v.talla || 'unica') === selectedTalla).map(v => v.color).filter(Boolean))];
+                    if (coloresParaTalla.length === 0) {
+                        selectColorAdmin.innerHTML = '<option value="unico">Único</option>';
+                        selectColorAdmin.value = "unico";
+                        selectColorAdmin.dispatchEvent(new Event('change'));
+                    } else {
+                        coloresParaTalla.forEach(color => { selectColorAdmin.innerHTML += `<option value="${color}">${color}</option>`; });
+                    }
+                });
+
+                selectColorAdmin.addEventListener('change', () => {
+                    const selectedTalla = selectTallaAdmin.value;
+                    const selectedColor = selectColorAdmin.value;
+                    const product = localProductsMap.get(document.getElementById('variation-product-id').value);
+                    if (!product || !selectedTalla || !selectedColor) return;
+                    const variaciones = product.variaciones || [];
+                    const variacion = variaciones.find(v => (v.talla || 'unica') === selectedTalla && (v.color || 'unico') === selectedColor);
+                    
+                    if (variacion && variacion.stock > 0) {
+                        stockDisponibleAdmin.textContent = `${variacion.stock} disponibles`;
+                        stockDisponibleAdmin.className = "text-success";
+                        selectCantidadAdmin.max = variacion.stock;
+                        selectCantidadAdmin.value = 1;
+                        btnAddToSaleCart.disabled = false;
+                    } else {
+                        stockDisponibleAdmin.textContent = 'Agotado';
+                        stockDisponibleAdmin.className = "text-danger";
+                        selectCantidadAdmin.max = 0;
+                        selectCantidadAdmin.value = 0;
+                        btnAddToSaleCart.disabled = true;
+                    }
+                });
+                
+                // Botón "Añadir al Carrito" del modal de variación
+                btnAddToSaleCart.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const productId = document.getElementById('variation-product-id').value;
+                    const nombre = document.getElementById('variation-product-name').value;
+                    const precio = parseFloat(document.getElementById('variation-product-price').value);
+                    const talla = selectTallaAdmin.value;
+                    const color = selectColorAdmin.value;
+                    const cantidad = parseInt(selectCantidadAdmin.value, 10);
+                    const stockMax = parseInt(selectCantidadAdmin.max, 10);
+                    
+                    if (cantidad > stockMax) {
+                        showToast(`No puedes agregar ${cantidad}. Solo hay ${stockMax} en stock.`, 'warning');
+                        return;
+                    }
+
+                    agregarItemAlCarrito(productId, nombre, cantidad, precio, talla, color);
+                    selectVariationModalInstance.hide();
+                });
                  
-                 function agregarItemAlCarrito(productoId, nombre, cantidad, precio) { const existingItem = ventaItems.find(item => item.productoId === productoId); if (existingItem) { existingItem.cantidad += cantidad; existingItem.total = existingItem.cantidad * existingItem.precio; } else { const totalItem = cantidad * precio; ventaItems.push({ productoId, nombre, cantidad, precio, total: totalItem }); } renderCarrito(); calcularTotalVentaGeneral(); }
+                 function agregarItemAlCarrito(productoId, nombre, cantidad, precio, talla, color) { 
+                    const cartItemId = `${productoId}-${talla}-${color}`;
+                    const existingItem = ventaItems.find(item => item.cartItemId === cartItemId); 
+                    
+                    if (existingItem) { 
+                        existingItem.cantidad += cantidad; 
+                        existingItem.total = existingItem.cantidad * existingItem.precio; 
+                    } else { 
+                        const totalItem = cantidad * precio; 
+                        ventaItems.push({ cartItemId, productoId, nombre, cantidad, precio, total: totalItem, talla, color }); 
+                    } 
+                    renderCarrito(); 
+                    calcularTotalVentaGeneral(); 
+                 }
                  function quitarItemDelCarrito(index) { ventaItems.splice(index, 1); renderCarrito(); calcularTotalVentaGeneral(); }
-                 function renderCarrito() { ventaCarritoTbody.innerHTML = ''; ventaItems.forEach((item, index) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${item.nombre}</td><td><input type="number" class="form-control form-control-sm item-qty-input" value="${item.cantidad}" min="1" data-index="${index}"></td><td>${formatoMoneda.format(item.precio)}</td><td>${formatoMoneda.format(item.total)}</td><td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 btn-quitar-item" data-index="${index}">&times;</button></td>`; ventaCarritoTbody.appendChild(tr); }); }
-                 if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('change', (e) => { if (e.target.classList.contains('item-qty-input')) { const index = parseInt(e.target.dataset.index, 10); const newQty = parseInt(e.target.value, 10); if (newQty > 0 && ventaItems[index]) { ventaItems[index].cantidad = newQty; ventaItems[index].total = newQty * ventaItems[index].precio; renderCarrito(); calcularTotalVentaGeneral(); } } });
+                 function renderCarrito() { 
+                    ventaCarritoTbody.innerHTML = ''; 
+                    ventaItems.forEach((item, index) => { 
+                        const tr = document.createElement('tr'); 
+                        tr.innerHTML = `<td>${item.nombre}</td>
+                                        <td><small class="text-muted">${item.talla}/${item.color}</small></td>
+                                        <td><input type="number" class="form-control form-control-sm item-qty-input" value="${item.cantidad}" min="1" data-index="${index}"></td>
+                                        <td>${formatoMoneda.format(item.precio)}</td>
+                                        <td>${formatoMoneda.format(item.total)}</td>
+                                        <td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 btn-quitar-item" data-index="${index}">&times;</button></td>`; 
+                        ventaCarritoTbody.appendChild(tr); 
+                    }); 
+                 }
+                 if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('change', async (e) => { 
+                    if (e.target.classList.contains('item-qty-input')) { 
+                        const index = parseInt(e.target.dataset.index, 10); 
+                        const newQty = parseInt(e.target.value, 10); 
+                        const item = ventaItems[index];
+                        if (newQty > 0 && item) {
+                            // Re-validar stock
+                            const product = localProductsMap.get(item.productoId);
+                            const variacion = product.variaciones.find(v => (v.talla || 'unica') === item.talla && (v.color || 'unico') === item.color);
+                            if (newQty > variacion.stock) {
+                                showToast(`Solo hay ${variacion.stock} disponibles.`, 'warning');
+                                e.target.value = variacion.stock; // Corregir
+                                item.cantidad = variacion.stock;
+                            } else {
+                                item.cantidad = newQty;
+                            }
+                            item.total = item.cantidad * item.precio; 
+                            renderCarrito(); 
+                            calcularTotalVentaGeneral(); 
+                        } 
+                    } 
+                 });
                  if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('click', (e) => { e.preventDefault(); if (e.target.closest('.btn-quitar-item')) { quitarItemDelCarrito(parseInt(e.target.closest('.btn-quitar-item').dataset.index, 10)); } });
                  function calcularTotalVentaGeneral() { let subtotalItems = ventaItems.reduce((sum, item) => sum + item.total, 0); let costoRuta = 0; if (tipoEntregaSelect.value === 'domicilio') { costoRuta = parseFloat(costoRutaInput.value) || 0; } let descuento = parseFloat(ventaDescuentoInput.value) || 0; if (ventaDescuentoTipo.value === 'porcentaje') { descuento = subtotalItems * (descuento / 100); } const totalFinal = subtotalItems - descuento + costoRuta; if(ventaTotalSpan) ventaTotalSpan.textContent = formatoMoneda.format(totalFinal); return totalFinal; }
                  if(costoRutaInput) costoRutaInput.addEventListener('input', calcularTotalVentaGeneral); if(ventaDescuentoInput) ventaDescuentoInput.addEventListener('input', calcularTotalVentaGeneral); if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', calcularTotalVentaGeneral); if(ventaDescuentoTipo) ventaDescuentoTipo.addEventListener('change', calcularTotalVentaGeneral);
+                 
                  const renderSales = (snapshot) => { if(!salesListTableBody) return; const emptyRow = document.getElementById('empty-sales-row'); salesListTableBody.innerHTML = ''; if (snapshot.empty) { if(emptyRow) { emptyRow.style.display = ''; salesListTableBody.appendChild(emptyRow); } return; } if(emptyRow) emptyRow.style.display = 'none'; snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); tr.dataset.id = id; const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A'; const pago = (d.pagoEfectivo>0?'Efec.':'') + (d.pagoTransferencia>0?(d.pagoEfectivo>0?'+':''):'') + (d.pagoTransferencia>0?'Transf.':''); const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge' : '-'); const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada'); tr.innerHTML = `<td>${fecha}</td><td>${d.clienteNombre || 'General'}</td><td>${d.tipoVenta}</td><td>${formatoMoneda.format(d.totalVenta||0)}</td><td>${pago||'-'}</td><td>${repartidor}</td><td><span class="badge ${estado==='Completada'?'bg-success':(estado==='Pendiente'?'bg-warning':'bg-danger')}">${estado}</span></td><td class="action-buttons"><button class="btn btn-sm btn-outline-primary py-0 px-1 btn-view-sale" title="Ver"><i class="bi bi-eye"></i></button>${d.tipoVenta === 'apartado' ? '<button class="btn btn-sm btn-outline-warning py-0 px-1 btn-manage-apartado" title="Gestionar"><i class="bi bi-calendar-heart"></i></button>' : ''}<button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-sale" title="Cancelar"><i class="bi bi-trash"></i></button></td>`; salesListTableBody.appendChild(tr); }); };
                  onSnapshot(query(salesCollection, orderBy('timestamp', 'desc')), renderSales, e => { console.error("Error sales:", e); if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
-                if (salesForm) salesForm.addEventListener('submit', async (e) => { e.preventDefault(); if (ventaItems.length === 0) { showToast("Agrega productos.", 'warning'); return; } const totalCalculado = calcularTotalVentaGeneral(); const ventaData = { clienteNombre: ventaClienteInput.value || "Cliente General", tipoVenta: tipoVentaSelect.value, tipoEntrega: tipoEntregaSelect.value, pedidoWhatsapp: ventaWhatsappCheckbox.checked, repartidorId: tipoEntregaSelect.value === 'domicilio' ? ventaRepartidorSelect.value : null, costoRuta: tipoEntregaSelect.value === 'domicilio' ? (parseFloat(costoRutaInput.value) || 0) : 0, rutaPagadaTransferencia: tipoEntregaSelect.value === 'domicilio' ? rutaPagadaCheckbox.checked : false, items: ventaItems, observaciones: ventaObservaciones.value.trim(), descuento: parseFloat(ventaDescuentoInput.value) || 0, descuentoTipo: ventaDescuentoTipo.value, pagoEfectivo: parseFloat(pagoEfectivoInput.value) || 0, pagoTransferencia: parseFloat(pagoTransferenciaInput.value) || 0, totalVenta: totalCalculado, estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada', timestamp: serverTimestamp() }; if (ventaData.tipoVenta !== 'apartado' && (ventaData.pagoEfectivo + ventaData.pagoTransferencia < totalCalculado)) { showToast("El pago no cubre el total.", 'warning'); return; } try { const docRef = await addDoc(salesCollection, ventaData); showToast("Venta registrada!"); if (ventaData.tipoVenta === 'apartado') { const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia; try { await addDoc(apartadosCollection, { ventaId: docRef.id, clienteNombre: ventaData.clienteNombre, total: ventaData.totalVenta, abonado: abonoInicial, saldo: ventaData.totalVenta - abonoInicial, fechaCreacion: ventaData.timestamp, fechaVencimiento: null, estado: 'Pendiente' }); } catch(apErr) { console.error("Error creando apartado:", apErr); showToast("Venta guardada, error al crear apartado.", 'error'); } } console.warn("Actualización de stock pendiente."); salesForm.reset(); ventaItems = []; renderCarrito(); fillClientInfoSales(); tipoVentaSelect.value='detal'; tipoEntregaSelect.value='tienda'; toggleDeliveryFields(); calcularTotalVentaGeneral(); } catch (err) { console.error("Error saving sale:", err); showToast(`Error: ${err.message}`, 'error'); } });
+                
+                // --- LÓGICA DE GUARDAR VENTA Y DESCONTAR STOCK ---
+                if (salesForm) salesForm.addEventListener('submit', async (e) => { 
+                    e.preventDefault(); 
+                    if (ventaItems.length === 0) { showToast("Agrega productos.", 'warning'); return; } 
+                    
+                    const btn = document.getElementById('btn-registrar-venta');
+                    const btnText = btn.querySelector('.save-text');
+                    const btnSpinner = btn.querySelector('.spinner-border');
+                    btn.disabled = true; btnText.textContent = "Registrando..."; btnSpinner.style.display = 'inline-block';
+
+                    const totalCalculado = calcularTotalVentaGeneral(); 
+                    const ventaData = { clienteNombre: ventaClienteInput.value || "Cliente General", tipoVenta: tipoVentaSelect.value, tipoEntrega: tipoEntregaSelect.value, pedidoWhatsapp: ventaWhatsappCheckbox.checked, repartidorId: tipoEntregaSelect.value === 'domicilio' ? ventaRepartidorSelect.value : null, costoRuta: tipoEntregaSelect.value === 'domicilio' ? (parseFloat(costoRutaInput.value) || 0) : 0, rutaPagadaTransferencia: tipoEntregaSelect.value === 'domicilio' ? rutaPagadaCheckbox.checked : false, items: ventaItems, observaciones: ventaObservaciones.value.trim(), descuento: parseFloat(ventaDescuentoInput.value) || 0, descuentoTipo: ventaDescuentoTipo.value, pagoEfectivo: parseFloat(pagoEfectivoInput.value) || 0, pagoTransferencia: parseFloat(pagoTransferenciaInput.value) || 0, totalVenta: totalCalculado, estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada', timestamp: serverTimestamp() }; 
+                    
+                    if (ventaData.tipoVenta !== 'apartado' && (ventaData.pagoEfectivo + ventaData.pagoTransferencia < totalCalculado)) { 
+                        showToast("El pago no cubre el total.", 'warning'); 
+                        btn.disabled = false; btnText.textContent = "Registrar Venta"; btnSpinner.style.display = 'none';
+                        return; 
+                    } 
+                    
+                    try {
+                        // Usar una transacción para asegurar que el stock se descuente correctamente
+                        await runTransaction(db, async (transaction) => {
+                            const saleRef = doc(collection(db, "ventas")); // Crear referencia para la nueva venta
+                            
+                            // 1. Validar stock y preparar actualizaciones
+                            for (const item of ventaData.items) {
+                                const productRef = doc(db, "productos", item.productoId);
+                                const productDoc = await transaction.get(productRef);
+                                if (!productDoc.exists()) {
+                                    throw new Error(`Producto ${item.nombre} no encontrado.`);
+                                }
+                                
+                                const productData = productDoc.data();
+                                const variaciones = productData.variaciones || [];
+                                const variacionIndex = variaciones.findIndex(v => (v.talla || 'unica') === item.talla && (v.color || 'unico') === item.color);
+                                
+                                if (variacionIndex === -1) {
+                                    throw new Error(`Variación ${item.talla}/${item.color} de ${item.nombre} no encontrada.`);
+                                }
+                                
+                                const stockActual = variaciones[variacionIndex].stock || 0;
+                                if (stockActual < item.cantidad) {
+                                    throw new Error(`Stock insuficiente para ${item.nombre} (${item.talla}/${item.color}). Solo quedan ${stockActual}.`);
+                                }
+                                
+                                // Preparar la actualización de la variación
+                                productData.variaciones[variacionIndex].stock = stockActual - item.cantidad;
+                                // Poner la actualización en la transacción
+                                transaction.update(productRef, { variaciones: productData.variaciones });
+                            }
+                            
+                            // 2. Si todo el stock es válido, crear la venta
+                            transaction.set(saleRef, ventaData);
+                            
+                            // 3. (Opcional) Crear apartado si es necesario
+                            if (ventaData.tipoVenta === 'apartado') {
+                                const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia;
+                                const apartadoRef = doc(collection(db, "apartados"));
+                                transaction.set(apartadoRef, {
+                                    ventaId: saleRef.id,
+                                    clienteNombre: ventaData.clienteNombre,
+                                    total: ventaData.totalVenta,
+                                    abonado: abonoInicial,
+                                    saldo: ventaData.totalVenta - abonoInicial,
+                                    fechaCreacion: ventaData.timestamp,
+                                    fechaVencimiento: null, // Puedes añadir lógica para esto
+                                    estado: 'Pendiente'
+                                });
+                            }
+                        });
+
+                        showToast("¡Venta registrada y stock actualizado!");
+                        salesForm.reset(); 
+                        ventaItems = []; 
+                        renderCarrito(); 
+                        fillClientInfoSales(); 
+                        tipoVentaSelect.value='detal'; 
+                        tipoEntregaSelect.value='tienda'; 
+                        toggleDeliveryFields(); 
+                        calcularTotalVentaGeneral();
+                        
+                    } catch (err) { 
+                        console.error("Error en la transacción de venta: ", err); 
+                        showToast(`Error: ${err.message}`, 'error'); 
+                    } finally {
+                        btn.disabled = false; btnText.textContent = "Registrar Venta"; btnSpinner.style.display = 'none';
+                    }
+                });
                 if(salesListTableBody) salesListTableBody.addEventListener('click', (e)=>{ e.preventDefault(); const target = e.target.closest('button'); if (!target) return; const id = target.closest('tr')?.dataset.id; if (!id) return; if(target.classList.contains('btn-view-sale')) showToast(`Ver ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-cancel-sale')) showToast(`Cancelar ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-manage-apartado')) showToast(`Gestionar ${id} (Pendiente)`, 'warning'); });
                 
-                function toggleDeliveryFields(){
-                    const tES = document.getElementById('tipo-entrega-select');
-                    const dFD = document.querySelector('.delivery-fields');
-                    const cRI = document.getElementById('costo-ruta');
-                    if (dFD && tES && cRI) { if (tES.value === 'domicilio') { dFD.style.display = 'flex'; } else { dFD.style.display = 'none'; cRI.value = 0; } }
-                }
+                function toggleDeliveryFields(){ const tES = document.getElementById('tipo-entrega-select'); const dFD = document.querySelector('.delivery-fields'); const cRI = document.getElementById('costo-ruta'); if (dFD && tES && cRI) { if (tES.value === 'domicilio') { dFD.style.display = 'flex'; } else { dFD.style.display = 'none'; cRI.value = 0; } } }
                 document.getElementById('tipo-entrega-select').addEventListener('change', toggleDeliveryFields);
                 toggleDeliveryFields();
                 calcularTotalVentaGeneral();
@@ -604,7 +888,7 @@
                  const apartadosListTableBody = document.getElementById('lista-apartados');
                  if(!apartadosListTableBody) { console.warn("Elementos de Apartados no encontrados."); return; }
                  const renderApartados = (snapshot) => { apartadosListTableBody.innerHTML = ''; if (snapshot.empty) { apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay apartados pendientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const ap = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); tr.dataset.id = id; const vence = ap.fechaVencimiento?.toDate ? ap.fechaVencimiento.toDate().toLocaleDateString('es-CO') : 'N/A'; tr.innerHTML = `<td>${ap.clienteNombre || '?'}</td><td>${formatoMoneda.format(ap.total || 0)}</td><td>${formatoMoneda.format(ap.abonado || 0)}</td><td>${formatoMoneda.format(ap.saldo || 0)}</td><td>${vence}</td><td class="action-buttons"><button class="btn btn-sm btn-outline-success py-0 px-1 btn-abono-apartado" title="Abono"><i class="bi bi-cash-coin"></i></button><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-apartado" title="Editar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-apartado" title="Cancelar"><i class="bi bi-trash"></i></button></td>`; apartadosListTableBody.appendChild(tr); }); };
-                  const q = query(apartadosCollection, where('estado', '==', 'Pendiente'), orderBy('fechaVencimiento'));
+                  const q = query(apartadosCollection, where('estado', '==', 'Pendiente'), orderBy('fechaCreacion', 'desc'));
                   onSnapshot(q, renderApartados, e => { console.error("Error apartados:", e); if(apartadosListTableBody) apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';});
                   if(apartadosListTableBody) apartadosListTableBody.addEventListener('click', (e)=>{ e.preventDefault(); const target = e.target.closest('button'); if (!target) return; const id = target.closest('tr')?.dataset.id; if(!id) return; if(target.classList.contains('btn-abono-apartado')) showToast(`Abono ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-edit-apartado')) showToast(`Editar ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-cancel-apartado')) showToast(`Cancelar ${id} (Pendiente)`, 'warning'); });
             })();
@@ -626,11 +910,11 @@
             // ========================================================================
             (() => {
                 // Toggles
-                const fV_prod = document.getElementById('form-view'); const iV_prod = document.getElementById('inventory-view'); const tIB_prod = document.getElementById('toggle-inventory-view-btn'); const tFB_prod = document.getElementById('toggle-form-view-btn'); if(fV_prod && iV_prod && tIB_prod && tFB_prod){ tIB_prod.addEventListener('click',(e)=>{ e.preventDefault(); fV_prod.style.display='none'; iV_prod.style.display='block'; tIB_prod.classList.add('active'); tFB_prod.classList.remove('active');}); tFB_prod.addEventListener('click',(e)=>{ e.preventDefault(); iV_prod.style.display='none'; fV_prod.style.display='block'; tFB_prod.classList.add('active'); tIB_prod.classList.remove('active'); clearProductForm(); }); iV_prod.style.display='block'; tIB_prod.classList.add('active'); } else { console.warn("Product view toggle missing."); }
+                const fV_prod = document.getElementById('form-view'); const iV_prod = document.getElementById('inventory-view'); const tIB_prod = document.getElementById('toggle-inventory-view-btn'); const tFB_prod = document.getElementById('toggle-form-view-btn'); if(fV_prod && iV_prod && tIB_prod && tFB_prod){ tIB_prod.addEventListener('click',(e)=>{ e.preventDefault(); fV_prod.style.display='none'; iV_prod.style.display='block'; tIB_prod.classList.add('active'); tFB_prod.classList.remove('active');}); tFB_prod.addEventListener('click',(e)=>{ e.preventDefault(); iV_prod.style.display='none'; fV_prod.style.display='block'; tFB_prod.classList.add('active'); tIB_prod.classList.remove('active'); document.getElementById('form-producto').reset(); document.getElementById('producto-id').value = ''; /* Limpiar formulario */ }); iV_prod.style.display='block'; tIB_prod.classList.add('active'); } else { console.warn("Product view toggle missing."); }
                 const sFV = document.getElementById('sales-form-view'); const sLV = document.getElementById('sales-list-view'); const tSLB = document.getElementById('toggle-sales-list-view-btn'); const tSFB = document.getElementById('toggle-sales-form-view-btn'); if(sFV && sLV && tSLB && tSFB){ tSLB.addEventListener('click',(e)=>{ e.preventDefault(); sFV.style.display='none'; sLV.style.display='block'; tSLB.classList.add('active'); tSFB.classList.remove('active'); }); tSFB.addEventListener('click',(e)=>{ e.preventDefault(); sLV.style.display='none'; sFV.style.display='block'; tSFB.classList.add('active'); tSLB.classList.remove('active'); }); sFV.style.display='block'; tSFB.classList.add('active'); } else { console.warn("Sales view toggle missing."); }
                  const todayViewR = document.getElementById('delivery-today-view'); const historyViewR = document.getElementById('delivery-history-view'); const toggleHistoryBtnR = document.getElementById('toggle-delivery-history-btn'); const toggleTodayBtnR = document.getElementById('toggle-delivery-today-btn'); if (todayViewR && historyViewR && toggleHistoryBtnR && toggleTodayBtnR) { toggleHistoryBtnR.addEventListener('click', (e) => { e.preventDefault(); todayViewR.style.display = 'none'; historyViewR.style.display = 'block'; toggleHistoryBtnR.classList.add('active'); toggleTodayBtnR.classList.remove('active'); }); toggleTodayBtnR.addEventListener('click', (e) => { e.preventDefault(); historyViewR.style.display = 'none'; todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); toggleHistoryBtnR.classList.remove('active'); }); todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); } else { console.warn("Delivery view toggle missing."); }
                 const tCV = document.getElementById('closing-today-view'); const hCV = document.getElementById('closing-history-view'); const tHB = document.getElementById('toggle-closing-history-btn'); const tTB = document.getElementById('toggle-closing-today-btn'); if (tCV && hCV && tHB && tTB) { tHB.addEventListener('click', (e) => { e.preventDefault(); tCV.style.display = 'none'; hCV.style.display = 'block'; tHB.classList.add('active'); tTB.classList.remove('active'); }); tTB.addEventListener('click', (e) => { e.preventDefault(); hCV.style.display = 'none'; tCV.style.display = 'block'; tTB.classList.add('active'); tHB.classList.remove('active'); }); tCV.style.display = 'block'; tTB.classList.add('active'); } else { console.warn("Finance closing view toggle missing."); }
-                                
+                
                 // Domicilio y Autollenar Cliente
                 const tES = document.getElementById('tipo-entrega-select'); const dFD = document.querySelector('.delivery-fields'); const cRI = document.getElementById('costo-ruta'); const vCI_fill = document.getElementById('venta-cliente'); const cCI_fill = document.getElementById('venta-cliente-celular'); const cDI_fill = document.getElementById('venta-cliente-direccion'); 
                 document.addEventListener('clientsLoaded', (event) => { localClientsMap = event.detail.clientsMap; fCIS_UI(); }); 
