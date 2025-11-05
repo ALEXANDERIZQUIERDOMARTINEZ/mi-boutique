@@ -33,9 +33,11 @@
         }
         .product-card .card-img-top {
             height: 200px; /* Altura optimizada para grid móvil */
-            object-fit: cover;
+            object-fit: contain; /* Muestra la imagen completa */
+            background-color: #fff; /* Fondo blanco para imágenes no cuadradas */
             border-top-left-radius: 0.5rem;
             border-top-right-radius: 0.5rem;
+            padding: 0.25rem; /* Pequeño padding */
         }
         .product-card .card-body {
             display: flex;
@@ -106,7 +108,8 @@
         #productDetailModal .modal-img {
             width: 100%;
             height: 400px;
-            object-fit: cover;
+            object-fit: contain; /* Imagen completa también en modal */
+            background-color: #fff;
             border-radius: 0.5rem;
         }
         #productDetailModal .price-detal {
@@ -177,13 +180,21 @@
                 </div>
                 <p class="mt-2">Cargando productos...</p>
             </div>
-
-            </div>
+        </div>
     </main>
 
     <footer class="text-center py-4 text-muted border-top mt-4">
         <p class="mb-0">&copy; 2024 Mishell Boutique. Todos los derechos reservados.</p>
     </footer>
+    
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div id="liveToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toast-body"> Mensaje. </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    </div>
 
     <div class="modal fade" id="productDetailModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -268,6 +279,14 @@
                 <div class="modal-body">
                     <form id="form-checkout">
                         <div class="mb-3">
+                            <label for="checkout-nombre" class="form-label">Nombre Completo:</label>
+                            <input type="text" class="form-control" id="checkout-nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="checkout-whatsapp" class="form-label">Número de WhatsApp:</label>
+                            <input type="tel" class="form-control" id="checkout-whatsapp" placeholder="Ej: 3001234567" required>
+                        </div>
+                        <div class="mb-3">
                             <label for="checkout-direccion" class="form-label">Dirección de Envío:</label>
                             <input type="text" class="form-control" id="checkout-direccion" required>
                         </div>
@@ -288,7 +307,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver al Carrito</button>
                     <button type="submit" class="btn btn-primary" id="btn-confirm-order" form="form-checkout">
-                        <i class="bi bi-whatsapp me-2"></i>Confirmar Pedido por WhatsApp
+                        <i class="bi bi-whatsapp me-2"></i>Confirmar Pedido
                     </button>
                 </div>
             </div>
@@ -301,7 +320,7 @@
     <script type="module">
         // Importar funciones necesarias
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
         // Configuración de Firebase (LA MISMA que en admin.html)
         const firebaseConfig = {
@@ -318,9 +337,27 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const productsCollection = collection(db, 'productos');
+        const webOrdersCollection = collection(db, 'pedidosWeb'); // <-- NUEVA COLECCIÓN
 
         // Helper: Formato de Moneda
         const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
+
+        // --- Helper: Show Toast Notification ---
+        let bsToast = null;
+        function showToast(message, type = 'success', title = 'Notificación') {
+            const liveToastEl = document.getElementById('liveToast');
+            const toastBodyEl = document.getElementById('toast-body');
+            
+            if (liveToastEl && toastBodyEl) {
+                if (!bsToast) { try { bsToast = new bootstrap.Toast(liveToastEl, { delay: 4000 }); } catch (e) { console.error("Toast init error", e); return; }}
+                liveToastEl.className = 'toast align-items-center border-0'; // Reset classes
+                const bgClass = type === 'error' ? 'text-bg-danger' : (type === 'warning' ? 'text-bg-warning' : (type === 'info' ? 'text-bg-info' : 'text-bg-success'));
+                liveToastEl.classList.add(bgClass, 'text-white');
+                let iconClass = type === 'success' ? 'bi-check-circle-fill' : (type === 'error' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill');
+                toastBodyEl.innerHTML = `<i class="bi ${iconClass} me-2"></i> ${message}`;
+                bsToast.show();
+            } else { console.warn("Toast elements not found:", message); alert(`${type.toUpperCase()}: ${message}`); }
+        }
 
         // --- Elementos del DOM ---
         const productListContainer = document.getElementById('lista-productos-publica');
@@ -374,13 +411,12 @@
                 const id = doc.id;
                 productsMap.set(id, product); // Guardar en caché
 
-                const stockTotal = product.variaciones ? product.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
+                const stockTotal = (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
                 const isAgotado = stockTotal <= 0;
                 const imagenUrl = product.imagenUrl || 'https://via.placeholder.com/300x300/f0f0f0/cccccc?text=Foto';
                 
-                // Info de variaciones para la tarjeta
-                const tallasUnicas = [...new Set(product.variaciones.map(v => v.talla).filter(Boolean))];
-                const coloresUnicos = [...new Set(product.variaciones.map(v => v.color).filter(Boolean))];
+                const tallasUnicas = [...new Set((product.variaciones || []).map(v => v.talla).filter(Boolean))];
+                const coloresUnicos = [...new Set((product.variaciones || []).map(v => v.color).filter(Boolean))];
                 let variationsText = [tallasUnicas.length > 0 ? 'Tallas' : '', coloresUnicos.length > 0 ? 'Colores' : ''].filter(Boolean).join(' y ');
                 if (variationsText) variationsText += " disponibles";
 
@@ -541,31 +577,34 @@
             const cantidad = parseInt(selectCantidad.value, 10);
             
             if (!product || !selectedTalla || !selectedColor || cantidad <= 0) {
-                alert("Por favor selecciona talla, color y cantidad."); 
+                showToast("Por favor selecciona talla, color y cantidad.", 'warning');
                 return;
             }
-
-            const cartItemId = `${product.id}-${selectedTalla}-${selectedColor}`;
-            const existingItem = cart.find(item => item.cartItemId === cartItemId);
             
             const variacion = product.variaciones.find(v => 
                 (v.talla || 'unica') === selectedTalla && 
                 (v.color || 'unico') === selectedColor
             );
-            const stock = variacion ? variacion.stock : 0;
+            const stock = variacion ? parseInt(variacion.stock, 10) : 0;
+            
+            // --- VALIDACIÓN DE STOCK ---
+            if (cantidad > stock) {
+                 showToast(`No puedes agregar ${cantidad}. Solo hay ${stock} en stock.`, 'warning');
+                 selectCantidad.value = stock; // Auto-corregir
+                 return;
+            }
+
+            const cartItemId = `${product.id}-${selectedTalla}-${selectedColor}`;
+            const existingItem = cart.find(item => item.cartItemId === cartItemId);
             
             if (existingItem) {
                 if (existingItem.cantidad + cantidad > stock) {
-                    alert(`No puedes agregar más. Solo hay ${stock} en stock.`);
+                    showToast(`Ya tienes ${existingItem.cantidad} en el carrito. No puedes agregar ${cantidad} más. Solo hay ${stock} en stock.`, 'warning');
                     return;
                 }
                 existingItem.cantidad += cantidad;
                 existingItem.total = existingItem.cantidad * existingItem.precio;
             } else {
-                if (cantidad > stock) {
-                    alert(`No puedes agregar ${cantidad}. Solo hay ${stock} en stock.`);
-                    return;
-                }
                 cart.push({
                     cartItemId: cartItemId,
                     id: product.id,
@@ -580,6 +619,7 @@
                 });
             }
             
+            showToast(`${product.nombre} (${selectedTalla}/${selectedColor}) añadido al carrito!`, 'success');
             productModal.hide();
             renderCart();
             cartOffcanvas.show(); // Mostrar carrito al agregar
@@ -642,50 +682,84 @@
         
         // Evento para Confirmar Pedido (Formulario de Checkout)
         if (formCheckout) {
-            formCheckout.addEventListener('submit', (e) => {
+            formCheckout.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const btnConfirm = document.getElementById('btn-confirm-order');
+                btnConfirm.disabled = true;
                 
+                const nombre = document.getElementById('checkout-nombre').value;
+                const whatsapp = document.getElementById('checkout-whatsapp').value;
                 const direccion = document.getElementById('checkout-direccion').value;
                 const observaciones = document.getElementById('checkout-observaciones').value;
                 const pago = document.getElementById('checkout-pago').value;
                 
-                if (!direccion || !pago) {
-                    alert("Por favor completa la dirección y el método de pago.");
+                if (!nombre || !whatsapp || !direccion || !pago) {
+                    showToast("Por favor completa todos los campos.", 'warning');
+                    btnConfirm.disabled = false;
                     return;
                 }
                 
-                // Construir Mensaje de WhatsApp
-                let mensaje = "¡Hola Mishell Boutique! 👋 Me gustaría confirmar mi pedido:\n\n";
-                mensaje += "*DATOS DE ENVÍO:*\n";
-                mensaje += `*Dirección:* ${direccion}\n`;
-                if(observaciones) mensaje += `*Obs:* ${observaciones}\n`;
-                mensaje += `*Pago:* ${pago}\n`;
-                mensaje += `---------------------\n`;
-                mensaje += "*PRODUCTOS:*\n\n";
-
-                cart.forEach(item => {
-                    mensaje += `*${item.nombre}*\n`;
-                    mensaje += `(Cód: ${item.codigo})\n`; // <-- CÓDIGO AÑADIDO
-                    mensaje += `Talla: ${item.talla} / Color: ${item.color}\n`;
-                    mensaje += `Cant: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}\n`;
-                    mensaje += `---------------------\n`;
-                });
-                
                 const totalGeneral = cart.reduce((sum, item) => sum + item.total, 0);
-                mensaje += `\n*TOTAL DEL PEDIDO: ${formatoMoneda.format(totalGeneral)}*`;
-                
-                // TU NÚMERO DE WHATSAPP
-                const numeroWhatsapp = "573046084971"; 
-                const url = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(mensaje)}`;
-                
-                // Abrir WhatsApp
-                window.open(url, '_blank');
-                
-                // Limpiar todo
-                checkoutModal.hide();
-                cartOffcanvas.hide();
-                clearCart();
-                formCheckout.reset();
+
+                // *** PASO A: Guardar el pedido en Firebase ***
+                const pedidoData = {
+                    datosCliente: {
+                        nombre: nombre,
+                        whatsapp: whatsapp,
+                        direccion: direccion,
+                        observaciones: observaciones,
+                        metodoPago: pago,
+                    },
+                    items: cart, // El carrito completo
+                    totalPedido: totalGeneral,
+                    estado: "pendiente", // Estado inicial
+                    timestamp: serverTimestamp()
+                };
+
+                try {
+                    // Guardar en la nueva colección
+                    await addDoc(webOrdersCollection, pedidoData);
+                    
+                    // *** PASO B: Generar mensaje de WhatsApp ***
+                    let mensaje = "¡Hola Mishell Boutique! 👋 Me gustaría confirmar mi pedido:\n\n";
+                    mensaje += "*DATOS DE ENVÍO:*\n";
+                    mensaje += `*Nombre:* ${nombre}\n`;
+                    mensaje += `*WhatsApp:* ${whatsapp}\n`;
+                    mensaje += `*Dirección:* ${direccion}\n`;
+                    if(observaciones) mensaje += `*Obs:* ${observaciones}\n`;
+                    mensaje += `*Pago:* ${pago}\n`;
+                    mensaje += `---------------------\n`;
+                    mensaje += "*PRODUCTOS:*\n\n";
+
+                    cart.forEach(item => {
+                        mensaje += `*${item.nombre}*\n`;
+                        mensaje += `(Cód: ${item.codigo})\n`;
+                        mensaje += `Talla: ${item.talla} / Color: ${item.color}\n`;
+                        mensaje += `Cant: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}\n`;
+                        mensaje += `---------------------\n`;
+                    });
+                    
+                    mensaje += `\n*TOTAL DEL PEDIDO: ${formatoMoneda.format(totalGeneral)}*`;
+                    
+                    const numeroWhatsapp = "573046084971"; 
+                    const url = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(mensaje)}`;
+                    
+                    // Abrir WhatsApp
+                    window.open(url, '_blank');
+                    
+                    // Limpiar todo
+                    checkoutModal.hide();
+                    cartOffcanvas.hide();
+                    clearCart();
+                    formCheckout.reset();
+                    showToast("¡Pedido enviado! Tu pedido está en revisión.", 'success');
+
+                } catch (err) {
+                    console.error("Error al guardar pedido: ", err);
+                    showToast("Error al guardar el pedido. Por favor, inténtalo de nuevo.", 'error');
+                } finally {
+                    btnConfirm.disabled = false;
+                }
             });
         }
 
