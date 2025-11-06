@@ -327,7 +327,7 @@
             apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
             authDomain: "mishell-boutique-admin.firebaseapp.com",
             projectId: "mishell-boutique-admin",
-            storageBucket: "mishell-boutique-admin.appspot.com",
+            storageBucket: "mishell-boutique-admin.firebasestorage.app",
             messagingSenderId: "399662956877",
             appId: "1:399662956877:web:084236f5bb3cf6f0a8f704",
             measurementId: "G-TZ3WQ8LSXH"
@@ -337,7 +337,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const productsCollection = collection(db, 'productos');
-        const webOrdersCollection = collection(db, 'pedidosWeb'); // <-- NUEVA COLECCIÓN
+        const webOrdersCollection = collection(db, 'pedidosWeb');
 
         // Helper: Formato de Moneda
         const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
@@ -350,7 +350,7 @@
             
             if (liveToastEl && toastBodyEl) {
                 if (!bsToast) { try { bsToast = new bootstrap.Toast(liveToastEl, { delay: 4000 }); } catch (e) { console.error("Toast init error", e); return; }}
-                liveToastEl.className = 'toast align-items-center border-0'; // Reset classes
+                liveToastEl.className = 'toast align-items-center border-0';
                 const bgClass = type === 'error' ? 'text-bg-danger' : (type === 'warning' ? 'text-bg-warning' : (type === 'info' ? 'text-bg-info' : 'text-bg-success'));
                 liveToastEl.classList.add(bgClass, 'text-white');
                 let iconClass = type === 'success' ? 'bi-check-circle-fill' : (type === 'error' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill');
@@ -380,14 +380,14 @@
         
         // --- Carrito ---
         let cart = [];
-        let productsMap = new Map(); // Caché de productos
+        let productsMap = new Map();
         const cartOffcanvasEl = document.getElementById('cartOffcanvas');
         const cartOffcanvas = new bootstrap.Offcanvas(cartOffcanvasEl);
         const cartItemsContainer = document.getElementById('cart-items-container');
         const cartEmptyMsg = document.getElementById('cart-empty-msg');
         const cartFooter = document.getElementById('cart-footer');
         const cartTotalEl = document.getElementById('cart-total');
-        const cartBadge = document.getElementById('cart-badge'); // Badge unificado
+        const cartBadge = document.getElementById('cart-badge');
         
         // --- Checkout ---
         const checkoutModalEl = document.getElementById('checkoutModal');
@@ -409,7 +409,7 @@
             snapshot.forEach(doc => {
                 const product = doc.data();
                 const id = doc.id;
-                productsMap.set(id, product); // Guardar en caché
+                productsMap.set(id, product);
 
                 const stockTotal = (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
                 const isAgotado = stockTotal <= 0;
@@ -421,7 +421,7 @@
                 if (variationsText) variationsText += " disponibles";
 
                 const col = document.createElement('div');
-                col.className = 'col-6 col-md-4 col-lg-3'; // 2 columnas en móvil
+                col.className = 'col-6 col-md-4 col-lg-3';
                 
                 col.innerHTML = `
                     <div class="card product-card h-100 ${isAgotado ? 'agotado' : ''}" data-bs-toggle="modal" data-bs-target="#productDetailModal" data-product-id="${id}">
@@ -450,7 +450,6 @@
 
             if (!product) { console.error("Producto no encontrado"); return; }
 
-            // Llenar info
             modalTitle.textContent = product.nombre;
             modalImg.src = product.imagenUrl || 'https://via.placeholder.com/400x400/f0f0f0/cccccc?text=Foto';
             modalDesc.textContent = product.descripcion || 'Sin descripción.';
@@ -458,7 +457,6 @@
             modalPriceMayor.textContent = `Mayor: ${formatoMoneda.format(product.precioMayor)}`;
             modalIdInput.value = productId;
             
-            // Resetear selects y botón
             selectTalla.innerHTML = '<option value="">Selecciona Talla...</option>';
             selectColor.innerHTML = '<option value="">Selecciona Color</option>';
             selectColor.disabled = true;
@@ -471,7 +469,6 @@
             const tallasUnicas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))];
             const coloresUnicos = [...new Set(variaciones.map(v => v.color).filter(Boolean))];
 
-            // Lógica para poblar Tallas
             if (tallasUnicas.length === 0 && variaciones.length > 0) {
                 selectTalla.innerHTML = '<option value="unica">Única</option>';
                 selectTalla.value = "unica";
@@ -481,16 +478,14 @@
                 });
             }
 
-            // Lógica para poblar Colores
             if (coloresUnicos.length === 0 && variaciones.length > 0) {
                 selectColor.innerHTML = '<option value="unico">Único</option>';
                 selectColor.value = "unico";
                 selectColor.disabled = false;
             } else {
                 if (tallasUnicas.length > 0) {
-                    selectColor.disabled = true; // Esperar a que se seleccione talla
+                    selectColor.disabled = true;
                 } else {
-                    // Si NO hay tallas, pero SÍ colores
                     selectColor.innerHTML = '<option value="">Selecciona Color...</option>';
                     coloresUnicos.forEach(color => {
                         selectColor.innerHTML += `<option value="${color}">${color}</option>`;
@@ -499,18 +494,16 @@
                 }
             }
             
-            // Si no hay variaciones de talla ni color (solo stock general)
             if (tallasUnicas.length === 0 && coloresUnicos.length === 0 && variaciones.length > 0) {
                 selectTalla.value = "unica";
                 selectColor.value = "unico";
                 selectColor.disabled = false;
                 selectColor.dispatchEvent(new Event('change'));
-            } else if (tallasUnicas.length === 0) { // Si solo talla es única
-                 selectTalla.dispatchEvent(new Event('change')); // Disparar para poblar colores
+            } else if (tallasUnicas.length === 0) {
+                 selectTalla.dispatchEvent(new Event('change'));
             }
         });
 
-        // --- Lógica Talla -> Color -> Stock ---
         selectTalla.addEventListener('change', () => {
             const selectedTalla = selectTalla.value;
             const product = productsMap.get(modalIdInput.value);
@@ -568,7 +561,6 @@
         });
         
         // --- Lógica del Carrito ---
-        
         function addToCart(e) {
             e.preventDefault(); 
             const product = productsMap.get(modalIdInput.value);
@@ -587,10 +579,9 @@
             );
             const stock = variacion ? parseInt(variacion.stock, 10) : 0;
             
-            // --- VALIDACIÓN DE STOCK ---
             if (cantidad > stock) {
                  showToast(`No puedes agregar ${cantidad}. Solo hay ${stock} en stock.`, 'warning');
-                 selectCantidad.value = stock; // Auto-corregir
+                 selectCantidad.value = stock;
                  return;
             }
 
@@ -608,7 +599,7 @@
                 cart.push({
                     cartItemId: cartItemId,
                     id: product.id,
-                    codigo: product.codigo || 'N/A', // <-- CÓDIGO AÑADIDO
+                    codigo: product.codigo || 'N/A',
                     nombre: product.nombre,
                     precio: product.precioDetal, 
                     talla: selectedTalla === 'unica' ? 'Única' : selectedTalla,
@@ -622,7 +613,7 @@
             showToast(`${product.nombre} (${selectedTalla}/${selectedColor}) añadido al carrito!`, 'success');
             productModal.hide();
             renderCart();
-            cartOffcanvas.show(); // Mostrar carrito al agregar
+            cartOffcanvas.show();
         }
         
         function renderCart() {
@@ -666,112 +657,124 @@
             renderCart();
         }
 
-        // Evento para el botón de Agregar al Carrito
         btnAddToCart.addEventListener('click', addToCart);
 
-        // Evento para remover items del carrito
         cartItemsContainer.addEventListener('click', (e) => {
             const target = e.target.closest('.btn-remove-from-cart');
             if (target) {
                 e.preventDefault();
                 const index = parseInt(target.dataset.index, 10);
-                cart.splice(index, 1); // Quitar el item del array
-                renderCart(); // Volver a dibujar el carrito
+                cart.splice(index, 1);
+                renderCart();
             }
         });
         
-        // Evento para Confirmar Pedido (Formulario de Checkout)
+        // ============================================
+        // NUEVA LÓGICA DE CHECKOUT CON PEDIDOS WEB
+        // ============================================
         if (formCheckout) {
             formCheckout.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const btnConfirm = document.getElementById('btn-confirm-order');
+                const originalText = btnConfirm.innerHTML;
                 btnConfirm.disabled = true;
+                btnConfirm.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
                 
-                const nombre = document.getElementById('checkout-nombre').value;
-                const whatsapp = document.getElementById('checkout-whatsapp').value;
-                const direccion = document.getElementById('checkout-direccion').value;
-                const observaciones = document.getElementById('checkout-observaciones').value;
+                const nombre = document.getElementById('checkout-nombre').value.trim();
+                const whatsapp = document.getElementById('checkout-whatsapp').value.trim();
+                const direccion = document.getElementById('checkout-direccion').value.trim();
+                const observaciones = document.getElementById('checkout-observaciones').value.trim();
                 const pago = document.getElementById('checkout-pago').value;
                 
                 if (!nombre || !whatsapp || !direccion || !pago) {
-                    showToast("Por favor completa todos los campos.", 'warning');
+                    showToast("Por favor completa todos los campos obligatorios.", 'warning');
                     btnConfirm.disabled = false;
+                    btnConfirm.innerHTML = originalText;
                     return;
                 }
                 
                 const totalGeneral = cart.reduce((sum, item) => sum + item.total, 0);
 
-                // *** PASO A: Guardar el pedido en Firebase ***
                 const pedidoData = {
-                    datosCliente: {
-                        nombre: nombre,
-                        whatsapp: whatsapp,
-                        direccion: direccion,
-                        observaciones: observaciones,
-                        metodoPago: pago,
-                    },
-                    items: cart, // El carrito completo
+                    clienteNombre: nombre,
+                    clienteCelular: whatsapp,
+                    clienteDireccion: direccion,
+                    observaciones: observaciones,
+                    metodoPagoSolicitado: pago,
+                    
+                    items: cart.map(item => ({
+                        productoId: item.id,
+                        codigo: item.codigo,
+                        nombre: item.nombre,
+                        talla: item.talla,
+                        color: item.color,
+                        cantidad: item.cantidad,
+                        precio: item.precio,
+                        total: item.total
+                    })),
+                    
                     totalPedido: totalGeneral,
-                    estado: "pendiente", // Estado inicial
-                    timestamp: serverTimestamp()
+                    estado: "pendiente",
+                    timestamp: serverTimestamp(),
+                    origen: "web"
                 };
 
                 try {
-                    // Guardar en la nueva colección
-                    await addDoc(webOrdersCollection, pedidoData);
+                    const docRef = await addDoc(webOrdersCollection, pedidoData);
+                    console.log("Pedido guardado con ID:", docRef.id);
                     
-                    // *** PASO B: Generar mensaje de WhatsApp ***
-                    let mensaje = "¡Hola Mishell Boutique! 👋 Me gustaría confirmar mi pedido:\n\n";
-                    mensaje += "*DATOS DE ENVÍO:*\n";
-                    mensaje += `*Nombre:* ${nombre}\n`;
-                    mensaje += `*WhatsApp:* ${whatsapp}\n`;
-                    mensaje += `*Dirección:* ${direccion}\n`;
-                    if(observaciones) mensaje += `*Obs:* ${observaciones}\n`;
-                    mensaje += `*Pago:* ${pago}\n`;
-                    mensaje += `---------------------\n`;
+                    let mensaje = "¡Hola Mishell Boutique! 👋\n\n";
+                    mensaje += "Acabo de realizar un pedido desde tu catálogo web:\n\n";
+                    mensaje += "*📦 PEDIDO #" + docRef.id.substring(0, 8).toUpperCase() + "*\n\n";
+                    mensaje += "*DATOS DE ENTREGA:*\n";
+                    mensaje += `👤 ${nombre}\n`;
+                    mensaje += `📱 ${whatsapp}\n`;
+                    mensaje += `📍 ${direccion}\n`;
+                    if(observaciones) mensaje += `📝 ${observaciones}\n`;
+                    mensaje += `💳 Método de pago preferido: ${pago}\n`;
+                    mensaje += `\n━━━━━━━━━━━━━━━━\n\n`;
                     mensaje += "*PRODUCTOS:*\n\n";
 
-                    cart.forEach(item => {
-                        mensaje += `*${item.nombre}*\n`;
-                        mensaje += `(Cód: ${item.codigo})\n`;
-                        mensaje += `Talla: ${item.talla} / Color: ${item.color}\n`;
-                        mensaje += `Cant: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}\n`;
-                        mensaje += `---------------------\n`;
+                    cart.forEach((item, index) => {
+                        mensaje += `${index + 1}. *${item.nombre}*\n`;
+                        mensaje += `   📏 Talla: ${item.talla} | 🎨 Color: ${item.color}\n`;
+                        mensaje += `   🔢 Cantidad: ${item.cantidad}\n`;
+                        mensaje += `   💰 ${formatoMoneda.format(item.precio)} x ${item.cantidad} = ${formatoMoneda.format(item.total)}\n\n`;
                     });
                     
-                    mensaje += `\n*TOTAL DEL PEDIDO: ${formatoMoneda.format(totalGeneral)}*`;
+                    mensaje += `━━━━━━━━━━━━━━━━\n`;
+                    mensaje += `\n*💵 TOTAL: ${formatoMoneda.format(totalGeneral)}*\n\n`;
+                    mensaje += `_Este pedido está en revisión. Te confirmaré pronto_ ✨`;
                     
                     const numeroWhatsapp = "573046084971"; 
                     const url = `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(mensaje)}`;
                     
-                    // Abrir WhatsApp
                     window.open(url, '_blank');
                     
-                    // Limpiar todo
                     checkoutModal.hide();
                     cartOffcanvas.hide();
                     clearCart();
                     formCheckout.reset();
-                    showToast("¡Pedido enviado! Tu pedido está en revisión.", 'success');
+                    
+                    showToast("✅ ¡Pedido enviado! Tu pedido está en revisión. Te contactaremos pronto por WhatsApp.", 'success');
+                    
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
 
                 } catch (err) {
                     console.error("Error al guardar pedido: ", err);
-                    showToast("Error al guardar el pedido. Por favor, inténtalo de nuevo.", 'error');
+                    showToast("❌ Error al procesar tu pedido. Por favor, intenta nuevamente.", 'error');
                 } finally {
                     btnConfirm.disabled = false;
+                    btnConfirm.innerHTML = originalText;
                 }
             });
         }
 
-
-        // --- Crear la consulta a Firebase ---
-        // (Asegúrate de crear este índice en tu consola de Firebase)
         const q = query(productsCollection, 
                         where("visible", "==", true), 
                         orderBy("timestamp", "desc")
                     );
 
-        // --- Escuchar cambios en tiempo real ---
         onSnapshot(q, renderProducts, (error) => {
             console.error("Error al cargar productos: ", error);
             if (loadingEl) loadingEl.style.display = 'none';
