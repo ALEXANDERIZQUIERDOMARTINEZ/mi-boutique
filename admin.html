@@ -58,6 +58,7 @@
                     <li class="nav-item"> <a href="#dashboard" class="nav-link active" data-bs-toggle="pill"><i class="bi bi-grid-1x2-fill me-1"></i> Dashboard</a> </li>
                     <li class="nav-item"> <a href="#productos" class="nav-link" data-bs-toggle="pill"><i class="bi bi-box-seam-fill me-1"></i> Productos</a> </li>
                     <li class="nav-item"> <a href="#ventas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-cart-check-fill me-1"></i> Ventas</a> </li>
+                    <li class="nav-item"> <a href="#pedidos-web" class="nav-link" data-bs-toggle="pill"><i class="bi bi-globe me-1"></i> Pedidos Web <span class="badge bg-danger" id="pedidos-pendientes-badge" style="display:none;">0</span></a> </li>
                     <li class="nav-item"> <a href="#apartados" class="nav-link" data-bs-toggle="pill"><i class="bi bi-calendar-heart-fill me-1"></i> Apartados</a> </li>
                     <li class="nav-item"> <a href="#clientes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-people-fill me-1"></i> Clientes</a> </li>
                     <li class="nav-item"> <a href="#repartidores" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bicycle me-1"></i> Repartidores</a> </li>
@@ -84,8 +85,26 @@
 
     <main class="admin-main">
         <div class="tab-content">
-            <div class="tab-pane fade show active" id="dashboard"> <h1 class="h2">Dashboard</h1> <p>Resumen...</p> <div class="row g-4"><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Ventas Hoy</h5><p class="card-text h2" id="db-ventas-hoy">$0</p></div></div><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Bajo Stock</h5><p class="card-text h2" id="db-bajo-stock">0</p></div></div><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Apartados Vencer</h5><p class="card-text h2" id="db-apartados-vencer">0</p></div></div></div> </div>
-            <div class="tab-pane fade" id="productos"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Productos</h1> <div class="btn-group"> <button type="button" id="toggle-inventory-view-btn" class="btn btn-sm btn-outline-secondary active"><i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline"> Inventario</span></button> <button type="button" id="toggle-form-view-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Agregar/Editar</span></button> </div> </div>
+            <!-- DASHBOARD -->
+            <div class="tab-pane fade show active" id="dashboard"> 
+                <h1 class="h2">Dashboard</h1> 
+                <p>Resumen...</p> 
+                <div class="row g-4">
+                    <div class="col-md-4"><div class="card p-3"><h5 class="card-title">Ventas Hoy</h5><p class="card-text h2" id="db-ventas-hoy">$0</p></div></div>
+                    <div class="col-md-4"><div class="card p-3"><h5 class="card-title">Bajo Stock</h5><p class="card-text h2" id="db-bajo-stock">0</p></div></div>
+                    <div class="col-md-4"><div class="card p-3"><h5 class="card-title">Apartados Vencer</h5><p class="card-text h2" id="db-apartados-vencer">0</p></div></div>
+                </div> 
+            </div>
+
+            <!-- PRODUCTOS -->
+            <div class="tab-pane fade" id="productos"> 
+                <div class="d-flex justify-content-between align-items-center mb-3"> 
+                    <h1 class="h2 mb-0">Productos</h1> 
+                    <div class="btn-group"> 
+                        <button type="button" id="toggle-inventory-view-btn" class="btn btn-sm btn-outline-secondary active"><i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline"> Inventario</span></button> 
+                        <button type="button" id="toggle-form-view-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Agregar/Editar</span></button> 
+                    </div> 
+                </div>
                 
                 <div class="row align-items-center mb-2 variation-row d-none" id="variation-template">
                     <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_talla[]" placeholder="Talla"> </div>
@@ -94,18 +113,432 @@
                     <div class="col-md-1 text-end"> <button type="button" class="btn btn-sm btn-outline-danger remove-variation-btn p-1"> <i class="bi bi-x"></i> </button> </div>
                 </div>
                 
-                 <div id="form-view" style="display: none;"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0" id="product-form-title">Formulario Producto</h3></div> <div class="card-body"> <form id="form-producto"> <input type="hidden" id="producto-id"> <div class="row"> <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div> <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div> <div class="col-md-3 mb-3"> <label for="proveedor-producto" class="form-label">Proveedor:</label> <div class="input-group"> <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal" style="cursor: pointer;"> <input type="hidden" id="proveedor-producto-id"> <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button> </div> </div> </div> <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div> <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div> <hr class="my-4"> <h5 class="mb-3">Precios</h5> <div class="row"> <div class="col-md-4 mb-3"> <label for="costo-compra" class="form-label">Costo ($):</label> <input type="number" class="form-control" id="costo-compra" step="0.01" min="0" required> </div> <div class="col-md-4 mb-3"> <label for="precio-detal" class="form-label">P. Detal ($):</label> <input type="number" class="form-control" id="precio-detal" step="0.01" min="0" required> <small id="margen-detal-info" class="form-text text-muted"></small> </div> <div class="col-md-4 mb-3"> <label for="precio-mayor" class="form-label">P. Mayor ($):</label> <input type="number" class="form-control" id="precio-mayor" step="0.01" min="0"> <small id="margen-mayor-info" class="form-text text-muted"></small> </div> </div> <hr class="my-4"> <h5 class="mb-3">Variaciones</h5> <div id="variaciones-container"> </div> <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir</button> <hr class="my-4"> <div class="row"> <div class="col-md-8 mb-3"> <label for="imagen" class="form-label">Fotos:</label> <input type="file" class="form-control" id="imagen" accept="image/*" multiple> <small class="text-muted" id="image-upload-label">La 1ra será la principal. Si editas y no subes una nueva, se mantendrá la anterior.</small> </div> <div class="col-md-4 d-flex align-items-center"> <div class="form-check form-switch fs-5 w-100"> <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked> <label class="form-check-label" for="visibilidad">Visible</label> </div> </div> </div> <hr class="my-4"> <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> <button type="button" id="btn-clear-product-form" class="btn btn-outline-secondary ms-2">Limpiar</button> </form> </div> </div> </div> <div id="inventory-view"> <div class="input-group mb-3"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="search" id="search-inventory" class="form-control" placeholder="Buscar..."></div> <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr> <th>Foto</th> <th>Nombre</th> <th>Variaciones</th> <th>P. Detal</th> <th>P. Mayor</th> <th>Stock</th> <th>Estado</th> <th>Acciones</th> </tr></thead><tbody id="lista-inventario-productos"><tr id="empty-inventory-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr></tbody></table></div></div></div> </div> </div>
-            <div class="tab-pane fade" id="ventas"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Ventas</h1> <div class="btn-group"> <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Registrar</span></button> <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-list-check me-1"></i><span class="d-none d-md-inline"> Historial</span></button> </div> </div> <div id="sales-form-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Registrar Venta</h3></div> <div class="card-body"> <form id="form-venta"> <input type="hidden" id="venta-cliente-id"> <div class="row align-items-end"> <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label> <div class="input-group"> <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;"> <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button> </div> <div class="row mt-2 gx-2"> <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div> <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div> </div> </div> <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div> <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div> <div class="col-md-2 mb-3"> <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> </div> </div> <div class="row delivery-fields"> <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div> <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div> <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> </div> </div> <label for="venta-producto" class="form-label">Buscar Producto:</label> <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;"> <table class="table my-3"> <thead><tr><th>Producto</th><th>Variación</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead> <tbody id="venta-carrito"></tbody> </table> <hr> <div class="row"> <div class="col-md-6"> <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> </div> <div class="col-md-6"> <div class="row"> <div class="col-7"> <label for="venta-descuento" class="form-label">Descuento:</label> <input type="number" id="venta-descuento" class="form-control" value="0"> </div> <div class="col-5"> <label class="form-label">&nbsp;</label> <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> </div> </div> <label class="form-label mt-3">Pago:</label> <div class="input-group mb-2"> <span class="input-group-text">Efectivo $</span> <input type="number" id="pago-efectivo" class="form-control" value="0"> </div> <div class="input-group mb-3"> <span class="input-group-text">Transf. $</span> <input type="number" id="pago-transferencia" class="form-control" value="0"> </div> <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-registrar-venta"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Registrar Venta</span> </button> </div> </div> </form> </div> </div> </div> <div id="sales-list-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div> <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"> <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> </thead><tbody id="lista-ventas-anteriores"> <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr> </tbody></table></div></div></div> </div> </div>
-            <div class="tab-pane fade" id="apartados"> <h1 class="h2">Apartados</h1> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Pendientes</h3></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Cliente</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Vence</th><th>Acciones</th></tr></thead><tbody id="lista-apartados"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
-            <div class="tab-pane fade" id="clientes"> <h1 class="h2">Clientes</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClientModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Nombre</th><th>Cédula</th><th>WhatsApp</th><th>Dirección</th><th>Última Compra</th><th>Acciones</th></tr></thead><tbody id="lista-clientes"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
-            <div class="tab-pane fade" id="repartidores"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Repartidores</h1> <div class="btn-group"> <button type="button" id="toggle-delivery-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-bicycle me-1"></i><span class="d-none d-md-inline"> Hoy</span></button> <button type="button" id="toggle-delivery-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-md-inline"> Historial</span></button> </div> </div> <div id="delivery-today-view"> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Liquidación Hoy</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addRepartidorModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Repartidor</th><th># Ent.</th><th>Efec. Recibido</th><th>Rutas ($)</th><th>Rutas Transf. ($)</th><th>Efec. a Entregar ($)</th><th>Efec. Entregado ($)</th><th>Saldo ($)</th><th>Acciones</th></tr></thead><tbody id="lista-repartidores"><tr><td colspan="9" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div> <div id="delivery-history-view"> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div><div class="card-body"><form id="form-filter-delivery-history" class="mb-3"><div class="row"><div class="col-md-4"><label for="history-repartidor" class="form-label">Repartidor:</label><select id="history-repartidor" class="form-select"></select></div><div class="col-md-3"><label for="history-desde" class="form-label">Desde:</label><input type="date" id="history-desde" class="form-control"></div><div class="col-md-3"><label for="history-hasta" class="form-label">Hasta:</label><input type="date" id="history-hasta" class="form-control"></div><div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Filtrar</button></div></div></form><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Repartidor</th><th>Efec. Esperado</th><th>Efec. Entregado</th><th>Diferencia</th></tr></thead><tbody id="lista-historial-repartidores"><tr><td colspan="5" class="text-center text-muted">Filtra.</td></tr></tbody></table></div></div></div> </div> </div>
-            <div class="tab-pane fade" id="reportes"> <h1 class="h2">Reportes</h1> <div class="card"><div class="card-body"><form id="form-reporte"><div class="row"><div class="col-md-4"><label for="reporte-tipo" class="form-label">Tipo:</label><select id="reporte-tipo" class="form-select"><option value="ventas">Ventas</option><option value="utilidad">Utilidad</option><option value="mas-vendidos">Más Vendidos</option><option value="repartidor">Por Repartidor</option><option value="apartados">Apartados</option><option value="descuentos">Descuentos</option></select></div><div class="col-md-3"><label for="reporte-desde" class="form-label">Desde:</label><input type="date" id="reporte-desde" class="form-control"></div><div class="col-md-3"><label for="reporte-hasta" class="form-label">Hasta:</label><input type="date" id="reporte-hasta" class="form-control"></div><div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Generar</button></div></div></form><hr><div id="area-reporte" class="mt-4"><p class="text-muted text-center">Filtra.</p></div></div></div> </div>
-            <div class="tab-pane fade" id="finanzas"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Finanzas</h1> <div class="btn-group"> <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addIncomeModal"> <i class="bi bi-plus-circle"></i><span class="d-none d-md-inline"> Ingreso</span></button> <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#addExpenseModal"> <i class="bi bi-dash-circle"></i><span class="d-none d-md-inline"> Gasto</span></button> <button type="button" id="toggle-closing-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-box-arrow-in-down me-1"></i><span class="d-none d-md-inline"> Cierre Hoy</span></button> <button type="button" id="toggle-closing-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-md-inline"> Historial</span></button> </div> </div> <div id="closing-today-view"> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Cierre Diario</h3></div><div class="card-body"><form id="form-cierre-caja"><div class="row"><div class="col-md-3"><label class="form-label">Ventas Efectivo:</label><input type="text" class="form-control" id="caja-efectivo" value="$0" readonly></div><div class="col-md-3"><label class="form-label">Abonos Efectivo:</label><input type="text" class="form-control" id="caja-abonos-efectivo" value="$0" readonly></div><div class="col-md-3"><label class="form-label">Recibido Repart.:</label><input type="text" class="form-control" id="caja-recibido-repartidores" value="$0" readonly></div><div class="col-md-3"><label for="caja-egresos" class="form-label">Gastos ($):</label><input type="number" class="form-control" id="caja-egresos" value="0" step="0.01"></div></div><div class="row mt-3"><div class="col-md-9"><label for="caja-observaciones" class="form-label">Observaciones:</label><input type="text" class="form-control" id="caja-observaciones"></div><div class="col-md-3"><label class="form-label">Total Caja:</label><input type="text" class="form-control fw-bold" id="caja-total" value="$0" readonly></div></div><hr><p class="text-muted small">Nota: Transferencias no afectan efectivo.</p><button type="submit" class="btn btn-primary mt-3">Realizar Cierre</button></form></div></div> </div> <div id="closing-history-view"> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Ventas Efec.</th><th>Abonos Efec.</th><th>Recibido Repart.</th><th>Gastos</th><th>Total Caja</th><th>Obs.</th></tr></thead><tbody id="lista-historial-cierres"><tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div> </div>
-            <div class="tab-pane fade" id="categorias"> <h1 class="h2">Categorías</h1> <div class="row"><div class="col-md-6"><div class="card"><div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Agregar</h3> </div><div class="card-body"><form id="form-categoria"><div class="mb-3"> <label for="nombre-categoria" class="form-label">Nombre:</label> <input type="text" id="nombre-categoria" class="form-control" required> </div><button type="submit" class="btn btn-primary">Guardar</button></form></div></div></div><div class="col-md-6"><div class="card"><div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Existentes</h3> </div><div class="card-body p-0"><ul class="list-group list-group-flush" id="lista-categorias"><li class="list-group-item text-muted" id="loading-categories">Cargando...</li></ul></div></div></div></div> </div>
-            <div class="tab-pane fade" id="proveedores"> <h1 class="h2">Proveedores</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSupplierModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Acciones</th></tr></thead><tbody id="lista-proveedores-tabla"><tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
+                <div id="form-view" style="display: none;"> 
+                    <div class="card"> 
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0" id="product-form-title">Formulario Producto</h3></div> 
+                        <div class="card-body"> 
+                            <form id="form-producto"> 
+                                <input type="hidden" id="producto-id"> 
+                                <div class="row"> 
+                                    <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div> 
+                                    <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div> 
+                                    <div class="col-md-3 mb-3"> <label for="proveedor-producto" class="form-label">Proveedor:</label> <div class="input-group"> <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal" style="cursor: pointer;"> <input type="hidden" id="proveedor-producto-id"> <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button> </div> </div> 
+                                </div> 
+                                <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div> 
+                                <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div> 
+                                <hr class="my-4"> 
+                                <h5 class="mb-3">Precios</h5> 
+                                <div class="row"> 
+                                    <div class="col-md-4 mb-3"> <label for="costo-compra" class="form-label">Costo ($):</label> <input type="number" class="form-control" id="costo-compra" step="0.01" min="0" required> </div> 
+                                    <div class="col-md-4 mb-3"> <label for="precio-detal" class="form-label">P. Detal ($):</label> <input type="number" class="form-control" id="precio-detal" step="0.01" min="0" required> <small id="margen-detal-info" class="form-text text-muted"></small> </div> 
+                                    <div class="col-md-4 mb-3"> <label for="precio-mayor" class="form-label">P. Mayor ($):</label> <input type="number" class="form-control" id="precio-mayor" step="0.01" min="0"> <small id="margen-mayor-info" class="form-text text-muted"></small> </div> 
+                                </div> 
+                                <hr class="my-4"> 
+                                <h5 class="mb-3">Variaciones</h5> 
+                                <div id="variaciones-container"> </div> 
+                                <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir</button> 
+                                <hr class="my-4"> 
+                                <div class="row"> 
+                                    <div class="col-md-8 mb-3"> <label for="imagen" class="form-label">Fotos:</label> <input type="file" class="form-control" id="imagen" accept="image/*" multiple> <small class="text-muted" id="image-upload-label">La 1ra será la principal. Si editas y no subes una nueva, se mantendrá la anterior.</small> </div> 
+                                    <div class="col-md-4 d-flex align-items-center"> <div class="form-check form-switch fs-5 w-100"> <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked> <label class="form-check-label" for="visibilidad">Visible</label> </div> </div> 
+                                </div> 
+                                <hr class="my-4"> 
+                                <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> 
+                                <button type="button" id="btn-clear-product-form" class="btn btn-outline-secondary ms-2">Limpiar</button> 
+                            </form> 
+                        </div> 
+                    </div> 
+                </div> 
+                <div id="inventory-view"> 
+                    <div class="input-group mb-3"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="search" id="search-inventory" class="form-control" placeholder="Buscar..."></div> 
+                    <div class="card">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr> 
+                                            <th>Foto</th> 
+                                            <th>Nombre</th> 
+                                            <th>Variaciones</th> 
+                                            <th>P. Detal</th> 
+                                            <th>P. Mayor</th> 
+                                            <th>Stock</th> 
+                                            <th>Estado</th> 
+                                            <th>Acciones</th> 
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lista-inventario-productos">
+                                        <tr id="empty-inventory-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> 
+                </div> 
+            </div>
+
+            <!-- VENTAS -->
+            <div class="tab-pane fade" id="ventas"> 
+                <div class="d-flex justify-content-between align-items-center mb-3"> 
+                    <h1 class="h2 mb-0">Ventas</h1> 
+                    <div class="btn-group"> 
+                        <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Registrar</span></button> 
+                        <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-list-check me-1"></i><span class="d-none d-md-inline"> Historial</span></button> 
+                    </div> 
+                </div> 
+                <div id="sales-form-view"> 
+                    <div class="card"> 
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Registrar Venta</h3></div> 
+                        <div class="card-body"> 
+                            <form id="form-venta"> 
+                                <input type="hidden" id="venta-cliente-id"> 
+                                <div class="row align-items-end"> 
+                                    <div class="col-md-5 mb-3"> 
+                                        <label for="venta-cliente" class="form-label">Cliente:</label> 
+                                        <div class="input-group"> 
+                                            <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;"> 
+                                            <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button> 
+                                        </div> 
+                                        <div class="row mt-2 gx-2"> 
+                                            <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div> 
+                                            <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div> 
+                                        </div> 
+                                    </div> 
+                                    <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div> 
+                                    <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div> 
+                                    <div class="col-md-2 mb-3"> <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> </div> 
+                                </div> 
+                                <div class="row delivery-fields"> 
+                                    <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div> 
+                                    <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div> 
+                                    <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> </div> 
+                                </div> 
+                                <label for="venta-producto" class="form-label">Buscar Producto:</label> 
+                                <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;"> 
+                                <table class="table my-3"> 
+                                    <thead><tr><th>Producto</th><th>Variación</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead> 
+                                    <tbody id="venta-carrito"></tbody> 
+                                </table> 
+                                <hr> 
+                                <div class="row"> 
+                                    <div class="col-md-6"> 
+                                        <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> 
+                                        <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> 
+                                    </div> 
+                                    <div class="col-md-6"> 
+                                        <div class="row"> 
+                                            <div class="col-7"> <label for="venta-descuento" class="form-label">Descuento:</label> <input type="number" id="venta-descuento" class="form-control" value="0"> </div> 
+                                            <div class="col-5"> <label class="form-label">&nbsp;</label> <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> </div> 
+                                        </div> 
+                                        <label class="form-label mt-3">Pago:</label> 
+                                        <div class="input-group mb-2"> <span class="input-group-text">Efectivo $</span> <input type="number" id="pago-efectivo" class="form-control" value="0"> </div> 
+                                        <div class="input-group mb-3"> <span class="input-group-text">Transf. $</span> <input type="number" id="pago-transferencia" class="form-control" value="0"> </div> 
+                                        <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> 
+                                        <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-registrar-venta"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Registrar Venta</span> </button> 
+                                    </div> 
+                                </div> 
+                            </form> 
+                        </div> 
+                    </div> 
+                </div> 
+                <div id="sales-list-view"> 
+                    <div class="card"> 
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div> 
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light"> 
+                                        <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> 
+                                    </thead>
+                                    <tbody id="lista-ventas-anteriores"> 
+                                        <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr> 
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> 
+                </div> 
+            </div>
+            
+            <!-- NUEVA PESTAÑA: PEDIDOS WEB -->
+            <div class="tab-pane fade" id="pedidos-web">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1 class="h2 mb-0">Pedidos Web</h1>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="filter-pedidos" id="filter-pendientes" value="pendiente" checked>
+                            <label class="btn btn-outline-warning" for="filter-pendientes"><i class="bi bi-clock-history"></i> Pendientes</label>
+
+                            <input type="radio" class="btn-check" name="filter-pedidos" id="filter-aceptados" value="aceptado">
+                            <label class="btn btn-outline-success" for="filter-aceptados"><i class="bi bi-check-circle"></i> Aceptados</label>
+
+                            <input type="radio" class="btn-check" name="filter-pedidos" id="filter-rechazados" value="rechazado">
+                            <label class="btn btn-outline-danger" for="filter-rechazados"><i class="bi bi-x-circle"></i> Rechazados</label>
+
+                            <input type="radio" class="btn-check" name="filter-pedidos" id="filter-todos" value="todos">
+                            <label class="btn btn-outline-secondary" for="filter-todos"><i class="bi bi-list"></i> Todos</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 100px;">ID</th>
+                                        <th>Cliente</th>
+                                        <th>Contacto</th>
+                                        <th>Productos</th>
+                                        <th>Total</th>
+                                        <th>Pago Pref.</th>
+                                        <th>Fecha</th>
+                                        <th>Estado</th>
+                                        <th style="width: 200px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lista-pedidos-web">
+                                    <tr id="empty-pedidos-row">
+                                        <td colspan="9" class="text-center text-muted p-4">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            No hay pedidos.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- APARTADOS -->
+            <div class="tab-pane fade" id="apartados"> 
+                <h1 class="h2">Apartados</h1> 
+                <div class="card">
+                    <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Pendientes</h3></div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Cliente</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Vence</th><th>Acciones</th></tr>
+                                </thead>
+                                <tbody id="lista-apartados">
+                                    <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+
+            <!-- CLIENTES -->
+            <div class="tab-pane fade" id="clientes"> 
+                <h1 class="h2">Clientes</h1> 
+                <div class="card">
+                    <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Lista</h3>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClientModal"><i class="bi bi-plus-lg"></i> Nuevo</button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Nombre</th><th>Cédula</th><th>WhatsApp</th><th>Dirección</th><th>Última Compra</th><th>Acciones</th></tr>
+                                </thead>
+                                <tbody id="lista-clientes">
+                                    <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+
+            <!-- REPARTIDORES -->
+            <div class="tab-pane fade" id="repartidores"> 
+                <div class="d-flex justify-content-between align-items-center mb-3"> 
+                    <h1 class="h2 mb-0">Repartidores</h1> 
+                    <div class="btn-group"> 
+                        <button type="button" id="toggle-delivery-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-bicycle me-1"></i><span class="d-none d-md-inline"> Hoy</span></button> 
+                        <button type="button" id="toggle-delivery-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-md-inline"> Historial</span></button> 
+                    </div> 
+                </div> 
+                <div id="delivery-today-view"> 
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                            <h3 class="h5 mb-0">Liquidación Hoy</h3>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addRepartidorModal"><i class="bi bi-plus-lg"></i> Nuevo</button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr><th>Repartidor</th><th># Ent.</th><th>Efec. Recibido</th><th>Rutas ($)</th><th>Rutas Transf. ($)</th><th>Efec. a Entregar ($)</th><th>Efec. Entregado ($)</th><th>Saldo ($)</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody id="lista-repartidores">
+                                        <tr><td colspan="9" class="text-center text-muted">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> 
+                </div> 
+                <div id="delivery-history-view"> 
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div>
+                        <div class="card-body">
+                            <form id="form-filter-delivery-history" class="mb-3">
+                                <div class="row">
+                                    <div class="col-md-4"><label for="history-repartidor" class="form-label">Repartidor:</label><select id="history-repartidor" class="form-select"></select></div>
+                                    <div class="col-md-3"><label for="history-desde" class="form-label">Desde:</label><input type="date" id="history-desde" class="form-control"></div>
+                                    <div class="col-md-3"><label for="history-hasta" class="form-label">Hasta:</label><input type="date" id="history-hasta" class="form-control"></div>
+                                    <div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Filtrar</button></div>
+                                </div>
+                            </form>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr><th>Fecha</th><th>Repartidor</th><th>Efec. Esperado</th><th>Efec. Entregado</th><th>Diferencia</th></tr>
+                                    </thead>
+                                    <tbody id="lista-historial-repartidores">
+                                        <tr><td colspan="5" class="text-center text-muted">Filtra.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> 
+                </div> 
+            </div>
+
+            <!-- REPORTES -->
+            <div class="tab-pane fade" id="reportes"> 
+                <h1 class="h2">Reportes</h1> 
+                <div class="card">
+                    <div class="card-body">
+                        <form id="form-reporte">
+                            <div class="row">
+                                <div class="col-md-4"><label for="reporte-tipo" class="form-label">Tipo:</label><select id="reporte-tipo" class="form-select"><option value="ventas">Ventas</option><option value="utilidad">Utilidad</option><option value="mas-vendidos">Más Vendidos</option><option value="repartidor">Por Repartidor</option><option value="apartados">Apartados</option><option value="descuentos">Descuentos</option></select></div>
+                                <div class="col-md-3"><label for="reporte-desde" class="form-label">Desde:</label><input type="date" id="reporte-desde" class="form-control"></div>
+                                <div class="col-md-3"><label for="reporte-hasta" class="form-label">Hasta:</label><input type="date" id="reporte-hasta" class="form-control"></div>
+                                <div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Generar</button></div>
+                            </div>
+                        </form>
+                        <hr>
+                        <div id="area-reporte" class="mt-4"><p class="text-muted text-center">Filtra.</p></div>
+                    </div>
+                </div> 
+            </div>
+
+            <!-- FINANZAS -->
+            <div class="tab-pane fade" id="finanzas"> 
+                <div class="d-flex justify-content-between align-items-center mb-3"> 
+                    <h1 class="h2 mb-0">Finanzas</h1> 
+                    <div class="btn-group"> 
+                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addIncomeModal"> <i class="bi bi-plus-circle"></i><span class="d-none d-md-inline"> Ingreso</span></button> 
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#addExpenseModal"> <i class="bi bi-dash-circle"></i><span class="d-none d-md-inline"> Gasto</span></button> 
+                        <button type="button" id="toggle-closing-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-box-arrow-in-down me-1"></i><span class="d-none d-md-inline"> Cierre Hoy</span></button> 
+                        <button type="button" id="toggle-closing-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-md-inline"> Historial</span></button> 
+                    </div> 
+                </div> 
+                <div id="closing-today-view"> 
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Cierre Diario</h3></div>
+                        <div class="card-body">
+                            <form id="form-cierre-caja">
+                                <div class="row">
+                                    <div class="col-md-3"><label class="form-label">Ventas Efectivo:</label><input type="text" class="form-control" id="caja-efectivo" value="$0" readonly></div>
+                                    <div class="col-md-3"><label class="form-label">Abonos Efectivo:</label><input type="text" class="form-control" id="caja-abonos-efectivo" value="$0" readonly></div>
+                                    <div class="col-md-3"><label class="form-label">Recibido Repart.:</label><input type="text" class="form-control" id="caja-recibido-repartidores" value="$0" readonly></div>
+                                    <div class="col-md-3"><label for="caja-egresos" class="form-label">Gastos ($):</label><input type="number" class="form-control" id="caja-egresos" value="0" step="0.01"></div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-9"><label for="caja-observaciones" class="form-label">Observaciones:</label><input type="text" class="form-control" id="caja-observaciones"></div>
+                                    <div class="col-md-3"><label class="form-label">Total Caja:</label><input type="text" class="form-control fw-bold" id="caja-total" value="$0" readonly></div>
+                                </div>
+                                <hr>
+                                <p class="text-muted small">Nota: Transferencias no afectan efectivo.</p>
+                                <button type="submit" class="btn btn-primary mt-3">Realizar Cierre</button>
+                            </form>
+                        </div>
+                    </div> 
+                </div> 
+                <div id="closing-history-view"> 
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr><th>Fecha</th><th>Ventas Efec.</th><th>Abonos Efec.</th><th>Recibido Repart.</th><th>Gastos</th><th>Total Caja</th><th>Obs.</th></tr>
+                                    </thead>
+                                    <tbody id="lista-historial-cierres">
+                                        <tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> 
+                </div> 
+            </div>
+
+            <!-- CATEGORÍAS -->
+            <div class="tab-pane fade" id="categorias"> 
+                <h1 class="h2">Categorías</h1> 
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Agregar</h3> </div>
+                            <div class="card-body">
+                                <form id="form-categoria">
+                                    <div class="mb-3"> <label for="nombre-categoria" class="form-label">Nombre:</label> <input type="text" id="nombre-categoria" class="form-control" required> </div>
+                                    <button type="submit" class="btn btn-primary">Guardar</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Existentes</h3> </div>
+                            <div class="card-body p-0">
+                                <ul class="list-group list-group-flush" id="lista-categorias">
+                                    <li class="list-group-item text-muted" id="loading-categories">Cargando...</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+
+            <!-- PROVEEDORES -->
+            <div class="tab-pane fade" id="proveedores"> 
+                <h1 class="h2">Proveedores</h1> 
+                <div class="card">
+                    <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Lista</h3>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSupplierModal"><i class="bi bi-plus-lg"></i> Nuevo</button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Acciones</th></tr>
+                                </thead>
+                                <tbody id="lista-proveedores-tabla">
+                                    <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> 
+            </div>
         </div>
     </main>
 
+    <!-- MODALES -->
     <div class="modal fade" id="addClientModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-client"> <div class="mb-3"> <label for="new-client-cedula" class="form-label">Cédula:</label> <input type="text" class="form-control" id="new-client-cedula"> </div> <div class="mb-3"> <label for="new-client-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-client-nombre" required> </div> <div class="mb-3"> <label for="new-client-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-client-celular" required> </div> <div class="mb-3"> <label for="new-client-direccion" class="form-label">Dirección:</label> <input type="text" class="form-control" id="new-client-direccion"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-client" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addRepartidorModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Repartidor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-repartidor"> <div class="mb-3"> <label for="new-repartidor-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-repartidor-nombre" required> </div> <div class="mb-3"> <label for="new-repartidor-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-repartidor-celular" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-repartidor" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addIncomeModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Ingreso Extra</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-income"> <div class="mb-3"> <label for="income-amount" class="form-label">Monto ($):</label> <input type="number" step="0.01" class="form-control" id="income-amount" required> </div> <div class="mb-3"> <label for="income-description" class="form-label">Descripción:</label> <input type="text" class="form-control" id="income-description" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-income" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
@@ -163,35 +596,112 @@
         </div>
     </div>
 
+    <!-- NUEVO MODAL: VER PEDIDO WEB -->
+    <div class="modal fade" id="viewPedidoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">
+                        <i class="bi bi-receipt me-2"></i>
+                        Detalles del Pedido #<span id="pedido-modal-id">000</span>
+                    </h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-person-fill me-2"></i>Datos del Cliente</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <strong>Nombre:</strong>
+                                    <p class="mb-0" id="pedido-cliente-nombre">-</p>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <strong>WhatsApp:</strong>
+                                    <p class="mb-0">
+                                        <a href="#" id="pedido-cliente-whatsapp" target="_blank" class="text-decoration-none">
+                                            <i class="bi bi-whatsapp text-success"></i> -
+                                        </a>
+                                    </p>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <strong>Dirección:</strong>
+                                    <p class="mb-0" id="pedido-cliente-direccion">-</p>
+                                </div>
+                                <div class="col-12 mb-2" id="pedido-observaciones-container" style="display: none;">
+                                    <strong>Observaciones:</strong>
+                                    <p class="mb-0 text-muted" id="pedido-observaciones">-</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Pago Preferido:</strong>
+                                    <span class="badge bg-info" id="pedido-metodo-pago">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-bag-fill me-2"></i>Productos</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th>Talla/Color</th>
+                                            <th>Cant.</th>
+                                            <th>Precio</th>
+                                            <th>Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pedido-items-list">
+                                        <tr><td colspan="5" class="text-center">Cargando...</td></tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="4" class="text-end">TOTAL:</th>
+                                            <th id="pedido-total">$0</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <script type="module">
-        // Import Firebase core and Firestore modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-        // Import Storage
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
-        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
             authDomain: "mishell-boutique-admin.firebaseapp.com",
             projectId: "mishell-boutique-admin",
-            // *** CORRECCIÓN CLAVE BASADA EN TUS IMÁGENES ***
-            storageBucket: "mishell-boutique-admin.firebasestorage.app", 
+            storageBucket: "mishell-boutique-admin.firebasestorage.app",
             messagingSenderId: "399662956877",
             appId: "1:399662956877:web:084236f5bb3cf6f0a8f704",
             measurementId: "G-TZ3WQ8LSXH"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app); // Initialize storage
+        const storage = getStorage(app);
         console.log("Firebase Initialized!");
 
-        // --- Collections References ---
         const categoriesCollection = collection(db, 'categorias');
         const suppliersCollection = collection(db, 'proveedores');
         const clientsCollection = collection(db, 'clientes');
@@ -201,21 +711,18 @@
         const apartadosCollection = collection(db, 'apartados');
         const financesCollection = collection(db, 'movimientosFinancieros');
         const closingsCollection = collection(db, 'cierresCaja');
+        const pedidosWebCollection = collection(db, 'pedidosWeb');
 
-        // --- Helper: Format Currency ---
         const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
 
-        // --- Helper: Show Toast Notification ---
         let bsToast = null;
         function showToast(message, type = 'success', title = 'Notificación') {
             const liveToastEl = document.getElementById('liveToast');
-            const toastTitleEl = document.getElementById('toast-title');
             const toastBodyEl = document.getElementById('toast-body');
             
-            if (liveToastEl && toastTitleEl && toastBodyEl) {
+            if (liveToastEl && toastBodyEl) {
                 if (!bsToast) { try { bsToast = new bootstrap.Toast(liveToastEl, { delay: 3500 }); } catch (e) { console.error("Toast init error", e); return; }}
-                toastTitleEl.textContent = title;
-                liveToastEl.className = 'toast align-items-center border-0'; // Reset classes
+                liveToastEl.className = 'toast align-items-center border-0';
                 const bgClass = type === 'error' ? 'text-bg-danger' : (type === 'warning' ? 'text-bg-warning' : (type === 'info' ? 'text-bg-info' : 'text-bg-success'));
                 liveToastEl.classList.add(bgClass, 'text-white');
                 let iconClass = type === 'success' ? 'bi-check-circle-fill' : (type === 'error' ? 'bi-exclamation-triangle-fill' : (type === 'warning' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'));
@@ -224,19 +731,25 @@
             } else { console.warn("Toast elements not found:", message); alert(`${type.toUpperCase()}: ${message}`); }
         }
 
-        // --- Global Modal Instances ---
-        let addClientModalInstance = null; let addRepartidorModalInstance = null; let addSupplierModalInstance = null; let addIncomeModalInstance = null; let addExpenseModalInstance = null; let editCategoryModalInstance = null; let deleteConfirmModalInstance = null;
-        let editSupplierModalInstance = null; let editClientModalInstance = null;
-        let searchSupplierModalInstance = null; let searchClientModalInstance = null; let searchProductModalInstance = null; let liquidateConfirmModalInstance = null;
-        let selectVariationModalInstance = null; // Nuevo modal
+        let addClientModalInstance = null; 
+        let addRepartidorModalInstance = null; 
+        let addSupplierModalInstance = null; 
+        let addIncomeModalInstance = null; 
+        let addExpenseModalInstance = null; 
+        let editCategoryModalInstance = null; 
+        let deleteConfirmModalInstance = null;
+        let editSupplierModalInstance = null; 
+        let editClientModalInstance = null;
+        let searchSupplierModalInstance = null; 
+        let searchClientModalInstance = null; 
+        let searchProductModalInstance = null; 
+        let liquidateConfirmModalInstance = null;
+        let selectVariationModalInstance = null;
+        let viewPedidoModalInstance = null;
         let localClientsMap = new Map([["Cliente General", {id: null, celular: "", direccion: ""}]]);
-        let localProductsMap = new Map(); // Cache local para productos
+        let localProductsMap = new Map();
 
-        // ========================================================================
-        // --- SCRIPT EJECUTADO AL CARGAR EL DOM ---
-        // ========================================================================
         document.addEventListener('DOMContentLoaded', () => {
-             // --- Inicializar Modales ---
              try {
                 const addClientModalEl = document.getElementById('addClientModal'); if(addClientModalEl) addClientModalInstance = new bootstrap.Modal(addClientModalEl);
                 const addRepartidorModalEl = document.getElementById('addRepartidorModal'); if(addRepartidorModalEl) addRepartidorModalInstance = new bootstrap.Modal(addRepartidorModalEl);
@@ -252,9 +765,9 @@
                 const searchProductModalEl = document.getElementById('searchProductModal'); if(searchProductModalEl) searchProductModalInstance = new bootstrap.Modal(searchProductModalEl);
                 const liquidateConfirmModalEl = document.getElementById('liquidateConfirmModal'); if(liquidateConfirmModalEl) liquidateConfirmModalInstance = new bootstrap.Modal(liquidateConfirmModalEl);
                 const selectVariationModalEl = document.getElementById('selectVariationModal'); if(selectVariationModalEl) selectVariationModalInstance = new bootstrap.Modal(selectVariationModalEl);
+                const viewPedidoModalEl = document.getElementById('viewPedidoModal'); if(viewPedidoModalEl) viewPedidoModalInstance = new bootstrap.Modal(viewPedidoModalEl);
              } catch (e) { console.error("Error initializing Modals:", e); }
 
-             // --- Lógica Modal de Confirmación de Borrado ---
              const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
              if (confirmDeleteBtn && deleteConfirmModalInstance) {
                  confirmDeleteBtn.addEventListener('click', async (e) => {
@@ -268,7 +781,6 @@
                         return;
                     }
 
-                    // --- LÓGICA MEJORADA PARA BORRAR IMAGEN ---
                     if (collectionToDelete === 'productos') {
                         try {
                             const productDocRef = doc(db, 'productos', idToDelete);
@@ -278,21 +790,18 @@
                                 const productData = docSnap.data();
                                 const imageUrl = productData.imagenUrl;
                                 
-                                // Si tiene imagen, borrarla de Storage
                                 if (imageUrl) {
                                     try {
                                         const imageRef = ref(storage, imageUrl);
                                         await deleteObject(imageRef);
                                         console.log("Imagen eliminada de Storage:", imageUrl);
                                     } catch (storageErr) {
-                                        // No detener el borrado si la imagen falla (podría no existir)
                                         console.error("Error al eliminar imagen de Storage:", storageErr);
                                         showToast("Producto eliminado. La imagen no se encontró en Storage.", 'warning');
                                     }
                                 }
                             }
                             
-                            // Borrar el documento de Firestore
                             await deleteDoc(productDocRef);
                             showToast("Producto eliminado!");
                             
@@ -303,7 +812,6 @@
                             deleteConfirmModalInstance.hide();
                         }
                     } else {
-                        // --- Lógica de borrado normal para otras colecciones ---
                         try { 
                             await deleteDoc(doc(db, collectionToDelete, idToDelete)); 
                             showToast("Elemento eliminado!"); 
@@ -318,627 +826,10 @@
                     }
                  });
              } else { console.error("Delete confirmation button or modal missing"); }
-        
-            // ========================================================================
-            // --- LÓGICA CATEGORÍAS (Funcional CRUD with Modals) ---
-            // ========================================================================
-            (() => {
-                const categoryForm = document.getElementById('form-categoria'); const categoryNameInput = document.getElementById('nombre-categoria'); const categoryList = document.getElementById('lista-categorias'); const categoryDropdown = document.getElementById('categoria-producto'); const editForm = document.getElementById('form-edit-category'); const editIdInput = document.getElementById('edit-category-id'); const editNameInput = document.getElementById('edit-category-nombre');
-                if (!categoryForm || !categoryList || !categoryDropdown || !editForm) { console.warn("Elementos de Categorías no encontrados."); return; }
-                const render = (snapshot) => { if (!categoryList) return; categoryList.innerHTML = ''; if (snapshot.empty) { categoryList.innerHTML = '<li class="list-group-item text-muted">No hay categorías.</li>'; return; } snapshot.forEach(doc => { const d = doc.data(); const id = doc.id; const li = document.createElement('li'); li.className = 'list-group-item d-flex justify-content-between align-items-center'; li.dataset.id = id; li.innerHTML = `<span class="category-name">${d.nombre}</span><div class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 me-1 btn-edit-category" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-category" title="Eliminar"><i class="bi bi-trash"></i></button></div>`; categoryList.appendChild(li); }); };
-                const updateDropdown = (snapshot) => { if (!categoryDropdown) return; const sel = categoryDropdown.value; categoryDropdown.innerHTML = '<option value="">Selecciona...</option>'; snapshot.forEach(doc => { const d = doc.data(); const opt = document.createElement('option'); opt.value = doc.id; opt.textContent = d.nombre; categoryDropdown.appendChild(opt); }); categoryDropdown.value = sel; }
-                const checkDuplicate = async (name, currentId = null) => { const lowerCaseName = name.toLowerCase(); const q = query(categoriesCollection, where("nombreLower", "==", lowerCaseName)); const querySnapshot = await getDocs(q); let isDuplicate = false; querySnapshot.forEach((doc) => { if (doc.id !== currentId) { isDuplicate = true; } }); return isDuplicate; };
-                onSnapshot(query(categoriesCollection, orderBy("nombre")), (s) => { render(s); updateDropdown(s); }, (e) => { console.error("Error categories: ", e); if(categoryList) categoryList.innerHTML = '<li class="list-group-item text-danger">Error.</li>'; });
-                if (categoryForm) categoryForm.addEventListener('submit', async (e) => { e.preventDefault(); const name = categoryNameInput.value.trim(); if (!name) return; if (await checkDuplicate(name)) { showToast('Ya existe una categoría con ese nombre.', 'warning'); return; } try { await addDoc(categoriesCollection, { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría guardada!"); categoryNameInput.value = ''; } catch (err) { console.error("Error add cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
-                if (editForm && editCategoryModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const name = editNameInput.value.trim(); if (!id || !name) return; if (await checkDuplicate(name, id)) { showToast('Ya existe otra categoría con ese nombre.', 'warning'); return; } try { await updateDoc(doc(db, "categorias", id), { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría actualizada!"); editCategoryModalInstance.hide(); } catch (err) { console.error("Error update cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
-                if (categoryList) categoryList.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const li = target.closest('li'); const id = li.dataset.id; const nameSpan = li.querySelector('.category-name'); if (!id || !nameSpan) return;
-                    if (target.classList.contains('btn-delete-category')) {
-                         const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'categorias'; deleteItemNameEl.textContent = `Categoría: ${nameSpan.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
-                    } else if (target.classList.contains('btn-edit-category')) { if(editIdInput && editNameInput && editCategoryModalInstance) { editIdInput.value = id; editNameInput.value = nameSpan.textContent; editCategoryModalInstance.show(); } else { console.error("Edit modal elements missing."); showToast('Error al abrir editor.', 'error'); } }
-                });
-            })();
 
-            // ========================================================================
-            // --- LÓGICA PROVEEDORES (Funcional CRUD with Modals) ---
-            // ========================================================================
-            (() => {
-                const addForm = document.getElementById('form-add-supplier'); const addNameInput = document.getElementById('new-supplier-nombre'); const addContactInput = document.getElementById('new-supplier-contacto'); const addPhoneInput = document.getElementById('new-supplier-telefono');
-                const editForm = document.getElementById('form-edit-supplier'); const editIdInput = document.getElementById('edit-supplier-id'); const editNameInput = document.getElementById('edit-supplier-nombre'); const editContactInput = document.getElementById('edit-supplier-contacto'); const editPhoneInput = document.getElementById('edit-supplier-telefono');
-                const listTable = document.getElementById('lista-proveedores-tabla');
-                const searchModalList = document.getElementById('supplier-modal-list');
-                const searchInput = document.getElementById('supplier-modal-search');
-                const productFormInput = document.getElementById('proveedor-producto');
-                let suppliersMap = new Map();
-                if (!addForm || !listTable || !searchModalList || !editForm || !productFormInput) { console.warn("Elementos de Proveedores no encontrados."); return; }
-
-                const renderSuppliers = (snapshot) => { suppliersMap.clear(); listTable.innerHTML = ''; searchModalList.innerHTML = ''; if (snapshot.empty) { listTable.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay proveedores.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; suppliersMap.set(id, d); if (listTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="supplier-name">${d.nombre}</td> <td>${d.contacto || '-'}</td> <td>${d.telefono || '-'}</td> <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-supplier" title="Modificar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-supplier" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; listTable.appendChild(tr); }
-                    const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action supplier-search-item'; li.dataset.name = d.nombre; li.dataset.id = id; li.textContent = d.nombre; searchModalList.appendChild(li);
-                }); };
-                onSnapshot(query(suppliersCollection, orderBy('nombre')), renderSuppliers, (e) => { console.error("Error suppliers:", e); if(listTable) listTable.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error.</td></tr>';});
-                if (addForm && addSupplierModalInstance) addForm.addEventListener('submit', async (e) => { e.preventDefault(); const name = addNameInput.value.trim(); const contact = addContactInput.value.trim(); const phone = addPhoneInput.value.trim(); if (name) { try { await addDoc(suppliersCollection, { nombre: name, contacto: contact, telefono: phone, nombreLower: name.toLowerCase() }); showToast("Proveedor guardado!"); addSupplierModalInstance.hide(); addForm.reset(); } catch (err) { console.error("Err add supplier:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast("Nombre requerido.", 'warning'); }});
-                if (editForm && editSupplierModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const name = editNameInput.value.trim(); const contact = editContactInput.value.trim(); const phone = editPhoneInput.value.trim(); if (id && name) { try { await updateDoc(doc(db, "proveedores", id), { nombre: name, contacto: contact, telefono: phone, nombreLower: name.toLowerCase() }); showToast("Proveedor actualizado!"); editSupplierModalInstance.hide(); } catch (err) { console.error("Err update supplier:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast("Nombre requerido.", 'warning'); }});
-                if (listTable) listTable.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.supplier-name'); if (!id || !nameTd) return;
-                    if (target.classList.contains('btn-delete-supplier')) {
-                         const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'proveedores'; deleteItemNameEl.textContent = `Proveedor: ${nameTd.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
-                    } else if (target.classList.contains('btn-edit-supplier')) {
-                        const supplierData = suppliersMap.get(id);
-                        if (supplierData && editSupplierModalInstance && editIdInput && editNameInput && editContactInput && editPhoneInput) {
-                            editIdInput.value = id; editNameInput.value = supplierData.nombre || ''; editContactInput.value = supplierData.contacto || ''; editPhoneInput.value = supplierData.telefono || '';
-                            editSupplierModalInstance.show();
-                        } else { console.error("Edit supplier modal or data missing"); showToast("Error al abrir editor.", 'error'); }
-                    }
-                });
-                if (searchInput) searchInput.addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); const items = searchModalList.querySelectorAll('.supplier-search-item'); items.forEach(item => { item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; }); });
-                if (searchModalList && searchSupplierModalInstance) searchModalList.addEventListener('click', (e) => { const target = e.target.closest('.supplier-search-item'); if (target) { productFormInput.value = target.dataset.name; searchSupplierModalInstance.hide(); } });
-            })();
-
-            // ========================================================================
-            // --- LÓGICA CLIENTES (Funcional CRUD with Modals) ---
-            // ========================================================================
-            (() => {
-                const addForm = document.getElementById('form-add-client'); const addCedulaInput = document.getElementById('new-client-cedula'); const addNombreInput = document.getElementById('new-client-nombre'); const addCelularInput = document.getElementById('new-client-celular'); const addDireccionInput = document.getElementById('new-client-direccion');
-                const editForm = document.getElementById('form-edit-client'); const editIdInput = document.getElementById('edit-client-id'); const editCedulaInput = document.getElementById('edit-client-cedula'); const editNombreInput = document.getElementById('edit-client-nombre'); const editCelularInput = document.getElementById('edit-client-celular'); const editDireccionInput = document.getElementById('edit-client-direccion');
-                const clientListTable = document.getElementById('lista-clientes');
-                const searchModalList = document.getElementById('client-modal-list');
-                const searchInput = document.getElementById('client-modal-search');
-                const ventaClienteInput = document.getElementById('venta-cliente'); const ventaCelularInput = document.getElementById('venta-cliente-celular'); const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
-                if (!addForm || !editForm || !clientListTable || !searchModalList) { console.warn("Elementos de Clientes no encontrados."); return; }
-                
-                const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General"}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-client" title="Modificar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-client" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; clientListTable.appendChild(tr); }
-                    const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action client-search-item'; li.dataset.name = dataListValue; li.dataset.id = id; li.textContent = dataListValue; searchModalList.appendChild(li);
-                }); document.dispatchEvent(new CustomEvent('clientsLoaded', { detail: { clientsMap: localClientsMap } })); fillClientInfoSales(); };
-                function fillClientInfoSales() { if (!ventaClienteInput || !ventaCelularInput || !ventaDireccionInput) return; const selectedValue = ventaClienteInput.value; const clientInfo = localClientsMap.get(selectedValue); if (clientInfo) { ventaCelularInput.value = clientInfo.celular; ventaDireccionInput.value = clientInfo.direccion; } else { ventaCelularInput.value = ""; ventaDireccionInput.value = ""; } }
-                onSnapshot(query(clientsCollection, orderBy('nombre')), renderClients, (e) => { console.error("Error clients:", e); if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';});
-                if (ventaClienteInput) ventaClienteInput.addEventListener('input', fillClientInfoSales);
-                if (addForm && addClientModalInstance) addForm.addEventListener('submit', async (e) => { e.preventDefault(); const ced = addCedulaInput.value.trim(); const nom = addNombreInput.value.trim(); const cel = addCelularInput.value.trim(); const dir = addDireccionInput.value.trim(); if (nom && cel) { try { await addDoc(clientsCollection, { nombre: nom, cedula: ced, celular: cel, direccion: dir, ultimaCompra: null }); showToast("Cliente guardado!"); addClientModalInstance.hide(); addForm.reset(); } catch (err) { console.error("Err add client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
-                if (editForm && editClientModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const ced = editCedulaInput.value.trim(); const nom = editNombreInput.value.trim(); const cel = editCelularInput.value.trim(); const dir = editDireccionInput.value.trim(); if (id && nom && cel) { try { await updateDoc(doc(db, "clientes", id), { nombre: nom, cedula: ced, celular: cel, direccion: dir }); showToast("Cliente actualizado!"); editClientModalInstance.hide(); } catch (err) { console.error("Err update client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); }});
-                if (clientListTable) clientListTable.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.client-name'); if (!id || !nameTd) return;
-                    if (target.classList.contains('btn-delete-client')) {
-                        const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'clientes'; deleteItemNameEl.textContent = `Cliente: ${nameTd.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
-                    } else if (target.classList.contains('btn-edit-client')) {
-                         const clientData = localClientsMap.get(id); if (clientData && editClientModalInstance && editIdInput && editCedulaInput && editNombreInput && editCelularInput && editDireccionInput) { editIdInput.value = id; editCedulaInput.value = clientData.cedula || ''; editNombreInput.value = clientData.nombre || ''; editCelularInput.value = clientData.celular || ''; editDireccionInput.value = clientData.direccion || ''; editClientModalInstance.show(); } else { console.error("Edit client modal or data missing"); showToast("Error al abrir editor.", 'error'); }
-                    }
-                });
-                if (searchInput) searchInput.addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); const items = searchModalList.querySelectorAll('.client-search-item'); items.forEach(item => { item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; }); });
-                if (searchModalList && searchClientModalInstance) searchModalList.addEventListener('click', (e) => { const target = e.target.closest('.client-search-item'); if (target) { ventaClienteInput.value = target.dataset.name; fillClientInfoSales(); searchClientModalInstance.hide(); } });
-                fillClientInfoSales();
-            })();
-
-            // ========================================================================
-            // --- LÓGICA REPARTIDORES (Add/Load/Delete, Edit placeholder, Liquidación) ---
-            // ========================================================================
-            (() => {
-                 const repartidorForm = document.getElementById('form-add-repartidor'); const nombreInput = document.getElementById('new-repartidor-nombre'); const celularInput = document.getElementById('new-repartidor-celular'); const repartidorListTableBody = document.getElementById('lista-repartidores'); const repartidorSelectVenta = document.getElementById('venta-repartidor'); const repartidorSelectHistory = document.getElementById('history-repartidor');
-                 if(!repartidorForm || !repartidorListTableBody) { console.warn("Elementos de Repartidores no encontrados."); return; }
-                 let repartidoresMap = new Map();
-                 const renderRepartidores = (snapshot) => { repartidoresMap.clear(); if(repartidorListTableBody) repartidorListTableBody.innerHTML = ''; if(repartidorSelectVenta) repartidorSelectVenta.innerHTML = '<option value="">Selecciona...</option>'; if(repartidorSelectHistory) repartidorSelectHistory.innerHTML = '<option value="">Todos</option>'; if (snapshot.empty) { if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No hay repartidores.</td></tr>'; return; } snapshot.forEach(docSnap => { const rep = docSnap.data(); const id = docSnap.id; repartidoresMap.set(id, rep); if (repartidorListTableBody) { const tr = document.createElement('tr'); tr.dataset.id = id; const efectivoRecibido = 0; const rutasTotal = 0; const rutasTransferencia = 0; const efectivoAEntregar = efectivoRecibido - (rutasTotal - rutasTransferencia); const saldoPendiente = efectivoAEntregar; tr.innerHTML = `<td class="repartidor-name">${rep.nombre}</td> <td>0</td> <td>${formatoMoneda.format(efectivoRecibido)}</td> <td>${formatoMoneda.format(rutasTotal)}</td> <td>${formatoMoneda.format(rutasTransferencia)}</td> <td>${formatoMoneda.format(efectivoAEntregar)}</td> <td><input type="number" class="form-control form-control-sm w-75 d-inline-block input-efectivo-entregado" value="0.00" step="0.01" data-expected="${efectivoAEntregar}"></td> <td class="saldo-pendiente ${saldoPendiente <= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatoMoneda.format(saldoPendiente)}</td> <td class="action-buttons"><button class="btn btn-sm btn-success py-0 px-1 btn-liquidar-repartidor" title="Liquidar"><i class="bi bi-check-circle"></i></button><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-repartidor" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-repartidor" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; repartidorListTableBody.appendChild(tr); } const option = document.createElement('option'); option.value = id; option.textContent = rep.nombre; if(repartidorSelectVenta) repartidorSelectVenta.appendChild(option.cloneNode(true)); if(repartidorSelectHistory) repartidorSelectHistory.appendChild(option.cloneNode(true)); }); };
-                 onSnapshot(query(repartidoresCollection, orderBy('nombre')), renderRepartidores, (e) => { console.error("Error repartidores:", e); if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error.</td></tr>';});
-                 if (repartidorForm && addRepartidorModalInstance) repartidorForm.addEventListener('submit', async (e) => { e.preventDefault(); const nom = nombreInput.value.trim(); const cel = celularInput.value.trim(); if (nom && cel) { try { await addDoc(repartidoresCollection, { nombre: nom, celular: cel }); showToast("Repartidor guardado!"); addRepartidorModalInstance.hide(); repartidorForm.reset(); } catch (err) { console.error("Err add repartidor:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
-                 const confirmLiquidateBtn = document.getElementById('confirm-liquidate-btn');
-                 if(confirmLiquidateBtn && liquidateConfirmModalInstance) { confirmLiquidateBtn.addEventListener('click', (e) => { e.preventDefault(); const id = confirmLiquidateBtn.dataset.liquidateId; console.log("Liquidando (simulado) repartidor ID:", id); showToast('Liquidación registrada (simulado).'); liquidateConfirmModalInstance.hide(); const tr = repartidorListTableBody.querySelector(`tr[data-id="${id}"]`); if(tr) { tr.querySelector('.input-efectivo-entregado').disabled = true; tr.querySelector('.btn-liquidar-repartidor').disabled = true; } }); }
-                if (repartidorListTableBody) { repartidorListTableBody.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.repartidor-name'); if (!id || !nameTd) return;
-                    if (target.classList.contains('btn-delete-repartidor')) {
-                        const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'repartidores'; deleteItemNameEl.textContent = `Repartidor: ${nameTd.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
-                    } else if (target.classList.contains('btn-edit-repartidor')) { showToast('Editar repartidor: pendiente.', 'warning'); } 
-                    else if (target.classList.contains('btn-liquidar-repartidor')) {
-                        const entregadoInput = tr.querySelector('.input-efectivo-entregado'); const saldoTd = tr.querySelector('.saldo-pendiente'); const efectivoEntregado = parseFloat(entregadoInput.value) || 0; const saldoPendiente = parseFloat(saldoTd.textContent.replace(/[$.]/g, '')) || 0;
-                        const amountEl = document.getElementById('liquidate-amount'); const nameEl = document.getElementById('liquidate-name'); const saldoTextEl = document.getElementById('liquidate-saldo-text');
-                        if (liquidateConfirmModalInstance && amountEl && nameEl && saldoTextEl && confirmLiquidateBtn) { amountEl.textContent = formatoMoneda.format(efectivoEntregado); nameEl.textContent = nameTd.textContent; saldoTextEl.textContent = `Saldo restante: ${formatoMoneda.format(saldoPendiente)}`; saldoTextEl.className = saldoPendiente <= 0 ? 'fw-bold text-success' : 'fw-bold text-danger'; confirmLiquidateBtn.dataset.liquidateId = id; liquidateConfirmModalInstance.show(); } else { console.error("Faltan elementos del modal de liquidación"); }
-                    }
-                 }); repartidorListTableBody.addEventListener('input', (e) => { if (e.target.classList.contains('input-efectivo-entregado')) { const input = e.target; const tr = input.closest('tr'); const saldoTd = tr.querySelector('.saldo-pendiente'); const efectivoEntregado = parseFloat(input.value) || 0; const efectivoEsperado = parseFloat(input.dataset.expected) || 0; const diferencia = efectivoEsperado - efectivoEntregado; saldoTd.textContent = formatoMoneda.format(diferencia); saldoTd.className = `saldo-pendiente ${diferencia <= 0 ? 'text-success' : 'text-danger'} fw-bold`; } }); }
-            })();
-
-            // ========================================================================
-            // --- LÓGICA PRODUCTOS (Funcional Add/Load/Delete, Edit/Imagen) ---
-            // ========================================================================
-            (() => {
-                const productForm = document.getElementById('form-producto'); const productIdInput = document.getElementById('producto-id'); const nombreInput = document.getElementById('nombre'); const codigoInput = document.getElementById('codigo'); const proveedorInput = document.getElementById('proveedor-producto'); const descripcionInput = document.getElementById('descripcion'); const categoriaSelect = document.getElementById('categoria-producto'); const costoInput = document.getElementById('costo-compra'); const detalInput = document.getElementById('precio-detal'); const mayorInput = document.getElementById('precio-mayor'); const variationsContainer = document.getElementById('variaciones-container'); const imagenInput = document.getElementById('imagen'); const visibleCheckbox = document.getElementById('visibilidad'); const productListTableBody = document.getElementById('lista-inventario-productos'); const clearFormBtn = document.getElementById('btn-clear-product-form');
-                const saveProductBtn = document.getElementById('btn-save-product');
-                const saveProductBtnText = saveProductBtn ? saveProductBtn.querySelector('.save-text') : null;
-                const saveProductBtnSpinner = saveProductBtn ? saveProductBtn.querySelector('.spinner-border') : null;
-                const productSearchModalList = document.getElementById('product-modal-list');
-                const productSearchInput = document.getElementById('product-modal-search');
-                
-                if (!productForm) { console.warn("Formulario de producto no encontrado."); return; }
-
-                // --- GESTIONAR VARIACIONES (Movido aquí para arreglar `aVR not defined`) ---
-                const vC=document.getElementById('variaciones-container'); const aVB=document.getElementById('add-variation-btn'); const vT=document.getElementById('variation-template'); 
-                function aVR(){ if(!vT || !vC) return; const nR=vT.cloneNode(true);nR.classList.remove('d-none');nR.removeAttribute('id');const rB=nR.querySelector('.remove-variation-btn');rB.addEventListener('click',(e)=>{ e.preventDefault(); nR.remove(); if(vC.querySelectorAll('.variation-row:not(#variation-template):not(.d-none)').length===0){aVR();}});vC.appendChild(nR);} 
-                if(aVB)aVB.addEventListener('click',(e) => { e.preventDefault(); aVR(); }); 
-                if(vC && vC.querySelectorAll('.variation-row:not(#variation-template):not(.d-none)').length===0){aVR();}
-                
-                // --- CÁLCULO DE MARGEN (Movido aquí) ---
-                const cI=document.getElementById('costo-compra'); const pDI=document.getElementById('precio-detal'); const pMI=document.getElementById('precio-mayor'); const mDI=document.getElementById('margen-detal-info'); const mMI=document.getElementById('margen-mayor-info'); const fM_margin=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}); function cYM(){ if(!cI || !pDI || !pMI || !mDI || !mMI) return; const c=parseFloat(cI.value)||0; const pD=parseFloat(pDI.value)||0; const pM=parseFloat(pMI.value)||0; let mDV=0,mDP=0;if(c>0&&pD>=c){mDV=pD-c;mDP=(mDV/c)*100;mDI.textContent=`Margen: ${fM_margin.format(mDV)} (${mDP.toFixed(1)}%)`;mDI.style.color='';mDI.style.fontWeight='';}else{mDI.textContent='Margen: $0 (0.0%)';mDI.style.color=(pD>0&&pD<c)?'red':'';mDI.style.fontWeight=(pD>0&&pD<c)?'bold':'';if(pD>0&&pD<c)mDI.textContent='Margen Negativo';} let mMV=0,mMP=0;if(c>0&&pM>=c){mMV=pM-c;mMP=(mMV/c)*100;mMI.textContent=`Margen: ${fM_margin.format(mMV)} (${mMP.toFixed(1)}%)`;mMI.style.color='';mMI.style.fontWeight='';}else{mMI.textContent='Margen: $0 (0.0%)';mMI.style.color=(pM>0&&pM<c)?'red':'';mMI.style.fontWeight=(pM>0&&pM<c)?'bold':'';if(pM>0&&pM<c)mMI.textContent='Margen Negativo';}} if(cI)cI.addEventListener('input',cYM); if(pDI)pDI.addEventListener('input',cYM); if(pMI)pMI.addEventListener('input',cYM); if(cI) cYM();
-                
-                // --- LÓGICA DE PRODUCTOS ---
-                const renderProducts = (snapshot) => { 
-                    localProductsMap.clear(); 
-                    if(productListTableBody) productListTableBody.innerHTML = ''; 
-                    if(productSearchModalList) productSearchModalList.innerHTML = ''; 
-                    const emptyRow = document.getElementById('empty-inventory-row'); 
-                    if (snapshot.empty) { if(emptyRow) { emptyRow.style.display = ''; if(productListTableBody) productListTableBody.appendChild(emptyRow); } return; } 
-                    if(emptyRow) emptyRow.style.display = 'none'; 
-                    
-                    snapshot.forEach(docSnap => { 
-                        const d = docSnap.data(); const id = docSnap.id; 
-                        localProductsMap.set(id, d);
-                        const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
-                        const imagenUrl = d.imagenUrl || 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto'; 
-                        
-                        let variacionesHtml = (d.variaciones || [])
-                            .map(v => `<span class="badge bg-light text-dark me-1">${v.talla || 'N/A'} / ${v.color || 'N/A'} (S: ${v.stock})</span>`)
-                            .join(' ');
-                        if (variacionesHtml === '') variacionesHtml = '<small class="text-muted">Sin variaciones</small>';
-                        
-                        const tr = document.createElement('tr'); tr.dataset.id = id; 
-                        tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img"></td>
-                                        <td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td>
-                                        <td>${variacionesHtml}</td>
-                                        <td>${formatoMoneda.format(d.precioDetal || 0)}</td>
-                                        <td>${formatoMoneda.format(d.precioMayor || 0)}</td>
-                                        <td>${stockTotal}</td>
-                                        <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
-                                        <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; 
-                        if(productListTableBody) productListTableBody.appendChild(tr); 
-                        
-                        const li = document.createElement('li');
-                        li.className = 'list-group-item list-group-item-action product-search-item d-flex justify-content-between align-items-center';
-                        li.dataset.id = id; li.dataset.nombre = d.nombre; li.dataset.precio = d.precioDetal || 0; li.dataset.stock = stockTotal;
-                        li.innerHTML = `<div> ${d.nombre} <span class="stock-info d-block">Stock: ${stockTotal}</span> </div> <span class="price-info">${formatoMoneda.format(d.precioDetal || 0)}</span>`;
-                        if(stockTotal <= 0) li.classList.add('disabled');
-                        if(productSearchModalList) productSearchModalList.appendChild(li);
-                    }); 
-                };
-                onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
-                
-                function clearProductForm() { productForm.reset(); productIdInput.value = ''; const margenDetalInfo = document.getElementById('margen-detal-info'); const margenMayorInfo = document.getElementById('margen-mayor-info'); if(margenDetalInfo) margenDetalInfo.textContent = ''; if(margenMayorInfo) margenMayorInfo.textContent = ''; const rows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)'); rows.forEach((row) => { row.remove(); }); aVR(); document.getElementById('product-form-title').textContent = "Agregar Producto"; imagenInput.required = true; }
-                if (clearFormBtn) clearFormBtn.addEventListener('click', (e) => { e.preventDefault(); clearProductForm(); });
-                
-                if (productForm) productForm.addEventListener('submit', async (e) => { 
-                    e.preventDefault(); 
-                    if(saveProductBtn) { saveProductBtn.disabled = true; if(saveProductBtnText) saveProductBtnText.textContent = "Guardando..."; if(saveProductBtnSpinner) saveProductBtnSpinner.style.display = 'inline-block'; }
-                    
-                    const productId = productIdInput.value;
-                    let productData = { nombre: nombreInput.value.trim(), proveedor: proveedorInput.value.trim(), descripcion: descripcionInput.value.trim(), categoriaId: categoriaSelect.value, costoCompra: parseFloat(costoInput.value) || 0, precioDetal: parseFloat(detalInput.value) || 0, precioMayor: parseFloat(mayorInput.value) || 0, visible: visibleCheckbox.checked, timestamp: serverTimestamp(), variaciones: [], imagenUrl: null };
-                    
-                    const variationRows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)'); 
-                    variationRows.forEach(row => { const talla = row.querySelector('[name="variation_talla[]"]').value.trim(); const color = row.querySelector('[name="variation_color[]"]').value.trim(); const stock = parseInt(row.querySelector('[name="variation_stock[]"]').value, 10) || 0; if (talla || color || stock > 0) { productData.variaciones.push({ talla, color, stock }); } }); 
-                    
-                    try {
-                        const files = imagenInput.files;
-                        if (files.length > 0) {
-                            showToast("Subiendo imagen...", 'info');
-                            const firstFile = files[0];
-                            const fileName = `product_images/${Date.now()}-${firstFile.name}`;
-                            const storageRef = ref(storage, fileName);
-                            
-                            const uploadResult = await uploadBytes(storageRef, firstFile);
-                            productData.imagenUrl = await getDownloadURL(uploadResult.ref);
-                            console.log("Imagen subida:", productData.imagenUrl);
-                        }
-                        
-                        if (productId) { 
-                            const existingDoc = localProductsMap.get(productId);
-                            if (files.length === 0 && existingDoc && existingDoc.imagenUrl) { // Si no se subió imagen nueva
-                                productData.imagenUrl = existingDoc.imagenUrl; // Mantener la URL anterior
-                            } else if (files.length === 0 && (!existingDoc || !existingDoc.imagenUrl)) {
-                                productData.imagenUrl = null; // No había y no se subió
-                            }
-                            
-                            await updateDoc(doc(db, "productos", productId), productData); 
-                            showToast("Producto actualizado!"); 
-                        } else { 
-                            if (!productData.imagenUrl) { showToast("Se requiere una imagen para crear un producto nuevo.", 'warning'); throw new Error("Imagen requerida"); }
-                            productData.codigo = "P" + Date.now().toString().slice(-5); 
-                            const docRef = await addDoc(productsCollection, productData); 
-                            showToast("Producto guardado!"); 
-                            clearProductForm(); 
-                        } 
-                    } catch (err) { 
-                        console.error("Error saving product or image:", err); 
-                        if (err.message !== "Imagen requerida") {
-                            showToast(`Error: ${err.message}`, 'error'); 
-                        }
-                    } finally {
-                         if(saveProductBtn) { saveProductBtn.disabled = false; if(saveProductBtnText) saveProductBtnText.textContent = "Guardar"; if(saveProductBtnSpinner) saveProductBtnSpinner.style.display = 'none'; }
-                    }
-                });
-                
-                if (productListTableBody) productListTableBody.addEventListener('click', async (e) => { 
-                    const target = e.target.closest('button'); if (!target) return; e.preventDefault(); 
-                    const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.product-name'); if (!id || !nameTd) return;
-                     
-                     if (target.classList.contains('btn-delete-product')) {
-                         const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'productos'; deleteItemNameEl.textContent = `Producto: ${nameTd.firstChild.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
-                     } else if (target.classList.contains('btn-edit-product')) {
-                         showToast("Cargando datos...", 'info');
-                         try {
-                            const product = localProductsMap.get(id); // Usar caché
-                            if (product) {
-                                productIdInput.value = id;
-                                nombreInput.value = product.nombre || '';
-                                proveedorInput.value = product.proveedor || '';
-                                descripcionInput.value = product.descripcion || '';
-                                categoriaSelect.value = product.categoriaId || '';
-                                costoInput.value = product.costoCompra || 0;
-                                detalInput.value = product.precioDetal || 0;
-                                mayorInput.value = product.precioMayor || 0;
-                                visibleCheckbox.checked = product.visible;
-                                imagenInput.required = false; 
-                                document.getElementById('product-form-title').textContent = `Editando: ${product.nombre}`;
-                                
-                                variationsContainer.innerHTML = ''; 
-                                if (product.variaciones && product.variaciones.length > 0) {
-                                    product.variaciones.forEach(v => {
-                                        const nR = document.getElementById('variation-template').cloneNode(true);
-                                        nR.classList.remove('d-none'); nR.removeAttribute('id');
-                                        nR.querySelector('[name="variation_talla[]"]').value = v.talla || '';
-                                        nR.querySelector('[name="variation_color[]"]').value = v.color || '';
-                                        nR.querySelector('[name="variation_stock[]"]').value = v.stock || 0;
-                                        nR.querySelector('.remove-variation-btn').addEventListener('click', (ev)=>{ ev.preventDefault(); nR.remove(); });
-                                        variationsContainer.appendChild(nR);
-                                    });
-                                } else { aVR(); } 
-                                
-                                costoInput.dispatchEvent(new Event('input')); 
-                                document.getElementById('toggle-form-view-btn').click(); 
-                            } else { showToast("Producto no encontrado.", 'error'); }
-                         } catch (err) { console.error("Error fetching product for edit:", err); showToast(`Error al cargar: ${err.message}`, 'error'); }
-                     }
-                 });
-                 // Lógica del modal de búsqueda de productos
-                if (productSearchInput) productSearchInput.addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); const items = productSearchModalList.querySelectorAll('.product-search-item'); items.forEach(item => { item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'flex'; }); });
-                
-                // *** NUEVO: Listener para abrir el modal de selección de variación ***
-                if (productSearchModalList && searchProductModalInstance && selectVariationModalInstance) {
-                    productSearchModalList.addEventListener('click', (e) => {
-                        const target = e.target.closest('.product-search-item');
-                        if (target && !target.classList.contains('disabled')) {
-                            const productId = target.dataset.id;
-                            const product = localProductsMap.get(productId);
-                            if (product) {
-                                // Llenar el nuevo modal de variación
-                                document.getElementById('variation-modal-title').textContent = product.nombre;
-                                document.getElementById('variation-product-id').value = productId;
-                                document.getElementById('variation-product-name').value = product.nombre;
-                                document.getElementById('variation-product-price').value = product.precioDetal; // O precioMayor
-                                
-                                const selectTallaAdmin = document.getElementById('select-talla-admin');
-                                const selectColorAdmin = document.getElementById('select-color-admin');
-                                
-                                selectTallaAdmin.innerHTML = '<option value="">Talla...</option>';
-                                selectColorAdmin.innerHTML = '<option value="">Color...</option>';
-                                selectColorAdmin.disabled = true;
-                                document.getElementById('stock-disponible-admin').textContent = '';
-                                document.getElementById('btn-add-to-sale-cart').disabled = true;
-
-                                const variaciones = product.variaciones || [];
-                                const tallasUnicas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))];
-                                const coloresUnicos = [...new Set(variaciones.map(v => v.color).filter(Boolean))];
-
-                                if (tallasUnicas.length === 0 && variaciones.length > 0) {
-                                    selectTallaAdmin.innerHTML = '<option value="unica">Única</option>';
-                                    selectTallaAdmin.value = "unica";
-                                } else {
-                                    tallasUnicas.forEach(talla => { selectTallaAdmin.innerHTML += `<option value="${talla}">${talla}</option>`; });
-                                }
-
-                                if (coloresUnicos.length === 0 && variaciones.length > 0) {
-                                    selectColorAdmin.innerHTML = '<option value="unico">Único</option>';
-                                    selectColorAdmin.value = "unico";
-                                    selectColorAdmin.disabled = false;
-                                } else {
-                                    if (tallasUnicas.length > 0) selectColorAdmin.disabled = true;
-                                    else {
-                                        coloresUnicos.forEach(color => { selectColorAdmin.innerHTML += `<option value="${color}">${color}</option>`; });
-                                        selectColorAdmin.disabled = false;
-                                    }
-                                }
-                                
-                                if (tallasUnicas.length === 0 && coloresUnicos.length === 0 && variaciones.length > 0) {
-                                    selectTallaAdmin.value = "unica";
-                                    selectColorAdmin.value = "unico";
-                                    selectColorAdmin.disabled = false;
-                                    selectColorAdmin.dispatchEvent(new Event('change'));
-                                } else if (tallasUnicas.length === 0) {
-                                    selectTallaAdmin.dispatchEvent(new Event('change'));
-                                }
-                                
-                                searchProductModalInstance.hide();
-                                selectVariationModalInstance.show();
-                            }
-                        }
-                    });
-                }
-            })();
-
-            // ========================================================================
-            // --- LÓGICA VENTAS (CON DESCUENTO DE STOCK) ---
-            // ========================================================================
-            (() => {
-                 const salesForm = document.getElementById('form-venta'); const ventaClienteInput = document.getElementById('venta-cliente'); const tipoVentaSelect = document.getElementById('tipo-venta-select'); const tipoEntregaSelect = document.getElementById('tipo-entrega-select'); const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp'); const ventaRepartidorSelect = document.getElementById('venta-repartidor'); const costoRutaInput = document.getElementById('costo-ruta'); const rutaPagadaCheckbox = document.getElementById('ruta-pagada-transferencia'); const ventaProductoInput = document.getElementById('venta-producto'); const ventaCarritoTbody = document.getElementById('venta-carrito'); const ventaObservaciones = document.getElementById('venta-observaciones'); const ventaDescuentoInput = document.getElementById('venta-descuento'); const ventaDescuentoTipo = document.getElementById('venta-descuento-tipo'); const pagoEfectivoInput = document.getElementById('pago-efectivo'); const pagoTransferenciaInput = document.getElementById('pago-transferencia'); const ventaTotalSpan = document.getElementById('venta-total'); const salesListTableBody = document.getElementById('lista-ventas-anteriores'); let ventaItems = [];
-                 if(!salesForm) { console.warn("Elementos de Ventas no encontrados."); return; }
-                 
-                 // --- Lógica del modal de selección de variación ---
-                const selectTallaAdmin = document.getElementById('select-talla-admin');
-                const selectColorAdmin = document.getElementById('select-color-admin');
-                const selectCantidadAdmin = document.getElementById('select-cantidad-admin');
-                const stockDisponibleAdmin = document.getElementById('stock-disponible-admin');
-                const btnAddToSaleCart = document.getElementById('btn-add-to-sale-cart');
-
-                selectTallaAdmin.addEventListener('change', () => {
-                    const selectedTalla = selectTallaAdmin.value;
-                    const product = localProductsMap.get(document.getElementById('variation-product-id').value);
-                    if (!product || !selectedTalla) return;
-                    selectColorAdmin.innerHTML = '<option value="">Color...</option>';
-                    selectColorAdmin.disabled = false;
-                    stockDisponibleAdmin.textContent = '';
-                    btnAddToSaleCart.disabled = true;
-                    const variaciones = product.variaciones || [];
-                    const coloresParaTalla = [...new Set(variaciones.filter(v => (v.talla || 'unica') === selectedTalla).map(v => v.color).filter(Boolean))];
-                    if (coloresParaTalla.length === 0) {
-                        selectColorAdmin.innerHTML = '<option value="unico">Único</option>';
-                        selectColorAdmin.value = "unico";
-                        selectColorAdmin.dispatchEvent(new Event('change'));
-                    } else {
-                        coloresParaTalla.forEach(color => { selectColorAdmin.innerHTML += `<option value="${color}">${color}</option>`; });
-                    }
-                });
-
-                selectColorAdmin.addEventListener('change', () => {
-                    const selectedTalla = selectTallaAdmin.value;
-                    const selectedColor = selectColorAdmin.value;
-                    const product = localProductsMap.get(document.getElementById('variation-product-id').value);
-                    if (!product || !selectedTalla || !selectedColor) return;
-                    const variaciones = product.variaciones || [];
-                    const variacion = variaciones.find(v => (v.talla || 'unica') === selectedTalla && (v.color || 'unico') === selectedColor);
-                    
-                    if (variacion && variacion.stock > 0) {
-                        stockDisponibleAdmin.textContent = `${variacion.stock} disponibles`;
-                        stockDisponibleAdmin.className = "text-success";
-                        selectCantidadAdmin.max = variacion.stock;
-                        selectCantidadAdmin.value = 1;
-                        btnAddToSaleCart.disabled = false;
-                    } else {
-                        stockDisponibleAdmin.textContent = 'Agotado';
-                        stockDisponibleAdmin.className = "text-danger";
-                        selectCantidadAdmin.max = 0;
-                        selectCantidadAdmin.value = 0;
-                        btnAddToSaleCart.disabled = true;
-                    }
-                });
-                
-                // Botón "Añadir al Carrito" del modal de variación
-                btnAddToSaleCart.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const productId = document.getElementById('variation-product-id').value;
-                    const nombre = document.getElementById('variation-product-name').value;
-                    const precio = parseFloat(document.getElementById('variation-product-price').value);
-                    const talla = selectTallaAdmin.value;
-                    const color = selectColorAdmin.value;
-                    const cantidad = parseInt(selectCantidadAdmin.value, 10);
-                    const stockMax = parseInt(selectCantidadAdmin.max, 10);
-                    
-                    if (cantidad > stockMax) {
-                        showToast(`No puedes agregar ${cantidad}. Solo hay ${stockMax} en stock.`, 'warning');
-                        return;
-                    }
-
-                    agregarItemAlCarrito(productId, nombre, cantidad, precio, talla, color);
-                    selectVariationModalInstance.hide();
-                });
-                 
-                 function agregarItemAlCarrito(productoId, nombre, cantidad, precio, talla, color) { 
-                    const cartItemId = `${productoId}-${talla}-${color}`;
-                    const existingItem = ventaItems.find(item => item.cartItemId === cartItemId); 
-                    
-                    if (existingItem) { 
-                        existingItem.cantidad += cantidad; 
-                        existingItem.total = existingItem.cantidad * existingItem.precio; 
-                    } else { 
-                        const totalItem = cantidad * precio; 
-                        ventaItems.push({ cartItemId, productoId, nombre, cantidad, precio, total: totalItem, talla, color }); 
-                    } 
-                    renderCarrito(); 
-                    calcularTotalVentaGeneral(); 
-                 }
-                 function quitarItemDelCarrito(index) { ventaItems.splice(index, 1); renderCarrito(); calcularTotalVentaGeneral(); }
-                 function renderCarrito() { 
-                    ventaCarritoTbody.innerHTML = ''; 
-                    ventaItems.forEach((item, index) => { 
-                        const tr = document.createElement('tr'); 
-                        tr.innerHTML = `<td>${item.nombre}</td>
-                                        <td><small class="text-muted">${item.talla}/${item.color}</small></td>
-                                        <td><input type="number" class="form-control form-control-sm item-qty-input" value="${item.cantidad}" min="1" data-index="${index}"></td>
-                                        <td>${formatoMoneda.format(item.precio)}</td>
-                                        <td>${formatoMoneda.format(item.total)}</td>
-                                        <td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 btn-quitar-item" data-index="${index}">&times;</button></td>`; 
-                        ventaCarritoTbody.appendChild(tr); 
-                    }); 
-                 }
-                 if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('change', async (e) => { 
-                    if (e.target.classList.contains('item-qty-input')) { 
-                        const index = parseInt(e.target.dataset.index, 10); 
-                        const newQty = parseInt(e.target.value, 10); 
-                        const item = ventaItems[index];
-                        if (newQty > 0 && item) {
-                            // Re-validar stock
-                            const product = localProductsMap.get(item.productoId);
-                            const variacion = product.variaciones.find(v => (v.talla || 'unica') === item.talla && (v.color || 'unico') === item.color);
-                            if (newQty > variacion.stock) {
-                                showToast(`Solo hay ${variacion.stock} disponibles.`, 'warning');
-                                e.target.value = variacion.stock; // Corregir
-                                item.cantidad = variacion.stock;
-                            } else {
-                                item.cantidad = newQty;
-                            }
-                            item.total = item.cantidad * item.precio; 
-                            renderCarrito(); 
-                            calcularTotalVentaGeneral(); 
-                        } 
-                    } 
-                 });
-                 if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('click', (e) => { e.preventDefault(); if (e.target.closest('.btn-quitar-item')) { quitarItemDelCarrito(parseInt(e.target.closest('.btn-quitar-item').dataset.index, 10)); } });
-                 function calcularTotalVentaGeneral() { let subtotalItems = ventaItems.reduce((sum, item) => sum + item.total, 0); let costoRuta = 0; if (tipoEntregaSelect.value === 'domicilio') { costoRuta = parseFloat(costoRutaInput.value) || 0; } let descuento = parseFloat(ventaDescuentoInput.value) || 0; if (ventaDescuentoTipo.value === 'porcentaje') { descuento = subtotalItems * (descuento / 100); } const totalFinal = subtotalItems - descuento + costoRuta; if(ventaTotalSpan) ventaTotalSpan.textContent = formatoMoneda.format(totalFinal); return totalFinal; }
-                 if(costoRutaInput) costoRutaInput.addEventListener('input', calcularTotalVentaGeneral); if(ventaDescuentoInput) ventaDescuentoInput.addEventListener('input', calcularTotalVentaGeneral); if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', calcularTotalVentaGeneral); if(ventaDescuentoTipo) ventaDescuentoTipo.addEventListener('change', calcularTotalVentaGeneral);
-                 
-                 const renderSales = (snapshot) => { if(!salesListTableBody) return; const emptyRow = document.getElementById('empty-sales-row'); salesListTableBody.innerHTML = ''; if (snapshot.empty) { if(emptyRow) { emptyRow.style.display = ''; salesListTableBody.appendChild(emptyRow); } return; } if(emptyRow) emptyRow.style.display = 'none'; snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); tr.dataset.id = id; const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A'; const pago = (d.pagoEfectivo>0?'Efec.':'') + (d.pagoTransferencia>0?(d.pagoEfectivo>0?'+':''):'') + (d.pagoTransferencia>0?'Transf.':''); const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge' : '-'); const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada'); tr.innerHTML = `<td>${fecha}</td><td>${d.clienteNombre || 'General'}</td><td>${d.tipoVenta}</td><td>${formatoMoneda.format(d.totalVenta||0)}</td><td>${pago||'-'}</td><td>${repartidor}</td><td><span class="badge ${estado==='Completada'?'bg-success':(estado==='Pendiente'?'bg-warning':'bg-danger')}">${estado}</span></td><td class="action-buttons"><button class="btn btn-sm btn-outline-primary py-0 px-1 btn-view-sale" title="Ver"><i class="bi bi-eye"></i></button>${d.tipoVenta === 'apartado' ? '<button class="btn btn-sm btn-outline-warning py-0 px-1 btn-manage-apartado" title="Gestionar"><i class="bi bi-calendar-heart"></i></button>' : ''}<button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-sale" title="Cancelar"><i class="bi bi-trash"></i></button></td>`; salesListTableBody.appendChild(tr); }); };
-                 onSnapshot(query(salesCollection, orderBy('timestamp', 'desc')), renderSales, e => { console.error("Error sales:", e); if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
-                
-                // --- LÓGICA DE GUARDAR VENTA Y DESCONTAR STOCK ---
-                if (salesForm) salesForm.addEventListener('submit', async (e) => { 
-                    e.preventDefault(); 
-                    if (ventaItems.length === 0) { showToast("Agrega productos.", 'warning'); return; } 
-                    
-                    const btn = document.getElementById('btn-registrar-venta');
-                    const btnText = btn.querySelector('.save-text');
-                    const btnSpinner = btn.querySelector('.spinner-border');
-                    btn.disabled = true; btnText.textContent = "Registrando..."; btnSpinner.style.display = 'inline-block';
-
-                    const totalCalculado = calcularTotalVentaGeneral(); 
-                    const ventaData = { clienteNombre: ventaClienteInput.value || "Cliente General", tipoVenta: tipoVentaSelect.value, tipoEntrega: tipoEntregaSelect.value, pedidoWhatsapp: ventaWhatsappCheckbox.checked, repartidorId: tipoEntregaSelect.value === 'domicilio' ? ventaRepartidorSelect.value : null, costoRuta: tipoEntregaSelect.value === 'domicilio' ? (parseFloat(costoRutaInput.value) || 0) : 0, rutaPagadaTransferencia: tipoEntregaSelect.value === 'domicilio' ? rutaPagadaCheckbox.checked : false, items: ventaItems, observaciones: ventaObservaciones.value.trim(), descuento: parseFloat(ventaDescuentoInput.value) || 0, descuentoTipo: ventaDescuentoTipo.value, pagoEfectivo: parseFloat(pagoEfectivoInput.value) || 0, pagoTransferencia: parseFloat(pagoTransferenciaInput.value) || 0, totalVenta: totalCalculado, estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada', timestamp: serverTimestamp() }; 
-                    
-                    if (ventaData.tipoVenta !== 'apartado' && (ventaData.pagoEfectivo + ventaData.pagoTransferencia < totalCalculado)) { 
-                        showToast("El pago no cubre el total.", 'warning'); 
-                        btn.disabled = false; btnText.textContent = "Registrar Venta"; btnSpinner.style.display = 'none';
-                        return; 
-                    } 
-                    
-                    try {
-                        // Usar una transacción para asegurar que el stock se descuente correctamente
-                        await runTransaction(db, async (transaction) => {
-                            const saleRef = doc(collection(db, "ventas")); // Crear referencia para la nueva venta
-                            
-                            // 1. Validar stock y preparar actualizaciones
-                            for (const item of ventaData.items) {
-                                const productRef = doc(db, "productos", item.productoId);
-                                const productDoc = await transaction.get(productRef);
-                                if (!productDoc.exists()) {
-                                    throw new Error(`Producto ${item.nombre} no encontrado.`);
-                                }
-                                
-                                const productData = productDoc.data();
-                                const variaciones = productData.variaciones || [];
-                                const variacionIndex = variaciones.findIndex(v => (v.talla || 'unica') === item.talla && (v.color || 'unico') === item.color);
-                                
-                                if (variacionIndex === -1) {
-                                    throw new Error(`Variación ${item.talla}/${item.color} de ${item.nombre} no encontrada.`);
-                                }
-                                
-                                const stockActual = variaciones[variacionIndex].stock || 0;
-                                if (stockActual < item.cantidad) {
-                                    throw new Error(`Stock insuficiente para ${item.nombre} (${item.talla}/${item.color}). Solo quedan ${stockActual}.`);
-                                }
-                                
-                                // Preparar la actualización de la variación
-                                productData.variaciones[variacionIndex].stock = stockActual - item.cantidad;
-                                // Poner la actualización en la transacción
-                                transaction.update(productRef, { variaciones: productData.variaciones });
-                            }
-                            
-                            // 2. Si todo el stock es válido, crear la venta
-                            transaction.set(saleRef, ventaData);
-                            
-                            // 3. (Opcional) Crear apartado si es necesario
-                            if (ventaData.tipoVenta === 'apartado') {
-                                const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia;
-                                const apartadoRef = doc(collection(db, "apartados"));
-                                transaction.set(apartadoRef, {
-                                    ventaId: saleRef.id,
-                                    clienteNombre: ventaData.clienteNombre,
-                                    total: ventaData.totalVenta,
-                                    abonado: abonoInicial,
-                                    saldo: ventaData.totalVenta - abonoInicial,
-                                    fechaCreacion: ventaData.timestamp,
-                                    fechaVencimiento: null, // Puedes añadir lógica para esto
-                                    estado: 'Pendiente'
-                                });
-                            }
-                        });
-
-                        showToast("¡Venta registrada y stock actualizado!");
-                        salesForm.reset(); 
-                        ventaItems = []; 
-                        renderCarrito(); 
-                        fillClientInfoSales(); 
-                        tipoVentaSelect.value='detal'; 
-                        tipoEntregaSelect.value='tienda'; 
-                        toggleDeliveryFields(); 
-                        calcularTotalVentaGeneral();
-                        
-                    } catch (err) { 
-                        console.error("Error en la transacción de venta: ", err); 
-                        showToast(`Error: ${err.message}`, 'error'); 
-                    } finally {
-                        btn.disabled = false; btnText.textContent = "Registrar Venta"; btnSpinner.style.display = 'none';
-                    }
-                });
-                if(salesListTableBody) salesListTableBody.addEventListener('click', (e)=>{ e.preventDefault(); const target = e.target.closest('button'); if (!target) return; const id = target.closest('tr')?.dataset.id; if (!id) return; if(target.classList.contains('btn-view-sale')) showToast(`Ver ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-cancel-sale')) showToast(`Cancelar ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-manage-apartado')) showToast(`Gestionar ${id} (Pendiente)`, 'warning'); });
-                
-                function toggleDeliveryFields(){ const tES = document.getElementById('tipo-entrega-select'); const dFD = document.querySelector('.delivery-fields'); const cRI = document.getElementById('costo-ruta'); if (dFD && tES && cRI) { if (tES.value === 'domicilio') { dFD.style.display = 'flex'; } else { dFD.style.display = 'none'; cRI.value = 0; } } }
-                document.getElementById('tipo-entrega-select').addEventListener('change', toggleDeliveryFields);
-                toggleDeliveryFields();
-                calcularTotalVentaGeneral();
-            })();
-
-            // ========================================================================
-            // --- LÓGICA APARTADOS (Cargar lista) ---
-            // ========================================================================
-            (() => {
-                 const apartadosListTableBody = document.getElementById('lista-apartados');
-                 if(!apartadosListTableBody) { console.warn("Elementos de Apartados no encontrados."); return; }
-                 const renderApartados = (snapshot) => { apartadosListTableBody.innerHTML = ''; if (snapshot.empty) { apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay apartados pendientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const ap = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); tr.dataset.id = id; const vence = ap.fechaVencimiento?.toDate ? ap.fechaVencimiento.toDate().toLocaleDateString('es-CO') : 'N/A'; tr.innerHTML = `<td>${ap.clienteNombre || '?'}</td><td>${formatoMoneda.format(ap.total || 0)}</td><td>${formatoMoneda.format(ap.abonado || 0)}</td><td>${formatoMoneda.format(ap.saldo || 0)}</td><td>${vence}</td><td class="action-buttons"><button class="btn btn-sm btn-outline-success py-0 px-1 btn-abono-apartado" title="Abono"><i class="bi bi-cash-coin"></i></button><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-apartado" title="Editar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-apartado" title="Cancelar"><i class="bi bi-trash"></i></button></td>`; apartadosListTableBody.appendChild(tr); }); };
-                  const q = query(apartadosCollection, where('estado', '==', 'Pendiente'), orderBy('fechaCreacion', 'desc'));
-                  onSnapshot(q, renderApartados, e => { console.error("Error apartados:", e); if(apartadosListTableBody) apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';});
-                  if(apartadosListTableBody) apartadosListTableBody.addEventListener('click', (e)=>{ e.preventDefault(); const target = e.target.closest('button'); if (!target) return; const id = target.closest('tr')?.dataset.id; if(!id) return; if(target.classList.contains('btn-abono-apartado')) showToast(`Abono ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-edit-apartado')) showToast(`Editar ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-cancel-apartado')) showToast(`Cancelar ${id} (Pendiente)`, 'warning'); });
-            })();
-
-            // ========================================================================
-            // --- LÓGICA FINANZAS (Ingreso/Gasto, Cierre Placeholder) ---
-            // ========================================================================
-            (() => {
-                 const addIncomeForm = document.getElementById('form-add-income'); const incomeAmountInput = document.getElementById('income-amount'); const incomeDescInput = document.getElementById('income-description'); const addExpenseForm = document.getElementById('form-add-expense'); const expenseAmountInput = document.getElementById('expense-amount'); const expenseDescInput = document.getElementById('expense-description'); const closingForm = document.getElementById('form-cierre-caja'); const closingHistoryTableBody = document.getElementById('lista-historial-cierres');
-                 if(addIncomeForm && addIncomeModalInstance) addIncomeForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(incomeAmountInput.value); const desc = incomeDescInput.value.trim(); if (amount && desc) { try { await addDoc(financesCollection, { tipo: 'ingreso', monto: amount, descripcion: desc, timestamp: serverTimestamp() }); showToast('Ingreso guardado!'); addIncomeModalInstance.hide(); addIncomeForm.reset(); } catch(err) { console.error("Err income:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Monto y descripción requeridos.', 'warning'); } });
-                 if(addExpenseForm && addExpenseModalInstance) addExpenseForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(expenseAmountInput.value); const desc = expenseDescInput.value.trim(); if (amount && desc) { try { await addDoc(financesCollection, { tipo: 'gasto', monto: amount, descripcion: desc, timestamp: serverTimestamp() }); showToast('Gasto guardado!'); addExpenseModalInstance.hide(); addExpenseForm.reset(); } catch(err) { console.error("Err expense:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Monto y descripción requeridos.', 'warning'); } });
-                if (closingForm) closingForm.addEventListener('submit', async (e) => { e.preventDefault(); showToast("Realizando cierre... (Lógica pendiente)", 'warning'); const egresos = parseFloat(document.getElementById('caja-egresos').value) || 0; const obs = document.getElementById('caja-observaciones').value.trim(); /* --- FETCH DATA & CALCULATE --- */ const cierreData = { timestamp: serverTimestamp(), egresos, observaciones: obs, /* calculated fields */ }; try { /* await addDoc(closingsCollection, cierreData); */ showToast("Cierre guardado (simulado)!"); /* Reset form? */ } catch(err) { console.error("Err closing:", err); showToast(`Error: ${err.message}`, 'error'); } });
-                 const renderClosings = (snapshot) => { if(!closingHistoryTableBody) return; closingHistoryTableBody.innerHTML = ''; if (snapshot.empty) { closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay cierres.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A'; tr.innerHTML = `<td>${fecha}</td><td>${formatoMoneda.format(d.ventasEfectivo||0)}</td><td>${formatoMoneda.format(d.abonosEfectivo||0)}</td><td>${formatoMoneda.format(d.recibidoRepartidores||0)}</td><td>${formatoMoneda.format(d.egresos||0)}</td><td>${formatoMoneda.format(d.totalCaja||0)}</td><td>${d.observaciones||'-'}</td>`; closingHistoryTableBody.appendChild(tr); }); };
-                 onSnapshot(query(closingsCollection, orderBy('timestamp', 'desc')), renderClosings, e => { console.error("Error closings:", e); if(closingHistoryTableBody) closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error.</td></tr>';});
-            })();
-
-            // ========================================================================
-            // --- SCRIPTS DE UI (Toggles, Domicilio) ---
-            // ========================================================================
-            (() => {
-                // Toggles
-                const fV_prod = document.getElementById('form-view'); const iV_prod = document.getElementById('inventory-view'); const tIB_prod = document.getElementById('toggle-inventory-view-btn'); const tFB_prod = document.getElementById('toggle-form-view-btn'); if(fV_prod && iV_prod && tIB_prod && tFB_prod){ tIB_prod.addEventListener('click',(e)=>{ e.preventDefault(); fV_prod.style.display='none'; iV_prod.style.display='block'; tIB_prod.classList.add('active'); tFB_prod.classList.remove('active');}); tFB_prod.addEventListener('click',(e)=>{ e.preventDefault(); iV_prod.style.display='none'; fV_prod.style.display='block'; tFB_prod.classList.add('active'); tIB_prod.classList.remove('active'); document.getElementById('form-producto').reset(); document.getElementById('producto-id').value = ''; /* Limpiar formulario */ }); iV_prod.style.display='block'; tIB_prod.classList.add('active'); } else { console.warn("Product view toggle missing."); }
-                const sFV = document.getElementById('sales-form-view'); const sLV = document.getElementById('sales-list-view'); const tSLB = document.getElementById('toggle-sales-list-view-btn'); const tSFB = document.getElementById('toggle-sales-form-view-btn'); if(sFV && sLV && tSLB && tSFB){ tSLB.addEventListener('click',(e)=>{ e.preventDefault(); sFV.style.display='none'; sLV.style.display='block'; tSLB.classList.add('active'); tSFB.classList.remove('active'); }); tSFB.addEventListener('click',(e)=>{ e.preventDefault(); sLV.style.display='none'; sFV.style.display='block'; tSFB.classList.add('active'); tSLB.classList.remove('active'); }); sFV.style.display='block'; tSFB.classList.add('active'); } else { console.warn("Sales view toggle missing."); }
-                 const todayViewR = document.getElementById('delivery-today-view'); const historyViewR = document.getElementById('delivery-history-view'); const toggleHistoryBtnR = document.getElementById('toggle-delivery-history-btn'); const toggleTodayBtnR = document.getElementById('toggle-delivery-today-btn'); if (todayViewR && historyViewR && toggleHistoryBtnR && toggleTodayBtnR) { toggleHistoryBtnR.addEventListener('click', (e) => { e.preventDefault(); todayViewR.style.display = 'none'; historyViewR.style.display = 'block'; toggleHistoryBtnR.classList.add('active'); toggleTodayBtnR.classList.remove('active'); }); toggleTodayBtnR.addEventListener('click', (e) => { e.preventDefault(); historyViewR.style.display = 'none'; todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); toggleHistoryBtnR.classList.remove('active'); }); todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); } else { console.warn("Delivery view toggle missing."); }
-                const tCV = document.getElementById('closing-today-view'); const hCV = document.getElementById('closing-history-view'); const tHB = document.getElementById('toggle-closing-history-btn'); const tTB = document.getElementById('toggle-closing-today-btn'); if (tCV && hCV && tHB && tTB) { tHB.addEventListener('click', (e) => { e.preventDefault(); tCV.style.display = 'none'; hCV.style.display = 'block'; tHB.classList.add('active'); tTB.classList.remove('active'); }); tTB.addEventListener('click', (e) => { e.preventDefault(); hCV.style.display = 'none'; tCV.style.display = 'block'; tTB.classList.add('active'); tHB.classList.remove('active'); }); tCV.style.display = 'block'; tTB.classList.add('active'); } else { console.warn("Finance closing view toggle missing."); }
-                
-                // Domicilio y Autollenar Cliente
-                const tES = document.getElementById('tipo-entrega-select'); const dFD = document.querySelector('.delivery-fields'); const cRI = document.getElementById('costo-ruta'); const vCI_fill = document.getElementById('venta-cliente'); const cCI_fill = document.getElementById('venta-cliente-celular'); const cDI_fill = document.getElementById('venta-cliente-direccion'); 
-                document.addEventListener('clientsLoaded', (event) => { localClientsMap = event.detail.clientsMap; fCIS_UI(); }); 
-                function tDF() { if (dFD && tES && cRI) { if (tES.value === 'domicilio') { dFD.style.display = 'flex'; } else { dFD.style.display = 'none'; cRI.value = 0; } } else { console.warn("Missing delivery elements."); } } 
-                function fCIS_UI() { if (!vCI_fill || !cCI_fill || !cDI_fill) return; const sV = vCI_fill.value; const cI = localClientsMap.get(sV); if (cI) { cCI_fill.value = cI.celular; cDI_fill.value = cI.direccion; } else { cCI_fill.value = ""; cDI_fill.value = ""; } } 
-                if(tES) tES.addEventListener('change', tDF); if(vCI_fill) vCI_fill.addEventListener('input', fCIS_UI); tDF(); fCIS_UI();
-
-                // Navbar collapse on click
-                const navLinks = document.querySelectorAll('#adminNavbarContent .nav-link');
-                const navCollapse = document.getElementById('adminNavbarContent');
-                if (navCollapse) {
-                    const bsCollapse = new bootstrap.Collapse(navCollapse, { toggle: false });
-                    navLinks.forEach((link) => {
-                        link.addEventListener('click', () => {
-                            if (navCollapse.classList.contains('show')) {
-                                bsCollapse.hide();
-                            }
-                        });
-                    });
-                }
-
-            })(); // End of UI Scripts IIFE
-        
-        }); // Fin de DOMContentLoaded
+            // ==== EL JAVASCRIPT CONTINUARÁ EN EL SIGUIENTE UPDATE ====
+            console.log("Admin.html cargado - JavaScript completo próximamente");
+        });
     </script>
 
 </body>
