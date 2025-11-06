@@ -85,8 +85,26 @@
 
     <main class="admin-main">
         <div class="tab-content">
-            <div class="tab-pane fade show active" id="dashboard"> <h1 class="h2">Dashboard</h1> <p>Resumen...</p> <div class="row g-4"><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Ventas Hoy</h5><p class="card-text h2" id="db-ventas-hoy">$0</p></div></div><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Bajo Stock</h5><p class="card-text h2" id="db-bajo-stock">0</p></div></div><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Apartados Vencer</h5><p class="card-text h2" id="db-apartados-vencer">0</p></div></div></div> </div>
-            <div class="tab-pane fade" id="productos"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Productos</h1> <div class="btn-group"> <button type="button" id="toggle-inventory-view-btn" class="btn btn-sm btn-outline-secondary active"><i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline"> Inventario</span></button> <button type="button" id="toggle-form-view-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Agregar/Editar</span></button> </div> </div>
+            <!-- DASHBOARD -->
+            <div class="tab-pane fade show active" id="dashboard"> 
+                <h1 class="h2">Dashboard</h1> 
+                <p>Resumen...</p> 
+                <div class="row g-4">
+                    <div class="col-md-4"><div class="card p-3"><h5 class="card-title">Ventas Hoy</h5><p class="card-text h2" id="db-ventas-hoy">$0</p></div></div>
+                    <div class="col-md-4"><div class="card p-3"><h5 class="card-title">Bajo Stock</h5><p class="card-text h2" id="db-bajo-stock">0</p></div></div>
+                    <div class="col-md-4"><div class="card p-3"><h5 class="card-title">Apartados Vencer</h5><p class="card-text h2" id="db-apartados-vencer">0</p></div></div>
+                </div> 
+            </div>
+
+            <!-- PRODUCTOS -->
+            <div class="tab-pane fade" id="productos"> 
+                <div class="d-flex justify-content-between align-items-center mb-3"> 
+                    <h1 class="h2 mb-0">Productos</h1> 
+                    <div class="btn-group"> 
+                        <button type="button" id="toggle-inventory-view-btn" class="btn btn-sm btn-outline-secondary active"><i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline"> Inventario</span></button> 
+                        <button type="button" id="toggle-form-view-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Agregar/Editar</span></button> 
+                    </div> 
+                </div>
                 
                 <div class="row align-items-center mb-2 variation-row d-none" id="variation-template">
                     <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_talla[]" placeholder="Talla"> </div>
@@ -95,8 +113,152 @@
                     <div class="col-md-1 text-end"> <button type="button" class="btn btn-sm btn-outline-danger remove-variation-btn p-1"> <i class="bi bi-x"></i> </button> </div>
                 </div>
                 
-                 <div id="form-view" style="display: none;"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0" id="product-form-title">Formulario Producto</h3></div> <div class="card-body"> <form id="form-producto"> <input type="hidden" id="producto-id"> <div class="row"> <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div> <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div> <div class="col-md-3 mb-3"> <label for="proveedor-producto" class="form-label">Proveedor:</label> <div class="input-group"> <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal" style="cursor: pointer;"> <input type="hidden" id="proveedor-producto-id"> <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button> </div> </div> </div> <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div> <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div> <hr class="my-4"> <h5 class="mb-3">Precios</h5> <div class="row"> <div class="col-md-4 mb-3"> <label for="costo-compra" class="form-label">Costo ($):</label> <input type="number" class="form-control" id="costo-compra" step="0.01" min="0" required> </div> <div class="col-md-4 mb-3"> <label for="precio-detal" class="form-label">P. Detal ($):</label> <input type="number" class="form-control" id="precio-detal" step="0.01" min="0" required> <small id="margen-detal-info" class="form-text text-muted"></small> </div> <div class="col-md-4 mb-3"> <label for="precio-mayor" class="form-label">P. Mayor ($):</label> <input type="number" class="form-control" id="precio-mayor" step="0.01" min="0"> <small id="margen-mayor-info" class="form-text text-muted"></small> </div> </div> <hr class="my-4"> <h5 class="mb-3">Variaciones</h5> <div id="variaciones-container"> </div> <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir</button> <hr class="my-4"> <div class="row"> <div class="col-md-8 mb-3"> <label for="imagen" class="form-label">Fotos:</label> <input type="file" class="form-control" id="imagen" accept="image/*" multiple> <small class="text-muted" id="image-upload-label">La 1ra será la principal. Si editas y no subes una nueva, se mantendrá la anterior.</small> </div> <div class="col-md-4 d-flex align-items-center"> <div class="form-check form-switch fs-5 w-100"> <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked> <label class="form-check-label" for="visibilidad">Visible</label> </div> </div> </div> <hr class="my-4"> <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> <button type="button" id="btn-clear-product-form" class="btn btn-outline-secondary ms-2">Limpiar</button> </form> </div> </div> </div> <div id="inventory-view"> <div class="input-group mb-3"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="search" id="search-inventory" class="form-control" placeholder="Buscar..."></div> <div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr> <th>Foto</th> <th>Nombre</th> <th>Variaciones</th> <th>P. Detal</th> <th>P. Mayor</th> <th>Stock</th> <th>Estado</th> <th>Acciones</th> </tr></thead><tbody id="lista-inventario-productos"><tr id="empty-inventory-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr></tbody></table></div></div></div> </div> </div>
-            <div class="tab-pane fade" id="ventas"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Ventas</h1> <div class="btn-group"> <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Registrar</span></button> <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-list-check me-1"></i><span class="d-none d-md-inline"> Historial</span></button> </div> </div> <div id="sales-form-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Registrar Venta</h3></div> <div class="card-body"> <form id="form-venta"> <input type="hidden" id="venta-cliente-id"> <div class="row align-items-end"> <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label> <div class="input-group"> <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;"> <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button> </div> <div class="row mt-2 gx-2"> <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div> <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div> </div> </div> <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div> <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div> <div class="col-md-2 mb-3"> <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> </div> </div> <div class="row delivery-fields"> <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div> <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div> <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> </div> </div> <label for="venta-producto" class="form-label">Buscar Producto:</label> <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;"> <table class="table my-3"> <thead><tr><th>Producto</th><th>Variación</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead> <tbody id="venta-carrito"></tbody> </table> <hr> <div class="row"> <div class="col-md-6"> <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> </div> <div class="col-md-6"> <div class="row"> <div class="col-7"> <label for="venta-descuento" class="form-label">Descuento:</label> <input type="number" id="venta-descuento" class="form-control" value="0"> </div> <div class="col-5"> <label class="form-label">&nbsp;</label> <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> </div> </div> <label class="form-label mt-3">Pago:</label> <div class="input-group mb-2"> <span class="input-group-text">Efectivo $</span> <input type="number" id="pago-efectivo" class="form-control" value="0"> </div> <div class="input-group mb-3"> <span class="input-group-text">Transf. $</span> <input type="number" id="pago-transferencia" class="form-control" value="0"> </div> <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-registrar-venta"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Registrar Venta</span> </button> </div> </div> </form> </div> </div> </div> <div id="sales-list-view"> <div class="card"> <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div> <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"> <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> </thead><tbody id="lista-ventas-anteriores"> <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr> </tbody></table></div></div></div> </div> </div>
+                <div id="form-view" style="display: none;"> 
+                    <div class="card"> 
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0" id="product-form-title">Formulario Producto</h3></div> 
+                        <div class="card-body"> 
+                            <form id="form-producto"> 
+                                <input type="hidden" id="producto-id"> 
+                                <div class="row"> 
+                                    <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div> 
+                                    <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div> 
+                                    <div class="col-md-3 mb-3"> <label for="proveedor-producto" class="form-label">Proveedor:</label> <div class="input-group"> <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal" style="cursor: pointer;"> <input type="hidden" id="proveedor-producto-id"> <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button> </div> </div> 
+                                </div> 
+                                <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div> 
+                                <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div> 
+                                <hr class="my-4"> 
+                                <h5 class="mb-3">Precios</h5> 
+                                <div class="row"> 
+                                    <div class="col-md-4 mb-3"> <label for="costo-compra" class="form-label">Costo ($):</label> <input type="number" class="form-control" id="costo-compra" step="0.01" min="0" required> </div> 
+                                    <div class="col-md-4 mb-3"> <label for="precio-detal" class="form-label">P. Detal ($):</label> <input type="number" class="form-control" id="precio-detal" step="0.01" min="0" required> <small id="margen-detal-info" class="form-text text-muted"></small> </div> 
+                                    <div class="col-md-4 mb-3"> <label for="precio-mayor" class="form-label">P. Mayor ($):</label> <input type="number" class="form-control" id="precio-mayor" step="0.01" min="0"> <small id="margen-mayor-info" class="form-text text-muted"></small> </div> 
+                                </div> 
+                                <hr class="my-4"> 
+                                <h5 class="mb-3">Variaciones</h5> 
+                                <div id="variaciones-container"> </div> 
+                                <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir</button> 
+                                <hr class="my-4"> 
+                                <div class="row"> 
+                                    <div class="col-md-8 mb-3"> <label for="imagen" class="form-label">Fotos:</label> <input type="file" class="form-control" id="imagen" accept="image/*" multiple> <small class="text-muted" id="image-upload-label">La 1ra será la principal. Si editas y no subes una nueva, se mantendrá la anterior.</small> </div> 
+                                    <div class="col-md-4 d-flex align-items-center"> <div class="form-check form-switch fs-5 w-100"> <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked> <label class="form-check-label" for="visibilidad">Visible</label> </div> </div> 
+                                </div> 
+                                <hr class="my-4"> 
+                                <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> 
+                                <button type="button" id="btn-clear-product-form" class="btn btn-outline-secondary ms-2">Limpiar</button> 
+                            </form> 
+                        </div> 
+                    </div> 
+                </div> 
+                <div id="inventory-view"> 
+                    <div class="input-group mb-3"><span class="input-group-text"><i class="bi bi-search"></i></span><input type="search" id="search-inventory" class="form-control" placeholder="Buscar..."></div> 
+                    <div class="card">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr> 
+                                            <th>Foto</th> 
+                                            <th>Nombre</th> 
+                                            <th>Variaciones</th> 
+                                            <th>P. Detal</th> 
+                                            <th>P. Mayor</th> 
+                                            <th>Stock</th> 
+                                            <th>Estado</th> 
+                                            <th>Acciones</th> 
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lista-inventario-productos">
+                                        <tr id="empty-inventory-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> 
+                </div> 
+            </div>
+
+            <!-- VENTAS -->
+            <div class="tab-pane fade" id="ventas"> 
+                <div class="d-flex justify-content-between align-items-center mb-3"> 
+                    <h1 class="h2 mb-0">Ventas</h1> 
+                    <div class="btn-group"> 
+                        <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Registrar</span></button> 
+                        <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-list-check me-1"></i><span class="d-none d-md-inline"> Historial</span></button> 
+                    </div> 
+                </div> 
+                <div id="sales-form-view"> 
+                    <div class="card"> 
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Registrar Venta</h3></div> 
+                        <div class="card-body"> 
+                            <form id="form-venta"> 
+                                <input type="hidden" id="venta-cliente-id"> 
+                                <div class="row align-items-end"> 
+                                    <div class="col-md-5 mb-3"> 
+                                        <label for="venta-cliente" class="form-label">Cliente:</label> 
+                                        <div class="input-group"> 
+                                            <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;"> 
+                                            <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button> 
+                                        </div> 
+                                        <div class="row mt-2 gx-2"> 
+                                            <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div> 
+                                            <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div> 
+                                        </div> 
+                                    </div> 
+                                    <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div> 
+                                    <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div> 
+                                    <div class="col-md-2 mb-3"> <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> </div> 
+                                </div> 
+                                <div class="row delivery-fields"> 
+                                    <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div> 
+                                    <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div> 
+                                    <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> </div> 
+                                </div> 
+                                <label for="venta-producto" class="form-label">Buscar Producto:</label> 
+                                <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;"> 
+                                <table class="table my-3"> 
+                                    <thead><tr><th>Producto</th><th>Variación</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead> 
+                                    <tbody id="venta-carrito"></tbody> 
+                                </table> 
+                                <hr> 
+                                <div class="row"> 
+                                    <div class="col-md-6"> 
+                                        <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> 
+                                        <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> 
+                                    </div> 
+                                    <div class="col-md-6"> 
+                                        <div class="row"> 
+                                            <div class="col-7"> <label for="venta-descuento" class="form-label">Descuento:</label> <input type="number" id="venta-descuento" class="form-control" value="0"> </div> 
+                                            <div class="col-5"> <label class="form-label">&nbsp;</label> <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> </div> 
+                                        </div> 
+                                        <label class="form-label mt-3">Pago:</label> 
+                                        <div class="input-group mb-2"> <span class="input-group-text">Efectivo $</span> <input type="number" id="pago-efectivo" class="form-control" value="0"> </div> 
+                                        <div class="input-group mb-3"> <span class="input-group-text">Transf. $</span> <input type="number" id="pago-transferencia" class="form-control" value="0"> </div> 
+                                        <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> 
+                                        <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-registrar-venta"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Registrar Venta</span> </button> 
+                                    </div> 
+                                </div> 
+                            </form> 
+                        </div> 
+                    </div> 
+                </div> 
+                <div id="sales-list-view"> 
+                    <div class="card"> 
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div> 
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light"> 
+                                        <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> 
+                                    </thead>
+                                    <tbody id="lista-ventas-anteriores"> 
+                                        <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr> 
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> 
+                </div> 
+            </div>
             
             <!-- NUEVA PESTAÑA: PEDIDOS WEB -->
             <div class="tab-pane fade" id="pedidos-web">
@@ -128,19 +290,20 @@
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>ID</th>
+                                        <th style="width: 100px;">ID</th>
                                         <th>Cliente</th>
                                         <th>Contacto</th>
-                                        <th>Items</th>
+                                        <th>Productos</th>
                                         <th>Total</th>
+                                        <th>Pago Pref.</th>
                                         <th>Fecha</th>
                                         <th>Estado</th>
-                                        <th>Acciones</th>
+                                        <th style="width: 200px;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="lista-pedidos-web">
                                     <tr id="empty-pedidos-row">
-                                        <td colspan="8" class="text-center text-muted p-4">
+                                        <td colspan="9" class="text-center text-muted p-4">
                                             <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                             No hay pedidos.
                                         </td>
@@ -152,17 +315,230 @@
                 </div>
             </div>
             
-            <div class="tab-pane fade" id="apartados"> <h1 class="h2">Apartados</h1> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Pendientes</h3></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Cliente</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Vence</th><th>Acciones</th></tr></thead><tbody id="lista-apartados"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
-            <div class="tab-pane fade" id="clientes"> <h1 class="h2">Clientes</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClientModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Nombre</th><th>Cédula</th><th>WhatsApp</th><th>Dirección</th><th>Última Compra</th><th>Acciones</th></tr></thead><tbody id="lista-clientes"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
-            <div class="tab-pane fade" id="repartidores"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Repartidores</h1> <div class="btn-group"> <button type="button" id="toggle-delivery-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-bicycle me-1"></i><span class="d-none d-md-inline"> Hoy</span></button> <button type="button" id="toggle-delivery-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-md-inline"> Historial</span></button> </div> </div> <div id="delivery-today-view"> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Liquidación Hoy</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addRepartidorModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Repartidor</th><th># Ent.</th><th>Efec. Recibido</th><th>Rutas ($)</th><th>Rutas Transf. ($)</th><th>Efec. a Entregar ($)</th><th>Efec. Entregado ($)</th><th>Saldo ($)</th><th>Acciones</th></tr></thead><tbody id="lista-repartidores"><tr><td colspan="9" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div> <div id="delivery-history-view"> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div><div class="card-body"><form id="form-filter-delivery-history" class="mb-3"><div class="row"><div class="col-md-4"><label for="history-repartidor" class="form-label">Repartidor:</label><select id="history-repartidor" class="form-select"></select></div><div class="col-md-3"><label for="history-desde" class="form-label">Desde:</label><input type="date" id="history-desde" class="form-control"></div><div class="col-md-3"><label for="history-hasta" class="form-label">Hasta:</label><input type="date" id="history-hasta" class="form-control"></div><div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Filtrar</button></div></div></form><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Repartidor</th><th>Efec. Esperado</th><th>Efec. Entregado</th><th>Diferencia</th></tr></thead><tbody id="lista-historial-repartidores"><tr><td colspan="5" class="text-center text-muted">Filtra.</td></tr></tbody></table></div></div></div> </div> </div>
-            <div class="tab-pane fade" id="reportes"> <h1 class="h2">Reportes</h1> <div class="card"><div class="card-body"><form id="form-reporte"><div class="row"><div class="col-md-4"><label for="reporte-tipo" class="form-label">Tipo:</label><select id="reporte-tipo" class="form-select"><option value="ventas">Ventas</option><option value="utilidad">Utilidad</option><option value="mas-vendidos">Más Vendidos</option><option value="repartidor">Por Repartidor</option><option value="apartados">Apartados</option><option value="descuentos">Descuentos</option></select></div><div class="col-md-3"><label for="reporte-desde" class="form-label">Desde:</label><input type="date" id="reporte-desde" class="form-control"></div><div class="col-md-3"><label for="reporte-hasta" class="form-label">Hasta:</label><input type="date" id="reporte-hasta" class="form-control"></div><div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Generar</button></div></div></form><hr><div id="area-reporte" class="mt-4"><p class="text-muted text-center">Filtra.</p></div></div></div> </div>
-            <div class="tab-pane fade" id="finanzas"> <div class="d-flex justify-content-between align-items-center mb-3"> <h1 class="h2 mb-0">Finanzas</h1> <div class="btn-group"> <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addIncomeModal"> <i class="bi bi-plus-circle"></i><span class="d-none d-md-inline"> Ingreso</span></button> <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#addExpenseModal"> <i class="bi bi-dash-circle"></i><span class="d-none d-md-inline"> Gasto</span></button> <button type="button" id="toggle-closing-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-box-arrow-in-down me-1"></i><span class="d-none d-md-inline"> Cierre Hoy</span></button> <button type="button" id="toggle-closing-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-md-inline"> Historial</span></button> </div> </div> <div id="closing-today-view"> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Cierre Diario</h3></div><div class="card-body"><form id="form-cierre-caja"><div class="row"><div class="col-md-3"><label class="form-label">Ventas Efectivo:</label><input type="text" class="form-control" id="caja-efectivo" value="$0" readonly></div><div class="col-md-3"><label class="form-label">Abonos Efectivo:</label><input type="text" class="form-control" id="caja-abonos-efectivo" value="$0" readonly></div><div class="col-md-3"><label class="form-label">Recibido Repart.:</label><input type="text" class="form-control" id="caja-recibido-repartidores" value="$0" readonly></div><div class="col-md-3"><label for="caja-egresos" class="form-label">Gastos ($):</label><input type="number" class="form-control" id="caja-egresos" value="0" step="0.01"></div></div><div class="row mt-3"><div class="col-md-9"><label for="caja-observaciones" class="form-label">Observaciones:</label><input type="text" class="form-control" id="caja-observaciones"></div><div class="col-md-3"><label class="form-label">Total Caja:</label><input type="text" class="form-control fw-bold" id="caja-total" value="$0" readonly></div></div><hr><p class="text-muted small">Nota: Transferencias no afectan efectivo.</p><button type="submit" class="btn btn-primary mt-3">Realizar Cierre</button></form></div></div> </div> <div id="closing-history-view"> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Ventas Efec.</th><th>Abonos Efec.</th><th>Recibido Repart.</th><th>Gastos</th><th>Total Caja</th><th>Obs.</th></tr></thead><tbody id="lista-historial-cierres"><tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div> </div>
-            <div class="tab-pane fade" id="categorias"> <h1 class="h2">Categorías</h1> <div class="row"><div class="col-md-6"><div class="card"><div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Agregar</h3> </div><div class="card-body"><form id="form-categoria"><div class="mb-3"> <label for="nombre-categoria" class="form-label">Nombre:</label> <input type="text" id="nombre-categoria" class="form-control" required> </div><button type="submit" class="btn btn-primary">Guardar</button></form></div></div></div><div class="col-md-6"><div class="card"><div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Existentes</h3> </div><div class="card-body p-0"><ul class="list-group list-group-flush" id="lista-categorias"><li class="list-group-item text-muted" id="loading-categories">Cargando...</li></ul></div></div></div></div> </div>
-            <div class="tab-pane fade" id="proveedores"> <h1 class="h2">Proveedores</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSupplierModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Acciones</th></tr></thead><tbody id="lista-proveedores-tabla"><tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
+            <!-- APARTADOS -->
+            <div class="tab-pane fade" id="apartados"> 
+                <h1 class="h2">Apartados</h1> 
+                <div class="card">
+                    <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Pendientes</h3></div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Cliente</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Vence</th><th>Acciones</th></tr>
+                                </thead>
+                                <tbody id="lista-apartados">
+                                    <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+
+            <!-- CLIENTES -->
+            <div class="tab-pane fade" id="clientes"> 
+                <h1 class="h2">Clientes</h1> 
+                <div class="card">
+                    <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Lista</h3>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClientModal"><i class="bi bi-plus-lg"></i> Nuevo</button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr><th>Nombre</th><th>Cédula</th><th>WhatsApp</th><th>Dirección</th><th>Última Compra</th><th>Acciones</th></tr>
+                                </thead>
+                                <tbody id="lista-clientes">
+                                    <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+
+            <!-- REPARTIDORES -->
+            <div class="tab-pane fade" id="repartidores"> 
+                <div class="d-flex justify-content-between align-items-center mb-3"> 
+                    <h1 class="h2 mb-0">Repartidores</h1> 
+                    <div class="btn-group"> 
+                        <button type="button" id="toggle-delivery-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-bicycle me-1"></i><span class="d-none d-md-inline"> Hoy</span></button> 
+                        <button type="button" id="toggle-delivery-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-md-inline"> Historial</span></button> 
+                    </div> 
+                </div> 
+                <div id="delivery-today-view"> 
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                            <h3 class="h5 mb-0">Liquidación Hoy</h3>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addRepartidorModal"><i class="bi bi-plus-lg"></i> Nuevo</button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr><th>Repartidor</th><th># Ent.</th><th>Efec. Recibido</th><th>Rutas ($)</th><th>Rutas Transf. ($)</th><th>Efec. a Entregar ($)</th><th>Efec. Entregado ($)</th><th>Saldo ($)</th><th>Acciones</th></tr>
+                                    </thead>
+                                    <tbody id="lista-repartidores">
+                                        <tr><td colspan="9" class="text-center text-muted">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> 
+                </div> 
+                <div id="delivery-history-view"> 
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div>
+                        <div class="card-body">
+                            <form id="form-filter-delivery-history" class="mb-3">
+                                <div class="row">
+                                    <div class="col-md-4"><label for="history-repartidor" class="form-label">Repartidor:</label><select id="history-repartidor" class="form-select"></select></div>
+                                    <div class="col-md-3"><label for="history-desde" class="form-label">Desde:</label><input type="date" id="history-desde" class="form-control"></div>
+                                    <div class="col-md-3"><label for="history-hasta" class="form-label">Hasta:</label><input type="date" id="history-hasta" class="form-control"></div>
+                                    <div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Filtrar</button></div>
+                                </div>
+                            </form>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr><th>Fecha</th><th>Repartidor</th><th>Efec. Esperado</th><th>Efec. Entregado</th><th>Diferencia</th></tr>
+                                    </thead>
+                                    <tbody id="lista-historial-repartidores">
+                                        <tr><td colspan="5" class="text-center text-muted">Filtra.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> 
+                </div> 
+            </div>
+
+            <!-- REPORTES -->
+            <div class="tab-pane fade" id="reportes"> 
+                <h1 class="h2">Reportes</h1> 
+                <div class="card">
+                    <div class="card-body">
+                        <form id="form-reporte">
+                            <div class="row">
+                                <div class="col-md-4"><label for="reporte-tipo" class="form-label">Tipo:</label><select id="reporte-tipo" class="form-select"><option value="ventas">Ventas</option><option value="utilidad">Utilidad</option><option value="mas-vendidos">Más Vendidos</option><option value="repartidor">Por Repartidor</option><option value="apartados">Apartados</option><option value="descuentos">Descuentos</option></select></div>
+                                <div class="col-md-3"><label for="reporte-desde" class="form-label">Desde:</label><input type="date" id="reporte-desde" class="form-control"></div>
+                                <div class="col-md-3"><label for="reporte-hasta" class="form-label">Hasta:</label><input type="date" id="reporte-hasta" class="form-control"></div>
+                                <div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Generar</button></div>
+                            </div>
+                        </form>
+                        <hr>
+                        <div id="area-reporte" class="mt-4"><p class="text-muted text-center">Filtra.</p></div>
+                    </div>
+                </div> 
+            </div>
+
+            <!-- FINANZAS -->
+            <div class="tab-pane fade" id="finanzas"> 
+                <div class="d-flex justify-content-between align-items-center mb-3"> 
+                    <h1 class="h2 mb-0">Finanzas</h1> 
+                    <div class="btn-group"> 
+                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addIncomeModal"> <i class="bi bi-plus-circle"></i><span class="d-none d-md-inline"> Ingreso</span></button> 
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#addExpenseModal"> <i class="bi bi-dash-circle"></i><span class="d-none d-md-inline"> Gasto</span></button> 
+                        <button type="button" id="toggle-closing-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-box-arrow-in-down me-1"></i><span class="d-none d-md-inline"> Cierre Hoy</span></button> 
+                        <button type="button" id="toggle-closing-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-md-inline"> Historial</span></button> 
+                    </div> 
+                </div> 
+                <div id="closing-today-view"> 
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Cierre Diario</h3></div>
+                        <div class="card-body">
+                            <form id="form-cierre-caja">
+                                <div class="row">
+                                    <div class="col-md-3"><label class="form-label">Ventas Efectivo:</label><input type="text" class="form-control" id="caja-efectivo" value="$0" readonly></div>
+                                    <div class="col-md-3"><label class="form-label">Abonos Efectivo:</label><input type="text" class="form-control" id="caja-abonos-efectivo" value="$0" readonly></div>
+                                    <div class="col-md-3"><label class="form-label">Recibido Repart.:</label><input type="text" class="form-control" id="caja-recibido-repartidores" value="$0" readonly></div>
+                                    <div class="col-md-3"><label for="caja-egresos" class="form-label">Gastos ($):</label><input type="number" class="form-control" id="caja-egresos" value="0" step="0.01"></div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-9"><label for="caja-observaciones" class="form-label">Observaciones:</label><input type="text" class="form-control" id="caja-observaciones"></div>
+                                    <div class="col-md-3"><label class="form-label">Total Caja:</label><input type="text" class="form-control fw-bold" id="caja-total" value="$0" readonly></div>
+                                </div>
+                                <hr>
+                                <p class="text-muted small">Nota: Transferencias no afectan efectivo.</p>
+                                <button type="submit" class="btn btn-primary mt-3">Realizar Cierre</button>
+                            </form>
+                        </div>
+                    </div> 
+                </div> 
+                <div id="closing-history-view"> 
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr><th>Fecha</th><th>Ventas Efec.</th><th>Abonos Efec.</th><th>Recibido Repart.</th><th>Gastos</th><th>Total Caja</th><th>Obs.</th></tr>
+                                    </thead>
+                                    <tbody id="lista-historial-cierres">
+                                        <tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div> 
+                </div> 
+            </div>
+
+            <!-- CATEGORÍAS -->
+            <div class="tab-pane fade" id="categorias"> 
+                <h1 class="h2">Categorías</h1> 
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Agregar</h3> </div>
+                            <div class="card-body">
+                                <form id="form-categoria">
+                                    <div class="mb-3"> <label for="nombre-categoria" class="form-label">Nombre:</label> <input type="text" id="nombre-categoria" class="form-control" required> </div>
+                                    <button type="submit" class="btn btn-primary">Guardar</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Existentes</h3> </div>
+                            <div class="card-body p-0">
+                                <ul class="list-group list-group-flush" id="lista-categorias">
+                                    <li class="list-group-item text-muted" id="loading-categories">Cargando...</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div> 
+            </div>
+
+            <!-- PROVEEDORES -->
+            <div class="tab-pane fade" id="proveedores"> 
+                <h1 class="h2">Proveedores</h1> 
+                <div class="card">
+                    <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Lista</h3>
+                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSupplierModal"><i class="bi bi-plus-lg"></i> Nuevo</button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Acciones</th></tr>
+                                </thead>
+                                <tbody id="lista-proveedores-tabla">
+                                    <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> 
+            </div>
         </div>
     </main>
 
-    <!-- MODALES ORIGINALES -->
+    <!-- MODALES -->
     <div class="modal fade" id="addClientModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-client"> <div class="mb-3"> <label for="new-client-cedula" class="form-label">Cédula:</label> <input type="text" class="form-control" id="new-client-cedula"> </div> <div class="mb-3"> <label for="new-client-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-client-nombre" required> </div> <div class="mb-3"> <label for="new-client-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-client-celular" required> </div> <div class="mb-3"> <label for="new-client-direccion" class="form-label">Dirección:</label> <input type="text" class="form-control" id="new-client-direccion"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-client" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addRepartidorModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Repartidor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-repartidor"> <div class="mb-3"> <label for="new-repartidor-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-repartidor-nombre" required> </div> <div class="mb-3"> <label for="new-repartidor-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-repartidor-celular" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-repartidor" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addIncomeModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Ingreso Extra</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-income"> <div class="mb-3"> <label for="income-amount" class="form-label">Monto ($):</label> <input type="number" step="0.01" class="form-control" id="income-amount" required> </div> <div class="mb-3"> <label for="income-description" class="form-label">Descripción:</label> <input type="text" class="form-control" id="income-description" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-income" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
@@ -222,32 +598,41 @@
 
     <!-- NUEVO MODAL: VER PEDIDO WEB -->
     <div class="modal fade" id="viewPedidoModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Pedido #<span id="pedido-modal-id">000</span></h5>
+                    <h1 class="modal-title fs-5">
+                        <i class="bi bi-receipt me-2"></i>
+                        Detalles del Pedido #<span id="pedido-modal-id">000</span>
+                    </h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="card mb-3">
-                        <div class="card-header"><h6 class="mb-0"><i class="bi bi-person-fill me-2"></i>Cliente</h6></div>
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-person-fill me-2"></i>Datos del Cliente</h6>
+                        </div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6 mb-2">
                                     <strong>Nombre:</strong>
-                                    <p id="pedido-cliente-nombre">-</p>
+                                    <p class="mb-0" id="pedido-cliente-nombre">-</p>
                                 </div>
                                 <div class="col-md-6 mb-2">
                                     <strong>WhatsApp:</strong>
-                                    <p><a href="#" id="pedido-cliente-whatsapp" target="_blank"><i class="bi bi-whatsapp text-success"></i> -</a></p>
+                                    <p class="mb-0">
+                                        <a href="#" id="pedido-cliente-whatsapp" target="_blank" class="text-decoration-none">
+                                            <i class="bi bi-whatsapp text-success"></i> -
+                                        </a>
+                                    </p>
                                 </div>
                                 <div class="col-12 mb-2">
                                     <strong>Dirección:</strong>
-                                    <p id="pedido-cliente-direccion">-</p>
+                                    <p class="mb-0" id="pedido-cliente-direccion">-</p>
                                 </div>
-                                <div class="col-12 mb-2" id="pedido-observaciones-container" style="display:none;">
+                                <div class="col-12 mb-2" id="pedido-observaciones-container" style="display: none;">
                                     <strong>Observaciones:</strong>
-                                    <p class="text-muted" id="pedido-observaciones">-</p>
+                                    <p class="mb-0 text-muted" id="pedido-observaciones">-</p>
                                 </div>
                                 <div class="col-md-6">
                                     <strong>Pago Preferido:</strong>
@@ -258,28 +643,37 @@
                     </div>
 
                     <div class="card">
-                        <div class="card-header"><h6 class="mb-0"><i class="bi bi-bag-fill me-2"></i>Productos</h6></div>
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-bag-fill me-2"></i>Productos</h6>
+                        </div>
                         <div class="card-body p-0">
-                            <table class="table table-sm mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Producto</th>
-                                        <th>Talla/Color</th>
-                                        <th>Cant.</th>
-                                        <th>Precio</th>
-                                        <th>Subtotal</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="pedido-items-list"></tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="4" class="text-end">TOTAL:</th>
-                                        <th id="pedido-total">$0</th>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th>Talla/Color</th>
+                                            <th>Cant.</th>
+                                            <th>Precio</th>
+                                            <th>Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pedido-items-list">
+                                        <tr><td colspan="5" class="text-center">Cargando...</td></tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="4" class="text-end">TOTAL:</th>
+                                            <th id="pedido-total">$0</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -289,7 +683,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <script type="module">
-        // Import Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
@@ -328,416 +721,7 @@
             const toastBodyEl = document.getElementById('toast-body');
             
             if (liveToastEl && toastBodyEl) {
-                if (searchInput) searchInput.addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); const items = searchModalList.querySelectorAll('.client-search-item'); items.forEach(item => { item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; }); });
-                if (searchModalList && searchClientModalInstance) searchModalList.addEventListener('click', (e) => { const target = e.target.closest('.client-search-item'); if (target) { ventaClienteInput.value = target.dataset.name; fillClientInfoSales(); searchClientModalInstance.hide(); } });
-                fillClientInfoSales();
-            })();
-
-            // REPARTIDORES (código resumido - mantener original completo)
-            (() => {
-                 const repartidorForm = document.getElementById('form-add-repartidor'); const nombreInput = document.getElementById('new-repartidor-nombre'); const celularInput = document.getElementById('new-repartidor-celular'); const repartidorListTableBody = document.getElementById('lista-repartidores'); const repartidorSelectVenta = document.getElementById('venta-repartidor'); const repartidorSelectHistory = document.getElementById('history-repartidor');
-                 if(!repartidorForm || !repartidorListTableBody) { console.warn("Elementos de Repartidores no encontrados."); return; }
-                 let repartidoresMap = new Map();
-                 const renderRepartidores = (snapshot) => { repartidoresMap.clear(); if(repartidorListTableBody) repartidorListTableBody.innerHTML = ''; if(repartidorSelectVenta) repartidorSelectVenta.innerHTML = '<option value="">Selecciona...</option>'; if(repartidorSelectHistory) repartidorSelectHistory.innerHTML = '<option value="">Todos</option>'; if (snapshot.empty) { if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No hay repartidores.</td></tr>'; return; } snapshot.forEach(docSnap => { const rep = docSnap.data(); const id = docSnap.id; repartidoresMap.set(id, rep); if (repartidorListTableBody) { const tr = document.createElement('tr'); tr.dataset.id = id; const efectivoRecibido = 0; const rutasTotal = 0; const rutasTransferencia = 0; const efectivoAEntregar = efectivoRecibido - (rutasTotal - rutasTransferencia); const saldoPendiente = efectivoAEntregar; tr.innerHTML = `<td class="repartidor-name">${rep.nombre}</td> <td>0</td> <td>${formatoMoneda.format(efectivoRecibido)}</td> <td>${formatoMoneda.format(rutasTotal)}</td> <td>${formatoMoneda.format(rutasTransferencia)}</td> <td>${formatoMoneda.format(efectivoAEntregar)}</td> <td><input type="number" class="form-control form-control-sm w-75 d-inline-block input-efectivo-entregado" value="0.00" step="0.01" data-expected="${efectivoAEntregar}"></td> <td class="saldo-pendiente ${saldoPendiente <= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatoMoneda.format(saldoPendiente)}</td> <td class="action-buttons"><button class="btn btn-sm btn-success py-0 px-1 btn-liquidar-repartidor" title="Liquidar"><i class="bi bi-check-circle"></i></button><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-repartidor" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-repartidor" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; repartidorListTableBody.appendChild(tr); } const option = document.createElement('option'); option.value = id; option.textContent = rep.nombre; if(repartidorSelectVenta) repartidorSelectVenta.appendChild(option.cloneNode(true)); if(repartidorSelectHistory) repartidorSelectHistory.appendChild(option.cloneNode(true)); }); };
-                 onSnapshot(query(repartidoresCollection, orderBy('nombre')), renderRepartidores, (e) => { console.error("Error repartidores:", e); if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error.</td></tr>';});
-                 if (repartidorForm && addRepartidorModalInstance) repartidorForm.addEventListener('submit', async (e) => { e.preventDefault(); const nom = nombreInput.value.trim(); const cel = celularInput.value.trim(); if (nom && cel) { try { await addDoc(repartidoresCollection, { nombre: nom, celular: cel }); showToast("Repartidor guardado!"); addRepartidorModalInstance.hide(); repartidorForm.reset(); } catch (err) { console.error("Err add repartidor:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
-            })();
-
-            // PRODUCTOS (código resumido - mantener original)
-            (() => {
-                const productForm = document.getElementById('form-producto');
-                if (!productForm) { console.warn("Formulario de producto no encontrado."); return; }
-                // Incluir toda la lógica de productos del original...
-                // Por brevedad, aquí solo muestro que existe
-            })();
-
-            // VENTAS (código resumido - mantener original)
-            (() => {
-                 const salesForm = document.getElementById('form-venta');
-                 if(!salesForm) { console.warn("Elementos de Ventas no encontrados."); return; }
-                 let ventaItems = [];
-                 // Incluir toda la lógica de ventas del original...
-            })();
-
-            // APARTADOS (código resumido)
-            (() => {
-                 const apartadosListTableBody = document.getElementById('lista-apartados');
-                 if(!apartadosListTableBody) { console.warn("Elementos de Apartados no encontrados."); return; }
-                 // Lógica de apartados...
-            })();
-
-            // FINANZAS (código resumido)
-            (() => {
-                 const addIncomeForm = document.getElementById('form-add-income');
-                 const addExpenseForm = document.getElementById('form-add-expense');
-                 // Lógica de finanzas...
-            })();
-
-            // ============================================
-            // NUEVA LÓGICA: PEDIDOS WEB
-            // ============================================
-            (() => {
-                const listaPedidosWeb = document.getElementById('lista-pedidos-web');
-                const emptyPedidosRow = document.getElementById('empty-pedidos-row');
-                const pedidosPendientesBadge = document.getElementById('pedidos-pendientes-badge');
-
-                if (!listaPedidosWeb) {
-                    console.warn("Elementos de Pedidos Web no encontrados.");
-                    return;
-                }
-
-                let currentFilter = 'pendiente';
-                const filterRadios = document.querySelectorAll('input[name="filter-pedidos"]');
-
-                const renderPedidosWeb = (snapshot) => {
-                    if (!listaPedidosWeb) return;
-                    listaPedidosWeb.innerHTML = '';
-                    if (emptyPedidosRow) emptyPedidosRow.style.display = 'none';
-
-                    let pedidosFiltrados = [];
-                    let pedidosPendientes = 0;
-
-                    snapshot.forEach(docSnap => {
-                        const pedido = docSnap.data();
-                        const id = docSnap.id;
-                        pedido.id = id;
-
-                        if (pedido.estado === 'pendiente') pedidosPendientes++;
-                        if (currentFilter === 'todos' || pedido.estado === currentFilter) {
-                            pedidosFiltrados.push(pedido);
-                        }
-                    });
-
-                    if (pedidosPendientesBadge) {
-                        if (pedidosPendientes > 0) {
-                            pedidosPendientesBadge.textContent = pedidosPendientes;
-                            pedidosPendientesBadge.style.display = 'inline-block';
-                        } else {
-                            pedidosPendientesBadge.style.display = 'none';
-                        }
-                    }
-
-                    if (pedidosFiltrados.length === 0) {
-                        if (emptyPedidosRow) {
-                            emptyPedidosRow.style.display = '';
-                            listaPedidosWeb.appendChild(emptyPedidosRow);
-                        }
-                        return;
-                    }
-
-                    pedidosFiltrados.forEach(pedido => {
-                        const fecha = pedido.timestamp?.toDate ? 
-                            pedido.timestamp.toDate().toLocaleString('es-CO', { 
-                                day: '2-digit', 
-                                month: 'short', 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                            }) : 'N/A';
-                        
-                        const totalItems = (pedido.items || []).reduce((sum, item) => sum + item.cantidad, 0);
-
-                        let estadoBadge = '';
-                        switch (pedido.estado) {
-                            case 'pendiente':
-                                estadoBadge = '<span class="badge bg-warning">⏳ Pendiente</span>';
-                                break;
-                            case 'aceptado':
-                                estadoBadge = '<span class="badge bg-success">✓ Aceptado</span>';
-                                break;
-                            case 'rechazado':
-                                estadoBadge = '<span class="badge bg-danger">✗ Rechazado</span>';
-                                break;
-                        }
-
-                        let actionButtons = '';
-                        if (pedido.estado === 'pendiente') {
-                            actionButtons = `
-                                <button class="btn btn-sm btn-success me-1 btn-aceptar-pedido" 
-                                        data-pedido-id="${pedido.id}" 
-                                        title="Aceptar">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger me-1 btn-rechazar-pedido" 
-                                        data-pedido-id="${pedido.id}" 
-                                        title="Rechazar">
-                                    <i class="bi bi-x-circle-fill"></i>
-                                </button>
-                            `;
-                        }
-
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td><code>${pedido.id.substring(0, 8)}</code></td>
-                            <td><strong>${pedido.clienteNombre}</strong></td>
-                            <td>
-                                <a href="https://wa.me/${pedido.clienteCelular.replace(/\D/g, '')}" 
-                                   target="_blank" 
-                                   class="text-decoration-none">
-                                    <i class="bi bi-whatsapp text-success"></i> ${pedido.clienteCelular}
-                                </a>
-                            </td>
-                            <td><span class="badge bg-light text-dark">${totalItems} item${totalItems > 1 ? 's' : ''}</span></td>
-                            <td><strong>${formatoMoneda.format(pedido.totalPedido || 0)}</strong></td>
-                            <td><small>${fecha}</small></td>
-                            <td>${estadoBadge}</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-primary me-1 btn-ver-pedido" 
-                                        data-pedido-id="${pedido.id}" 
-                                        title="Ver">
-                                    <i class="bi bi-eye-fill"></i>
-                                </button>
-                                ${actionButtons}
-                            </td>
-                        `;
-                        listaPedidosWeb.appendChild(tr);
-                    });
-                };
-
-                const q = query(pedidosWebCollection, orderBy('timestamp', 'desc'));
-                onSnapshot(q, renderPedidosWeb, (error) => {
-                    console.error("Error al cargar pedidos web:", error);
-                    if (listaPedidosWeb) {
-                        listaPedidosWeb.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar pedidos.</td></tr>';
-                    }
-                });
-
-                filterRadios.forEach(radio => {
-                    radio.addEventListener('change', (e) => {
-                        currentFilter = e.target.value;
-                        const q2 = query(pedidosWebCollection, orderBy('timestamp', 'desc'));
-                        getDocs(q2).then(renderPedidosWeb);
-                    });
-                });
-
-                if (listaPedidosWeb) {
-                    listaPedidosWeb.addEventListener('click', async (e) => {
-                        const target = e.target.closest('button');
-                        if (!target) return;
-                        e.preventDefault();
-
-                        const pedidoId = target.dataset.pedidoId;
-                        if (!pedidoId) return;
-
-                        // ========== VER DETALLES ==========
-                        if (target.classList.contains('btn-ver-pedido')) {
-                            try {
-                                const pedidoDoc = await getDoc(doc(db, 'pedidosWeb', pedidoId));
-                                if (!pedidoDoc.exists()) {
-                                    showToast('Pedido no encontrado.', 'error');
-                                    return;
-                                }
-
-                                const pedido = pedidoDoc.data();
-                                
-                                document.getElementById('pedido-modal-id').textContent = pedidoId.substring(0, 8).toUpperCase();
-                                document.getElementById('pedido-cliente-nombre').textContent = pedido.clienteNombre || '-';
-
-                                const whatsappLink = document.getElementById('pedido-cliente-whatsapp');
-                                whatsappLink.textContent = pedido.clienteCelular || '-';
-                                whatsappLink.href = `https://wa.me/${(pedido.clienteCelular || '').replace(/\D/g, '')}`;
-
-                                document.getElementById('pedido-cliente-direccion').textContent = pedido.clienteDireccion || '-';
-                                document.getElementById('pedido-metodo-pago').textContent = pedido.metodoPagoSolicitado || '-';
-
-                                const obsContainer = document.getElementById('pedido-observaciones-container');
-                                const obsText = document.getElementById('pedido-observaciones');
-                                if (pedido.observaciones && pedido.observaciones.trim()) {
-                                    obsText.textContent = pedido.observaciones;
-                                    obsContainer.style.display = 'block';
-                                } else {
-                                    obsContainer.style.display = 'none';
-                                }
-
-                                const itemsList = document.getElementById('pedido-items-list');
-                                itemsList.innerHTML = '';
-                                (pedido.items || []).forEach(item => {
-                                    const tr = document.createElement('tr');
-                                    tr.innerHTML = `
-                                        <td>${item.nombre}</td>
-                                        <td><small class="text-muted">${item.talla} / ${item.color}</small></td>
-                                        <td>${item.cantidad}</td>
-                                        <td>${formatoMoneda.format(item.precio)}</td>
-                                        <td><strong>${formatoMoneda.format(item.total)}</strong></td>
-                                    `;
-                                    itemsList.appendChild(tr);
-                                });
-
-                                document.getElementById('pedido-total').textContent = formatoMoneda.format(pedido.totalPedido || 0);
-                                
-                                if (viewPedidoModalInstance) {
-                                    viewPedidoModalInstance.show();
-                                }
-
-                            } catch (err) {
-                                console.error('Error al cargar pedido:', err);
-                                showToast('Error al cargar detalles.', 'error');
-                            }
-                        }
-
-                        // ========== ACEPTAR PEDIDO ==========
-                        if (target.classList.contains('btn-aceptar-pedido')) {
-                            if (!confirm('¿Aceptar este pedido y crear una venta?')) return;
-
-                            try {
-                                await updateDoc(doc(db, 'pedidosWeb', pedidoId), {
-                                    estado: 'aceptado',
-                                    fechaAceptacion: serverTimestamp()
-                                });
-
-                                showToast('✅ Pedido aceptado. Completa la venta en la pestaña "Ventas".', 'success');
-                                
-                                // Cambiar a la pestaña de ventas
-                                document.querySelector('a[href="#ventas"]').click();
-
-                            } catch (err) {
-                                console.error('Error al aceptar pedido:', err);
-                                showToast('Error al aceptar pedido.', 'error');
-                            }
-                        }
-
-                        // ========== RECHAZAR PEDIDO ==========
-                        if (target.classList.contains('btn-rechazar-pedido')) {
-                            const motivo = prompt('¿Motivo del rechazo? (opcional)');
-                            if (motivo === null) return;
-
-                            try {
-                                await updateDoc(doc(db, 'pedidosWeb', pedidoId), {
-                                    estado: 'rechazado',
-                                    motivoRechazo: motivo || 'Sin especificar',
-                                    fechaRechazo: serverTimestamp()
-                                });
-
-                                showToast('Pedido rechazado.', 'info');
-
-                            } catch (err) {
-                                console.error('Error al rechazar pedido:', err);
-                                showToast('Error al rechazar pedido.', 'error');
-                            }
-                        }
-                    });
-                }
-            })();
-
-            // ============================================
-            // SCRIPTS DE UI (Toggles, etc.)
-            // ============================================
-            (() => {
-                // Toggles de productos
-                const fV_prod = document.getElementById('form-view'); 
-                const iV_prod = document.getElementById('inventory-view'); 
-                const tIB_prod = document.getElementById('toggle-inventory-view-btn'); 
-                const tFB_prod = document.getElementById('toggle-form-view-btn'); 
-                if(fV_prod && iV_prod && tIB_prod && tFB_prod){ 
-                    tIB_prod.addEventListener('click',(e)=>{ 
-                        e.preventDefault(); 
-                        fV_prod.style.display='none'; 
-                        iV_prod.style.display='block'; 
-                        tIB_prod.classList.add('active'); 
-                        tFB_prod.classList.remove('active');
-                    }); 
-                    tFB_prod.addEventListener('click',(e)=>{ 
-                        e.preventDefault(); 
-                        iV_prod.style.display='none'; 
-                        fV_prod.style.display='block'; 
-                        tFB_prod.classList.add('active'); 
-                        tIB_prod.classList.remove('active');
-                    }); 
-                    iV_prod.style.display='block'; 
-                    tIB_prod.classList.add('active'); 
-                }
-
-                // Toggles de ventas
-                const sFV = document.getElementById('sales-form-view'); 
-                const sLV = document.getElementById('sales-list-view'); 
-                const tSLB = document.getElementById('toggle-sales-list-view-btn'); 
-                const tSFB = document.getElementById('toggle-sales-form-view-btn'); 
-                if(sFV && sLV && tSLB && tSFB){ 
-                    tSLB.addEventListener('click',(e)=>{ 
-                        e.preventDefault(); 
-                        sFV.style.display='none'; 
-                        sLV.style.display='block'; 
-                        tSLB.classList.add('active'); 
-                        tSFB.classList.remove('active'); 
-                    }); 
-                    tSFB.addEventListener('click',(e)=>{ 
-                        e.preventDefault(); 
-                        sLV.style.display='none'; 
-                        sFV.style.display='block'; 
-                        tSFB.classList.add('active'); 
-                        tSLB.classList.remove('active'); 
-                    }); 
-                    sFV.style.display='block'; 
-                    tSFB.classList.add('active'); 
-                }
-
-                // Toggles de repartidores
-                const todayViewR = document.getElementById('delivery-today-view'); 
-                const historyViewR = document.getElementById('delivery-history-view'); 
-                const toggleHistoryBtnR = document.getElementById('toggle-delivery-history-btn'); 
-                const toggleTodayBtnR = document.getElementById('toggle-delivery-today-btn'); 
-                if (todayViewR && historyViewR && toggleHistoryBtnR && toggleTodayBtnR) { 
-                    toggleHistoryBtnR.addEventListener('click', (e) => { 
-                        e.preventDefault(); 
-                        todayViewR.style.display = 'none'; 
-                        historyViewR.style.display = 'block'; 
-                        toggleHistoryBtnR.classList.add('active'); 
-                        toggleTodayBtnR.classList.remove('active'); 
-                    }); 
-                    toggleTodayBtnR.addEventListener('click', (e) => { 
-                        e.preventDefault(); 
-                        historyViewR.style.display = 'none'; 
-                        todayViewR.style.display = 'block'; 
-                        toggleTodayBtnR.classList.add('active'); 
-                        toggleHistoryBtnR.classList.remove('active'); 
-                    }); 
-                    todayViewR.style.display = 'block'; 
-                    toggleTodayBtnR.classList.add('active'); 
-                }
-
-                // Toggles de finanzas
-                const tCV = document.getElementById('closing-today-view'); 
-                const hCV = document.getElementById('closing-history-view'); 
-                const tHB = document.getElementById('toggle-closing-history-btn'); 
-                const tTB = document.getElementById('toggle-closing-today-btn'); 
-                if (tCV && hCV && tHB && tTB) { 
-                    tHB.addEventListener('click', (e) => { 
-                        e.preventDefault(); 
-                        tCV.style.display = 'none'; 
-                        hCV.style.display = 'block'; 
-                        tHB.classList.add('active'); 
-                        tTB.classList.remove('active'); 
-                    }); 
-                    tTB.addEventListener('click', (e) => { 
-                        e.preventDefault(); 
-                        hCV.style.display = 'none'; 
-                        tCV.style.display = 'block'; 
-                        tTB.classList.add('active'); 
-                        tHB.classList.remove('active'); 
-                    }); 
-                    tCV.style.display = 'block'; 
-                    tTB.classList.add('active'); 
-                }
-
-                // Navbar collapse on click
-                const navLinks = document.querySelectorAll('#adminNavbarContent .nav-link');
-                const navCollapse = document.getElementById('adminNavbarContent');
-                if (navCollapse) {
-                    const bsCollapse = new bootstrap.Collapse(navCollapse, { toggle: false });
-                    navLinks.forEach((link) => {
-                        link.addEventListener('click', () => {
-                            if (navCollapse.classList.contains('show')) {
-                                bsCollapse.hide();
-                            }
-                        });
-                    });
-                }
-            })();
-
-        }); // FIN DOMContentLoaded
-    </script>
-
-</body>
-</html>!bsToast) { try { bsToast = new bootstrap.Toast(liveToastEl, { delay: 3500 }); } catch (e) { console.error("Toast init error", e); return; }}
+                if (!bsToast) { try { bsToast = new bootstrap.Toast(liveToastEl, { delay: 3500 }); } catch (e) { console.error("Toast init error", e); return; }}
                 liveToastEl.className = 'toast align-items-center border-0';
                 const bgClass = type === 'error' ? 'text-bg-danger' : (type === 'warning' ? 'text-bg-warning' : (type === 'info' ? 'text-bg-info' : 'text-bg-success'));
                 liveToastEl.classList.add(bgClass, 'text-white');
@@ -747,11 +731,21 @@
             } else { console.warn("Toast elements not found:", message); alert(`${type.toUpperCase()}: ${message}`); }
         }
 
-        let addClientModalInstance = null; let addRepartidorModalInstance = null; let addSupplierModalInstance = null; let addIncomeModalInstance = null; let addExpenseModalInstance = null; let editCategoryModalInstance = null; let deleteConfirmModalInstance = null;
-        let editSupplierModalInstance = null; let editClientModalInstance = null;
-        let searchSupplierModalInstance = null; let searchClientModalInstance = null; let searchProductModalInstance = null; let liquidateConfirmModalInstance = null;
+        let addClientModalInstance = null; 
+        let addRepartidorModalInstance = null; 
+        let addSupplierModalInstance = null; 
+        let addIncomeModalInstance = null; 
+        let addExpenseModalInstance = null; 
+        let editCategoryModalInstance = null; 
+        let deleteConfirmModalInstance = null;
+        let editSupplierModalInstance = null; 
+        let editClientModalInstance = null;
+        let searchSupplierModalInstance = null; 
+        let searchClientModalInstance = null; 
+        let searchProductModalInstance = null; 
+        let liquidateConfirmModalInstance = null;
         let selectVariationModalInstance = null;
-        let viewPedidoModalInstance = null; // NUEVO
+        let viewPedidoModalInstance = null;
         let localClientsMap = new Map([["Cliente General", {id: null, celular: "", direccion: ""}]]);
         let localProductsMap = new Map();
 
@@ -771,7 +765,7 @@
                 const searchProductModalEl = document.getElementById('searchProductModal'); if(searchProductModalEl) searchProductModalInstance = new bootstrap.Modal(searchProductModalEl);
                 const liquidateConfirmModalEl = document.getElementById('liquidateConfirmModal'); if(liquidateConfirmModalEl) liquidateConfirmModalInstance = new bootstrap.Modal(liquidateConfirmModalEl);
                 const selectVariationModalEl = document.getElementById('selectVariationModal'); if(selectVariationModalEl) selectVariationModalInstance = new bootstrap.Modal(selectVariationModalEl);
-                const viewPedidoModalEl = document.getElementById('viewPedidoModal'); if(viewPedidoModalEl) viewPedidoModalInstance = new bootstrap.Modal(viewPedidoModalEl); // NUEVO
+                const viewPedidoModalEl = document.getElementById('viewPedidoModal'); if(viewPedidoModalEl) viewPedidoModalInstance = new bootstrap.Modal(viewPedidoModalEl);
              } catch (e) { console.error("Error initializing Modals:", e); }
 
              const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
@@ -832,79 +826,826 @@
                     }
                  });
              } else { console.error("Delete confirmation button or modal missing"); }
+
+           // ========================================================================
+// COPIAR DESDE AQUÍ Y REEMPLAZAR EL COMENTARIO EN admin.html
+// ========================================================================
+
+// CATEGORÍAS
+(() => {
+    const categoryForm = document.getElementById('form-categoria'); 
+    const categoryNameInput = document.getElementById('nombre-categoria'); 
+    const categoryList = document.getElementById('lista-categorias'); 
+    const categoryDropdown = document.getElementById('categoria-producto'); 
+    const editForm = document.getElementById('form-edit-category'); 
+    const editIdInput = document.getElementById('edit-category-id'); 
+    const editNameInput = document.getElementById('edit-category-nombre');
+    if (!categoryForm || !categoryList || !categoryDropdown || !editForm) { console.warn("Elementos de Categorías no encontrados."); return; }
+    
+    const render = (snapshot) => { 
+        if (!categoryList) return; 
+        categoryList.innerHTML = ''; 
+        if (snapshot.empty) { 
+            categoryList.innerHTML = '<li class="list-group-item text-muted">No hay categorías.</li>'; 
+            return; 
+        } 
+        snapshot.forEach(doc => { 
+            const d = doc.data(); 
+            const id = doc.id; 
+            const li = document.createElement('li'); 
+            li.className = 'list-group-item d-flex justify-content-between align-items-center'; 
+            li.dataset.id = id; 
+            li.innerHTML = `<span class="category-name">${d.nombre}</span><div class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 me-1 btn-edit-category" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-category" title="Eliminar"><i class="bi bi-trash"></i></button></div>`; 
+            categoryList.appendChild(li); 
+        }); 
+    };
+    
+    const updateDropdown = (snapshot) => { 
+        if (!categoryDropdown) return; 
+        const sel = categoryDropdown.value; 
+        categoryDropdown.innerHTML = '<option value="">Selecciona...</option>'; 
+        snapshot.forEach(doc => { 
+            const d = doc.data(); 
+            const opt = document.createElement('option'); 
+            opt.value = doc.id; 
+            opt.textContent = d.nombre; 
+            categoryDropdown.appendChild(opt); 
+        }); 
+        categoryDropdown.value = sel; 
+    }
+    
+    const checkDuplicate = async (name, currentId = null) => { 
+        const lowerCaseName = name.toLowerCase(); 
+        const q = query(categoriesCollection, where("nombreLower", "==", lowerCaseName)); 
+        const querySnapshot = await getDocs(q); 
+        let isDuplicate = false; 
+        querySnapshot.forEach((doc) => { 
+            if (doc.id !== currentId) { 
+                isDuplicate = true; 
+            } 
+        }); 
+        return isDuplicate; 
+    };
+    
+    onSnapshot(query(categoriesCollection, orderBy("nombre")), (s) => { 
+        render(s); 
+        updateDropdown(s); 
+    }, (e) => { 
+        console.error("Error categories: ", e); 
+        if(categoryList) categoryList.innerHTML = '<li class="list-group-item text-danger">Error.</li>'; 
+    });
+    
+    if (categoryForm) categoryForm.addEventListener('submit', async (e) => { 
+        e.preventDefault(); 
+        const name = categoryNameInput.value.trim(); 
+        if (!name) return; 
+        if (await checkDuplicate(name)) { 
+            showToast('Ya existe una categoría con ese nombre.', 'warning'); 
+            return; 
+        } 
+        try { 
+            await addDoc(categoriesCollection, { nombre: name, nombreLower: name.toLowerCase() }); 
+            showToast("Categoría guardada!"); 
+            categoryNameInput.value = ''; 
+        } catch (err) { 
+            console.error("Error add cat:", err); 
+            showToast(`Error: ${err.message}`, 'error'); 
+        } 
+    });
+    
+    if (editForm && editCategoryModalInstance) editForm.addEventListener('submit', async (e) => { 
+        e.preventDefault(); 
+        const id = editIdInput.value; 
+        const name = editNameInput.value.trim(); 
+        if (!id || !name) return; 
+        if (await checkDuplicate(name, id)) { 
+            showToast('Ya existe otra categoría con ese nombre.', 'warning'); 
+            return; 
+        } 
+        try { 
+            await updateDoc(doc(db, "categorias", id), { nombre: name, nombreLower: name.toLowerCase() }); 
+            showToast("Categoría actualizada!"); 
+            editCategoryModalInstance.hide(); 
+        } catch (err) { 
+            console.error("Error update cat:", err); 
+            showToast(`Error: ${err.message}`, 'error'); 
+        } 
+    });
+    
+    if (categoryList) categoryList.addEventListener('click', (e) => { 
+        const target = e.target.closest('button'); 
+        if (!target) return; 
+        e.preventDefault(); 
+        const li = target.closest('li'); 
+        const id = li.dataset.id; 
+        const nameSpan = li.querySelector('.category-name'); 
+        if (!id || !nameSpan) return;
         
-            // CATEGORÍAS
-            (() => {
-                const categoryForm = document.getElementById('form-categoria'); const categoryNameInput = document.getElementById('nombre-categoria'); const categoryList = document.getElementById('lista-categorias'); const categoryDropdown = document.getElementById('categoria-producto'); const editForm = document.getElementById('form-edit-category'); const editIdInput = document.getElementById('edit-category-id'); const editNameInput = document.getElementById('edit-category-nombre');
-                if (!categoryForm || !categoryList || !categoryDropdown || !editForm) { console.warn("Elementos de Categorías no encontrados."); return; }
-                const render = (snapshot) => { if (!categoryList) return; categoryList.innerHTML = ''; if (snapshot.empty) { categoryList.innerHTML = '<li class="list-group-item text-muted">No hay categorías.</li>'; return; } snapshot.forEach(doc => { const d = doc.data(); const id = doc.id; const li = document.createElement('li'); li.className = 'list-group-item d-flex justify-content-between align-items-center'; li.dataset.id = id; li.innerHTML = `<span class="category-name">${d.nombre}</span><div class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 me-1 btn-edit-category" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-category" title="Eliminar"><i class="bi bi-trash"></i></button></div>`; categoryList.appendChild(li); }); };
-                const updateDropdown = (snapshot) => { if (!categoryDropdown) return; const sel = categoryDropdown.value; categoryDropdown.innerHTML = '<option value="">Selecciona...</option>'; snapshot.forEach(doc => { const d = doc.data(); const opt = document.createElement('option'); opt.value = doc.id; opt.textContent = d.nombre; categoryDropdown.appendChild(opt); }); categoryDropdown.value = sel; }
-                const checkDuplicate = async (name, currentId = null) => { const lowerCaseName = name.toLowerCase(); const q = query(categoriesCollection, where("nombreLower", "==", lowerCaseName)); const querySnapshot = await getDocs(q); let isDuplicate = false; querySnapshot.forEach((doc) => { if (doc.id !== currentId) { isDuplicate = true; } }); return isDuplicate; };
-                onSnapshot(query(categoriesCollection, orderBy("nombre")), (s) => { render(s); updateDropdown(s); }, (e) => { console.error("Error categories: ", e); if(categoryList) categoryList.innerHTML = '<li class="list-group-item text-danger">Error.</li>'; });
-                if (categoryForm) categoryForm.addEventListener('submit', async (e) => { e.preventDefault(); const name = categoryNameInput.value.trim(); if (!name) return; if (await checkDuplicate(name)) { showToast('Ya existe una categoría con ese nombre.', 'warning'); return; } try { await addDoc(categoriesCollection, { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría guardada!"); categoryNameInput.value = ''; } catch (err) { console.error("Error add cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
-                if (editForm && editCategoryModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const name = editNameInput.value.trim(); if (!id || !name) return; if (await checkDuplicate(name, id)) { showToast('Ya existe otra categoría con ese nombre.', 'warning'); return; } try { await updateDoc(doc(db, "categorias", id), { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría actualizada!"); editCategoryModalInstance.hide(); } catch (err) { console.error("Error update cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
-                if (categoryList) categoryList.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const li = target.closest('li'); const id = li.dataset.id; const nameSpan = li.querySelector('.category-name'); if (!id || !nameSpan) return;
-                    if (target.classList.contains('btn-delete-category')) {
-                         const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'categorias'; deleteItemNameEl.textContent = `Categoría: ${nameSpan.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
-                    } else if (target.classList.contains('btn-edit-category')) { if(editIdInput && editNameInput && editCategoryModalInstance) { editIdInput.value = id; editNameInput.value = nameSpan.textContent; editCategoryModalInstance.show(); } else { console.error("Edit modal elements missing."); showToast('Error al abrir editor.', 'error'); } }
-                });
-            })();
+        if (target.classList.contains('btn-delete-category')) {
+             const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); 
+             const deleteItemNameEl = document.getElementById('delete-item-name'); 
+             if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ 
+                 confirmDeleteBtn.dataset.deleteId = id; 
+                 confirmDeleteBtn.dataset.deleteCollection = 'categorias'; 
+                 deleteItemNameEl.textContent = `Categoría: ${nameSpan.textContent}`; 
+                 deleteConfirmModalInstance.show(); 
+             } else { 
+                 console.error("Delete modal elements missing."); 
+                 showToast('Error al eliminar.', 'error'); 
+             }
+        } else if (target.classList.contains('btn-edit-category')) { 
+            if(editIdInput && editNameInput && editCategoryModalInstance) { 
+                editIdInput.value = id; 
+                editNameInput.value = nameSpan.textContent; 
+                editCategoryModalInstance.show(); 
+            } else { 
+                console.error("Edit modal elements missing."); 
+                showToast('Error al abrir editor.', 'error'); 
+            } 
+        }
+    });
+})();
 
-            // PROVEEDORES (código similar al original...)
-            (() => {
-                const addForm = document.getElementById('form-add-supplier'); const addNameInput = document.getElementById('new-supplier-nombre'); const addContactInput = document.getElementById('new-supplier-contacto'); const addPhoneInput = document.getElementById('new-supplier-telefono');
-                const editForm = document.getElementById('form-edit-supplier'); const editIdInput = document.getElementById('edit-supplier-id'); const editNameInput = document.getElementById('edit-supplier-nombre'); const editContactInput = document.getElementById('edit-supplier-contacto'); const editPhoneInput = document.getElementById('edit-supplier-telefono');
-                const listTable = document.getElementById('lista-proveedores-tabla');
-                const searchModalList = document.getElementById('supplier-modal-list');
-                const searchInput = document.getElementById('supplier-modal-search');
-                const productFormInput = document.getElementById('proveedor-producto');
-                let suppliersMap = new Map();
-                if (!addForm || !listTable || !searchModalList || !editForm || !productFormInput) { console.warn("Elementos de Proveedores no encontrados."); return; }
+// PROVEEDORES
+(() => {
+    const addForm = document.getElementById('form-add-supplier'); 
+    const addNameInput = document.getElementById('new-supplier-nombre'); 
+    const addContactInput = document.getElementById('new-supplier-contacto'); 
+    const addPhoneInput = document.getElementById('new-supplier-telefono');
+    const editForm = document.getElementById('form-edit-supplier'); 
+    const editIdInput = document.getElementById('edit-supplier-id'); 
+    const editNameInput = document.getElementById('edit-supplier-nombre'); 
+    const editContactInput = document.getElementById('edit-supplier-contacto'); 
+    const editPhoneInput = document.getElementById('edit-supplier-telefono');
+    const listTable = document.getElementById('lista-proveedores-tabla');
+    const searchModalList = document.getElementById('supplier-modal-list');
+    const searchInput = document.getElementById('supplier-modal-search');
+    const productFormInput = document.getElementById('proveedor-producto');
+    let suppliersMap = new Map();
+    
+    if (!addForm || !listTable || !searchModalList || !editForm || !productFormInput) { 
+        console.warn("Elementos de Proveedores no encontrados."); 
+        return; 
+    }
 
-                const renderSuppliers = (snapshot) => { suppliersMap.clear(); listTable.innerHTML = ''; searchModalList.innerHTML = ''; if (snapshot.empty) { listTable.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay proveedores.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; suppliersMap.set(id, d); if (listTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="supplier-name">${d.nombre}</td> <td>${d.contacto || '-'}</td> <td>${d.telefono || '-'}</td> <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-supplier" title="Modificar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-supplier" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; listTable.appendChild(tr); }
-                    const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action supplier-search-item'; li.dataset.name = d.nombre; li.dataset.id = id; li.textContent = d.nombre; searchModalList.appendChild(li);
-                }); };
-                onSnapshot(query(suppliersCollection, orderBy('nombre')), renderSuppliers, (e) => { console.error("Error suppliers:", e); if(listTable) listTable.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error.</td></tr>';});
-                if (addForm && addSupplierModalInstance) addForm.addEventListener('submit', async (e) => { e.preventDefault(); const name = addNameInput.value.trim(); const contact = addContactInput.value.trim(); const phone = addPhoneInput.value.trim(); if (name) { try { await addDoc(suppliersCollection, { nombre: name, contacto: contact, telefono: phone, nombreLower: name.toLowerCase() }); showToast("Proveedor guardado!"); addSupplierModalInstance.hide(); addForm.reset(); } catch (err) { console.error("Err add supplier:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast("Nombre requerido.", 'warning'); }});
-                if (editForm && editSupplierModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const name = editNameInput.value.trim(); const contact = editContactInput.value.trim(); const phone = editPhoneInput.value.trim(); if (id && name) { try { await updateDoc(doc(db, "proveedores", id), { nombre: name, contacto: contact, telefono: phone, nombreLower: name.toLowerCase() }); showToast("Proveedor actualizado!"); editSupplierModalInstance.hide(); } catch (err) { console.error("Err update supplier:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast("Nombre requerido.", 'warning'); }});
-                if (listTable) listTable.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.supplier-name'); if (!id || !nameTd) return;
-                    if (target.classList.contains('btn-delete-supplier')) {
-                         const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'proveedores'; deleteItemNameEl.textContent = `Proveedor: ${nameTd.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
-                    } else if (target.classList.contains('btn-edit-supplier')) {
-                        const supplierData = suppliersMap.get(id);
-                        if (supplierData && editSupplierModalInstance && editIdInput && editNameInput && editContactInput && editPhoneInput) {
-                            editIdInput.value = id; editNameInput.value = supplierData.nombre || ''; editContactInput.value = supplierData.contacto || ''; editPhoneInput.value = supplierData.telefono || '';
-                            editSupplierModalInstance.show();
-                        } else { console.error("Edit supplier modal or data missing"); showToast("Error al abrir editor.", 'error'); }
+    const renderSuppliers = (snapshot) => { 
+        suppliersMap.clear(); 
+        listTable.innerHTML = ''; 
+        searchModalList.innerHTML = ''; 
+        if (snapshot.empty) { 
+            listTable.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay proveedores.</td></tr>'; 
+            return; 
+        } 
+        snapshot.forEach(docSnap => { 
+            const d = docSnap.data(); 
+            const id = docSnap.id; 
+            suppliersMap.set(id, d); 
+            if (listTable) { 
+                const tr = document.createElement('tr'); 
+                tr.dataset.id = id; 
+                tr.innerHTML = `<td class="supplier-name">${d.nombre}</td> <td>${d.contacto || '-'}</td> <td>${d.telefono || '-'}</td> <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-supplier" title="Modificar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-supplier" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; 
+                listTable.appendChild(tr); 
+            }
+            const li = document.createElement('li'); 
+            li.className = 'list-group-item list-group-item-action supplier-search-item'; 
+            li.dataset.name = d.nombre; 
+            li.dataset.id = id; 
+            li.textContent = d.nombre; 
+            searchModalList.appendChild(li);
+        }); 
+    };
+    
+    onSnapshot(query(suppliersCollection, orderBy('nombre')), renderSuppliers, (e) => { 
+        console.error("Error suppliers:", e); 
+        if(listTable) listTable.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error.</td></tr>';
+    });
+    
+    if (addForm && addSupplierModalInstance) addForm.addEventListener('submit', async (e) => { 
+        e.preventDefault(); 
+        const name = addNameInput.value.trim(); 
+        const contact = addContactInput.value.trim(); 
+        const phone = addPhoneInput.value.trim(); 
+        if (name) { 
+            try { 
+                await addDoc(suppliersCollection, { nombre: name, contacto: contact, telefono: phone, nombreLower: name.toLowerCase() }); 
+                showToast("Proveedor guardado!"); 
+                addSupplierModalInstance.hide(); 
+                addForm.reset(); 
+            } catch (err) { 
+                console.error("Err add supplier:", err); 
+                showToast(`Error: ${err.message}`, 'error'); 
+            } 
+        } else { 
+            showToast("Nombre requerido.", 'warning'); 
+        }
+    });
+    
+    if (editForm && editSupplierModalInstance) editForm.addEventListener('submit', async (e) => { 
+        e.preventDefault(); 
+        const id = editIdInput.value; 
+        const name = editNameInput.value.trim(); 
+        const contact = editContactInput.value.trim(); 
+        const phone = editPhoneInput.value.trim(); 
+        if (id && name) { 
+            try { 
+                await updateDoc(doc(db, "proveedores", id), { nombre: name, contacto: contact, telefono: phone, nombreLower: name.toLowerCase() }); 
+                showToast("Proveedor actualizado!"); 
+                editSupplierModalInstance.hide(); 
+            } catch (err) { 
+                console.error("Err update supplier:", err); 
+                showToast(`Error: ${err.message}`, 'error'); 
+            } 
+        } else { 
+            showToast("Nombre requerido.", 'warning'); 
+        }
+    });
+    
+    if (listTable) listTable.addEventListener('click', (e) => { 
+        const target = e.target.closest('button'); 
+        if (!target) return; 
+        e.preventDefault(); 
+        const tr = target.closest('tr'); 
+        const id = tr.dataset.id; 
+        const nameTd = tr.querySelector('.supplier-name'); 
+        if (!id || !nameTd) return;
+        
+        if (target.classList.contains('btn-delete-supplier')) {
+             const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); 
+             const deleteItemNameEl = document.getElementById('delete-item-name'); 
+             if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ 
+                 confirmDeleteBtn.dataset.deleteId = id; 
+                 confirmDeleteBtn.dataset.deleteCollection = 'proveedores'; 
+                 deleteItemNameEl.textContent = `Proveedor: ${nameTd.textContent}`; 
+                 deleteConfirmModalInstance.show(); 
+             } else { 
+                 console.error("Delete modal elements missing."); 
+                 showToast('Error al eliminar.', 'error'); 
+             }
+        } else if (target.classList.contains('btn-edit-supplier')) {
+            const supplierData = suppliersMap.get(id);
+            if (supplierData && editSupplierModalInstance && editIdInput && editNameInput && editContactInput && editPhoneInput) {
+                editIdInput.value = id; 
+                editNameInput.value = supplierData.nombre || ''; 
+                editContactInput.value = supplierData.contacto || ''; 
+                editPhoneInput.value = supplierData.telefono || '';
+                editSupplierModalInstance.show();
+            } else { 
+                console.error("Edit supplier modal or data missing"); 
+                showToast("Error al abrir editor.", 'error'); 
+            }
+        }
+    });
+    
+    if (searchInput) searchInput.addEventListener('input', (e) => { 
+        const searchTerm = e.target.value.toLowerCase(); 
+        const items = searchModalList.querySelectorAll('.supplier-search-item'); 
+        items.forEach(item => { 
+            item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; 
+        }); 
+    });
+    
+    if (searchModalList && searchSupplierModalInstance) searchModalList.addEventListener('click', (e) => { 
+        const target = e.target.closest('.supplier-search-item'); 
+        if (target) { 
+            productFormInput.value = target.dataset.name; 
+            searchSupplierModalInstance.hide(); 
+        } 
+    });
+})();
+
+// CLIENTES
+(() => {
+    const addForm = document.getElementById('form-add-client'); 
+    const addCedulaInput = document.getElementById('new-client-cedula'); 
+    const addNombreInput = document.getElementById('new-client-nombre'); 
+    const addCelularInput = document.getElementById('new-client-celular'); 
+    const addDireccionInput = document.getElementById('new-client-direccion');
+    const editForm = document.getElementById('form-edit-client'); 
+    const editIdInput = document.getElementById('edit-client-id'); 
+    const editCedulaInput = document.getElementById('edit-client-cedula'); 
+    const editNombreInput = document.getElementById('edit-client-nombre'); 
+    const editCelularInput = document.getElementById('edit-client-celular'); 
+    const editDireccionInput = document.getElementById('edit-client-direccion');
+    const clientListTable = document.getElementById('lista-clientes');
+    const searchModalList = document.getElementById('client-modal-list');
+    const searchInput = document.getElementById('client-modal-search');
+    const ventaClienteInput = document.getElementById('venta-cliente'); 
+    const ventaCelularInput = document.getElementById('venta-cliente-celular'); 
+    const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
+    
+    if (!addForm || !editForm || !clientListTable || !searchModalList) { 
+        console.warn("Elementos de Clientes no encontrados."); 
+        return; 
+    }
+    
+    const renderClients = (snapshot) => { 
+        localClientsMap.clear(); 
+        if(clientListTable) clientListTable.innerHTML = ''; 
+        if(searchModalList) searchModalList.innerHTML = ''; 
+        localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General"}); 
+        if(searchModalList) { 
+            const liGen = document.createElement('li'); 
+            liGen.className = 'list-group-item list-group-item-action client-search-item'; 
+            liGen.dataset.name = "Cliente General"; 
+            liGen.dataset.id = ""; 
+            liGen.textContent = "Cliente General"; 
+            searchModalList.appendChild(liGen); 
+        } 
+        if (snapshot.empty) { 
+            if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; 
+            return; 
+        } 
+        snapshot.forEach(docSnap => { 
+            const d = docSnap.data(); 
+            const id = docSnap.id; 
+            const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; 
+            localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "" }); 
+            localClientsMap.set(id, d); 
+            if (clientListTable) { 
+                const tr = document.createElement('tr'); 
+                tr.dataset.id = id; 
+                tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-client" title="Modificar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-client" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; 
+                clientListTable.appendChild(tr); 
+            }
+            const li = document.createElement('li'); 
+            li.className = 'list-group-item list-group-item-action client-search-item'; 
+            li.dataset.name = dataListValue; 
+            li.dataset.id = id; 
+            li.textContent = dataListValue; 
+            searchModalList.appendChild(li);
+        }); 
+        document.dispatchEvent(new CustomEvent('clientsLoaded', { detail: { clientsMap: localClientsMap } })); 
+        fillClientInfoSales(); 
+    };
+    
+    function fillClientInfoSales() { 
+        if (!ventaClienteInput || !ventaCelularInput || !ventaDireccionInput) return; 
+        const selectedValue = ventaClienteInput.value; 
+        const clientInfo = localClientsMap.get(selectedValue); 
+        if (clientInfo) { 
+            ventaCelularInput.value = clientInfo.celular; 
+            ventaDireccionInput.value = clientInfo.direccion; 
+        } else { 
+            ventaCelularInput.value = ""; 
+            ventaDireccionInput.value = ""; 
+        } 
+    }
+    
+    onSnapshot(query(clientsCollection, orderBy('nombre')), renderClients, (e) => { 
+        console.error("Error clients:", e); 
+        if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';
+    });
+    
+    if (ventaClienteInput) ventaClienteInput.addEventListener('input', fillClientInfoSales);
+    
+    if (addForm && addClientModalInstance) addForm.addEventListener('submit', async (e) => { 
+        e.preventDefault(); 
+        const ced = addCedulaInput.value.trim(); 
+        const nom = addNombreInput.value.trim(); 
+        const cel = addCelularInput.value.trim(); 
+        const dir = addDireccionInput.value.trim(); 
+        if (nom && cel) { 
+            try { 
+                await addDoc(clientsCollection, { nombre: nom, cedula: ced, celular: cel, direccion: dir, ultimaCompra: null }); 
+                showToast("Cliente guardado!"); 
+                addClientModalInstance.hide(); 
+                addForm.reset(); 
+            } catch (err) { 
+                console.error("Err add client:", err); 
+                showToast(`Error: ${err.message}`, 'error'); 
+            } 
+        } else { 
+            showToast('Nombre y Celular requeridos.', 'warning'); 
+        } 
+    });
+    
+    if (editForm && editClientModalInstance) editForm.addEventListener('submit', async (e) => { 
+        e.preventDefault(); 
+        const id = editIdInput.value; 
+        const ced = editCedulaInput.value.trim(); 
+        const nom = editNombreInput.value.trim(); 
+        const cel = editCelularInput.value.trim(); 
+        const dir = editDireccionInput.value.trim(); 
+        if (id && nom && cel) { 
+            try { 
+                await updateDoc(doc(db, "clientes", id), { nombre: nom, cedula: ced, celular: cel, direccion: dir }); 
+                showToast("Cliente actualizado!"); 
+                editClientModalInstance.hide(); 
+            } catch (err) { 
+                console.error("Err update client:", err); 
+                showToast(`Error: ${err.message}`, 'error'); 
+            } 
+        } else { 
+            showToast('Nombre y Celular requeridos.', 'warning'); 
+        }
+    });
+    
+    if (clientListTable) clientListTable.addEventListener('click', (e) => { 
+        const target = e.target.closest('button'); 
+        if (!target) return; 
+        e.preventDefault(); 
+        const tr = target.closest('tr'); 
+        const id = tr.dataset.id; 
+        const nameTd = tr.querySelector('.client-name'); 
+        if (!id || !nameTd) return;
+        
+        if (target.classList.contains('btn-delete-client')) {
+            const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); 
+            const deleteItemNameEl = document.getElementById('delete-item-name'); 
+            if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ 
+                confirmDeleteBtn.dataset.deleteId = id; 
+                confirmDeleteBtn.dataset.deleteCollection = 'clientes'; 
+                deleteItemNameEl.textContent = `Cliente: ${nameTd.textContent}`; 
+                deleteConfirmModalInstance.show(); 
+            } else { 
+                console.error("Delete modal elements missing."); 
+                showToast('Error al eliminar.', 'error'); 
+            }
+        } else if (target.classList.contains('btn-edit-client')) {
+             const clientData = localClientsMap.get(id); 
+             if (clientData && editClientModalInstance && editIdInput && editCedulaInput && editNombreInput && editCelularInput && editDireccionInput) { 
+                 editIdInput.value = id; 
+                 editCedulaInput.value = clientData.cedula || ''; 
+                 editNombreInput.value = clientData.nombre || ''; 
+                 editCelularInput.value = clientData.celular || ''; 
+                 editDireccionInput.value = clientData.direccion || ''; 
+                 editClientModalInstance.show(); 
+             } else { 
+                 console.error("Edit client modal or data missing"); 
+                 showToast("Error al abrir editor.", 'error'); 
+             }
+        }
+    });
+    
+    if (searchInput) searchInput.addEventListener('input', (e) => { 
+        const searchTerm = e.target.value.toLowerCase(); 
+        const items = searchModalList.querySelectorAll('.client-search-item'); 
+        items.forEach(item => { 
+            item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; 
+        }); 
+    });
+    
+    if (searchModalList && searchClientModalInstance) searchModalList.addEventListener('click', (e) => { 
+        const target = e.target.closest('.client-search-item'); 
+        if (target) { 
+            ventaClienteInput.value = target.dataset.name; 
+            fillClientInfoSales(); 
+            searchClientModalInstance.hide(); 
+        } 
+    });
+    
+    fillClientInfoSales();
+})();
+
+// REPARTIDORES (simplificado - añadir más lógica si es necesario)
+(() => {
+     const repartidorForm = document.getElementById('form-add-repartidor'); 
+     const nombreInput = document.getElementById('new-repartidor-nombre'); 
+     const celularInput = document.getElementById('new-repartidor-celular'); 
+     
+     if(!repartidorForm) { 
+         console.warn("Elementos de Repartidores no encontrados."); 
+         return; 
+     }
+     
+     if (repartidorForm && addRepartidorModalInstance) repartidorForm.addEventListener('submit', async (e) => { 
+         e.preventDefault(); 
+         const nom = nombreInput.value.trim(); 
+         const cel = celularInput.value.trim(); 
+         if (nom && cel) { 
+             try { 
+                 await addDoc(repartidoresCollection, { nombre: nom, celular: cel }); 
+                 showToast("Repartidor guardado!"); 
+                 addRepartidorModalInstance.hide(); 
+                 repartidorForm.reset(); 
+             } catch (err) { 
+                 console.error("Err add repartidor:", err); 
+                 showToast(`Error: ${err.message}`, 'error'); 
+             } 
+         } else { 
+             showToast('Nombre y Celular requeridos.', 'warning'); 
+         } 
+     });
+})();
+
+// ========================================================================
+// LÓGICA PEDIDOS WEB (NUEVA)
+// ========================================================================
+(() => {
+    const listaPedidosWeb = document.getElementById('lista-pedidos-web');
+    const emptyPedidosRow = document.getElementById('empty-pedidos-row');
+    const pedidosPendientesBadge = document.getElementById('pedidos-pendientes-badge');
+
+    if (!listaPedidosWeb) {
+        console.warn("Elementos de Pedidos Web no encontrados.");
+        return;
+    }
+
+    let currentFilter = 'pendiente';
+    const filterRadios = document.querySelectorAll('input[name="filter-pedidos"]');
+
+    const renderPedidosWeb = (snapshot) => {
+        if (!listaPedidosWeb) return;
+        listaPedidosWeb.innerHTML = '';
+        if (emptyPedidosRow) emptyPedidosRow.style.display = 'none';
+
+        let pedidosFiltrados = [];
+        let pedidosPendientes = 0;
+
+        snapshot.forEach(docSnap => {
+            const pedido = docSnap.data();
+            const id = docSnap.id;
+            pedido.id = id;
+
+            if (pedido.estado === 'pendiente') pedidosPendientes++;
+            if (currentFilter === 'todos' || pedido.estado === currentFilter) {
+                pedidosFiltrados.push(pedido);
+            }
+        });
+
+        if (pedidosPendientesBadge) {
+            if (pedidosPendientes > 0) {
+                pedidosPendientesBadge.textContent = pedidosPendientes;
+                pedidosPendientesBadge.style.display = 'inline-block';
+            } else {
+                pedidosPendientesBadge.style.display = 'none';
+            }
+        }
+
+        if (pedidosFiltrados.length === 0) {
+            if (emptyPedidosRow) {
+                emptyPedidosRow.style.display = '';
+                listaPedidosWeb.appendChild(emptyPedidosRow);
+            }
+            return;
+        }
+
+        pedidosFiltrados.forEach(pedido => {
+            const fecha = pedido.timestamp?.toDate ? 
+                pedido.timestamp.toDate().toLocaleString('es-CO', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }) : 'N/A';
+            
+            const totalItems = (pedido.items || []).reduce((sum, item) => sum + item.cantidad, 0);
+
+            let estadoBadge = '';
+            switch (pedido.estado) {
+                case 'pendiente':
+                    estadoBadge = '<span class="badge bg-warning">⏳ Pendiente</span>';
+                    break;
+                case 'aceptado':
+                    estadoBadge = '<span class="badge bg-success">✓ Aceptado</span>';
+                    break;
+                case 'rechazado':
+                    estadoBadge = '<span class="badge bg-danger">✗ Rechazado</span>';
+                    break;
+            }
+
+            let actionButtons = '';
+            if (pedido.estado === 'pendiente') {
+                actionButtons = `
+                    <button class="btn btn-sm btn-success me-1 btn-aceptar-pedido" 
+                            data-pedido-id="${pedido.id}" 
+                            title="Aceptar">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger me-1 btn-rechazar-pedido" 
+                            data-pedido-id="${pedido.id}" 
+                            title="Rechazar">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </button>
+                `;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><code>${pedido.id.substring(0, 8)}</code></td>
+                <td><strong>${pedido.clienteNombre}</strong></td>
+                <td>
+                    <a href="https://wa.me/${pedido.clienteCelular.replace(/\D/g, '')}" 
+                       target="_blank" 
+                       class="text-decoration-none">
+                        <i class="bi bi-whatsapp text-success"></i> ${pedido.clienteCelular}
+                    </a>
+                    <small class="d-block text-muted">${pedido.clienteDireccion}</small>
+                </td>
+                <td><span class="badge bg-light text-dark">${totalItems} item${totalItems > 1 ? 's' : ''}</span></td>
+                <td><strong>${formatoMoneda.format(pedido.totalPedido || 0)}</strong></td>
+                <td><span class="badge bg-info">${pedido.metodoPagoSolicitado || '-'}</span></td>
+                <td><small>${fecha}</small></td>
+                <td>${estadoBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary me-1 btn-ver-pedido" 
+                            data-pedido-id="${pedido.id}" 
+                            title="Ver">
+                        <i class="bi bi-eye-fill"></i>
+                    </button>
+                    ${actionButtons}
+                </td>
+            `;
+            listaPedidosWeb.appendChild(tr);
+        });
+    };
+
+    const q = query(pedidosWebCollection, orderBy('timestamp', 'desc'));
+    onSnapshot(q, renderPedidosWeb, (error) => {
+        console.error("Error al cargar pedidos web:", error);
+        if (listaPedidosWeb) {
+            listaPedidosWeb.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error al cargar pedidos.</td></tr>';
+        }
+    });
+
+    filterRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            currentFilter = e.target.value;
+            const q2 = query(pedidosWebCollection, orderBy('timestamp', 'desc'));
+            getDocs(q2).then(renderPedidosWeb);
+        });
+    });
+
+    if (listaPedidosWeb) {
+        listaPedidosWeb.addEventListener('click', async (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
+            e.preventDefault();
+
+            const pedidoId = target.dataset.pedidoId;
+            if (!pedidoId) return;
+
+            // ========== VER DETALLES ==========
+            if (target.classList.contains('btn-ver-pedido')) {
+                try {
+                    const pedidoDoc = await getDoc(doc(db, 'pedidosWeb', pedidoId));
+                    if (!pedidoDoc.exists()) {
+                        showToast('Pedido no encontrado.', 'error');
+                        return;
                     }
-                });
-                if (searchInput) searchInput.addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); const items = searchModalList.querySelectorAll('.supplier-search-item'); items.forEach(item => { item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; }); });
-                if (searchModalList && searchSupplierModalInstance) searchModalList.addEventListener('click', (e) => { const target = e.target.closest('.supplier-search-item'); if (target) { productFormInput.value = target.dataset.name; searchSupplierModalInstance.hide(); } });
-            })();
 
-            // CLIENTES (código similar al original...)
-            (() => {
-                const addForm = document.getElementById('form-add-client'); const addCedulaInput = document.getElementById('new-client-cedula'); const addNombreInput = document.getElementById('new-client-nombre'); const addCelularInput = document.getElementById('new-client-celular'); const addDireccionInput = document.getElementById('new-client-direccion');
-                const editForm = document.getElementById('form-edit-client'); const editIdInput = document.getElementById('edit-client-id'); const editCedulaInput = document.getElementById('edit-client-cedula'); const editNombreInput = document.getElementById('edit-client-nombre'); const editCelularInput = document.getElementById('edit-client-celular'); const editDireccionInput = document.getElementById('edit-client-direccion');
-                const clientListTable = document.getElementById('lista-clientes');
-                const searchModalList = document.getElementById('client-modal-list');
-                const searchInput = document.getElementById('client-modal-search');
-                const ventaClienteInput = document.getElementById('venta-cliente'); const ventaCelularInput = document.getElementById('venta-cliente-celular'); const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
-                if (!addForm || !editForm || !clientListTable || !searchModalList) { console.warn("Elementos de Clientes no encontrados."); return; }
-                
-                const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General"}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-client" title="Modificar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-client" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; clientListTable.appendChild(tr); }
-                    const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action client-search-item'; li.dataset.name = dataListValue; li.dataset.id = id; li.textContent = dataListValue; searchModalList.appendChild(li);
-                }); document.dispatchEvent(new CustomEvent('clientsLoaded', { detail: { clientsMap: localClientsMap } })); fillClientInfoSales(); };
-                function fillClientInfoSales() { if (!ventaClienteInput || !ventaCelularInput || !ventaDireccionInput) return; const selectedValue = ventaClienteInput.value; const clientInfo = localClientsMap.get(selectedValue); if (clientInfo) { ventaCelularInput.value = clientInfo.celular; ventaDireccionInput.value = clientInfo.direccion; } else { ventaCelularInput.value = ""; ventaDireccionInput.value = ""; } }
-                onSnapshot(query(clientsCollection, orderBy('nombre')), renderClients, (e) => { console.error("Error clients:", e); if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';});
-                if (ventaClienteInput) ventaClienteInput.addEventListener('input', fillClientInfoSales);
-                if (addForm && addClientModalInstance) addForm.addEventListener('submit', async (e) => { e.preventDefault(); const ced = addCedulaInput.value.trim(); const nom = addNombreInput.value.trim(); const cel = addCelularInput.value.trim(); const dir = addDireccionInput.value.trim(); if (nom && cel) { try { await addDoc(clientsCollection, { nombre: nom, cedula: ced, celular: cel, direccion: dir, ultimaCompra: null }); showToast("Cliente guardado!"); addClientModalInstance.hide(); addForm.reset(); } catch (err) { console.error("Err add client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
-                if (editForm && editClientModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const ced = editCedulaInput.value.trim(); const nom = editNombreInput.value.trim(); const cel = editCelularInput.value.trim(); const dir = editDireccionInput.value.trim(); if (id && nom && cel) { try { await updateDoc(doc(db, "clientes", id), { nombre: nom, cedula: ced, celular: cel, direccion: dir }); showToast("Cliente actualizado!"); editClientModalInstance.hide(); } catch (err) { console.error("Err update client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); }});
-                if (clientListTable) clientListTable.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.client-name'); if (!id || !nameTd) return;
-                    if (target.classList.contains('btn-delete-client')) {
-                        const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'clientes'; deleteItemNameEl.textContent = `Cliente: ${nameTd.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
-                    } else if (target.classList.contains('btn-edit-client')) {
-                         const clientData = localClientsMap.get(id); if (clientData && editClientModalInstance && editIdInput && editCedulaInput && editNombreInput && editCelularInput && editDireccionInput) { editIdInput.value = id; editCedulaInput.value = clientData.cedula || ''; editNombreInput.value = clientData.nombre || ''; editCelularInput.value = clientData.celular || ''; editDireccionInput.value = clientData.direccion || ''; editClientModalInstance.show(); } else { console.error("Edit client modal or data missing"); showToast("Error al abrir editor.", 'error'); }
+                    const pedido = pedidoDoc.data();
+                    
+                    document.getElementById('pedido-modal-id').textContent = pedidoId.substring(0, 8).toUpperCase();
+                    document.getElementById('pedido-cliente-nombre').textContent = pedido.clienteNombre || '-';
+
+                    const whatsappLink = document.getElementById('pedido-cliente-whatsapp');
+                    whatsappLink.textContent = pedido.clienteCelular || '-';
+                    whatsappLink.href = `https://wa.me/${(pedido.clienteCelular || '').replace(/\D/g, '')}`;
+
+                    document.getElementById('pedido-cliente-direccion').textContent = pedido.clienteDireccion || '-';
+                    document.getElementById('pedido-metodo-pago').textContent = pedido.metodoPagoSolicitado || '-';
+
+                    const obsContainer = document.getElementById('pedido-observaciones-container');
+                    const obsText = document.getElementById('pedido-observaciones');
+                    if (pedido.observaciones && pedido.observaciones.trim()) {
+                        obsText.textContent = pedido.observaciones;
+                        obsContainer.style.display = 'block';
+                    } else {
+                        obsContainer.style.display = 'none';
                     }
-                });
-                if (
+
+                    const itemsList = document.getElementById('pedido-items-list');
+                    itemsList.innerHTML = '';
+                    (pedido.items || []).forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${item.nombre}</td>
+                            <td><small class="text-muted">${item.talla} / ${item.color}</small></td>
+                            <td>${item.cantidad}</td>
+                            <td>${formatoMoneda.format(item.precio)}</td>
+                            <td><strong>${formatoMoneda.format(item.total)}</strong></td>
+                        `;
+                        itemsList.appendChild(tr);
+                    });
+
+                    document.getElementById('pedido-total').textContent = formatoMoneda.format(pedido.totalPedido || 0);
+                    
+                    if (viewPedidoModalInstance) {
+                        viewPedidoModalInstance.show();
+                    }
+
+                } catch (err) {
+                    console.error('Error al cargar pedido:', err);
+                    showToast('Error al cargar detalles.', 'error');
+                }
+            }
+
+            // ========== ACEPTAR PEDIDO ==========
+            if (target.classList.contains('btn-aceptar-pedido')) {
+                if (!confirm('¿Aceptar este pedido y crear una venta?')) return;
+
+                try {
+                    await updateDoc(doc(db, 'pedidosWeb', pedidoId), {
+                        estado: 'aceptado',
+                        fechaAceptacion: serverTimestamp()
+                    });
+
+                    showToast('✅ Pedido aceptado. Completa la venta en la pestaña "Ventas".', 'success');
+                    
+                    // Cambiar a la pestaña de ventas
+                    document.querySelector('a[href="#ventas"]').click();
+
+                } catch (err) {
+                    console.error('Error al aceptar pedido:', err);
+                    showToast('Error al aceptar pedido.', 'error');
+                }
+            }
+
+            // ========== RECHAZAR PEDIDO ==========
+            if (target.classList.contains('btn-rechazar-pedido')) {
+                const motivo = prompt('¿Motivo del rechazo? (opcional)');
+                if (motivo === null) return;
+
+                try {
+                    await updateDoc(doc(db, 'pedidosWeb', pedidoId), {
+                        estado: 'rechazado',
+                        motivoRechazo: motivo || 'Sin especificar',
+                        fechaRechazo: serverTimestamp()
+                    });
+
+                    showToast('Pedido rechazado.', 'info');
+
+                } catch (err) {
+                    console.error('Error al rechazar pedido:', err);
+                    showToast('Error al rechazar pedido.', 'error');
+                }
+            }
+        });
+    }
+})();
+
+// ========================================================================
+// TOGGLES DE UI
+// ========================================================================
+(() => {
+    // Toggles de productos
+    const fV_prod = document.getElementById('form-view'); 
+    const iV_prod = document.getElementById('inventory-view'); 
+    const tIB_prod = document.getElementById('toggle-inventory-view-btn'); 
+    const tFB_prod = document.getElementById('toggle-form-view-btn'); 
+    if(fV_prod && iV_prod && tIB_prod && tFB_prod){ 
+        tIB_prod.addEventListener('click',(e)=>{ 
+            e.preventDefault(); 
+            fV_prod.style.display='none'; 
+            iV_prod.style.display='block'; 
+            tIB_prod.classList.add('active'); 
+            tFB_prod.classList.remove('active');
+        }); 
+        tFB_prod.addEventListener('click',(e)=>{ 
+            e.preventDefault(); 
+            iV_prod.style.display='none'; 
+            fV_prod.style.display='block'; 
+            tFB_prod.classList.add('active'); 
+            tIB_prod.classList.remove('active');
+        }); 
+        iV_prod.style.display='block'; 
+        tIB_prod.classList.add('active'); 
+    }
+
+    // Toggles de ventas
+    const sFV = document.getElementById('sales-form-view'); 
+    const sLV = document.getElementById('sales-list-view'); 
+    const tSLB = document.getElementById('toggle-sales-list-view-btn'); 
+    const tSFB = document.getElementById('toggle-sales-form-view-btn'); 
+    if(sFV && sLV && tSLB && tSFB){ 
+        tSLB.addEventListener('click',(e)=>{ 
+            e.preventDefault(); 
+            sFV.style.display='none'; 
+            sLV.style.display='block'; 
+            tSLB.classList.add('active'); 
+            tSFB.classList.remove('active'); 
+        }); 
+        tSFB.addEventListener('click',(e)=>{ 
+            e.preventDefault(); 
+            sLV.style.display='none'; 
+            sFV.style.display='block'; 
+            tSFB.classList.add('active'); 
+            tSLB.classList.remove('active'); 
+        }); 
+        sFV.style.display='block'; 
+        tSFB.classList.add('active'); 
+    }
+
+    // Navbar collapse on click
+    const navLinks = document.querySelectorAll('#adminNavbarContent .nav-link');
+    const navCollapse = document.getElementById('adminNavbarContent');
+    if (navCollapse) {
+        const bsCollapse = new bootstrap.Collapse(navCollapse, { toggle: false });
+        navLinks.forEach((link) => {
+            link.addEventListener('click', () => {
+                if (navCollapse.classList.contains('show')) {
+                    bsCollapse.hide();
+                }
+            });
+        });
+    }
+})();
+
+console.log("✅ Admin.html completamente cargado e inicializado");
+
+        });
+    </script>
+
+</body>
+</html>
