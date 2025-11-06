@@ -282,3 +282,11 @@ main {
 .remove-variation-btn i {
     vertical-align: middle; /* Centra el ícono verticalmente */
 }
+
+/* ✅ Ahora en esquina superior izquierda */
+.toast-container { 
+    top: 20px !important;
+    left: 20px !important;
+    bottom: auto !important;
+    right: auto !important;
+}
