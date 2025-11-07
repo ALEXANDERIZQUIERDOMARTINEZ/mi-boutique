@@ -91,7 +91,6 @@ function loadPromotions() {
 
 function calculatePromotionPrice(producto) {
     const promo = activePromotions.get(producto.id);
-    // Si el modo mayorista está activo, las promociones no aplican
     if (!promo || isWholesaleActive) {
         return { precioFinal: producto.precioDetal, tienePromo: false };
     }
@@ -390,6 +389,15 @@ function handleSearch(e) {
 document.getElementById('search-input').addEventListener('input', handleSearch);
 document.getElementById('search-modal-input').addEventListener('input', handleSearch);
 
+// ¡NUEVO! Cierra el modal de búsqueda con 'Enter'
+document.getElementById('search-modal-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('close-search-modal').click();
+    }
+});
+
+
 // --- Event Listeners del MODAL DE PRODUCTO ---
 
 document.getElementById('select-talla').addEventListener('change', (e) => {
@@ -469,7 +477,6 @@ document.getElementById('quantity-plus').addEventListener('click', () => {
         cantidadInput.value = currentValue + 1;
     }
 });
-
 document.getElementById('quantity-minus').addEventListener('click', () => {
     const cantidadInput = document.getElementById('select-cantidad');
     let currentValue = parseInt(cantidadInput.value);
@@ -492,10 +499,8 @@ document.getElementById('btn-add-cart').addEventListener('click', () => {
     }
 
     const { precioFinal } = calculatePromotionPrice(product);
-    // ¡LÓGICA DE PRECIO!
     const precioUnitarioFinal = isWholesaleActive ? product.precioMayor : precioFinal;
     
-    // El ID único ahora incluye el tipo de precio
     const cartItemId = `${productId}-${talla}-${color}-${isWholesaleActive ? 'MAYOR' : 'DETAL'}`;
     
     const existing = cart.find(item => item.cartItemId === cartItemId);
@@ -526,7 +531,7 @@ document.getElementById('btn-add-cart').addEventListener('click', () => {
 
 // --- Event Listeners del CARRITO y CHECKOUT ---
 
-// Confirmar Eliminación del Carrito (¡ARREGLO BUG!)
+// ¡ARREGLO BUG!
 document.getElementById('confirm-delete-cart-item').addEventListener('click', () => {
     if (itemToDelete === null) return;
 
@@ -544,7 +549,7 @@ document.getElementById('confirm-delete-cart-item').addEventListener('click', ()
 });
 
 
-// Enviar Formulario de Checkout (¡Con info mayorista!)
+// ¡Con info mayorista!
 document.getElementById('checkout-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -673,7 +678,7 @@ document.getElementById('mobile-promo-btn').addEventListener('click', () => {
 document.getElementById('wholesale-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const input = document.getElementById('wholesale-code');
-    const code = input.value.trim().toUpperCase(); // Convertimos a mayúsculas
+    const code = input.value.trim().toUpperCase();
 
     if (code === WHOLESALE_CODE) {
         isWholesaleActive = true;
