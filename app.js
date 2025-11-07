@@ -26,9 +26,9 @@ let cart = [];
 let productsMap = new Map();
 let allProducts = [];
 let activePromotions = new Map();
-let itemToDelete = null; // Almacenará el cartItemId a eliminar
-let isWholesaleActive = false; // ¡NUEVA LÓGICA MAYORISTA!
-const WHOLESALE_CODE = "MISHELLMAYOR"; // El código para activar
+let itemToDelete = null; 
+let isWholesaleActive = false;
+const WHOLESALE_CODE = "MISHELLMAYOR";
 
 // --- FUNCIONES PRINCIPALES ---
 
@@ -107,9 +107,6 @@ function calculatePromotionPrice(producto) {
     };
 }
 
-/**
- * Renderiza la lista de productos en la página.
- */
 function renderProducts(products) {
     const container = document.getElementById('products-container');
     const loading = document.getElementById('loading-products');
@@ -180,7 +177,6 @@ function renderProducts(products) {
         container.appendChild(col);
     });
 
-    // Evento en toda la tarjeta
     document.querySelectorAll('.product-card').forEach(card => {
         card.addEventListener('click', (e) => {
             const stock = parseInt(e.currentTarget.dataset.stock);
@@ -195,10 +191,6 @@ function renderProducts(products) {
     });
 }
 
-
-/**
- * Abre el modal de un producto específico.
- */
 function openProductModal(productId) {
     const product = productsMap.get(productId);
     if (!product) return;
@@ -255,9 +247,6 @@ function openProductModal(productId) {
     modal.show();
 }
 
-/**
- * Renderiza el contenido del carrito.
- */
 function renderCart() {
     const container = document.getElementById('cart-items-container');
     const footer = document.getElementById('cart-footer');
@@ -312,9 +301,6 @@ function renderCart() {
     badgeMobile.style.display = 'flex';
 }
 
-/**
- * Función global para abrir el modal de confirmación de eliminación.
- */
 window.confirmRemoveFromCart = function(cartItemId) {
     itemToDelete = cartItemId;
     const modal = new bootstrap.Modal(document.getElementById('deleteCartModal'));
@@ -389,7 +375,7 @@ function handleSearch(e) {
 document.getElementById('search-input').addEventListener('input', handleSearch);
 document.getElementById('search-modal-input').addEventListener('input', handleSearch);
 
-// ¡NUEVO! Cierra el modal de búsqueda con 'Enter'
+// ¡ARREGLO! Cierra el modal de búsqueda con 'Enter'
 document.getElementById('search-modal-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
@@ -531,10 +517,8 @@ document.getElementById('btn-add-cart').addEventListener('click', () => {
 
 // --- Event Listeners del CARRITO y CHECKOUT ---
 
-// ¡ARREGLO BUG!
 document.getElementById('confirm-delete-cart-item').addEventListener('click', () => {
     if (itemToDelete === null) return;
-
     const itemIndex = cart.findIndex(item => item.cartItemId === itemToDelete);
     
     if (itemIndex > -1) {
@@ -549,7 +533,6 @@ document.getElementById('confirm-delete-cart-item').addEventListener('click', ()
 });
 
 
-// ¡Con info mayorista!
 document.getElementById('checkout-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -586,7 +569,7 @@ document.getElementById('checkout-form').addEventListener('submit', async (e) =>
         estado: "pendiente",
         timestamp: serverTimestamp(),
         origen: "web",
-        tipoVenta: isWholesaleActive ? "Mayorista" : "Detal" // ¡NUEVO CAMPO!
+        tipoVenta: isWholesaleActive ? "Mayorista" : "Detal"
     };
 
     try {
@@ -594,7 +577,6 @@ document.getElementById('checkout-form').addEventListener('submit', async (e) =>
         
         let mensaje = "¡Nuevo pedido desde el catálogo web!\n\n";
         mensaje += `*PEDIDO #${docRef.id.substring(0, 6).toUpperCase()}*\n\n`;
-        // ¡NUEVA LÍNEA!
         if (isWholesaleActive) {
             mensaje += "*TIPO DE VENTA: MAYORISTA*\n\n";
         }
@@ -618,8 +600,11 @@ document.getElementById('checkout-form').addEventListener('submit', async (e) =>
         const url = `https://wa.me/573046084971?text=${encodeURIComponent(mensaje)}`;
         // **********************************************************
 
-        window.open(url, '_blank');
+        // ¡ARREGLO DEL BUG DE WHATSAPP!
+        // Reemplaza window.open() con window.location.href
+        window.location.href = url;
 
+        // Cierra modales y limpia el carrito
         bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
         bootstrap.Offcanvas.getInstance(document.getElementById('cartOffcanvas')).hide();
         
