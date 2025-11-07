@@ -76,7 +76,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     cursor: default;
 }
 
-/* 5. HEADER Y FILTROS (Reestructurado) */
+/* 5. HEADER Y FILTROS */
 .navbar {
     background-color: var(--color-fondo) !important;
     border-bottom: 1px solid var(--color-borde-sutil);
@@ -84,7 +84,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     padding: 0.75rem 0;
 }
 .navbar > .container {
-    position: relative; /* Contexto para centrado absoluto */
+    position: relative;
 }
 .navbar-brand {
     font-weight: 700;
@@ -157,35 +157,28 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     border-color: var(--color-primario);
     color: white;
 }
-
-/* Ajustes para el header colapsable */
 @media (max-width: 991.98px) {
     .navbar-collapse {
         margin-top: 1rem;
     }
-    /* ¡AQUÍ ESTÁ EL ARREGLO MÓVIL! */
     .catalog-filters {
-        flex-direction: row; /* Vuelve a ser fila */
-        justify-content: center; /* Se centra */
+        flex-direction: row; /* Arreglo para móvil */
+        justify-content: center;
     }
     .filter-group {
-        font-size: 0.8rem; /* Un poco más pequeño para que quepa */
+        font-size: 0.8rem;
         padding: 6px 12px;
     }
 }
-
-/* ¡AQUÍ ESTÁ EL ARREGLO DESKTOP! */
 @media (min-width: 992px) {
     .navbar-collapse .catalog-filters {
-        /* Centrado absoluto perfecto */
         position: absolute;
         left: 50%;
         transform: translateX(-50%);
     }
 }
 
-
-/* 6. TARJETA DE PRODUCTO */
+/* 6. TARJETA DE PRODUCTO (Ajustada) */
 .product-card {
     background: var(--color-fondo);
     border: none;
@@ -211,7 +204,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 .product-card img {
     width: 100%;
     height: 280px;
-    object-fit: contain; /* Muestra imagen completa */
+    object-fit: cover; /* ¡CAMBIO CLAVE! Se ve más "bonito" y organizado */
     transition: transform 0.4s ease;
 }
 .product-card:hover img {
@@ -267,9 +260,12 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     font-weight: 600;
     font-size: 1.1rem;
 }
+
+/* --- ¡ARREGLO DE ALTURA UNIFORME! --- */
 .product-variations {
     margin-bottom: 1rem;
-    min-height: 22px;
+    height: 60px; /* Altura fija para Tallas y Colores */
+    overflow: hidden;
 }
 .variations-title {
     font-size: 0.7rem;
@@ -293,8 +289,10 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     padding: 2px 6px;
     border-radius: 4px;
 }
+/* --- Fin Arreglo --- */
+
 .product-card .btn {
-    margin-top: auto;
+    margin-top: auto; /* Esto ahora alineará los botones */
     padding: 8px 15px;
     font-size: 0.9rem;
 }
@@ -325,7 +323,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     background-color: #fafafa;
     border-top: 1px solid var(--color-borde-sutil);
     text-align: center;
-    margin-top: auto;
+    margin-top: auto; /* ¡ARREGLO DE FOOTER! */
 }
 .wholesale-form {
     max-width: 400px;
@@ -376,7 +374,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     padding: 5px;
     position: relative;
 }
-/* ¡AQUÍ ESTÁ EL ARREGLO! */
+/* ¡ARREGLO DE ICONOS GIGANTES! */
 .mobile-bottom-nav .nav-item i {
     font-size: 1.4rem;
     margin-bottom: 2px;
@@ -598,7 +596,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 /* Posición Móvil (Abajo) */
 @media (max-width: 767.98px) {
     .toast-container {
-        bottom: 80px !important; /* Arriba de la barra de nav móvil */
+        bottom: 80px !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         top: auto !important;
