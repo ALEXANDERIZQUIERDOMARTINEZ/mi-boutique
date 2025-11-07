@@ -360,7 +360,7 @@ function filterProducts(filter) {
             return stock > 0;
         });
     } else if (filter === 'promocion') {
-        filtered = allProducts.filter(p => activePromotions.has(p.id));
+        filtered = allProducts.filter(p => activePromotions.has(p.id) && !isWholesaleActive); // Promos solo en detal
     }
     renderProducts(filtered);
 }
@@ -376,7 +376,7 @@ function handleSearch(e) {
             return stock > 0;
         });
     } else if (activeFilter === 'promocion') {
-        baseList = allProducts.filter(p => activePromotions.has(p.id));
+        baseList = allProducts.filter(p => activePromotions.has(p.id) && !isWholesaleActive);
     }
     
     const filtered = baseList.filter(p => 
