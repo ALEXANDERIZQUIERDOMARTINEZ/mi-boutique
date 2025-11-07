@@ -28,7 +28,7 @@ let allProducts = [];
 let activePromotions = new Map();
 let itemToDelete = null; 
 let isWholesaleActive = false;
-const WHOLESALE_CODE = "MISHELLMAYOR";
+const WHOLESALE_CODE = "MISHELLMAYOR"; 
 
 // --- FUNCIONES PRINCIPALES ---
 
@@ -375,15 +375,6 @@ function handleSearch(e) {
 document.getElementById('search-input').addEventListener('input', handleSearch);
 document.getElementById('search-modal-input').addEventListener('input', handleSearch);
 
-// ¡ARREGLO! Cierra el modal de búsqueda con 'Enter'
-document.getElementById('search-modal-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('close-search-modal').click();
-    }
-});
-
-
 // --- Event Listeners del MODAL DE PRODUCTO ---
 
 document.getElementById('select-talla').addEventListener('change', (e) => {
@@ -596,23 +587,26 @@ document.getElementById('checkout-form').addEventListener('submit', async (e) =>
         });
         mensaje += `*TOTAL PEDIDO: ${formatoMoneda.format(total)}*`;
         
-        // *** PASO 4: CAMBIA ESTE NÚMERO DE WHATSAPP POR EL TUYO ***
         const url = `https://wa.me/573046084971?text=${encodeURIComponent(mensaje)}`;
-        // **********************************************************
 
-        // ¡ARREGLO DEL BUG DE WHATSAPP!
+        // ¡ARREGLO DEL BUG DE WHATSAPP EN PWA!
         // Reemplaza window.open() con window.location.href
         window.location.href = url;
 
-        // Cierra modales y limpia el carrito
+        // No podemos limpiar el carrito aquí porque no sabemos si el usuario envió el mensaje.
+        // La limpieza se hará la próxima vez que cargue la página,
+        // pero sí cerramos los modales.
+        
         bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
         bootstrap.Offcanvas.getInstance(document.getElementById('cartOffcanvas')).hide();
         
+        // Vaciamos el carrito en la UI, aunque no esté 100% confirmado
         cart = [];
         renderCart();
         document.getElementById('checkout-form').reset();
         
-        showToast('Pedido enviado correctamente', 'success');
+        // No mostramos "Pedido enviado" porque el usuario aún debe confirmar en WhatsApp
+        // showToast('Pedido enviado correctamente', 'success');
 
     } catch (err) {
         console.error("Error al guardar pedido: ", err);
@@ -640,9 +634,25 @@ document.getElementById('mobile-search-btn').addEventListener('click', () => {
     setActiveNavItem(document.getElementById('mobile-search-btn'));
 });
 
-document.getElementById('close-search-modal').addEventListener('click', () => {
+// ¡ARREGLO! Cierra el modal con el botón de "X"
+const closeSearchButton = document.getElementById('close-search-modal');
+closeSearchButton.addEventListener('click', () => {
     searchModal.style.display = 'none';
 });
+
+// ¡ARREGLO! Cierra el modal también al hacer clic en el ícono de lupa
+document.querySelector('#searchModal .search-icon').addEventListener('click', () => {
+    closeSearchButton.click(); // Simula un clic en el botón de cerrar
+});
+
+// ¡ARREGLO! Cierra el modal con 'Enter'
+document.getElementById('search-modal-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        closeSearchButton.click(); // Simula un clic en el botón de cerrar
+    }
+});
+
 
 document.getElementById('mobile-home-btn').addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
