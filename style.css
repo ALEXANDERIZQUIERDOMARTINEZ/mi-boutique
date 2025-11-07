@@ -76,12 +76,15 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     cursor: default;
 }
 
-/* 5. HEADER Y FILTROS */
+/* 5. HEADER Y FILTROS (Reestructurado) */
 .navbar {
     background-color: var(--color-fondo) !important;
     border-bottom: 1px solid var(--color-borde-sutil);
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     padding: 0.75rem 0;
+}
+.navbar > .container {
+    position: relative; /* Contexto para centrado absoluto */
 }
 .navbar-brand {
     font-weight: 700;
@@ -154,18 +157,33 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     border-color: var(--color-primario);
     color: white;
 }
+
+/* Ajustes para el header colapsable */
 @media (max-width: 991.98px) {
     .navbar-collapse {
         margin-top: 1rem;
     }
+    /* ¡AQUÍ ESTÁ EL ARREGLO MÓVIL! */
     .catalog-filters {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row; /* Vuelve a ser fila */
+        justify-content: center; /* Se centra */
     }
     .filter-group {
-        text-align: center;
+        font-size: 0.8rem; /* Un poco más pequeño para que quepa */
+        padding: 6px 12px;
     }
 }
+
+/* ¡AQUÍ ESTÁ EL ARREGLO DESKTOP! */
+@media (min-width: 992px) {
+    .navbar-collapse .catalog-filters {
+        /* Centrado absoluto perfecto */
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
+
 
 /* 6. TARJETA DE PRODUCTO */
 .product-card {
@@ -307,7 +325,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     background-color: #fafafa;
     border-top: 1px solid var(--color-borde-sutil);
     text-align: center;
-    margin-top: auto; /* ¡ARREGLO DE FOOTER! */
+    margin-top: auto;
 }
 .wholesale-form {
     max-width: 400px;
@@ -358,8 +376,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     padding: 5px;
     position: relative;
 }
-/* *** ¡AQUÍ ESTÁ EL ARREGLO! *** */
-/* Esta regla ahora SOLO aplica a los iconos DENTRO de la barra móvil */
+/* ¡AQUÍ ESTÁ EL ARREGLO! */
 .mobile-bottom-nav .nav-item i {
     font-size: 1.4rem;
     margin-bottom: 2px;
