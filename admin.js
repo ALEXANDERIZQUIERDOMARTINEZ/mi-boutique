@@ -716,6 +716,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
+        // ========================================================================
+        // ✅ CORRECCIÓN: Editar Producto (Cambiar orden de ejecución)
+        // ========================================================================
         if (productListTableBody) productListTableBody.addEventListener('click', async (e) => { 
             const target = e.target.closest('button'); if (!target) return; e.preventDefault(); 
             const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.product-name'); if (!id || !nameTd) return;
@@ -727,6 +730,20 @@ document.addEventListener('DOMContentLoaded', () => {
                  try {
                     const product = localProductsMap.get(id);
                     if (product) {
+                        // ✅ PASO 1: Cambiar a la vista del formulario PRIMERO (sin usar .click())
+                        const formView = document.getElementById('form-view');
+                        const inventoryView = document.getElementById('inventory-view');
+                        const toggleFormBtn = document.getElementById('toggle-form-view-btn');
+                        const toggleInventoryBtn = document.getElementById('toggle-inventory-view-btn');
+                        
+                        if (formView && inventoryView && toggleFormBtn && toggleInventoryBtn) {
+                            inventoryView.style.display = 'none';
+                            formView.style.display = 'block';
+                            toggleFormBtn.classList.add('active');
+                            toggleInventoryBtn.classList.remove('active');
+                        }
+                        
+                        // ✅ PASO 2: Ahora SÍ rellenar el formulario
                         productIdInput.value = id;
                         nombreInput.value = product.nombre || '';
                         proveedorInput.value = product.proveedor || '';
@@ -753,7 +770,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else { aVR(); } 
                         
                         costoInput.dispatchEvent(new Event('input')); 
-                        document.getElementById('toggle-form-view-btn').click(); 
+                        
+                        // ✅ Scroll hacia el formulario para que sea visible
+                        if (formView) {
+                            formView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                        
                     } else { showToast("Producto no encontrado.", 'error'); }
                  } catch (err) { console.error("Error fetching product for edit:", err); showToast(`Error al cargar: ${err.message}`, 'error'); }
              }
