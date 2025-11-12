@@ -1,10 +1,10 @@
-/* --- style.css --- */
+/* --- style.css VERSIÓN FINAL MEJORADA --- */
 
 /* 1. IMPORTACIÓN DE FUENTES Y ÍCONOS */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 @import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css');
 
-/* 2. VARIABLES GLOBALES (Tu Marca) */
+/* 2. VARIABLES GLOBALES */
 :root {
     --color-primario: #D988B9;
     --color-primario-claro: #F5E8ED;
@@ -18,7 +18,7 @@
     --shadow-suave: 0 5px 15px rgba(0, 0, 0, 0.06);
 }
 
-/* 3. ESTILOS BASE (Con Arreglo de Footer) */
+/* 3. ESTILOS BASE */
 body {
     font-family: var(--font-base);
     background-color: var(--color-fondo);
@@ -29,12 +29,17 @@ body {
     min-height: 100vh;
     padding-bottom: 70px;
 }
-main {
-    flex-grow: 1; /* ¡ARREGLO DE FOOTER! */
+
+body.modal-search-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
 }
+
+main { flex-grow: 1; }
 h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 
-/* 4. COMPONENTES DE BOOTSTRAP */
+/* 4. COMPONENTES BOOTSTRAP */
 .btn {
     border-radius: var(--border-radius);
     font-weight: 500;
@@ -70,11 +75,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     border-color: var(--color-primario);
     box-shadow: 0 0 0 0.2rem rgba(217, 136, 185, 0.2);
 }
-.form-control:disabled, .form-control[readonly] {
-    background-color: #e9ecef;
-    opacity: 1;
-    cursor: default;
-}
 
 /* 5. HEADER Y FILTROS */
 .navbar {
@@ -83,21 +83,14 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     padding: 0.75rem 0;
 }
-.navbar > .container {
-    position: relative;
-}
+.navbar > .container { position: relative; }
 .navbar-brand {
     font-weight: 700;
     font-size: 1.6rem;
     color: var(--color-primario) !important;
 }
-.navbar-toggler {
-    border: none;
-    padding: 0;
-}
-.navbar-toggler:focus {
-    box-shadow: none;
-}
+.navbar-toggler { border: none; padding: 0; }
+.navbar-toggler:focus { box-shadow: none; }
 .cart-icon {
     font-size: 1.5rem;
     position: relative;
@@ -113,24 +106,39 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     width: 20px; height: 20px;
     display: flex; align-items: center; justify-content: center;
 }
+
+/* ✅ BUSCADOR MÁS GRANDE */
 .search-box {
     position: relative;
-    width: 250px;
+    width: 380px;
 }
 .search-box input {
     border-radius: var(--border-radius);
-    padding-left: 15px; padding-right: 40px;
-    background: var(--color-borde-sutil);
-    border: 1px solid var(--color-borde-sutil);
-    font-size: 0.9rem;
+    padding: 14px 20px 14px 50px;
+    background: white;
+    border: 2px solid var(--color-primario-claro);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+.search-box input:focus {
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.1);
+    outline: none;
+}
+.search-box input::placeholder {
+    color: var(--color-texto-claro);
 }
 .search-box .search-icon {
     position: absolute;
-    right: 15px;
+    left: 18px;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--color-texto-claro);
+    color: var(--color-primario);
+    font-size: 1.3rem;
+    pointer-events: none;
 }
+
 .catalog-filters {
     display: flex;
     justify-content: center;
@@ -158,16 +166,18 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     color: white;
 }
 @media (max-width: 991.98px) {
-    .navbar-collapse {
-        margin-top: 1rem;
-    }
+    .navbar-collapse { margin-top: 1rem; }
     .catalog-filters {
-        flex-direction: row; /* Arreglo para móvil */
+        flex-direction: row;
         justify-content: center;
     }
     .filter-group {
         font-size: 0.8rem;
         padding: 6px 12px;
+    }
+    .search-box {
+        width: 100%;
+        max-width: 320px;
     }
 }
 @media (min-width: 992px) {
@@ -178,7 +188,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     }
 }
 
-/* 6. TARJETA DE PRODUCTO (Ajustada) */
+/* 6. TARJETA DE PRODUCTO */
 .product-card {
     background: var(--color-fondo);
     border: none;
@@ -204,12 +214,10 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 .product-card img {
     width: 100%;
     height: 280px;
-    object-fit: cover; /* ¡CAMBIO CLAVE! Se ve más "bonito" y organizado */
+    object-fit: cover;
     transition: transform 0.4s ease;
 }
-.product-card:hover img {
-    transform: scale(1.05);
-}
+.product-card:hover img { transform: scale(1.05); }
 .product-card-body {
     padding: 1rem;
     text-align: left;
@@ -261,38 +269,82 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     font-size: 1.1rem;
 }
 
-/* --- ¡ARREGLO DE ALTURA UNIFORME! --- */
+/* ✅ VARIACIONES - Altura flexible */
 .product-variations {
     margin-bottom: 1rem;
-    height: 60px; /* Altura fija para Tallas y Colores */
-    overflow: hidden;
+    min-height: 60px;
+    max-height: none;
 }
 .variations-title {
     font-size: 0.7rem;
     font-weight: 600;
     color: var(--color-texto-claro);
     text-transform: uppercase;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 .variation-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-    max-height: 22px;
-    overflow: hidden;
+    gap: 6px;
 }
+
+/* Chips de TALLA */
 .variation-chip {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     font-weight: 500;
     background-color: var(--color-borde-sutil);
-    color: var(--color-texto-claro);
-    padding: 2px 6px;
-    border-radius: 4px;
+    color: var(--color-texto);
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
 }
-/* --- Fin Arreglo --- */
+
+/* ✅ Chips de COLOR con círculos */
+.variation-chips.colors {
+    gap: 8px;
+}
+
+.variation-chips.colors .color-chip {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px #ccc, 0 2px 4px rgba(0,0,0,0.15);
+    cursor: default;
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.variation-chips.colors .color-chip:hover {
+    transform: scale(1.15);
+}
+
+/* Tooltip para nombre del color */
+.variation-chips.colors .color-chip::after {
+    content: attr(data-color-name);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+
+.variation-chips.colors .color-chip:hover::after {
+    opacity: 1;
+}
 
 .product-card .btn {
-    margin-top: auto; /* Esto ahora alineará los botones */
+    margin-top: auto;
     padding: 8px 15px;
     font-size: 0.9rem;
 }
@@ -316,18 +368,21 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 .badge-promo { background: #e74c3c; }
+.badge-agotado { background-color: #777 !important; }
+.badge-solo-detal {
+    background-color: #6c757d !important;
+    color: white;
+}
 
-/* 7. FOOTER (Simplificado) */
+/* 7. FOOTER */
 .footer-minimal {
     padding: 1.5rem 0;
     background-color: #fafafa;
     border-top: 1px solid var(--color-borde-sutil);
     text-align: center;
-    margin-top: auto; /* ¡ARREGLO DE FOOTER! */
+    margin-top: auto;
 }
-.wholesale-form {
-    max-width: 400px;
-}
+.wholesale-form { max-width: 400px; }
 .wholesale-form input {
     font-size: 0.9rem;
     max-width: 200px;
@@ -337,17 +392,11 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     font-size: 0.9rem;
 }
 @media (max-width: 767.98px) {
-    .footer-minimal .container div {
-        text-align: center;
-    }
-    .wholesale-form {
-        justify-content: center;
-    }
+    .footer-minimal .container div { text-align: center; }
+    .wholesale-form { justify-content: center; }
 }
 
-/* 8. ESTILOS FUNCIONALES (Nuevos y Añadidos) */
-
-/* --- NAVEGACIÓN INFERIOR MÓVIL --- */
+/* 8. NAVEGACIÓN MÓVIL */
 .mobile-bottom-nav {
     position: fixed;
     bottom: 0;
@@ -374,7 +423,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     padding: 5px;
     position: relative;
 }
-/* ¡ARREGLO DE ICONOS GIGANTES! */
 .mobile-bottom-nav .nav-item i {
     font-size: 1.4rem;
     margin-bottom: 2px;
@@ -392,18 +440,26 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     font-weight: 600;
 }
 
-/* --- MODAL DE BÚSQUEDA MÓVIL --- */
+/* ✅ MODAL DE BÚSQUEDA MÓVIL */
 .search-modal {
-    position: fixed; top: 0; left: 0;
+    position: fixed; 
+    top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(5px);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
     z-index: 1050;
     display: none;
-    align-items: center; justify-content: center;
-    padding: 20px; flex-direction: column;
+    align-items: center; 
+    justify-content: center;
+    padding: 20px; 
+    flex-direction: column;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
-.search-modal-content { width: 100%; max-width: 500px; }
+.search-modal-content { 
+    width: 100%; 
+    max-width: 500px; 
+}
 .search-modal-title {
     font-family: 'Playfair Display', serif;
     font-size: 1.8rem;
@@ -417,10 +473,25 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     top: 20px; right: 20px;
     font-size: 2.5rem;
     color: var(--color-texto-claro);
-    background: none; border: none; line-height: 1;
+    background: none; border: none; 
+    line-height: 1;
+    cursor: pointer;
+    z-index: 1051;
 }
 
-/* --- ESTILOS DE MODALES (Producto, Checkout) --- */
+.search-modal .search-box {
+    width: 100%;
+}
+.search-modal .search-box input {
+    font-size: 1.1rem;
+    padding: 16px 20px 16px 55px;
+}
+.search-modal .search-icon {
+    font-size: 1.5rem;
+    left: 20px;
+}
+
+/* 9. MODALES */
 .modal-content {
     border: none;
     border-radius: var(--border-radius);
@@ -440,7 +511,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 .modal-product-image {
     width: 100%;
     height: 400px;
-    object-fit: contain; /* Muestra imagen completa */
+    object-fit: contain;
     border-radius: var(--border-radius);
     border: 1px solid var(--color-borde-sutil);
     background-color: #f9f9f9;
@@ -456,12 +527,8 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     margin-bottom: 8px;
     font-size: 0.9rem;
 }
-.price-detal-modal {
-    transition: all 0.3s ease;
-}
-.price-mayor-modal {
-    transition: all 0.3s ease;
-}
+.price-detal-modal { transition: all 0.3s ease; }
+.price-mayor-modal { transition: all 0.3s ease; }
 .price-detal-modal .price-detal {
     font-size: 1.8rem;
     font-weight: 700;
@@ -478,9 +545,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     color: var(--color-texto);
     font-size: 1.3rem;
 }
-.wholesale-active .price-detal-modal {
-    opacity: 0.6;
-}
+.wholesale-active .price-detal-modal { opacity: 0.6; }
 .wholesale-active .price-detal-modal .price-detal {
     text-decoration: line-through;
     font-size: 1.3rem;
@@ -501,7 +566,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     color: var(--color-primario);
 }
 
-/* --- BOTONES +/- (Estilo de la imagen) --- */
+/* SELECTOR DE CANTIDAD */
 .quantity-selector {
     display: flex;
     align-items: center;
@@ -544,15 +609,13 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     margin: 0;
 }
 
-/* --- CARRITO (Offcanvas) --- */
+/* CARRITO */
 .offcanvas-header {
     background: var(--color-fondo);
     border-bottom: 1px solid var(--color-borde-sutil);
     padding: 1.5rem;
 }
-.offcanvas-title {
-    font-weight: 600;
-}
+.offcanvas-title { font-weight: 600; }
 .cart-item {
     padding: 1.5rem;
     border-bottom: 1px solid var(--color-borde-sutil);
@@ -580,11 +643,8 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     color: var(--color-primario);
 }
 
-/* --- TOAST (Notificación) (Reposicionado) --- */
-.toast-container {
-    z-index: 9999;
-}
-/* Posición Desktop (ARRIBA IZQUIERDA) */
+/* TOAST */
+.toast-container { z-index: 9999; }
 @media (min-width: 768px) {
     .toast-container {
         top: 20px !important;
@@ -593,7 +653,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
         bottom: auto !important;
     }
 }
-/* Posición Móvil (Abajo) */
 @media (max-width: 767.98px) {
     .toast-container {
         bottom: 80px !important;
@@ -616,7 +675,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     color: #333 !important;
 }
 
-/* --- SECCIÓN PROMOCIONES --- */
+/* PROMOCIONES */
 .promotions-section {
     background: linear-gradient(135deg, var(--color-primario-claro) 0%, var(--color-primario-hover) 100%);
     border: 1px solid var(--color-primario-hover);
@@ -630,26 +689,8 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     margin-bottom: 15px;
     text-align: center;
 }
-.promotion-item {
-    background: white;
-    border: 1px solid var(--color-primario-hover);
-    border-radius: var(--border-radius);
-    padding: 15px;
-    margin-bottom: 10px;
-    box-shadow: var(--shadow-suave);
-}
-.promotion-badge {
-    background: #e74c3c;
-    color: white;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    display: inline-block;
-    margin-bottom: 5px;
-}
 
-/* --- LOADING SPINNER --- */
+/* LOADING */
 .loading-spinner {
     display: inline-block;
     width: 40px;
@@ -664,87 +705,13 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     100% { transform: rotate(360deg); }
 }
 
-/* 9. ESTILOS RESPONSIVE */
+/* RESPONSIVE */
 @media (min-width: 992px) {
-    body {
-        padding-bottom: 0;
-    }
-    .product-card img {
-        height: 320px;
-    }
+    body { padding-bottom: 0; }
+    .product-card img { height: 320px; }
 }
 @media (max-width: 576px) {
-    .modal-product-image {
-        height: 300px;
-    }
-    .modal-body {
-        padding: 1.25rem;
-    }
-    .offcanvas {
-        width: 90% !important;
-    }
-}
-/* --- 10. ESTILOS DE VARIACIONES EN TARJETA (NUEVO) --- */
-
-.product-card-body {
-    /* Asegura que el botón se alinee al fondo */
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.product-variations {
-    margin: 0.75rem 0;
-    /* Este es el contenedor que faltaba */
-    min-height: 40px; /* Evita que la tarjeta "salte" si un producto no tiene variaciones */
-}
-
-.variations-title {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--color-texto-claro);
-    text-transform: uppercase;
-    margin-bottom: 4px;
-}
-
-.variation-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.variation-chip {
-    font-size: 0.75rem;
-    font-weight: 500;
-    background-color: var(--color-primario-claro);
-    color: var(--color-primario);
-    padding: 3px 8px;
-    border-radius: 4px;
-    border: 1px solid var(--color-primario-hover);
-}
-
-/* Estilo específico para los chips de color */
-.variation-chips.colors .color-chip {
-    min-width: 20px;
-    height: 20px;
-    padding: 0;
-    border-radius: 50%;
-    text-indent: -9999px; /* Oculta el texto (ej. "Rojo") */
-    border: 2px solid #fff;
-    box-shadow: 0 0 0 1px var(--color-borde-sutil);
-    
-    /* ¡Magia! Si no puedes poner el color de fondo, esto al menos los muestra como círculos */
-    background-color: var(--color-borde-sutil); /* Color base si no se puede mapear */
-    color: transparent;
-}
-
-/* --- 11. ESTILOS DE BADGES (NUEVO) --- */
-
-.badge-agotado {
-    background-color: #777 !important;
-}
-
-.badge-solo-detal {
-    background-color: #6c757d !important; /* Un gris neutral */
-    color: white;
+    .modal-product-image { height: 300px; }
+    .modal-body { padding: 1.25rem; }
+    .offcanvas { width: 90% !important; }
 }
