@@ -11,7 +11,6 @@ const firebaseConfig = {
     messagingSenderId: "399662956877",
     appId: "1:399662956877:web:084236f5bb3cf6f0a8f704"
 };
-// **********************************
 
 // --- INICIALIZACIÓN Y GLOBALES ---
 const app = initializeApp(firebaseConfig);
@@ -31,7 +30,99 @@ let itemToDelete = null;
 let isWholesaleActive = false;
 const WHOLESALE_CODE = "MISHELLMAYOR"; 
 
-// --- FUNCIONES DE RENDERIZADO Y LÓGICA ---
+let categoriesMap = new Map();
+
+// ✅ MAPEO DE COLORES: Texto → Código Hex
+const COLOR_MAP = {
+    // Colores básicos
+    'rojo': '#E53935',
+    'azul': '#1E88E5',
+    'verde': '#43A047',
+    'amarillo': '#FDD835',
+    'naranja': '#FB8C00',
+    'rosa': '#EC407A',
+    'morado': '#8E24AA',
+    'violeta': '#8E24AA',
+    'negro': '#212121',
+    'blanco': '#FFFFFF',
+    'gris': '#9E9E9E',
+    'cafe': '#6D4C41',
+    'café': '#6D4C41',
+    'marron': '#6D4C41',
+    'marrón': '#6D4C41',
+    'beige': '#D7CCC8',
+    'crema': '#FFF8E1',
+    
+    // Tonos de rojo
+    'rojo oscuro': '#C62828',
+    'rojo claro': '#EF5350',
+    'coral': '#FF6F61',
+    'salmon': '#FA8072',
+    'salmón': '#FA8072',
+    'fucsia': '#E91E63',
+    'magenta': '#E91E63',
+    
+    // Tonos de azul
+    'azul marino': '#0D47A1',
+    'azul claro': '#64B5F6',
+    'celeste': '#81D4FA',
+    'turquesa': '#00ACC1',
+    'aguamarina': '#00BCD4',
+    'cyan': '#00BCD4',
+    
+    // Tonos de verde
+    'verde oscuro': '#2E7D32',
+    'verde claro': '#81C784',
+    'lima': '#CDDC39',
+    'oliva': '#7CB342',
+    'menta': '#80CBC4',
+    
+    // Tonos de morado
+    'morado oscuro': '#6A1B9A',
+    'morado claro': '#BA68C8',
+    'lavanda': '#B39DDB',
+    'lila': '#E1BEE7',
+    
+    // Tonos de rosa
+    'rosa claro': '#F48FB1',
+    'rosa fuerte': '#D81B60',
+    'rosado': '#F8BBD0',
+    'durazno': '#FFAB91',
+    
+    // Tonos de gris
+    'gris oscuro': '#424242',
+    'gris claro': '#E0E0E0',
+    'plata': '#BDBDBD',
+    'plateado': '#BDBDBD',
+    
+    // Otros colores
+    'dorado': '#FFD700',
+    'oro': '#FFD700',
+    'bronce': '#CD7F32',
+    'cobre': '#B87333',
+    'mostaza': '#E5AE0F',
+    'bordo': '#900C3F',
+    'vino': '#722F37',
+    'terracota': '#CC5233',
+    'unico': '#9E9E9E',
+    'único': '#9E9E9E',
+    
+    // Estampados (color neutral)
+    'estampado': '#9E9E9E',
+    'floral': '#9E9E9E',
+    'animal print': '#9E9E9E',
+    'rayas': '#9E9E9E',
+    'puntos': '#9E9E9E',
+};
+
+// ✅ FUNCIÓN: Convertir nombre de color a código hex
+function getColorHex(colorName) {
+    if (!colorName) return '#9E9E9E';
+    const normalized = colorName.toLowerCase().trim();
+    return COLOR_MAP[normalized] || '#9E9E9E';
+}
+
+// --- FUNCIONES DE RENDERIZADO ---
 
 function showToast(message, type = 'success') {
     const liveToastEl = document.getElementById('liveToast');
@@ -56,7 +147,6 @@ function loadPromotions() {
         const promotionsSection = document.getElementById('promotions-section');
         
         let hasActivePromos = false;
-        let promosHTML = '';
         
         snapshot.forEach(doc => {
             const promo = doc.data();
@@ -73,13 +163,10 @@ function loadPromotions() {
                         nombre: promo.nombre
                     });
                 });
-                // (Omitido por brevedad)
             }
         });
 
         promotionsSection.style.display = hasActivePromos ? 'block' : 'none';
-        promotionsContainer.innerHTML = promosHTML;
-        
         applyFiltersAndRender();
     });
 }
@@ -102,7 +189,7 @@ function calculatePromotionPrice(producto) {
     };
 }
 
-// --- FUNCIÓN DE FILTRO (Sin cambios) ---
+// ✅ FUNCIÓN DE FILTRO CORREGIDA
 function applyFiltersAndRender() {
     const activeFilterEl = document.querySelector('.filter-group.active');
     if (!activeFilterEl) return; 
@@ -123,7 +210,12 @@ function applyFiltersAndRender() {
     } else if (activeFilter === 'promocion') {
         filtered = filtered.filter(p => activePromotions.has(p.id) && !isWholesaleActive);
     } else if (activeFilter !== 'all') {
-        filtered = filtered.filter(p => p.categoria === activeFilter);
+        // ✅ CORRECCIÓN: Verificar si existe categoriaId o categoria
+        filtered = filtered.filter(p => {
+            const categoryId = p.categoriaId || p.categoria;
+            const categoryName = categoriesMap.get(categoryId) || '';
+            return categoryName === activeFilter;
+        });
     }
 
     // 2. Filtrar por Búsqueda
@@ -138,7 +230,7 @@ function applyFiltersAndRender() {
     renderProducts(filtered);
 }
 
-// --- RENDERIZAR PRODUCTOS (CORREGIDO) ---
+// ✅ RENDERIZAR PRODUCTOS CON COLORES REALES
 function renderProducts(products) {
     const container = document.getElementById('products-container');
     const loading = document.getElementById('loading-products');
@@ -147,7 +239,7 @@ function renderProducts(products) {
     container.innerHTML = ''; 
 
     if (products.length === 0) {
-        container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">No se encontraron productos para esta selección</p></div>';
+        container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">No se encontraron productos</p></div>';
         return;
     }
 
@@ -161,25 +253,37 @@ function renderProducts(products) {
         const tallas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))];
         const colores = [...new Set(variaciones.map(v => v.color).filter(Boolean))];
 
-        // ==========================================================
-        // CORRECCIÓN LÓGICA Y VISUAL "AL POR MAYOR 0"
-        // ==========================================================
         const precioMayorNum = parseFloat(product.precioMayor) || 0;
         const isSoloDetal = isWholesaleActive && precioMayorNum === 0;
         
-        // Lógica visual: Si el precio es 0, no creamos el HTML
         let priceMayorHTML = '';
         if (precioMayorNum > 0) {
             priceMayorHTML = `<div class="price-mayor-card">${formatoMoneda.format(precioMayorNum)} (Mayor)</div>`;
         }
-        // ==========================================================
         
         const isDisabled = isAgotado || isSoloDetal;
         let btnText = isAgotado ? 'Agotado' : 'Seleccionar Opciones';
         if (isSoloDetal) btnText = 'Solo Detal';
 
-        const tallasHTML = tallas.length > 0 ? `<div class="variations-title">Tallas</div><div class="variation-chips">${tallas.map(t => `<span class="variation-chip">${t}</span>`).join('')}</div>` : '';
-        const coloresHTML = colores.length > 0 ? `<div class="variations-title mt-1">Colores</div><div class="variation-chips colors">${colores.map(c => `<span class="variation-chip color-chip">${c}</span>`).join('')}</div>` : '';
+        // ✅ HTML para TALLAS
+        const tallasHTML = tallas.length > 0 ? 
+            `<div class="variations-title">Tallas</div>
+             <div class="variation-chips">${tallas.map(t => `<span class="variation-chip">${t}</span>`).join('')}</div>` 
+            : '';
+
+        // ✅ HTML para COLORES con círculos de color
+        let coloresHTML = '';
+        if (colores.length > 0) {
+            const colorChips = colores.map(c => {
+                const hexColor = getColorHex(c);
+                return `<span class="variation-chip color-chip" 
+                             style="background-color: ${hexColor};" 
+                             data-color-name="${c}"></span>`;
+            }).join('');
+            
+            coloresHTML = `<div class="variations-title mt-1">Colores</div>
+                          <div class="variation-chips colors">${colorChips}</div>`;
+        }
 
         const col = document.createElement('div');
         col.className = 'col-6 col-md-4 col-lg-3'; 
@@ -201,9 +305,7 @@ function renderProducts(products) {
                         ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
                         ${formatoMoneda.format(precioFinal)} (Detal)
                     </div>
-                    
-                    ${priceMayorHTML} 
-                    
+                    ${priceMayorHTML}
                     <div class="product-variations">${tallasHTML}${coloresHTML}</div>
                     <button class="btn btn-primary btn-sm w-100 mt-auto" ${isDisabled ? 'disabled' : ''}>${btnText}</button>
                 </div>
@@ -212,7 +314,6 @@ function renderProducts(products) {
         container.appendChild(col);
     });
 
-    // EVENT LISTENER DE TARJETA (Con corrección)
     document.querySelectorAll('.product-card').forEach(card => {
         card.addEventListener('click', (e) => {
             if (e.target.tagName === 'BUTTON' && !e.target.disabled) e.stopPropagation();
@@ -237,17 +338,13 @@ function renderProducts(products) {
     });
 }
 
-// --- ABRIR MODAL DE PRODUCTO (CORREGIDO) ---
+// --- ABRIR MODAL DE PRODUCTO ---
 function openProductModal(productId) {
     const product = productsMap.get(productId);
     if (!product) return;
 
-    // ==========================================================
-    // CORRECCIÓN LÓGICA Y VISUAL "AL POR MAYOR 0"
-    // ==========================================================
     const precioMayorNum = parseFloat(product.precioMayor) || 0;
     const isSoloDetal = isWholesaleActive && precioMayorNum === 0;
-    // ==========================================================
     
     if (isSoloDetal) {
         showToast('Este producto solo está disponible para venta al detal', 'warning');
@@ -268,23 +365,18 @@ function openProductModal(productId) {
     }
     document.getElementById('modal-price-detal').textContent = formatoMoneda.format(precioFinal);
     
-    // ==========================================================
-    // Lógica visual del modal
-    // ==========================================================
     const priceMayorModalEl = document.getElementById('modal-price-mayor');
     const priceMayorContainerEl = priceMayorModalEl.closest('.price-mayor-modal');
     
     if (precioMayorNum > 0) {
         priceMayorModalEl.textContent = formatoMoneda.format(precioMayorNum);
-        priceMayorContainerEl.style.display = 'block'; // Asegurarse de que sea visible
+        priceMayorContainerEl.style.display = 'block';
     } else {
-        priceMayorContainerEl.style.display = 'none'; // Ocultarlo
+        priceMayorContainerEl.style.display = 'none';
     }
-    // ==========================================================
     
     document.getElementById('modal-product-id').value = productId;
 
-    // ... (El resto de la función es igual: cargar tallas, colores, etc.)
     const selectTalla = document.getElementById('select-talla');
     const selectColor = document.getElementById('select-color');
     selectTalla.innerHTML = '<option value="">Seleccione Talla</option>';
@@ -323,9 +415,8 @@ function openProductModal(productId) {
     modal.show();
 }
 
-// --- FUNCIONES DE CARRITO (Sin cambios) ---
+// --- FUNCIONES DE CARRITO ---
 function renderCart() {
-    // ... (Tu código de renderCart original)
     const container = document.getElementById('cart-items-container');
     const footer = document.getElementById('cart-footer');
     const badgeDesktop = document.getElementById('cart-badge-desktop');
@@ -389,8 +480,7 @@ function loadCart() {
     }
 }
 
-
-// --- DOMCONTENTLOADED (Actualizado para el header) ---
+// --- DOMCONTENTLOADED ---
 document.addEventListener('DOMContentLoaded', () => {
     
     loadCart();
@@ -399,40 +489,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
     const categoryDropdownButton = document.getElementById('category-dropdown-button');
 
-    // --- Cargar Categorías Dinámicas ---
+    // ✅ Cargar Categorías
     onSnapshot(query(categoriesCollection, orderBy('nombre')), (snapshot) => {
-        categoryDropdownMenu.innerHTML = ''; // Limpiar "Cargando..."
+        categoryDropdownMenu.innerHTML = '';
+        categoriesMap.clear();
         
         snapshot.forEach(doc => {
             const cat = doc.data();
+            const catId = doc.id;
+            const catName = cat.nombre;
+            
+            categoriesMap.set(catId, catName);
+            categoriesMap.set(catName, catId);
+            
             const li = document.createElement('li');
-            li.innerHTML = `<a class="dropdown-item filter-group" href="#" data-filter="${cat.nombre}">${cat.nombre}</a>`;
+            li.innerHTML = `<a class="dropdown-item filter-group" href="#" data-filter="${catName}">${catName}</a>`;
             categoryDropdownMenu.appendChild(li);
         });
         
-        // Asignar eventos a los items del dropdown NUEVOS
         categoryDropdownMenu.querySelectorAll('.filter-group').forEach(item => {
             item.addEventListener('click', handleFilterClick);
         });
     });
 
-    // Asignar eventos a los botones de filtro ESTÁTICOS
     document.querySelectorAll('.catalog-filters .filter-group').forEach(btn => {
         btn.addEventListener('click', handleFilterClick);
     });
 
-    // --- Función Unificada para Clics de Filtro ---
     function handleFilterClick(e) {
         e.preventDefault();
         const clickedFilter = e.currentTarget;
 
-        // 1. Quitar 'active' de todos
         document.querySelectorAll('.catalog-filters .filter-group.active').forEach(b => b.classList.remove('active'));
-        
-        // 2. Poner 'active' en el clicado
         clickedFilter.classList.add('active');
 
-        // 3. Lógica del texto del dropdown
         if (clickedFilter.classList.contains('dropdown-item')) {
             categoryDropdownButton.innerHTML = `${clickedFilter.textContent} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
             categoryDropdownButton.classList.add('active'); 
@@ -444,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
         applyFiltersAndRender();
     }
 
-    // --- Carga inicial de productos ---
+    // Carga inicial de productos
     const q = query(productsCollection, where("visible", "==", true), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
         allProducts = [];
@@ -456,23 +546,23 @@ document.addEventListener('DOMContentLoaded', () => {
             productsMap.set(doc.id, product);
         });
 
-        applyFiltersAndRender(); // Renderizado inicial
+        applyFiltersAndRender();
     });
 
-    // --- Listeners de Búsqueda (Ambos inputs) ---
+    // ✅ Búsqueda en tiempo real MEJORADA
     document.getElementById('search-input').addEventListener('input', applyFiltersAndRedraw);
     document.getElementById('search-modal-input').addEventListener('input', (e) => {
-        document.getElementById('search-input').value = e.target.value; // Sincronizar
+        document.getElementById('search-input').value = e.target.value;
         applyFiltersAndRedraw();
     });
     
     let searchTimeout;
     function applyFiltersAndRedraw() {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(applyFiltersAndRender, 300);
+        searchTimeout = setTimeout(applyFiltersAndRender, 200); // 200ms para búsqueda más rápida
     }
     
-    // --- Listeners del MODAL DE PRODUCTO (Tu código original) ---
+    // Listeners del MODAL DE PRODUCTO
     document.getElementById('select-talla').addEventListener('change', (e) => {
         const productId = document.getElementById('modal-product-id').value;
         const product = productsMap.get(productId);
@@ -554,7 +644,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- BOTÓN AÑADIR AL CARRITO (Con corrección) ---
     document.getElementById('btn-add-cart').addEventListener('click', () => {
         const productId = document.getElementById('modal-product-id').value;
         const product = productsMap.get(productId);
@@ -567,15 +656,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // ==========================================================
-        // CORRECCIÓN LÓGICA "AL POR MAYOR 0"
-        // ==========================================================
         const precioMayorNum = parseFloat(product.precioMayor) || 0;
         if (isWholesaleActive && precioMayorNum === 0) {
             showToast('Este producto es solo para venta al detal', 'warning');
-            return; // No se añade
+            return;
         }
-        // ==========================================================
 
         const { precioFinal } = calculatePromotionPrice(product);
         const precioUnitarioFinal = isWholesaleActive ? precioMayorNum : precioFinal;
@@ -609,7 +694,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.hide();
     });
 
-    // --- Listeners de CARRITO y CHECKOUT (Tu código original) ---
     document.getElementById('confirm-delete-cart-item').addEventListener('click', () => {
         if (itemToDelete === null) return;
         const itemIndex = cart.findIndex(item => item.cartItemId === itemToDelete);
@@ -692,8 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-
-    // --- Lógica de NAVEGACIÓN MÓVIL (Tu código original) ---
+    // ✅ NAVEGACIÓN MÓVIL MEJORADA
     const searchModal = document.getElementById('searchModal');
     const mobileNavItems = document.querySelectorAll('.nav-item');
 
@@ -708,19 +791,25 @@ document.addEventListener('DOMContentLoaded', () => {
         searchModal.style.display = 'flex';
         document.getElementById('search-modal-input').focus();
         setActiveNavItem(document.getElementById('mobile-search-btn'));
+        document.body.classList.add('modal-search-open');
     });
 
     const closeSearchButton = document.getElementById('close-search-modal');
     closeSearchButton.addEventListener('click', () => {
         searchModal.style.display = 'none';
+        document.body.classList.remove('modal-search-open');
     });
+    
     document.querySelector('#searchModal .search-icon').addEventListener('click', () => {
-        closeSearchButton.click(); 
+        searchModal.style.display = 'none';
+        document.body.classList.remove('modal-search-open');
     });
+    
     document.getElementById('search-modal-input').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            closeSearchButton.click(); 
+            searchModal.style.display = 'none';
+            document.body.classList.remove('modal-search-open');
         }
     });
 
@@ -740,7 +829,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setActiveNavItem(document.getElementById('mobile-promo-btn'));
     });
 
-    // --- LÓGICA DE PRECIO MAYORISTA (Tu código original) ---
     document.getElementById('wholesale-form').addEventListener('submit', (e) => {
         e.preventDefault();
         const input = document.getElementById('wholesale-code');
@@ -765,4 +853,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-}); // Fin de DOMContentLoaded
+});
