@@ -637,38 +637,82 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 localProductsMap.set(id, d);
                 
-                const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
-                const imagenUrl = d.imagenUrl || 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto'; 
-                
-                let variacionesHtml = (d.variaciones || [])
-                    .map(v => `<span class="badge bg-light text-dark me-1">${v.talla || ''} / ${v.color || ''} (Stock: ${v.stock})</span>`)
-                    .join(' ');
-                if (variacionesHtml === '') variacionesHtml = '<small class="text-muted">Sin variaciones</small>';
-                
-                // ✅ CORRECCIÓN: Mostrar nombre de categoría
-                const categoryName = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
-                
-                const tr = document.createElement('tr'); 
-                tr.dataset.id = id; 
-                tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img"></td>
-                                <td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td>
-                                <td>${categoryName}</td> <td>${variacionesHtml}</td>
-                                <td>${formatoMoneda.format(d.precioDetal || 0)}</td>
-                                <td>${formatoMoneda.format(d.precioMayor || 0)}</td>
-                                <td>${stockTotal}</td>
-                                <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
-                                <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; 
-                if(productListTableBody) productListTableBody.appendChild(tr); 
-                
-                // --- NUEVO: Lógica para modal de búsqueda (SOLO PRODUCTOS) ---
-                const li = document.createElement('li');
-                li.className = 'list-group-item list-group-item-action product-search-item d-flex justify-content-between align-items-center';
-                li.dataset.productId = id; // Guardamos el ID del producto
-                
-                li.innerHTML = `<div> ${d.nombre} <span class="stock-info d-block">Stock Total: ${stockTotal}</span> </div> <span class="price-info">${formatoMoneda.format(d.precioDetal || 0)}</span>`;
-                
-                if(stockTotal <= 0) li.classList.add('disabled'); // Deshabilitar si no hay stock en ninguna variación
-                if(productSearchModalList) productSearchModalList.appendChild(li);
+            // =======================================================================
+// INICIO DEL BLOQUE PARA REEMPLAZAR
+// =======================================================================
+
+const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
+const defaultImgTabla = 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto';
+const imagenUrl = d.imagenUrl || defaultImgTabla; 
+
+let variacionesHtml = (d.variaciones || [])
+    .map(v => `<span class="badge bg-light text-dark me-1">${v.talla || ''} / ${v.color || ''} (Stock: ${v.stock})</span>`)
+    .join(' ');
+if (variacionesHtml === '') variacionesHtml = '<small class="text-muted">Sin variaciones</small>';
+
+// ✅ CORRECCIÓN 1: Aplicada a la TABLA DE PRODUCTOS
+let categoryName = 'Sin Categoría';
+if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) {
+    categoryName = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
+}
+
+const tr = document.createElement('tr'); 
+tr.dataset.id = id; 
+tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img" onerror="this.src='${defaultImgTabla}'"></td>
+                <td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td>
+                <td>${categoryName}</td> <td>${variacionesHtml}</td>
+                <td>${formatoMoneda.format(d.precioDetal || 0)}</td>
+                <td>${formatoMoneda.format(d.precioMayor || 0)}</td>
+                <td>${stockTotal}</td>
+                <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
+                <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; 
+if(productListTableBody) productListTableBody.appendChild(tr); 
+
+// --- NUEVO: Lógica para modal de búsqueda (PRODUCTOS CON IMÁGENES MEJORADAS) ---
+const li = document.createElement('li');
+li.className = 'list-group-item list-group-item-action product-search-item';
+li.dataset.productId = id;
+li.dataset.productName = d.nombre.toLowerCase();
+li.dataset.productCode = (d.codigo || '').toLowerCase();
+
+// ✅ CORRECCIÓN (imagenUrl): Definimos la imagen por defecto
+const defaultImgModal = 'https://via.placeholder.com/70x90.png?text=Sin+Foto';
+const imagenUrlModal = d.imagenUrl || defaultImgModal; // Usamos variable 'imagenUrlModal'
+
+// ✅ CORRECCIÓN 2: Lógica COMPLETA para el MODAL DE BÚSQUEDA
+let categoryNameModal = 'Sin Categoría';
+if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) {
+    categoryNameModal = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
+}
+
+li.innerHTML = `
+    <div class="d-flex align-items-center gap-3">
+        <img src="${imagenUrlModal}" alt="${d.nombre}" class="product-search-img" onerror="this.src='${defaultImgModal}'">
+        <div class="flex-grow-1">
+            <div class="product-search-name">${d.nombre}</div>
+            <div class="d-flex gap-2 align-items-center mt-1">
+                <small class="text-muted">${categoryNameModal}</small>
+                ${d.codigo ? `<small class="text-muted">• ${d.codigo}</small>` : ''}
+            </div>
+            <div class="stock-info">Stock: ${stockTotal} unid.</div>
+        </div>
+        <div class="text-end">
+            <div class="price-info">${formatoMoneda.format(d.precioDetal || 0)}</div>
+            ${d.precioMayor ? `<small class="text-muted d-block">Mayor: ${formatoMoneda.format(d.precioMayor)}</small>` : ''}
+        </div>
+    </div>
+`;
+
+if(stockTotal <= 0) {
+    li.classList.add('disabled');
+    li.style.opacity = '0.5';
+    li.style.cursor = 'not-allowed';
+}
+if(productSearchModalList) productSearchModalList.appendChild(li); 
+
+// =======================================================================
+// FIN DEL BLOQUE PARA REEMPLAZAR
+// =======================================================================
             });
             
             // ✅ Aplicar filtros después de renderizar
