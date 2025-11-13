@@ -1,4 +1,4 @@
-/* --- style.css VERSIÓN FINAL MEJORADA --- */
+
 
 /* 1. IMPORTACIÓN DE FUENTES Y ÍCONOS */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -107,17 +107,17 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     display: flex; align-items: center; justify-content: center;
 }
 
-/* ✅ BUSCADOR MÁS GRANDE */
+/* ✅ CORRECCIÓN: BUSCADOR TAMAÑO MODERADO */
 .search-box {
     position: relative;
-    width: 380px;
+    width: 280px; /* Reducido de 380px a 280px */
 }
 .search-box input {
     border-radius: var(--border-radius);
-    padding: 14px 20px 14px 50px;
+    padding: 11px 15px 11px 42px; /* Padding más moderado */
     background: white;
     border: 2px solid var(--color-primario-claro);
-    font-size: 1rem;
+    font-size: 0.95rem; /* Ligeramente más pequeño */
     transition: all 0.3s ease;
     width: 100%;
 }
@@ -131,11 +131,11 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 }
 .search-box .search-icon {
     position: absolute;
-    left: 18px;
+    left: 14px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--color-primario);
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     pointer-events: none;
 }
 
@@ -177,7 +177,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     }
     .search-box {
         width: 100%;
-        max-width: 320px;
+        max-width: 280px;
     }
 }
 @media (min-width: 992px) {
@@ -269,7 +269,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     font-size: 1.1rem;
 }
 
-/* ✅ VARIACIONES - Altura flexible */
+/* VARIACIONES */
 .product-variations {
     margin-bottom: 1rem;
     min-height: 60px;
@@ -288,7 +288,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     gap: 6px;
 }
 
-/* Chips de TALLA */
 .variation-chip {
     font-size: 0.75rem;
     font-weight: 500;
@@ -299,7 +298,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     border: 1px solid #ddd;
 }
 
-/* ✅ Chips de COLOR con círculos */
 .variation-chips.colors {
     gap: 8px;
 }
@@ -320,7 +318,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     transform: scale(1.15);
 }
 
-/* Tooltip para nombre del color */
 .variation-chips.colors .color-chip::after {
     content: attr(data-color-name);
     position: absolute;
@@ -440,7 +437,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     font-weight: 600;
 }
 
-/* ✅ MODAL DE BÚSQUEDA MÓVIL */
+/* MODAL DE BÚSQUEDA MÓVIL */
 .search-modal {
     position: fixed; 
     top: 0; left: 0;
@@ -566,7 +563,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     color: var(--color-primario);
 }
 
-/* SELECTOR DE CANTIDAD */
 .quantity-selector {
     display: flex;
     align-items: center;
@@ -609,7 +605,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     margin: 0;
 }
 
-/* CARRITO */
 .offcanvas-header {
     background: var(--color-fondo);
     border-bottom: 1px solid var(--color-borde-sutil);
@@ -643,7 +638,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     color: var(--color-primario);
 }
 
-/* TOAST */
 .toast-container { z-index: 9999; }
 @media (min-width: 768px) {
     .toast-container {
@@ -675,7 +669,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     color: #333 !important;
 }
 
-/* PROMOCIONES */
 .promotions-section {
     background: linear-gradient(135deg, var(--color-primario-claro) 0%, var(--color-primario-hover) 100%);
     border: 1px solid var(--color-primario-hover);
@@ -690,7 +683,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     text-align: center;
 }
 
-/* LOADING */
 .loading-spinner {
     display: inline-block;
     width: 40px;
@@ -705,7 +697,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     100% { transform: rotate(360deg); }
 }
 
-/* RESPONSIVE */
 @media (min-width: 992px) {
     body { padding-bottom: 0; }
     .product-card img { height: 320px; }
