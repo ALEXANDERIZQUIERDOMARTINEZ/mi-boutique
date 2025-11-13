@@ -103,8 +103,8 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,.08);
 }
 .modal-header {
-    background-color: var(--color-primario-claro); /* Rosa pálido */
-    color: var(--color-primario); /* Rosa oscuro */
+    background-color: var(--color-primario-claro);
+    color: var(--color-primario);
     border-bottom: none; 
     border-top-left-radius: 0.5rem;
     border-top-right-radius: 0.5rem;
@@ -112,28 +112,95 @@ body {
 .modal-header .btn-close { filter: none; }
 /* Modal de Eliminar: Sobrio pero con advertencia */
 #deleteConfirmModal .modal-header {
-    background-color: #fff; /* Fondo blanco */
-    color: #dc3545; /* Texto rojo */
+    background-color: #fff;
+    color: #dc3545;
     border-bottom: 1px solid #eee;
 }
 .modal-footer { 
     border-top: 1px solid #eee; 
 }
 
-/* Estilos para lista en modal de búsqueda */
+/* ✅ ESTILOS MEJORADOS PARA MODAL DE BÚSQUEDA DE PRODUCTOS */
+.search-modal-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
 .search-modal-list .list-group-item { 
-    cursor: pointer; 
+    cursor: pointer;
+    border: 1px solid #e9ecef;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    padding: 12px;
+    transition: all 0.2s ease;
 }
-.search-modal-list .list-group-item:hover { 
-    background-color: var(--color-primario-claro); 
+
+.search-modal-list .list-group-item:hover:not(.disabled) { 
+    background-color: var(--color-primario-claro);
+    border-color: var(--color-primario);
+    transform: translateX(4px);
 }
-.search-modal-list .list-group-item .stock-info { 
-    font-size: 0.85em; 
-    color: #6c757d; 
+
+.search-modal-list .list-group-item.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
 }
-.search-modal-list .list-group-item .price-info { 
-    font-weight: 500; 
-    color: var(--color-primario); 
+
+/* Imagen del producto en búsqueda */
+.product-search-img {
+    width: 70px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 2px solid #dee2e6;
+    flex-shrink: 0;
+}
+
+/* Nombre del producto */
+.product-search-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #333;
+    line-height: 1.3;
+}
+
+/* Stock info */
+.search-modal-list .stock-info { 
+    font-size: 0.8em;
+    color: #28a745;
+    font-weight: 500;
+    margin-top: 4px;
+}
+
+.search-modal-list .list-group-item.disabled .stock-info {
+    color: #dc3545;
+}
+
+/* Price info */
+.search-modal-list .price-info { 
+    font-weight: 600;
+    color: var(--color-primario);
+    font-size: 1.1rem;
+    white-space: nowrap;
+}
+
+/* Input de búsqueda mejorado */
+#product-modal-search,
+#client-modal-search,
+#supplier-modal-search {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+#product-modal-search:focus,
+#client-modal-search:focus,
+#supplier-modal-search:focus {
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 0.2rem rgba(217, 136, 185, 0.25);
+    outline: none;
 }
 
 /* Estilos para Pedidos Web */
@@ -147,6 +214,7 @@ body {
 .web-order-card {
     border-left: 4px solid var(--color-primario);
 }
+
 /* Mejorar visualización de imágenes en tabla */
 .table-product-img {
     max-width: 60px;
@@ -222,5 +290,18 @@ body {
     
     .action-buttons button {
         padding: 2px 6px !important;
+    }
+    
+    .product-search-img {
+        width: 50px;
+        height: 65px;
+    }
+    
+    .product-search-name {
+        font-size: 0.85rem;
+    }
+    
+    .search-modal-list .price-info {
+        font-size: 0.95rem;
     }
 }
