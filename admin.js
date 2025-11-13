@@ -590,6 +590,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const productSearchModalList = document.getElementById('product-modal-list');
         const productSearchInput = document.getElementById('product-modal-search');
         
+        // ✅ Mapa de categorías para filtros y renderizado
+        let categoriesMap = new Map();
+
         if (!productForm) { console.warn("Formulario de producto no encontrado."); return; }
 
         const vC=document.getElementById('variaciones-container'); const aVB=document.getElementById('add-variation-btn'); const vT=document.getElementById('variation-template'); 
@@ -599,8 +602,22 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const cI=document.getElementById('costo-compra'); const pDI=document.getElementById('precio-detal'); const pMI=document.getElementById('precio-mayor'); const mDI=document.getElementById('margen-detal-info'); const mMI=document.getElementById('margen-mayor-info'); const fM_margin=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}); function cYM(){ if(!cI || !pDI || !pMI || !mDI || !mMI) return; const c=parseFloat(cI.value)||0; const pD=parseFloat(pDI.value)||0; const pM=parseFloat(pMI.value)||0; let mDV=0,mDP=0;if(c>0&&pD>=c){mDV=pD-c;mDP=(mDV/c)*100;mDI.textContent=`Margen: ${fM_margin.format(mDV)} (${mDP.toFixed(1)}%)`;mDI.style.color='';mDI.style.fontWeight='';}else{mDI.textContent='Margen: $0 (0.0%)';mDI.style.color=(pD>0&&pD<c)?'red':'';mDI.style.fontWeight=(pD>0&&pD<c)?'bold':'';if(pD>0&&pD<c)mDI.textContent='Margen Negativo';} let mMV=0,mMP=0;if(c>0&&pM>=c){mMV=pM-c;mMP=(mMV/c)*100;mMI.textContent=`Margen: ${fM_margin.format(mMV)} (${mMP.toFixed(1)}%)`;mMI.style.color='';mMI.style.fontWeight='';}else{mMI.textContent='Margen: $0 (0.0%)';mMI.style.color=(pM>0&&pM<c)?'red':'';mMI.style.fontWeight=(pM>0&&pM<c)?'bold':'';if(pM>0&&pM<c)mMI.textContent='Margen Negativo';}} if(cI)cI.addEventListener('input',cYM); if(pDI)pDI.addEventListener('input',cYM); if(pMI)pMI.addEventListener('input',cYM); if(cI) cYM();
         
+        // --- R (Read) ---
+        // ✅ FUNCIÓN RENDERPRODUCTS ACTUALIZADA
         const renderProducts = (snapshot) => { 
             localProductsMap.clear(); 
+            
+            // Copiar categorías al dropdown de filtros
+            const filterCategoryDropdown = document.getElementById('filter-category-inventory');
+            const productCategoryDropdown = document.getElementById('categoria-producto');
+            if (filterCategoryDropdown && productCategoryDropdown) {
+                // Solo copia si el dropdown de filtro está vacío (para no hacerlo en cada render)
+                if (filterCategoryDropdown.options.length <= 1) { 
+                    filterCategoryDropdown.innerHTML = productCategoryDropdown.innerHTML;
+                    filterCategoryDropdown.value = ''; // Asegurarse que "Todas" esté seleccionada
+                }
+            }
+
             if(!productListTableBody) return; 
             const emptyRow = document.getElementById('empty-inventory-row'); 
             productListTableBody.innerHTML = ''; 
@@ -628,11 +645,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     .join(' ');
                 if (variacionesHtml === '') variacionesHtml = '<small class="text-muted">Sin variaciones</small>';
                 
+                // ✅ CORRECCIÓN: Mostrar nombre de categoría
+                const categoryName = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
+                
                 const tr = document.createElement('tr'); 
                 tr.dataset.id = id; 
                 tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img"></td>
                                 <td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td>
-                                <td>${variacionesHtml}</td>
+                                <td>${categoryName}</td> <td>${variacionesHtml}</td>
                                 <td>${formatoMoneda.format(d.precioDetal || 0)}</td>
                                 <td>${formatoMoneda.format(d.precioMayor || 0)}</td>
                                 <td>${stockTotal}</td>
@@ -649,7 +669,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if(stockTotal <= 0) li.classList.add('disabled'); // Deshabilitar si no hay stock en ninguna variación
                 if(productSearchModalList) productSearchModalList.appendChild(li);
-            }); 
+            });
+            
+            // ✅ Aplicar filtros después de renderizar
+            applyInventoryFilters();
         };
         onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
         
@@ -916,6 +939,84 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectVariationModalInstance.hide();
             });
         }
+
+        // ✅ ========================================================================
+        // ✅ --- INICIO DE LA LÓGICA DE FILTROS DE INVENTARIO (AGREGADA) ---
+        // ✅ ========================================================================
+        const searchInputInventory = document.getElementById('search-inventory');
+        const categorySelectInventory = document.getElementById('filter-category-inventory');
+        const clearFiltersBtn = document.getElementById('clear-filters-inventory');
+        const inventoryBody = document.getElementById('lista-inventario-productos');
+
+        function loadCategoriesForFilter() {
+            onSnapshot(query(categoriesCollection, orderBy("nombre")), (snapshot) => {
+                categoriesMap.clear();
+                snapshot.forEach(doc => {
+                    categoriesMap.set(doc.id, doc.data().nombre);
+                });
+                // Las categorías ahora están cargadas en el mapa.
+                // El onSnapshot de productos llamará a renderProducts,
+                // y renderProducts usará este mapa y también aplicará los filtros.
+            });
+        }
+
+        function applyInventoryFilters() {
+            if (!inventoryBody) return;
+            
+            // Asegurarse de que los elementos de filtro existen
+            const searchVal = searchInputInventory ? searchInputInventory.value.toLowerCase() : '';
+            const categoryVal = categorySelectInventory ? categorySelectInventory.value : '';
+
+            const allRows = inventoryBody.querySelectorAll('tr[data-id]');
+            let hasVisibleRows = false;
+
+            allRows.forEach(row => {
+                const productId = row.dataset.id;
+                const product = localProductsMap.get(productId);
+                if (!product) {
+                    row.style.display = 'none';
+                    return;
+                }
+
+                const productName = (product.nombre || '').toLowerCase();
+                const productCode = (product.codigo || '').toLowerCase();
+                const categoryId = product.categoriaId || '';
+
+                // 1. Check search term
+                const matchesSearch = productName.includes(searchVal) || productCode.includes(searchVal);
+                
+                // 2. Check category
+                const matchesCategory = (categoryVal === '' || categoryId === categoryVal);
+
+                // 3. Show/Hide
+                if (matchesSearch && matchesCategory) {
+                    row.style.display = ''; 
+                    hasVisibleRows = true;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            const emptyRow = document.getElementById('empty-inventory-row');
+            if (emptyRow) {
+                emptyRow.style.display = hasVisibleRows ? 'none' : '';
+            }
+        }
+
+        // Listeners para los filtros
+        if (searchInputInventory) searchInputInventory.addEventListener('input', applyInventoryFilters);
+        if (categorySelectInventory) categorySelectInventory.addEventListener('change', applyInventoryFilters);
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', () => {
+                if (searchInputInventory) searchInputInventory.value = '';
+                if (categorySelectInventory) categorySelectInventory.value = '';
+                applyInventoryFilters();
+            });
+        }
+
+        // Cargar categorías para el filtro
+        loadCategoriesForFilter();
+        // ✅ --- FIN DE LA LÓGICA DE FILTROS DE INVENTARIO ---
 
     })();
 
