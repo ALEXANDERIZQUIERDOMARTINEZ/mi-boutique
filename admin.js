@@ -1836,134 +1836,135 @@ document.addEventListener('DOMContentLoaded', () => {
 
     })();
 
-    // ========================================================================
-    // ✅ --- SECCIÓN 5: DASHBOARD FUNCIONAL ---
-    // ========================================================================
-    (() => {
-        console.log("🎯 Inicializando Dashboard...");
+// ========================================================================
+// ✅ --- SECCIÓN 5: DASHBOARD FUNCIONAL (CORREGIDO) ---
+// ========================================================================
+(() => {
+    console.log("🎯 Inicializando Dashboard...");
+    
+    const dbVentasHoyEl = document.getElementById('db-ventas-hoy');
+    const dbBajoStockEl = document.getElementById('db-bajo-stock');
+    const dbApartadosVencerEl = document.getElementById('db-apartados-vencer');
+    
+    if (!dbVentasHoyEl || !dbBajoStockEl || !dbApartadosVencerEl) {
+        console.warn("⚠️ Elementos del Dashboard no encontrados");
+        return;
+    }
+    
+    // 1. VENTAS DEL DÍA - CORREGIDO
+    function calcularVentasHoy() {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const manana = new Date(hoy);
+        manana.setDate(manana.getDate() + 1);
         
-        const dbVentasHoyEl = document.getElementById('db-ventas-hoy');
-        const dbBajoStockEl = document.getElementById('db-bajo-stock');
-        const dbApartadosVencerEl = document.getElementById('db-apartados-vencer');
+        // ✅ Solo filtrar por timestamp en Firestore
+        const q = query(
+            salesCollection,
+            where('timestamp', '>=', Timestamp.fromDate(hoy)),
+            where('timestamp', '<', Timestamp.fromDate(manana))
+        );
         
-        if (!dbVentasHoyEl || !dbBajoStockEl || !dbApartadosVencerEl) {
-            console.warn("Elementos del Dashboard no encontrados");
-            return;
-        }
-        
-        // 1. VENTAS DEL DÍA
-        function calcularVentasHoy() {
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            const manana = new Date(hoy);
-            manana.setDate(manana.getDate() + 1);
+        onSnapshot(q, (snapshot) => {
+            let totalVentas = 0;
             
-            const q = query(
-                salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(hoy)),
-                where('timestamp', '<', Timestamp.fromDate(manana)),
-                where('estado', '!=', 'Anulada'),
-                where('estado', '!=', 'Cancelada') // Añadir también cancelada
-            );
-            
-            onSnapshot(q, (snapshot) => {
-                let totalVentas = 0;
-                snapshot.forEach(doc => {
-                    const venta = doc.data();
-                    // Solo sumar ventas completadas, o apartados (ya que son un pago inicial)
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                // ✅ Filtrar estado en el cliente
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
                     if (venta.estado === 'Completada' || venta.estado === 'Pendiente') {
-                         totalVentas += venta.totalVenta || 0;
+                        totalVentas += venta.totalVenta || 0;
                     }
-                });
-                
-                dbVentasHoyEl.textContent = formatoMoneda.format(totalVentas);
-                dbVentasHoyEl.classList.add('text-success');
-            }, (error) => {
-                console.error("Error al calcular ventas del día:", error);
-                dbVentasHoyEl.textContent = "Error";
-            });
-        }
-        
-        // 2. PRODUCTOS BAJO STOCK
-        function calcularBajoStock() {
-            const STOCK_MINIMO = 5;
-            
-            const q = query(
-                productsCollection,
-                where('visible', '==', true)
-            );
-            
-            onSnapshot(q, (snapshot) => {
-                let countBajoStock = 0;
-                
-                snapshot.forEach(doc => {
-                    const producto = doc.data();
-                    const stockTotal = (producto.variaciones || []).reduce(
-                        (sum, v) => sum + (parseInt(v.stock, 10) || 0), 
-                        0
-                    );
-                    
-                    if (stockTotal > 0 && stockTotal <= STOCK_MINIMO) {
-                        countBajoStock++;
-                    }
-                });
-                
-                dbBajoStockEl.textContent = countBajoStock;
-                
-                if (countBajoStock > 0) {
-                    dbBajoStockEl.classList.add('text-warning');
-                } else {
-                    dbBajoStockEl.classList.add('text-success');
                 }
-            }, (error) => {
-                console.error("Error al calcular bajo stock:", error);
-                dbBajoStockEl.textContent = "Error";
             });
-        }
+            
+            dbVentasHoyEl.textContent = formatoMoneda.format(totalVentas);
+            dbVentasHoyEl.classList.add('text-success');
+        }, (error) => {
+            console.error("❌ Error al calcular ventas del día:", error);
+            dbVentasHoyEl.textContent = "Error";
+        });
+    }
+    
+    // 2. PRODUCTOS BAJO STOCK
+    function calcularBajoStock() {
+        const STOCK_MINIMO = 5;
         
-        // 3. APARTADOS PRÓXIMOS A VENCER
-        function calcularApartadosVencer() {
-            const hoy = new Date();
-            const proximosDias = new Date(hoy);
-            proximosDias.setDate(proximosDias.getDate() + 7);
+        const q = query(
+            productsCollection,
+            where('visible', '==', true)
+        );
+        
+        onSnapshot(q, (snapshot) => {
+            let countBajoStock = 0;
             
-            const q = query(
-                apartadosCollection,
-                where('estado', '==', 'Pendiente'),
-                where('fechaVencimiento', '<=', Timestamp.fromDate(proximosDias))
-            );
-            
-            onSnapshot(q, (snapshot) => {
-                let countVencer = 0;
+            snapshot.forEach(doc => {
+                const producto = doc.data();
+                const stockTotal = (producto.variaciones || []).reduce(
+                    (sum, v) => sum + (parseInt(v.stock, 10) || 0), 
+                    0
+                );
                 
-                snapshot.forEach(doc => {
-                    const apartado = doc.data();
-                    const fechaVenc = apartado.fechaVencimiento?.toDate();
-                    
-                    // Contar solo los que vencen en el futuro (próximos 7 días)
-                    if (fechaVenc && fechaVenc >= hoy) {
-                        countVencer++;
-                    }
-                });
-                
-                dbApartadosVencerEl.textContent = countVencer;
-                
-                if (countVencer > 0) {
-                    dbApartadosVencerEl.classList.add('text-danger');
-                } else {
-                    dbApartadosVencerEl.classList.add('text-success');
+                if (stockTotal > 0 && stockTotal <= STOCK_MINIMO) {
+                    countBajoStock++;
                 }
-            }, (error) => {
-                console.error("Error al calcular apartados por vencer:", error);
-                dbApartadosVencerEl.textContent = "Error";
             });
-        }
+            
+            dbBajoStockEl.textContent = countBajoStock;
+            
+            if (countBajoStock > 0) {
+                dbBajoStockEl.classList.add('text-warning');
+            } else {
+                dbBajoStockEl.classList.add('text-success');
+            }
+        }, (error) => {
+            console.error("❌ Error al calcular bajo stock:", error);
+            dbBajoStockEl.textContent = "Error";
+        });
+    }
+    
+    // 3. APARTADOS PRÓXIMOS A VENCER
+    function calcularApartadosVencer() {
+        const hoy = new Date();
+        const proximosDias = new Date(hoy);
+        proximosDias.setDate(proximosDias.getDate() + 7);
         
-        calcularVentasHoy();
-        calcularBajoStock();
-        calcularApartadosVencer();
+        const q = query(
+            apartadosCollection,
+            where('estado', '==', 'Pendiente'),
+            where('fechaVencimiento', '<=', Timestamp.fromDate(proximosDias))
+        );
         
-        console.log("✅ Dashboard inicializado correctamente");
-    })();
-
-});
+        onSnapshot(q, (snapshot) => {
+            let countVencer = 0;
+            
+            snapshot.forEach(doc => {
+                const apartado = doc.data();
+                const fechaVenc = apartado.fechaVencimiento?.toDate();
+                
+                // Contar solo los que vencen en el futuro (próximos 7 días)
+                if (fechaVenc && fechaVenc >= hoy) {
+                    countVencer++;
+                }
+            });
+            
+            dbApartadosVencerEl.textContent = countVencer;
+            
+            if (countVencer > 0) {
+                dbApartadosVencerEl.classList.add('text-danger');
+            } else {
+                dbApartadosVencerEl.classList.add('text-success');
+            }
+        }, (error) => {
+            console.error("❌ Error al calcular apartados por vencer:", error);
+            dbApartadosVencerEl.textContent = "Error";
+        });
+    }
+    
+    // ✅ Ejecutar las funciones
+    calcularVentasHoy();
+    calcularBajoStock();
+    calcularApartadosVencer();
+    
+    console.log("✅ Dashboard inicializado correctamente");
+})();
