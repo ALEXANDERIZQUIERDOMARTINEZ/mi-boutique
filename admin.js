@@ -1839,131 +1839,219 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========================================================================
     // ✅ --- SECCIÓN 5: DASHBOARD FUNCIONAL ---
     // ========================================================================
-    (() => {
-        console.log("🎯 Inicializando Dashboard...");
+// ========================================================================
+
+(() => {
+    console.log("🎯 Inicializando Dashboard...");
+    
+    // Referencias a elementos DOM
+    const dbVentasHoyEl = document.getElementById('db-ventas-hoy');
+    const dbBajoStockEl = document.getElementById('db-bajo-stock');
+    const dbApartadosVencerEl = document.getElementById('db-apartados-vencer');
+    
+    // Validar que los elementos existan
+    if (!dbVentasHoyEl || !dbBajoStockEl || !dbApartadosVencerEl) {
+        console.error("❌ ERROR: Elementos del Dashboard no encontrados en el HTML");
+        console.log("Verificando elementos:");
+        console.log("- db-ventas-hoy:", !!dbVentasHoyEl);
+        console.log("- db-bajo-stock:", !!dbBajoStockEl);
+        console.log("- db-apartados-vencer:", !!dbApartadosVencerEl);
+        return;
+    }
+    
+    // ================================================================
+    // 1️⃣ VENTAS DEL DÍA
+    // ================================================================
+    function calcularVentasHoy() {
+        console.log("📊 Calculando ventas del día...");
         
-        const dbVentasHoyEl = document.getElementById('db-ventas-hoy');
-        const dbBajoStockEl = document.getElementById('db-bajo-stock');
-        const dbApartadosVencerEl = document.getElementById('db-apartados-vencer');
-        
-        if (!dbVentasHoyEl || !dbBajoStockEl || !dbApartadosVencerEl) {
-            console.warn("Elementos del Dashboard no encontrados");
-            return;
-        }
-        
-        // 1. VENTAS DEL DÍA
-        function calcularVentasHoy() {
+        try {
+            // Obtener rango de hoy (00:00 a 23:59)
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
+            
             const manana = new Date(hoy);
             manana.setDate(manana.getDate() + 1);
             
+            // ⚠️ IMPORTANTE: Solo filtrar por UN campo con desigualdad
+            // NO podemos filtrar por timestamp Y estado al mismo tiempo
             const q = query(
                 salesCollection,
                 where('timestamp', '>=', Timestamp.fromDate(hoy)),
                 where('timestamp', '<', Timestamp.fromDate(manana)),
-                where('estado', '!=', 'Anulada'),
-                where('estado', '!=', 'Cancelada') // Añadir también cancelada
+                orderBy('timestamp', 'desc')
             );
             
-            onSnapshot(q, (snapshot) => {
-                let totalVentas = 0;
-                snapshot.forEach(doc => {
-                    const venta = doc.data();
-                    // Solo sumar ventas completadas, o apartados (ya que son un pago inicial)
-                    if (venta.estado === 'Completada' || venta.estado === 'Pendiente') {
-                         totalVentas += venta.totalVenta || 0;
-                    }
-                });
-                
-                dbVentasHoyEl.textContent = formatoMoneda.format(totalVentas);
-                dbVentasHoyEl.classList.add('text-success');
-            }, (error) => {
-                console.error("Error al calcular ventas del día:", error);
-                dbVentasHoyEl.textContent = "Error";
-            });
+            // Escuchar cambios en tiempo real
+            onSnapshot(q, 
+                (snapshot) => {
+                    let totalVentas = 0;
+                    let ventasContadas = 0;
+                    
+                    snapshot.forEach(doc => {
+                        const venta = doc.data();
+                        const estado = venta.estado || '';
+                        
+                        // ✅ Filtrar el estado AQUÍ en el cliente
+                        if (estado !== 'Anulada' && estado !== 'Cancelada') {
+                            totalVentas += (venta.totalVenta || 0);
+                            ventasContadas++;
+                        }
+                    });
+                    
+                    // Actualizar UI
+                    dbVentasHoyEl.textContent = formatoMoneda.format(totalVentas);
+                    dbVentasHoyEl.classList.add('text-success');
+                    
+                    console.log(`✅ Ventas hoy: ${formatoMoneda.format(totalVentas)} (${ventasContadas} ventas)`);
+                },
+                (error) => {
+                    console.error("❌ Error al calcular ventas del día:", error);
+                    dbVentasHoyEl.textContent = "Error";
+                    dbVentasHoyEl.classList.add('text-danger');
+                }
+            );
+            
+        } catch (error) {
+            console.error("❌ Error fatal al configurar ventas del día:", error);
+            dbVentasHoyEl.textContent = "Error";
+            dbVentasHoyEl.classList.add('text-danger');
         }
+    }
+    
+    // ================================================================
+    // 2️⃣ PRODUCTOS CON BAJO STOCK
+    // ================================================================
+    function calcularBajoStock() {
+        console.log("📦 Calculando productos con bajo stock...");
         
-        // 2. PRODUCTOS BAJO STOCK
-        function calcularBajoStock() {
+        try {
             const STOCK_MINIMO = 5;
             
+            // Query simple: solo productos visibles
             const q = query(
                 productsCollection,
                 where('visible', '==', true)
             );
             
-            onSnapshot(q, (snapshot) => {
-                let countBajoStock = 0;
-                
-                snapshot.forEach(doc => {
-                    const producto = doc.data();
-                    const stockTotal = (producto.variaciones || []).reduce(
-                        (sum, v) => sum + (parseInt(v.stock, 10) || 0), 
-                        0
-                    );
+            // Escuchar cambios en tiempo real
+            onSnapshot(q,
+                (snapshot) => {
+                    let countBajoStock = 0;
                     
-                    if (stockTotal > 0 && stockTotal <= STOCK_MINIMO) {
-                        countBajoStock++;
+                    snapshot.forEach(doc => {
+                        const producto = doc.data();
+                        const variaciones = producto.variaciones || [];
+                        
+                        // Calcular stock total del producto
+                        const stockTotal = variaciones.reduce((sum, variacion) => {
+                            const stock = parseInt(variacion.stock, 10) || 0;
+                            return sum + stock;
+                        }, 0);
+                        
+                        // Contar si está bajo en stock
+                        if (stockTotal > 0 && stockTotal <= STOCK_MINIMO) {
+                            countBajoStock++;
+                        }
+                    });
+                    
+                    // Actualizar UI
+                    dbBajoStockEl.textContent = countBajoStock;
+                    
+                    if (countBajoStock > 0) {
+                        dbBajoStockEl.classList.add('text-warning');
+                    } else {
+                        dbBajoStockEl.classList.add('text-success');
                     }
-                });
-                
-                dbBajoStockEl.textContent = countBajoStock;
-                
-                if (countBajoStock > 0) {
-                    dbBajoStockEl.classList.add('text-warning');
-                } else {
-                    dbBajoStockEl.classList.add('text-success');
+                    
+                    console.log(`✅ Productos con bajo stock: ${countBajoStock}`);
+                },
+                (error) => {
+                    console.error("❌ Error al calcular bajo stock:", error);
+                    dbBajoStockEl.textContent = "Error";
+                    dbBajoStockEl.classList.add('text-danger');
                 }
-            }, (error) => {
-                console.error("Error al calcular bajo stock:", error);
-                dbBajoStockEl.textContent = "Error";
-            });
+            );
+            
+        } catch (error) {
+            console.error("❌ Error fatal al configurar bajo stock:", error);
+            dbBajoStockEl.textContent = "Error";
+            dbBajoStockEl.classList.add('text-danger');
         }
+    }
+    
+    // ================================================================
+    // 3️⃣ APARTADOS PRÓXIMOS A VENCER
+    // ================================================================
+    function calcularApartadosVencer() {
+        console.log("📅 Calculando apartados próximos a vencer...");
         
-        // 3. APARTADOS PRÓXIMOS A VENCER
-        function calcularApartadosVencer() {
+        try {
             const hoy = new Date();
             const proximosDias = new Date(hoy);
-            proximosDias.setDate(proximosDias.getDate() + 7);
+            proximosDias.setDate(proximosDias.getDate() + 7); // Próximos 7 días
             
+            // Query: solo apartados pendientes que vencen en los próximos 7 días
             const q = query(
                 apartadosCollection,
                 where('estado', '==', 'Pendiente'),
-                where('fechaVencimiento', '<=', Timestamp.fromDate(proximosDias))
+                where('fechaVencimiento', '<=', Timestamp.fromDate(proximosDias)),
+                orderBy('fechaVencimiento', 'asc')
             );
             
-            onSnapshot(q, (snapshot) => {
-                let countVencer = 0;
-                
-                snapshot.forEach(doc => {
-                    const apartado = doc.data();
-                    const fechaVenc = apartado.fechaVencimiento?.toDate();
+            // Escuchar cambios en tiempo real
+            onSnapshot(q,
+                (snapshot) => {
+                    let countVencer = 0;
                     
-                    // Contar solo los que vencen en el futuro (próximos 7 días)
-                    if (fechaVenc && fechaVenc >= hoy) {
-                        countVencer++;
+                    snapshot.forEach(doc => {
+                        const apartado = doc.data();
+                        const fechaVenc = apartado.fechaVencimiento?.toDate();
+                        
+                        // Solo contar los que AÚN NO han vencido (futuro)
+                        if (fechaVenc && fechaVenc >= hoy) {
+                            countVencer++;
+                        }
+                    });
+                    
+                    // Actualizar UI
+                    dbApartadosVencerEl.textContent = countVencer;
+                    
+                    if (countVencer > 0) {
+                        dbApartadosVencerEl.classList.add('text-danger');
+                    } else {
+                        dbApartadosVencerEl.classList.add('text-success');
                     }
-                });
-                
-                dbApartadosVencerEl.textContent = countVencer;
-                
-                if (countVencer > 0) {
+                    
+                    console.log(`✅ Apartados próximos a vencer: ${countVencer}`);
+                },
+                (error) => {
+                    console.error("❌ Error al calcular apartados por vencer:", error);
+                    dbApartadosVencerEl.textContent = "Error";
                     dbApartadosVencerEl.classList.add('text-danger');
-                } else {
-                    dbApartadosVencerEl.classList.add('text-success');
                 }
-            }, (error) => {
-                console.error("Error al calcular apartados por vencer:", error);
-                dbApartadosVencerEl.textContent = "Error";
-            });
+            );
+            
+        } catch (error) {
+            console.error("❌ Error fatal al configurar apartados:", error);
+            dbApartadosVencerEl.textContent = "Error";
+            dbApartadosVencerEl.classList.add('text-danger');
         }
-        
-        calcularVentasHoy();
-        calcularBajoStock();
-        calcularApartadosVencer();
-        
-        console.log("✅ Dashboard inicializado correctamente");
-    })();
+    }
+    
+    // ================================================================
+    // 🚀 INICIALIZAR TODAS LAS FUNCIONES
+    // ================================================================
+    calcularVentasHoy();
+    calcularBajoStock();
+    calcularApartadosVencer();
+    
+    console.log("✅ Dashboard inicializado correctamente");
+    
+})(); // ← Cierre del IIFE del Dashboard
+
+// ========================================================================
+// FIN DE LA SECCIÓN DEL DASHBOARD
+// ========================================================================
 
 });
