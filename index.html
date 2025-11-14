@@ -26,17 +26,24 @@
                 </button>
 
                 <div class="collapse navbar-collapse" id="navCollapse">
-                    
+
                     <div class="catalog-filters mx-auto d-flex align-items-center">
-                        <button class="btn filter-group active" data-filter="all">Todos</button>
-                        <button class="btn filter-group" data-filter="disponible">Disponibles</button>
-                        <button class="btn filter-group" data-filter="promocion">Promociones</button>
-                        
+                        <button class="btn filter-group active" data-filter="all">
+                            <i class="bi bi-grid-3x3-gap"></i> Todos
+                        </button>
+                        <button class="btn filter-group filter-badge-container" data-filter="disponible">
+                            <i class="bi bi-check-circle"></i> Disponibles
+                            <span class="filter-badge" id="available-badge">0</span>
+                        </button>
+                        <button class="btn filter-group filter-promo" data-filter="promocion">
+                            <i class="bi bi-tag-fill"></i> Promociones
+                        </button>
+
                         <div class="dropdown d-inline-block">
                             <button class="btn filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="category-dropdown-button">
-                                Categorías <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>
+                                <i class="bi bi-collection"></i> Categorías <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>
                             </button>
-                            <ul class="dropdown-menu" id="category-dropdown-menu">
+                            <ul class="dropdown-menu dropdown-menu-enhanced" id="category-dropdown-menu">
                                 <li><a class="dropdown-item" href="#">Cargando...</a></li>
                             </ul>
                         </div>
@@ -62,16 +69,107 @@
 
 
         <main class="container my-4" id="main-content">
-            
+
             <div class="promotions-section mb-4" id="promotions-section" style="display: none;">
                 <h2 class="promotions-title">Promociones Imperdibles</h2>
                 <div id="promotions-container"></div>
             </div>
 
-            <div class="row g-3 g-md-4" id="products-container">
-                <div class="col-12 text-center py-5" id="loading-products">
-                    <div class="loading-spinner"></div>
-                    <p class="mt-3 text-muted">Cargando productos</p>
+            <div class="row">
+                <!-- Sidebar de Filtros -->
+                <aside class="col-lg-3 mb-4" id="filters-sidebar">
+                    <div class="filters-container">
+                        <div class="filters-header">
+                            <h5 class="filters-title">
+                                <i class="bi bi-funnel"></i> Filtros Avanzados
+                            </h5>
+                            <button class="btn-reset-filters" id="btn-reset-filters">
+                                <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                            </button>
+                        </div>
+
+                        <!-- Filtro por Precio -->
+                        <div class="filter-section">
+                            <h6 class="filter-section-title">
+                                <i class="bi bi-cash-stack"></i> Rango de Precio
+                            </h6>
+                            <div class="price-filter-content">
+                                <div class="price-inputs">
+                                    <div class="price-input-group">
+                                        <label>Mínimo</label>
+                                        <input type="number" id="price-min" class="form-control form-control-sm" placeholder="$0" min="0">
+                                    </div>
+                                    <div class="price-input-group">
+                                        <label>Máximo</label>
+                                        <input type="number" id="price-max" class="form-control form-control-sm" placeholder="$500.000" min="0">
+                                    </div>
+                                </div>
+                                <div class="price-range-slider">
+                                    <input type="range" id="price-range-min" class="form-range" min="0" max="500000" step="5000" value="0">
+                                    <input type="range" id="price-range-max" class="form-range" min="0" max="500000" step="5000" value="500000">
+                                </div>
+                                <div class="price-display">
+                                    <span id="price-display-min">$0</span> - <span id="price-display-max">$500.000</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filtro por Colores -->
+                        <div class="filter-section">
+                            <h6 class="filter-section-title">
+                                <i class="bi bi-palette"></i> Colores
+                            </h6>
+                            <div class="color-filter-content" id="color-filter-container">
+                                <!-- Se llenará dinámicamente -->
+                            </div>
+                        </div>
+
+                        <!-- Filtro por Disponibilidad -->
+                        <div class="filter-section">
+                            <h6 class="filter-section-title">
+                                <i class="bi bi-box-seam"></i> Disponibilidad
+                            </h6>
+                            <div class="availability-filter-content">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="filter-in-stock">
+                                    <label class="form-check-label" for="filter-in-stock">
+                                        Solo productos disponibles
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="filter-promo-only">
+                                    <label class="form-check-label" for="filter-promo-only">
+                                        Solo en promoción
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Productos -->
+                <div class="col-lg-9">
+                    <div class="products-header mb-3">
+                        <div class="products-count">
+                            <span id="products-count">0</span> productos encontrados
+                        </div>
+                        <div class="products-sort">
+                            <select class="form-select form-select-sm" id="sort-products">
+                                <option value="newest">Más recientes</option>
+                                <option value="price-asc">Precio: Menor a Mayor</option>
+                                <option value="price-desc">Precio: Mayor a Menor</option>
+                                <option value="name-asc">Nombre: A-Z</option>
+                                <option value="name-desc">Nombre: Z-A</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 g-md-4" id="products-container">
+                        <div class="col-12 text-center py-5" id="loading-products">
+                            <div class="loading-spinner"></div>
+                            <p class="mt-3 text-muted">Cargando productos</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>

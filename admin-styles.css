@@ -283,25 +283,276 @@ body {
         max-width: 45px;
         max-height: 60px;
     }
-    
+
     .table-responsive {
         font-size: 0.85rem;
     }
-    
+
     .action-buttons button {
         padding: 2px 6px !important;
     }
-    
+
     .product-search-img {
         width: 50px;
         height: 65px;
     }
-    
+
     .product-search-name {
         font-size: 0.85rem;
     }
-    
+
     .search-modal-list .price-info {
         font-size: 0.95rem;
+    }
+}
+
+/* ============================================ */
+/* ESTILOS MEJORADOS DEL DASHBOARD */
+/* ============================================ */
+
+/* Tarjetas principales del dashboard */
+.dashboard-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    height: 100%;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.dashboard-card .card-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    flex-shrink: 0;
+}
+
+.dashboard-card .card-content {
+    flex-grow: 1;
+}
+
+.dashboard-card .card-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dashboard-card .card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.dashboard-card .card-subtitle {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Variantes de colores para tarjetas principales */
+.card-ventas {
+    border-color: #e8f5e9;
+}
+
+.card-ventas .card-icon {
+    background: linear-gradient(135deg, #4caf50, #66bb6a);
+    color: white;
+}
+
+.card-ventas .card-value {
+    color: #4caf50;
+}
+
+.card-productos {
+    border-color: #e3f2fd;
+}
+
+.card-productos .card-icon {
+    background: linear-gradient(135deg, #2196f3, #42a5f5);
+    color: white;
+}
+
+.card-productos .card-value {
+    color: #2196f3;
+}
+
+.card-stock {
+    border-color: #fff3e0;
+}
+
+.card-stock .card-icon {
+    background: linear-gradient(135deg, #ff9800, #ffa726);
+    color: white;
+}
+
+.card-stock .card-value {
+    color: #ff9800;
+}
+
+.card-apartados {
+    border-color: #fce4ec;
+}
+
+.card-apartados .card-icon {
+    background: linear-gradient(135deg, var(--color-primario), #e3b0cc);
+    color: white;
+}
+
+.card-apartados .card-value {
+    color: var(--color-primario);
+}
+
+/* Tarjetas secundarias */
+.dashboard-card-secondary {
+    background: white;
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.dashboard-card-secondary:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.icon-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.icon-badge.bg-info {
+    background: linear-gradient(135deg, #17a2b8, #20c9e0);
+}
+
+.icon-badge.bg-success {
+    background: linear-gradient(135deg, #28a745, #34ce57);
+}
+
+.icon-badge.bg-warning {
+    background: linear-gradient(135deg, #ffc107, #ffcd38);
+}
+
+.icon-badge.bg-danger {
+    background: linear-gradient(135deg, #dc3545, #f04556);
+}
+
+/* Lista de actividad reciente */
+.activity-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    padding: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s ease;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-item:hover {
+    background-color: #f8f9fa;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.activity-icon.icon-venta {
+    background: #e8f5e9;
+    color: #4caf50;
+}
+
+.activity-icon.icon-apartado {
+    background: #fce4ec;
+    color: var(--color-primario);
+}
+
+.activity-icon.icon-pedido {
+    background: #e3f2fd;
+    color: #2196f3;
+}
+
+.activity-time {
+    font-size: 0.75rem;
+    color: #999;
+}
+
+.activity-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+.activity-subtitle {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Tabla de stock crítico */
+#db-tabla-stock-critico .stock-critical {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+#db-tabla-stock-critico .stock-low {
+    color: #ffc107;
+    font-weight: 600;
+}
+
+/* Responsive del dashboard */
+@media (max-width: 768px) {
+    .dashboard-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .dashboard-card .card-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+    }
+
+    .dashboard-card .card-value {
+        font-size: 1.5rem;
+    }
+
+    .icon-badge {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
     }
 }
