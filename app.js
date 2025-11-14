@@ -190,20 +190,22 @@ function loadPromotions() {
 }
 
 function calculatePromotionPrice(producto) {
-    const promo = activePromotions.get(producto.id);
-    if (!promo || isWholesaleActive) {
+    // ✅ Leer promoción directamente del campo del producto (administrable desde admin.html)
+    if (!producto.promocion || !producto.promocion.activa || isWholesaleActive) {
         return { precioFinal: producto.precioDetal, tienePromo: false };
     }
+
     let precioFinal = producto.precioDetal;
-    if (promo.tipo === 'porcentaje') {
-        precioFinal = producto.precioDetal * (1 - promo.descuento / 100);
-    } else {
-        precioFinal = producto.precioDetal - promo.descuento;
+    if (producto.promocion.tipo === 'porcentaje') {
+        precioFinal = producto.precioDetal * (1 - producto.promocion.descuento / 100);
+    } else if (producto.promocion.tipo === 'fijo') {
+        precioFinal = producto.promocion.precioFijo;
     }
-    return { 
+
+    return {
         precioFinal: Math.max(0, precioFinal),
         tienePromo: true,
-        precioOriginal: producto.precioDetal 
+        precioOriginal: producto.precioDetal
     };
 }
 
@@ -226,7 +228,7 @@ function applyFiltersAndRender() {
             return stock > 0;
         });
     } else if (activeFilter === 'promocion') {
-        filtered = filtered.filter(p => activePromotions.has(p.id) && !isWholesaleActive);
+        filtered = filtered.filter(p => p.promocion?.activa && !isWholesaleActive);
     } else if (activeFilter !== 'all') {
         filtered = filtered.filter(p => {
             const categoryId = p.categoriaId || p.categoria;
@@ -271,7 +273,7 @@ function applyFiltersAndRender() {
 
     // 3.4 Filtro solo promociones (del sidebar)
     if (advancedFilters.promoOnly) {
-        filtered = filtered.filter(p => activePromotions.has(p.id) && !isWholesaleActive);
+        filtered = filtered.filter(p => p.promocion?.activa && !isWholesaleActive);
     }
 
     // 4. Ordenamiento
@@ -669,7 +671,7 @@ function resetAllFilters() {
 document.addEventListener('DOMContentLoaded', () => {
 
     loadCart();
-    loadPromotions();
+    // loadPromotions(); // ✅ Ya no necesario - las promociones se leen del campo producto.promocion
 
     const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
     const categoryDropdownButton = document.getElementById('category-dropdown-button');
