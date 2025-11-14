@@ -269,7 +269,73 @@
             </div>
             
             <div class="tab-pane fade" id="apartados"> <h1 class="h2">Apartados</h1> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Pendientes</h3></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Cliente</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Vence</th><th>Acciones</th></tr></thead><tbody id="lista-apartados"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
-            
+            <!--apartados-->
+            <div class="modal fade" id="abonoApartadoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registrar Abono</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-light mb-3">
+                    <h6 class="mb-2"><strong>Cliente:</strong> <span id="abono-cliente-nombre"></span></h6>
+                    <div class="row text-center mt-3">
+                        <div class="col-4">
+                            <small class="text-muted d-block">Total</small>
+                            <strong id="abono-total">$0</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted d-block">Abonado</small>
+                            <strong class="text-success" id="abono-abonado">$0</strong>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted d-block">Saldo</small>
+                            <strong class="text-danger" id="abono-saldo">$0</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <form id="form-abono-apartado">
+                    <input type="hidden" id="abono-apartado-id">
+                    <input type="hidden" id="abono-saldo-actual">
+                    
+                    <div class="mb-3">
+                        <label for="abono-monto" class="form-label">Monto a Abonar ($)</label>
+                        <input type="number" 
+                               class="form-control form-control-lg text-center" 
+                               id="abono-monto" 
+                               min="1" 
+                               step="0.01"
+                               required 
+                               autofocus>
+                        <small class="text-muted" id="abono-helper"></small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="abono-metodo-pago" class="form-label">Método de Pago</label>
+                        <select class="form-select" id="abono-metodo-pago" required>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Transferencia">Transferencia</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="abono-observaciones" class="form-label">Observaciones (Opcional)</label>
+                        <textarea class="form-control" id="abono-observaciones" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="form-abono-apartado" class="btn btn-success">
+                    <i class="bi bi-cash-coin me-1"></i> Registrar Abono
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+            <!--apartados-->
             <div class="tab-pane fade" id="clientes"> <h1 class="h2">Clientes</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClientModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Nombre</th><th>Cédula</th><th>WhatsApp</th><th>Dirección</th><th>Última Compra</th><th>Acciones</th></tr></thead><tbody id="lista-clientes"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
             
             <div class="tab-pane fade" id="repartidores"> 
