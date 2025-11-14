@@ -528,16 +528,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const clickedFilter = e.currentTarget;
 
         document.querySelectorAll('.catalog-filters .filter-group.active').forEach(b => b.classList.remove('active'));
-        clickedFilter.classList.add('active');
 
         if (clickedFilter.classList.contains('dropdown-item')) {
+            // Si es un item del dropdown (categoría), activar el botón del dropdown
+            categoryDropdownButton.classList.add('active');
+            categoryDropdownButton.dataset.filter = clickedFilter.dataset.filter;
             categoryDropdownButton.innerHTML = `${clickedFilter.textContent} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
-            categoryDropdownButton.classList.add('active'); 
-        } else if (clickedFilter.dataset.filter === 'all' || clickedFilter.dataset.filter === 'disponible' || clickedFilter.dataset.filter === 'promocion') {
-            categoryDropdownButton.innerHTML = `Categorías <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
+        } else {
+            // Si es un botón normal (Todos, Disponibles, Promociones)
+            clickedFilter.classList.add('active');
+            // Resetear el botón del dropdown
             categoryDropdownButton.classList.remove('active');
+            categoryDropdownButton.removeAttribute('data-filter');
+            categoryDropdownButton.innerHTML = `Categorías <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
         }
-        
+
         applyFiltersAndRender();
     }
 
