@@ -52,7 +52,178 @@
 
     <main class="admin-main">
         <div class="tab-content">
-            <div class="tab-pane fade show active" id="dashboard"> <h1 class="h2">Dashboard</h1> <p>Resumen...</p> <div class="row g-4"><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Ventas Hoy</h5><p class="card-text h2" id="db-ventas-hoy">$0</p></div></div><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Bajo Stock</h5><p class="card-text h2" id="db-bajo-stock">0</p></div></div><div class="col-md-4"><div class="card p-3"><h5 class="card-title">Apartados Vencer</h5><p class="card-text h2" id="db-apartados-vencer">0</p></div></div></div> </div>
+            <div class="tab-pane fade show active" id="dashboard">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h2 mb-0">
+                        <i class="bi bi-grid-1x2-fill me-2"></i>Dashboard
+                    </h1>
+                    <div class="text-muted small">
+                        <i class="bi bi-calendar3"></i> Hoy: <span id="dashboard-date"></span>
+                    </div>
+                </div>
+
+                <!-- Tarjetas de Resumen Principal -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="dashboard-card card-ventas">
+                            <div class="card-icon">
+                                <i class="bi bi-cash-stack"></i>
+                            </div>
+                            <div class="card-content">
+                                <h6 class="card-label">Ventas Hoy</h6>
+                                <p class="card-value" id="db-ventas-hoy">$0</p>
+                                <small class="card-subtitle" id="db-ventas-count">0 ventas</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-sm-6">
+                        <div class="dashboard-card card-productos">
+                            <div class="card-icon">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                            <div class="card-content">
+                                <h6 class="card-label">Productos Totales</h6>
+                                <p class="card-value" id="db-total-productos">0</p>
+                                <small class="card-subtitle" id="db-productos-disponibles">0 disponibles</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-sm-6">
+                        <div class="dashboard-card card-stock">
+                            <div class="card-icon">
+                                <i class="bi bi-exclamation-triangle"></i>
+                            </div>
+                            <div class="card-content">
+                                <h6 class="card-label">Bajo Stock</h6>
+                                <p class="card-value" id="db-bajo-stock">0</p>
+                                <small class="card-subtitle">Menos de 5 unidades</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-sm-6">
+                        <div class="dashboard-card card-apartados">
+                            <div class="card-icon">
+                                <i class="bi bi-calendar-heart"></i>
+                            </div>
+                            <div class="card-content">
+                                <h6 class="card-label">Apartados Activos</h6>
+                                <p class="card-value" id="db-apartados-vencer">0</p>
+                                <small class="card-subtitle" id="db-apartados-total-saldo">$0 pendiente</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjetas Secundarias -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="dashboard-card-secondary">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-badge bg-info">
+                                    <i class="bi bi-globe"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mb-0">Pedidos Web</h6>
+                                    <p class="h5 mb-0" id="db-pedidos-web">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-sm-6">
+                        <div class="dashboard-card-secondary">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-badge bg-success">
+                                    <i class="bi bi-people"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mb-0">Clientes</h6>
+                                    <p class="h5 mb-0" id="db-total-clientes">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-sm-6">
+                        <div class="dashboard-card-secondary">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-badge bg-warning">
+                                    <i class="bi bi-tag"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mb-0">Promociones</h6>
+                                    <p class="h5 mb-0" id="db-promociones-activas">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-sm-6">
+                        <div class="dashboard-card-secondary">
+                            <div class="d-flex align-items-center">
+                                <div class="icon-badge bg-danger">
+                                    <i class="bi bi-bicycle"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <h6 class="mb-0">Repartidores</h6>
+                                    <p class="h5 mb-0" id="db-total-repartidores">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Productos con Stock Crítico -->
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i>Stock Crítico</h5>
+                                <a href="#productos" data-bs-toggle="pill" class="btn btn-sm btn-outline-primary">Ver todos</a>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th class="text-center">Stock</th>
+                                                <th class="text-end">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="db-tabla-stock-critico">
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted py-3">
+                                                    Cargando...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Actividad Reciente</h5>
+                                <a href="#ventas" data-bs-toggle="pill" class="btn btn-sm btn-outline-primary">Ver todas</a>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="activity-list" id="db-actividad-reciente">
+                                    <div class="text-center text-muted py-3">
+                                        Cargando actividad...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <div class="tab-pane fade" id="pedidos-web">
                 <h1 class="h2 mb-4"><i class="bi bi-globe me-2"></i>Pedidos desde la Web</h1>
