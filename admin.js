@@ -58,9 +58,12 @@ let addClientModalInstance = null; let addRepartidorModalInstance = null; let ad
 let editSupplierModalInstance = null; let editClientModalInstance = null;
 let searchSupplierModalInstance = null; let searchClientModalInstance = null; let searchProductModalInstance = null; let liquidateConfirmModalInstance = null;
 let viewSaleModalInstance = null; 
-let selectVariationModalInstance = null; // --- NUEVO: Modal de Variaciones ---
+let selectVariationModalInstance = null; // --- Modal de Variaciones ---
+let abonoApartadoModalInstance = null; // ✅ --- NUEVO: Modal de Abonos ---
+
 let localClientsMap = new Map([["Cliente General", {id: null, celular: "", direccion: ""}]]);
 let localProductsMap = new Map();
+let repartidoresMap = new Map(); // ✅ Mapa de repartidores para el modal de ver venta
 
 // ========================================================================
 // --- SCRIPT EJECUTADO AL CARGAR EL DOM ---
@@ -85,9 +88,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const viewSaleModalEl = document.getElementById('viewSaleModal'); 
         if(viewSaleModalEl) viewSaleModalInstance = new bootstrap.Modal(viewSaleModalEl);
 
-        // --- NUEVO: Inicializar modal de Variaciones ---
         const selectVariationModalEl = document.getElementById('selectVariationModal');
         if (selectVariationModalEl) selectVariationModalInstance = new bootstrap.Modal(selectVariationModalEl);
+
+        // ✅ --- INICIALIZAR MODAL DE ABONO ---
+        const abonoApartadoModalEl = document.getElementById('abonoApartadoModal');
+        if (abonoApartadoModalEl) abonoApartadoModalInstance = new bootstrap.Modal(abonoApartadoModalEl);
 
 
         // --- Lógica para limpiar modales de búsqueda al cerrar ---
@@ -98,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const list = document.getElementById('product-modal-list');
                 if (list) {
                     list.querySelectorAll('.product-search-item').forEach(item => {
-                        item.style.display = ''; // --- CORREGIDO: display '' ---
+                        item.style.display = ''; 
                     });
                 }
             });
@@ -202,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Función para crear una tarjeta de pedido
         function createOrderCard(order, orderId) {
             const card = document.createElement('div');
             card.className = 'card mb-3 web-order-card';
@@ -285,7 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return card;
         }
 
-        // Función para renderizar pedidos
         function renderWebOrders(snapshot) {
             if (loadingWebOrders) loadingWebOrders.style.display = 'none';
             
@@ -312,7 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Escuchar pedidos pendientes en tiempo real
         const webOrdersQuery = query(
             webOrdersCollection,
             where('estado', '==', 'pendiente'),
@@ -325,7 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
             webOrdersContainer.innerHTML = '<div class="alert alert-danger">Error al cargar pedidos</div>';
         });
 
-        // Event delegation para botones de aceptar/rechazar
         webOrdersContainer.addEventListener('click', async (e) => {
             const acceptBtn = e.target.closest('.btn-accept-order');
             const rejectBtn = e.target.closest('.btn-reject-order');
@@ -341,7 +343,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Función para RECHAZAR pedido
         async function handleRejectOrder(orderId) {
             if (!confirm('¿Estás seguro de que quieres rechazar este pedido?')) return;
 
@@ -359,10 +360,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Función para ACEPTAR pedido y pre-llenar formulario
         async function handleAcceptOrder(orderId) {
             try {
-                // Obtener datos del pedido
                 const orderRef = doc(db, 'pedidosWeb', orderId);
                 const orderSnap = await getDoc(orderRef);
                 
@@ -373,25 +372,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const orderData = orderSnap.data();
 
-                // Actualizar estado del pedido
                 await updateDoc(orderRef, {
                     estado: 'aceptado',
                     fechaAceptacion: serverTimestamp()
                 });
 
-                // PRE-LLENAR FORMULARIO DE VENTAS
                 await preFillSalesForm(orderData, orderId);
 
                 showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
 
-                // Cambiar a la pestaña de ventas
                 const ventasTab = document.querySelector('a[href="#ventas"]');
                 if (ventasTab) {
                     const tab = new bootstrap.Tab(ventasTab);
                     tab.show();
                 }
 
-                // Mostrar vista de formulario
                 const salesFormViewBtn = document.getElementById('toggle-sales-form-view-btn');
                 if (salesFormViewBtn) salesFormViewBtn.click();
 
@@ -401,12 +396,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Función para PRE-LLENAR el formulario de ventas
         async function preFillSalesForm(orderData, orderId) {
-            // Limpiar carrito actual
-            window.ventaItems = []; // Usa window.ventaItems
+            window.ventaItems = []; 
 
-            // Llenar datos del cliente
             const ventaClienteInput = document.getElementById('venta-cliente');
             const ventaCelularInput = document.getElementById('venta-cliente-celular');
             const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
@@ -415,47 +407,41 @@ document.addEventListener('DOMContentLoaded', () => {
             if (ventaCelularInput) ventaCelularInput.value = orderData.clienteCelular;
             if (ventaDireccionInput) ventaDireccionInput.value = orderData.clienteDireccion;
 
-            // Tipo de venta: Detal (por defecto desde web)
             const tipoVentaSelect = document.getElementById('tipo-venta-select');
             if (tipoVentaSelect) tipoVentaSelect.value = 'detal';
 
-            // Tipo de entrega: Domicilio (siempre desde web)
             const tipoEntregaSelect = document.getElementById('tipo-entrega-select');
             if (tipoEntregaSelect) {
                 tipoEntregaSelect.value = 'domicilio';
                 tipoEntregaSelect.dispatchEvent(new Event('change'));
             }
 
-            // Marcar como pedido WhatsApp
             const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp');
             if (ventaWhatsappCheckbox) ventaWhatsappCheckbox.checked = true;
 
-            // Llenar observaciones
             const ventaObservaciones = document.getElementById('venta-observaciones');
             if (ventaObservaciones) {
                 ventaObservaciones.value = `Pedido Web #${orderId.substring(0, 8).toUpperCase()}\n${orderData.observaciones || ''}`;
             }
 
-            // Llenar carrito con productos
             if (orderData.items && orderData.items.length > 0) {
                 orderData.items.forEach(item => {
-                    window.agregarItemAlCarrito( // Usa window.agregarItemAlCarrito
+                    window.agregarItemAlCarrito( 
                         item.productoId,
-                        item.nombre, // Nombre base
+                        item.nombre, 
                         item.cantidad,
                         item.precio,
                         item.talla,
                         item.color,
-                        `${item.nombre} (${item.talla}/${item.color})` // Nombre completo
+                        `${item.nombre} (${item.talla}/${item.color})` 
                     );
                 });
             }
 
-            // Calcular total
-            window.calcularTotalVentaGeneral(); // Usa window.calcularTotalVentaGeneral
+            window.calcularTotalVentaGeneral(); 
         }
 
-    })(); // Fin de lógica de Pedidos Web
+    })(); 
 
     // ========================================================================
     // --- LÓGICA CATEGORÍAS (Funcional CRUD with Modals) ---
@@ -561,7 +547,8 @@ document.addEventListener('DOMContentLoaded', () => {
     (() => {
          const repartidorForm = document.getElementById('form-add-repartidor'); const nombreInput = document.getElementById('new-repartidor-nombre'); const celularInput = document.getElementById('new-repartidor-celular'); const repartidorListTableBody = document.getElementById('lista-repartidores'); const repartidorSelectVenta = document.getElementById('venta-repartidor'); const repartidorSelectHistory = document.getElementById('history-repartidor');
          if(!repartidorForm || !repartidorListTableBody) { console.warn("Elementos de Repartidores no encontrados."); return; }
-         let repartidoresMap = new Map();
+         
+         // ✅ Usar el mapa global de repartidores
          const renderRepartidores = (snapshot) => { repartidoresMap.clear(); if(repartidorListTableBody) repartidorListTableBody.innerHTML = ''; if(repartidorSelectVenta) repartidorSelectVenta.innerHTML = '<option value="">Selecciona...</option>'; if(repartidorSelectHistory) repartidorSelectHistory.innerHTML = '<option value="">Todos</option>'; if (snapshot.empty) { if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No hay repartidores.</td></tr>'; return; } snapshot.forEach(docSnap => { const rep = docSnap.data(); const id = docSnap.id; repartidoresMap.set(id, rep); if (repartidorListTableBody) { const tr = document.createElement('tr'); tr.dataset.id = id; const efectivoRecibido = 0; const rutasTotal = 0; const rutasTransferencia = 0; const efectivoAEntregar = efectivoRecibido - (rutasTotal - rutasTransferencia); const saldoPendiente = efectivoAEntregar; tr.innerHTML = `<td class="repartidor-name">${rep.nombre}</td> <td>0</td> <td>${formatoMoneda.format(efectivoRecibido)}</td> <td>${formatoMoneda.format(rutasTotal)}</td> <td>${formatoMoneda.format(rutasTransferencia)}</td> <td>${formatoMoneda.format(efectivoAEntregar)}</td> <td><input type="number" class="form-control form-control-sm w-75 d-inline-block input-efectivo-entregado" value="0.00" step="0.01" data-expected="${efectivoAEntregar}"></td> <td class="saldo-pendiente ${saldoPendiente <= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatoMoneda.format(saldoPendiente)}</td> <td class="action-buttons"><button class="btn btn-sm btn-success py-0 px-1 btn-liquidar-repartidor" title="Liquidar"><i class="bi bi-check-circle"></i></button><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-repartidor" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-repartidor" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; repartidorListTableBody.appendChild(tr); } const option = document.createElement('option'); option.value = id; option.textContent = rep.nombre; if(repartidorSelectVenta) repartidorSelectVenta.appendChild(option.cloneNode(true)); if(repartidorSelectHistory) repartidorSelectHistory.appendChild(option.cloneNode(true)); }); };
          onSnapshot(query(repartidoresCollection, orderBy('nombre')), renderRepartidores, (e) => { console.error("Error repartidores:", e); if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error.</td></tr>';});
          if (repartidorForm && addRepartidorModalInstance) repartidorForm.addEventListener('submit', async (e) => { e.preventDefault(); const nom = nombreInput.value.trim(); const cel = celularInput.value.trim(); if (nom && cel) { try { await addDoc(repartidoresCollection, { nombre: nom, celular: cel }); showToast("Repartidor guardado!"); addRepartidorModalInstance.hide(); repartidorForm.reset(); } catch (err) { console.error("Err add repartidor:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
@@ -590,7 +577,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const productSearchModalList = document.getElementById('product-modal-list');
         const productSearchInput = document.getElementById('product-modal-search');
         
-        // ✅ Mapa de categorías para filtros y renderizado
         let categoriesMap = new Map();
 
         if (!productForm) { console.warn("Formulario de producto no encontrado."); return; }
@@ -602,19 +588,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const cI=document.getElementById('costo-compra'); const pDI=document.getElementById('precio-detal'); const pMI=document.getElementById('precio-mayor'); const mDI=document.getElementById('margen-detal-info'); const mMI=document.getElementById('margen-mayor-info'); const fM_margin=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}); function cYM(){ if(!cI || !pDI || !pMI || !mDI || !mMI) return; const c=parseFloat(cI.value)||0; const pD=parseFloat(pDI.value)||0; const pM=parseFloat(pMI.value)||0; let mDV=0,mDP=0;if(c>0&&pD>=c){mDV=pD-c;mDP=(mDV/c)*100;mDI.textContent=`Margen: ${fM_margin.format(mDV)} (${mDP.toFixed(1)}%)`;mDI.style.color='';mDI.style.fontWeight='';}else{mDI.textContent='Margen: $0 (0.0%)';mDI.style.color=(pD>0&&pD<c)?'red':'';mDI.style.fontWeight=(pD>0&&pD<c)?'bold':'';if(pD>0&&pD<c)mDI.textContent='Margen Negativo';} let mMV=0,mMP=0;if(c>0&&pM>=c){mMV=pM-c;mMP=(mMV/c)*100;mMI.textContent=`Margen: ${fM_margin.format(mMV)} (${mMP.toFixed(1)}%)`;mMI.style.color='';mMI.style.fontWeight='';}else{mMI.textContent='Margen: $0 (0.0%)';mMI.style.color=(pM>0&&pM<c)?'red':'';mMI.style.fontWeight=(pM>0&&pM<c)?'bold':'';if(pM>0&&pM<c)mMI.textContent='Margen Negativo';}} if(cI)cI.addEventListener('input',cYM); if(pDI)pDI.addEventListener('input',cYM); if(pMI)pMI.addEventListener('input',cYM); if(cI) cYM();
         
-        // --- R (Read) ---
-        // ✅ FUNCIÓN RENDERPRODUCTS ACTUALIZADA
         const renderProducts = (snapshot) => { 
             localProductsMap.clear(); 
             
-            // Copiar categorías al dropdown de filtros
             const filterCategoryDropdown = document.getElementById('filter-category-inventory');
             const productCategoryDropdown = document.getElementById('categoria-producto');
-            if (filterCategoryDropdown && productCategoryDropdown) {
-                // Solo copia si el dropdown de filtro está vacío (para no hacerlo en cada render)
+            if (filterCategoryDropdown && productCategoryDropdown) { 
                 if (filterCategoryDropdown.options.length <= 1) { 
                     filterCategoryDropdown.innerHTML = productCategoryDropdown.innerHTML;
-                    filterCategoryDropdown.value = ''; // Asegurarse que "Todas" esté seleccionada
+                    filterCategoryDropdown.value = ''; 
                 }
             }
 
@@ -636,86 +618,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = docSnap.id; 
                 
                 localProductsMap.set(id, d);
-                
-            // =======================================================================
-// INICIO DEL BLOQUE PARA REEMPLAZAR
-// =======================================================================
 
-const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
-const defaultImgTabla = 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto';
-const imagenUrl = d.imagenUrl || defaultImgTabla; 
+                const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
+                const defaultImgTabla = 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto';
+                const imagenUrl = d.imagenUrl || defaultImgTabla; 
 
-let variacionesHtml = (d.variaciones || [])
-    .map(v => `<span class="badge bg-light text-dark me-1">${v.talla || ''} / ${v.color || ''} (Stock: ${v.stock})</span>`)
-    .join(' ');
-if (variacionesHtml === '') variacionesHtml = '<small class="text-muted">Sin variaciones</small>';
+                let variacionesHtml = (d.variaciones || [])
+                    .map(v => `<span class="badge bg-light text-dark me-1">${v.talla || ''} / ${v.color || ''} (Stock: ${v.stock})</span>`)
+                    .join(' ');
+                if (variacionesHtml === '') variacionesHtml = '<small class="text-muted">Sin variaciones</small>';
 
-// ✅ CORRECCIÓN 1: Aplicada a la TABLA DE PRODUCTOS
-let categoryName = 'Sin Categoría';
-if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) {
-    categoryName = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
-}
+                let categoryName = 'Sin Categoría';
+                if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) {
+                    categoryName = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
+                }
 
-const tr = document.createElement('tr'); 
-tr.dataset.id = id; 
-tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img" onerror="this.src='${defaultImgTabla}'"></td>
-                <td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td>
-                <td>${categoryName}</td> <td>${variacionesHtml}</td>
-                <td>${formatoMoneda.format(d.precioDetal || 0)}</td>
-                <td>${formatoMoneda.format(d.precioMayor || 0)}</td>
-                <td>${stockTotal}</td>
-                <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
-                <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; 
-if(productListTableBody) productListTableBody.appendChild(tr); 
+                const tr = document.createElement('tr'); 
+                tr.dataset.id = id; 
+                tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img" onerror="this.src='${defaultImgTabla}'"></td>
+                                <td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td>
+                                <td>${categoryName}</td> <td>${variacionesHtml}</td>
+                                <td>${formatoMoneda.format(d.precioDetal || 0)}</td>
+                                <td>${formatoMoneda.format(d.precioMayor || 0)}</td>
+                                <td>${stockTotal}</td>
+                                <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
+                                <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; 
+                if(productListTableBody) productListTableBody.appendChild(tr); 
 
-// --- NUEVO: Lógica para modal de búsqueda (PRODUCTOS CON IMÁGENES MEJORADAS) ---
-const li = document.createElement('li');
-li.className = 'list-group-item list-group-item-action product-search-item';
-li.dataset.productId = id;
-li.dataset.productName = d.nombre.toLowerCase();
-li.dataset.productCode = (d.codigo || '').toLowerCase();
+                const li = document.createElement('li');
+                li.className = 'list-group-item list-group-item-action product-search-item';
+                li.dataset.productId = id;
+                li.dataset.productName = d.nombre.toLowerCase();
+                li.dataset.productCode = (d.codigo || '').toLowerCase();
 
-// ✅ CORRECCIÓN (imagenUrl): Definimos la imagen por defecto
-const defaultImgModal = 'https://via.placeholder.com/70x90.png?text=Sin+Foto';
-const imagenUrlModal = d.imagenUrl || defaultImgModal; // Usamos variable 'imagenUrlModal'
+                const defaultImgModal = 'https://via.placeholder.com/70x90.png?text=Sin+Foto';
+                const imagenUrlModal = d.imagenUrl || defaultImgModal; 
 
-// ✅ CORRECCIÓN 2: Lógica COMPLETA para el MODAL DE BÚSQUEDA
-let categoryNameModal = 'Sin Categoría';
-if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) {
-    categoryNameModal = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
-}
+                let categoryNameModal = 'Sin Categoría';
+                if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) {
+                    categoryNameModal = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
+                }
 
-li.innerHTML = `
-    <div class="d-flex align-items-center gap-3">
-        <img src="${imagenUrlModal}" alt="${d.nombre}" class="product-search-img" onerror="this.src='${defaultImgModal}'">
-        <div class="flex-grow-1">
-            <div class="product-search-name">${d.nombre}</div>
-            <div class="d-flex gap-2 align-items-center mt-1">
-                <small class="text-muted">${categoryNameModal}</small>
-                ${d.codigo ? `<small class="text-muted">• ${d.codigo}</small>` : ''}
-            </div>
-            <div class="stock-info">Stock: ${stockTotal} unid.</div>
-        </div>
-        <div class="text-end">
-            <div class="price-info">${formatoMoneda.format(d.precioDetal || 0)}</div>
-            ${d.precioMayor ? `<small class="text-muted d-block">Mayor: ${formatoMoneda.format(d.precioMayor)}</small>` : ''}
-        </div>
-    </div>
-`;
+                li.innerHTML = `
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="${imagenUrlModal}" alt="${d.nombre}" class="product-search-img" onerror="this.src='${defaultImgModal}'">
+                        <div class="flex-grow-1">
+                            <div class="product-search-name">${d.nombre}</div>
+                            <div class="d-flex gap-2 align-items-center mt-1">
+                                <small class="text-muted">${categoryNameModal}</small>
+                                ${d.codigo ? `<small class="text-muted">• ${d.codigo}</small>` : ''}
+                            </div>
+                            <div class="stock-info">Stock: ${stockTotal} unid.</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="price-info">${formatoMoneda.format(d.precioDetal || 0)}</div>
+                            ${d.precioMayor ? `<small class="text-muted d-block">Mayor: ${formatoMoneda.format(d.precioMayor)}</small>` : ''}
+                        </div>
+                    </div>
+                `;
 
-if(stockTotal <= 0) {
-    li.classList.add('disabled');
-    li.style.opacity = '0.5';
-    li.style.cursor = 'not-allowed';
-}
-if(productSearchModalList) productSearchModalList.appendChild(li); 
-
-// =======================================================================
-// FIN DEL BLOQUE PARA REEMPLAZAR
-// =======================================================================
+                if(stockTotal <= 0) {
+                    li.classList.add('disabled');
+                    li.style.opacity = '0.5';
+                    li.style.cursor = 'not-allowed';
+                }
+                if(productSearchModalList) productSearchModalList.appendChild(li); 
             });
             
-            // ✅ Aplicar filtros después de renderizar
             applyInventoryFilters();
         };
         onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
@@ -783,9 +752,6 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
             }
         });
         
-        // ========================================================================
-        // ✅ CORRECCIÓN: Editar Producto (Cambiar orden de ejecución)
-        // ========================================================================
         if (productListTableBody) productListTableBody.addEventListener('click', async (e) => { 
             const target = e.target.closest('button'); if (!target) return; e.preventDefault(); 
             const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.product-name'); if (!id || !nameTd) return;
@@ -797,7 +763,6 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                  try {
                     const product = localProductsMap.get(id);
                     if (product) {
-                        // ✅ PASO 1: Cambiar a la vista del formulario PRIMERO (sin usar .click())
                         const formView = document.getElementById('form-view');
                         const inventoryView = document.getElementById('inventory-view');
                         const toggleFormBtn = document.getElementById('toggle-form-view-btn');
@@ -810,7 +775,6 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                             toggleInventoryBtn.classList.remove('active');
                         }
                         
-                        // ✅ PASO 2: Ahora SÍ rellenar el formulario
                         productIdInput.value = id;
                         nombreInput.value = product.nombre || '';
                         proveedorInput.value = product.proveedor || '';
@@ -838,7 +802,6 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                         
                         costoInput.dispatchEvent(new Event('input')); 
                         
-                        // ✅ Scroll hacia el formulario para que sea visible
                         if (formView) {
                             formView.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }
@@ -848,30 +811,26 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
              }
          });
 
-         // --- NUEVO: Lógica del buscador (CORREGIDA) ---
          if (productSearchInput) productSearchInput.addEventListener('input', (e) => { 
             const searchTerm = e.target.value.toLowerCase(); 
             const items = productSearchModalList.querySelectorAll('.product-search-item'); 
             items.forEach(item => { 
                 const itemText = item.textContent.toLowerCase();
-                // Ahora usa display '' (default) y 'none' (oculto)
                 item.style.display = itemText.includes(searchTerm) ? '' : 'none'; 
             }); 
         });
         
-        // --- NUEVO: Lógica de clic en Modal 1 (Buscar Producto) ---
         if (productSearchModalList && searchProductModalInstance) {
             productSearchModalList.addEventListener('click', (e) => {
                 const target = e.target.closest('.product-search-item');
                 if (target && !target.classList.contains('disabled')) {
                     const productId = target.dataset.productId;
-                    openVariationModal(productId); // Llama al nuevo modal
+                    openVariationModal(productId); 
                     searchProductModalInstance.hide();
                 }
             });
         }
 
-        // --- NUEVO: Función para abrir Modal 2 (Elegir Variación) ---
         function openVariationModal(productId) {
             const product = localProductsMap.get(productId);
             if (!product) {
@@ -879,7 +838,6 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                 return;
             }
 
-            // Guardar datos base del producto en el modal
             document.getElementById('variation-product-id').value = productId;
             document.getElementById('variation-product-name').value = product.nombre;
             document.getElementById('variation-product-price').value = product.precioDetal || 0;
@@ -893,11 +851,9 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
             stockDisplay.style.display = 'none';
             addBtn.disabled = true;
 
-            // Generar Tallas y Colores únicos
             const tallas = [...new Set(product.variaciones.map(v => v.talla || ''))];
             const colores = [...new Set(product.variaciones.map(v => v.color || ''))];
 
-            // Crear HTML para los <select>
             let optionsHtml = `
                 <div class="mb-3">
                     <label for="select-talla" class="form-label">Talla:</label>
@@ -916,7 +872,6 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
             `;
             optionsContainer.innerHTML = optionsHtml;
 
-            // Añadir listener para comprobar stock
             const selectTalla = document.getElementById('select-talla');
             const selectColor = document.getElementById('select-color');
 
@@ -924,7 +879,7 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                 const talla = selectTalla.value;
                 const color = selectColor.value;
 
-                if (talla && color) { // Solo si ambos están seleccionados
+                if (talla && color) { 
                     const variacion = product.variaciones.find(v => v.talla === talla && v.color === color);
                     const stock = variacion ? (parseInt(variacion.stock, 10) || 0) : 0;
                     
@@ -949,11 +904,9 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
             selectTalla.addEventListener('change', checkStock);
             selectColor.addEventListener('change', checkStock);
 
-            // Mostrar el modal
             selectVariationModalInstance.show();
         }
 
-        // --- NUEVO: Listener para el botón "Añadir" del Modal 2 ---
         const addVariationBtn = document.getElementById('add-variation-to-cart-btn');
         if (addVariationBtn) {
             addVariationBtn.addEventListener('click', () => {
@@ -968,25 +921,21 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                     return;
                 }
 
-                // Enviar al carrito
                 window.agregarItemAlCarrito(
                     productId,
                     nombre,
-                    1, // Cantidad
+                    1, 
                     precio,
                     talla,
                     color,
-                    `${nombre} (${talla}/${color})` // Nombre completo
+                    `${nombre} (${talla}/${color})` 
                 );
 
-                // Ocultar modal
                 selectVariationModalInstance.hide();
             });
         }
 
-        // ✅ ========================================================================
-        // ✅ --- INICIO DE LA LÓGICA DE FILTROS DE INVENTARIO (AGREGADA) ---
-        // ✅ ========================================================================
+        // --- LÓGICA DE FILTROS DE INVENTARIO ---
         const searchInputInventory = document.getElementById('search-inventory');
         const categorySelectInventory = document.getElementById('filter-category-inventory');
         const clearFiltersBtn = document.getElementById('clear-filters-inventory');
@@ -998,16 +947,12 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                 snapshot.forEach(doc => {
                     categoriesMap.set(doc.id, doc.data().nombre);
                 });
-                // Las categorías ahora están cargadas en el mapa.
-                // El onSnapshot de productos llamará a renderProducts,
-                // y renderProducts usará este mapa y también aplicará los filtros.
             });
         }
 
         function applyInventoryFilters() {
             if (!inventoryBody) return;
             
-            // Asegurarse de que los elementos de filtro existen
             const searchVal = searchInputInventory ? searchInputInventory.value.toLowerCase() : '';
             const categoryVal = categorySelectInventory ? categorySelectInventory.value : '';
 
@@ -1026,13 +971,9 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                 const productCode = (product.codigo || '').toLowerCase();
                 const categoryId = product.categoriaId || '';
 
-                // 1. Check search term
                 const matchesSearch = productName.includes(searchVal) || productCode.includes(searchVal);
-                
-                // 2. Check category
                 const matchesCategory = (categoryVal === '' || categoryId === categoryVal);
 
-                // 3. Show/Hide
                 if (matchesSearch && matchesCategory) {
                     row.style.display = ''; 
                     hasVisibleRows = true;
@@ -1047,7 +988,6 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
             }
         }
 
-        // Listeners para los filtros
         if (searchInputInventory) searchInputInventory.addEventListener('input', applyInventoryFilters);
         if (categorySelectInventory) categorySelectInventory.addEventListener('change', applyInventoryFilters);
         if (clearFiltersBtn) {
@@ -1058,9 +998,7 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
             });
         }
 
-        // Cargar categorías para el filtro
         loadCategoriesForFilter();
-        // ✅ --- FIN DE LA LÓGICA DE FILTROS DE INVENTARIO ---
 
     })();
 
@@ -1070,7 +1008,7 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
     (() => {
          const salesForm = document.getElementById('form-venta'); const ventaClienteInput = document.getElementById('venta-cliente'); const tipoVentaSelect = document.getElementById('tipo-venta-select'); const tipoEntregaSelect = document.getElementById('tipo-entrega-select'); const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp'); const ventaRepartidorSelect = document.getElementById('venta-repartidor'); const costoRutaInput = document.getElementById('costo-ruta'); const rutaPagadaCheckbox = document.getElementById('ruta-pagada-transferencia'); const ventaProductoInput = document.getElementById('venta-producto'); const ventaCarritoTbody = document.getElementById('venta-carrito'); const ventaObservaciones = document.getElementById('venta-observaciones'); const ventaDescuentoInput = document.getElementById('venta-descuento'); const ventaDescuentoTipo = document.getElementById('venta-descuento-tipo'); const pagoEfectivoInput = document.getElementById('pago-efectivo'); const pagoTransferenciaInput = document.getElementById('pago-transferencia'); const ventaTotalSpan = document.getElementById('venta-total'); const salesListTableBody = document.getElementById('lista-ventas-anteriores'); 
          
-         window.ventaItems = []; // { productoId, nombre, cantidad, precio, total, talla, color, nombreCompleto }
+         window.ventaItems = []; 
          
          if(!salesForm) { console.warn("Elementos de Ventas no encontrados."); return; }
          
@@ -1156,10 +1094,10 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                 let estadoBadgeClass = 'bg-success';
                 if (estado === 'Pendiente') {
                     estadoBadgeClass = 'bg-warning text-dark';
-                } else if (estado === 'Anulada') {
+                } else if (estado === 'Anulada' || estado === 'Cancelada') {
                     estadoBadgeClass = 'bg-danger';
                 }
-                const estaAnulada = estado === 'Anulada';
+                const estaAnulada = (estado === 'Anulada' || estado === 'Cancelada');
 
                 tr.innerHTML = `<td>${fecha}</td>
                                 <td>${d.clienteNombre || 'General'}</td>
@@ -1170,7 +1108,7 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                                 <td><span class="badge ${estadoBadgeClass}">${estado}</span></td>
                                 <td class="action-buttons">
                                     <button class="btn btn-sm btn-outline-primary py-0 px-1 btn-view-sale" title="Ver"><i class="bi bi-eye"></i></button>
-                                    ${d.tipoVenta === 'apartado' ? `<button class="btn btn-sm btn-outline-warning py-0 px-1 btn-manage-apartado" title="Gestionar"><i class="bi bi-calendar-heart"></i></button>` : ''}
+                                    ${d.tipoVenta === 'apartado' && !estaAnulada ? `<button class="btn btn-sm btn-outline-warning py-0 px-1 btn-manage-apartado" title="Gestionar"><i class="bi bi-calendar-heart"></i></button>` : ''}
                                     <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-sale" title="Anular" ${estaAnulada ? 'disabled' : ''}>
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -1180,10 +1118,16 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
         };
          onSnapshot(query(salesCollection, orderBy('timestamp', 'desc')), renderSales, e => { console.error("Error sales:", e); if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
         
-         // --- C (Create) ---
+        // ========================================================================
+        // ✅ --- SECCIÓN 3: CORREGIR VENTAS (REEMPLAZO) ---
+        // ========================================================================
          if (salesForm) salesForm.addEventListener('submit', async (e) => { 
             e.preventDefault(); 
-            if (window.ventaItems.length === 0) { showToast("Agrega productos.", 'warning'); return; } 
+            if (window.ventaItems.length === 0) { 
+                showToast("Agrega productos.", 'warning'); 
+                return; 
+            } 
+            
             const totalCalculado = window.calcularTotalVentaGeneral(); 
             const ventaData = { 
                 clienteNombre: ventaClienteInput.value || "Cliente General", 
@@ -1191,6 +1135,7 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                 tipoEntrega: tipoEntregaSelect.value, 
                 pedidoWhatsapp: ventaWhatsappCheckbox.checked, 
                 repartidorId: tipoEntregaSelect.value === 'domicilio' ? ventaRepartidorSelect.value : null, 
+                repartidorNombre: tipoEntregaSelect.value === 'domicilio' ? (ventaRepartidorSelect.options[ventaRepartidorSelect.selectedIndex]?.text || '') : null,
                 costoRuta: tipoEntregaSelect.value === 'domicilio' ? (parseFloat(costoRutaInput.value) || 0) : 0, 
                 rutaPagadaTransferencia: tipoEntregaSelect.value === 'domicilio' ? rutaPagadaCheckbox.checked : false, 
                 items: window.ventaItems, 
@@ -1203,31 +1148,54 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                 estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada', 
                 timestamp: serverTimestamp() 
             }; 
-            if (ventaData.tipoVenta !== 'apartado' && (ventaData.pagoEfectivo + ventaData.pagoTransferencia < totalCalculado)) { 
-                showToast("El pago no cubre el total.", 'warning'); 
-                return; 
-            } 
+            
+            if (ventaData.tipoVenta === 'apartado') {
+                const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia;
+                if (abonoInicial <= 0) {
+                    showToast("Los apartados requieren un abono inicial.", 'warning');
+                    return;
+                }
+                if (abonoInicial >= totalCalculado) {
+                    showToast("El abono es igual o mayor al total. Registra como venta normal.", 'warning');
+                    return;
+                }
+            } else {
+                if (ventaData.pagoEfectivo + ventaData.pagoTransferencia < totalCalculado) { 
+                    showToast("El pago no cubre el total.", 'warning'); 
+                    return; 
+                }
+            }
+            
             try { 
                 const docRef = await addDoc(salesCollection, ventaData); 
                 showToast("Venta registrada!"); 
-
-                if (ventaData.tipoVenta !== 'apartado') {
-                     await actualizarStock(ventaData.items, 'restar'); 
-                }
-
+        
+                // ✅ CORRECCIÓN CRÍTICA: APARTADOS TAMBIÉN RESTAN STOCK
+                await actualizarStock(ventaData.items, 'restar'); 
+        
                 if (ventaData.tipoVenta === 'apartado') { 
                     const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia; 
+                    const saldoPendiente = ventaData.totalVenta - abonoInicial;
+                    const fechaVencimiento = new Date();
+                    fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
+                    
                     try { 
                         await addDoc(apartadosCollection, { 
                             ventaId: docRef.id, 
                             clienteNombre: ventaData.clienteNombre, 
                             total: ventaData.totalVenta, 
                             abonado: abonoInicial, 
-                            saldo: ventaData.totalVenta - abonoInicial, 
+                            saldo: saldoPendiente, 
                             fechaCreacion: ventaData.timestamp, 
-                            fechaVencimiento: null, 
-                            estado: 'Pendiente' 
+                            fechaVencimiento: Timestamp.fromDate(fechaVencimiento),
+                            estado: 'Pendiente',
+                            abonos: [{
+                                fecha: serverTimestamp(),
+                                monto: abonoInicial,
+                                metodoPago: ventaData.pagoEfectivo > 0 ? 'Efectivo' : (ventaData.pagoTransferencia > 0 ? 'Transferencia' : 'Mixto')
+                            }]
                         }); 
+                        showToast(`Apartado creado. Vence: ${fechaVencimiento.toLocaleDateString('es-CO')}`, 'success');
                     } catch(apErr) { 
                         console.error("Error creando apartado:", apErr); 
                         showToast("Venta guardada, error al crear apartado.", 'error'); 
@@ -1237,7 +1205,7 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                 salesForm.reset(); 
                 window.ventaItems = []; 
                 renderCarrito(); 
-                window.fillClientInfoSales(); // Llama a la función global
+                window.fillClientInfoSales(); 
                 tipoVentaSelect.value='detal'; 
                 tipoEntregaSelect.value='tienda'; 
                 toggleDeliveryFields(); 
@@ -1327,11 +1295,13 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
 
                 const ventaData = ventaSnap.data();
 
-                if (ventaData.estado === 'Anulada') {
+                if (ventaData.estado === 'Anulada' || ventaData.estado === 'Cancelada') {
                     showToast('Esta venta ya ha sido anulada.', 'info');
                     return;
                 }
-
+                
+                // Si la venta no es un apartado, o si es un apartado ya completado, reponer stock.
+                // Si es un apartado PENDIENTE, la función de cancelar apartado se encarga.
                 if (ventaData.tipoVenta !== 'apartado') {
                     await actualizarStock(ventaData.items, 'sumar'); 
                 }
@@ -1339,6 +1309,20 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                 await updateDoc(ventaRef, {
                     estado: 'Anulada'
                 });
+                
+                // Si es un apartado, también cancelarlo
+                if (ventaData.tipoVenta === 'apartado') {
+                     const q = query(apartadosCollection, where("ventaId", "==", ventaId));
+                     const apartadosSnap = await getDocs(q);
+                     apartadosSnap.forEach(async (docSnap) => {
+                         await updateDoc(docSnap.ref, { estado: "Cancelado" });
+                         // Si el apartado estaba PENDIENTE, el stock ya se repuso.
+                         // Si estaba COMPLETADO, debemos reponerlo ahora.
+                         if (ventaData.estado === 'Completada') {
+                             await actualizarStock(ventaData.items, 'sumar');
+                         }
+                     });
+                }
 
                 showToast('Venta anulada y stock repuesto.', 'info');
                 
@@ -1386,6 +1370,8 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
                 let repartidorNombre = 'N/A';
                 if (d.repartidorId && repartidoresMap.has(d.repartidorId)) {
                     repartidorNombre = repartidoresMap.get(d.repartidorId).nombre;
+                } else if (d.repartidorNombre) {
+                    repartidorNombre = d.repartidorNombre;
                 }
 
                 let repartidorHtml = d.tipoEntrega === 'domicilio' ? 
@@ -1457,7 +1443,13 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
             } 
             
             if(target.classList.contains('btn-manage-apartado')) {
-                showToast(`Gestionar apartado ${id} (Pendiente)`, 'info');
+                // Redirigir a la pestaña de apartados
+                const apartadosTab = document.querySelector('a[href="#apartados"]');
+                if (apartadosTab) {
+                    const tab = new bootstrap.Tab(apartadosTab);
+                    tab.show();
+                    showToast(`Gestiona el apartado desde esta pestaña`, 'info');
+                }
             }
         });
         
@@ -1474,16 +1466,333 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
     })();
 
     // ========================================================================
-    // --- LÓGICA APARTADOS (Cargar lista) ---
+    // ✅ --- SECCIÓN 4: APARTADOS COMPLETOS (REEMPLAZO) ---
     // ========================================================================
     (() => {
-         const apartadosListTableBody = document.getElementById('lista-apartados');
-         if(!apartadosListTableBody) { console.warn("Elementos de Apartados no encontrados."); return; }
-         const renderApartados = (snapshot) => { apartadosListTableBody.innerHTML = ''; if (snapshot.empty) { apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay apartados pendientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const ap = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); tr.dataset.id = id; const vence = ap.fechaVencimiento?.toDate ? ap.fechaVencimiento.toDate().toLocaleDateString('es-CO') : 'N/A'; tr.innerHTML = `<td>${ap.clienteNombre || '?'}</td><td>${formatoMoneda.format(ap.total || 0)}</td><td>${formatoMoneda.format(ap.abonado || 0)}</td><td>${formatoMoneda.format(ap.saldo || 0)}</td><td>${vence}</td><td class="action-buttons"><button class="btn btn-sm btn-outline-success py-0 px-1 btn-abono-apartado" title="Abono"><i class="bi bi-cash-coin"></i></button><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-apartado" title="Editar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-apartado" title="Cancelar"><i class="bi bi-trash"></i></button></td>`; apartadosListTableBody.appendChild(tr); }); };
-          const q = query(apartadosCollection, where('estado', '==', 'Pendiente'), orderBy('fechaVencimiento'));
-          onSnapshot(q, renderApartados, e => { console.error("Error apartados:", e); if(apartadosListTableBody) apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';});
-          if(apartadosListTableBody) apartadosListTableBody.addEventListener('click', (e)=>{ e.preventDefault(); const target = e.target.closest('button'); if (!target) return; const id = target.closest('tr')?.dataset.id; if(!id) return; if(target.classList.contains('btn-abono-apartado')) showToast(`Abono ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-edit-apartado')) showToast(`Editar ${id} (Pendiente)`, 'warning'); if(target.classList.contains('btn-cancel-apartado')) showToast(`Cancelar ${id} (Pendiente)`, 'warning'); });
+        const apartadosListTableBody = document.getElementById('lista-apartados');
+        if (!apartadosListTableBody) { 
+            console.warn("Elementos de Apartados no encontrados."); 
+            return; 
+        }
+        
+        const renderApartados = (snapshot) => { 
+            apartadosListTableBody.innerHTML = ''; 
+            
+            if (snapshot.empty) { 
+                apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay apartados pendientes.</td></tr>'; 
+                return; 
+            } 
+            
+            snapshot.forEach(docSnap => { 
+                const ap = docSnap.data(); 
+                const id = docSnap.id; 
+                const tr = document.createElement('tr'); 
+                tr.dataset.id = id; 
+                
+                const vence = ap.fechaVencimiento?.toDate ? 
+                    ap.fechaVencimiento.toDate().toLocaleDateString('es-CO') : 'N/A';
+                
+                const hoy = new Date();
+                const fechaVenc = ap.fechaVencimiento?.toDate ? ap.fechaVencimiento.toDate() : null;
+                let diasRestantes = 0;
+                let vencimientoClass = '';
+                
+                if (fechaVenc) {
+                    diasRestantes = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
+                    if (diasRestantes < 0) {
+                        vencimientoClass = 'text-danger fw-bold';
+                    } else if (diasRestantes <= 7) {
+                        vencimientoClass = 'text-warning fw-bold';
+                    }
+                }
+                
+                const saldo = ap.saldo || 0;
+                const porcentajePagado = ap.total > 0 ? ((ap.abonado / ap.total) * 100).toFixed(0) : 0;
+                
+                tr.innerHTML = `
+                    <td>
+                        ${ap.clienteNombre || '?'}
+                        <small class="d-block text-muted">${porcentajePagado}% pagado</small>
+                    </td>
+                    <td>${formatoMoneda.format(ap.total || 0)}</td>
+                    <td class="text-success">${formatoMoneda.format(ap.abonado || 0)}</td>
+                    <td class="text-danger fw-bold">${formatoMoneda.format(saldo)}</td>
+                    <td class="${vencimientoClass}">
+                        ${vence}
+                        ${diasRestantes > 0 ? `<small class="d-block">(${diasRestantes} días)</small>` : ''}
+                        ${diasRestantes < 0 ? '<small class="d-block">(VENCIDO)</small>' : ''}
+                    </td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-success py-0 px-1 btn-abono-apartado" 
+                                title="Registrar Abono" data-apartado-id="${id}">
+                            <i class="bi bi-cash-coin"></i>
+                        </button>
+                        <button class="btn btn-sm btn-primary py-0 px-1 btn-completar-apartado" 
+                                title="Completar" data-apartado-id="${id}" ${saldo > 0 ? 'disabled' : ''}>
+                            <i class="bi bi-check-circle"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-apartado" 
+                                title="Cancelar" data-apartado-id="${id}">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </td>
+                `; 
+                apartadosListTableBody.appendChild(tr); 
+            }); 
+        };
+        
+        const q = query(
+            apartadosCollection, 
+            where('estado', '==', 'Pendiente'), 
+            orderBy('fechaVencimiento')
+        );
+        
+        onSnapshot(q, renderApartados, e => { 
+            console.error("Error apartados:", e); 
+            if (apartadosListTableBody) {
+                apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al cargar.</td></tr>';
+            }
+        });
+        
+        // EVENTOS
+        if (apartadosListTableBody) {
+            apartadosListTableBody.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const target = e.target.closest('button');
+                if (!target) return;
+                
+                const apartadoId = target.dataset.apartadoId;
+                if (!apartadoId) return;
+                
+                if (target.classList.contains('btn-abono-apartado')) {
+                    await abrirModalAbono(apartadoId);
+                } else if (target.classList.contains('btn-completar-apartado')) {
+                    await completarApartado(apartadoId);
+                } else if (target.classList.contains('btn-cancel-apartado')) {
+                    await cancelarApartado(apartadoId);
+                }
+            });
+        }
+        
+        // FUNCIÓN: ABRIR MODAL DE ABONO
+        async function abrirModalAbono(apartadoId) {
+            const apartadoRef = doc(db, 'apartados', apartadoId);
+            const apartadoSnap = await getDoc(apartadoRef);
+            
+            if (!apartadoSnap.exists()) {
+                showToast('Apartado no encontrado', 'error');
+                return;
+            }
+            
+            const apartadoData = apartadoSnap.data();
+            const saldo = apartadoData.saldo || 0;
+            
+            document.getElementById('abono-apartado-id').value = apartadoId;
+            document.getElementById('abono-saldo-actual').value = saldo;
+            document.getElementById('abono-cliente-nombre').textContent = apartadoData.clienteNombre || 'N/A';
+            document.getElementById('abono-total').textContent = formatoMoneda.format(apartadoData.total || 0);
+            document.getElementById('abono-abonado').textContent = formatoMoneda.format(apartadoData.abonado || 0);
+            document.getElementById('abono-saldo').textContent = formatoMoneda.format(saldo);
+            
+            const abonoMontoEl = document.getElementById('abono-monto');
+            const abonoHelperEl = document.getElementById('abono-helper');
+            abonoMontoEl.value = '';
+            abonoMontoEl.setAttribute('max', saldo);
+            document.getElementById('abono-metodo-pago').value = 'Efectivo';
+            document.getElementById('abono-observaciones').value = '';
+            abonoHelperEl.textContent = `Máximo: ${formatoMoneda.format(saldo)}`;
+            abonoHelperEl.classList.remove('text-danger', 'text-success');
+
+            
+            if (abonoApartadoModalInstance) {
+                abonoApartadoModalInstance.show();
+            }
+        }
+        
+        // FUNCIÓN: COMPLETAR APARTADO
+        async function completarApartado(apartadoId) {
+            const apartadoRef = doc(db, 'apartados', apartadoId);
+            const apartadoSnap = await getDoc(apartadoRef);
+            
+            if (!apartadoSnap.exists()) {
+                showToast('Apartado no encontrado', 'error');
+                return;
+            }
+            
+            const apartadoData = apartadoSnap.data();
+            
+            if (apartadoData.saldo > 0) {
+                showToast('El apartado aún tiene saldo pendiente', 'warning');
+                return;
+            }
+            
+            if (!confirm('¿Confirmas que este apartado está completamente pagado?')) {
+                return;
+            }
+            
+            try {
+                await updateDoc(apartadoRef, {
+                    estado: 'Completado',
+                    fechaCompletado: serverTimestamp()
+                });
+                
+                if (apartadoData.ventaId) {
+                    const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
+                    await updateDoc(ventaRef, {
+                        estado: 'Completada'
+                    });
+                }
+                
+                showToast('¡Apartado completado exitosamente!', 'success');
+                
+            } catch (error) {
+                console.error('Error al completar apartado:', error);
+                showToast('Error al completar el apartado', 'error');
+            }
+        }
+        
+        // FUNCIÓN: CANCELAR APARTADO
+        async function cancelarApartado(apartadoId) {
+            if (!confirm('¿Estás seguro de cancelar este apartado?\n\nEsta acción devolverá el stock de los productos.')) {
+                return;
+            }
+            
+            try {
+                const apartadoRef = doc(db, 'apartados', apartadoId);
+                const apartadoSnap = await getDoc(apartadoRef);
+                
+                if (!apartadoSnap.exists()) {
+                    showToast('Apartado no encontrado', 'error');
+                    return;
+                }
+                
+                const apartadoData = apartadoSnap.data();
+                
+                if (apartadoData.ventaId) {
+                    const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
+                    const ventaSnap = await getDoc(ventaRef);
+                    
+                    if (ventaSnap.exists()) {
+                        const ventaData = ventaSnap.data();
+                        
+                        // Solo devolver stock si la venta no estaba ya cancelada
+                        if (ventaData.estado !== 'Cancelada' && ventaData.estado !== 'Anulada') {
+                             await actualizarStock(ventaData.items, 'sumar');
+                        }
+                       
+                        await updateDoc(ventaRef, {
+                            estado: 'Cancelada'
+                        });
+                    }
+                }
+                
+                await updateDoc(apartadoRef, {
+                    estado: 'Cancelado',
+                    fechaCancelacion: serverTimestamp()
+                });
+                
+                showToast('Apartado cancelado y stock devuelto', 'info');
+                
+            } catch (error) {
+                console.error('Error al cancelar apartado:', error);
+                showToast('Error al cancelar el apartado', 'error');
+            }
+        }
     })();
+
+    // LISTENER PARA FORMULARIO DE ABONO
+    const formAbonoApartado = document.getElementById('form-abono-apartado');
+    if (formAbonoApartado) {
+        formAbonoApartado.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const apartadoId = document.getElementById('abono-apartado-id').value;
+            const monto = parseFloat(document.getElementById('abono-monto').value);
+            const saldoActual = parseFloat(document.getElementById('abono-saldo-actual').value);
+            const metodoPago = document.getElementById('abono-metodo-pago').value;
+            const observaciones = document.getElementById('abono-observaciones').value.trim();
+            
+            if (isNaN(monto) || monto <= 0) {
+                showToast('Monto inválido', 'error');
+                return;
+            }
+            
+            if (monto > saldoActual) {
+                showToast('El abono no puede ser mayor al saldo', 'warning');
+                return;
+            }
+            
+            try {
+                const apartadoRef = doc(db, 'apartados', apartadoId);
+                const apartadoSnap = await getDoc(apartadoRef);
+                
+                if (!apartadoSnap.exists()) {
+                    showToast('Apartado no encontrado', 'error');
+                    return;
+                }
+                
+                const apartadoData = apartadoSnap.data();
+                const nuevoAbonado = apartadoData.abonado + monto;
+                const nuevoSaldo = apartadoData.total - nuevoAbonado;
+                
+                const abonos = apartadoData.abonos || [];
+                abonos.push({
+                    fecha: serverTimestamp(),
+                    monto: monto,
+                    metodoPago: metodoPago,
+                    observaciones: observaciones || ''
+                });
+                
+                await updateDoc(apartadoRef, {
+                    abonado: nuevoAbonado,
+                    saldo: nuevoSaldo,
+                    abonos: abonos,
+                    estado: nuevoSaldo <= 0 ? 'Completado' : 'Pendiente'
+                });
+                
+                abonoApartadoModalInstance.hide();
+                
+                if (nuevoSaldo <= 0) {
+                    showToast('¡Apartado completado!', 'success');
+                } else {
+                    showToast(`Abono registrado. Saldo: ${formatoMoneda.format(nuevoSaldo)}`, 'success');
+                }
+                
+            } catch (error) {
+                console.error('Error al registrar abono:', error);
+                showToast('Error al registrar el abono', 'error');
+            }
+        });
+    }
+
+    // VALIDACIÓN EN TIEMPO REAL
+    const abonoMontoInput = document.getElementById('abono-monto');
+    if (abonoMontoInput) {
+        abonoMontoInput.addEventListener('input', (e) => {
+            const monto = parseFloat(e.target.value);
+            const saldoActual = parseFloat(document.getElementById('abono-saldo-actual').value);
+            const helper = document.getElementById('abono-helper');
+            
+            if (isNaN(monto)) {
+                 helper.textContent = `Máximo: ${formatoMoneda.format(saldoActual)}`;
+                 helper.classList.remove('text-danger', 'text-success');
+                 return;
+            }
+            
+            if (monto > saldoActual) {
+                helper.textContent = '⚠️ El monto supera el saldo pendiente';
+                helper.classList.add('text-danger');
+            } else if (monto === saldoActual) {
+                helper.textContent = '✓ Esto completará el apartado';
+                helper.classList.remove('text-danger');
+                helper.classList.add('text-success');
+            } else {
+                helper.textContent = `Máximo: ${formatoMoneda.format(saldoActual)}`;
+                helper.classList.remove('text-danger', 'text-success');
+            }
+        });
+    }
+
 
     // ========================================================================
     // --- LÓGICA FINANZAS (Ingreso/Gasto, Cierre Placeholder) ---
@@ -1525,6 +1834,136 @@ if(productSearchModalList) productSearchModalList.appendChild(li);
             });
         }
 
+    })();
+
+    // ========================================================================
+    // ✅ --- SECCIÓN 5: DASHBOARD FUNCIONAL ---
+    // ========================================================================
+    (() => {
+        console.log("🎯 Inicializando Dashboard...");
+        
+        const dbVentasHoyEl = document.getElementById('db-ventas-hoy');
+        const dbBajoStockEl = document.getElementById('db-bajo-stock');
+        const dbApartadosVencerEl = document.getElementById('db-apartados-vencer');
+        
+        if (!dbVentasHoyEl || !dbBajoStockEl || !dbApartadosVencerEl) {
+            console.warn("Elementos del Dashboard no encontrados");
+            return;
+        }
+        
+        // 1. VENTAS DEL DÍA
+        function calcularVentasHoy() {
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            const manana = new Date(hoy);
+            manana.setDate(manana.getDate() + 1);
+            
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(hoy)),
+                where('timestamp', '<', Timestamp.fromDate(manana)),
+                where('estado', '!=', 'Anulada'),
+                where('estado', '!=', 'Cancelada') // Añadir también cancelada
+            );
+            
+            onSnapshot(q, (snapshot) => {
+                let totalVentas = 0;
+                snapshot.forEach(doc => {
+                    const venta = doc.data();
+                    // Solo sumar ventas completadas, o apartados (ya que son un pago inicial)
+                    if (venta.estado === 'Completada' || venta.estado === 'Pendiente') {
+                         totalVentas += venta.totalVenta || 0;
+                    }
+                });
+                
+                dbVentasHoyEl.textContent = formatoMoneda.format(totalVentas);
+                dbVentasHoyEl.classList.add('text-success');
+            }, (error) => {
+                console.error("Error al calcular ventas del día:", error);
+                dbVentasHoyEl.textContent = "Error";
+            });
+        }
+        
+        // 2. PRODUCTOS BAJO STOCK
+        function calcularBajoStock() {
+            const STOCK_MINIMO = 5;
+            
+            const q = query(
+                productsCollection,
+                where('visible', '==', true)
+            );
+            
+            onSnapshot(q, (snapshot) => {
+                let countBajoStock = 0;
+                
+                snapshot.forEach(doc => {
+                    const producto = doc.data();
+                    const stockTotal = (producto.variaciones || []).reduce(
+                        (sum, v) => sum + (parseInt(v.stock, 10) || 0), 
+                        0
+                    );
+                    
+                    if (stockTotal > 0 && stockTotal <= STOCK_MINIMO) {
+                        countBajoStock++;
+                    }
+                });
+                
+                dbBajoStockEl.textContent = countBajoStock;
+                
+                if (countBajoStock > 0) {
+                    dbBajoStockEl.classList.add('text-warning');
+                } else {
+                    dbBajoStockEl.classList.add('text-success');
+                }
+            }, (error) => {
+                console.error("Error al calcular bajo stock:", error);
+                dbBajoStockEl.textContent = "Error";
+            });
+        }
+        
+        // 3. APARTADOS PRÓXIMOS A VENCER
+        function calcularApartadosVencer() {
+            const hoy = new Date();
+            const proximosDias = new Date(hoy);
+            proximosDias.setDate(proximosDias.getDate() + 7);
+            
+            const q = query(
+                apartadosCollection,
+                where('estado', '==', 'Pendiente'),
+                where('fechaVencimiento', '<=', Timestamp.fromDate(proximosDias))
+            );
+            
+            onSnapshot(q, (snapshot) => {
+                let countVencer = 0;
+                
+                snapshot.forEach(doc => {
+                    const apartado = doc.data();
+                    const fechaVenc = apartado.fechaVencimiento?.toDate();
+                    
+                    // Contar solo los que vencen en el futuro (próximos 7 días)
+                    if (fechaVenc && fechaVenc >= hoy) {
+                        countVencer++;
+                    }
+                });
+                
+                dbApartadosVencerEl.textContent = countVencer;
+                
+                if (countVencer > 0) {
+                    dbApartadosVencerEl.classList.add('text-danger');
+                } else {
+                    dbApartadosVencerEl.classList.add('text-success');
+                }
+            }, (error) => {
+                console.error("Error al calcular apartados por vencer:", error);
+                dbApartadosVencerEl.textContent = "Error";
+            });
+        }
+        
+        calcularVentasHoy();
+        calcularBajoStock();
+        calcularApartadosVencer();
+        
+        console.log("✅ Dashboard inicializado correctamente");
     })();
 
 });
