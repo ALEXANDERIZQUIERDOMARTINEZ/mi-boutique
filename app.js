@@ -32,6 +32,17 @@ const WHOLESALE_CODE = "MISHELLMAYOR";
 
 let categoriesMap = new Map();
 
+// Variables para filtros avanzados
+let advancedFilters = {
+    priceMin: 0,
+    priceMax: 500000,
+    selectedColors: new Set(),
+    inStockOnly: false,
+    promoOnly: false,
+    sortBy: 'newest'
+};
+let allAvailableColors = new Set();
+
 // ✅ MAPEO DE COLORES: Texto → Código Hex
 const COLOR_MAP = {
     // Colores básicos
@@ -196,11 +207,11 @@ function calculatePromotionPrice(producto) {
     };
 }
 
-// ✅ FUNCIÓN DE FILTRO CORREGIDA
+// ✅ FUNCIÓN DE FILTRO MEJORADA CON FILTROS AVANZADOS
 function applyFiltersAndRender() {
     const activeFilterEl = document.querySelector('.filter-group.active');
-    if (!activeFilterEl) return; 
-    
+    if (!activeFilterEl) return;
+
     const activeFilter = activeFilterEl.dataset.filter;
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
     const searchModalTerm = document.getElementById('search-modal-input').value.toLowerCase();
@@ -208,7 +219,7 @@ function applyFiltersAndRender() {
 
     let filtered = allProducts;
 
-    // 1. Filtrar por Categoría
+    // 1. Filtrar por Categoría (filtros principales del header)
     if (activeFilter === 'disponible') {
         filtered = filtered.filter(p => {
             const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
@@ -217,7 +228,6 @@ function applyFiltersAndRender() {
     } else if (activeFilter === 'promocion') {
         filtered = filtered.filter(p => activePromotions.has(p.id) && !isWholesaleActive);
     } else if (activeFilter !== 'all') {
-        // ✅ CORRECCIÓN: Verificar si existe categoriaId o categoria
         filtered = filtered.filter(p => {
             const categoryId = p.categoriaId || p.categoria;
             const categoryName = categoriesMap.get(categoryId) || '';
@@ -227,23 +237,99 @@ function applyFiltersAndRender() {
 
     // 2. Filtrar por Búsqueda
     if (finalSearchTerm) {
-        filtered = filtered.filter(p => 
-            p.nombre.toLowerCase().includes(finalSearchTerm) || 
+        filtered = filtered.filter(p =>
+            p.nombre.toLowerCase().includes(finalSearchTerm) ||
             (p.descripcion || '').toLowerCase().includes(finalSearchTerm) ||
             (p.codigo || '').toLowerCase().includes(finalSearchTerm)
         );
     }
 
+    // 3. Filtros Avanzados del Sidebar
+
+    // 3.1 Filtro por Rango de Precio
+    filtered = filtered.filter(p => {
+        const { precioFinal } = calculatePromotionPrice(p);
+        const price = isWholesaleActive ? (parseFloat(p.precioMayor) || 0) : precioFinal;
+        return price >= advancedFilters.priceMin && price <= advancedFilters.priceMax;
+    });
+
+    // 3.2 Filtro por Colores
+    if (advancedFilters.selectedColors.size > 0) {
+        filtered = filtered.filter(p => {
+            const productColors = (p.variaciones || []).map(v => v.color?.toLowerCase()).filter(Boolean);
+            return productColors.some(color => advancedFilters.selectedColors.has(color));
+        });
+    }
+
+    // 3.3 Filtro de Disponibilidad (solo en stock)
+    if (advancedFilters.inStockOnly) {
+        filtered = filtered.filter(p => {
+            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+            return stock > 0;
+        });
+    }
+
+    // 3.4 Filtro solo promociones (del sidebar)
+    if (advancedFilters.promoOnly) {
+        filtered = filtered.filter(p => activePromotions.has(p.id) && !isWholesaleActive);
+    }
+
+    // 4. Ordenamiento
+    filtered = sortProducts(filtered, advancedFilters.sortBy);
+
     renderProducts(filtered);
+}
+
+// ✅ FUNCIÓN DE ORDENAMIENTO
+function sortProducts(products, sortBy) {
+    const sorted = [...products];
+
+    switch (sortBy) {
+        case 'price-asc':
+            return sorted.sort((a, b) => {
+                const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : calculatePromotionPrice(a).precioFinal;
+                const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : calculatePromotionPrice(b).precioFinal;
+                return priceA - priceB;
+            });
+        case 'price-desc':
+            return sorted.sort((a, b) => {
+                const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : calculatePromotionPrice(a).precioFinal;
+                const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : calculatePromotionPrice(b).precioFinal;
+                return priceB - priceA;
+            });
+        case 'name-asc':
+            return sorted.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        case 'name-desc':
+            return sorted.sort((a, b) => b.nombre.localeCompare(a.nombre));
+        case 'newest':
+        default:
+            return sorted; // Ya vienen ordenados por timestamp desc
+    }
 }
 
 // ✅ RENDERIZAR PRODUCTOS CON COLORES REALES
 function renderProducts(products) {
     const container = document.getElementById('products-container');
     const loading = document.getElementById('loading-products');
-    
+    const productsCountEl = document.getElementById('products-count');
+
     if (loading) loading.style.display = 'none';
-    container.innerHTML = ''; 
+    container.innerHTML = '';
+
+    // Actualizar contador
+    if (productsCountEl) {
+        productsCountEl.textContent = products.length;
+    }
+
+    // Actualizar badge de disponibles
+    const availableBadge = document.getElementById('available-badge');
+    if (availableBadge) {
+        const availableCount = allProducts.filter(p => {
+            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+            return stock > 0;
+        }).length;
+        availableBadge.textContent = availableCount;
+    }
 
     if (products.length === 0) {
         container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">No se encontraron productos</p></div>';
@@ -487,33 +573,139 @@ function loadCart() {
     }
 }
 
+// ✅ FUNCIÓN: Cargar colores disponibles dinámicamente
+function loadAvailableColors() {
+    allAvailableColors.clear();
+
+    allProducts.forEach(product => {
+        (product.variaciones || []).forEach(v => {
+            if (v.color) {
+                allAvailableColors.add(v.color.toLowerCase());
+            }
+        });
+    });
+
+    renderColorFilters();
+}
+
+// ✅ FUNCIÓN: Renderizar filtros de colores
+function renderColorFilters() {
+    const colorContainer = document.getElementById('color-filter-container');
+    if (!colorContainer) return;
+
+    colorContainer.innerHTML = '';
+
+    const uniqueColors = Array.from(allAvailableColors).sort();
+
+    if (uniqueColors.length === 0) {
+        colorContainer.innerHTML = '<p class="text-muted small">No hay colores disponibles</p>';
+        return;
+    }
+
+    uniqueColors.forEach(colorName => {
+        const hexColor = getColorHex(colorName);
+        const chip = document.createElement('div');
+        chip.className = 'color-filter-chip';
+        chip.style.backgroundColor = hexColor;
+        chip.dataset.colorName = colorName;
+        chip.dataset.color = colorName;
+
+        chip.addEventListener('click', () => {
+            chip.classList.toggle('active');
+
+            if (chip.classList.contains('active')) {
+                advancedFilters.selectedColors.add(colorName);
+            } else {
+                advancedFilters.selectedColors.delete(colorName);
+            }
+
+            applyFiltersAndRender();
+        });
+
+        colorContainer.appendChild(chip);
+    });
+}
+
+// ✅ FUNCIÓN: Formatear precio para display
+function formatCurrency(value) {
+    return formatoMoneda.format(value);
+}
+
+// ✅ FUNCIÓN: Resetear todos los filtros
+function resetAllFilters() {
+    advancedFilters = {
+        priceMin: 0,
+        priceMax: 500000,
+        selectedColors: new Set(),
+        inStockOnly: false,
+        promoOnly: false,
+        sortBy: 'newest'
+    };
+
+    // Resetear inputs de precio
+    document.getElementById('price-min').value = '';
+    document.getElementById('price-max').value = '';
+    document.getElementById('price-range-min').value = 0;
+    document.getElementById('price-range-max').value = 500000;
+    document.getElementById('price-display-min').textContent = '$0';
+    document.getElementById('price-display-max').textContent = '$500.000';
+
+    // Resetear colores
+    document.querySelectorAll('.color-filter-chip.active').forEach(chip => {
+        chip.classList.remove('active');
+    });
+
+    // Resetear checkboxes
+    document.getElementById('filter-in-stock').checked = false;
+    document.getElementById('filter-promo-only').checked = false;
+
+    // Resetear ordenamiento
+    document.getElementById('sort-products').value = 'newest';
+
+    applyFiltersAndRender();
+}
+
 // --- DOMCONTENTLOADED ---
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     loadCart();
     loadPromotions();
 
     const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
     const categoryDropdownButton = document.getElementById('category-dropdown-button');
 
-    // ✅ Cargar Categorías
+    // ✅ Cargar Categorías con Badges
+    const trendingCategories = ['Vestidos', 'Blusas', 'Pantalones']; // Categorías en tendencia
+    const newCategories = ['Accesorios', 'Zapatos']; // Categorías nuevas
+
     onSnapshot(query(categoriesCollection, orderBy('nombre')), (snapshot) => {
         categoryDropdownMenu.innerHTML = '';
         categoriesMap.clear();
-        
+
         snapshot.forEach(doc => {
             const cat = doc.data();
             const catId = doc.id;
             const catName = cat.nombre;
-            
+
             categoriesMap.set(catId, catName);
             categoriesMap.set(catName, catId);
-            
+
             const li = document.createElement('li');
-            li.innerHTML = `<a class="dropdown-item filter-group" href="#" data-filter="${catName}">${catName}</a>`;
+            let badgeHTML = '';
+
+            if (trendingCategories.includes(catName)) {
+                badgeHTML = '<span class="category-badge badge-trending">🔥 Tendencia</span>';
+            } else if (newCategories.includes(catName)) {
+                badgeHTML = '<span class="category-badge badge-new">✨ Nuevo</span>';
+            }
+
+            li.innerHTML = `<a class="dropdown-item filter-group" href="#" data-filter="${catName}">
+                <span>${catName}</span>
+                ${badgeHTML}
+            </a>`;
             categoryDropdownMenu.appendChild(li);
         });
-        
+
         categoryDropdownMenu.querySelectorAll('.filter-group').forEach(item => {
             item.addEventListener('click', handleFilterClick);
         });
@@ -558,8 +750,72 @@ document.addEventListener('DOMContentLoaded', () => {
             productsMap.set(doc.id, product);
         });
 
+        loadAvailableColors();
         applyFiltersAndRender();
     });
+
+    // ✅ EVENT LISTENERS PARA FILTROS AVANZADOS
+
+    // Filtro de precio - Inputs numéricos
+    const priceMinInput = document.getElementById('price-min');
+    const priceMaxInput = document.getElementById('price-max');
+    const priceRangeMin = document.getElementById('price-range-min');
+    const priceRangeMax = document.getElementById('price-range-max');
+    const priceDisplayMin = document.getElementById('price-display-min');
+    const priceDisplayMax = document.getElementById('price-display-max');
+
+    function updatePriceFilter() {
+        advancedFilters.priceMin = parseInt(priceMinInput.value) || 0;
+        advancedFilters.priceMax = parseInt(priceMaxInput.value) || 500000;
+
+        priceRangeMin.value = advancedFilters.priceMin;
+        priceRangeMax.value = advancedFilters.priceMax;
+
+        priceDisplayMin.textContent = formatCurrency(advancedFilters.priceMin);
+        priceDisplayMax.textContent = formatCurrency(advancedFilters.priceMax);
+
+        applyFiltersAndRender();
+    }
+
+    priceMinInput.addEventListener('input', updatePriceFilter);
+    priceMaxInput.addEventListener('input', updatePriceFilter);
+
+    // Filtro de precio - Sliders
+    priceRangeMin.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        advancedFilters.priceMin = value;
+        priceMinInput.value = value;
+        priceDisplayMin.textContent = formatCurrency(value);
+        applyFiltersAndRender();
+    });
+
+    priceRangeMax.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        advancedFilters.priceMax = value;
+        priceMaxInput.value = value;
+        priceDisplayMax.textContent = formatCurrency(value);
+        applyFiltersAndRender();
+    });
+
+    // Filtros de disponibilidad
+    document.getElementById('filter-in-stock').addEventListener('change', (e) => {
+        advancedFilters.inStockOnly = e.target.checked;
+        applyFiltersAndRender();
+    });
+
+    document.getElementById('filter-promo-only').addEventListener('change', (e) => {
+        advancedFilters.promoOnly = e.target.checked;
+        applyFiltersAndRender();
+    });
+
+    // Ordenamiento
+    document.getElementById('sort-products').addEventListener('change', (e) => {
+        advancedFilters.sortBy = e.target.value;
+        applyFiltersAndRender();
+    });
+
+    // Botón resetear filtros
+    document.getElementById('btn-reset-filters').addEventListener('click', resetAllFilters);
 
     // ✅ Búsqueda en tiempo real MEJORADA
     document.getElementById('search-input').addEventListener('input', applyFiltersAndRedraw);
