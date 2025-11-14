@@ -57,9 +57,10 @@ function showToast(message, type = 'success', title = 'Notificación') {
 let addClientModalInstance = null; let addRepartidorModalInstance = null; let addSupplierModalInstance = null; let addIncomeModalInstance = null; let addExpenseModalInstance = null; let editCategoryModalInstance = null; let deleteConfirmModalInstance = null;
 let editSupplierModalInstance = null; let editClientModalInstance = null;
 let searchSupplierModalInstance = null; let searchClientModalInstance = null; let searchProductModalInstance = null; let liquidateConfirmModalInstance = null;
-let viewSaleModalInstance = null; 
+let viewSaleModalInstance = null;
 let selectVariationModalInstance = null; // --- Modal de Variaciones ---
 let abonoApartadoModalInstance = null; // ✅ --- NUEVO: Modal de Abonos ---
+let verApartadoModalInstance = null; // ✅ --- NUEVO: Modal de Ver Apartado ---
 
 let localClientsMap = new Map([["Cliente General", {id: null, celular: "", direccion: ""}]]);
 let localProductsMap = new Map();
@@ -94,6 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // ✅ --- INICIALIZAR MODAL DE ABONO ---
         const abonoApartadoModalEl = document.getElementById('abonoApartadoModal');
         if (abonoApartadoModalEl) abonoApartadoModalInstance = new bootstrap.Modal(abonoApartadoModalEl);
+
+        // ✅ --- INICIALIZAR MODAL DE VER APARTADO ---
+        const verApartadoModalEl = document.getElementById('verApartadoModal');
+        if (verApartadoModalEl) verApartadoModalInstance = new bootstrap.Modal(verApartadoModalEl);
 
 
         // --- Lógica para limpiar modales de búsqueda al cerrar ---
@@ -548,8 +553,122 @@ document.addEventListener('DOMContentLoaded', () => {
          const repartidorForm = document.getElementById('form-add-repartidor'); const nombreInput = document.getElementById('new-repartidor-nombre'); const celularInput = document.getElementById('new-repartidor-celular'); const repartidorListTableBody = document.getElementById('lista-repartidores'); const repartidorSelectVenta = document.getElementById('venta-repartidor'); const repartidorSelectHistory = document.getElementById('history-repartidor');
          if(!repartidorForm || !repartidorListTableBody) { console.warn("Elementos de Repartidores no encontrados."); return; }
          
-         // ✅ Usar el mapa global de repartidores
-         const renderRepartidores = (snapshot) => { repartidoresMap.clear(); if(repartidorListTableBody) repartidorListTableBody.innerHTML = ''; if(repartidorSelectVenta) repartidorSelectVenta.innerHTML = '<option value="">Selecciona...</option>'; if(repartidorSelectHistory) repartidorSelectHistory.innerHTML = '<option value="">Todos</option>'; if (snapshot.empty) { if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No hay repartidores.</td></tr>'; return; } snapshot.forEach(docSnap => { const rep = docSnap.data(); const id = docSnap.id; repartidoresMap.set(id, rep); if (repartidorListTableBody) { const tr = document.createElement('tr'); tr.dataset.id = id; const efectivoRecibido = 0; const rutasTotal = 0; const rutasTransferencia = 0; const efectivoAEntregar = efectivoRecibido - (rutasTotal - rutasTransferencia); const saldoPendiente = efectivoAEntregar; tr.innerHTML = `<td class="repartidor-name">${rep.nombre}</td> <td>0</td> <td>${formatoMoneda.format(efectivoRecibido)}</td> <td>${formatoMoneda.format(rutasTotal)}</td> <td>${formatoMoneda.format(rutasTransferencia)}</td> <td>${formatoMoneda.format(efectivoAEntregar)}</td> <td><input type="number" class="form-control form-control-sm w-75 d-inline-block input-efectivo-entregado" value="0.00" step="0.01" data-expected="${efectivoAEntregar}"></td> <td class="saldo-pendiente ${saldoPendiente <= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatoMoneda.format(saldoPendiente)}</td> <td class="action-buttons"><button class="btn btn-sm btn-success py-0 px-1 btn-liquidar-repartidor" title="Liquidar"><i class="bi bi-check-circle"></i></button><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-repartidor" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-repartidor" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; repartidorListTableBody.appendChild(tr); } const option = document.createElement('option'); option.value = id; option.textContent = rep.nombre; if(repartidorSelectVenta) repartidorSelectVenta.appendChild(option.cloneNode(true)); if(repartidorSelectHistory) repartidorSelectHistory.appendChild(option.cloneNode(true)); }); };
+         // ✅ Calcular estadísticas de repartidores desde las ventas
+         async function calcularEstadisticasRepartidores() {
+             const hoy = new Date();
+             hoy.setHours(0, 0, 0, 0);
+             const manana = new Date(hoy);
+             manana.setDate(manana.getDate() + 1);
+
+             const q = query(
+                 salesCollection,
+                 where('tipoEntrega', '==', 'domicilio'),
+                 where('timestamp', '>=', hoy),
+                 where('timestamp', '<', manana),
+                 where('estado', '!=', 'Anulada')
+             );
+
+             const ventasSnap = await getDocs(q);
+             const estadisticas = new Map();
+
+             ventasSnap.forEach(docSnap => {
+                 const venta = docSnap.data();
+                 const repartidorId = venta.repartidorId;
+                 if (!repartidorId) return;
+
+                 if (!estadisticas.has(repartidorId)) {
+                     estadisticas.set(repartidorId, {
+                         entregas: 0,
+                         efectivoRecibido: 0,
+                         rutasTotal: 0,
+                         rutasCash: 0  // Rutas pagadas en efectivo
+                     });
+                 }
+
+                 const stats = estadisticas.get(repartidorId);
+                 stats.entregas++;
+                 stats.efectivoRecibido += venta.pagoEfectivo || 0;
+                 stats.rutasTotal += venta.costoRuta || 0;
+
+                 // Si el cliente pagó en efectivo, el repartidor se queda con el costo de ruta
+                 if (venta.pagoEfectivo > 0) {
+                     stats.rutasCash += venta.costoRuta || 0;
+                 }
+             });
+
+             return estadisticas;
+         }
+
+         // ✅ Renderizar repartidores con cálculos reales
+         const renderRepartidores = async (snapshot) => {
+             repartidoresMap.clear();
+             if(repartidorListTableBody) repartidorListTableBody.innerHTML = '';
+             if(repartidorSelectVenta) repartidorSelectVenta.innerHTML = '<option value="">Selecciona...</option>';
+             if(repartidorSelectHistory) repartidorSelectHistory.innerHTML = '<option value="">Todos</option>';
+
+             if (snapshot.empty) {
+                 if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No hay repartidores.</td></tr>';
+                 return;
+             }
+
+             const estadisticas = await calcularEstadisticasRepartidores();
+
+             snapshot.forEach(docSnap => {
+                 const rep = docSnap.data();
+                 const id = docSnap.id;
+                 repartidoresMap.set(id, rep);
+
+                 if (repartidorListTableBody) {
+                     const stats = estadisticas.get(id) || {
+                         entregas: 0,
+                         efectivoRecibido: 0,
+                         rutasTotal: 0,
+                         rutasCash: 0
+                     };
+
+                     // Lógica de cálculo:
+                     // - Efectivo recibido: Todo el efectivo que el repartidor cobró
+                     // - Rutas Total: Suma de todos los costos de ruta
+                     // - Rutas Transfer: Rutas de pedidos pagados por transferencia
+                     // - Efectivo a entregar: Efectivo recibido - Rutas en efectivo (lo que el repartidor se queda)
+                     const efectivoRecibido = stats.efectivoRecibido;
+                     const rutasTotal = stats.rutasTotal;
+                     const rutasTransf = rutasTotal - stats.rutasCash;  // Rutas de pedidos pagados por transferencia
+                     const efectivoAEntregar = efectivoRecibido - stats.rutasCash;  // El repartidor se queda con las rutas en cash
+                     const saldoPendiente = efectivoAEntregar;
+
+                     const tr = document.createElement('tr');
+                     tr.dataset.id = id;
+                     tr.innerHTML = `<td class="repartidor-name">${rep.nombre}</td>
+                         <td>${stats.entregas}</td>
+                         <td>${formatoMoneda.format(efectivoRecibido)}</td>
+                         <td>${formatoMoneda.format(rutasTotal)}</td>
+                         <td>${formatoMoneda.format(rutasTransf)}</td>
+                         <td class="fw-bold">${formatoMoneda.format(efectivoAEntregar)}</td>
+                         <td><input type="number" class="form-control form-control-sm w-75 d-inline-block input-efectivo-entregado"
+                                    value="0.00" step="0.01" data-expected="${efectivoAEntregar}"></td>
+                         <td class="saldo-pendiente ${saldoPendiente <= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatoMoneda.format(saldoPendiente)}</td>
+                         <td class="action-buttons">
+                             <button class="btn btn-sm btn-success py-0 px-1 btn-liquidar-repartidor" title="Liquidar">
+                                 <i class="bi bi-check-circle"></i>
+                             </button>
+                             <button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-repartidor" title="Modificar">
+                                 <i class="bi bi-pencil"></i>
+                             </button>
+                             <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-repartidor" title="Eliminar">
+                                 <i class="bi bi-trash"></i>
+                             </button>
+                         </td>`;
+                     repartidorListTableBody.appendChild(tr);
+                 }
+
+                 const option = document.createElement('option');
+                 option.value = id;
+                 option.textContent = rep.nombre;
+                 if(repartidorSelectVenta) repartidorSelectVenta.appendChild(option.cloneNode(true));
+                 if(repartidorSelectHistory) repartidorSelectHistory.appendChild(option.cloneNode(true));
+             });
+         };
          onSnapshot(query(repartidoresCollection, orderBy('nombre')), renderRepartidores, (e) => { console.error("Error repartidores:", e); if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error.</td></tr>';});
          if (repartidorForm && addRepartidorModalInstance) repartidorForm.addEventListener('submit', async (e) => { e.preventDefault(); const nom = nombreInput.value.trim(); const cel = celularInput.value.trim(); if (nom && cel) { try { await addDoc(repartidoresCollection, { nombre: nom, celular: cel }); showToast("Repartidor guardado!"); addRepartidorModalInstance.hide(); repartidorForm.reset(); } catch (err) { console.error("Err add repartidor:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
          const confirmLiquidateBtn = document.getElementById('confirm-liquidate-btn');
@@ -633,16 +752,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     categoryName = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
                 }
 
-                const tr = document.createElement('tr'); 
-                tr.dataset.id = id; 
+                // Verificar si tiene promoción
+                const hasPromo = d.promocion && d.promocion.activa;
+                const promoHtml = hasPromo
+                    ? `<button class="btn btn-sm btn-warning py-0 px-2 btn-manage-promo" title="Gestionar Promoción">
+                        <i class="bi bi-tag-fill"></i> ${d.promocion.tipo === 'porcentaje' ? d.promocion.descuento + '%' : 'Precio'}
+                       </button>`
+                    : `<button class="btn btn-sm btn-outline-secondary py-0 px-2 btn-manage-promo" title="Agregar Promoción">
+                        <i class="bi bi-tag"></i> Agregar
+                       </button>`;
+
+                const tr = document.createElement('tr');
+                tr.dataset.id = id;
                 tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img" onerror="this.src='${defaultImgTabla}'"></td>
                                 <td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td>
                                 <td>${categoryName}</td> <td>${variacionesHtml}</td>
                                 <td>${formatoMoneda.format(d.precioDetal || 0)}</td>
                                 <td>${formatoMoneda.format(d.precioMayor || 0)}</td>
                                 <td>${stockTotal}</td>
+                                <td>${promoHtml}</td>
                                 <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
-                                <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; 
+                                <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`;
                 if(productListTableBody) productListTableBody.appendChild(tr); 
 
                 const li = document.createElement('li');
@@ -999,6 +1129,179 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         loadCategoriesForFilter();
+
+        // ========================================================================
+        // GESTIÓN DE PROMOCIONES DESDE INVENTARIO
+        // ========================================================================
+
+        const promoModal = document.getElementById('promoModal');
+        const promoModalInstance = promoModal ? new bootstrap.Modal(promoModal) : null;
+
+        const promoProductIdInput = document.getElementById('promo-product-id');
+        const promoProductPriceInput = document.getElementById('promo-product-price');
+        const promoProductNameEl = document.getElementById('promo-product-name');
+        const promoPriceNormalEl = document.getElementById('promo-price-normal');
+
+        const promoTypePercentage = document.getElementById('promo-type-percentage');
+        const promoTypeFixed = document.getElementById('promo-type-fixed');
+        const promoPercentageSection = document.getElementById('promo-percentage-section');
+        const promoFixedSection = document.getElementById('promo-fixed-section');
+
+        const promoDiscountPercentageInput = document.getElementById('promo-discount-percentage');
+        const promoFixedPriceInput = document.getElementById('promo-fixed-price');
+        const promoActiveCheckbox = document.getElementById('promo-active');
+
+        const promoFinalPricePercentageEl = document.getElementById('promo-final-price-percentage');
+        const promoSavingsFixedEl = document.getElementById('promo-savings-fixed');
+
+        const btnSavePromo = document.getElementById('btn-save-promo');
+        const btnRemovePromo = document.getElementById('btn-remove-promo');
+
+        // Cambiar entre tipo de promoción
+        if (promoTypePercentage && promoTypeFixed) {
+            promoTypePercentage.addEventListener('change', () => {
+                if (promoPercentageSection && promoFixedSection) {
+                    promoPercentageSection.style.display = 'block';
+                    promoFixedSection.style.display = 'none';
+                }
+            });
+
+            promoTypeFixed.addEventListener('change', () => {
+                if (promoPercentageSection && promoFixedSection) {
+                    promoPercentageSection.style.display = 'none';
+                    promoFixedSection.style.display = 'block';
+                }
+            });
+        }
+
+        // Calcular precio final con descuento porcentual
+        if (promoDiscountPercentageInput) {
+            promoDiscountPercentageInput.addEventListener('input', () => {
+                const normalPrice = parseFloat(promoProductPriceInput.value) || 0;
+                const discount = parseFloat(promoDiscountPercentageInput.value) || 0;
+                const finalPrice = normalPrice * (1 - discount / 100);
+                promoFinalPricePercentageEl.textContent = formatoMoneda.format(finalPrice);
+            });
+        }
+
+        // Calcular ahorro con precio fijo
+        if (promoFixedPriceInput) {
+            promoFixedPriceInput.addEventListener('input', () => {
+                const normalPrice = parseFloat(promoProductPriceInput.value) || 0;
+                const promoPrice = parseFloat(promoFixedPriceInput.value) || 0;
+                const savings = normalPrice - promoPrice;
+                promoSavingsFixedEl.textContent = formatoMoneda.format(Math.max(0, savings));
+            });
+        }
+
+        // Event listener para botones de gestionar promoción
+        if (productListTableBody) {
+            productListTableBody.addEventListener('click', async (e) => {
+                const btn = e.target.closest('.btn-manage-promo');
+                if (!btn) return;
+
+                const tr = btn.closest('tr');
+                const productId = tr.dataset.id;
+                const product = localProductsMap.get(productId);
+
+                if (!product || !promoModalInstance) return;
+
+                // Rellenar datos del modal
+                promoProductIdInput.value = productId;
+                promoProductPriceInput.value = product.precioDetal || 0;
+                promoProductNameEl.textContent = product.nombre;
+                promoPriceNormalEl.textContent = formatoMoneda.format(product.precioDetal || 0);
+
+                // Si ya tiene promoción, cargar datos
+                if (product.promocion && product.promocion.activa) {
+                    btnRemovePromo.style.display = 'inline-block';
+                    promoActiveCheckbox.checked = true;
+
+                    if (product.promocion.tipo === 'porcentaje') {
+                        promoTypePercentage.checked = true;
+                        promoPercentageSection.style.display = 'block';
+                        promoFixedSection.style.display = 'none';
+                        promoDiscountPercentageInput.value = product.promocion.descuento;
+
+                        const finalPrice = product.precioDetal * (1 - product.promocion.descuento / 100);
+                        promoFinalPricePercentageEl.textContent = formatoMoneda.format(finalPrice);
+                    } else {
+                        promoTypeFixed.checked = true;
+                        promoPercentageSection.style.display = 'none';
+                        promoFixedSection.style.display = 'block';
+                        promoFixedPriceInput.value = product.promocion.precioFijo || 0;
+
+                        const savings = product.precioDetal - (product.promocion.precioFijo || 0);
+                        promoSavingsFixedEl.textContent = formatoMoneda.format(Math.max(0, savings));
+                    }
+                } else {
+                    // Nueva promoción
+                    btnRemovePromo.style.display = 'none';
+                    promoActiveCheckbox.checked = true;
+                    promoTypePercentage.checked = true;
+                    promoPercentageSection.style.display = 'block';
+                    promoFixedSection.style.display = 'none';
+                    promoDiscountPercentageInput.value = 10;
+                    promoFixedPriceInput.value = '';
+
+                    const finalPrice = product.precioDetal * 0.9;
+                    promoFinalPricePercentageEl.textContent = formatoMoneda.format(finalPrice);
+                }
+
+                promoModalInstance.show();
+            });
+        }
+
+        // Guardar promoción
+        if (btnSavePromo) {
+            btnSavePromo.addEventListener('click', async () => {
+                const productId = promoProductIdInput.value;
+                const isActive = promoActiveCheckbox.checked;
+                const isPercentage = promoTypePercentage.checked;
+
+                let promocion = {
+                    activa: isActive,
+                    tipo: isPercentage ? 'porcentaje' : 'fijo'
+                };
+
+                if (isPercentage) {
+                    promocion.descuento = parseFloat(promoDiscountPercentageInput.value) || 0;
+                } else {
+                    promocion.precioFijo = parseFloat(promoFixedPriceInput.value) || 0;
+                }
+
+                try {
+                    const productRef = doc(productsCollection, productId);
+                    await updateDoc(productRef, { promocion });
+
+                    showToast('Promoción actualizada correctamente', 'success');
+                    promoModalInstance.hide();
+                } catch (error) {
+                    console.error('Error al guardar promoción:', error);
+                    showToast('Error al guardar la promoción', 'error');
+                }
+            });
+        }
+
+        // Quitar promoción
+        if (btnRemovePromo) {
+            btnRemovePromo.addEventListener('click', async () => {
+                const productId = promoProductIdInput.value;
+
+                try {
+                    const productRef = doc(productsCollection, productId);
+                    await updateDoc(productRef, {
+                        promocion: deleteField()
+                    });
+
+                    showToast('Promoción eliminada correctamente', 'success');
+                    promoModalInstance.hide();
+                } catch (error) {
+                    console.error('Error al eliminar promoción:', error);
+                    showToast('Error al eliminar la promoción', 'error');
+                }
+            });
+        }
 
     })();
 
@@ -1523,15 +1826,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${diasRestantes < 0 ? '<small class="d-block">(VENCIDO)</small>' : ''}
                     </td>
                     <td class="action-buttons">
-                        <button class="btn btn-sm btn-success py-0 px-1 btn-abono-apartado" 
+                        <button class="btn btn-sm btn-outline-info py-0 px-1 btn-ver-apartado"
+                                title="Ver Detalles" data-apartado-id="${id}">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-success py-0 px-1 btn-abono-apartado"
                                 title="Registrar Abono" data-apartado-id="${id}">
                             <i class="bi bi-cash-coin"></i>
                         </button>
-                        <button class="btn btn-sm btn-primary py-0 px-1 btn-completar-apartado" 
+                        <button class="btn btn-sm btn-primary py-0 px-1 btn-completar-apartado"
                                 title="Completar" data-apartado-id="${id}" ${saldo > 0 ? 'disabled' : ''}>
                             <i class="bi bi-check-circle"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-apartado" 
+                        <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-apartado"
                                 title="Cancelar" data-apartado-id="${id}">
                             <i class="bi bi-x-circle"></i>
                         </button>
@@ -1564,7 +1871,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const apartadoId = target.dataset.apartadoId;
                 if (!apartadoId) return;
                 
-                if (target.classList.contains('btn-abono-apartado')) {
+                if (target.classList.contains('btn-ver-apartado')) {
+                    await abrirModalVerApartado(apartadoId);
+                } else if (target.classList.contains('btn-abono-apartado')) {
                     await abrirModalAbono(apartadoId);
                 } else if (target.classList.contains('btn-completar-apartado')) {
                     await completarApartado(apartadoId);
@@ -1573,7 +1882,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-        
+
+        // ✅ FUNCIÓN: ABRIR MODAL DE VER APARTADO (con historial de pagos)
+        async function abrirModalVerApartado(apartadoId) {
+            const apartadoRef = doc(db, 'apartados', apartadoId);
+            const apartadoSnap = await getDoc(apartadoRef);
+
+            if (!apartadoSnap.exists()) {
+                showToast('Apartado no encontrado', 'error');
+                return;
+            }
+
+            const apartadoData = apartadoSnap.data();
+            const saldo = apartadoData.saldo || 0;
+
+            // Poblar información general
+            document.getElementById('detalle-cliente-nombre').textContent = apartadoData.clienteNombre || 'N/A';
+            document.getElementById('detalle-total').textContent = formatoMoneda.format(apartadoData.total || 0);
+            document.getElementById('detalle-abonado').textContent = formatoMoneda.format(apartadoData.abonado || 0);
+            document.getElementById('detalle-saldo').textContent = formatoMoneda.format(saldo);
+
+            // Estado con badge
+            const estadoEl = document.getElementById('detalle-estado');
+            estadoEl.textContent = apartadoData.estado || 'Pendiente';
+            estadoEl.className = 'badge';
+            if (apartadoData.estado === 'Completado') {
+                estadoEl.classList.add('bg-success');
+            } else if (apartadoData.estado === 'Cancelado') {
+                estadoEl.classList.add('bg-danger');
+            } else {
+                estadoEl.classList.add('bg-warning', 'text-dark');
+            }
+
+            // Fecha de vencimiento
+            const vencimientoDate = apartadoData.fechaVencimiento?.toDate();
+            document.getElementById('detalle-vencimiento').textContent = vencimientoDate
+                ? vencimientoDate.toLocaleDateString('es-CO')
+                : 'N/A';
+
+            // Poblar historial de pagos
+            const historialBody = document.getElementById('detalle-historial-pagos');
+            historialBody.innerHTML = '';
+
+            const abonos = apartadoData.abonos || [];
+            if (abonos.length === 0) {
+                historialBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay pagos registrados</td></tr>';
+            } else {
+                abonos.forEach(abono => {
+                    const tr = document.createElement('tr');
+                    const fechaAbono = abono.fecha?.toDate ? abono.fecha.toDate().toLocaleDateString('es-CO') : 'N/A';
+                    tr.innerHTML = `
+                        <td>${fechaAbono}</td>
+                        <td class="fw-bold text-success">${formatoMoneda.format(abono.monto || 0)}</td>
+                        <td><span class="badge ${abono.metodoPago === 'Efectivo' ? 'bg-success' : 'bg-primary'}">${abono.metodoPago || 'N/A'}</span></td>
+                        <td>${abono.observaciones || '-'}</td>
+                    `;
+                    historialBody.appendChild(tr);
+                });
+            }
+
+            if (verApartadoModalInstance) {
+                verApartadoModalInstance.show();
+            }
+        }
+
         // FUNCIÓN: ABRIR MODAL DE ABONO
         async function abrirModalAbono(apartadoId) {
             const apartadoRef = doc(db, 'apartados', apartadoId);
@@ -1749,7 +2121,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     abonos: abonos,
                     estado: nuevoSaldo <= 0 ? 'Completado' : 'Pendiente'
                 });
-                
+
+                // ✅ ACTUALIZAR TAMBIÉN LA VENTA CON LOS NUEVOS MONTOS DE PAGO
+                if (apartadoData.ventaId) {
+                    const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
+                    const ventaSnap = await getDoc(ventaRef);
+
+                    if (ventaSnap.exists()) {
+                        const ventaData = ventaSnap.data();
+                        const updateVenta = {
+                            estado: nuevoSaldo <= 0 ? 'Completada' : 'Pendiente'
+                        };
+
+                        // Actualizar los montos de pago según el método
+                        if (metodoPago === 'Efectivo') {
+                            updateVenta.pagoEfectivo = (ventaData.pagoEfectivo || 0) + monto;
+                        } else if (metodoPago === 'Transferencia') {
+                            updateVenta.pagoTransferencia = (ventaData.pagoTransferencia || 0) + monto;
+                        }
+
+                        await updateDoc(ventaRef, updateVenta);
+                    }
+                }
+
                 abonoApartadoModalInstance.hide();
                 
                 if (nuevoSaldo <= 0) {
