@@ -57,7 +57,6 @@ const COLOR_MAP = {
     'violeta': '#8E24AA',
     'negro': '#212121',
     'negra': '#212121',
-    'blanco/negro': 'linear-gradient(to right, #FFFFFF 50%, #000000 50%)',
     'rojo': '#E53935'
     'blanca': '#FFFFFF',
     'blanco': '#FFFFFF',
