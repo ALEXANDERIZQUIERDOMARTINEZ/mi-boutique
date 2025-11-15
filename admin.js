@@ -1079,7 +1079,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.getElementById('variation-product-id').value = productId;
             document.getElementById('variation-product-name').value = product.nombre;
-            document.getElementById('variation-product-price').value = product.precioDetal || 0;
+
+            // ✅ Verificar tipo de venta para usar precio correcto
+            const tipoVenta = document.getElementById('tipo-venta-select')?.value || 'detal';
+            const precioAUsar = tipoVenta === 'mayorista' ? (product.precioMayor || product.precioDetal || 0) : (product.precioDetal || 0);
+            document.getElementById('variation-product-price').value = precioAUsar;
             
             const titleEl = document.getElementById('selectVariationModalTitle');
             const optionsContainer = document.getElementById('variation-options-container');
