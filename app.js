@@ -115,6 +115,7 @@ const COLOR_MAP = {
     'plateado': '#BDBDBD',
     
     // Otros colores
+    'marfil': 'e1cc4f',
     'camel': 'bf8a3d',
     'dorado': '#FFD700',
     'oro': '#FFD700',
