@@ -176,6 +176,41 @@
                     </div>
                 </div>
 
+                <!-- Gráficos de Análisis -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Tendencia de Ventas</h5>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check" name="chart-period" id="chart-7days" autocomplete="off" checked>
+                                    <label class="btn btn-outline-primary" for="chart-7days">7 días</label>
+
+                                    <input type="radio" class="btn-check" name="chart-period" id="chart-30days" autocomplete="off">
+                                    <label class="btn btn-outline-primary" for="chart-30days">30 días</label>
+
+                                    <input type="radio" class="btn-check" name="chart-period" id="chart-6months" autocomplete="off">
+                                    <label class="btn btn-outline-primary" for="chart-6months">6 meses</label>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="ventasChart" height="80"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Top Productos</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="topProductosChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Productos con Stock Crítico -->
                 <div class="row g-4">
                     <div class="col-lg-6">
@@ -813,6 +848,8 @@
         </div>
     </div>
 
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script type="module" src="admin.js"></script>
 
 </body>

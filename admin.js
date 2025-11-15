@@ -2741,6 +2741,305 @@ document.addEventListener('DOMContentLoaded', () => {
     calcularBajoStock();
     calcularApartadosVencer();
 
+    // ========================================================================
+    // 📊 GRÁFICOS DEL DASHBOARD
+    // ========================================================================
+
+    let ventasChart = null;
+    let topProductosChart = null;
+
+    // ✅ GRÁFICO DE TENDENCIA DE VENTAS
+    function initVentasChart() {
+        const ctx = document.getElementById('ventasChart');
+        if (!ctx) return;
+
+        ventasChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Ventas ($)',
+                    data: [],
+                    borderColor: '#D988B9',
+                    backgroundColor: 'rgba(217, 136, 185, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#D988B9',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        padding: 12,
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 13 },
+                        callbacks: {
+                            label: function(context) {
+                                return formatoMoneda.format(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return formatoMoneda.format(value);
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ✅ GRÁFICO DE TOP PRODUCTOS
+    function initTopProductosChart() {
+        const ctx = document.getElementById('topProductosChart');
+        if (!ctx) return;
+
+        topProductosChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [
+                        '#D988B9',
+                        '#FF8DA1',
+                        '#C77DA5',
+                        '#E5A4C3',
+                        '#B86FA2'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            font: { size: 11 },
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.map((label, i) => {
+                                        const value = data.datasets[0].data[i];
+                                        return {
+                                            text: `${label} (${value})`,
+                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed} unidades`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ✅ CARGAR DATOS DE VENTAS POR PERIODO (sin índices)
+    async function cargarVentasPorPeriodo(dias) {
+        try {
+            const hoy = new Date();
+            hoy.setHours(23, 59, 59, 999);
+
+            const fechaInicio = new Date(hoy);
+            fechaInicio.setDate(fechaInicio.getDate() - dias + 1);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            // Query simple sin orderBy (ordenar en memoria)
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', fechaInicio),
+                where('timestamp', '<=', hoy)
+            );
+
+            const snapshot = await getDocs(q);
+            const ventasPorFecha = {};
+
+            // Inicializar todos los días con 0
+            for (let i = 0; i < dias; i++) {
+                const fecha = new Date(fechaInicio);
+                fecha.setDate(fecha.getDate() + i);
+                const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                ventasPorFecha[key] = 0;
+            }
+
+            // Sumar ventas por fecha
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const fecha = venta.timestamp?.toDate();
+                    if (fecha) {
+                        const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                        ventasPorFecha[key] = (ventasPorFecha[key] || 0) + (venta.totalVenta || 0);
+                    }
+                }
+            });
+
+            const labels = Object.keys(ventasPorFecha);
+            const data = Object.values(ventasPorFecha);
+
+            if (ventasChart) {
+                ventasChart.data.labels = labels;
+                ventasChart.data.datasets[0].data = data;
+                ventasChart.update();
+            }
+
+        } catch (error) {
+            console.error("Error cargando ventas por periodo:", error);
+        }
+    }
+
+    // ✅ CARGAR DATOS DE VENTAS POR MESES (sin índices)
+    async function cargarVentasPorMeses(meses) {
+        try {
+            const hoy = new Date();
+            const fechaInicio = new Date(hoy);
+            fechaInicio.setMonth(fechaInicio.getMonth() - meses + 1);
+            fechaInicio.setDate(1);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            // Query simple sin orderBy (ordenar en memoria)
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', fechaInicio)
+            );
+
+            const snapshot = await getDocs(q);
+            const ventasPorMes = {};
+
+            // Inicializar todos los meses con 0
+            for (let i = 0; i < meses; i++) {
+                const fecha = new Date(fechaInicio);
+                fecha.setMonth(fecha.getMonth() + i);
+                const key = fecha.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
+                ventasPorMes[key] = 0;
+            }
+
+            // Sumar ventas por mes
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const fecha = venta.timestamp?.toDate();
+                    if (fecha) {
+                        const key = fecha.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
+                        ventasPorMes[key] = (ventasPorMes[key] || 0) + (venta.totalVenta || 0);
+                    }
+                }
+            });
+
+            const labels = Object.keys(ventasPorMes);
+            const data = Object.values(ventasPorMes);
+
+            if (ventasChart) {
+                ventasChart.data.labels = labels;
+                ventasChart.data.datasets[0].data = data;
+                ventasChart.update();
+            }
+
+        } catch (error) {
+            console.error("Error cargando ventas por meses:", error);
+        }
+    }
+
+    // ✅ CARGAR TOP PRODUCTOS MÁS VENDIDOS (sin índices)
+    async function cargarTopProductos() {
+        try {
+            // Obtener todas las ventas del último mes
+            const hoy = new Date();
+            const hace30Dias = new Date(hoy);
+            hace30Dias.setDate(hace30Dias.getDate() - 30);
+
+            // Query simple sin orderBy (no necesita orden aquí)
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', hace30Dias)
+            );
+
+            const snapshot = await getDocs(q);
+            const productosCantidad = {};
+
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    venta.items?.forEach(item => {
+                        const nombre = item.nombre || 'Sin nombre';
+                        productosCantidad[nombre] = (productosCantidad[nombre] || 0) + (item.cantidad || 0);
+                    });
+                }
+            });
+
+            // Ordenar y tomar top 5
+            const topProductos = Object.entries(productosCantidad)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            const labels = topProductos.map(p => p[0]);
+            const data = topProductos.map(p => p[1]);
+
+            if (topProductosChart) {
+                topProductosChart.data.labels = labels;
+                topProductosChart.data.datasets[0].data = data;
+                topProductosChart.update();
+            }
+
+        } catch (error) {
+            console.error("Error cargando top productos:", error);
+        }
+    }
+
+    // ✅ EVENT LISTENERS PARA CAMBIAR PERIODO
+    document.getElementById('chart-7days')?.addEventListener('change', () => cargarVentasPorPeriodo(7));
+    document.getElementById('chart-30days')?.addEventListener('change', () => cargarVentasPorPeriodo(30));
+    document.getElementById('chart-6months')?.addEventListener('change', () => cargarVentasPorMeses(6));
+
+    // ✅ INICIALIZAR GRÁFICOS
+    setTimeout(() => {
+        console.log("📊 Inicializando gráficos del dashboard...");
+        initVentasChart();
+        initTopProductosChart();
+        cargarVentasPorPeriodo(7); // Cargar 7 días por defecto
+        cargarTopProductos();
+        console.log("✅ Gráficos inicializados correctamente");
+    }, 1000); // Esperar a que Chart.js esté disponible
+
     console.log("✅ Dashboard inicializado correctamente");
 
 })(); // ← Cierre del IIFE del Dashboard
