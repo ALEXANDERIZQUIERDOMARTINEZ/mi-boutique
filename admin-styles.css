@@ -1145,23 +1145,13 @@ html, body {
 }
 
 /* =========================================================== */
-/* ICONOS BLANCOS PREMIUM - PANEL DE ADMINISTRACIÓN */
+/* ICONOS BLANCOS - SIN ANIMACIONES (ESTÁTICOS) */
 /* =========================================================== */
 
 /* Navegación principal - iconos blancos cuando activos */
 .nav-pills .nav-link.active i {
     color: white !important;
     text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-    animation: adminIconPulse 2s ease-in-out infinite;
-}
-
-.nav-pills .nav-link:not(.active) i {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.nav-pills .nav-link:hover:not(.active) i {
-    transform: scale(1.2) rotate(5deg);
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
 /* Iconos en tarjetas del dashboard - blancos con fondos de color */
@@ -1170,12 +1160,6 @@ html, body {
     color: white !important;
     font-size: 1.6rem;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
-}
-
-.dashboard-card:hover .card-icon i {
-    transform: scale(1.15) rotate(-5deg);
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
 }
 
 /* Iconos de actividad reciente */
@@ -1188,11 +1172,6 @@ html, body {
 .card-header i {
     color: var(--color-primario) !important;
     margin-right: 8px;
-    transition: all 0.3s ease;
-}
-
-.card:hover .card-header i {
-    transform: scale(1.1) rotate(360deg);
 }
 
 /* Botones primarios - iconos blancos */
@@ -1203,51 +1182,17 @@ html, body {
 .btn-info i {
     color: white !important;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-    margin-right: 6px;
 }
 
-.btn-primary:hover i,
-.btn-success:hover i,
-.btn-danger:hover i {
-    transform: scale(1.15) rotate(5deg);
-    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.7));
-}
-
-/* Botones de acción en tablas */
+/* Botones de acción en tablas - iconos visibles */
 .action-buttons .btn i {
     color: white !important;
-    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.action-buttons .btn:hover i {
-    transform: scale(1.3) rotate(10deg);
-}
-
-.action-buttons .btn-danger:hover i {
-    transform: scale(1.3) rotate(180deg);
 }
 
 /* Iconos en modales */
 .modal-header i {
-    color: white !important;
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
-    padding: 12px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(217, 136, 185, 0.4);
-    font-size: 1.4rem;
-    transition: all 0.4s ease;
-}
-
-.modal-header:hover i {
-    transform: rotate(360deg) scale(1.1);
-}
-
-/* Iconos de eliminar en modales de confirmación */
-#deleteConfirmModal .modal-header i,
-#liquidateConfirmModal .modal-header i {
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-    animation: warningPulse 1.5s ease-in-out infinite;
+    color: var(--color-primario) !important;
+    margin-right: 8px;
 }
 
 /* Iconos de badges y alertas */
@@ -1257,41 +1202,9 @@ html, body {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-.badge-new-order {
-    animation: badgePulse 2s ease-in-out infinite;
-}
-
-.badge-new-order i {
-    animation: iconSpin 3s linear infinite;
-}
-
 /* Iconos en inputs de búsqueda y selects */
 .input-group-text i {
     color: var(--color-primario);
-    transition: all 0.3s ease;
-}
-
-.input-group:focus-within .input-group-text i {
-    color: white !important;
-    background: var(--color-primario);
-    padding: 8px;
-    border-radius: 50%;
-    transform: scale(1.2);
-}
-
-/* Iconos en listado de productos de búsqueda modal */
-.search-modal-list .list-group-item i {
-    color: var(--color-primario);
-    margin-right: 8px;
-    transition: all 0.3s ease;
-}
-
-.search-modal-list .list-group-item:hover i {
-    color: white !important;
-    background: var(--color-primario);
-    padding: 6px;
-    border-radius: 50%;
-    transform: rotate(360deg) scale(1.1);
 }
 
 /* Iconos de stock crítico y alertas */
@@ -1300,90 +1213,15 @@ html, body {
 .badge.bg-danger i,
 .badge.bg-warning i {
     color: white !important;
-    animation: alertBlink 2s ease-in-out infinite;
 }
 
 /* Iconos en gráficos y reportes */
 #dashboard .btn-group-sm .btn i {
     margin-right: 4px;
-    transition: all 0.3s ease;
 }
 
 #dashboard .btn-check:checked + .btn i {
     color: white !important;
-    transform: scale(1.1);
-}
-
-/* Iconos del navbar superior */
-.admin-navbar i {
-    transition: all 0.3s ease;
-}
-
-.admin-navbar .nav-link:hover i {
-    transform: scale(1.2) translateY(-2px);
-}
-
-/* Icono del enlace al catálogo */
-.admin-logout i {
-    margin-right: 6px;
-    transition: all 0.3s ease;
-}
-
-.admin-logout:hover i {
-    transform: scale(1.2) rotate(360deg);
-}
-
-/* Iconos en tablas - mejorados */
-.table i {
-    transition: all 0.3s ease;
-}
-
-.table tbody tr:hover i {
-    transform: scale(1.15);
-}
-
-/* Animaciones premium para el admin */
-@keyframes adminIconPulse {
-    0%, 100% {
-        transform: scale(1);
-        filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.4));
-    }
-    50% {
-        transform: scale(1.08);
-        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.7));
-    }
-}
-
-@keyframes warningPulse {
-    0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
-    }
-    50% {
-        transform: scale(1.05);
-        box-shadow: 0 6px 25px rgba(220, 53, 69, 0.6);
-    }
-}
-
-@keyframes badgePulse {
-    0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 2px 6px rgba(217, 136, 185, 0.3);
-    }
-    50% {
-        transform: scale(1.05);
-        box-shadow: 0 4px 12px rgba(217, 136, 185, 0.5);
-    }
-}
-
-@keyframes iconSpin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-@keyframes alertBlink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
 }
 
 /* Iconos en formularios */
@@ -1395,50 +1233,21 @@ html, body {
 /* Iconos en listas y menús */
 .list-group-item i {
     margin-right: 8px;
-    transition: all 0.3s ease;
 }
 
-.list-group-item:hover i {
-    transform: scale(1.15) translateX(3px);
-}
-
-/* Iconos flotantes para secciones específicas */
-.card-ventas .card-icon i,
-.card-productos .card-icon i,
-.card-stock .card-icon i,
-.card-apartados .card-icon i {
-    animation: iconFloat 3s ease-in-out infinite;
-}
-
-@keyframes iconFloat {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-5px);
-    }
-}
-
-/* Mejora visual de iconos en estado hover para botones outline */
+/* Mejora visual de iconos en botones outline */
 .btn-outline-primary i,
 .btn-outline-secondary i {
     color: var(--color-primario);
-    transition: all 0.3s ease;
 }
 
 .btn-outline-primary:hover i {
     color: white !important;
-    transform: scale(1.2) rotate(10deg);
 }
 
 /* Iconos en dropdowns y selects */
 .dropdown-toggle i {
     margin-right: 6px;
-    transition: all 0.3s ease;
-}
-
-.dropdown-toggle:hover i {
-    transform: rotate(180deg);
 }
 
 /* Toast notifications - iconos blancos */
@@ -1446,48 +1255,22 @@ html, body {
     color: white !important;
     font-size: 1.2rem;
     margin-right: 8px;
-    animation: toastIconAppear 0.5s ease;
-}
-
-@keyframes toastIconAppear {
-    0% {
-        transform: scale(0) rotate(-180deg);
-        opacity: 0;
-    }
-    100% {
-        transform: scale(1) rotate(0deg);
-        opacity: 1;
-    }
 }
 
 /* Iconos de filtros en inventario */
 #clear-filters-inventory i {
-    transition: all 0.3s ease;
+    color: #666;
 }
 
 #clear-filters-inventory:hover i {
-    color: white !important;
-    transform: rotate(-360deg) scale(1.2);
+    color: var(--color-primario);
 }
 
-/* Hacer todos los iconos más nítidos y bonitos */
+/* Hacer todos los iconos más nítidos */
 i[class*="bi-"] {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-style: normal;
     font-variant: normal;
     text-rendering: optimizeLegibility;
-}
-
-/* Efecto especial para iconos en cards secundarias */
-.dashboard-card-secondary:hover .icon-badge i {
-    transform: scale(1.2) rotate(360deg);
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
-}
-
-/* Iconos en estado activo con resplandor */
-.active i,
-.nav-link.active i,
-.btn-primary i {
-    filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.4));
 }
