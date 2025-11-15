@@ -319,8 +319,8 @@ function renderProducts(products) {
     const loading = document.getElementById('loading-products');
     const productsCountEl = document.getElementById('products-count');
 
-    if (loading) loading.style.display = 'none';
-    container.innerHTML = '';
+            const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp');
+            if (ventaWhatsappCheckbox) ventaWhatsappCheckbox.checked = false; // Invertido para corregir lógica
 
     // Actualizar contador
     if (productsCountEl) {
@@ -675,11 +675,94 @@ function resetAllFilters() {
 // --- DOMCONTENTLOADED ---
 document.addEventListener('DOMContentLoaded', () => {
 
-    loadCart();
-    // loadPromotions(); // ✅ Ya no necesario - las promociones se leen del campo producto.promocion
+        // Event listener para botones de gestionar promoción
+        if (productListTableBody) {
+            productListTableBody.addEventListener('click', async (e) => {
+                const btn = e.target.closest('.btn-manage-promo');
+                if (!btn) return;
 
-    const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
-    const categoryDropdownButton = document.getElementById('category-dropdown-button');
+                const tr = btn.closest('tr');
+                const productId = tr.dataset.id;
+                const product = localProductsMap.get(productId);
+
+                if (!product || !promoModalInstance) return;
+
+                // Rellenar datos del modal
+                promoProductIdInput.value = productId;
+                promoProductPriceInput.value = product.precioDetal || 0;
+                promoProductNameEl.textContent = product.nombre;
+                promoPriceNormalEl.textContent = formatoMoneda.format(product.precioDetal || 0);
+
+                // Si ya tiene promoción, cargar datos
+                if (product.promocion && product.promocion.activa) {
+                    btnRemovePromo.style.display = 'inline-block';
+                    promoActiveCheckbox.checked = false; // Invertido para corregir lógica
+
+                    if (product.promocion.tipo === 'porcentaje') {
+                        promoTypePercentage.checked = true;
+                        promoPercentageSection.style.display = 'block';
+                        promoFixedSection.style.display = 'none';
+                        promoDiscountPercentageInput.value = product.promocion.descuento;
+
+                        const finalPrice = product.precioDetal * (1 - product.promocion.descuento / 100);
+                        promoFinalPricePercentageEl.textContent = formatoMoneda.format(finalPrice);
+                    } else {
+                        promoTypeFixed.checked = true;
+                        promoPercentageSection.style.display = 'none';
+                        promoFixedSection.style.display = 'block';
+                        promoFixedPriceInput.value = product.promocion.precioFijo || 0;
+
+                        const savings = product.precioDetal - (product.promocion.precioFijo || 0);
+                        promoSavingsFixedEl.textContent = formatoMoneda.format(Math.max(0, savings));
+                    }
+                } else {
+                    // Nueva promoción
+                    btnRemovePromo.style.display = 'none';
+                    promoActiveCheckbox.checked = false; // Invertido para corregir lógica
+                    promoTypePercentage.checked = true;
+                    promoPercentageSection.style.display = 'block';
+                    promoFixedSection.style.display = 'none';
+                    promoDiscountPercentageInput.value = 10;
+                    promoFixedPriceInput.value = '';
+
+                    const finalPrice = product.precioDetal * 0.9;
+                    promoFinalPricePercentageEl.textContent = formatoMoneda.format(finalPrice);
+                }
+
+                promoModalInstance.show();
+            });
+        }
+
+        // Guardar promoción
+        if (btnSavePromo) {
+            btnSavePromo.addEventListener('click', async () => {
+                const productId = promoProductIdInput.value;
+                const isActive = !promoActiveCheckbox.checked; // Invertido para corregir lógica
+                const isPercentage = promoTypePercentage.checked;
+
+                let promocion = {
+                    activa: isActive,
+                    tipo: isPercentage ? 'porcentaje' : 'fijo'
+                };
+
+                if (isPercentage) {
+                    promocion.descuento = parseFloat(promoDiscountPercentageInput.value) || 0;
+                } else {
+                    promocion.precioFijo = parseFloat(promoFixedPriceInput.value) || 0;
+                }
+
+                try {
+                    const productRef = doc(productsCollection, productId);
+                    await updateDoc(productRef, { promocion });
+
+                    showToast('Promoción actualizada correctamente', 'success');
+                    promoModalInstance.hide();
+                } catch (error) {
+                    console.error('Error al guardar promoción:', error);
+                    showToast('Error al guardar la promoción', 'error');
+                }
+            });
+        }
 
     // ✅ Cargar Categorías con Badges
     const trendingCategories = ['Vestidos', 'Blusas', 'Pantalones']; // Categorías en tendencia
@@ -751,10 +834,135 @@ document.addEventListener('DOMContentLoaded', () => {
         allProducts = [];
         productsMap.clear();
 
-        snapshot.forEach(doc => {
-            const product = { ...doc.data(), id: doc.id };
-            allProducts.push(product);
-            productsMap.set(doc.id, product);
+        // Cargar ventas inicialmente
+        cargarVentas();
+
+        // ========================================================================
+        // ✅ --- SECCIÓN 3: CORREGIR VENTAS (REEMPLAZO) ---
+        // ========================================================================
+         if (salesForm) salesForm.addEventListener('submit', async (e) => { 
+            e.preventDefault(); 
+            if (window.ventaItems.length === 0) { 
+                showToast("Agrega productos.", 'warning'); 
+                return; 
+            } 
+            
+            const totalCalculado = window.calcularTotalVentaGeneral();
+            const ventaData = {
+                clienteNombre: ventaClienteInput.value || "Cliente General",
+                tipoVenta: tipoVentaSelect.value,
+                tipoEntrega: tipoEntregaSelect.value,
+                pedidoWhatsapp: !ventaWhatsappCheckbox.checked, // Invertido para corregir lógica
+                repartidorId: tipoEntregaSelect.value === 'domicilio' ? ventaRepartidorSelect.value : null,
+                repartidorNombre: tipoEntregaSelect.value === 'domicilio' ? (ventaRepartidorSelect.options[ventaRepartidorSelect.selectedIndex]?.text || '') : null,
+                costoRuta: tipoEntregaSelect.value === 'domicilio' ? (parseFloat(costoRutaInput.value) || 0) : 0,
+                rutaPagadaTransferencia: tipoEntregaSelect.value === 'domicilio' ? !rutaPagadaCheckbox.checked : false, // Invertido para corregir lógica 
+                items: window.ventaItems, 
+                observaciones: ventaObservaciones.value.trim(), 
+                descuento: parseFloat(ventaDescuentoInput.value) || 0, 
+                descuentoTipo: ventaDescuentoTipo.value, 
+                pagoEfectivo: parseFloat(pagoEfectivoInput.value) || 0, 
+                pagoTransferencia: parseFloat(pagoTransferenciaInput.value) || 0, 
+                totalVenta: totalCalculado, 
+                estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada', 
+                timestamp: serverTimestamp() 
+            }; 
+            
+            if (ventaData.tipoVenta === 'apartado') {
+                const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia;
+                if (abonoInicial <= 0) {
+                    showToast("Los apartados requieren un abono inicial.", 'warning');
+                    return;
+                }
+                if (abonoInicial >= totalCalculado) {
+                    showToast("El abono es igual o mayor al total. Registra como venta normal.", 'warning');
+                    return;
+                }
+            } else {
+                if (ventaData.pagoEfectivo + ventaData.pagoTransferencia < totalCalculado) { 
+                    showToast("El pago no cubre el total.", 'warning'); 
+                    return; 
+                }
+            }
+            
+            try {
+                // ✅ PASO 1: Registrar la venta primero
+                const docRef = await addDoc(salesCollection, ventaData);
+                console.log("✅ Venta registrada con ID:", docRef.id);
+
+                // ✅ PASO 2: Actualizar stock inmediatamente
+                await actualizarStock(ventaData.items, 'restar');
+                console.log("✅ Stock actualizado correctamente");
+
+                // ✅ PASO 3: Si es apartado, crear documento apartado
+                if (ventaData.tipoVenta === 'apartado') {
+                    const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia;
+                    const saldoPendiente = ventaData.totalVenta - abonoInicial;
+
+                    // Calcular fecha de vencimiento
+                    const apartadoFechaInput = document.getElementById('apartado-fecha-max');
+                    let fechaVencimiento;
+
+                    if (apartadoFechaInput && apartadoFechaInput.value) {
+                        fechaVencimiento = new Date(apartadoFechaInput.value + 'T23:59:59');
+                    } else {
+                        fechaVencimiento = new Date();
+                        fechaVencimiento.setDate(fechaVencimiento.getDate() + 15);
+                    }
+
+                    // Determinar método de pago inicial
+                    let metodoPagoInicial;
+                    if (ventaData.pagoEfectivo > 0 && ventaData.pagoTransferencia > 0) {
+                        metodoPagoInicial = 'Mixto';
+                    } else if (ventaData.pagoEfectivo > 0) {
+                        metodoPagoInicial = 'Efectivo';
+                    } else {
+                        metodoPagoInicial = 'Transferencia';
+                    }
+
+                    // Crear documento apartado
+                    const apartadoData = {
+                        ventaId: docRef.id,
+                        clienteNombre: ventaData.clienteNombre,
+                        total: ventaData.totalVenta,
+                        abonado: abonoInicial,
+                        saldo: saldoPendiente,
+                        fechaCreacion: serverTimestamp(),
+                        fechaVencimiento: Timestamp.fromDate(fechaVencimiento),
+                        estado: 'Pendiente',
+                        items: ventaData.items, // Guardar items para referencia
+                        abonos: [{
+                            fecha: serverTimestamp(),
+                            monto: abonoInicial,
+                            metodoPago: metodoPagoInicial,
+                            observaciones: 'Abono inicial'
+                        }]
+                    };
+
+                    try {
+                        const apartadoRef = await addDoc(apartadosCollection, apartadoData);
+                        console.log("✅ Apartado creado exitosamente con ID:", apartadoRef.id);
+                        showToast(`Apartado creado! Saldo: ${formatoMoneda.format(saldoPendiente)}. Vence: ${fechaVencimiento.toLocaleDateString('es-CO')}`, 'success');
+                    } catch (apErr) {
+                        console.error("❌ Error crítico al crear apartado:", apErr);
+                        showToast("Error al crear apartado. La venta fue registrada pero el apartado falló.", 'error');
+                    }
+                } else {
+                    showToast("Venta registrada exitosamente!", 'success');
+                } 
+                
+                salesForm.reset(); 
+                window.ventaItems = []; 
+                renderCarrito(); 
+                window.fillClientInfoSales(); 
+                tipoVentaSelect.value='detal'; 
+                tipoEntregaSelect.value='tienda'; 
+                toggleDeliveryFields(); 
+                window.calcularTotalVentaGeneral(); 
+            } catch (err) { 
+                console.error("Error saving sale:", err); 
+                showToast(`Error: ${err.message}`, 'error'); 
+            } 
         });
 
         loadAvailableColors();
@@ -960,6 +1168,130 @@ document.addEventListener('DOMContentLoaded', () => {
                 imagenUrl: product.imagenUrl || ''
             });
         }
+    })();
+
+    // ✅ LISTENER PARA FORMULARIO DE ABONO (MEJORADO)
+    const formAbonoApartado = document.getElementById('form-abono-apartado');
+    if (formAbonoApartado) {
+        formAbonoApartado.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log("📝 Iniciando registro de abono...");
+
+            const apartadoId = document.getElementById('abono-apartado-id').value;
+            const monto = parseFloat(document.getElementById('abono-monto').value);
+            const saldoActual = parseFloat(document.getElementById('abono-saldo-actual').value);
+            const metodoPago = document.getElementById('abono-metodo-pago').value;
+            const observaciones = document.getElementById('abono-observaciones').value.trim();
+
+            console.log("Datos del abono:", { apartadoId, monto, saldoActual, metodoPago, observaciones });
+
+            // Validaciones
+            if (!apartadoId) {
+                showToast('Error: ID de apartado no encontrado', 'error');
+                return;
+            }
+
+            if (isNaN(monto) || monto <= 0) {
+                showToast('El monto debe ser mayor a cero', 'error');
+                return;
+            }
+
+            if (monto > saldoActual) {
+                showToast(`El abono (${formatoMoneda.format(monto)}) no puede ser mayor al saldo (${formatoMoneda.format(saldoActual)})`, 'warning');
+                return;
+            }
+
+            try {
+                // ✅ PASO 1: Obtener apartado actual
+                const apartadoRef = doc(db, 'apartados', apartadoId);
+                const apartadoSnap = await getDoc(apartadoRef);
+
+                if (!apartadoSnap.exists()) {
+                    showToast('Apartado no encontrado en la base de datos', 'error');
+                    console.error("❌ Apartado no existe:", apartadoId);
+                    return;
+                }
+
+                const apartadoData = apartadoSnap.data();
+                console.log("Apartado actual:", apartadoData);
+
+                // ✅ PASO 2: Calcular nuevos valores
+                const nuevoAbonado = (apartadoData.abonado || 0) + monto;
+                const nuevoSaldo = apartadoData.total - nuevoAbonado;
+
+                console.log("Cálculos:", {
+                    abonado_anterior: apartadoData.abonado,
+                    monto_abono: monto,
+                    nuevo_abonado: nuevoAbonado,
+                    total: apartadoData.total,
+                    nuevo_saldo: nuevoSaldo
+                });
+
+                // ✅ PASO 3: Agregar abono al historial
+                const abonos = apartadoData.abonos || [];
+                const nuevoAbono = {
+                    fecha: serverTimestamp(),
+                    monto: monto,
+                    metodoPago: metodoPago,
+                    observaciones: observaciones || 'Sin observaciones'
+                };
+                abonos.push(nuevoAbono);
+
+                // ✅ PASO 4: Actualizar apartado
+                await updateDoc(apartadoRef, {
+                    abonado: nuevoAbonado,
+                    saldo: nuevoSaldo,
+                    abonos: abonos,
+                    estado: nuevoSaldo <= 0 ? 'Completado' : 'Pendiente',
+                    ultimaModificacion: serverTimestamp()
+                });
+                console.log("✅ Apartado actualizado correctamente");
+
+                // ✅ PASO 5: Actualizar venta asociada
+                if (apartadoData.ventaId) {
+                    const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
+                    const ventaSnap = await getDoc(ventaRef);
+
+                    if (ventaSnap.exists()) {
+                        const ventaData = ventaSnap.data();
+                        const updateVenta = {
+                            estado: nuevoSaldo <= 0 ? 'Completada' : 'Pendiente'
+                        };
+
+                        // Actualizar montos de pago según método
+                        if (metodoPago === 'Efectivo') {
+                            updateVenta.pagoEfectivo = (ventaData.pagoEfectivo || 0) + monto;
+                        } else if (metodoPago === 'Transferencia') {
+                            updateVenta.pagoTransferencia = (ventaData.pagoTransferencia || 0) + monto;
+                        }
+
+                        await updateDoc(ventaRef, updateVenta);
+                        console.log("✅ Venta actualizada correctamente");
+                    } else {
+                        console.warn("⚠️ Venta asociada no encontrada:", apartadoData.ventaId);
+                    }
+                }
+
+                // ✅ PASO 6: Cerrar modal y mostrar confirmación
+                if (typeof abonoApartadoModalInstance !== 'undefined' && abonoApartadoModalInstance) {
+                    abonoApartadoModalInstance.hide();
+                }
+
+                if (nuevoSaldo <= 0) {
+                    showToast('¡Apartado completado exitosamente! 🎉', 'success');
+                } else {
+                    showToast(`Abono registrado. Nuevo saldo: ${formatoMoneda.format(nuevoSaldo)}`, 'success');
+                }
+
+                // Limpiar formulario
+                formAbonoApartado.reset();
+
+            } catch (error) {
+                console.error('❌ Error crítico al registrar abono:', error);
+                showToast(`Error al registrar el abono: ${error.message}`, 'error');
+            }
+        });
+    }
 
         showToast(`${product.nombre} agregado al carrito`, 'success');
         renderCart();
