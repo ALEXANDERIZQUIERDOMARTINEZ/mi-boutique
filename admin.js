@@ -1490,8 +1490,67 @@ document.addEventListener('DOMContentLoaded', () => {
                 salesListTableBody.appendChild(tr); 
             }); 
         };
-         onSnapshot(query(salesCollection, orderBy('timestamp', 'desc')), renderSales, e => { console.error("Error sales:", e); if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
-        
+
+        // ✅ FILTRO DE FECHA PARA HISTORIAL
+        let ventasUnsubscribe = null;
+
+        function cargarVentas(fechaFiltro = null) {
+            // Cancelar listener anterior si existe
+            if (ventasUnsubscribe) {
+                ventasUnsubscribe();
+            }
+
+            let q;
+            if (fechaFiltro) {
+                // Filtrar por fecha específica
+                const inicio = new Date(fechaFiltro);
+                inicio.setHours(0, 0, 0, 0);
+                const fin = new Date(fechaFiltro);
+                fin.setHours(23, 59, 59, 999);
+
+                q = query(
+                    salesCollection,
+                    where('timestamp', '>=', inicio),
+                    where('timestamp', '<=', fin),
+                    orderBy('timestamp', 'desc')
+                );
+            } else {
+                // Sin filtro, mostrar todas
+                q = query(salesCollection, orderBy('timestamp', 'desc'));
+            }
+
+            ventasUnsubscribe = onSnapshot(q, renderSales, e => {
+                console.error("Error sales:", e);
+                if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';
+            });
+        }
+
+        // Eventos del filtro
+        const filtroFechaInput = document.getElementById('filtro-fecha-ventas');
+        const btnLimpiarFiltro = document.getElementById('btn-limpiar-filtro-ventas');
+
+        if (filtroFechaInput) {
+            filtroFechaInput.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    cargarVentas(e.target.value);
+                } else {
+                    cargarVentas();
+                }
+            });
+        }
+
+        if (btnLimpiarFiltro) {
+            btnLimpiarFiltro.addEventListener('click', () => {
+                if (filtroFechaInput) {
+                    filtroFechaInput.value = '';
+                    cargarVentas();
+                }
+            });
+        }
+
+        // Cargar ventas inicialmente
+        cargarVentas();
+
         // ========================================================================
         // ✅ --- SECCIÓN 3: CORREGIR VENTAS (REEMPLAZO) ---
         // ========================================================================

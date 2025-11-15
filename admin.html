@@ -443,11 +443,26 @@
                     </div> 
                 </div> 
                 
-                <div id="sales-list-view"> 
-                    <div class="card"> 
-                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div> 
+                <div id="sales-list-view">
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h3 class="h5 mb-0">Historial</h3>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label for="filtro-fecha-ventas" class="form-label small">Filtrar por fecha:</label>
+                                    <input type="date" id="filtro-fecha-ventas" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button type="button" id="btn-limpiar-filtro-ventas" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-x-circle"></i> Limpiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"> <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> </thead><tbody id="lista-ventas-anteriores"> <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr> </tbody></table></div></div>
-                    </div> 
+                    </div>
                 </div> 
             </div>
             
