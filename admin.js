@@ -1,6 +1,6 @@
 // Import Firebase core and Firestore modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 // Import Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
@@ -560,12 +560,11 @@ document.addEventListener('DOMContentLoaded', () => {
              const manana = new Date(hoy);
              manana.setDate(manana.getDate() + 1);
 
+             // Query simplificada sin índice compuesto
              const q = query(
                  salesCollection,
-                 where('tipoEntrega', '==', 'domicilio'),
                  where('timestamp', '>=', hoy),
-                 where('timestamp', '<', manana),
-                 where('estado', '!=', 'Anulada')
+                 where('timestamp', '<', manana)
              );
 
              const ventasSnap = await getDocs(q);
@@ -573,8 +572,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
              ventasSnap.forEach(docSnap => {
                  const venta = docSnap.data();
+
+                 // Filtrar en memoria en lugar de en la query
+                 if (venta.tipoEntrega !== 'domicilio' || venta.estado === 'Anulada' || !venta.repartidorId) {
+                     return;
+                 }
+
                  const repartidorId = venta.repartidorId;
-                 if (!repartidorId) return;
 
                  if (!estadisticas.has(repartidorId)) {
                      estadisticas.set(repartidorId, {
@@ -1848,14 +1852,40 @@ document.addEventListener('DOMContentLoaded', () => {
             }); 
         };
         
-        const q = query(
-            apartadosCollection, 
-            where('estado', '==', 'Pendiente'), 
-            orderBy('fechaVencimiento')
-        );
-        
-        onSnapshot(q, renderApartados, e => { 
-            console.error("Error apartados:", e); 
+        // Query simplificada sin índice compuesto - ordenar en memoria
+        onSnapshot(apartadosCollection, (snapshot) => {
+            // Filtrar y ordenar en memoria
+            const apartadosPendientes = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.estado === 'Pendiente') {
+                    apartadosPendientes.push({ id: doc.id, ...data });
+                }
+            });
+
+            // Ordenar por fecha de vencimiento
+            apartadosPendientes.sort((a, b) => {
+                const fechaA = a.fechaVencimiento?.toDate?.() || new Date(0);
+                const fechaB = b.fechaVencimiento?.toDate?.() || new Date(0);
+                return fechaA - fechaB;
+            });
+
+            // Crear snapshot simulado para renderApartados
+            const mockSnapshot = {
+                empty: apartadosPendientes.length === 0,
+                forEach: (callback) => {
+                    apartadosPendientes.forEach(apt => {
+                        callback({
+                            id: apt.id,
+                            data: () => apt
+                        });
+                    });
+                }
+            };
+
+            renderApartados(mockSnapshot);
+        }, e => {
+            console.error("Error apartados:", e);
             if (apartadosListTableBody) {
                 apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al cargar.</td></tr>';
             }
@@ -2379,44 +2409,48 @@ document.addEventListener('DOMContentLoaded', () => {
     // ================================================================
     function calcularApartadosVencer() {
         console.log("📅 Calculando apartados próximos a vencer...");
-        
+
         try {
             const hoy = new Date();
             const proximosDias = new Date(hoy);
             proximosDias.setDate(proximosDias.getDate() + 7); // Próximos 7 días
-            
-            // Query: solo apartados pendientes que vencen en los próximos 7 días
-            const q = query(
-                apartadosCollection,
-                where('estado', '==', 'Pendiente'),
-                where('fechaVencimiento', '<=', Timestamp.fromDate(proximosDias)),
-                orderBy('fechaVencimiento', 'asc')
-            );
-            
-            // Escuchar cambios en tiempo real
-            onSnapshot(q,
+
+            // Query simplificada - filtrar en memoria
+            onSnapshot(apartadosCollection,
                 (snapshot) => {
                     let countVencer = 0;
-                    
+                    let saldoTotal = 0;
+
                     snapshot.forEach(doc => {
                         const apartado = doc.data();
+
+                        // Filtrar en memoria
+                        if (apartado.estado !== 'Pendiente') return;
+
                         const fechaVenc = apartado.fechaVencimiento?.toDate();
-                        
-                        // Solo contar los que AÚN NO han vencido (futuro)
-                        if (fechaVenc && fechaVenc >= hoy) {
+
+                        // Solo contar los que vencen en los próximos 7 días y aún no han vencido
+                        if (fechaVenc && fechaVenc >= hoy && fechaVenc <= proximosDias) {
                             countVencer++;
+                            saldoTotal += apartado.saldo || 0;
                         }
                     });
-                    
+
                     // Actualizar UI
                     dbApartadosVencerEl.textContent = countVencer;
-                    
+
+                    // Actualizar saldo total
+                    const saldoEl = document.getElementById('db-apartados-total-saldo');
+                    if (saldoEl) {
+                        saldoEl.textContent = formatoMoneda.format(saldoTotal) + ' pendiente';
+                    }
+
                     if (countVencer > 0) {
                         dbApartadosVencerEl.classList.add('text-danger');
                     } else {
                         dbApartadosVencerEl.classList.add('text-success');
                     }
-                    
+
                     console.log(`✅ Apartados próximos a vencer: ${countVencer}`);
                 },
                 (error) => {
