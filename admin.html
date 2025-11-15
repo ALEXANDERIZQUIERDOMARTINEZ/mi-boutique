@@ -634,7 +634,69 @@
                 </div> 
             </div>
             
-            <div class="tab-pane fade" id="reportes"> <h1 class="h2">Reportes</h1> <div class="card"><div class="card-body"><form id="form-reporte"><div class="row"><div class="col-md-4"><label for="reporte-tipo" class="form-label">Tipo:</label><select id="reporte-tipo" class="form-select"><option value="ventas">Ventas</option><option value="utilidad">Utilidad</option><option value="mas-vendidos">Más Vendidos</option><option value="repartidor">Por Repartidor</option><option value="apartados">Apartados</option><option value="descuentos">Descuentos</option></select></div><div class="col-md-3"><label for="reporte-desde" class="form-label">Desde:</label><input type="date" id="reporte-desde" class="form-control"></div><div class="col-md-3"><label for="reporte-hasta" class="form-label">Hasta:</label><input type="date" id="reporte-hasta" class="form-control"></div><div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Generar</button></div></div></form><hr><div id="area-reporte" class="mt-4"><p class="text-muted text-center">Filtra.</p></div></div></div> </div>
+            <div class="tab-pane fade" id="reportes">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h2 mb-0"><i class="bi bi-file-earmark-bar-graph me-2"></i>Reportes</h1>
+                    <button type="button" id="btn-imprimir-reporte" class="btn btn-outline-secondary" style="display: none;">
+                        <i class="bi bi-printer"></i> Imprimir
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Generar Reporte</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="form-reporte">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="reporte-tipo" class="form-label">Tipo de Reporte:</label>
+                                    <select id="reporte-tipo" class="form-select">
+                                        <option value="">Seleccionar...</option>
+                                        <option value="ventas">📊 Ventas</option>
+                                        <option value="utilidad">💰 Utilidad</option>
+                                        <option value="mas-vendidos">🏆 Más Vendidos</option>
+                                        <option value="repartidor">🚴 Por Repartidor</option>
+                                        <option value="apartados">📅 Apartados</option>
+                                        <option value="descuentos">🎁 Descuentos</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="reporte-desde" class="form-label">Desde:</label>
+                                    <input type="date" id="reporte-desde" class="form-control" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="reporte-hasta" class="form-label">Hasta:</label>
+                                    <input type="date" id="reporte-hasta" class="form-control" required>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-play-fill"></i> Generar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Filtro adicional para repartidores -->
+                            <div id="reporte-repartidor-filter" class="row g-3 mt-2" style="display: none;">
+                                <div class="col-md-4">
+                                    <label for="reporte-repartidor-select" class="form-label">Seleccionar Repartidor:</label>
+                                    <select id="reporte-repartidor-select" class="form-select">
+                                        <option value="">Todos los repartidores</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Área de resultados -->
+                <div id="area-reporte" class="mt-4">
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-file-earmark-text" style="font-size: 3rem;"></i>
+                        <p class="mt-3">Selecciona un tipo de reporte y las fechas para generar</p>
+                    </div>
+                </div>
+            </div>
             
             <div class="tab-pane fade" id="finanzas"> 
                 <div class="d-flex justify-content-between align-items-center mb-3"> 
