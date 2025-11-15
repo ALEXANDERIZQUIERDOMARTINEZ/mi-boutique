@@ -1145,154 +1145,154 @@ html, body {
 }
 
 /* =========================================================== */
-/* ICONOS COLORIDOS MINIMALISTAS - PANEL ADMINISTRACIÓN */
+/* ICONOS MINIMALISTAS - PANEL ADMINISTRACIÓN */
 /* =========================================================== */
 
 /* Base iconos admin */
 i[class*="bi-"] {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* 🏠 DASHBOARD - Rosa/Magenta */
+/* DASHBOARD - Azul gris oscuro */
 .bi-house-heart-fill, .bi-grid-1x2-fill {
-    color: #FF6090 !important;
+    color: #546E7A !important;
 }
 
-/* 🛒 PEDIDOS WEB - Verde brillante */
+/* PEDIDOS WEB - Verde sobrio */
 .bi-cart-check {
-    color: #00E676 !important;
+    color: #66BB6A !important;
 }
 
-/* 👜 PRODUCTOS - Púrpura vibrante */
+/* PRODUCTOS - Púrpura sobrio */
 .bi-bag-heart-fill {
-    color: #AB47BC !important;
+    color: #7E57C2 !important;
 }
 
-/* 💰 VENTAS - Dorado */
+/* VENTAS - Ámbar sobrio */
 .bi-cash-stack {
-    color: #FFD600 !important;
+    color: #FFA726 !important;
 }
 
-/* 📌 APARTADOS - Rojo coral */
+/* APARTADOS - Rojo sobrio */
 .bi-bookmark-heart-fill, .bi-calendar-heart {
-    color: #FF5252 !important;
+    color: #E57373 !important;
 }
 
-/* 👥 CLIENTES - Azul cielo */
+/* CLIENTES - Azul pizarra */
 .bi-person-hearts, .bi-people {
-    color: #40C4FF !important;
+    color: #607D8B !important;
 }
 
-/* 🚚 REPARTIDORES - Naranja */
+/* REPARTIDORES - Naranja sobrio */
 .bi-truck, .bi-bicycle {
-    color: #FF6D00 !important;
+    color: #FF9800 !important;
 }
 
-/* 📊 REPORTES - Verde lima */
+/* REPORTES - Verde oliva */
 .bi-graph-up-arrow, .bi-file-earmark-bar-graph {
-    color: #76FF03 !important;
+    color: #7CB342 !important;
 }
 
-/* 💼 FINANZAS - Verde esmeralda */
+/* FINANZAS - Verde azulado */
 .bi-wallet2 {
-    color: #00C853 !important;
+    color: #4DB6AC !important;
 }
 
-/* 🏷️ CATEGORÍAS - Índigo */
+/* CATEGORÍAS - Índigo */
 .bi-tags-fill {
     color: #5C6BC0 !important;
 }
 
-/* 🏪 PROVEEDORES - Ámbar */
+/* PROVEEDORES - Ámbar */
 .bi-shop {
-    color: #FFC400 !important;
+    color: #FFA726 !important;
 }
 
-/* 📅 CALENDARIO - Cyan */
+/* CALENDARIO - Cyan medio */
 .bi-calendar3 {
-    color: #00E5FF !important;
+    color: #4DD0E1 !important;
 }
 
-/* 📦 INVENTARIO - Turquesa */
+/* INVENTARIO - Verde azulado */
 .bi-box-seam {
-    color: #1DE9B6 !important;
+    color: #4DB6AC !important;
 }
 
-/* ⚠️ ALERTAS - Amarillo brillante */
+/* ALERTAS - Naranja medio */
 .bi-exclamation-triangle, .bi-exclamation-circle {
-    color: #FFEA00 !important;
+    color: #FFB74D !important;
 }
 
-/* 🔔 NOTIFICACIONES - Naranja claro */
+/* NOTIFICACIONES - Naranja */
 .bi-bell {
-    color: #FF9100 !important;
+    color: #FF9800 !important;
 }
 
-/* ⏰ HISTORIAL - Gris azulado */
+/* HISTORIAL - Gris azulado */
 .bi-clock-history {
     color: #78909C !important;
 }
 
-/* 🌐 WEB - Azul eléctrico */
+/* WEB - Índigo */
 .bi-globe {
-    color: #2979FF !important;
+    color: #5C6BC0 !important;
 }
 
-/* 🏆 RANKING - Dorado brillante */
+/* RANKING - Dorado sobrio */
 .bi-trophy {
-    color: #FFD700 !important;
+    color: #FFA726 !important;
 }
 
-/* 📈 TENDENCIAS - Verde menta */
+/* TENDENCIAS - Verde azulado */
 .bi-bar-chart-line, .bi-graph-up {
-    color: #00E5CC !important;
+    color: #26A69A !important;
 }
 
-/* ✅ CONFIRMAR/CHECK - Verde brillante */
+/* CONFIRMAR/CHECK - Verde sobrio */
 .bi-check-circle, .bi-check2-circle {
-    color: #00E676 !important;
+    color: #66BB6A !important;
 }
 
-/* 🗑️ ELIMINAR - Rojo */
+/* ELIMINAR - Rojo sobrio */
 .bi-trash {
-    color: #FF1744 !important;
+    color: #E57373 !important;
 }
 
-/* ✏️ EDITAR - Azul */
+/* EDITAR - Azul pizarra */
 .bi-pencil-square {
-    color: #2196F3 !important;
+    color: #607D8B !important;
 }
 
-/* 👁️ VER - Cyan */
+/* VER - Cyan medio */
 .bi-eye {
-    color: #00BCD4 !important;
+    color: #4DD0E1 !important;
 }
 
-/* ➕ AGREGAR - Verde agua */
+/* AGREGAR - Verde azulado */
 .bi-plus-lg, .bi-plus-circle {
     color: #26A69A !important;
 }
 
-/* 🔍 BUSCAR - Verde esmeralda */
+/* BUSCAR - Verde oliva */
 .bi-search {
-    color: #00C853 !important;
+    color: #7CB342 !important;
 }
 
-/* 📤 EXPORTAR - Púrpura claro */
+/* EXPORTAR - Púrpura medio */
 .bi-box-arrow-up-right {
-    color: #BA68C8 !important;
+    color: #9575CD !important;
 }
 
-/* 🖨️ IMPRIMIR - Gris oscuro */
+/* IMPRIMIR - Gris oscuro */
 .bi-printer {
     color: #616161 !important;
 }
 
-/* ▶️ PLAY/GENERAR - Verde */
+/* PLAY/GENERAR - Verde sobrio */
 .bi-play-fill {
-    color: #4CAF50 !important;
+    color: #66BB6A !important;
 }
 
 /* Navegación activa - iconos blancos sobre gradiente */

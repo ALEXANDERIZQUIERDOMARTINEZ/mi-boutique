@@ -1131,27 +1131,27 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 }
 
 /* =========================================================== */
-/* ICONOS COLORIDOS MINIMALISTAS - TODOS CON COLORES VIVOS */
+/* ICONOS MINIMALISTAS - PALETA SOBRIA Y PROFESIONAL */
 /* =========================================================== */
 
-/* Base para todos los iconos - minimalista */
+/* Base para todos los iconos */
 i[class*="bi-"] {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     -webkit-font-smoothing: antialiased;
 }
 
-/* 🏠 NAVEGACIÓN - Azul brillante */
+/* NAVEGACIÓN - Azul gris oscuro */
 .bi-house {
-    color: #2196F3 !important;
+    color: #546E7A !important;
 }
 
-/* 🔍 BÚSQUEDA - Verde esmeralda */
+/* BÚSQUEDA - Gris medio */
 .bi-search {
-    color: #00C853 !important;
+    color: #78909C !important;
 }
 
 .search-box .search-icon {
-    background: #00C853;
+    background: #78909C;
     width: 32px;
     height: 32px;
     display: flex;
@@ -1165,164 +1165,164 @@ i[class*="bi-"] {
     color: white !important;
 }
 
-/* 🛒 CARRITO - Naranja vibrante */
+/* CARRITO - Gris oscuro */
 .bi-bag, .bi-cart-check {
-    color: #FF6D00 !important;
+    color: #455A64 !important;
 }
 
-/* 🏷️ ETIQUETAS Y PRODUCTOS - Púrpura */
+/* ETIQUETAS Y PRODUCTOS - Azul pizarra */
 .bi-tag, .bi-tag-fill, .bi-tags-fill {
-    color: #9C27B0 !important;
+    color: #5C6BC0 !important;
 }
 
-/* ✅ CONFIRMACIÓN - Verde brillante */
+/* CONFIRMACIÓN - Verde sobrio */
 .bi-check-circle, .bi-check2-circle {
-    color: #00E676 !important;
+    color: #66BB6A !important;
 }
 
-/* 📦 PRODUCTOS/INVENTARIO - Cyan */
+/* PRODUCTOS/INVENTARIO - Azul gris */
 .bi-box-seam, .bi-grid-3x3-gap, .bi-collection {
-    color: #00BCD4 !important;
-}
-
-/* 🎨 COLORES/FILTROS - Magenta */
-.bi-palette {
-    color: #E91E63 !important;
-}
-
-/* 💰 DINERO/PRECIOS - Dorado */
-.bi-cash-stack, .bi-currency-dollar, .bi-wallet2 {
-    color: #FFC107 !important;
-}
-
-/* 🔄 LIMPIAR/RESET - Gris azulado */
-.bi-arrow-counterclockwise {
     color: #607D8B !important;
 }
 
-/* 🎯 FILTROS - Índigo */
+/* COLORES/FILTROS - Gris azulado */
+.bi-palette {
+    color: #7E57C2 !important;
+}
+
+/* DINERO/PRECIOS - Ámbar sobrio */
+.bi-cash-stack, .bi-currency-dollar, .bi-wallet2 {
+    color: #FFA726 !important;
+}
+
+/* LIMPIAR/RESET - Gris */
+.bi-arrow-counterclockwise {
+    color: #757575 !important;
+}
+
+/* FILTROS - Índigo apagado */
 .bi-funnel {
-    color: #3F51B5 !important;
+    color: #5C6BC0 !important;
 }
 
-/* 📊 GRÁFICOS - Verde lima */
+/* GRÁFICOS - Verde oliva */
 .bi-graph-up-arrow, .bi-bar-chart-line {
-    color: #64DD17 !important;
+    color: #7CB342 !important;
 }
 
-/* 🗑️ ELIMINAR - Rojo vibrante */
+/* ELIMINAR - Rojo sobrio */
 .bi-trash, .bi-x-circle {
-    color: #F44336 !important;
+    color: #E57373 !important;
 }
 
-/* ➕ AGREGAR - Verde agua */
+/* AGREGAR - Verde azulado */
 .bi-plus-lg, .bi-plus-circle {
-    color: #26A69A !important;
+    color: #4DB6AC !important;
 }
 
-/* 💬 MENSAJES/CHAT - Azul cielo */
+/* MENSAJES/CHAT - Azul sobrio */
 .bi-chat-left-text {
-    color: #03A9F4 !important;
+    color: #64B5F6 !important;
 }
 
-/* ⬇️ CHEVRON/DROPDOWN - Ámbar */
+/* CHEVRON/DROPDOWN - Gris medio */
 .bi-chevron-down {
-    color: #FF9800 !important;
+    color: #90A4AE !important;
 }
 
-/* 🎁 PROMOCIONES - Rojo coral brillante */
+/* PROMOCIONES - Rojo apagado */
 .filter-promo .bi-tag-fill {
-    color: #FF5252 !important;
+    color: #EF5350 !important;
 }
 
-/* Botones primarios - iconos blancos sobre fondo de color */
+/* Botones primarios - iconos blancos */
 .btn-primary i {
     color: white !important;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
-/* Navegación móvil activa - iconos sobre círculo de color */
+/* Navegación móvil activa */
 .mobile-bottom-nav .nav-item.active i {
     color: white !important;
-    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
     padding: 12px;
     border-radius: 50%;
-    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+    box-shadow: 0 4px 15px rgba(217, 136, 185, 0.4);
 }
 
 .mobile-bottom-nav .nav-item:not(.active) i {
     color: #999;
 }
 
-/* Filtros activos - fondo colorido */
+/* Filtros activos - fondos sobrios */
 .filter-group.active .bi-grid-3x3-gap {
     color: white !important;
-    background: #00BCD4;
+    background: #607D8B;
     padding: 8px;
     border-radius: 8px;
 }
 
 .filter-group.active .bi-check-circle {
     color: white !important;
-    background: #00E676;
+    background: #66BB6A;
     padding: 8px;
     border-radius: 8px;
 }
 
 .filter-group.active .bi-tag-fill {
     color: white !important;
-    background: #FF5252;
+    background: #EF5350;
     padding: 8px;
     border-radius: 8px;
 }
 
-/* Sidebar de filtros - iconos coloridos en círculos */
+/* Sidebar de filtros */
 .filters-title i {
     color: white !important;
-    background: linear-gradient(135deg, #3F51B5 0%, #303F9F 100%);
+    background: linear-gradient(135deg, #5C6BC0 0%, #3F51B5 100%);
     padding: 10px;
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(63, 81, 181, 0.3);
+    box-shadow: 0 4px 12px rgba(92, 107, 192, 0.3);
 }
 
 .filter-section-title i.bi-cash-stack {
     color: white !important;
-    background: linear-gradient(135deg, #FFC107 0%, #FFA000 100%);
+    background: linear-gradient(135deg, #FFA726 0%, #FB8C00 100%);
     padding: 8px;
     border-radius: 8px;
 }
 
 .filter-section-title i.bi-palette {
     color: white !important;
-    background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%);
+    background: linear-gradient(135deg, #7E57C2 0%, #673AB7 100%);
     padding: 8px;
     border-radius: 8px;
 }
 
 .filter-section-title i.bi-box-seam {
     color: white !important;
-    background: linear-gradient(135deg, #00BCD4 0%, #0097A7 100%);
+    background: linear-gradient(135deg, #607D8B 0%, #455A64 100%);
     padding: 8px;
     border-radius: 8px;
 }
 
-/* Botón reset - color vibrante */
+/* Botón reset */
 .btn-reset-filters i {
-    color: #607D8B !important;
+    color: #757575 !important;
 }
 
 .btn-reset-filters:hover i {
-    color: #FF5252 !important;
+    color: #E57373 !important;
 }
 
-/* Carrito con items - naranja brillante */
+/* Carrito con items */
 .cart-icon.has-items i {
-    color: #FF6D00 !important;
+    color: var(--color-primario) !important;
 }
 
 /* Modal de producto */
 .modal-title i {
-    color: #9C27B0 !important;
+    color: var(--color-primario) !important;
     margin-right: 8px;
 }
 
@@ -1334,7 +1334,7 @@ i[class*="bi-"] {
 
 /* Dropdown de categorías */
 .dropdown-menu-enhanced .dropdown-item i {
-    color: #9C27B0 !important;
+    color: #5C6BC0 !important;
     margin-right: 8px;
 }
 
