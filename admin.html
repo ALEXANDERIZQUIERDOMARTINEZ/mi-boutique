@@ -91,14 +91,14 @@
                     </div>
 
                     <div class="col-md-3 col-sm-6">
-                        <div class="dashboard-card card-stock">
+                        <div class="dashboard-card card-stock" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
                             <div class="card-icon">
                                 <i class="bi bi-exclamation-triangle"></i>
                             </div>
                             <div class="card-content">
                                 <h6 class="card-label">Bajo Stock</h6>
                                 <p class="card-value" id="db-bajo-stock">0</p>
-                                <small class="card-subtitle">Menos de 5 unidades</small>
+                                <small class="card-subtitle">2 unidades o menos</small>
                             </div>
                         </div>
                     </div>
@@ -756,6 +756,43 @@
                     <button type="button" class="btn btn-primary" id="btn-save-promo">
                         <i class="bi bi-check-lg"></i> Guardar Promoción
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Bajo Stock -->
+    <div class="modal fade" id="bajoStockModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle text-warning me-2"></i>Productos con Bajo Stock
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Productos con 2 unidades o menos en inventario</p>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Variación</th>
+                                    <th class="text-center">Stock</th>
+                                    <th>Categoría</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bajo-stock-list">
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Cargando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>

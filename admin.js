@@ -676,7 +676,74 @@ document.addEventListener('DOMContentLoaded', () => {
          onSnapshot(query(repartidoresCollection, orderBy('nombre')), renderRepartidores, (e) => { console.error("Error repartidores:", e); if(repartidorListTableBody) repartidorListTableBody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error.</td></tr>';});
          if (repartidorForm && addRepartidorModalInstance) repartidorForm.addEventListener('submit', async (e) => { e.preventDefault(); const nom = nombreInput.value.trim(); const cel = celularInput.value.trim(); if (nom && cel) { try { await addDoc(repartidoresCollection, { nombre: nom, celular: cel }); showToast("Repartidor guardado!"); addRepartidorModalInstance.hide(); repartidorForm.reset(); } catch (err) { console.error("Err add repartidor:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
          const confirmLiquidateBtn = document.getElementById('confirm-liquidate-btn');
-         if(confirmLiquidateBtn && liquidateConfirmModalInstance) { confirmLiquidateBtn.addEventListener('click', (e) => { e.preventDefault(); const id = confirmLiquidateBtn.dataset.liquidateId; console.log("Liquidando (simulado) repartidor ID:", id); showToast('Liquidación registrada (simulado).'); liquidateConfirmModalInstance.hide(); const tr = repartidorListTableBody.querySelector(`tr[data-id="${id}"]`); if(tr) { tr.querySelector('.input-efectivo-entregado').disabled = true; tr.querySelector('.btn-liquidar-repartidor').disabled = true; } }); }
+         if(confirmLiquidateBtn && liquidateConfirmModalInstance) {
+             confirmLiquidateBtn.addEventListener('click', async (e) => {
+                 e.preventDefault();
+                 const repartidorId = confirmLiquidateBtn.dataset.liquidateId;
+                 const tr = repartidorListTableBody.querySelector(`tr[data-id="${repartidorId}"]`);
+
+                 if (!tr) return;
+
+                 const repartidorNombre = tr.querySelector('.repartidor-name')?.textContent || '';
+                 const efectivoEntregadoInput = tr.querySelector('.input-efectivo-entregado');
+                 const efectivoEntregado = parseFloat(efectivoEntregadoInput.value) || 0;
+                 const efectivoEsperado = parseFloat(efectivoEntregadoInput.dataset.expected) || 0;
+                 const diferencia = efectivoEsperado - efectivoEntregado;
+
+                 try {
+                     // Obtener ventas del día para este repartidor
+                     const hoy = new Date();
+                     hoy.setHours(0, 0, 0, 0);
+                     const manana = new Date(hoy);
+                     manana.setDate(manana.getDate() + 1);
+
+                     const ventasQuery = query(
+                         salesCollection,
+                         where('timestamp', '>=', hoy),
+                         where('timestamp', '<', manana),
+                         where('repartidorId', '==', repartidorId)
+                     );
+
+                     const ventasSnap = await getDocs(ventasQuery);
+                     const ventasIds = [];
+                     let totalEfectivo = 0;
+                     let totalRutas = 0;
+
+                     ventasSnap.forEach(doc => {
+                         ventasIds.push(doc.id);
+                         const venta = doc.data();
+                         totalEfectivo += venta.pagoEfectivo || 0;
+                         totalRutas += venta.costoRuta || 0;
+                     });
+
+                     // Crear registro de liquidación
+                     const liquidacionesCollection = collection(db, 'liquidaciones');
+                     await addDoc(liquidacionesCollection, {
+                         repartidorId: repartidorId,
+                         repartidorNombre: repartidorNombre,
+                         fecha: serverTimestamp(),
+                         efectivoRecibido: totalEfectivo,
+                         rutasTotal: totalRutas,
+                         efectivoEsperado: efectivoEsperado,
+                         efectivoEntregado: efectivoEntregado,
+                         diferencia: diferencia,
+                         ventasIds: ventasIds,
+                         cantidadVentas: ventasIds.length
+                     });
+
+                     showToast('Liquidación registrada correctamente', 'success');
+                     liquidateConfirmModalInstance.hide();
+
+                     // Deshabilitar botones
+                     efectivoEntregadoInput.disabled = true;
+                     tr.querySelector('.btn-liquidar-repartidor').disabled = true;
+
+                 } catch (error) {
+                     console.error("Error al liquidar:", error);
+                     showToast('Error al registrar liquidación', 'error');
+                 }
+             });
+         }
         if (repartidorListTableBody) { repartidorListTableBody.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.repartidor-name'); if (!id || !nameTd) return;
             if (target.classList.contains('btn-delete-repartidor')) {
                 const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'repartidores'; deleteItemNameEl.textContent = `Repartidor: ${nameTd.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
@@ -2386,49 +2453,59 @@ document.addEventListener('DOMContentLoaded', () => {
     // ================================================================
     // 2️⃣ PRODUCTOS CON BAJO STOCK
     // ================================================================
+    window.productosBajoStock = []; // Variable global para el modal
+
     function calcularBajoStock() {
         console.log("📦 Calculando productos con bajo stock...");
-        
+
         try {
-            const STOCK_MINIMO = 5;
-            
+            const STOCK_MINIMO = 2; // ✅ Cambiado a 2 unidades
+
             // Query simple: solo productos visibles
             const q = query(
                 productsCollection,
                 where('visible', '==', true)
             );
-            
+
             // Escuchar cambios en tiempo real
             onSnapshot(q,
                 (snapshot) => {
-                    let countBajoStock = 0;
-                    
+                    window.productosBajoStock = []; // Limpiar lista
+
                     snapshot.forEach(doc => {
                         const producto = doc.data();
+                        const productoId = doc.id;
                         const variaciones = producto.variaciones || [];
-                        
-                        // Calcular stock total del producto
-                        const stockTotal = variaciones.reduce((sum, variacion) => {
+
+                        // Revisar cada variación individualmente
+                        variaciones.forEach(variacion => {
                             const stock = parseInt(variacion.stock, 10) || 0;
-                            return sum + stock;
-                        }, 0);
-                        
-                        // Contar si está bajo en stock
-                        if (stockTotal > 0 && stockTotal <= STOCK_MINIMO) {
-                            countBajoStock++;
-                        }
+
+                            // Si la variación tiene stock ≤ 2
+                            if (stock > 0 && stock <= STOCK_MINIMO) {
+                                window.productosBajoStock.push({
+                                    id: productoId,
+                                    nombre: producto.nombre,
+                                    talla: variacion.talla || 'N/A',
+                                    color: variacion.color || 'N/A',
+                                    stock: stock,
+                                    categoriaId: producto.categoriaId
+                                });
+                            }
+                        });
                     });
-                    
+
                     // Actualizar UI
-                    dbBajoStockEl.textContent = countBajoStock;
-                    
-                    if (countBajoStock > 0) {
+                    const count = window.productosBajoStock.length;
+                    dbBajoStockEl.textContent = count;
+
+                    if (count > 0) {
                         dbBajoStockEl.classList.add('text-warning');
                     } else {
                         dbBajoStockEl.classList.add('text-success');
                     }
-                    
-                    console.log(`✅ Productos con bajo stock: ${countBajoStock}`);
+
+                    console.log(`✅ Variaciones con bajo stock: ${count}`);
                 },
                 (error) => {
                     console.error("❌ Error al calcular bajo stock:", error);
@@ -2506,16 +2583,49 @@ document.addEventListener('DOMContentLoaded', () => {
             dbApartadosVencerEl.classList.add('text-danger');
         }
     }
-    
+
+    // ================================================================
+    // 💡 MODAL DE BAJO STOCK
+    // ================================================================
+    const bajoStockModal = document.getElementById('bajoStockModal');
+    if (bajoStockModal) {
+        bajoStockModal.addEventListener('show.bs.modal', () => {
+            const bajoStockList = document.getElementById('bajo-stock-list');
+            if (!bajoStockList) return;
+
+            bajoStockList.innerHTML = '';
+
+            if (window.productosBajoStock.length === 0) {
+                bajoStockList.innerHTML = '<tr><td colspan="4" class="text-center text-success">¡No hay productos con bajo stock!</td></tr>';
+                return;
+            }
+
+            // Renderizar cada producto
+            window.productosBajoStock.forEach(item => {
+                const categoria = categoriesMap.get(item.categoriaId) || 'Sin categoría';
+                const stockClass = item.stock === 1 ? 'text-danger fw-bold' : 'text-warning fw-bold';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="fw-bold">${item.nombre}</td>
+                    <td><span class="badge bg-secondary">${item.talla} / ${item.color}</span></td>
+                    <td class="text-center ${stockClass}">${item.stock}</td>
+                    <td><small class="text-muted">${categoria}</small></td>
+                `;
+                bajoStockList.appendChild(tr);
+            });
+        });
+    }
+
     // ================================================================
     // 🚀 INICIALIZAR TODAS LAS FUNCIONES
     // ================================================================
     calcularVentasHoy();
     calcularBajoStock();
     calcularApartadosVencer();
-    
+
     console.log("✅ Dashboard inicializado correctamente");
-    
+
 })(); // ← Cierre del IIFE del Dashboard
 
 // ========================================================================
