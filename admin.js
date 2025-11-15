@@ -1041,7 +1041,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.getElementById('variation-product-id').value = productId;
             document.getElementById('variation-product-name').value = product.nombre;
-            document.getElementById('variation-product-price').value = product.precioDetal || 0;
+
+            // Obtener el tipo de venta seleccionado
+            const tipoVentaSelect = document.getElementById('tipo-venta-select');
+            const tipoVenta = tipoVentaSelect ? tipoVentaSelect.value : 'detal';
+
+            // Aplicar precio según el tipo de venta
+            let precioAplicar = product.precioDetal || 0;
+            if (tipoVenta === 'mayorista') {
+                precioAplicar = product.precioMayor || 0;
+                if (precioAplicar === 0) {
+                    showToast("Advertencia: Este producto no tiene precio mayorista configurado", "warning");
+                    precioAplicar = product.precioDetal || 0;
+                }
+            }
+
+            document.getElementById('variation-product-price').value = precioAplicar;
             
             const titleEl = document.getElementById('selectVariationModalTitle');
             const optionsContainer = document.getElementById('variation-options-container');
@@ -1936,6 +1951,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const tipoVenta = document.getElementById('tipo-venta-select');
             const apartadoFechaField = document.querySelector('.apartado-fecha-field');
             const apartadoFechaInput = document.getElementById('apartado-fecha-max');
+
+            // Advertir si hay productos en el carrito al cambiar el tipo de venta
+            if (tipoVenta && window.ventaItems && window.ventaItems.length > 0) {
+                showToast("Importante: Vacíe el carrito antes de cambiar el tipo de venta para aplicar los precios correctos", "warning");
+            }
 
             if (tipoVenta && apartadoFechaField && apartadoFechaInput) {
                 if (tipoVenta.value === 'apartado') {
