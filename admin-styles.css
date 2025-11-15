@@ -1145,36 +1145,187 @@ html, body {
 }
 
 /* =========================================================== */
-/* ICONOS BLANCOS - SIN ANIMACIONES (ESTÁTICOS) */
+/* ICONOS COLORIDOS MINIMALISTAS - PANEL ADMINISTRACIÓN */
 /* =========================================================== */
 
-/* Navegación principal - iconos blancos cuando activos */
+/* Base iconos admin */
+i[class*="bi-"] {
+    font-size: 1.2rem;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 🏠 DASHBOARD - Rosa/Magenta */
+.bi-house-heart-fill, .bi-grid-1x2-fill {
+    color: #FF6090 !important;
+}
+
+/* 🛒 PEDIDOS WEB - Verde brillante */
+.bi-cart-check {
+    color: #00E676 !important;
+}
+
+/* 👜 PRODUCTOS - Púrpura vibrante */
+.bi-bag-heart-fill {
+    color: #AB47BC !important;
+}
+
+/* 💰 VENTAS - Dorado */
+.bi-cash-stack {
+    color: #FFD600 !important;
+}
+
+/* 📌 APARTADOS - Rojo coral */
+.bi-bookmark-heart-fill, .bi-calendar-heart {
+    color: #FF5252 !important;
+}
+
+/* 👥 CLIENTES - Azul cielo */
+.bi-person-hearts, .bi-people {
+    color: #40C4FF !important;
+}
+
+/* 🚚 REPARTIDORES - Naranja */
+.bi-truck, .bi-bicycle {
+    color: #FF6D00 !important;
+}
+
+/* 📊 REPORTES - Verde lima */
+.bi-graph-up-arrow, .bi-file-earmark-bar-graph {
+    color: #76FF03 !important;
+}
+
+/* 💼 FINANZAS - Verde esmeralda */
+.bi-wallet2 {
+    color: #00C853 !important;
+}
+
+/* 🏷️ CATEGORÍAS - Índigo */
+.bi-tags-fill {
+    color: #5C6BC0 !important;
+}
+
+/* 🏪 PROVEEDORES - Ámbar */
+.bi-shop {
+    color: #FFC400 !important;
+}
+
+/* 📅 CALENDARIO - Cyan */
+.bi-calendar3 {
+    color: #00E5FF !important;
+}
+
+/* 📦 INVENTARIO - Turquesa */
+.bi-box-seam {
+    color: #1DE9B6 !important;
+}
+
+/* ⚠️ ALERTAS - Amarillo brillante */
+.bi-exclamation-triangle, .bi-exclamation-circle {
+    color: #FFEA00 !important;
+}
+
+/* 🔔 NOTIFICACIONES - Naranja claro */
+.bi-bell {
+    color: #FF9100 !important;
+}
+
+/* ⏰ HISTORIAL - Gris azulado */
+.bi-clock-history {
+    color: #78909C !important;
+}
+
+/* 🌐 WEB - Azul eléctrico */
+.bi-globe {
+    color: #2979FF !important;
+}
+
+/* 🏆 RANKING - Dorado brillante */
+.bi-trophy {
+    color: #FFD700 !important;
+}
+
+/* 📈 TENDENCIAS - Verde menta */
+.bi-bar-chart-line, .bi-graph-up {
+    color: #00E5CC !important;
+}
+
+/* ✅ CONFIRMAR/CHECK - Verde brillante */
+.bi-check-circle, .bi-check2-circle {
+    color: #00E676 !important;
+}
+
+/* 🗑️ ELIMINAR - Rojo */
+.bi-trash {
+    color: #FF1744 !important;
+}
+
+/* ✏️ EDITAR - Azul */
+.bi-pencil-square {
+    color: #2196F3 !important;
+}
+
+/* 👁️ VER - Cyan */
+.bi-eye {
+    color: #00BCD4 !important;
+}
+
+/* ➕ AGREGAR - Verde agua */
+.bi-plus-lg, .bi-plus-circle {
+    color: #26A69A !important;
+}
+
+/* 🔍 BUSCAR - Verde esmeralda */
+.bi-search {
+    color: #00C853 !important;
+}
+
+/* 📤 EXPORTAR - Púrpura claro */
+.bi-box-arrow-up-right {
+    color: #BA68C8 !important;
+}
+
+/* 🖨️ IMPRIMIR - Gris oscuro */
+.bi-printer {
+    color: #616161 !important;
+}
+
+/* ▶️ PLAY/GENERAR - Verde */
+.bi-play-fill {
+    color: #4CAF50 !important;
+}
+
+/* Navegación activa - iconos blancos sobre gradiente */
 .nav-pills .nav-link.active i {
     color: white !important;
     text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-/* Iconos en tarjetas del dashboard - blancos con fondos de color */
-.dashboard-card .card-icon i,
-.dashboard-card-secondary .icon-badge i {
+/* Tarjetas dashboard - iconos blancos sobre fondos coloridos */
+.dashboard-card .card-icon i {
     color: white !important;
     font-size: 1.6rem;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
-/* Iconos de actividad reciente */
+/* Tarjetas secundarias - iconos coloridos */
+.dashboard-card-secondary .icon-badge i {
+    color: white !important;
+    font-size: 1.2rem;
+}
+
+/* Actividad reciente - iconos blancos */
 .activity-icon i {
     color: white !important;
     font-size: 1.1rem;
 }
 
-/* Iconos en headers de cards */
+/* Headers de cards - iconos coloridos vivos */
 .card-header i {
-    color: var(--color-primario) !important;
     margin-right: 8px;
 }
 
-/* Botones primarios - iconos blancos */
+/* Botones con colores - iconos blancos */
 .btn-primary i,
 .btn-success i,
 .btn-danger i,
@@ -1184,93 +1335,77 @@ html, body {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-/* Botones de acción en tablas - iconos visibles */
-.action-buttons .btn i {
+/* Botones de acción - mantener colores vivos */
+.action-buttons .btn-primary i {
     color: white !important;
 }
 
-/* Iconos en modales */
-.modal-header i {
-    color: var(--color-primario) !important;
-    margin-right: 8px;
+.action-buttons .btn-danger i {
+    color: white !important;
 }
 
-/* Iconos de badges y alertas */
+.action-buttons .btn-success i {
+    color: white !important;
+}
+
+.action-buttons .btn-warning i {
+    color: white !important;
+}
+
+.action-buttons .btn-info i {
+    color: white !important;
+}
+
+/* Modales - iconos coloridos */
+.modal-header i {
+    margin-right: 8px;
+    font-size: 1.4rem;
+}
+
+/* Badges - iconos blancos */
 .badge i {
     color: white !important;
     margin-right: 4px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Iconos en inputs de búsqueda y selects */
+/* Inputs de búsqueda */
 .input-group-text i {
-    color: var(--color-primario);
+    font-size: 1.1rem;
 }
 
-/* Iconos de stock crítico y alertas */
-.stock-critical i,
-.stock-low i,
-.badge.bg-danger i,
-.badge.bg-warning i {
-    color: white !important;
-}
-
-/* Iconos en gráficos y reportes */
-#dashboard .btn-group-sm .btn i {
-    margin-right: 4px;
-}
-
+/* Gráficos y reportes */
 #dashboard .btn-check:checked + .btn i {
     color: white !important;
 }
 
-/* Iconos en formularios */
+/* Formularios */
 .form-label i {
-    color: var(--color-primario);
     margin-right: 6px;
 }
 
-/* Iconos en listas y menús */
+/* Listas */
 .list-group-item i {
     margin-right: 8px;
 }
 
-/* Mejora visual de iconos en botones outline */
-.btn-outline-primary i,
-.btn-outline-secondary i {
-    color: var(--color-primario);
-}
-
+/* Botones outline - mantener colores */
 .btn-outline-primary:hover i {
     color: white !important;
 }
 
-/* Iconos en dropdowns y selects */
+/* Dropdowns */
 .dropdown-toggle i {
     margin-right: 6px;
 }
 
-/* Toast notifications - iconos blancos */
+/* Toasts - iconos blancos */
 .toast i {
     color: white !important;
     font-size: 1.2rem;
     margin-right: 8px;
 }
 
-/* Iconos de filtros en inventario */
-#clear-filters-inventory i {
-    color: #666;
-}
-
+/* Filtros de inventario */
 #clear-filters-inventory:hover i {
-    color: var(--color-primario);
-}
-
-/* Hacer todos los iconos más nítidos */
-i[class*="bi-"] {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-style: normal;
-    font-variant: normal;
-    text-rendering: optimizeLegibility;
+    color: #FF1744 !important;
 }

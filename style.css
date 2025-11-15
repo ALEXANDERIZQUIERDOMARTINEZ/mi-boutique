@@ -1131,140 +1131,216 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 }
 
 /* =========================================================== */
-/* ICONOS BLANCOS - SIN ANIMACIONES (ESTÁTICOS) */
+/* ICONOS COLORIDOS MINIMALISTAS - TODOS CON COLORES VIVOS */
 /* =========================================================== */
 
-/* Todos los iconos en botones primarios y áreas de color primario */
-.btn-primary i,
-.filter-group.active i,
-.quantity-selector i,
-.navbar .filter-group.active i,
-.mobile-bottom-nav .nav-item.active i {
-    color: white !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+/* Base para todos los iconos - minimalista */
+i[class*="bi-"] {
+    font-size: 1.2rem;
+    -webkit-font-smoothing: antialiased;
 }
 
-/* Iconos del header - blancos con fondo de color primario */
-.navbar .filter-group i {
-    color: #777;
+/* 🏠 NAVEGACIÓN - Azul brillante */
+.bi-house {
+    color: #2196F3 !important;
 }
 
-.navbar .filter-group.active i {
-    color: white !important;
+/* 🔍 BÚSQUEDA - Verde esmeralda */
+.bi-search {
+    color: #00C853 !important;
 }
 
-/* Icono del carrito */
-.cart-icon i {
-    color: #333;
-}
-
-.cart-icon:hover i {
-    color: var(--color-primario);
-}
-
-.cart-icon.has-items i {
-    color: var(--color-primario) !important;
-}
-
-/* Iconos de navegación móvil - blancos cuando activos */
-.mobile-bottom-nav .nav-item i {
-    font-size: 1.5rem;
-}
-
-.mobile-bottom-nav .nav-item.active i {
-    color: white !important;
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
-    padding: 12px;
-    border-radius: 50%;
-    box-shadow: 0 4px 15px rgba(217, 136, 185, 0.4);
-}
-
-.mobile-bottom-nav .nav-item:not(.active) i {
-    color: #999;
-}
-
-.mobile-bottom-nav .nav-item:hover:not(.active) i {
-    color: var(--color-primario);
-}
-
-/* Iconos del sidebar de filtros */
-.filters-title i {
-    color: white !important;
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
-    padding: 10px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(217, 136, 185, 0.3);
-}
-
-.filter-section-title i {
-    color: white !important;
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
-    padding: 8px;
-    border-radius: 8px;
-    box-shadow: 0 3px 10px rgba(217, 136, 185, 0.3);
-}
-
-/* Botón de limpiar filtros con icono */
-.btn-reset-filters i {
-    color: #777;
-}
-
-.btn-reset-filters:hover i {
-    color: var(--color-primario);
-}
-
-/* Iconos de búsqueda - blancos con fondo */
 .search-box .search-icon {
-    color: white !important;
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
+    background: #00C853;
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    box-shadow: 0 3px 10px rgba(217, 136, 185, 0.3);
     left: 8px;
 }
 
-/* Icono de observaciones en carrito */
-.cart-item i.bi-chat-left-text {
+.search-box .bi-search {
     color: white !important;
-    background: var(--color-primario);
-    padding: 6px;
+}
+
+/* 🛒 CARRITO - Naranja vibrante */
+.bi-bag, .bi-cart-check {
+    color: #FF6D00 !important;
+}
+
+/* 🏷️ ETIQUETAS Y PRODUCTOS - Púrpura */
+.bi-tag, .bi-tag-fill, .bi-tags-fill {
+    color: #9C27B0 !important;
+}
+
+/* ✅ CONFIRMACIÓN - Verde brillante */
+.bi-check-circle, .bi-check2-circle {
+    color: #00E676 !important;
+}
+
+/* 📦 PRODUCTOS/INVENTARIO - Cyan */
+.bi-box-seam, .bi-grid-3x3-gap, .bi-collection {
+    color: #00BCD4 !important;
+}
+
+/* 🎨 COLORES/FILTROS - Magenta */
+.bi-palette {
+    color: #E91E63 !important;
+}
+
+/* 💰 DINERO/PRECIOS - Dorado */
+.bi-cash-stack, .bi-currency-dollar, .bi-wallet2 {
+    color: #FFC107 !important;
+}
+
+/* 🔄 LIMPIAR/RESET - Gris azulado */
+.bi-arrow-counterclockwise {
+    color: #607D8B !important;
+}
+
+/* 🎯 FILTROS - Índigo */
+.bi-funnel {
+    color: #3F51B5 !important;
+}
+
+/* 📊 GRÁFICOS - Verde lima */
+.bi-graph-up-arrow, .bi-bar-chart-line {
+    color: #64DD17 !important;
+}
+
+/* 🗑️ ELIMINAR - Rojo vibrante */
+.bi-trash, .bi-x-circle {
+    color: #F44336 !important;
+}
+
+/* ➕ AGREGAR - Verde agua */
+.bi-plus-lg, .bi-plus-circle {
+    color: #26A69A !important;
+}
+
+/* 💬 MENSAJES/CHAT - Azul cielo */
+.bi-chat-left-text {
+    color: #03A9F4 !important;
+}
+
+/* ⬇️ CHEVRON/DROPDOWN - Ámbar */
+.bi-chevron-down {
+    color: #FF9800 !important;
+}
+
+/* 🎁 PROMOCIONES - Rojo coral brillante */
+.filter-promo .bi-tag-fill {
+    color: #FF5252 !important;
+}
+
+/* Botones primarios - iconos blancos sobre fondo de color */
+.btn-primary i {
+    color: white !important;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Navegación móvil activa - iconos sobre círculo de color */
+.mobile-bottom-nav .nav-item.active i {
+    color: white !important;
+    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+    padding: 12px;
     border-radius: 50%;
-    font-size: 0.9rem;
+    box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
 }
 
-/* Icono de eliminar en carrito - rojo con blanco */
-.cart-item .btn-danger i {
+.mobile-bottom-nav .nav-item:not(.active) i {
+    color: #999;
+}
+
+/* Filtros activos - fondo colorido */
+.filter-group.active .bi-grid-3x3-gap {
     color: white !important;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    background: #00BCD4;
+    padding: 8px;
+    border-radius: 8px;
 }
 
-/* Iconos de modal de producto */
+.filter-group.active .bi-check-circle {
+    color: white !important;
+    background: #00E676;
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.filter-group.active .bi-tag-fill {
+    color: white !important;
+    background: #FF5252;
+    padding: 8px;
+    border-radius: 8px;
+}
+
+/* Sidebar de filtros - iconos coloridos en círculos */
+.filters-title i {
+    color: white !important;
+    background: linear-gradient(135deg, #3F51B5 0%, #303F9F 100%);
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(63, 81, 181, 0.3);
+}
+
+.filter-section-title i.bi-cash-stack {
+    color: white !important;
+    background: linear-gradient(135deg, #FFC107 0%, #FFA000 100%);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.filter-section-title i.bi-palette {
+    color: white !important;
+    background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.filter-section-title i.bi-box-seam {
+    color: white !important;
+    background: linear-gradient(135deg, #00BCD4 0%, #0097A7 100%);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+/* Botón reset - color vibrante */
+.btn-reset-filters i {
+    color: #607D8B !important;
+}
+
+.btn-reset-filters:hover i {
+    color: #FF5252 !important;
+}
+
+/* Carrito con items - naranja brillante */
+.cart-icon.has-items i {
+    color: #FF6D00 !important;
+}
+
+/* Modal de producto */
 .modal-title i {
-    color: var(--color-primario) !important;
+    color: #9C27B0 !important;
     margin-right: 8px;
 }
 
-/* Estilo especial para el icono de promociones */
-.filter-promo i {
-    color: white !important;
-    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-/* Iconos en badges */
+/* Badges en productos */
 .product-badges i {
     color: white !important;
     margin-right: 4px;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-/* Iconos del dropdown de categorías */
+/* Dropdown de categorías */
 .dropdown-menu-enhanced .dropdown-item i {
-    color: var(--color-primario);
+    color: #9C27B0 !important;
     margin-right: 8px;
+}
+
+/* Selector de cantidad */
+.quantity-selector i {
+    color: white !important;
 }
 
 /* Checkboxes de disponibilidad mejorados */
