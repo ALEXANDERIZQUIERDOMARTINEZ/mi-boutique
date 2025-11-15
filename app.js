@@ -490,6 +490,7 @@ function openProductModal(productId) {
     document.getElementById('btn-add-cart').disabled = true;
     document.getElementById('select-cantidad').value = 1;
     document.getElementById('select-cantidad').setAttribute('max', 1);
+    document.getElementById('product-observation').value = '';
     const variaciones = product.variaciones || [];
     const tallas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))];
     if (tallas.length === 0 && variaciones.length > 0) {
@@ -538,12 +539,14 @@ function renderCart() {
     cart.forEach(item => {
         const div = document.createElement('div');
         div.className = 'cart-item';
+        const observacionHtml = item.observacion ? `<small class="text-muted d-block mt-1"><i class="bi bi-chat-left-text"></i> ${item.observacion}</small>` : '';
         div.innerHTML = `
             <div class="d-flex gap-3">
                 <img src="${item.imagenUrl || 'https://via.placeholder.com/70x90'}" class="cart-item-image" alt="${item.nombre}">
                 <div class="flex-grow-1">
                     <h6 class="mb-1" style="font-weight: 600; font-size: 0.9rem;">${item.nombre}</h6>
                     <small class="text-muted">${item.talla} / ${item.color}</small>
+                    ${observacionHtml}
                     <div class="d-flex justify-content-between align-items-center mt-2">
                         <span style="font-weight: 500; font-size: 0.9rem;">${formatoMoneda.format(item.precio)} × ${item.cantidad}</span>
                         <button class="btn btn-sm btn-outline-danger" onclick="window.confirmRemoveFromCart('${item.cartItemId}')" style="padding: 2px 8px;">
@@ -954,6 +957,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const talla = document.getElementById('select-talla').value;
         const color = document.getElementById('select-color').value;
         const cantidad = parseInt(document.getElementById('select-cantidad').value);
+        const observacion = document.getElementById('product-observation').value.trim();
 
         if (!product || !talla || !color || cantidad <= 0) {
             showToast('Seleccione talla, color y cantidad', 'error');
@@ -968,13 +972,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const { precioFinal } = calculatePromotionPrice(product);
         const precioUnitarioFinal = isWholesaleActive ? precioMayorNum : precioFinal;
-        
+
         const cartItemId = `${productId}-${talla}-${color}-${isWholesaleActive ? 'MAYOR' : 'DETAL'}`;
-        
+
         const existing = cart.find(item => item.cartItemId === cartItemId);
         if (existing) {
             existing.cantidad += cantidad;
             existing.total = existing.cantidad * precioUnitarioFinal;
+            // Si hay nueva observación, agregarla o actualizarla
+            if (observacion) {
+                existing.observacion = observacion;
+            }
         } else {
             cart.push({
                 cartItemId,
@@ -986,7 +994,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 color: color === 'unico' ? 'Único' : color,
                 cantidad,
                 total: cantidad * precioUnitarioFinal,
-                imagenUrl: product.imagenUrl || ''
+                imagenUrl: product.imagenUrl || '',
+                observacion: observacion || ''
             });
         }
 
