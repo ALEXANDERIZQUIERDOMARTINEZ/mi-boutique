@@ -12,23 +12,18 @@ body {
     font-size: 14px;
     line-height: 1.6;
     overflow-x: hidden;
-    height: 100vh;
+    overflow-y: auto;
     margin: 0;
     padding: 0;
 }
 
-/* Contenedor principal usa 100% del viewport */
+/* Contenedor principal - scroll vertical normal */
 html, body {
-    height: 100%;
     width: 100%;
     overflow-x: hidden;
 }
 
-.admin-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
+/* Contenedor eliminado para evitar scroll duplicado */
 
 .admin-navbar {
     background-color: white;
@@ -41,9 +36,6 @@ html, body {
     padding: 1rem 1.5rem;
     max-width: 100%;
     margin: 0 auto;
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
     width: 100%;
 }
 
@@ -62,7 +54,7 @@ html, body {
     padding: 1.25rem 1.5rem;
 }
 
-/* Navegación SIEMPRE centrada en una línea - NUNCA wrap */
+/* Navegación SIEMPRE centrada - SIN scroll horizontal */
 .navbar-collapse {
     justify-content: center;
 }
@@ -70,20 +62,9 @@ html, body {
 .nav-pills {
     justify-content: center;
     flex-wrap: nowrap !important;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: visible;
     white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
     margin: 0 auto;
-}
-
-.nav-pills::-webkit-scrollbar {
-    height: 2px;
-}
-
-.nav-pills::-webkit-scrollbar-thumb {
-    background: var(--color-primario);
-    border-radius: 2px;
 }
 
 .nav-pills .nav-link {
@@ -801,6 +782,7 @@ html, body {
         border-radius: 0 0 12px 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         margin-top: 0.5rem;
+        overflow: visible;
     }
 
     .navbar-collapse.collapsing {
@@ -811,8 +793,7 @@ html, body {
     .nav-pills {
         flex-direction: column;
         padding: 0.5rem;
-        overflow-x: visible;
-        overflow-y: visible;
+        overflow: visible;
     }
 
     .nav-pills .nav-link {
