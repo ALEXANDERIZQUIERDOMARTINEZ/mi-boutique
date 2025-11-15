@@ -91,14 +91,14 @@
                     </div>
 
                     <div class="col-md-3 col-sm-6">
-                        <div class="dashboard-card card-stock">
+                        <div class="dashboard-card card-stock" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
                             <div class="card-icon">
                                 <i class="bi bi-exclamation-triangle"></i>
                             </div>
                             <div class="card-content">
                                 <h6 class="card-label">Bajo Stock</h6>
                                 <p class="card-value" id="db-bajo-stock">0</p>
-                                <small class="card-subtitle">Menos de 5 unidades</small>
+                                <small class="card-subtitle">2 unidades o menos</small>
                             </div>
                         </div>
                     </div>
@@ -373,29 +373,27 @@
                         <div class="card-body"> 
                             <form id="form-venta"> 
                                 <input type="hidden" id="venta-cliente-id"> 
-                                <div class="row align-items-end"> 
-                                    <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label> 
-                                        <div class="input-group"> 
-                                            <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;"> 
-                                            <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button> 
-                                        </div> 
-                                        <div class="row mt-2 gx-2"> 
-                                            <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div> 
-                                            <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div> 
-                                        </div> 
-                                    </div> 
-                                    <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div> 
-                                    <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div> 
-                                    <div class="col-md-2 mb-3"> 
-                                        <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> 
-                                    </div> 
+                                <div class="row align-items-end">
+                                    <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label>
+                                        <div class="input-group">
+                                            <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;">
+                                            <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button>
+                                        </div>
+                                        <div class="row mt-2 gx-2">
+                                            <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div>
+                                            <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div>
+                                    <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div>
+                                    <div class="col-md-2 mb-3 apartado-fecha-field" style="display: none;">
+                                        <label for="apartado-fecha-max" class="form-label">Vence:</label>
+                                        <input type="date" id="apartado-fecha-max" class="form-control form-control-sm" readonly>
+                                    </div>
                                 </div> 
-                                <div class="row delivery-fields"> 
-                                    <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div> 
-                                    <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div> 
-                                    <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> 
-                                        <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> 
-                                    </div> 
+                                <div class="row delivery-fields">
+                                    <div class="col-md-6 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div>
+                                    <div class="col-md-6 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div>
                                 </div> 
                                 <label for="venta-producto" class="form-label">Buscar Producto:</label> 
                                 <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;"> 
@@ -404,10 +402,23 @@
                                     <tbody id="venta-carrito"></tbody> 
                                 </table> 
                                 <hr> 
-                                <div class="row"> 
-                                    <div class="col-md-6"> 
-                                        <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> 
-                                        <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> 
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="venta-whatsapp" disabled>
+                                                <label class="form-check-label" for="venta-whatsapp">Pedido WhatsApp</label>
+                                                <small class="d-block text-muted">Se activa automáticamente desde pedidos web</small>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 delivery-fields">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia">
+                                                <label class="form-check-label" for="ruta-pagada-transferencia">Ruta pagada por Transferencia</label>
+                                            </div>
+                                        </div>
+                                        <label for="venta-observaciones" class="form-label">Observaciones:</label>
+                                        <textarea id="venta-observaciones" class="form-control" rows="2"></textarea>
                                     </div> 
                                     <div class="col-md-6"> 
                                         <div class="row"> 
@@ -432,11 +443,26 @@
                     </div> 
                 </div> 
                 
-                <div id="sales-list-view"> 
-                    <div class="card"> 
-                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div> 
+                <div id="sales-list-view">
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h3 class="h5 mb-0">Historial</h3>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <label for="filtro-fecha-ventas" class="form-label small">Filtrar por fecha:</label>
+                                    <input type="date" id="filtro-fecha-ventas" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button type="button" id="btn-limpiar-filtro-ventas" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-x-circle"></i> Limpiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"> <tr><th>Fecha</th><th>Cliente</th><th>Tipo</th><th>Total</th><th>Pago</th><th>Repartidor</th><th>Estado</th><th>Acciones</th></tr> </thead><tbody id="lista-ventas-anteriores"> <tr id="empty-sales-row"><td colspan="8" class="text-center text-muted p-4">Cargando...</td></tr> </tbody></table></div></div>
-                    </div> 
+                    </div>
                 </div> 
             </div>
             
@@ -684,13 +710,13 @@
                     </div>
 
                     <div class="mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="promo-active" checked>
-                            <label class="form-check-label" for="promo-active">
+                        <div class="form-check form-switch d-flex align-items-center">
+                            <input class="form-check-input me-2" type="checkbox" id="promo-active" checked>
+                            <label class="form-check-label mb-0" for="promo-active">
                                 <strong>Promoción Activa</strong>
                             </label>
                         </div>
-                        <small class="text-muted">Activa o desactiva la promoción en la tienda</small>
+                        <small class="text-muted d-block mt-1">Activa o desactiva la promoción en la tienda</small>
                     </div>
 
                     <div class="mb-3">
@@ -745,6 +771,43 @@
                     <button type="button" class="btn btn-primary" id="btn-save-promo">
                         <i class="bi bi-check-lg"></i> Guardar Promoción
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Bajo Stock -->
+    <div class="modal fade" id="bajoStockModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle text-warning me-2"></i>Productos con Bajo Stock
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Productos con 2 unidades o menos en inventario</p>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Variación</th>
+                                    <th class="text-center">Stock</th>
+                                    <th>Categoría</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bajo-stock-list">
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">Cargando...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
