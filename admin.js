@@ -1518,20 +1518,29 @@ document.addEventListener('DOMContentLoaded', () => {
             let q;
             if (fechaFiltro) {
                 // Filtrar por fecha específica
-                const inicio = new Date(fechaFiltro);
-                inicio.setHours(0, 0, 0, 0);
-                const fin = new Date(fechaFiltro);
-                fin.setHours(23, 59, 59, 999);
+                // ✅ Crear fecha en zona horaria local para evitar problemas
+                const partes = fechaFiltro.split('-');
+                const inicio = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 0, 0, 0, 0);
+                const fin = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 23, 59, 59, 999);
 
                 q = query(
                     salesCollection,
-                    where('timestamp', '>=', inicio),
-                    where('timestamp', '<=', fin),
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<=', Timestamp.fromDate(fin)),
                     orderBy('timestamp', 'desc')
                 );
             } else {
-                // Sin filtro, mostrar todas
-                q = query(salesCollection, orderBy('timestamp', 'desc'));
+                // Sin filtro, mostrar solo del día actual por defecto
+                const hoy = new Date();
+                const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+                const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+
+                q = query(
+                    salesCollection,
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<=', Timestamp.fromDate(fin)),
+                    orderBy('timestamp', 'desc')
+                );
             }
 
             ventasUnsubscribe = onSnapshot(q, renderSales, e => {
@@ -1544,7 +1553,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const filtroFechaInput = document.getElementById('filtro-fecha-ventas');
         const btnLimpiarFiltro = document.getElementById('btn-limpiar-filtro-ventas');
 
+        // Establecer fecha actual en el input
         if (filtroFechaInput) {
+            const hoy = new Date();
+            const año = hoy.getFullYear();
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            filtroFechaInput.value = `${año}-${mes}-${dia}`;
+
             filtroFechaInput.addEventListener('change', (e) => {
                 if (e.target.value) {
                     cargarVentas(e.target.value);
@@ -1557,13 +1573,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnLimpiarFiltro) {
             btnLimpiarFiltro.addEventListener('click', () => {
                 if (filtroFechaInput) {
-                    filtroFechaInput.value = '';
+                    // Al limpiar, volver a la fecha de hoy
+                    const hoy = new Date();
+                    const año = hoy.getFullYear();
+                    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+                    const dia = String(hoy.getDate()).padStart(2, '0');
+                    filtroFechaInput.value = `${año}-${mes}-${dia}`;
                     cargarVentas();
                 }
             });
         }
 
-        // Cargar ventas inicialmente
+        // Cargar ventas del día actual inicialmente
         cargarVentas();
 
         // ========================================================================
@@ -2368,20 +2389,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 // ✅ PASO 3: Agregar abono al historial
-                const abonos = apartadoData.abonos || [];
+                // Convertir abonos existentes para asegurar que usen Timestamp
+                const abonosExistentes = apartadoData.abonos || [];
+                const abonosConvertidos = abonosExistentes.map(abono => {
+                    // Si la fecha es un Timestamp, mantenerlo; si no, convertirlo
+                    const fecha = abono.fecha?.toDate ? abono.fecha : (abono.fecha ? Timestamp.fromDate(new Date(abono.fecha)) : Timestamp.fromDate(new Date()));
+                    return {
+                        ...abono,
+                        fecha: fecha
+                    };
+                });
+
                 const nuevoAbono = {
-                    fecha: serverTimestamp(),
+                    fecha: Timestamp.fromDate(new Date()),
                     monto: monto,
                     metodoPago: metodoPago,
                     observaciones: observaciones || 'Sin observaciones'
                 };
-                abonos.push(nuevoAbono);
+                abonosConvertidos.push(nuevoAbono);
 
                 // ✅ PASO 4: Actualizar apartado
                 await updateDoc(apartadoRef, {
                     abonado: nuevoAbonado,
                     saldo: nuevoSaldo,
-                    abonos: abonos,
+                    abonos: abonosConvertidos,
                     estado: nuevoSaldo <= 0 ? 'Completado' : 'Pendiente',
                     ultimaModificacion: serverTimestamp()
                 });
@@ -2570,7 +2601,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Actualizar UI
                     dbVentasHoyEl.textContent = formatoMoneda.format(totalVentas);
                     dbVentasHoyEl.classList.add('text-success');
-                    
+
+                    // Actualizar contador de ventas
+                    const dbVentasCountEl = document.getElementById('db-ventas-count');
+                    if (dbVentasCountEl) {
+                        dbVentasCountEl.textContent = `${ventasContadas} ${ventasContadas === 1 ? 'venta' : 'ventas'}`;
+                    }
+
                     console.log(`✅ Ventas hoy: ${formatoMoneda.format(totalVentas)} (${ventasContadas} ventas)`);
                 },
                 (error) => {
@@ -2596,7 +2633,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("📦 Calculando productos con bajo stock...");
 
         try {
-            const STOCK_MINIMO = 2; // ✅ Cambiado a 2 unidades
+            const STOCK_MINIMO = 2; // Productos con 2 prendas o menos
 
             // Query simple: solo productos visibles
             const q = query(
@@ -2614,27 +2651,32 @@ document.addEventListener('DOMContentLoaded', () => {
                         const productoId = doc.id;
                         const variaciones = producto.variaciones || [];
 
-                        // Revisar cada variación individualmente
-                        variaciones.forEach(variacion => {
-                            const stock = parseInt(variacion.stock, 10) || 0;
+                        // Calcular stock TOTAL del producto (suma de todas las variaciones)
+                        const stockTotal = variaciones.reduce((total, variacion) => {
+                            return total + (parseInt(variacion.stock, 10) || 0);
+                        }, 0);
 
-                            // Si la variación tiene stock ≤ 2
-                            if (stock > 0 && stock <= STOCK_MINIMO) {
-                                window.productosBajoStock.push({
-                                    id: productoId,
-                                    nombre: producto.nombre,
-                                    talla: variacion.talla || 'N/A',
-                                    color: variacion.color || 'N/A',
-                                    stock: stock,
-                                    categoriaId: producto.categoriaId
-                                });
-                            }
-                        });
+                        // Si el stock TOTAL del producto es <= 2
+                        if (stockTotal > 0 && stockTotal <= STOCK_MINIMO) {
+                            // Guardar el producto UNA VEZ con todas sus variaciones
+                            window.productosBajoStock.push({
+                                id: productoId,
+                                nombre: producto.nombre,
+                                stockTotal: stockTotal,
+                                variaciones: variaciones.map(v => ({
+                                    talla: v.talla || 'N/A',
+                                    color: v.color || 'N/A',
+                                    stock: parseInt(v.stock, 10) || 0
+                                })),
+                                categoriaId: producto.categoriaId
+                            });
+                        }
                     });
 
-                    // Actualizar UI
+                    // Actualizar UI - muestra cantidad de PRODUCTOS únicos
                     const count = window.productosBajoStock.length;
                     dbBajoStockEl.textContent = count;
+                    dbBajoStockEl.classList.remove('text-warning', 'text-success');
 
                     if (count > 0) {
                         dbBajoStockEl.classList.add('text-warning');
@@ -2642,7 +2684,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         dbBajoStockEl.classList.add('text-success');
                     }
 
-                    console.log(`✅ Variaciones con bajo stock: ${count}`);
+                    console.log(`✅ Productos con bajo stock: ${count}`);
                 },
                 (error) => {
                     console.error("❌ Error al calcular bajo stock:", error);
@@ -2650,7 +2692,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     dbBajoStockEl.classList.add('text-danger');
                 }
             );
-            
+
         } catch (error) {
             console.error("❌ Error fatal al configurar bajo stock:", error);
             dbBajoStockEl.textContent = "Error";
@@ -2692,6 +2734,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Actualizar UI
                     dbApartadosVencerEl.textContent = countVencer;
+                    dbApartadosVencerEl.classList.remove('text-danger', 'text-success');
 
                     // Actualizar saldo total
                     const saldoEl = document.getElementById('db-apartados-total-saldo');
@@ -2737,16 +2780,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Renderizar cada producto
+            // Renderizar cada producto con todas sus variaciones
             window.productosBajoStock.forEach(item => {
                 const categoria = categoriesMap.get(item.categoriaId) || 'Sin categoría';
-                const stockClass = item.stock === 1 ? 'text-danger fw-bold' : 'text-warning fw-bold';
+                const stockClass = item.stockTotal === 1 ? 'text-danger fw-bold' : 'text-warning fw-bold';
+
+                // Crear string con todas las variaciones
+                const variacionesHtml = item.variaciones
+                    .filter(v => v.stock > 0)
+                    .map(v => `<span class="badge bg-secondary me-1">${v.talla}/${v.color}: ${v.stock}</span>`)
+                    .join(' ');
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="fw-bold">${item.nombre}</td>
-                    <td><span class="badge bg-secondary">${item.talla} / ${item.color}</span></td>
-                    <td class="text-center ${stockClass}">${item.stock}</td>
+                    <td>${variacionesHtml || '<span class="text-muted">Sin variaciones</span>'}</td>
+                    <td class="text-center ${stockClass}">${item.stockTotal}</td>
                     <td><small class="text-muted">${categoria}</small></td>
                 `;
                 bajoStockList.appendChild(tr);
@@ -2866,6 +2915,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ================================================================
+    // 8️⃣ TOTAL DE REPARTIDORES
+    // ================================================================
+    function calcularTotalRepartidores() {
+        console.log("🚴 Calculando total de repartidores...");
+
+        try {
+            onSnapshot(repartidoresCollection, (snapshot) => {
+                const totalRepartidores = snapshot.size;
+
+                const dbTotalRepartidoresEl = document.getElementById('db-total-repartidores');
+                if (dbTotalRepartidoresEl) {
+                    dbTotalRepartidoresEl.textContent = totalRepartidores;
+                }
+
+                console.log(`✅ Total de repartidores: ${totalRepartidores}`);
+            });
+        } catch (error) {
+            console.error("❌ Error al calcular repartidores:", error);
+        }
+    }
+
+    // ================================================================
     // 🚀 INICIALIZAR TODAS LAS FUNCIONES
     // ================================================================
     calcularVentasHoy();
@@ -2875,6 +2946,19 @@ document.addEventListener('DOMContentLoaded', () => {
     calcularPedidosWeb();
     calcularTotalClientes();
     calcularPromocionesActivas();
+    calcularTotalRepartidores();
+
+    // Mostrar fecha actual en el dashboard
+    const dashboardDateEl = document.getElementById('dashboard-date');
+    if (dashboardDateEl) {
+        const hoy = new Date();
+        dashboardDateEl.textContent = hoy.toLocaleDateString('es-CO', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
 
     console.log("✅ Dashboard inicializado correctamente");
 
