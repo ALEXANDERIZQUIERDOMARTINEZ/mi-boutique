@@ -2370,7 +2370,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // ✅ PASO 3: Agregar abono al historial
                 const abonos = apartadoData.abonos || [];
                 const nuevoAbono = {
-                    fecha: serverTimestamp(),
+                    fecha: Timestamp.fromDate(new Date()), // ✅ Usar Timestamp en lugar de serverTimestamp
                     monto: monto,
                     metodoPago: metodoPago,
                     observaciones: observaciones || 'Sin observaciones'
@@ -2570,7 +2570,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Actualizar UI
                     dbVentasHoyEl.textContent = formatoMoneda.format(totalVentas);
                     dbVentasHoyEl.classList.add('text-success');
-                    
+
+                    // Actualizar contador de ventas
+                    const dbVentasCountEl = document.getElementById('db-ventas-count');
+                    if (dbVentasCountEl) {
+                        dbVentasCountEl.textContent = `${ventasContadas} ${ventasContadas === 1 ? 'venta' : 'ventas'}`;
+                    }
+
                     console.log(`✅ Ventas hoy: ${formatoMoneda.format(totalVentas)} (${ventasContadas} ventas)`);
                 },
                 (error) => {
@@ -2635,6 +2641,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Actualizar UI
                     const count = window.productosBajoStock.length;
                     dbBajoStockEl.textContent = count;
+                    dbBajoStockEl.classList.remove('text-warning', 'text-success');
 
                     if (count > 0) {
                         dbBajoStockEl.classList.add('text-warning');
@@ -2692,6 +2699,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Actualizar UI
                     dbApartadosVencerEl.textContent = countVencer;
+                    dbApartadosVencerEl.classList.remove('text-danger', 'text-success');
 
                     // Actualizar saldo total
                     const saldoEl = document.getElementById('db-apartados-total-saldo');
@@ -2866,6 +2874,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ================================================================
+    // 8️⃣ TOTAL DE REPARTIDORES
+    // ================================================================
+    function calcularTotalRepartidores() {
+        console.log("🚴 Calculando total de repartidores...");
+
+        try {
+            onSnapshot(repartidoresCollection, (snapshot) => {
+                const totalRepartidores = snapshot.size;
+
+                const dbTotalRepartidoresEl = document.getElementById('db-total-repartidores');
+                if (dbTotalRepartidoresEl) {
+                    dbTotalRepartidoresEl.textContent = totalRepartidores;
+                }
+
+                console.log(`✅ Total de repartidores: ${totalRepartidores}`);
+            });
+        } catch (error) {
+            console.error("❌ Error al calcular repartidores:", error);
+        }
+    }
+
+    // ================================================================
     // 🚀 INICIALIZAR TODAS LAS FUNCIONES
     // ================================================================
     calcularVentasHoy();
@@ -2875,6 +2905,19 @@ document.addEventListener('DOMContentLoaded', () => {
     calcularPedidosWeb();
     calcularTotalClientes();
     calcularPromocionesActivas();
+    calcularTotalRepartidores();
+
+    // Mostrar fecha actual en el dashboard
+    const dashboardDateEl = document.getElementById('dashboard-date');
+    if (dashboardDateEl) {
+        const hoy = new Date();
+        dashboardDateEl.textContent = hoy.toLocaleDateString('es-CO', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
 
     console.log("✅ Dashboard inicializado correctamente");
 
