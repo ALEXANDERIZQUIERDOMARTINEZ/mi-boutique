@@ -388,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const ventasTab = document.querySelector('a[href="#ventas"]');
                 if (ventasTab) {
-                    const tab = new bootstrap.Tab(ventasTab);
+                    const tab = bootstrap.Tab.getOrCreateInstance(ventasTab);
                     tab.show();
                 }
 
@@ -1945,7 +1945,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Redirigir a la pestaña de apartados
                 const apartadosTab = document.querySelector('a[href="#apartados"]');
                 if (apartadosTab) {
-                    const tab = new bootstrap.Tab(apartadosTab);
+                    const tab = bootstrap.Tab.getOrCreateInstance(apartadosTab);
                     tab.show();
                     showToast(`Gestiona el apartado desde esta pestaña`, 'info');
                 }
