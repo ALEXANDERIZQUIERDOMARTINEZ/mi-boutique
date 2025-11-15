@@ -422,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp');
-            if (ventaWhatsappCheckbox) ventaWhatsappCheckbox.checked = true;
+            if (ventaWhatsappCheckbox) ventaWhatsappCheckbox.checked = false; // Invertido para corregir lógica
 
             const ventaObservaciones = document.getElementById('venta-observaciones');
             if (ventaObservaciones) {
@@ -1286,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Si ya tiene promoción, cargar datos
                 if (product.promocion && product.promocion.activa) {
                     btnRemovePromo.style.display = 'inline-block';
-                    promoActiveCheckbox.checked = true;
+                    promoActiveCheckbox.checked = false; // Invertido para corregir lógica
 
                     if (product.promocion.tipo === 'porcentaje') {
                         promoTypePercentage.checked = true;
@@ -1308,7 +1308,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     // Nueva promoción
                     btnRemovePromo.style.display = 'none';
-                    promoActiveCheckbox.checked = true;
+                    promoActiveCheckbox.checked = false; // Invertido para corregir lógica
                     promoTypePercentage.checked = true;
                     promoPercentageSection.style.display = 'block';
                     promoFixedSection.style.display = 'none';
@@ -1327,7 +1327,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnSavePromo) {
             btnSavePromo.addEventListener('click', async () => {
                 const productId = promoProductIdInput.value;
-                const isActive = promoActiveCheckbox.checked;
+                const isActive = !promoActiveCheckbox.checked; // Invertido para corregir lógica
                 const isPercentage = promoTypePercentage.checked;
 
                 let promocion = {
@@ -1561,16 +1561,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 return; 
             } 
             
-            const totalCalculado = window.calcularTotalVentaGeneral(); 
-            const ventaData = { 
-                clienteNombre: ventaClienteInput.value || "Cliente General", 
-                tipoVenta: tipoVentaSelect.value, 
-                tipoEntrega: tipoEntregaSelect.value, 
-                pedidoWhatsapp: ventaWhatsappCheckbox.checked, 
-                repartidorId: tipoEntregaSelect.value === 'domicilio' ? ventaRepartidorSelect.value : null, 
+            const totalCalculado = window.calcularTotalVentaGeneral();
+            const ventaData = {
+                clienteNombre: ventaClienteInput.value || "Cliente General",
+                tipoVenta: tipoVentaSelect.value,
+                tipoEntrega: tipoEntregaSelect.value,
+                pedidoWhatsapp: !ventaWhatsappCheckbox.checked, // Invertido para corregir lógica
+                repartidorId: tipoEntregaSelect.value === 'domicilio' ? ventaRepartidorSelect.value : null,
                 repartidorNombre: tipoEntregaSelect.value === 'domicilio' ? (ventaRepartidorSelect.options[ventaRepartidorSelect.selectedIndex]?.text || '') : null,
-                costoRuta: tipoEntregaSelect.value === 'domicilio' ? (parseFloat(costoRutaInput.value) || 0) : 0, 
-                rutaPagadaTransferencia: tipoEntregaSelect.value === 'domicilio' ? rutaPagadaCheckbox.checked : false, 
+                costoRuta: tipoEntregaSelect.value === 'domicilio' ? (parseFloat(costoRutaInput.value) || 0) : 0,
+                rutaPagadaTransferencia: tipoEntregaSelect.value === 'domicilio' ? !rutaPagadaCheckbox.checked : false, // Invertido para corregir lógica 
                 items: window.ventaItems, 
                 observaciones: ventaObservaciones.value.trim(), 
                 descuento: parseFloat(ventaDescuentoInput.value) || 0, 
@@ -1599,48 +1599,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            try { 
-                const docRef = await addDoc(salesCollection, ventaData); 
-                showToast("Venta registrada!"); 
-        
-                // ✅ CORRECCIÓN CRÍTICA: APARTADOS TAMBIÉN RESTAN STOCK
-                await actualizarStock(ventaData.items, 'restar'); 
-        
+            try {
+                // ✅ PASO 1: Registrar la venta primero
+                const docRef = await addDoc(salesCollection, ventaData);
+                console.log("✅ Venta registrada con ID:", docRef.id);
+
+                // ✅ PASO 2: Actualizar stock inmediatamente
+                await actualizarStock(ventaData.items, 'restar');
+                console.log("✅ Stock actualizado correctamente");
+
+                // ✅ PASO 3: Si es apartado, crear documento apartado
                 if (ventaData.tipoVenta === 'apartado') {
                     const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia;
                     const saldoPendiente = ventaData.totalVenta - abonoInicial;
 
-                    // Usar la fecha del campo (15 días por defecto)
+                    // Calcular fecha de vencimiento
                     const apartadoFechaInput = document.getElementById('apartado-fecha-max');
-                    const fechaVencimiento = apartadoFechaInput && apartadoFechaInput.value
-                        ? new Date(apartadoFechaInput.value + 'T23:59:59')
-                        : (() => {
-                            const f = new Date();
-                            f.setDate(f.getDate() + 15);
-                            return f;
-                        })();
-                    
-                    try { 
-                        await addDoc(apartadosCollection, { 
-                            ventaId: docRef.id, 
-                            clienteNombre: ventaData.clienteNombre, 
-                            total: ventaData.totalVenta, 
-                            abonado: abonoInicial, 
-                            saldo: saldoPendiente, 
-                            fechaCreacion: ventaData.timestamp, 
-                            fechaVencimiento: Timestamp.fromDate(fechaVencimiento),
-                            estado: 'Pendiente',
-                            abonos: [{
-                                fecha: serverTimestamp(),
-                                monto: abonoInicial,
-                                metodoPago: ventaData.pagoEfectivo > 0 ? 'Efectivo' : (ventaData.pagoTransferencia > 0 ? 'Transferencia' : 'Mixto')
-                            }]
-                        }); 
-                        showToast(`Apartado creado. Vence: ${fechaVencimiento.toLocaleDateString('es-CO')}`, 'success');
-                    } catch(apErr) { 
-                        console.error("Error creando apartado:", apErr); 
-                        showToast("Venta guardada, error al crear apartado.", 'error'); 
-                    } 
+                    let fechaVencimiento;
+
+                    if (apartadoFechaInput && apartadoFechaInput.value) {
+                        fechaVencimiento = new Date(apartadoFechaInput.value + 'T23:59:59');
+                    } else {
+                        fechaVencimiento = new Date();
+                        fechaVencimiento.setDate(fechaVencimiento.getDate() + 15);
+                    }
+
+                    // Determinar método de pago inicial
+                    let metodoPagoInicial;
+                    if (ventaData.pagoEfectivo > 0 && ventaData.pagoTransferencia > 0) {
+                        metodoPagoInicial = 'Mixto';
+                    } else if (ventaData.pagoEfectivo > 0) {
+                        metodoPagoInicial = 'Efectivo';
+                    } else {
+                        metodoPagoInicial = 'Transferencia';
+                    }
+
+                    // Crear documento apartado
+                    const apartadoData = {
+                        ventaId: docRef.id,
+                        clienteNombre: ventaData.clienteNombre,
+                        total: ventaData.totalVenta,
+                        abonado: abonoInicial,
+                        saldo: saldoPendiente,
+                        fechaCreacion: serverTimestamp(),
+                        fechaVencimiento: Timestamp.fromDate(fechaVencimiento),
+                        estado: 'Pendiente',
+                        items: ventaData.items, // Guardar items para referencia
+                        abonos: [{
+                            fecha: serverTimestamp(),
+                            monto: abonoInicial,
+                            metodoPago: metodoPagoInicial,
+                            observaciones: 'Abono inicial'
+                        }]
+                    };
+
+                    try {
+                        const apartadoRef = await addDoc(apartadosCollection, apartadoData);
+                        console.log("✅ Apartado creado exitosamente con ID:", apartadoRef.id);
+                        showToast(`Apartado creado! Saldo: ${formatoMoneda.format(saldoPendiente)}. Vence: ${fechaVencimiento.toLocaleDateString('es-CO')}`, 'success');
+                    } catch (apErr) {
+                        console.error("❌ Error crítico al crear apartado:", apErr);
+                        showToast("Error al crear apartado. La venta fue registrada pero el apartado falló.", 'error');
+                    }
+                } else {
+                    showToast("Venta registrada exitosamente!", 'success');
                 } 
                 
                 salesForm.reset(); 
@@ -2268,57 +2290,84 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     })();
 
-    // LISTENER PARA FORMULARIO DE ABONO
+    // ✅ LISTENER PARA FORMULARIO DE ABONO (MEJORADO)
     const formAbonoApartado = document.getElementById('form-abono-apartado');
     if (formAbonoApartado) {
         formAbonoApartado.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+            console.log("📝 Iniciando registro de abono...");
+
             const apartadoId = document.getElementById('abono-apartado-id').value;
             const monto = parseFloat(document.getElementById('abono-monto').value);
             const saldoActual = parseFloat(document.getElementById('abono-saldo-actual').value);
             const metodoPago = document.getElementById('abono-metodo-pago').value;
             const observaciones = document.getElementById('abono-observaciones').value.trim();
-            
+
+            console.log("Datos del abono:", { apartadoId, monto, saldoActual, metodoPago, observaciones });
+
+            // Validaciones
+            if (!apartadoId) {
+                showToast('Error: ID de apartado no encontrado', 'error');
+                return;
+            }
+
             if (isNaN(monto) || monto <= 0) {
-                showToast('Monto inválido', 'error');
+                showToast('El monto debe ser mayor a cero', 'error');
                 return;
             }
-            
+
             if (monto > saldoActual) {
-                showToast('El abono no puede ser mayor al saldo', 'warning');
+                showToast(`El abono (${formatoMoneda.format(monto)}) no puede ser mayor al saldo (${formatoMoneda.format(saldoActual)})`, 'warning');
                 return;
             }
-            
+
             try {
+                // ✅ PASO 1: Obtener apartado actual
                 const apartadoRef = doc(db, 'apartados', apartadoId);
                 const apartadoSnap = await getDoc(apartadoRef);
-                
+
                 if (!apartadoSnap.exists()) {
-                    showToast('Apartado no encontrado', 'error');
+                    showToast('Apartado no encontrado en la base de datos', 'error');
+                    console.error("❌ Apartado no existe:", apartadoId);
                     return;
                 }
-                
+
                 const apartadoData = apartadoSnap.data();
-                const nuevoAbonado = apartadoData.abonado + monto;
+                console.log("Apartado actual:", apartadoData);
+
+                // ✅ PASO 2: Calcular nuevos valores
+                const nuevoAbonado = (apartadoData.abonado || 0) + monto;
                 const nuevoSaldo = apartadoData.total - nuevoAbonado;
-                
+
+                console.log("Cálculos:", {
+                    abonado_anterior: apartadoData.abonado,
+                    monto_abono: monto,
+                    nuevo_abonado: nuevoAbonado,
+                    total: apartadoData.total,
+                    nuevo_saldo: nuevoSaldo
+                });
+
+                // ✅ PASO 3: Agregar abono al historial
                 const abonos = apartadoData.abonos || [];
-                abonos.push({
+                const nuevoAbono = {
                     fecha: serverTimestamp(),
                     monto: monto,
                     metodoPago: metodoPago,
-                    observaciones: observaciones || ''
-                });
-                
+                    observaciones: observaciones || 'Sin observaciones'
+                };
+                abonos.push(nuevoAbono);
+
+                // ✅ PASO 4: Actualizar apartado
                 await updateDoc(apartadoRef, {
                     abonado: nuevoAbonado,
                     saldo: nuevoSaldo,
                     abonos: abonos,
-                    estado: nuevoSaldo <= 0 ? 'Completado' : 'Pendiente'
+                    estado: nuevoSaldo <= 0 ? 'Completado' : 'Pendiente',
+                    ultimaModificacion: serverTimestamp()
                 });
+                console.log("✅ Apartado actualizado correctamente");
 
-                // ✅ ACTUALIZAR TAMBIÉN LA VENTA CON LOS NUEVOS MONTOS DE PAGO
+                // ✅ PASO 5: Actualizar venta asociada
                 if (apartadoData.ventaId) {
                     const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
                     const ventaSnap = await getDoc(ventaRef);
@@ -2329,7 +2378,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             estado: nuevoSaldo <= 0 ? 'Completada' : 'Pendiente'
                         };
 
-                        // Actualizar los montos de pago según el método
+                        // Actualizar montos de pago según método
                         if (metodoPago === 'Efectivo') {
                             updateVenta.pagoEfectivo = (ventaData.pagoEfectivo || 0) + monto;
                         } else if (metodoPago === 'Transferencia') {
@@ -2337,20 +2386,29 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
 
                         await updateDoc(ventaRef, updateVenta);
+                        console.log("✅ Venta actualizada correctamente");
+                    } else {
+                        console.warn("⚠️ Venta asociada no encontrada:", apartadoData.ventaId);
                     }
                 }
 
-                abonoApartadoModalInstance.hide();
-                
-                if (nuevoSaldo <= 0) {
-                    showToast('¡Apartado completado!', 'success');
-                } else {
-                    showToast(`Abono registrado. Saldo: ${formatoMoneda.format(nuevoSaldo)}`, 'success');
+                // ✅ PASO 6: Cerrar modal y mostrar confirmación
+                if (typeof abonoApartadoModalInstance !== 'undefined' && abonoApartadoModalInstance) {
+                    abonoApartadoModalInstance.hide();
                 }
-                
+
+                if (nuevoSaldo <= 0) {
+                    showToast('¡Apartado completado exitosamente! 🎉', 'success');
+                } else {
+                    showToast(`Abono registrado. Nuevo saldo: ${formatoMoneda.format(nuevoSaldo)}`, 'success');
+                }
+
+                // Limpiar formulario
+                formAbonoApartado.reset();
+
             } catch (error) {
-                console.error('Error al registrar abono:', error);
-                showToast('Error al registrar el abono', 'error');
+                console.error('❌ Error crítico al registrar abono:', error);
+                showToast(`Error al registrar el abono: ${error.message}`, 'error');
             }
         });
     }

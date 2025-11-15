@@ -789,7 +789,28 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     box-shadow: var(--shadow-suave);
     position: sticky;
     top: 100px;
-    max-width: 100%;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Scrollbar personalizado para filtros */
+.filters-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filters-container::-webkit-scrollbar-track {
+    background: var(--color-fondo);
+    border-radius: 3px;
+}
+
+.filters-container::-webkit-scrollbar-thumb {
+    background: var(--color-borde-sutil);
+    border-radius: 3px;
+}
+
+.filters-container::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primario);
 }
 
 .filters-header {
