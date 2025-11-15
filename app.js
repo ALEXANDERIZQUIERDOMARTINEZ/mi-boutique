@@ -79,6 +79,7 @@ const COLOR_MAP = {
     'magenta': '#E91E63',
     
     // Tonos de azul
+    'azul rey': '#0400FF',
     'azul marino': '#0D47A1',
     'azul claro': '#64B5F6',
     'azul bebe': '#64B5F6',
@@ -114,6 +115,7 @@ const COLOR_MAP = {
     'plateado': '#BDBDBD',
     
     // Otros colores
+    'camel': 'bf8a3d',
     'dorado': '#FFD700',
     'oro': '#FFD700',
     'bronce': '#CD7F32',
