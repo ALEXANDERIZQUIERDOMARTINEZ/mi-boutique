@@ -79,6 +79,7 @@ const COLOR_MAP = {
     'magenta': '#E91E63',
     
     // Tonos de azul
+    'azul rey': '#1414b8',
     'azul marino': '#0D47A1',
     'azul claro': '#64B5F6',
     'azul bebe': '#64B5F6',
