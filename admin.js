@@ -1970,6 +1970,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const ventaData = ventaSnap.data();
+
+                // Validar que ventaData y ventaData.items existan
+                if (!ventaData || !ventaData.items || !Array.isArray(ventaData.items)) {
+                    showToast('Error: La venta no tiene items válidos', 'error');
+                    console.error('ventaData.items no es válido:', ventaData);
+                    return;
+                }
+
                 const nuevoTipo = tipoActual === 'detal' ? 'mayorista' : 'detal';
 
                 // Confirmar cambio
@@ -1979,6 +1987,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Recalcular precios de items
                 const itemsActualizados = await Promise.all(ventaData.items.map(async (item) => {
+                    if (!item || !item.id) {
+                        console.warn('Item inválido encontrado:', item);
+                        return item;
+                    }
+
                     const prodRef = doc(db, 'productos', item.id);
                     const prodSnap = await getDoc(prodRef);
 
@@ -1995,7 +2008,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }));
 
                 // Recalcular total
-                const subtotal = itemsActualizados.reduce((sum, item) => sum + item.totalItem, 0);
+                const subtotal = itemsActualizados.reduce((sum, item) => sum + (item.totalItem || 0), 0);
                 const descuento = ventaData.descuento || 0;
                 const costoRuta = ventaData.costoRuta || 0;
                 const nuevoTotal = subtotal - descuento + costoRuta;
@@ -2009,6 +2022,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 showToast(`Venta cambiada a ${nuevoTipo} exitosamente`, 'success');
+
+                // Recargar la tabla de ventas si existe la función
+                if (typeof renderVentas === 'function') {
+                    renderVentas();
+                }
             } catch (error) {
                 console.error('Error al cambiar tipo de venta:', error);
                 showToast(`Error: ${error.message}`, 'error');
