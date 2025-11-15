@@ -79,6 +79,7 @@ const COLOR_MAP = {
     'magenta': '#E91E63',
     
     // Tonos de azul
+    'azul rey': '#1414b8',
     'azul marino': '#0D47A1',
     'azul claro': '#64B5F6',
     'azul bebe': '#64B5F6',
@@ -126,6 +127,8 @@ const COLOR_MAP = {
     'único': '#9E9E9E',
     
     // Estampados (color neutral)
+    'camel': '#bf8a3d',
+    'marfil': '#e1cc4f',
     'estampado': '#9E9E9E',
     'floral': '#9E9E9E',
     'animal print': '#9E9E9E',

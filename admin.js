@@ -2051,6 +2051,378 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+        // --- Función para actualizar stock (restar o sumar) ---
+        async function actualizarStock(itemsVendido, accion = 'restar') {
+            if (!itemsVendido || itemsVendido.length === 0) return;
+            
+            const batch = writeBatch(db);
+            let productosParaActualizar = new Map(); 
+
+            for (const item of itemsVendido) {
+                if (!item.productoId) {
+                    console.warn("Item en carrito sin productoId, omitiendo stock:", item);
+                    continue; 
+                }
+
+                if (!productosParaActualizar.has(item.productoId)) {
+                    const productoActual = localProductsMap.get(item.productoId);
+                    if (!productoActual) {
+                        console.error(`Producto ${item.productoId} no encontrado en localProductsMap. Omitiendo stock.`);
+                        continue;
+                    }
+                    productosParaActualizar.set(item.productoId, JSON.parse(JSON.stringify(productoActual.variaciones)));
+                }
+
+                let variaciones = productosParaActualizar.get(item.productoId);
+                let variacionEncontrada = false;
+
+                let nuevasVariaciones = variaciones.map(v => {
+                    if (v.talla === item.talla && v.color === item.color) {
+                        variacionEncontrada = true;
+                        const stockActual = parseInt(v.stock, 10) || 0;
+                        const cantidad = parseInt(item.cantidad, 10);
+                        
+                        if (accion === 'restar') {
+                            v.stock = stockActual - cantidad;
+                        } else if (accion === 'sumar') {
+                            v.stock = stockActual + cantidad;
+                        }
+                    }
+                    return v;
+                });
+
+                if (variacionEncontrada) {
+                    productosParaActualizar.set(item.productoId, nuevasVariaciones);
+                } else {
+                    console.warn(`No se encontró la variación ${item.talla}/${item.color} para el producto ${item.productoId}`);
+                }
+            }
+
+            productosParaActualizar.forEach((nuevasVariaciones, productoId) => {
+                const productRef = doc(db, 'productos', productoId);
+                batch.update(productRef, { variaciones: nuevasVariaciones });
+            });
+
+            try {
+                await batch.commit();
+                console.log(`Stock actualizado (acción: ${accion}) correctamente.`);
+            } catch (error) {
+                console.error("Error al actualizar stock en batch:", error);
+                showToast('Venta guardada, pero falló la actualización de stock.', 'error');
+            }
+        }
+
+        // --- Función para Anular Venta (D) ---
+        async function anularVenta(ventaId) {
+            if (!ventaId) return;
+            if (!confirm('¿Estás seguro de que quieres ANULAR esta venta?\nEsta acción repondrá el stock y marcará la venta como "Anulada".')) {
+                return;
+            }
+
+            const ventaRef = doc(db, 'ventas', ventaId);
+            
+            try {
+                const ventaSnap = await getDoc(ventaRef);
+                if (!ventaSnap.exists()) {
+                    showToast('Error: No se encontró la venta.', 'error');
+                    return;
+                }
+
+                const ventaData = ventaSnap.data();
+
+                if (ventaData.estado === 'Anulada' || ventaData.estado === 'Cancelada') {
+                    showToast('Esta venta ya ha sido anulada.', 'info');
+                    return;
+                }
+                
+                // Si la venta no es un apartado, o si es un apartado ya completado, reponer stock.
+                // Si es un apartado PENDIENTE, la función de cancelar apartado se encarga.
+                if (ventaData.tipoVenta !== 'apartado') {
+                    await actualizarStock(ventaData.items, 'sumar'); 
+                }
+
+                await updateDoc(ventaRef, {
+                    estado: 'Anulada'
+                });
+                
+                // Si es un apartado, también cancelarlo
+                if (ventaData.tipoVenta === 'apartado') {
+                     const q = query(apartadosCollection, where("ventaId", "==", ventaId));
+                     const apartadosSnap = await getDocs(q);
+                     apartadosSnap.forEach(async (docSnap) => {
+                         await updateDoc(docSnap.ref, { estado: "Cancelado" });
+                         // Si el apartado estaba PENDIENTE, el stock ya se repuso.
+                         // Si estaba COMPLETADO, debemos reponerlo ahora.
+                         if (ventaData.estado === 'Completada') {
+                             await actualizarStock(ventaData.items, 'sumar');
+                         }
+                     });
+                }
+
+                showToast('Venta anulada y stock repuesto.', 'info');
+                
+            } catch (error) {
+                console.error("Error al anular la venta:", error);
+                showToast('Error al anular la venta.', 'error');
+            }
+        }
+        
+        // --- Función para Ver Venta (R-Detalle) ---
+        async function handleViewSale(ventaId) {
+            if (!viewSaleModalInstance) {
+                console.error("El modal de ver venta no está inicializado.");
+                return;
+            }
+
+            const modalTitle = document.getElementById('viewSaleModalTitle');
+            const modalBody = document.getElementById('viewSaleModalBody');
+            
+            modalTitle.textContent = `Detalle de Venta #${ventaId.substring(0,8).toUpperCase()}`;
+            modalBody.innerHTML = '<p class="text-center">Cargando...</p>';
+            viewSaleModalInstance.show();
+
+            try {
+                const ventaRef = doc(db, 'ventas', ventaId);
+                const ventaSnap = await getDoc(ventaRef);
+
+                if (!ventaSnap.exists()) {
+                    modalBody.innerHTML = '<p class="text-danger text-center">Error: Venta no encontrada.</p>';
+                    return;
+                }
+
+                const d = ventaSnap.data();
+                const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('es-CO') : 'N/A';
+                
+                let itemsHtml = d.items.map(item => `
+                    <tr>
+                        <td>${item.nombreCompleto || item.nombre}</td>
+                        <td class="text-center">${item.cantidad}</td>
+                        <td class="text-end">${formatoMoneda.format(item.precio)}</td>
+                        <td class="text-end fw-bold">${formatoMoneda.format(item.total)}</td>
+                    </tr>
+                `).join('');
+                
+                let repartidorNombre = 'N/A';
+                if (d.repartidorId && repartidoresMap.has(d.repartidorId)) {
+                    repartidorNombre = repartidoresMap.get(d.repartidorId).nombre;
+                } else if (d.repartidorNombre) {
+                    repartidorNombre = d.repartidorNombre;
+                }
+
+                let repartidorHtml = d.tipoEntrega === 'domicilio' ? 
+                    `<li><strong>Repartidor:</strong> ${repartidorNombre}</li>
+                     <li><strong>Costo Ruta:</strong> ${formatoMoneda.format(d.costoRuta || 0)}</li>` : 
+                    '<li><strong>Tipo Entrega:</strong> Recoge en Tienda</li>';
+
+                modalBody.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Datos del Cliente</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Cliente:</strong> ${d.clienteNombre || 'Cliente General'}</li>
+                                <li><strong>Fecha:</strong> ${fecha}</li>
+                                ${repartidorHtml}
+                                <li><strong>Observaciones:</strong> ${d.observaciones || 'Ninguna'}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Datos de Pago</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Estado:</strong> ${d.estado}</li>
+                                <li><strong>Efectivo:</strong> ${formatoMoneda.format(d.pagoEfectivo || 0)}</li>
+                                <li><strong>Transferencia:</strong> ${formatoMoneda.format(d.pagoTransferencia || 0)}</li>
+                                <li><strong>Descuento:</strong> ${formatoMoneda.format(d.descuento || 0)}</li>
+                                <li class="fs-5 fw-bold mt-2"><strong>Total Venta:</strong> ${formatoMoneda.format(d.totalVenta || 0)}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <hr>
+                    <h5>Items Comprados</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th class="text-end">Precio U.</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error("Error al cargar detalle de venta:", error);
+                modalBody.innerHTML = `<p class="text-danger text-center">Error al cargar datos: ${error.message}</p>`;
+            }
+        }
+        
+        // --- Listener de la lista de ventas (Actualizado) ---
+        if(salesListTableBody) salesListTableBody.addEventListener('click', (e)=>{ 
+            e.preventDefault(); 
+            const target = e.target.closest('button'); 
+            if (!target) return; 
+            const id = target.closest('tr')?.dataset.id; 
+            if (!id) return; 
+            
+            if(target.classList.contains('btn-view-sale')) {
+                handleViewSale(id); 
+            } 
+            
+            if(target.classList.contains('btn-cancel-sale')) {
+                anularVenta(id); 
+            } 
+            
+            if(target.classList.contains('btn-manage-apartado')) {
+                // Redirigir a la pestaña de apartados
+                const apartadosTab = document.querySelector('a[href="#apartados"]');
+                if (apartadosTab) {
+                    const tab = new bootstrap.Tab(apartadosTab);
+                    tab.show();
+                    showToast(`Gestiona el apartado desde esta pestaña`, 'info');
+                }
+            }
+        });
+        
+        function toggleDeliveryFields(){
+            const tES = document.getElementById('tipo-entrega-select');
+            const dFD = document.querySelectorAll('.delivery-fields');
+            const cRI = document.getElementById('costo-ruta');
+            if (dFD && tES && cRI) {
+                dFD.forEach(field => {
+                    if (tES.value === 'domicilio') {
+                        field.style.display = 'flex';
+                    } else {
+                        field.style.display = 'none';
+                        cRI.value = 0;
+                    }
+                });
+            }
+        }
+
+        function toggleApartadoFields(){
+            const tipoVenta = document.getElementById('tipo-venta-select');
+            const apartadoFechaField = document.querySelector('.apartado-fecha-field');
+            const apartadoFechaInput = document.getElementById('apartado-fecha-max');
+
+            if (tipoVenta && apartadoFechaField && apartadoFechaInput) {
+                if (tipoVenta.value === 'apartado') {
+                    apartadoFechaField.style.display = 'block';
+                    // Calcular fecha máxima (15 días desde hoy)
+                    const hoy = new Date();
+                    const fechaMax = new Date(hoy);
+                    fechaMax.setDate(fechaMax.getDate() + 15);
+                    apartadoFechaInput.value = fechaMax.toISOString().split('T')[0];
+                } else {
+                    apartadoFechaField.style.display = 'none';
+                    apartadoFechaInput.value = '';
+                }
+            }
+        }
+
+        document.getElementById('tipo-entrega-select').addEventListener('change', toggleDeliveryFields);
+        document.getElementById('tipo-venta-select').addEventListener('change', toggleApartadoFields);
+        toggleDeliveryFields();
+        toggleApartadoFields();
+        window.calcularTotalVentaGeneral();
+
+    })();
+
+    // ========================================================================
+    // ✅ --- SECCIÓN 4: APARTADOS COMPLETOS (REEMPLAZO) ---
+    // ========================================================================
+    (() => {
+        const apartadosListTableBody = document.getElementById('lista-apartados');
+        if (!apartadosListTableBody) { 
+            console.warn("Elementos de Apartados no encontrados."); 
+            return; 
+        }
+        
+        const renderApartados = (snapshot) => { 
+            apartadosListTableBody.innerHTML = ''; 
+            
+            if (snapshot.empty) { 
+                apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay apartados pendientes.</td></tr>'; 
+                return; 
+            } 
+            
+            snapshot.forEach(docSnap => { 
+                const ap = docSnap.data(); 
+                const id = docSnap.id; 
+                const tr = document.createElement('tr'); 
+                tr.dataset.id = id; 
+                
+                const vence = ap.fechaVencimiento?.toDate ? 
+                    ap.fechaVencimiento.toDate().toLocaleDateString('es-CO') : 'N/A';
+                
+                const hoy = new Date();
+                const fechaVenc = ap.fechaVencimiento?.toDate ? ap.fechaVencimiento.toDate() : null;
+                let diasRestantes = 0;
+                let vencimientoClass = '';
+                
+                if (fechaVenc) {
+                    diasRestantes = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
+                    if (diasRestantes < 0) {
+                        vencimientoClass = 'text-danger fw-bold';
+                    } else if (diasRestantes <= 7) {
+                        vencimientoClass = 'text-warning fw-bold';
+                    }
+                }
+                
+                const saldo = ap.saldo || 0;
+                const porcentajePagado = ap.total > 0 ? ((ap.abonado / ap.total) * 100).toFixed(0) : 0;
+                
+                tr.innerHTML = `
+                    <td>
+                        ${ap.clienteNombre || '?'}
+                        <small class="d-block text-muted">${porcentajePagado}% pagado</small>
+                    </td>
+                    <td>${formatoMoneda.format(ap.total || 0)}</td>
+                    <td class="text-success">${formatoMoneda.format(ap.abonado || 0)}</td>
+                    <td class="text-danger fw-bold">${formatoMoneda.format(saldo)}</td>
+                    <td class="${vencimientoClass}">
+                        ${vence}
+                        ${diasRestantes > 0 ? `<small class="d-block">(${diasRestantes} días)</small>` : ''}
+                        ${diasRestantes < 0 ? '<small class="d-block">(VENCIDO)</small>' : ''}
+                    </td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-outline-info py-0 px-1 btn-ver-apartado"
+                                title="Ver Detalles" data-apartado-id="${id}">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-success py-0 px-1 btn-abono-apartado"
+                                title="Registrar Abono" data-apartado-id="${id}">
+                            <i class="bi bi-cash-coin"></i>
+                        </button>
+                        <button class="btn btn-sm btn-primary py-0 px-1 btn-completar-apartado"
+                                title="Completar" data-apartado-id="${id}" ${saldo > 0 ? 'disabled' : ''}>
+                            <i class="bi bi-check-circle"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-apartado"
+                                title="Cancelar" data-apartado-id="${id}">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </td>
+                `; 
+                apartadosListTableBody.appendChild(tr); 
+            }); 
+        };
+        
+        // Query simplificada sin índice compuesto - ordenar en memoria
+        onSnapshot(apartadosCollection, (snapshot) => {
+            // Filtrar y ordenar en memoria
+            const apartadosPendientes = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.estado === 'Pendiente') {
+                    apartadosPendientes.push({ id: doc.id, ...data });
+                }
+            });
+
             // Ordenar por fecha de vencimiento
             apartadosPendientes.sort((a, b) => {
                 const fechaA = a.fechaVencimiento?.toDate?.() || new Date(0);
