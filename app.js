@@ -65,6 +65,7 @@ const COLOR_MAP = {
     'cafe claro': '#a18262',
     'café claro': '#a18262',
     'marron': '#6D4C41',
+    'cafe oscuro': '#59412f',
     'marrón': '#6D4C41',
     'beige': '#D7CCC8',
     'crema': '#FFF8E1',
