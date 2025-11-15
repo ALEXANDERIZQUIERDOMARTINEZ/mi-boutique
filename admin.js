@@ -1661,7 +1661,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         estado: 'Pendiente',
                         items: ventaData.items, // Guardar items para referencia
                         abonos: [{
-                            fecha: serverTimestamp(),
+                            fecha: Timestamp.fromDate(new Date()), // ✅ Usar Timestamp en lugar de serverTimestamp
                             monto: abonoInicial,
                             metodoPago: metodoPagoInicial,
                             observaciones: 'Abono inicial'
@@ -2755,11 +2755,126 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ================================================================
+    // 4️⃣ PRODUCTOS TOTALES Y DISPONIBLES
+    // ================================================================
+    function calcularProductosTotales() {
+        console.log("📦 Calculando productos totales...");
+
+        try {
+            onSnapshot(productsCollection, (snapshot) => {
+                const totalProductos = snapshot.size;
+                let productosDisponibles = 0;
+
+                snapshot.forEach(doc => {
+                    const producto = doc.data();
+                    if (producto.visible) {
+                        productosDisponibles++;
+                    }
+                });
+
+                const dbTotalProductosEl = document.getElementById('db-total-productos');
+                const dbProductosDisponiblesEl = document.getElementById('db-productos-disponibles');
+
+                if (dbTotalProductosEl) {
+                    dbTotalProductosEl.textContent = totalProductos;
+                }
+
+                if (dbProductosDisponiblesEl) {
+                    dbProductosDisponiblesEl.textContent = `${productosDisponibles} disponibles`;
+                }
+
+                console.log(`✅ Productos totales: ${totalProductos}, Disponibles: ${productosDisponibles}`);
+            });
+        } catch (error) {
+            console.error("❌ Error al calcular productos:", error);
+        }
+    }
+
+    // ================================================================
+    // 5️⃣ PEDIDOS WEB PENDIENTES
+    // ================================================================
+    function calcularPedidosWeb() {
+        console.log("🌐 Calculando pedidos web...");
+
+        try {
+            const q = query(webOrdersCollection, where('estado', '==', 'pendiente'));
+
+            onSnapshot(q, (snapshot) => {
+                const pedidosPendientes = snapshot.size;
+
+                const dbPedidosWebEl = document.getElementById('db-pedidos-web');
+                if (dbPedidosWebEl) {
+                    dbPedidosWebEl.textContent = pedidosPendientes;
+                }
+
+                console.log(`✅ Pedidos web pendientes: ${pedidosPendientes}`);
+            });
+        } catch (error) {
+            console.error("❌ Error al calcular pedidos web:", error);
+        }
+    }
+
+    // ================================================================
+    // 6️⃣ TOTAL DE CLIENTES
+    // ================================================================
+    function calcularTotalClientes() {
+        console.log("👥 Calculando total de clientes...");
+
+        try {
+            onSnapshot(clientsCollection, (snapshot) => {
+                const totalClientes = snapshot.size;
+
+                const dbTotalClientesEl = document.getElementById('db-total-clientes');
+                if (dbTotalClientesEl) {
+                    dbTotalClientesEl.textContent = totalClientes;
+                }
+
+                console.log(`✅ Total de clientes: ${totalClientes}`);
+            });
+        } catch (error) {
+            console.error("❌ Error al calcular clientes:", error);
+        }
+    }
+
+    // ================================================================
+    // 7️⃣ PROMOCIONES ACTIVAS
+    // ================================================================
+    function calcularPromocionesActivas() {
+        console.log("🎁 Calculando promociones activas...");
+
+        try {
+            onSnapshot(productsCollection, (snapshot) => {
+                let promocionesActivas = 0;
+
+                snapshot.forEach(doc => {
+                    const producto = doc.data();
+                    if (producto.promocion && producto.promocion.activa) {
+                        promocionesActivas++;
+                    }
+                });
+
+                const dbPromocionesActivasEl = document.getElementById('db-promociones-activas');
+                if (dbPromocionesActivasEl) {
+                    dbPromocionesActivasEl.textContent = promocionesActivas;
+                }
+
+                console.log(`✅ Promociones activas: ${promocionesActivas}`);
+            });
+        } catch (error) {
+            console.error("❌ Error al calcular promociones:", error);
+        }
+    }
+
+    // ================================================================
     // 🚀 INICIALIZAR TODAS LAS FUNCIONES
     // ================================================================
     calcularVentasHoy();
     calcularBajoStock();
     calcularApartadosVencer();
+    calcularProductosTotales();
+    calcularPedidosWeb();
+    calcularTotalClientes();
+    calcularPromocionesActivas();
 
     console.log("✅ Dashboard inicializado correctamente");
 
