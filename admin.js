@@ -2968,5 +2968,407 @@ document.addEventListener('DOMContentLoaded', () => {
 // FIN DE LA SECCIÓN DEL DASHBOARD
 // ========================================================================
 
+// ========================================================================
+// 📊 GRÁFICOS PROFESIONALES CON CHART.JS
+// ========================================================================
+(() => {
+    console.log("📊 Inicializando gráficos del dashboard...");
+
+    // Referencias a los canvas
+    const ventasChartCanvas = document.getElementById('ventasChart');
+    const topProductosChartCanvas = document.getElementById('topProductosChart');
+
+    // Variables para almacenar las instancias de los gráficos
+    let ventasChart = null;
+    let topProductosChart = null;
+
+    // ================================================================
+    // GRÁFICO 1: TENDENCIA DE VENTAS (BARRAS)
+    // ================================================================
+    async function crearGraficoVentas(dias = 7) {
+        if (!ventasChartCanvas) {
+            console.warn("Canvas de ventas no encontrado");
+            return;
+        }
+
+        try {
+            // Destruir gráfico anterior si existe
+            if (ventasChart) {
+                ventasChart.destroy();
+            }
+
+            // Calcular rango de fechas
+            const hoy = new Date();
+            const fechaInicio = new Date(hoy);
+            fechaInicio.setDate(fechaInicio.getDate() - dias + 1);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            // Obtener ventas del período
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(fechaInicio)),
+                orderBy('timestamp', 'asc')
+            );
+
+            const snapshot = await getDocs(q);
+
+            // Agrupar ventas por día
+            const ventasPorDia = {};
+            const labels = [];
+
+            // Inicializar todos los días con 0
+            for (let i = 0; i < dias; i++) {
+                const fecha = new Date(fechaInicio);
+                fecha.setDate(fecha.getDate() + i);
+                const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                ventasPorDia[key] = 0;
+                labels.push(key);
+            }
+
+            // Sumar ventas por día
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const fecha = venta.timestamp?.toDate();
+                    if (fecha) {
+                        const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                        if (ventasPorDia.hasOwnProperty(key)) {
+                            ventasPorDia[key] += (venta.totalVenta || 0);
+                        }
+                    }
+                }
+            });
+
+            const data = labels.map(label => ventasPorDia[label] || 0);
+
+            // Crear el gráfico
+            const ctx = ventasChartCanvas.getContext('2d');
+            ventasChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Ventas ($)',
+                        data: data,
+                        backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                        borderColor: 'rgba(99, 102, 241, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Ventas: ' + formatoMoneda.format(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            console.log(`✅ Gráfico de ventas creado (${dias} días)`);
+
+        } catch (error) {
+            console.error("❌ Error al crear gráfico de ventas:", error);
+        }
+    }
+
+    // ================================================================
+    // GRÁFICO 2: TOP PRODUCTOS (HORIZONTAL)
+    // ================================================================
+    async function crearGraficoTopProductos() {
+        if (!topProductosChartCanvas) {
+            console.warn("Canvas de top productos no encontrado");
+            return;
+        }
+
+        try {
+            // Destruir gráfico anterior si existe
+            if (topProductosChart) {
+                topProductosChart.destroy();
+            }
+
+            // Obtener ventas del último mes
+            const fechaInicio = new Date();
+            fechaInicio.setDate(fechaInicio.getDate() - 30);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(fechaInicio))
+            );
+
+            const snapshot = await getDocs(q);
+
+            // Contar productos vendidos
+            const productosVendidos = {};
+
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const items = venta.items || [];
+                    items.forEach(item => {
+                        const nombre = item.nombre || 'Sin nombre';
+                        if (!productosVendidos[nombre]) {
+                            productosVendidos[nombre] = 0;
+                        }
+                        productosVendidos[nombre] += (item.cantidad || 0);
+                    });
+                }
+            });
+
+            // Ordenar y obtener top 5
+            const topProductos = Object.entries(productosVendidos)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            if (topProductos.length === 0) {
+                topProductos.push(['Sin datos', 0]);
+            }
+
+            const labels = topProductos.map(p => p[0].length > 20 ? p[0].substring(0, 20) + '...' : p[0]);
+            const data = topProductos.map(p => p[1]);
+
+            // Crear el gráfico
+            const ctx = topProductosChartCanvas.getContext('2d');
+            topProductosChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Unidades',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(139, 92, 246, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(139, 92, 246, 1)'
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            console.log("✅ Gráfico de top productos creado");
+
+        } catch (error) {
+            console.error("❌ Error al crear gráfico de top productos:", error);
+        }
+    }
+
+    // ================================================================
+    // TABLA: STOCK CRÍTICO
+    // ================================================================
+    function actualizarTablaStockCritico() {
+        const tablaBody = document.getElementById('db-tabla-stock-critico');
+        if (!tablaBody) return;
+
+        if (window.productosBajoStock && window.productosBajoStock.length > 0) {
+            const top5 = window.productosBajoStock.slice(0, 5);
+
+            tablaBody.innerHTML = '';
+
+            top5.forEach(item => {
+                const tr = document.createElement('tr');
+                const stockClass = item.stockTotal === 1 ? 'text-danger fw-bold' : 'text-warning fw-bold';
+
+                tr.innerHTML = `
+                    <td>
+                        <div class="fw-semibold">${item.nombre}</div>
+                        <small class="text-muted">${item.variaciones.length} variación(es)</small>
+                    </td>
+                    <td class="text-center ${stockClass}">${item.stockTotal}</td>
+                    <td class="text-end">
+                        <a href="#productos" data-bs-toggle="pill" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
+                `;
+
+                tablaBody.appendChild(tr);
+            });
+        } else {
+            tablaBody.innerHTML = '<tr><td colspan="3" class="text-center text-success py-3">✓ Stock saludable</td></tr>';
+        }
+    }
+
+    // ================================================================
+    // TIMELINE: ACTIVIDAD RECIENTE
+    // ================================================================
+    async function actualizarActividadReciente() {
+        const timelineContainer = document.getElementById('db-actividad-reciente');
+        if (!timelineContainer) return;
+
+        try {
+            // Obtener últimas 5 ventas
+            const q = query(
+                salesCollection,
+                orderBy('timestamp', 'desc'),
+                limit(5)
+            );
+
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                timelineContainer.innerHTML = '<div class="text-center text-muted py-3">No hay actividad reciente</div>';
+                return;
+            }
+
+            let html = '';
+
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                const fecha = venta.timestamp?.toDate();
+                const tiempoRelativo = fecha ? obtenerTiempoRelativo(fecha) : 'Hace un momento';
+
+                const iconoEstado = venta.estado === 'Completada' ? 'check-circle-fill text-success' :
+                                    venta.estado === 'Pendiente' ? 'clock-fill text-warning' :
+                                    'x-circle-fill text-danger';
+
+                html += `
+                    <div class="activity-item d-flex align-items-start gap-3 py-2 px-3 border-bottom">
+                        <i class="bi bi-${iconoEstado} fs-5 mt-1"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold text-dark">Venta ${venta.estado}</div>
+                            <div class="small text-muted">
+                                ${venta.clienteNombre || 'Cliente'} • ${formatoMoneda.format(venta.totalVenta || 0)}
+                            </div>
+                        </div>
+                        <small class="text-muted text-nowrap">${tiempoRelativo}</small>
+                    </div>
+                `;
+            });
+
+            timelineContainer.innerHTML = html;
+
+        } catch (error) {
+            console.error("❌ Error al actualizar actividad:", error);
+            timelineContainer.innerHTML = '<div class="text-center text-danger py-3">Error al cargar</div>';
+        }
+    }
+
+    // Función auxiliar para tiempo relativo
+    function obtenerTiempoRelativo(fecha) {
+        const ahora = new Date();
+        const diff = Math.floor((ahora - fecha) / 1000); // en segundos
+
+        if (diff < 60) return 'Hace un momento';
+        if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
+        if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} h`;
+        if (diff < 604800) return `Hace ${Math.floor(diff / 86400)} días`;
+        return fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+    }
+
+    // ================================================================
+    // EVENT LISTENERS
+    // ================================================================
+
+    // Cambiar período del gráfico de ventas
+    const periodoBtns = document.querySelectorAll('input[name="chart-period"]');
+    periodoBtns.forEach(btn => {
+        btn.addEventListener('change', (e) => {
+            const dias = e.target.id === 'chart-7days' ? 7 :
+                        e.target.id === 'chart-30days' ? 30 :
+                        180; // 6 meses
+            crearGraficoVentas(dias);
+        });
+    });
+
+    // ================================================================
+    // INICIALIZAR
+    // ================================================================
+    crearGraficoVentas(7);
+    crearGraficoTopProductos();
+    actualizarTablaStockCritico();
+    actualizarActividadReciente();
+
+    // Actualizar tabla de stock crítico cuando cambie window.productosBajoStock
+    const originalCalcBajoStock = window.calcularBajoStock;
+    if (originalCalcBajoStock) {
+        // Se actualiza automáticamente con el onSnapshot
+        setTimeout(() => actualizarTablaStockCritico(), 2000);
+    }
+
+    console.log("✅ Gráficos del dashboard inicializados");
+
+})();
+
+// ========================================================================
+// FIN DE LOS GRÁFICOS
+// ========================================================================
+
 });
     
