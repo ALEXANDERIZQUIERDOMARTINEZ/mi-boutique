@@ -1497,6 +1497,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <td><span class="badge ${estadoBadgeClass}">${estado}</span></td>
                                 <td class="action-buttons">
                                     <button class="btn btn-sm btn-outline-primary py-0 px-1 btn-view-sale" title="Ver"><i class="bi bi-eye"></i></button>
+                                    ${!estaAnulada ? `<button class="btn btn-sm btn-outline-info py-0 px-1 btn-change-sale-type" title="Cambiar Tipo" data-tipo="${d.tipoVenta}"><i class="bi bi-arrow-left-right"></i></button>` : ''}
                                     ${d.tipoVenta === 'apartado' && !estaAnulada ? `<button class="btn btn-sm btn-outline-warning py-0 px-1 btn-manage-apartado" title="Gestionar"><i class="bi bi-calendar-heart"></i></button>` : ''}
                                     <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-sale" title="Anular" ${estaAnulada ? 'disabled' : ''}>
                                         <i class="bi bi-trash"></i>
@@ -1950,7 +1951,69 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(`Gestiona el apartado desde esta pestaña`, 'info');
                 }
             }
+
+            // Cambiar tipo de venta (detal/mayorista)
+            if(target.classList.contains('btn-change-sale-type')) {
+                cambiarTipoVenta(id, target.dataset.tipo);
+            }
         });
+
+        // Función para cambiar tipo de venta y recalcular precios
+        async function cambiarTipoVenta(ventaId, tipoActual) {
+            try {
+                const ventaRef = doc(db, 'ventas', ventaId);
+                const ventaSnap = await getDoc(ventaRef);
+
+                if (!ventaSnap.exists()) {
+                    showToast('Venta no encontrada', 'error');
+                    return;
+                }
+
+                const ventaData = ventaSnap.data();
+                const nuevoTipo = tipoActual === 'detal' ? 'mayorista' : 'detal';
+
+                // Confirmar cambio
+                if (!confirm(`¿Cambiar venta de ${tipoActual} a ${nuevoTipo}?`)) {
+                    return;
+                }
+
+                // Recalcular precios de items
+                const itemsActualizados = await Promise.all(ventaData.items.map(async (item) => {
+                    const prodRef = doc(db, 'productos', item.id);
+                    const prodSnap = await getDoc(prodRef);
+
+                    if (prodSnap.exists()) {
+                        const prodData = prodSnap.data();
+                        const nuevoPrecio = nuevoTipo === 'mayorista' ? prodData.precioMayor : prodData.precioDetal;
+                        return {
+                            ...item,
+                            precioUnitario: nuevoPrecio || item.precioUnitario,
+                            totalItem: (nuevoPrecio || item.precioUnitario) * item.cantidad
+                        };
+                    }
+                    return item;
+                }));
+
+                // Recalcular total
+                const subtotal = itemsActualizados.reduce((sum, item) => sum + item.totalItem, 0);
+                const descuento = ventaData.descuento || 0;
+                const costoRuta = ventaData.costoRuta || 0;
+                const nuevoTotal = subtotal - descuento + costoRuta;
+
+                // Actualizar venta
+                await updateDoc(ventaRef, {
+                    tipoVenta: nuevoTipo,
+                    items: itemsActualizados,
+                    subtotal: subtotal,
+                    totalVenta: nuevoTotal
+                });
+
+                showToast(`Venta cambiada a ${nuevoTipo} exitosamente`, 'success');
+            } catch (error) {
+                console.error('Error al cambiar tipo de venta:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        }
         
         function toggleDeliveryFields(){
             const tES = document.getElementById('tipo-entrega-select');
@@ -2500,7 +2563,94 @@ document.addEventListener('DOMContentLoaded', () => {
          const addIncomeForm = document.getElementById('form-add-income'); const incomeAmountInput = document.getElementById('income-amount'); const incomeDescInput = document.getElementById('income-description'); const addExpenseForm = document.getElementById('form-add-expense'); const expenseAmountInput = document.getElementById('expense-amount'); const expenseDescInput = document.getElementById('expense-description'); const closingForm = document.getElementById('form-cierre-caja'); const closingHistoryTableBody = document.getElementById('lista-historial-cierres');
          if(addIncomeForm && addIncomeModalInstance) addIncomeForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(incomeAmountInput.value); const desc = incomeDescInput.value.trim(); if (amount && desc) { try { await addDoc(financesCollection, { tipo: 'ingreso', monto: amount, descripcion: desc, timestamp: serverTimestamp() }); showToast('Ingreso guardado!'); addIncomeModalInstance.hide(); addIncomeForm.reset(); } catch(err) { console.error("Err income:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Monto y descripción requeridos.', 'warning'); } });
          if(addExpenseForm && addExpenseModalInstance) addExpenseForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(expenseAmountInput.value); const desc = expenseDescInput.value.trim(); if (amount && desc) { try { await addDoc(financesCollection, { tipo: 'gasto', monto: amount, descripcion: desc, timestamp: serverTimestamp() }); showToast('Gasto guardado!'); addExpenseModalInstance.hide(); addExpenseForm.reset(); } catch(err) { console.error("Err expense:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Monto y descripción requeridos.', 'warning'); } });
-        if (closingForm) closingForm.addEventListener('submit', async (e) => { e.preventDefault(); showToast("Realizando cierre... (Lógica pendiente)", 'warning'); const egresos = parseFloat(document.getElementById('caja-egresos').value) || 0; const obs = document.getElementById('caja-observaciones').value.trim(); const cierreData = { timestamp: serverTimestamp(), egresos, observaciones: obs }; try { showToast("Cierre guardado (simulado)!"); } catch(err) { console.error("Err closing:", err); showToast(`Error: ${err.message}`, 'error'); } });
+        if (closingForm) closingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            try {
+                showToast("Calculando cierre de caja...", 'info');
+
+                // Obtener fecha actual
+                const hoy = new Date();
+                const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+                const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+
+                // Consultar ventas del día
+                const qVentas = query(
+                    salesCollection,
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<=', Timestamp.fromDate(fin)),
+                    where('estado', '!=', 'Anulada')
+                );
+                const ventasSnap = await getDocs(qVentas);
+
+                let totalVentas = 0;
+                let ventasEfectivo = 0;
+                let ventasTransferencia = 0;
+                let detalleProductos = {};
+
+                ventasSnap.forEach(doc => {
+                    const venta = doc.data();
+                    totalVentas += venta.totalVenta || 0;
+                    ventasEfectivo += venta.pagoEfectivo || 0;
+                    ventasTransferencia += venta.pagoTransferencia || 0;
+
+                    // Contar productos vendidos
+                    if (venta.items) {
+                        venta.items.forEach(item => {
+                            if (!detalleProductos[item.nombre]) {
+                                detalleProductos[item.nombre] = 0;
+                            }
+                            detalleProductos[item.nombre] += item.cantidad;
+                        });
+                    }
+                });
+
+                const egresos = parseFloat(document.getElementById('caja-egresos').value) || 0;
+                const obs = document.getElementById('caja-observaciones').value.trim();
+                const totalCaja = ventasEfectivo - egresos;
+
+                // Guardar cierre en BD
+                const cierreData = {
+                    timestamp: serverTimestamp(),
+                    ventasEfectivo,
+                    ventasTransferencia,
+                    totalVentas,
+                    egresos,
+                    totalCaja,
+                    observaciones: obs
+                };
+
+                await addDoc(closingsCollection, cierreData);
+
+                // Crear mensaje para WhatsApp
+                let mensaje = `*CIERRE DE CAJA*\\n`;
+                mensaje += `📅 ${hoy.toLocaleDateString('es-CO')}\\n\\n`;
+                mensaje += `💰 *Total Ventas:* $${totalVentas.toLocaleString()}\\n`;
+                mensaje += `💵 Efectivo: $${ventasEfectivo.toLocaleString()}\\n`;
+                mensaje += `💳 Transferencia: $${ventasTransferencia.toLocaleString()}\\n`;
+                mensaje += `📤 Egresos: $${egresos.toLocaleString()}\\n`;
+                mensaje += `💼 *Total en Caja:* $${totalCaja.toLocaleString()}\\n\\n`;
+                mensaje += `📦 *Productos Vendidos:*\\n`;
+
+                for (let [producto, cantidad] of Object.entries(detalleProductos)) {
+                    mensaje += `• ${producto}: ${cantidad}\\n`;
+                }
+
+                if (obs) {
+                    mensaje += `\\n📝 Obs: ${obs}`;
+                }
+
+                // Abrir WhatsApp
+                const whatsappUrl = `https://wa.me/573046084971?text=${encodeURIComponent(mensaje)}`;
+                window.open(whatsappUrl, '_blank');
+
+                showToast("Cierre guardado! Enviando por WhatsApp...", 'success');
+                closingForm.reset();
+            } catch(err) {
+                console.error("Err closing:", err);
+                showToast(`Error: ${err.message}`, 'error');
+            }
+        });
          const renderClosings = (snapshot) => { if(!closingHistoryTableBody) return; closingHistoryTableBody.innerHTML = ''; if (snapshot.empty) { closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay cierres.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A'; tr.innerHTML = `<td>${fecha}</td><td>${formatoMoneda.format(d.ventasEfectivo||0)}</td><td>${formatoMoneda.format(d.abonosEfectivo||0)}</td><td>${formatoMoneda.format(d.recibidoRepartidores||0)}</td><td>${formatoMoneda.format(d.egresos||0)}</td><td>${formatoMoneda.format(d.totalCaja||0)}</td><td>${d.observaciones||'-'}</td>`; closingHistoryTableBody.appendChild(tr); }); };
          onSnapshot(query(closingsCollection, orderBy('timestamp', 'desc')), renderClosings, e => { console.error("Error closings:", e); if(closingHistoryTableBody) closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error.</td></tr>';});
     })();
