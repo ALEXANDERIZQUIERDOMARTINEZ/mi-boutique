@@ -1503,7 +1503,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let q;
             if (fechaFiltro) {
-                // Filtrar por fecha específica
+                // Filtrar por fecha específica (sin orderBy)
                 const inicio = new Date(fechaFiltro);
                 inicio.setHours(0, 0, 0, 0);
                 const fin = new Date(fechaFiltro);
@@ -1512,15 +1512,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 q = query(
                     salesCollection,
                     where('timestamp', '>=', inicio),
-                    where('timestamp', '<=', fin),
-                    orderBy('timestamp', 'desc')
+                    where('timestamp', '<=', fin)
                 );
             } else {
-                // Sin filtro, mostrar todas
-                q = query(salesCollection, orderBy('timestamp', 'desc'));
+                // Sin filtro (sin orderBy)
+                q = salesCollection;
             }
 
-            ventasUnsubscribe = onSnapshot(q, renderSales, e => {
+            ventasUnsubscribe = onSnapshot(q, (snapshot) => {
+                const sales = [];
+                snapshot.forEach(doc => sales.push({ id: doc.id, ...doc.data() }));
+                sales.sort((a, b) => {
+                    const tA = a.timestamp?.toMillis?.() || 0;
+                    const tB = b.timestamp?.toMillis?.() || 0;
+                    return tB - tA;
+                });
+                const s = { docs: sales.map(x => ({ id: x.id, data: () => x })), forEach: (cb) => sales.forEach((x, i) => cb({ id: x.id, data: () => x }, i)), empty: sales.length === 0 };
+                renderSales(s);
+            }, e => {
                 console.error("Error sales:", e);
                 if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';
             });
