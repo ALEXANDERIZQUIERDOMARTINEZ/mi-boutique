@@ -909,13 +909,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script type="module" src="admin.js"></script>
 
-    <!-- Script para cerrar drawer móvil al hacer clic en un enlace -->
+    <!-- Script para cerrar navegación móvil al hacer clic en un enlace -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Cerrar el drawer móvil al hacer clic en cualquier enlace de navegación
+            // Cerrar el menú móvil al hacer clic en cualquier enlace de navegación
             const navLinks = document.querySelectorAll('.nav-pills .nav-link');
             const navbarCollapse = document.getElementById('adminNavbarContent');
-            const navbarToggler = document.querySelector('.navbar-toggler');
 
             navLinks.forEach(link => {
                 link.addEventListener('click', function() {
@@ -925,23 +924,9 @@
                         const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
                         if (bsCollapse) {
                             bsCollapse.hide();
-                        } else {
-                            navbarToggler.click();
                         }
                     }
                 });
-            });
-
-            // Cerrar drawer al hacer clic en el overlay (fuera del drawer)
-            navbarCollapse.addEventListener('click', function(e) {
-                if (e.target === this && window.innerWidth < 992) {
-                    const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
-                    if (bsCollapse) {
-                        bsCollapse.hide();
-                    } else {
-                        navbarToggler.click();
-                    }
-                }
             });
         });
     </script>

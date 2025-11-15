@@ -1985,6 +1985,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                console.log('=== CAMBIO DE TIPO DE VENTA ===');
+                console.log('Tipo actual:', tipoActual);
+                console.log('Nuevo tipo:', nuevoTipo);
+                console.log('Items originales:', ventaData.items);
+
                 // Recalcular precios de items
                 const itemsActualizados = await Promise.all(ventaData.items.map(async (item) => {
                     if (!item || !item.id) {
@@ -1997,21 +2002,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (prodSnap.exists()) {
                         const prodData = prodSnap.data();
-                        const nuevoPrecio = nuevoTipo === 'mayorista' ? prodData.precioMayor : prodData.precioDetal;
+                        const nuevoPrecio = nuevoTipo === 'mayorista' ?
+                            (prodData.precioMayor || prodData.precioDetal) :
+                            prodData.precioDetal;
+
+                        const cantidad = parseFloat(item.cantidad) || 1;
+                        const precioFinal = parseFloat(nuevoPrecio) || parseFloat(item.precioUnitario) || 0;
+                        const totalItem = precioFinal * cantidad;
+
+                        console.log(`Item: ${item.nombre || item.id}`);
+                        console.log(`  - Cantidad: ${cantidad}`);
+                        console.log(`  - Precio anterior: $${item.precioUnitario}`);
+                        console.log(`  - Precio nuevo (${nuevoTipo}): $${precioFinal}`);
+                        console.log(`  - Total item: $${totalItem}`);
+
                         return {
                             ...item,
-                            precioUnitario: nuevoPrecio || item.precioUnitario,
-                            totalItem: (nuevoPrecio || item.precioUnitario) * item.cantidad
+                            precioUnitario: precioFinal,
+                            totalItem: totalItem
                         };
                     }
+
+                    console.warn('Producto no encontrado:', item.id);
                     return item;
                 }));
 
-                // Recalcular total
-                const subtotal = itemsActualizados.reduce((sum, item) => sum + (item.totalItem || 0), 0);
-                const descuento = ventaData.descuento || 0;
-                const costoRuta = ventaData.costoRuta || 0;
+                console.log('Items actualizados:', itemsActualizados);
+
+                // Recalcular total con validación estricta
+                let subtotal = 0;
+                itemsActualizados.forEach((item, index) => {
+                    const itemTotal = parseFloat(item.totalItem) || 0;
+                    console.log(`Item ${index + 1} total: $${itemTotal}`);
+                    subtotal += itemTotal;
+                });
+
+                const descuento = parseFloat(ventaData.descuento) || 0;
+                const costoRuta = parseFloat(ventaData.costoRuta) || 0;
                 const nuevoTotal = subtotal - descuento + costoRuta;
+
+                console.log('=== TOTALES ===');
+                console.log('Subtotal (suma items):', subtotal);
+                console.log('Descuento:', descuento);
+                console.log('Costo ruta:', costoRuta);
+                console.log('Total final:', nuevoTotal);
 
                 // Actualizar venta
                 await updateDoc(ventaRef, {
@@ -2021,7 +2055,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     totalVenta: nuevoTotal
                 });
 
-                showToast(`Venta cambiada a ${nuevoTipo} exitosamente`, 'success');
+                showToast(`Venta cambiada a ${nuevoTipo} exitosamente. Total: $${nuevoTotal.toFixed(2)}`, 'success');
 
                 // Recargar la tabla de ventas si existe la función
                 if (typeof renderVentas === 'function') {
