@@ -307,38 +307,85 @@ body {
 }
 
 /* ============================================ */
-/* ESTILOS MEJORADOS DEL DASHBOARD */
+/* ESTILOS MEJORADOS DEL DASHBOARD - DISEÑO ESPECTACULAR */
 /* ============================================ */
 
-/* Tarjetas principales del dashboard - Estilo minimalista */
+/* Animación de entrada suave */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 8px 20px rgba(217, 136, 185, 0.15);
+    }
+    50% {
+        box-shadow: 0 8px 30px rgba(217, 136, 185, 0.3);
+    }
+}
+
+/* Tarjetas principales del dashboard - Diseño espectacular */
 .dashboard-card {
-    background: white;
-    border-radius: 8px;
-    padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    transition: box-shadow 0.2s ease;
-    border-left: 4px solid #e0e0e0;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border-radius: 16px;
+    padding: 1.75rem;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.25rem;
     height: 100%;
+    position: relative;
+    overflow: hidden;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, currentColor, transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease;
 }
 
 .dashboard-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-8px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-card:hover::before {
+    opacity: 0.6;
 }
 
 .dashboard-card .card-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    background: #f5f5f5;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
-    color: #5f6368;
+    font-size: 1.6rem;
+    color: #fff;
     flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.dashboard-card:hover .card-icon {
+    transform: scale(1.1) rotate(5deg);
 }
 
 .dashboard-card .card-content {
@@ -346,31 +393,43 @@ body {
 }
 
 .dashboard-card .card-label {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: #5f6368;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6c757d;
     margin-bottom: 0.5rem;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 1px;
 }
 
 .dashboard-card .card-value {
-    font-size: 1.75rem;
-    font-weight: 600;
+    font-size: 2rem;
+    font-weight: 700;
     margin: 0;
     line-height: 1;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.35rem;
     color: #202124;
+    background: linear-gradient(135deg, currentColor 0%, currentColor 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
 }
 
 .dashboard-card .card-subtitle {
-    font-size: 0.7rem;
-    color: #5f6368;
+    font-size: 0.75rem;
+    color: #868e96;
+    font-weight: 500;
 }
 
-/* Variantes sutiles para tarjetas principales */
+/* Variantes espectaculares con gradientes */
 .card-ventas {
-    border-left-color: #34a853;
+    background: linear-gradient(135deg, #ffffff 0%, #f0fff4 100%);
+}
+
+.card-ventas::before {
+    background: linear-gradient(90deg, #34a853, #66bb6a);
+}
+
+.card-ventas .card-icon {
+    background: linear-gradient(135deg, #34a853 0%, #66bb6a 100%);
 }
 
 .card-ventas .card-value {
@@ -378,7 +437,15 @@ body {
 }
 
 .card-productos {
-    border-left-color: #4285f4;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+}
+
+.card-productos::before {
+    background: linear-gradient(90deg, #4285f4, #5c9aff);
+}
+
+.card-productos .card-icon {
+    background: linear-gradient(135deg, #4285f4 0%, #5c9aff 100%);
 }
 
 .card-productos .card-value {
@@ -386,7 +453,15 @@ body {
 }
 
 .card-stock {
-    border-left-color: #fbbc04;
+    background: linear-gradient(135deg, #ffffff 0%, #fffbf0 100%);
+}
+
+.card-stock::before {
+    background: linear-gradient(90deg, #fbbc04, #ffd54f);
+}
+
+.card-stock .card-icon {
+    background: linear-gradient(135deg, #fbbc04 0%, #ffd54f 100%);
 }
 
 .card-stock .card-value {
@@ -394,70 +469,116 @@ body {
 }
 
 .card-apartados {
-    border-left-color: #ea4335;
+    background: linear-gradient(135deg, #ffffff 0%, #fff5f5 100%);
+}
+
+.card-apartados::before {
+    background: linear-gradient(90deg, #ea4335, #ef5350);
+}
+
+.card-apartados .card-icon {
+    background: linear-gradient(135deg, #ea4335 0%, #ef5350 100%);
 }
 
 .card-apartados .card-value {
     color: #ea4335;
 }
 
-/* Tarjetas secundarias - Estilo minimalista */
+/* Tarjetas secundarias - Diseño moderno */
 .dashboard-card-secondary {
-    background: white;
-    border-radius: 8px;
-    padding: 1.25rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    transition: box-shadow 0.2s ease;
-    border: 1px solid #e0e0e0;
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .dashboard-card-secondary:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
 }
 
 .icon-badge {
-    width: 42px;
-    height: 42px;
-    border-radius: 8px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     flex-shrink: 0;
-    background: #f5f5f5;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
     color: #5f6368;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.icon-badge:hover {
+    transform: scale(1.1);
 }
 
 .icon-badge.bg-info {
-    background: #e8f4fd;
-    color: #1967d2;
+    background: linear-gradient(135deg, #4fc3f7 0%, #29b6f6 100%);
+    color: #fff;
 }
 
 .icon-badge.bg-success {
-    background: #e6f4ea;
-    color: #1e8e3e;
+    background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+    color: #fff;
 }
 
 .icon-badge.bg-warning {
-    background: #fef7e0;
-    color: #ea8600;
+    background: linear-gradient(135deg, #ffb74d 0%, #ffa726 100%);
+    color: #fff;
 }
 
 .icon-badge.bg-danger {
-    background: #fce8e6;
-    color: #c5221f;
+    background: linear-gradient(135deg, #ef5350 0%, #e53935 100%);
+    color: #fff;
 }
 
-/* Lista de actividad reciente */
+/* Lista de actividad reciente - Diseño espectacular */
 .activity-list {
     max-height: 400px;
     overflow-y: auto;
 }
 
+.activity-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.activity-list::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 10px;
+}
+
+.activity-list::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--color-primario) 0%, #c473a2 100%);
+    border-radius: 10px;
+}
+
 .activity-item {
-    padding: 1rem;
-    border-bottom: 1px solid #f0f0f0;
-    transition: background 0.2s ease;
+    padding: 1.25rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.activity-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, transparent, var(--color-primario), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.activity-item:hover::before {
+    opacity: 1;
 }
 
 .activity-item:last-child {
@@ -465,44 +586,53 @@ body {
 }
 
 .activity-item:hover {
-    background-color: #f8f9fa;
+    background: linear-gradient(90deg, rgba(217, 136, 185, 0.05) 0%, transparent 100%);
+    transform: translateX(8px);
 }
 
 .activity-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.activity-item:hover .activity-icon {
+    transform: scale(1.1);
 }
 
 .activity-icon.icon-venta {
-    background: #e8f5e9;
-    color: #4caf50;
+    background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+    color: #fff;
 }
 
 .activity-icon.icon-apartado {
-    background: #fce4ec;
-    color: var(--color-primario);
+    background: linear-gradient(135deg, var(--color-primario) 0%, #c473a2 100%);
+    color: #fff;
 }
 
 .activity-icon.icon-pedido {
-    background: #e3f2fd;
-    color: #2196f3;
+    background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+    color: #fff;
 }
 
 .activity-time {
     font-size: 0.75rem;
-    color: #999;
+    color: #868e96;
+    font-weight: 500;
 }
 
 .activity-title {
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     margin-bottom: 0.25rem;
+    color: #202124;
 }
 
 .activity-subtitle {
@@ -519,6 +649,113 @@ body {
 #db-tabla-stock-critico .stock-low {
     color: #ffc107;
     font-weight: 600;
+}
+
+/* Estilos espectaculares para las cards de gráficos */
+#dashboard .card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    overflow: hidden;
+}
+
+#dashboard .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+}
+
+#dashboard .card-header {
+    background: linear-gradient(135deg, #fafbfc 0%, #f1f3f4 100%);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+    padding: 1.25rem 1.5rem;
+    font-weight: 600;
+}
+
+#dashboard .card-header h5 {
+    color: #202124;
+    font-weight: 700;
+    margin: 0;
+}
+
+#dashboard .card-body {
+    padding: 1.5rem;
+}
+
+/* Estilos para los botones de periodo del gráfico */
+#dashboard .btn-group-sm .btn-outline-primary {
+    border-color: rgba(217, 136, 185, 0.3);
+    color: var(--color-primario);
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+#dashboard .btn-group-sm .btn-outline-primary:hover {
+    background: linear-gradient(135deg, var(--color-primario) 0%, #c473a2 100%);
+    border-color: var(--color-primario);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(217, 136, 185, 0.3);
+}
+
+#dashboard .btn-group-sm .btn-check:checked + .btn-outline-primary {
+    background: linear-gradient(135deg, var(--color-primario) 0%, #c473a2 100%);
+    border-color: var(--color-primario);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(217, 136, 185, 0.3);
+}
+
+/* Mejorar el fondo del dashboard */
+.admin-main {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+    padding: 2rem 1.5rem;
+}
+
+/* Títulos de sección con estilo */
+#dashboard h5.text-muted {
+    color: #495057 !important;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 1.25rem;
+    position: relative;
+    padding-left: 1rem;
+}
+
+#dashboard h5.text-muted::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 70%;
+    background: linear-gradient(180deg, var(--color-primario) 0%, #c473a2 100%);
+    border-radius: 2px;
+}
+
+/* Animación para las tablas */
+#dashboard table {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+#dashboard .table thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #495057;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+#dashboard .table tbody tr {
+    transition: all 0.2s ease;
+}
+
+#dashboard .table tbody tr:hover {
+    background: linear-gradient(90deg, rgba(217, 136, 185, 0.05) 0%, transparent 100%);
+    transform: scale(1.01);
 }
 
 /* Responsive del dashboard */
@@ -543,4 +780,217 @@ body {
         height: 40px;
         font-size: 1.2rem;
     }
+
+    .admin-main {
+        padding: 1.5rem 1rem;
+    }
+}
+
+/* ============================================ */
+/* ANIMACIONES Y EFECTOS ADICIONALES */
+/* ============================================ */
+
+/* Animación de carga suave para elementos */
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+/* Efecto de brillo en hover para botones */
+.btn-primary, .btn-outline-primary {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before, .btn-outline-primary:hover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+.btn-primary:hover::before, .btn-outline-primary:hover::before {
+    left: 100%;
+}
+
+/* Badges mejorados con animación */
+.badge {
+    font-weight: 600;
+    padding: 0.4em 0.8em;
+    border-radius: 8px;
+    letter-spacing: 0.3px;
+    transition: all 0.3s ease;
+}
+
+.badge:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Números con animación de conteo */
+@keyframes countUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card-value {
+    animation: countUp 0.5s ease-out;
+}
+
+/* Efecto de hover en las tarjetas métricas secundarias */
+#dashboard .col-6.col-md-3:hover .icon-badge {
+    transform: scale(1.15) rotate(5deg);
+}
+
+#dashboard .col-6.col-md-3:hover h6 {
+    color: var(--color-primario);
+    transition: color 0.3s ease;
+}
+
+/* Animación de pulso para elementos importantes */
+@keyframes pulse-soft {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.card-stock[data-urgent="true"] {
+    animation: pulse-soft 2s infinite;
+}
+
+/* Mejorar el aspecto de los inputs y selects */
+.form-control, .form-select {
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 0.2rem rgba(217, 136, 185, 0.25);
+    transform: translateY(-2px);
+}
+
+/* Efecto de carga en gráficos */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+canvas {
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+/* Mejorar scrollbar global */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f3f4;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--color-primario) 0%, #c473a2 100%);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #c473a2 0%, var(--color-primario) 100%);
+}
+
+/* Sombra especial para elementos flotantes */
+.shadow-special {
+    box-shadow: 0 10px 40px rgba(217, 136, 185, 0.2), 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Animación para los títulos del dashboard */
+#dashboard h1, #dashboard h2 {
+    animation: fadeInUp 0.6s ease-out;
+    font-weight: 700;
+    color: #202124;
+}
+
+/* Hover effect para filas de tabla con color de marca */
+.table-hover tbody tr:hover {
+    background: linear-gradient(90deg, rgba(217, 136, 185, 0.08) 0%, transparent 50%);
+    cursor: pointer;
+}
+
+/* Mejorar botones de acción */
+.btn-sm {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-sm:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Loading spinner personalizado */
+.spinner-border {
+    border-color: var(--color-primario);
+    border-right-color: transparent;
+}
+
+/* Efecto glassmorphism para modales */
+.modal-content {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+/* Animación de entrada para modales */
+.modal.fade .modal-dialog {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal.show .modal-dialog {
+    transform: scale(1);
+}
+
+/* Mejorar navbar con sombra sutil */
+.admin-navbar {
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.98) !important;
+}
+
+/* Pills de navegación con gradientes */
+.nav-pills .nav-link.active {
+    background: linear-gradient(135deg, var(--color-primario) 0%, #c473a2 100%);
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(217, 136, 185, 0.3);
+}
+
+.nav-pills .nav-link {
+    transition: all 0.3s ease;
+}
+
+.nav-pills .nav-link:hover:not(.active) {
+    background: rgba(217, 136, 185, 0.1);
+    transform: translateY(-2px);
 }
