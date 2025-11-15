@@ -1480,11 +1480,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 // ✅ CORRECCIÓN CRÍTICA: APARTADOS TAMBIÉN RESTAN STOCK
                 await actualizarStock(ventaData.items, 'restar'); 
         
-                if (ventaData.tipoVenta === 'apartado') { 
-                    const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia; 
+                if (ventaData.tipoVenta === 'apartado') {
+                    const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia;
                     const saldoPendiente = ventaData.totalVenta - abonoInicial;
-                    const fechaVencimiento = new Date();
-                    fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
+
+                    // Usar la fecha del campo (15 días por defecto)
+                    const apartadoFechaInput = document.getElementById('apartado-fecha-max');
+                    const fechaVencimiento = apartadoFechaInput && apartadoFechaInput.value
+                        ? new Date(apartadoFechaInput.value + 'T23:59:59')
+                        : (() => {
+                            const f = new Date();
+                            f.setDate(f.getDate() + 15);
+                            return f;
+                        })();
                     
                     try { 
                         await addDoc(apartadosCollection, { 
