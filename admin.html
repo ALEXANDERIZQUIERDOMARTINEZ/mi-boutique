@@ -373,29 +373,27 @@
                         <div class="card-body"> 
                             <form id="form-venta"> 
                                 <input type="hidden" id="venta-cliente-id"> 
-                                <div class="row align-items-end"> 
-                                    <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label> 
-                                        <div class="input-group"> 
-                                            <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;"> 
-                                            <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button> 
-                                        </div> 
-                                        <div class="row mt-2 gx-2"> 
-                                            <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div> 
-                                            <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div> 
-                                        </div> 
-                                    </div> 
-                                    <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div> 
-                                    <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div> 
-                                    <div class="col-md-2 mb-3"> 
-                                        <div class="form-check form-switch pt-3"> <input type="checkbox" id="venta-whatsapp" class="form-check-input"> <label for="venta-whatsapp" class="form-check-label">Pedido WP</label> </div> 
-                                    </div> 
+                                <div class="row align-items-end">
+                                    <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label>
+                                        <div class="input-group">
+                                            <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;">
+                                            <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button>
+                                        </div>
+                                        <div class="row mt-2 gx-2">
+                                            <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div>
+                                            <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div>
+                                    <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div>
+                                    <div class="col-md-2 mb-3 apartado-fecha-field" style="display: none;">
+                                        <label for="apartado-fecha-max" class="form-label">Vence:</label>
+                                        <input type="date" id="apartado-fecha-max" class="form-control form-control-sm" readonly>
+                                    </div>
                                 </div> 
-                                <div class="row delivery-fields"> 
-                                    <div class="col-md-4 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div> 
-                                    <div class="col-md-3 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div> 
-                                    <div class="col-md-5 mb-3 d-flex align-items-center pt-3"> 
-                                        <div class="form-check form-switch"> <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia"> <label class="form-check-label" for="ruta-pagada-transferencia">¿Ruta pagada por Transf.?</label> </div> 
-                                    </div> 
+                                <div class="row delivery-fields">
+                                    <div class="col-md-6 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div>
+                                    <div class="col-md-6 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="number" id="costo-ruta" class="form-control" value="0" step="100"> </div>
                                 </div> 
                                 <label for="venta-producto" class="form-label">Buscar Producto:</label> 
                                 <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;"> 
@@ -404,10 +402,23 @@
                                     <tbody id="venta-carrito"></tbody> 
                                 </table> 
                                 <hr> 
-                                <div class="row"> 
-                                    <div class="col-md-6"> 
-                                        <label for="venta-observaciones" class="form-label mt-3">Observaciones:</label> 
-                                        <textarea id="venta-observaciones" class="form-control" rows="3"></textarea> 
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="venta-whatsapp" disabled>
+                                                <label class="form-check-label" for="venta-whatsapp">Pedido WhatsApp</label>
+                                                <small class="d-block text-muted">Se activa automáticamente desde pedidos web</small>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 delivery-fields">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia">
+                                                <label class="form-check-label" for="ruta-pagada-transferencia">Ruta pagada por Transferencia</label>
+                                            </div>
+                                        </div>
+                                        <label for="venta-observaciones" class="form-label">Observaciones:</label>
+                                        <textarea id="venta-observaciones" class="form-control" rows="2"></textarea>
                                     </div> 
                                     <div class="col-md-6"> 
                                         <div class="row"> 

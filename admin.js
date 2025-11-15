@@ -1762,12 +1762,44 @@ document.addEventListener('DOMContentLoaded', () => {
         
         function toggleDeliveryFields(){
             const tES = document.getElementById('tipo-entrega-select');
-            const dFD = document.querySelector('.delivery-fields');
+            const dFD = document.querySelectorAll('.delivery-fields');
             const cRI = document.getElementById('costo-ruta');
-            if (dFD && tES && cRI) { if (tES.value === 'domicilio') { dFD.style.display = 'flex'; } else { dFD.style.display = 'none'; cRI.value = 0; } }
+            if (dFD && tES && cRI) {
+                dFD.forEach(field => {
+                    if (tES.value === 'domicilio') {
+                        field.style.display = 'flex';
+                    } else {
+                        field.style.display = 'none';
+                        cRI.value = 0;
+                    }
+                });
+            }
         }
+
+        function toggleApartadoFields(){
+            const tipoVenta = document.getElementById('tipo-venta-select');
+            const apartadoFechaField = document.querySelector('.apartado-fecha-field');
+            const apartadoFechaInput = document.getElementById('apartado-fecha-max');
+
+            if (tipoVenta && apartadoFechaField && apartadoFechaInput) {
+                if (tipoVenta.value === 'apartado') {
+                    apartadoFechaField.style.display = 'block';
+                    // Calcular fecha máxima (15 días desde hoy)
+                    const hoy = new Date();
+                    const fechaMax = new Date(hoy);
+                    fechaMax.setDate(fechaMax.getDate() + 15);
+                    apartadoFechaInput.value = fechaMax.toISOString().split('T')[0];
+                } else {
+                    apartadoFechaField.style.display = 'none';
+                    apartadoFechaInput.value = '';
+                }
+            }
+        }
+
         document.getElementById('tipo-entrega-select').addEventListener('change', toggleDeliveryFields);
+        document.getElementById('tipo-venta-select').addEventListener('change', toggleApartadoFields);
         toggleDeliveryFields();
+        toggleApartadoFields();
         window.calcularTotalVentaGeneral();
 
     })();
