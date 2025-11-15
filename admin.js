@@ -457,7 +457,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const render = (snapshot) => { if (!categoryList) return; categoryList.innerHTML = ''; if (snapshot.empty) { categoryList.innerHTML = '<li class="list-group-item text-muted">No hay categorías.</li>'; return; } snapshot.forEach(doc => { const d = doc.data(); const id = doc.id; const li = document.createElement('li'); li.className = 'list-group-item d-flex justify-content-between align-items-center'; li.dataset.id = id; li.innerHTML = `<span class="category-name">${d.nombre}</span><div class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 me-1 btn-edit-category" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-category" title="Eliminar"><i class="bi bi-trash"></i></button></div>`; categoryList.appendChild(li); }); };
         const updateDropdown = (snapshot) => { if (!categoryDropdown) return; const sel = categoryDropdown.value; categoryDropdown.innerHTML = '<option value="">Selecciona...</option>'; snapshot.forEach(doc => { const d = doc.data(); const opt = document.createElement('option'); opt.value = doc.id; opt.textContent = d.nombre; categoryDropdown.appendChild(opt); }); categoryDropdown.value = sel; }
         const checkDuplicate = async (name, currentId = null) => { const lowerCaseName = name.toLowerCase(); const q = query(categoriesCollection, where("nombreLower", "==", lowerCaseName)); const querySnapshot = await getDocs(q); let isDuplicate = false; querySnapshot.forEach((doc) => { if (doc.id !== currentId) { isDuplicate = true; } }); return isDuplicate; };
-        onSnapshot(query(categoriesCollection, orderBy("nombre")), (s) => { render(s); updateDropdown(s); }, (e) => { console.error("Error categories: ", e); if(categoryList) categoryList.innerHTML = '<li class="list-group-item text-danger">Error.</li>'; });
+        // Cargar categorías sin índice (ordenar en memoria)
+        onSnapshot(categoriesCollection, (snapshot) => {
+            const categories = [];
+            snapshot.forEach(doc => {
+                categories.push({ id: doc.id, ...doc.data() });
+            });
+            // Ordenar alfabéticamente en memoria
+            categories.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+            // Renderizar con categorías ordenadas
+            const orderedSnapshot = { docs: categories.map(c => ({ id: c.id, data: () => c })), forEach: (callback) => categories.forEach((c, i) => callback({ id: c.id, data: () => c }, i)), empty: categories.length === 0 };
+            render(orderedSnapshot);
+            updateDropdown(orderedSnapshot);
+        }, (e) => {
+            console.error("Error categories: ", e);
+            if(categoryList) categoryList.innerHTML = '<li class="list-group-item text-danger">Error.</li>';
+        });
         if (categoryForm) categoryForm.addEventListener('submit', async (e) => { e.preventDefault(); const name = categoryNameInput.value.trim(); if (!name) return; if (await checkDuplicate(name)) { showToast('Ya existe una categoría con ese nombre.', 'warning'); return; } try { await addDoc(categoriesCollection, { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría guardada!"); categoryNameInput.value = ''; } catch (err) { console.error("Error add cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
         if (editForm && editCategoryModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const name = editNameInput.value.trim(); if (!id || !name) return; if (await checkDuplicate(name, id)) { showToast('Ya existe otra categoría con ese nombre.', 'warning'); return; } try { await updateDoc(doc(db, "categorias", id), { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría actualizada!"); editCategoryModalInstance.hide(); } catch (err) { console.error("Error update cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
         if (categoryList) categoryList.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const li = target.closest('li'); const id = li.dataset.id; const nameSpan = li.querySelector('.category-name'); if (!id || !nameSpan) return;
@@ -888,7 +904,29 @@ document.addEventListener('DOMContentLoaded', () => {
             
             applyInventoryFilters();
         };
-        onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
+        // Cargar productos sin índice (ordenar en memoria)
+        onSnapshot(productsCollection, (snapshot) => {
+            const products = [];
+            snapshot.forEach(doc => {
+                products.push({ id: doc.id, ...doc.data() });
+            });
+            // Ordenar por timestamp descendente en memoria
+            products.sort((a, b) => {
+                const timeA = a.timestamp?.toMillis?.() || 0;
+                const timeB = b.timestamp?.toMillis?.() || 0;
+                return timeB - timeA;
+            });
+            // Crear snapshot simulado para renderProducts
+            const orderedSnapshot = {
+                docs: products.map(p => ({ id: p.id, data: () => p })),
+                forEach: (callback) => products.forEach((p, i) => callback({ id: p.id, data: () => p }, i)),
+                empty: products.length === 0
+            };
+            renderProducts(orderedSnapshot);
+        }, e => {
+            console.error("Error products:", e);
+            if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar productos.</td></tr>';
+        });
         
         window.clearProductForm = function() { 
             productForm.reset(); 
@@ -1502,7 +1540,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let q;
             if (fechaFiltro) {
-                // Filtrar por fecha específica
+                // Filtrar por fecha específica (sin orderBy)
                 const inicio = new Date(fechaFiltro);
                 inicio.setHours(0, 0, 0, 0);
                 const fin = new Date(fechaFiltro);
@@ -1511,17 +1549,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 q = query(
                     salesCollection,
                     where('timestamp', '>=', inicio),
-                    where('timestamp', '<=', fin),
-                    orderBy('timestamp', 'desc')
+                    where('timestamp', '<=', fin)
                 );
             } else {
-                // Sin filtro, mostrar todas
-                q = query(salesCollection, orderBy('timestamp', 'desc'));
+                // Sin filtro, cargar todas (sin orderBy)
+                q = salesCollection;
             }
 
-            ventasUnsubscribe = onSnapshot(q, renderSales, e => {
+            // Ordenar en memoria
+            ventasUnsubscribe = onSnapshot(q, (snapshot) => {
+                const ventas = [];
+                snapshot.forEach(doc => {
+                    ventas.push({ id: doc.id, ...doc.data() });
+                });
+                // Ordenar por timestamp descendente en memoria
+                ventas.sort((a, b) => {
+                    const timeA = a.timestamp?.toMillis?.() || 0;
+                    const timeB = b.timestamp?.toMillis?.() || 0;
+                    return timeB - timeA;
+                });
+                // Crear snapshot simulado
+                const orderedSnapshot = {
+                    docs: ventas.map(v => ({ id: v.id, data: () => v })),
+                    forEach: (callback) => ventas.forEach((v, i) => callback({ id: v.id, data: () => v }, i)),
+                    empty: ventas.length === 0
+                };
+                renderSales(orderedSnapshot);
+            }, e => {
                 console.error("Error sales:", e);
-                if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';
+                if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar ventas.</td></tr>';
             });
         }
 
