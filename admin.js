@@ -2051,6 +2051,378 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+        // --- Función para actualizar stock (restar o sumar) ---
+        async function actualizarStock(itemsVendido, accion = 'restar') {
+            if (!itemsVendido || itemsVendido.length === 0) return;
+            
+            const batch = writeBatch(db);
+            let productosParaActualizar = new Map(); 
+
+            for (const item of itemsVendido) {
+                if (!item.productoId) {
+                    console.warn("Item en carrito sin productoId, omitiendo stock:", item);
+                    continue; 
+                }
+
+                if (!productosParaActualizar.has(item.productoId)) {
+                    const productoActual = localProductsMap.get(item.productoId);
+                    if (!productoActual) {
+                        console.error(`Producto ${item.productoId} no encontrado en localProductsMap. Omitiendo stock.`);
+                        continue;
+                    }
+                    productosParaActualizar.set(item.productoId, JSON.parse(JSON.stringify(productoActual.variaciones)));
+                }
+
+                let variaciones = productosParaActualizar.get(item.productoId);
+                let variacionEncontrada = false;
+
+                let nuevasVariaciones = variaciones.map(v => {
+                    if (v.talla === item.talla && v.color === item.color) {
+                        variacionEncontrada = true;
+                        const stockActual = parseInt(v.stock, 10) || 0;
+                        const cantidad = parseInt(item.cantidad, 10);
+                        
+                        if (accion === 'restar') {
+                            v.stock = stockActual - cantidad;
+                        } else if (accion === 'sumar') {
+                            v.stock = stockActual + cantidad;
+                        }
+                    }
+                    return v;
+                });
+
+                if (variacionEncontrada) {
+                    productosParaActualizar.set(item.productoId, nuevasVariaciones);
+                } else {
+                    console.warn(`No se encontró la variación ${item.talla}/${item.color} para el producto ${item.productoId}`);
+                }
+            }
+
+            productosParaActualizar.forEach((nuevasVariaciones, productoId) => {
+                const productRef = doc(db, 'productos', productoId);
+                batch.update(productRef, { variaciones: nuevasVariaciones });
+            });
+
+            try {
+                await batch.commit();
+                console.log(`Stock actualizado (acción: ${accion}) correctamente.`);
+            } catch (error) {
+                console.error("Error al actualizar stock en batch:", error);
+                showToast('Venta guardada, pero falló la actualización de stock.', 'error');
+            }
+        }
+
+        // --- Función para Anular Venta (D) ---
+        async function anularVenta(ventaId) {
+            if (!ventaId) return;
+            if (!confirm('¿Estás seguro de que quieres ANULAR esta venta?\nEsta acción repondrá el stock y marcará la venta como "Anulada".')) {
+                return;
+            }
+
+            const ventaRef = doc(db, 'ventas', ventaId);
+            
+            try {
+                const ventaSnap = await getDoc(ventaRef);
+                if (!ventaSnap.exists()) {
+                    showToast('Error: No se encontró la venta.', 'error');
+                    return;
+                }
+
+                const ventaData = ventaSnap.data();
+
+                if (ventaData.estado === 'Anulada' || ventaData.estado === 'Cancelada') {
+                    showToast('Esta venta ya ha sido anulada.', 'info');
+                    return;
+                }
+                
+                // Si la venta no es un apartado, o si es un apartado ya completado, reponer stock.
+                // Si es un apartado PENDIENTE, la función de cancelar apartado se encarga.
+                if (ventaData.tipoVenta !== 'apartado') {
+                    await actualizarStock(ventaData.items, 'sumar'); 
+                }
+
+                await updateDoc(ventaRef, {
+                    estado: 'Anulada'
+                });
+                
+                // Si es un apartado, también cancelarlo
+                if (ventaData.tipoVenta === 'apartado') {
+                     const q = query(apartadosCollection, where("ventaId", "==", ventaId));
+                     const apartadosSnap = await getDocs(q);
+                     apartadosSnap.forEach(async (docSnap) => {
+                         await updateDoc(docSnap.ref, { estado: "Cancelado" });
+                         // Si el apartado estaba PENDIENTE, el stock ya se repuso.
+                         // Si estaba COMPLETADO, debemos reponerlo ahora.
+                         if (ventaData.estado === 'Completada') {
+                             await actualizarStock(ventaData.items, 'sumar');
+                         }
+                     });
+                }
+
+                showToast('Venta anulada y stock repuesto.', 'info');
+                
+            } catch (error) {
+                console.error("Error al anular la venta:", error);
+                showToast('Error al anular la venta.', 'error');
+            }
+        }
+        
+        // --- Función para Ver Venta (R-Detalle) ---
+        async function handleViewSale(ventaId) {
+            if (!viewSaleModalInstance) {
+                console.error("El modal de ver venta no está inicializado.");
+                return;
+            }
+
+            const modalTitle = document.getElementById('viewSaleModalTitle');
+            const modalBody = document.getElementById('viewSaleModalBody');
+            
+            modalTitle.textContent = `Detalle de Venta #${ventaId.substring(0,8).toUpperCase()}`;
+            modalBody.innerHTML = '<p class="text-center">Cargando...</p>';
+            viewSaleModalInstance.show();
+
+            try {
+                const ventaRef = doc(db, 'ventas', ventaId);
+                const ventaSnap = await getDoc(ventaRef);
+
+                if (!ventaSnap.exists()) {
+                    modalBody.innerHTML = '<p class="text-danger text-center">Error: Venta no encontrada.</p>';
+                    return;
+                }
+
+                const d = ventaSnap.data();
+                const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('es-CO') : 'N/A';
+                
+                let itemsHtml = d.items.map(item => `
+                    <tr>
+                        <td>${item.nombreCompleto || item.nombre}</td>
+                        <td class="text-center">${item.cantidad}</td>
+                        <td class="text-end">${formatoMoneda.format(item.precio)}</td>
+                        <td class="text-end fw-bold">${formatoMoneda.format(item.total)}</td>
+                    </tr>
+                `).join('');
+                
+                let repartidorNombre = 'N/A';
+                if (d.repartidorId && repartidoresMap.has(d.repartidorId)) {
+                    repartidorNombre = repartidoresMap.get(d.repartidorId).nombre;
+                } else if (d.repartidorNombre) {
+                    repartidorNombre = d.repartidorNombre;
+                }
+
+                let repartidorHtml = d.tipoEntrega === 'domicilio' ? 
+                    `<li><strong>Repartidor:</strong> ${repartidorNombre}</li>
+                     <li><strong>Costo Ruta:</strong> ${formatoMoneda.format(d.costoRuta || 0)}</li>` : 
+                    '<li><strong>Tipo Entrega:</strong> Recoge en Tienda</li>';
+
+                modalBody.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Datos del Cliente</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Cliente:</strong> ${d.clienteNombre || 'Cliente General'}</li>
+                                <li><strong>Fecha:</strong> ${fecha}</li>
+                                ${repartidorHtml}
+                                <li><strong>Observaciones:</strong> ${d.observaciones || 'Ninguna'}</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Datos de Pago</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Estado:</strong> ${d.estado}</li>
+                                <li><strong>Efectivo:</strong> ${formatoMoneda.format(d.pagoEfectivo || 0)}</li>
+                                <li><strong>Transferencia:</strong> ${formatoMoneda.format(d.pagoTransferencia || 0)}</li>
+                                <li><strong>Descuento:</strong> ${formatoMoneda.format(d.descuento || 0)}</li>
+                                <li class="fs-5 fw-bold mt-2"><strong>Total Venta:</strong> ${formatoMoneda.format(d.totalVenta || 0)}</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <hr>
+                    <h5>Items Comprados</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center">Cant.</th>
+                                    <th class="text-end">Precio U.</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error("Error al cargar detalle de venta:", error);
+                modalBody.innerHTML = `<p class="text-danger text-center">Error al cargar datos: ${error.message}</p>`;
+            }
+        }
+        
+        // --- Listener de la lista de ventas (Actualizado) ---
+        if(salesListTableBody) salesListTableBody.addEventListener('click', (e)=>{ 
+            e.preventDefault(); 
+            const target = e.target.closest('button'); 
+            if (!target) return; 
+            const id = target.closest('tr')?.dataset.id; 
+            if (!id) return; 
+            
+            if(target.classList.contains('btn-view-sale')) {
+                handleViewSale(id); 
+            } 
+            
+            if(target.classList.contains('btn-cancel-sale')) {
+                anularVenta(id); 
+            } 
+            
+            if(target.classList.contains('btn-manage-apartado')) {
+                // Redirigir a la pestaña de apartados
+                const apartadosTab = document.querySelector('a[href="#apartados"]');
+                if (apartadosTab) {
+                    const tab = new bootstrap.Tab(apartadosTab);
+                    tab.show();
+                    showToast(`Gestiona el apartado desde esta pestaña`, 'info');
+                }
+            }
+        });
+        
+        function toggleDeliveryFields(){
+            const tES = document.getElementById('tipo-entrega-select');
+            const dFD = document.querySelectorAll('.delivery-fields');
+            const cRI = document.getElementById('costo-ruta');
+            if (dFD && tES && cRI) {
+                dFD.forEach(field => {
+                    if (tES.value === 'domicilio') {
+                        field.style.display = 'flex';
+                    } else {
+                        field.style.display = 'none';
+                        cRI.value = 0;
+                    }
+                });
+            }
+        }
+
+        function toggleApartadoFields(){
+            const tipoVenta = document.getElementById('tipo-venta-select');
+            const apartadoFechaField = document.querySelector('.apartado-fecha-field');
+            const apartadoFechaInput = document.getElementById('apartado-fecha-max');
+
+            if (tipoVenta && apartadoFechaField && apartadoFechaInput) {
+                if (tipoVenta.value === 'apartado') {
+                    apartadoFechaField.style.display = 'block';
+                    // Calcular fecha máxima (15 días desde hoy)
+                    const hoy = new Date();
+                    const fechaMax = new Date(hoy);
+                    fechaMax.setDate(fechaMax.getDate() + 15);
+                    apartadoFechaInput.value = fechaMax.toISOString().split('T')[0];
+                } else {
+                    apartadoFechaField.style.display = 'none';
+                    apartadoFechaInput.value = '';
+                }
+            }
+        }
+
+        document.getElementById('tipo-entrega-select').addEventListener('change', toggleDeliveryFields);
+        document.getElementById('tipo-venta-select').addEventListener('change', toggleApartadoFields);
+        toggleDeliveryFields();
+        toggleApartadoFields();
+        window.calcularTotalVentaGeneral();
+
+    })();
+
+    // ========================================================================
+    // ✅ --- SECCIÓN 4: APARTADOS COMPLETOS (REEMPLAZO) ---
+    // ========================================================================
+    (() => {
+        const apartadosListTableBody = document.getElementById('lista-apartados');
+        if (!apartadosListTableBody) { 
+            console.warn("Elementos de Apartados no encontrados."); 
+            return; 
+        }
+        
+        const renderApartados = (snapshot) => { 
+            apartadosListTableBody.innerHTML = ''; 
+            
+            if (snapshot.empty) { 
+                apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay apartados pendientes.</td></tr>'; 
+                return; 
+            } 
+            
+            snapshot.forEach(docSnap => { 
+                const ap = docSnap.data(); 
+                const id = docSnap.id; 
+                const tr = document.createElement('tr'); 
+                tr.dataset.id = id; 
+                
+                const vence = ap.fechaVencimiento?.toDate ? 
+                    ap.fechaVencimiento.toDate().toLocaleDateString('es-CO') : 'N/A';
+                
+                const hoy = new Date();
+                const fechaVenc = ap.fechaVencimiento?.toDate ? ap.fechaVencimiento.toDate() : null;
+                let diasRestantes = 0;
+                let vencimientoClass = '';
+                
+                if (fechaVenc) {
+                    diasRestantes = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
+                    if (diasRestantes < 0) {
+                        vencimientoClass = 'text-danger fw-bold';
+                    } else if (diasRestantes <= 7) {
+                        vencimientoClass = 'text-warning fw-bold';
+                    }
+                }
+                
+                const saldo = ap.saldo || 0;
+                const porcentajePagado = ap.total > 0 ? ((ap.abonado / ap.total) * 100).toFixed(0) : 0;
+                
+                tr.innerHTML = `
+                    <td>
+                        ${ap.clienteNombre || '?'}
+                        <small class="d-block text-muted">${porcentajePagado}% pagado</small>
+                    </td>
+                    <td>${formatoMoneda.format(ap.total || 0)}</td>
+                    <td class="text-success">${formatoMoneda.format(ap.abonado || 0)}</td>
+                    <td class="text-danger fw-bold">${formatoMoneda.format(saldo)}</td>
+                    <td class="${vencimientoClass}">
+                        ${vence}
+                        ${diasRestantes > 0 ? `<small class="d-block">(${diasRestantes} días)</small>` : ''}
+                        ${diasRestantes < 0 ? '<small class="d-block">(VENCIDO)</small>' : ''}
+                    </td>
+                    <td class="action-buttons">
+                        <button class="btn btn-sm btn-outline-info py-0 px-1 btn-ver-apartado"
+                                title="Ver Detalles" data-apartado-id="${id}">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-success py-0 px-1 btn-abono-apartado"
+                                title="Registrar Abono" data-apartado-id="${id}">
+                            <i class="bi bi-cash-coin"></i>
+                        </button>
+                        <button class="btn btn-sm btn-primary py-0 px-1 btn-completar-apartado"
+                                title="Completar" data-apartado-id="${id}" ${saldo > 0 ? 'disabled' : ''}>
+                            <i class="bi bi-check-circle"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-apartado"
+                                title="Cancelar" data-apartado-id="${id}">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </td>
+                `; 
+                apartadosListTableBody.appendChild(tr); 
+            }); 
+        };
+        
+        // Query simplificada sin índice compuesto - ordenar en memoria
+        onSnapshot(apartadosCollection, (snapshot) => {
+            // Filtrar y ordenar en memoria
+            const apartadosPendientes = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.estado === 'Pendiente') {
+                    apartadosPendientes.push({ id: doc.id, ...data });
+                }
+            });
+
             // Ordenar por fecha de vencimiento
             apartadosPendientes.sort((a, b) => {
                 const fechaA = a.fechaVencimiento?.toDate?.() || new Date(0);
@@ -2741,12 +3113,791 @@ document.addEventListener('DOMContentLoaded', () => {
     calcularBajoStock();
     calcularApartadosVencer();
 
+    // ========================================================================
+    // 📊 GRÁFICOS DEL DASHBOARD
+    // ========================================================================
+
+    let ventasChart = null;
+    let topProductosChart = null;
+
+    // ✅ GRÁFICO DE TENDENCIA DE VENTAS
+    function initVentasChart() {
+        const ctx = document.getElementById('ventasChart');
+        if (!ctx) return;
+
+        ventasChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Ventas ($)',
+                    data: [],
+                    borderColor: '#D988B9',
+                    backgroundColor: 'rgba(217, 136, 185, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#D988B9',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        padding: 12,
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 13 },
+                        callbacks: {
+                            label: function(context) {
+                                return formatoMoneda.format(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return formatoMoneda.format(value);
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ✅ GRÁFICO DE TOP PRODUCTOS
+    function initTopProductosChart() {
+        const ctx = document.getElementById('topProductosChart');
+        if (!ctx) return;
+
+        topProductosChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [
+                        '#D988B9',
+                        '#FF8DA1',
+                        '#C77DA5',
+                        '#E5A4C3',
+                        '#B86FA2'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            font: { size: 11 },
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.map((label, i) => {
+                                        const value = data.datasets[0].data[i];
+                                        return {
+                                            text: `${label} (${value})`,
+                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.parsed} unidades`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ✅ CARGAR DATOS DE VENTAS POR PERIODO (sin índices)
+    async function cargarVentasPorPeriodo(dias) {
+        try {
+            const hoy = new Date();
+            hoy.setHours(23, 59, 59, 999);
+
+            const fechaInicio = new Date(hoy);
+            fechaInicio.setDate(fechaInicio.getDate() - dias + 1);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            // Query simple sin orderBy (ordenar en memoria)
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', fechaInicio),
+                where('timestamp', '<=', hoy)
+            );
+
+            const snapshot = await getDocs(q);
+            const ventasPorFecha = {};
+
+            // Inicializar todos los días con 0
+            for (let i = 0; i < dias; i++) {
+                const fecha = new Date(fechaInicio);
+                fecha.setDate(fecha.getDate() + i);
+                const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                ventasPorFecha[key] = 0;
+            }
+
+            // Sumar ventas por fecha
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const fecha = venta.timestamp?.toDate();
+                    if (fecha) {
+                        const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                        ventasPorFecha[key] = (ventasPorFecha[key] || 0) + (venta.totalVenta || 0);
+                    }
+                }
+            });
+
+            const labels = Object.keys(ventasPorFecha);
+            const data = Object.values(ventasPorFecha);
+
+            if (ventasChart) {
+                ventasChart.data.labels = labels;
+                ventasChart.data.datasets[0].data = data;
+                ventasChart.update();
+            }
+
+        } catch (error) {
+            console.error("Error cargando ventas por periodo:", error);
+        }
+    }
+
+    // ✅ CARGAR DATOS DE VENTAS POR MESES (sin índices)
+    async function cargarVentasPorMeses(meses) {
+        try {
+            const hoy = new Date();
+            const fechaInicio = new Date(hoy);
+            fechaInicio.setMonth(fechaInicio.getMonth() - meses + 1);
+            fechaInicio.setDate(1);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            // Query simple sin orderBy (ordenar en memoria)
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', fechaInicio)
+            );
+
+            const snapshot = await getDocs(q);
+            const ventasPorMes = {};
+
+            // Inicializar todos los meses con 0
+            for (let i = 0; i < meses; i++) {
+                const fecha = new Date(fechaInicio);
+                fecha.setMonth(fecha.getMonth() + i);
+                const key = fecha.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
+                ventasPorMes[key] = 0;
+            }
+
+            // Sumar ventas por mes
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const fecha = venta.timestamp?.toDate();
+                    if (fecha) {
+                        const key = fecha.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
+                        ventasPorMes[key] = (ventasPorMes[key] || 0) + (venta.totalVenta || 0);
+                    }
+                }
+            });
+
+            const labels = Object.keys(ventasPorMes);
+            const data = Object.values(ventasPorMes);
+
+            if (ventasChart) {
+                ventasChart.data.labels = labels;
+                ventasChart.data.datasets[0].data = data;
+                ventasChart.update();
+            }
+
+        } catch (error) {
+            console.error("Error cargando ventas por meses:", error);
+        }
+    }
+
+    // ✅ CARGAR TOP PRODUCTOS MÁS VENDIDOS (sin índices)
+    async function cargarTopProductos() {
+        try {
+            // Obtener todas las ventas del último mes
+            const hoy = new Date();
+            const hace30Dias = new Date(hoy);
+            hace30Dias.setDate(hace30Dias.getDate() - 30);
+
+            // Query simple sin orderBy (no necesita orden aquí)
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', hace30Dias)
+            );
+
+            const snapshot = await getDocs(q);
+            const productosCantidad = {};
+
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    venta.items?.forEach(item => {
+                        const nombre = item.nombre || 'Sin nombre';
+                        productosCantidad[nombre] = (productosCantidad[nombre] || 0) + (item.cantidad || 0);
+                    });
+                }
+            });
+
+            // Ordenar y tomar top 5
+            const topProductos = Object.entries(productosCantidad)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            const labels = topProductos.map(p => p[0]);
+            const data = topProductos.map(p => p[1]);
+
+            if (topProductosChart) {
+                topProductosChart.data.labels = labels;
+                topProductosChart.data.datasets[0].data = data;
+                topProductosChart.update();
+            }
+
+        } catch (error) {
+            console.error("Error cargando top productos:", error);
+        }
+    }
+
+    // ✅ EVENT LISTENERS PARA CAMBIAR PERIODO
+    document.getElementById('chart-7days')?.addEventListener('change', () => cargarVentasPorPeriodo(7));
+    document.getElementById('chart-30days')?.addEventListener('change', () => cargarVentasPorPeriodo(30));
+    document.getElementById('chart-6months')?.addEventListener('change', () => cargarVentasPorMeses(6));
+
+    // ✅ INICIALIZAR GRÁFICOS
+    setTimeout(() => {
+        console.log("📊 Inicializando gráficos del dashboard...");
+        initVentasChart();
+        initTopProductosChart();
+        cargarVentasPorPeriodo(7); // Cargar 7 días por defecto
+        cargarTopProductos();
+        console.log("✅ Gráficos inicializados correctamente");
+    }, 1000); // Esperar a que Chart.js esté disponible
+
     console.log("✅ Dashboard inicializado correctamente");
 
 })(); // ← Cierre del IIFE del Dashboard
 
 // ========================================================================
 // FIN DE LA SECCIÓN DEL DASHBOARD
+// ========================================================================
+
+// ========================================================================
+// 📊 SISTEMA DE REPORTES
+// ========================================================================
+(() => {
+    const formReporte = document.getElementById('form-reporte');
+    const reporteTipo = document.getElementById('reporte-tipo');
+    const reporteDesde = document.getElementById('reporte-desde');
+    const reporteHasta = document.getElementById('reporte-hasta');
+    const areaReporte = document.getElementById('area-reporte');
+    const btnImprimir = document.getElementById('btn-imprimir-reporte');
+    const repartidorFilter = document.getElementById('reporte-repartidor-filter');
+    const repartidorSelect = document.getElementById('reporte-repartidor-select');
+
+    if (!formReporte) return;
+
+    // Mostrar/ocultar filtro de repartidor
+    reporteTipo?.addEventListener('change', () => {
+        if (reporteTipo.value === 'repartidor') {
+            repartidorFilter.style.display = 'block';
+            cargarRepartidoresReporte();
+        } else {
+            repartidorFilter.style.display = 'none';
+        }
+    });
+
+    // Cargar repartidores para el filtro
+    async function cargarRepartidoresReporte() {
+        const snapshot = await getDocs(repartidoresCollection);
+        repartidorSelect.innerHTML = '<option value="">Todos los repartidores</option>';
+        snapshot.forEach(doc => {
+            const rep = doc.data();
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = rep.nombre;
+            repartidorSelect.appendChild(option);
+        });
+    }
+
+    // Generar reporte
+    formReporte.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const tipo = reporteTipo.value;
+        const desde = new Date(reporteDesde.value);
+        desde.setHours(0, 0, 0, 0);
+        const hasta = new Date(reporteHasta.value);
+        hasta.setHours(23, 59, 59, 999);
+
+        if (!tipo) {
+            showToast('Selecciona un tipo de reporte', 'warning');
+            return;
+        }
+
+        areaReporte.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2">Generando reporte...</p></div>';
+        btnImprimir.style.display = 'none';
+
+        try {
+            let html = '';
+            switch (tipo) {
+                case 'ventas':
+                    html = await generarReporteVentas(desde, hasta);
+                    break;
+                case 'utilidad':
+                    html = await generarReporteUtilidad(desde, hasta);
+                    break;
+                case 'mas-vendidos':
+                    html = await generarReporteMasVendidos(desde, hasta);
+                    break;
+                case 'repartidor':
+                    html = await generarReporteRepartidor(desde, hasta, repartidorSelect.value);
+                    break;
+                case 'apartados':
+                    html = await generarReporteApartados(desde, hasta);
+                    break;
+                case 'descuentos':
+                    html = await generarReporteDescuentos(desde, hasta);
+                    break;
+            }
+            areaReporte.innerHTML = html;
+            btnImprimir.style.display = 'inline-block';
+        } catch (error) {
+            console.error('Error generando reporte:', error);
+            areaReporte.innerHTML = '<div class="alert alert-danger">Error al generar el reporte</div>';
+        }
+    });
+
+    // Función para obtener ventas del periodo
+    async function obtenerVentasPeriodo(desde, hasta) {
+        const q = query(salesCollection, where('timestamp', '>=', desde), where('timestamp', '<=', hasta));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    // REPORTE DE VENTAS
+    async function generarReporteVentas(desde, hasta) {
+        const ventas = await obtenerVentasPeriodo(desde, hasta);
+        const ventasValidas = ventas.filter(v => v.estado !== 'Anulada' && v.estado !== 'Cancelada');
+
+        const totalVentas = ventasValidas.reduce((sum, v) => sum + (v.totalVenta || 0), 0);
+        const totalEfectivo = ventasValidas.reduce((sum, v) => sum + (v.pagoEfectivo || 0), 0);
+        const totalTransferencia = ventasValidas.reduce((sum, v) => sum + (v.pagoTransferencia || 0), 0);
+
+        let html = `
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">📊 Reporte de Ventas</h5>
+                    <small class="text-muted">Periodo: ${desde.toLocaleDateString('es-CO')} - ${hasta.toLocaleDateString('es-CO')}</small>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-4">
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted">Total Ventas</h6>
+                                <h3 class="text-primary">${formatoMoneda.format(totalVentas)}</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted">Cantidad</h6>
+                                <h3 class="text-success">${ventasValidas.length}</h3>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted">Promedio</h6>
+                                <h3 class="text-info">${formatoMoneda.format(ventasValidas.length ? totalVentas / ventasValidas.length : 0)}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p><strong>Efectivo:</strong> ${formatoMoneda.format(totalEfectivo)}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Transferencia:</strong> ${formatoMoneda.format(totalTransferencia)}</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Tipo</th>
+                                    <th class="text-end">Total</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${ventasValidas.map(v => `
+                                    <tr>
+                                        <td>${v.timestamp?.toDate().toLocaleDateString('es-CO')}</td>
+                                        <td>${v.clienteNombre || 'N/A'}</td>
+                                        <td><span class="badge bg-secondary">${v.tipoVenta}</span></td>
+                                        <td class="text-end">${formatoMoneda.format(v.totalVenta || 0)}</td>
+                                        <td><span class="badge ${v.estado === 'Completada' ? 'bg-success' : 'bg-warning'}">${v.estado}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+        return html;
+    }
+
+    // REPORTE DE UTILIDAD
+    async function generarReporteUtilidad(desde, hasta) {
+        const ventas = await obtenerVentasPeriodo(desde, hasta);
+        const ventasValidas = ventas.filter(v => v.estado !== 'Anulada' && v.estado !== 'Cancelada');
+
+        let totalVentas = 0;
+        let totalCosto = 0;
+
+        for (const venta of ventasValidas) {
+            totalVentas += venta.totalVenta || 0;
+            for (const item of (venta.items || [])) {
+                // Obtener costo del producto
+                const prodSnapshot = await getDocs(query(productsCollection, where('nombre', '==', item.nombre)));
+                if (!prodSnapshot.empty) {
+                    const costo = prodSnapshot.docs[0].data().costoCompra || 0;
+                    totalCosto += costo * (item.cantidad || 0);
+                }
+            }
+        }
+
+        const utilidad = totalVentas - totalCosto;
+        const margen = totalVentas > 0 ? ((utilidad / totalVentas) * 100).toFixed(2) : 0;
+
+        return `
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">💰 Reporte de Utilidad</h5>
+                    <small class="text-muted">Periodo: ${desde.toLocaleDateString('es-CO')} - ${hasta.toLocaleDateString('es-CO')}</small>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded mb-3">
+                                <h6 class="text-muted">Total Ventas</h6>
+                                <h4 class="text-primary">${formatoMoneda.format(totalVentas)}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-light rounded mb-3">
+                                <h6 class="text-muted">Costo Total</h6>
+                                <h4 class="text-danger">${formatoMoneda.format(totalCosto)}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-success text-white rounded mb-3">
+                                <h6>Utilidad Neta</h6>
+                                <h4>${formatoMoneda.format(utilidad)}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 bg-info text-white rounded mb-3">
+                                <h6>Margen</h6>
+                                <h4>${margen}%</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // REPORTE MÁS VENDIDOS
+    async function generarReporteMasVendidos(desde, hasta) {
+        const ventas = await obtenerVentasPeriodo(desde, hasta);
+        const ventasValidas = ventas.filter(v => v.estado !== 'Anulada' && v.estado !== 'Cancelada');
+
+        const productos = {};
+        ventasValidas.forEach(venta => {
+            venta.items?.forEach(item => {
+                const key = item.nombre;
+                if (!productos[key]) {
+                    productos[key] = { nombre: key, cantidad: 0, total: 0 };
+                }
+                productos[key].cantidad += item.cantidad || 0;
+                productos[key].total += (item.precio || 0) * (item.cantidad || 0);
+            });
+        });
+
+        const topProductos = Object.values(productos).sort((a, b) => b.cantidad - a.cantidad).slice(0, 10);
+
+        return `
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">🏆 Top 10 Productos Más Vendidos</h5>
+                    <small class="text-muted">Periodo: ${desde.toLocaleDateString('es-CO')} - ${hasta.toLocaleDateString('es-CO')}</small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Producto</th>
+                                    <th class="text-center">Unidades Vendidas</th>
+                                    <th class="text-end">Total Generado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${topProductos.map((p, i) => `
+                                    <tr>
+                                        <td><strong>${i + 1}</strong></td>
+                                        <td>${p.nombre}</td>
+                                        <td class="text-center"><span class="badge bg-primary">${p.cantidad}</span></td>
+                                        <td class="text-end">${formatoMoneda.format(p.total)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // REPORTE POR REPARTIDOR
+    async function generarReporteRepartidor(desde, hasta, repartidorId) {
+        let q = query(salesCollection, where('timestamp', '>=', desde), where('timestamp', '<=', hasta), where('tipoEntrega', '==', 'domicilio'));
+        if (repartidorId) {
+            q = query(salesCollection, where('timestamp', '>=', desde), where('timestamp', '<=', hasta), where('repartidorId', '==', repartidorId));
+        }
+
+        const snapshot = await getDocs(q);
+        const ventas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(v => v.estado !== 'Anulada');
+
+        const repartidores = {};
+        ventas.forEach(v => {
+            const key = v.repartidorNombre || 'Sin asignar';
+            if (!repartidores[key]) {
+                repartidores[key] = { nombre: key, entregas: 0, efectivo: 0, transferencia: 0, totalRutas: 0 };
+            }
+            repartidores[key].entregas++;
+            repartidores[key].efectivo += v.rutaPagadaTransferencia ? 0 : (v.pagoEfectivo || 0);
+            repartidores[key].transferencia += (v.pagoTransferencia || 0);
+            repartidores[key].totalRutas += v.costoRuta || 0;
+        });
+
+        return `
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">🚴 Reporte por Repartidor</h5>
+                    <small class="text-muted">Periodo: ${desde.toLocaleDateString('es-CO')} - ${hasta.toLocaleDateString('es-CO')}</small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Repartidor</th>
+                                    <th class="text-center">Entregas</th>
+                                    <th class="text-end">Efectivo</th>
+                                    <th class="text-end">Transferencia</th>
+                                    <th class="text-end">Costo Rutas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.values(repartidores).map(r => `
+                                    <tr>
+                                        <td><strong>${r.nombre}</strong></td>
+                                        <td class="text-center">${r.entregas}</td>
+                                        <td class="text-end">${formatoMoneda.format(r.efectivo)}</td>
+                                        <td class="text-end">${formatoMoneda.format(r.transferencia)}</td>
+                                        <td class="text-end">${formatoMoneda.format(r.totalRutas)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // REPORTE DE APARTADOS
+    async function generarReporteApartados(desde, hasta) {
+        const q = query(apartadosCollection, where('fechaCreacion', '>=', desde), where('fechaCreacion', '<=', hasta));
+        const snapshot = await getDocs(q);
+        const apartados = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const totalApartados = apartados.reduce((sum, a) => sum + (a.total || 0), 0);
+        const totalAbonado = apartados.reduce((sum, a) => sum + (a.abonado || 0), 0);
+        const totalSaldo = apartados.reduce((sum, a) => sum + (a.saldo || 0), 0);
+
+        return `
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">📅 Reporte de Apartados</h5>
+                    <small class="text-muted">Periodo: ${desde.toLocaleDateString('es-CO')} - ${hasta.toLocaleDateString('es-CO')}</small>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-4">
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted">Total Apartados</h6>
+                                <h4>${formatoMoneda.format(totalApartados)}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-success text-white rounded">
+                                <h6>Abonado</h6>
+                                <h4>${formatoMoneda.format(totalAbonado)}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-warning text-white rounded">
+                                <h6>Saldo Pendiente</h6>
+                                <h4>${formatoMoneda.format(totalSaldo)}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end">Abonado</th>
+                                    <th class="text-end">Saldo</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${apartados.map(a => `
+                                    <tr>
+                                        <td>${a.clienteNombre || 'N/A'}</td>
+                                        <td class="text-end">${formatoMoneda.format(a.total || 0)}</td>
+                                        <td class="text-end text-success">${formatoMoneda.format(a.abonado || 0)}</td>
+                                        <td class="text-end text-danger">${formatoMoneda.format(a.saldo || 0)}</td>
+                                        <td><span class="badge ${a.estado === 'Completado' ? 'bg-success' : 'bg-warning'}">${a.estado}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // REPORTE DE DESCUENTOS
+    async function generarReporteDescuentos(desde, hasta) {
+        const ventas = await obtenerVentasPeriodo(desde, hasta);
+        const ventasConDescuento = ventas.filter(v => (v.descuento || 0) > 0 && v.estado !== 'Anulada');
+
+        const totalDescuentos = ventasConDescuento.reduce((sum, v) => {
+            const desc = v.descuentoTipo === 'porcentaje' ? (v.totalVenta * v.descuento / 100) : v.descuento;
+            return sum + desc;
+        }, 0);
+
+        return `
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">🎁 Reporte de Descuentos</h5>
+                    <small class="text-muted">Periodo: ${desde.toLocaleDateString('es-CO')} - ${hasta.toLocaleDateString('es-CO')}</small>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-4">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted">Ventas con Descuento</h6>
+                                <h4>${ventasConDescuento.length}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-danger text-white rounded">
+                                <h6>Total Descontado</h6>
+                                <h4>${formatoMoneda.format(totalDescuentos)}</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end">Descuento</th>
+                                    <th>Tipo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${ventasConDescuento.map(v => {
+                                    const desc = v.descuentoTipo === 'porcentaje' ? (v.totalVenta * v.descuento / 100) : v.descuento;
+                                    return `
+                                        <tr>
+                                            <td>${v.timestamp?.toDate().toLocaleDateString('es-CO')}</td>
+                                            <td>${v.clienteNombre || 'N/A'}</td>
+                                            <td class="text-end">${formatoMoneda.format(v.totalVenta || 0)}</td>
+                                            <td class="text-end text-danger">${formatoMoneda.format(desc)}</td>
+                                            <td><span class="badge bg-secondary">${v.descuentoTipo === 'porcentaje' ? v.descuento + '%' : 'Fijo'}</span></td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Botón de imprimir
+    btnImprimir?.addEventListener('click', () => {
+        window.print();
+    });
+
+    console.log("✅ Sistema de reportes inicializado");
+})();
+
+// ========================================================================
+// FIN DEL SISTEMA DE REPORTES
 // ========================================================================
 
 });
