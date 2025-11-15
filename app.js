@@ -132,15 +132,28 @@ const COLOR_MAP = {
     'marfil': '#e1cc4f',
     'estampado': '#9E9E9E',
     'floral': '#9E9E9E',
-    'animal print': '#9E9E9E',
     'rayas': '#9E9E9E',
     'puntos': '#9E9E9E',
 };
 
-// ✅ FUNCIÓN: Convertir nombre de color a código hex
+// ✅ COLORES ESPECIALES CON GRADIENTES Y PATRONES
+const SPECIAL_COLORS = {
+    'animal print': 'radial-gradient(circle at 20% 50%, #C19A6B 0%, #C19A6B 15%, transparent 15%), radial-gradient(circle at 60% 30%, #8B6914 0%, #8B6914 12%, transparent 12%), radial-gradient(circle at 80% 70%, #C19A6B 0%, #C19A6B 15%, transparent 15%), linear-gradient(135deg, #DEB887 0%, #F4A460 100%)',
+    'blanco/negro': 'linear-gradient(to right, #FFFFFF 0%, #FFFFFF 50%, #212121 50%, #212121 100%)',
+    'blanco lineas beig': 'repeating-linear-gradient(45deg, #FFFFFF 0px, #FFFFFF 8px, #D7CCC8 8px, #D7CCC8 16px)',
+};
+
+// ✅ FUNCIÓN: Convertir nombre de color a código hex o gradiente
 function getColorHex(colorName) {
     if (!colorName) return '#9E9E9E';
     const normalized = colorName.toLowerCase().trim();
+
+    // Primero verificar si es un color especial
+    if (SPECIAL_COLORS[normalized]) {
+        return SPECIAL_COLORS[normalized];
+    }
+
+    // Si no, buscar en el mapa normal
     return COLOR_MAP[normalized] || '#9E9E9E';
 }
 
@@ -374,12 +387,19 @@ function renderProducts(products) {
         let coloresHTML = '';
         if (colores.length > 0) {
             const colorChips = colores.map(c => {
-                const hexColor = getColorHex(c);
-                return `<span class="variation-chip color-chip" 
-                             style="background-color: ${hexColor};" 
+                const colorValue = getColorHex(c);
+                const normalized = c.toLowerCase().trim();
+
+                // Si es un color especial (gradiente), usar background-image
+                const styleAttr = SPECIAL_COLORS[normalized]
+                    ? `background-image: ${colorValue};`
+                    : `background-color: ${colorValue};`;
+
+                return `<span class="variation-chip color-chip"
+                             style="${styleAttr}"
                              data-color-name="${c}"></span>`;
             }).join('');
-            
+
             coloresHTML = `<div class="variations-title mt-1">Colores</div>
                           <div class="variation-chips colors">${colorChips}</div>`;
         }

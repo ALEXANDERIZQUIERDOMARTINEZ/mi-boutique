@@ -395,6 +395,8 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     cursor: default;
     position: relative;
     transition: transform 0.2s;
+    background-size: cover;
+    background-position: center;
 }
 
 .variation-chips.colors .color-chip:hover {
@@ -1129,7 +1131,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 }
 
 /* =========================================================== */
-/* ICONOS BLANCOS - DISEÑO PREMIUM CON EFECTOS ESPECIALES */
+/* ICONOS BLANCOS - SIN ANIMACIONES (ESTÁTICOS) */
 /* =========================================================== */
 
 /* Todos los iconos en botones primarios y áreas de color primario */
@@ -1140,47 +1142,33 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 .mobile-bottom-nav .nav-item.active i {
     color: white !important;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Efecto de brillo en hover para iconos blancos */
-.btn-primary:hover i,
-.filter-group.active:hover i {
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
-    transform: scale(1.1);
 }
 
 /* Iconos del header - blancos con fondo de color primario */
 .navbar .filter-group i {
     color: #777;
-    transition: all 0.3s ease;
 }
 
 .navbar .filter-group.active i {
     color: white !important;
-    animation: iconPulse 1.5s ease-in-out infinite;
 }
 
-/* Icono del carrito - blanco cuando tiene items */
+/* Icono del carrito */
 .cart-icon i {
     color: #333;
-    transition: all 0.3s ease;
 }
 
 .cart-icon:hover i {
     color: var(--color-primario);
-    transform: scale(1.15) rotate(-5deg);
 }
 
 .cart-icon.has-items i {
     color: var(--color-primario) !important;
-    animation: cartBounce 0.6s ease;
 }
 
 /* Iconos de navegación móvil - blancos cuando activos */
 .mobile-bottom-nav .nav-item i {
     font-size: 1.5rem;
-    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .mobile-bottom-nav .nav-item.active i {
@@ -1189,7 +1177,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     padding: 12px;
     border-radius: 50%;
     box-shadow: 0 4px 15px rgba(217, 136, 185, 0.4);
-    transform: translateY(-8px) scale(1.2);
 }
 
 .mobile-bottom-nav .nav-item:not(.active) i {
@@ -1198,22 +1185,15 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 
 .mobile-bottom-nav .nav-item:hover:not(.active) i {
     color: var(--color-primario);
-    transform: translateY(-3px) scale(1.1);
 }
 
-/* Iconos del sidebar de filtros - con estilo premium */
+/* Iconos del sidebar de filtros */
 .filters-title i {
     color: white !important;
     background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
     padding: 10px;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(217, 136, 185, 0.3);
-    transition: all 0.3s ease;
-}
-
-.filters-title:hover i {
-    transform: rotate(360deg) scale(1.1);
-    box-shadow: 0 6px 20px rgba(217, 136, 185, 0.5);
 }
 
 .filter-section-title i {
@@ -1224,18 +1204,13 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     box-shadow: 0 3px 10px rgba(217, 136, 185, 0.3);
 }
 
-/* Botón de limpiar filtros con icono blanco */
+/* Botón de limpiar filtros con icono */
 .btn-reset-filters i {
     color: #777;
-    transition: all 0.3s ease;
 }
 
 .btn-reset-filters:hover i {
-    color: white !important;
-    background: var(--color-primario);
-    padding: 6px;
-    border-radius: 50%;
-    transform: rotate(-360deg);
+    color: var(--color-primario);
 }
 
 /* Iconos de búsqueda - blancos con fondo */
@@ -1250,12 +1225,6 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     border-radius: 50%;
     box-shadow: 0 3px 10px rgba(217, 136, 185, 0.3);
     left: 8px;
-    transition: all 0.3s ease;
-}
-
-.search-box input:focus ~ .search-icon {
-    transform: scale(1.15) rotate(90deg);
-    box-shadow: 0 5px 15px rgba(217, 136, 185, 0.5);
 }
 
 /* Icono de observaciones en carrito */
@@ -1273,119 +1242,29 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.cart-item .btn-danger:hover i {
-    transform: rotate(180deg) scale(1.2);
-}
-
 /* Iconos de modal de producto */
 .modal-title i {
-    color: white !important;
-    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
-    padding: 12px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(217, 136, 185, 0.3);
-    margin-right: 12px;
-}
-
-/* Animaciones premium para iconos */
-@keyframes iconPulse {
-    0%, 100% {
-        transform: scale(1);
-        filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
-    }
-    50% {
-        transform: scale(1.1);
-        filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
-    }
-}
-
-@keyframes cartBounce {
-    0%, 100% { transform: scale(1) rotate(0deg); }
-    25% { transform: scale(1.2) rotate(-10deg); }
-    50% { transform: scale(1.1) rotate(10deg); }
-    75% { transform: scale(1.15) rotate(-5deg); }
-}
-
-@keyframes iconFloat {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-5px); }
-}
-
-/* Hacer iconos más grandes y llamativos en hover */
-.filter-group i,
-.catalog-filters i,
-.navbar i {
-    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.filter-group:hover i {
-    transform: scale(1.2) rotate(5deg);
+    color: var(--color-primario) !important;
+    margin-right: 8px;
 }
 
 /* Estilo especial para el icono de promociones */
 .filter-promo i {
     color: white !important;
-    animation: iconFloat 2s ease-in-out infinite;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-.filter-promo:hover i {
-    animation: iconPulse 0.6s ease-in-out infinite, iconFloat 2s ease-in-out infinite;
-}
-
-/* Iconos en badges con efecto especial */
+/* Iconos en badges */
 .product-badges i {
     color: white !important;
     margin-right: 4px;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-/* Contador del carrito con icono mejorado */
-.cart-counter {
-    animation: iconPulse 2s ease-in-out infinite;
-}
-
-/* Selector de cantidad - iconos blancos premium */
-.quantity-selector .quantity-btn {
-    position: relative;
-    overflow: hidden;
-}
-
-.quantity-selector .quantity-btn::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.3s, height 0.3s;
-}
-
-.quantity-selector .quantity-btn:hover::before {
-    width: 100%;
-    height: 100%;
-}
-
-.quantity-selector .quantity-btn:hover {
-    transform: scale(1.15);
-}
-
 /* Iconos del dropdown de categorías */
 .dropdown-menu-enhanced .dropdown-item i {
     color: var(--color-primario);
     margin-right: 8px;
-    transition: all 0.3s ease;
-}
-
-.dropdown-menu-enhanced .dropdown-item:hover i {
-    color: white !important;
-    background: var(--color-primario);
-    padding: 6px;
-    border-radius: 50%;
-    transform: rotate(360deg);
 }
 
 /* Checkboxes de disponibilidad mejorados */
