@@ -127,6 +127,7 @@ const COLOR_MAP = {
     'único': '#9E9E9E',
     
     // Estampados (color neutral)
+    'camel': '#bf8a3d',
     'marfil': '#e1cc4f',
     'estampado': '#9E9E9E',
     'floral': '#9E9E9E',
