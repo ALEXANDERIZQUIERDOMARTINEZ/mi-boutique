@@ -681,13 +681,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const trendingCategories = ['Vestidos', 'Blusas', 'Pantalones']; // Categorías en tendencia
     const newCategories = ['Accesorios', 'Zapatos']; // Categorías nuevas
 
-    onSnapshot(query(categoriesCollection, orderBy('nombre')), (snapshot) => {
+    // ✅ Cargar categorías sin índice (ordenar en memoria)
+    onSnapshot(categoriesCollection, (snapshot) => {
         categoryDropdownMenu.innerHTML = '';
         categoriesMap.clear();
 
+        // Ordenar categorías alfabéticamente en memoria
+        const categories = [];
         snapshot.forEach(doc => {
-            const cat = doc.data();
-            const catId = doc.id;
+            categories.push({ id: doc.id, ...doc.data() });
+        });
+
+        categories.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+        categories.forEach(cat => {
+            const catId = cat.id;
             const catName = cat.nombre;
 
             categoriesMap.set(catId, catName);
@@ -712,6 +720,11 @@ document.addEventListener('DOMContentLoaded', () => {
         categoryDropdownMenu.querySelectorAll('.filter-group').forEach(item => {
             item.addEventListener('click', handleFilterClick);
         });
+
+        console.log(`✅ ${categories.length} categorías cargadas correctamente`);
+    }, (error) => {
+        console.error("❌ Error al cargar categorías:", error);
+        categoryDropdownMenu.innerHTML = '<li><a class="dropdown-item text-danger" href="#">Error al cargar</a></li>';
     });
 
     document.querySelectorAll('.catalog-filters .filter-group').forEach(btn => {
@@ -741,20 +754,37 @@ document.addEventListener('DOMContentLoaded', () => {
         applyFiltersAndRender();
     }
 
-    // Carga inicial de productos
-    const q = query(productsCollection, where("visible", "==", true), orderBy("timestamp", "desc"));
-    onSnapshot(q, (snapshot) => {
+    // ✅ Carga inicial de productos (sin índice compuesto)
+    // Cargar todos los productos y filtrar por visible en memoria
+    onSnapshot(productsCollection, (snapshot) => {
         allProducts = [];
         productsMap.clear();
 
         snapshot.forEach(doc => {
             const product = { ...doc.data(), id: doc.id };
-            allProducts.push(product);
-            productsMap.set(doc.id, product);
+            // Filtrar solo productos visibles
+            if (product.visible === true) {
+                allProducts.push(product);
+                productsMap.set(doc.id, product);
+            }
         });
 
+        // Ordenar por timestamp (más recientes primero)
+        allProducts.sort((a, b) => {
+            const timestampA = a.timestamp?.toMillis?.() || 0;
+            const timestampB = b.timestamp?.toMillis?.() || 0;
+            return timestampB - timestampA;
+        });
+
+        console.log(`✅ ${allProducts.length} productos cargados correctamente`);
         loadAvailableColors();
         applyFiltersAndRender();
+    }, (error) => {
+        console.error("❌ Error al cargar productos:", error);
+        const container = document.getElementById('products-container');
+        if (container) {
+            container.innerHTML = '<div class="col-12 text-center text-danger p-4"><p>Error al cargar productos. Por favor recarga la página.</p></div>';
+        }
     });
 
     // ✅ EVENT LISTENERS PARA FILTROS AVANZADOS
