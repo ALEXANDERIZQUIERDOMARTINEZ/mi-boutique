@@ -26,17 +26,17 @@
             </button>
             <div class="collapse navbar-collapse" id="adminNavbarContent">
                 <ul class="nav nav-pills navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item"> <a href="#dashboard" class="nav-link active" data-bs-toggle="pill"><i class="bi bi-grid-1x2-fill me-1"></i> Dashboard</a> </li>
-                    <li class="nav-item"> <a href="#pedidos-web" class="nav-link position-relative" data-bs-toggle="pill"><i class="bi bi-globe me-1"></i> Pedidos Web <span class="badge bg-danger ms-1 badge-new-order" id="pedidos-web-count" style="display: none;">0</span></a> </li>
-                    <li class="nav-item"> <a href="#productos" class="nav-link" data-bs-toggle="pill"><i class="bi bi-box-seam-fill me-1"></i> Productos</a> </li>
-                    <li class="nav-item"> <a href="#ventas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-cart-check-fill me-1"></i> Ventas</a> </li>
-                    <li class="nav-item"> <a href="#apartados" class="nav-link" data-bs-toggle="pill"><i class="bi bi-calendar-heart-fill me-1"></i> Apartados</a> </li>
-                    <li class="nav-item"> <a href="#clientes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-people-fill me-1"></i> Clientes</a> </li>
-                    <li class="nav-item"> <a href="#repartidores" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bicycle me-1"></i> Repartidores</a> </li>
-                    <li class="nav-item"> <a href="#reportes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-clipboard-data-fill me-1"></i> Reportes</a> </li>
-                    <li class="nav-item"> <a href="#finanzas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-cash-coin me-1"></i> Finanzas</a> </li>
+                    <li class="nav-item"> <a href="#dashboard" class="nav-link active" data-bs-toggle="pill"><i class="bi bi-house-heart-fill me-1"></i> Dashboard</a> </li>
+                    <li class="nav-item"> <a href="#pedidos-web" class="nav-link position-relative" data-bs-toggle="pill"><i class="bi bi-cart-check me-1"></i> Pedidos Web <span class="badge bg-danger ms-1 badge-new-order" id="pedidos-web-count" style="display: none;">0</span></a> </li>
+                    <li class="nav-item"> <a href="#productos" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bag-heart-fill me-1"></i> Productos</a> </li>
+                    <li class="nav-item"> <a href="#ventas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-cash-stack me-1"></i> Ventas</a> </li>
+                    <li class="nav-item"> <a href="#apartados" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bookmark-heart-fill me-1"></i> Apartados</a> </li>
+                    <li class="nav-item"> <a href="#clientes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-person-hearts me-1"></i> Clientes</a> </li>
+                    <li class="nav-item"> <a href="#repartidores" class="nav-link" data-bs-toggle="pill"><i class="bi bi-truck me-1"></i> Repartidores</a> </li>
+                    <li class="nav-item"> <a href="#reportes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-graph-up-arrow me-1"></i> Reportes</a> </li>
+                    <li class="nav-item"> <a href="#finanzas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-wallet2 me-1"></i> Finanzas</a> </li>
                     <li class="nav-item"> <a href="#categorias" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-tags-fill me-1"></i> Categorías </a> </li>
-                    <li class="nav-item"> <a href="#proveedores" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-truck me-1"></i> Proveedores </a> </li>
+                    <li class="nav-item"> <a href="#proveedores" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-shop me-1"></i> Proveedores </a> </li>
                 </ul>
                 <a href="index.html" target="_blank" class="admin-logout d-flex align-items-center text-secondary text-decoration-none ms-lg-auto mt-2 mt-lg-0">
                      Catálogo <i class="bi bi-box-arrow-up-right ms-1"></i>
@@ -908,6 +908,43 @@
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script type="module" src="admin.js"></script>
+
+    <!-- Script para cerrar drawer móvil al hacer clic en un enlace -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Cerrar el drawer móvil al hacer clic en cualquier enlace de navegación
+            const navLinks = document.querySelectorAll('.nav-pills .nav-link');
+            const navbarCollapse = document.getElementById('adminNavbarContent');
+            const navbarToggler = document.querySelector('.navbar-toggler');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    // Solo cerrar en móvil (cuando el navbar está colapsado)
+                    if (window.innerWidth < 992 && navbarCollapse.classList.contains('show')) {
+                        // Usar Bootstrap para cerrar el collapse
+                        const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
+                        if (bsCollapse) {
+                            bsCollapse.hide();
+                        } else {
+                            navbarToggler.click();
+                        }
+                    }
+                });
+            });
+
+            // Cerrar drawer al hacer clic en el overlay (fuera del drawer)
+            navbarCollapse.addEventListener('click', function(e) {
+                if (e.target === this && window.innerWidth < 992) {
+                    const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
+                    if (bsCollapse) {
+                        bsCollapse.hide();
+                    } else {
+                        navbarToggler.click();
+                    }
+                }
+            });
+        });
+    </script>
 
 </body>
 </html>
