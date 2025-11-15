@@ -396,6 +396,7 @@ function renderProducts(products) {
                 </div>
                 <div class="product-card-body">
                     <h3 class="product-title">${product.nombre}</h3>
+                    ${product.observaciones ? `<p class="product-observations">${product.observaciones}</p>` : ''}
                     <div class="price-detal-card">
                         ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
                         ${formatoMoneda.format(precioFinal)} (Detal)
