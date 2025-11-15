@@ -30,121 +30,39 @@ let itemToDelete = null;
 let isWholesaleActive = false;
 const WHOLESALE_CODE = "MISHELLMAYOR"; 
 
-let categoriesMap = new Map();
+// ✅ NUEVO: Dos mapas separados para mayor claridad
+let categoriesById = new Map(); // ID → Nombre
+let categoriesByName = new Map(); // Nombre → ID
 
-// Variables para filtros avanzados
-let advancedFilters = {
-    priceMin: 0,
-    priceMax: 500000,
-    selectedColors: new Set(),
-    inStockOnly: false,
-    promoOnly: false,
-    sortBy: 'newest'
-};
-let allAvailableColors = new Set();
-
-// ✅ MAPEO DE COLORES: Texto → Código Hex
+// ✅ MAPEO DE COLORES
 const COLOR_MAP = {
-    // Colores básicos
-    'rojo': '#E53935',
-    'roja': '#E53935',
-    'azul': '#1E88E5',
-    'verde': '#43A047',
-    'amarillo': '#FDD835',
-    'naranja': '#FB8C00',
-    'rosa': '#FF8DA1',
-    'morado': '#8E24AA',
-    'violeta': '#8E24AA',
-    'negro': '#212121',
-    'negra': '#212121',
-    'rojo': '#E53935'
-    'blanca': '#FFFFFF',
-    'blanco': '#FFFFFF',
-    'gris': '#9E9E9E',
-    'cafe': '#6D4C41',
-    'café': '#6D4C41',
-    'cafe claro': '#a18262',
-    'café claro': '#a18262',
-    'marron': '#6D4C41',
-    'marrón': '#6D4C41',
-    'beige': '#D7CCC8',
-    'crema': '#FFF8E1',
-    
-    // Tonos de rojo
-    'rojo oscuro': '#C62828',
-    'rojo claro': '#EF5350',
-    'coral': '#FF6F61',
-    'salmon': '#FA8072',
-    'salmón': '#FA8072',
-    'fucsia': '#E91E63',
-    'magenta': '#E91E63',
-    
-    // Tonos de azul
-    'azul rey': '#0400FF',
-    'azul marino': '#0D47A1',
-    'azul claro': '#64B5F6',
-    'azul bebe': '#64B5F6',
-    'azul bebé': '#64B5F6',
-    'celeste': '#81D4FA',
-    'turquesa': '#00ACC1',
-    'aguamarina': '#00BCD4',
-    'cyan': '#00BCD4',
-    
-    // Tonos de verde
-    'verde oscuro': '#2E7D32',
-    'verde claro': '#81C784',
-    'lima': '#CDDC39',
-    'oliva': '#7CB342',
-    'menta': '#80CBC4',
-    
-    // Tonos de morado
-    'morado oscuro': '#6A1B9A',
-    'morado claro': '#BA68C8',
-    'lavanda': '#B39DDB',
-    'lila': '#E1BEE7',
-    
-    // Tonos de rosa
-    'rosa claro': '#F48FB1',
-    'rosa fuerte': '#D81B60',
-    'rosado': '#F8BBD0',
-    'durazno': '#FFAB91',
-    
-    // Tonos de gris
-    'gris oscuro': '#424242',
-    'gris claro': '#E0E0E0',
-    'plata': '#BDBDBD',
-    'plateado': '#BDBDBD',
-    
-    // Otros colores
-    'marfil': 'e1cc4f',
-    'camel': 'bf8a3d',
-    'dorado': '#FFD700',
-    'oro': '#FFD700',
-    'bronce': '#CD7F32',
-    'cobre': '#B87333',
-    'mostaza': '#E5AE0F',
-    'bordo': '#900C3F',
-    'vino tinto': '#722F37',
-    'terracota': '#CC5233',
-    'unico': '#9E9E9E',
-    'único': '#9E9E9E',
-    
-    // Estampados (color neutral)
-    'estampado': '#9E9E9E',
-    'floral': '#9E9E9E',
-    'animal print': '#9E9E9E',
-    'rayas': '#9E9E9E',
-    'puntos': '#9E9E9E',
+    'rojo': '#E53935', 'roja': '#E53935', 'azul': '#1E88E5', 'verde': '#43A047',
+    'amarillo': '#FDD835', 'naranja': '#FB8C00', 'rosa': '#FF8DA1', 'morado': '#8E24AA',
+    'violeta': '#8E24AA', 'negro': '#212121', 'negra': '#212121', 'blanca': '#FFFFFF',
+    'blanco': '#FFFFFF', 'gris': '#9E9E9E', 'cafe': '#6D4C41', 'café': '#6D4C41',
+    'cafe claro': '#a18262', 'café claro': '#a18262', 'marron': '#6D4C41', 'marrón': '#6D4C41',
+    'beige': '#D7CCC8', 'crema': '#FFF8E1', 'rojo oscuro': '#C62828', 'rojo claro': '#EF5350',
+    'coral': '#FF6F61', 'salmon': '#FA8072', 'salmón': '#FA8072', 'fucsia': '#E91E63',
+    'magenta': '#E91E63', 'azul marino': '#0D47A1', 'azul claro': '#64B5F6',
+    'azul bebe': '#64B5F6', 'azul bebé': '#64B5F6', 'celeste': '#81D4FA',
+    'turquesa': '#00ACC1', 'aguamarina': '#00BCD4', 'cyan': '#00BCD4',
+    'verde oscuro': '#2E7D32', 'verde claro': '#81C784', 'lima': '#CDDC39',
+    'oliva': '#7CB342', 'menta': '#80CBC4', 'morado oscuro': '#6A1B9A',
+    'morado claro': '#BA68C8', 'lavanda': '#B39DDB', 'lila': '#E1BEE7',
+    'rosa claro': '#F48FB1', 'rosa fuerte': '#D81B60', 'rosado': '#F8BBD0',
+    'durazno': '#FFAB91', 'gris oscuro': '#424242', 'gris claro': '#E0E0E0',
+    'plata': '#BDBDBD', 'plateado': '#BDBDBD', 'dorado': '#FFD700', 'oro': '#FFD700',
+    'bronce': '#CD7F32', 'cobre': '#B87333', 'mostaza': '#E5AE0F', 'bordo': '#900C3F',
+    'vino tinto': '#722F37', 'terracota': '#CC5233', 'unico': '#9E9E9E', 'único': '#9E9E9E',
+    'estampado': '#9E9E9E', 'floral': '#9E9E9E', 'animal print': '#9E9E9E',
+    'rayas': '#9E9E9E', 'puntos': '#9E9E9E',
 };
 
-// ✅ FUNCIÓN: Convertir nombre de color a código hex
 function getColorHex(colorName) {
     if (!colorName) return '#9E9E9E';
     const normalized = colorName.toLowerCase().trim();
     return COLOR_MAP[normalized] || '#9E9E9E';
 }
-
-// --- FUNCIONES DE RENDERIZADO ---
 
 function showToast(message, type = 'success') {
     const liveToastEl = document.getElementById('liveToast');
@@ -194,148 +112,76 @@ function loadPromotions() {
 }
 
 function calculatePromotionPrice(producto) {
-    // ✅ Leer promoción directamente del campo del producto (administrable desde admin.html)
-    if (!producto.promocion || !producto.promocion.activa || isWholesaleActive) {
+    const promo = activePromotions.get(producto.id);
+    if (!promo || isWholesaleActive) {
         return { precioFinal: producto.precioDetal, tienePromo: false };
     }
-
     let precioFinal = producto.precioDetal;
-    if (producto.promocion.tipo === 'porcentaje') {
-        precioFinal = producto.precioDetal * (1 - producto.promocion.descuento / 100);
-    } else if (producto.promocion.tipo === 'fijo') {
-        precioFinal = producto.promocion.precioFijo;
+    if (promo.tipo === 'porcentaje') {
+        precioFinal = producto.precioDetal * (1 - promo.descuento / 100);
+    } else {
+        precioFinal = producto.precioDetal - promo.descuento;
     }
-
-    return {
+    return { 
         precioFinal: Math.max(0, precioFinal),
         tienePromo: true,
-        precioOriginal: producto.precioDetal
+        precioOriginal: producto.precioDetal 
     };
 }
 
-// ✅ FUNCIÓN DE FILTRO MEJORADA CON FILTROS AVANZADOS
+// ✅ SOLUCIÓN DEFINITIVA: FILTRO CORREGIDO
 function applyFiltersAndRender() {
     const activeFilterEl = document.querySelector('.filter-group.active');
-    if (!activeFilterEl) return;
-
+    if (!activeFilterEl) return; 
+    
     const activeFilter = activeFilterEl.dataset.filter;
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
     const searchModalTerm = document.getElementById('search-modal-input').value.toLowerCase();
     const finalSearchTerm = searchTerm || searchModalTerm;
 
+    console.log('🔍 FILTRO ACTIVO:', activeFilter);
+
     let filtered = allProducts;
 
-    // 1. Filtrar por Categoría (filtros principales del header)
+    // 1. Filtrar por Categoría
     if (activeFilter === 'disponible') {
         filtered = filtered.filter(p => {
             const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
             return stock > 0;
         });
     } else if (activeFilter === 'promocion') {
-        filtered = filtered.filter(p => p.promocion?.activa && !isWholesaleActive);
+        filtered = filtered.filter(p => activePromotions.has(p.id) && !isWholesaleActive);
     } else if (activeFilter !== 'all') {
+        const categoryIdToFilter = categoriesByName.get(activeFilter);
+        
+        console.log('🏷️  Filtrando categoría:', activeFilter, '→ ID:', categoryIdToFilter);
+        
         filtered = filtered.filter(p => {
-            const categoryId = p.categoriaId || p.categoria;
-            const categoryName = categoriesMap.get(categoryId) || '';
-            return categoryName === activeFilter;
+            const productCategoryId = p.categoriaId || p.categoria;
+            return productCategoryId === categoryIdToFilter;
         });
+        
+        console.log('📊 Productos encontrados:', filtered.length);
     }
 
     // 2. Filtrar por Búsqueda
     if (finalSearchTerm) {
-        filtered = filtered.filter(p =>
-            p.nombre.toLowerCase().includes(finalSearchTerm) ||
+        filtered = filtered.filter(p => 
+            p.nombre.toLowerCase().includes(finalSearchTerm) || 
             (p.descripcion || '').toLowerCase().includes(finalSearchTerm) ||
             (p.codigo || '').toLowerCase().includes(finalSearchTerm)
         );
     }
 
-    // 3. Filtros Avanzados del Sidebar
-
-    // 3.1 Filtro por Rango de Precio
-    filtered = filtered.filter(p => {
-        const { precioFinal } = calculatePromotionPrice(p);
-        const price = isWholesaleActive ? (parseFloat(p.precioMayor) || 0) : precioFinal;
-        return price >= advancedFilters.priceMin && price <= advancedFilters.priceMax;
-    });
-
-    // 3.2 Filtro por Colores
-    if (advancedFilters.selectedColors.size > 0) {
-        filtered = filtered.filter(p => {
-            const productColors = (p.variaciones || []).map(v => v.color?.toLowerCase()).filter(Boolean);
-            return productColors.some(color => advancedFilters.selectedColors.has(color));
-        });
-    }
-
-    // 3.3 Filtro de Disponibilidad (solo en stock)
-    if (advancedFilters.inStockOnly) {
-        filtered = filtered.filter(p => {
-            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-            return stock > 0;
-        });
-    }
-
-    // 3.4 Filtro solo promociones (del sidebar)
-    if (advancedFilters.promoOnly) {
-        filtered = filtered.filter(p => p.promocion?.activa && !isWholesaleActive);
-    }
-
-    // 4. Ordenamiento
-    filtered = sortProducts(filtered, advancedFilters.sortBy);
-
     renderProducts(filtered);
 }
 
-// ✅ FUNCIÓN DE ORDENAMIENTO
-function sortProducts(products, sortBy) {
-    const sorted = [...products];
-
-    switch (sortBy) {
-        case 'price-asc':
-            return sorted.sort((a, b) => {
-                const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : calculatePromotionPrice(a).precioFinal;
-                const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : calculatePromotionPrice(b).precioFinal;
-                return priceA - priceB;
-            });
-        case 'price-desc':
-            return sorted.sort((a, b) => {
-                const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : calculatePromotionPrice(a).precioFinal;
-                const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : calculatePromotionPrice(b).precioFinal;
-                return priceB - priceA;
-            });
-        case 'name-asc':
-            return sorted.sort((a, b) => a.nombre.localeCompare(b.nombre));
-        case 'name-desc':
-            return sorted.sort((a, b) => b.nombre.localeCompare(a.nombre));
-        case 'newest':
-        default:
-            return sorted; // Ya vienen ordenados por timestamp desc
-    }
-}
-
-// ✅ RENDERIZAR PRODUCTOS CON COLORES REALES
 function renderProducts(products) {
     const container = document.getElementById('products-container');
     const loading = document.getElementById('loading-products');
-    const productsCountEl = document.getElementById('products-count');
-
+    
     if (loading) loading.style.display = 'none';
-    container.innerHTML = '';
-
-    // Actualizar contador
-    if (productsCountEl) {
-        productsCountEl.textContent = products.length;
-    }
-
-    // Actualizar badge de disponibles
-    const availableBadge = document.getElementById('available-badge');
-    if (availableBadge) {
-        const availableCount = allProducts.filter(p => {
-            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-            return stock > 0;
-        }).length;
-        availableBadge.textContent = availableCount;
-    }
+    container.innerHTML = ''; 
 
     if (products.length === 0) {
         container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">No se encontraron productos</p></div>';
@@ -364,13 +210,11 @@ function renderProducts(products) {
         let btnText = isAgotado ? 'Agotado' : 'Seleccionar Opciones';
         if (isSoloDetal) btnText = 'Solo Detal';
 
-        // ✅ HTML para TALLAS
         const tallasHTML = tallas.length > 0 ? 
             `<div class="variations-title">Tallas</div>
              <div class="variation-chips">${tallas.map(t => `<span class="variation-chip">${t}</span>`).join('')}</div>` 
             : '';
 
-        // ✅ HTML para COLORES con círculos de color
         let coloresHTML = '';
         if (colores.length > 0) {
             const colorChips = colores.map(c => {
@@ -393,14 +237,13 @@ function renderProducts(products) {
                     <img src="${imgUrl}" alt="${product.nombre}">
                     <div class="product-badges">
                         ${tienePromo ? '<span class="badge-promo">PROMO</span>' : ''}
-                        ${!isAgotado && stockTotal > 0 && stockTotal <= 5 ? '<span class="badge-stock">POCAS UNID.</span>' : ''}
+                        ${!isAgotado && stockTotal >= 2 && stockTotal <= 5 ? '<span class="badge-stock">POCAS UNID.</span>' : ''}
                         ${isAgotado ? '<span class="badge-stock badge-agotado">AGOTADO</span>' : ''}
                         ${isSoloDetal ? '<span class="badge-stock badge-solo-detal">SOLO DETAL</span>' : ''}
                     </div>
                 </div>
                 <div class="product-card-body">
                     <h3 class="product-title">${product.nombre}</h3>
-                    ${product.observaciones ? `<p class="product-observations">${product.observaciones}</p>` : ''}
                     <div class="price-detal-card">
                         ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
                         ${formatoMoneda.format(precioFinal)} (Detal)
@@ -438,7 +281,6 @@ function renderProducts(products) {
     });
 }
 
-// --- ABRIR MODAL DE PRODUCTO ---
 function openProductModal(productId) {
     const product = productsMap.get(productId);
     if (!product) return;
@@ -515,7 +357,6 @@ function openProductModal(productId) {
     modal.show();
 }
 
-// --- FUNCIONES DE CARRITO ---
 function renderCart() {
     const container = document.getElementById('cart-items-container');
     const footer = document.getElementById('cart-footer');
@@ -580,139 +421,39 @@ function loadCart() {
     }
 }
 
-// ✅ FUNCIÓN: Cargar colores disponibles dinámicamente
-function loadAvailableColors() {
-    allAvailableColors.clear();
-
-    allProducts.forEach(product => {
-        (product.variaciones || []).forEach(v => {
-            if (v.color) {
-                allAvailableColors.add(v.color.toLowerCase());
-            }
-        });
-    });
-
-    renderColorFilters();
-}
-
-// ✅ FUNCIÓN: Renderizar filtros de colores
-function renderColorFilters() {
-    const colorContainer = document.getElementById('color-filter-container');
-    if (!colorContainer) return;
-
-    colorContainer.innerHTML = '';
-
-    const uniqueColors = Array.from(allAvailableColors).sort();
-
-    if (uniqueColors.length === 0) {
-        colorContainer.innerHTML = '<p class="text-muted small">No hay colores disponibles</p>';
-        return;
-    }
-
-    uniqueColors.forEach(colorName => {
-        const hexColor = getColorHex(colorName);
-        const chip = document.createElement('div');
-        chip.className = 'color-filter-chip';
-        chip.style.backgroundColor = hexColor;
-        chip.dataset.colorName = colorName;
-        chip.dataset.color = colorName;
-
-        chip.addEventListener('click', () => {
-            chip.classList.toggle('active');
-
-            if (chip.classList.contains('active')) {
-                advancedFilters.selectedColors.add(colorName);
-            } else {
-                advancedFilters.selectedColors.delete(colorName);
-            }
-
-            applyFiltersAndRender();
-        });
-
-        colorContainer.appendChild(chip);
-    });
-}
-
-// ✅ FUNCIÓN: Formatear precio para display
-function formatCurrency(value) {
-    return formatoMoneda.format(value);
-}
-
-// ✅ FUNCIÓN: Resetear todos los filtros
-function resetAllFilters() {
-    advancedFilters = {
-        priceMin: 0,
-        priceMax: 500000,
-        selectedColors: new Set(),
-        inStockOnly: false,
-        promoOnly: false,
-        sortBy: 'newest'
-    };
-
-    // Resetear inputs de precio
-    document.getElementById('price-min').value = '';
-    document.getElementById('price-max').value = '';
-    document.getElementById('price-range-min').value = 0;
-    document.getElementById('price-range-max').value = 500000;
-    document.getElementById('price-display-min').textContent = '$0';
-    document.getElementById('price-display-max').textContent = '$500.000';
-
-    // Resetear colores
-    document.querySelectorAll('.color-filter-chip.active').forEach(chip => {
-        chip.classList.remove('active');
-    });
-
-    // Resetear checkboxes
-    document.getElementById('filter-in-stock').checked = false;
-    document.getElementById('filter-promo-only').checked = false;
-
-    // Resetear ordenamiento
-    document.getElementById('sort-products').value = 'newest';
-
-    applyFiltersAndRender();
-}
-
-// --- DOMCONTENTLOADED ---
 document.addEventListener('DOMContentLoaded', () => {
-
+    
     loadCart();
-    // loadPromotions(); // ✅ Ya no necesario - las promociones se leen del campo producto.promocion
+    loadPromotions();
 
     const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
     const categoryDropdownButton = document.getElementById('category-dropdown-button');
 
-    // ✅ Cargar Categorías con Badges
-    const trendingCategories = ['Vestidos', 'Blusas', 'Pantalones']; // Categorías en tendencia
-    const newCategories = ['Accesorios', 'Zapatos']; // Categorías nuevas
-
+    // ✅ CARGAR CATEGORÍAS
     onSnapshot(query(categoriesCollection, orderBy('nombre')), (snapshot) => {
         categoryDropdownMenu.innerHTML = '';
-        categoriesMap.clear();
-
+        categoriesById.clear();
+        categoriesByName.clear();
+        
+        console.log('🏷️  === CARGANDO CATEGORÍAS ===');
+        
         snapshot.forEach(doc => {
             const cat = doc.data();
             const catId = doc.id;
             const catName = cat.nombre;
-
-            categoriesMap.set(catId, catName);
-            categoriesMap.set(catName, catId);
-
+            
+            categoriesById.set(catId, catName);
+            categoriesByName.set(catName, catId);
+            
+            console.log(`   📁 ${catName} → ID: ${catId}`);
+            
             const li = document.createElement('li');
-            let badgeHTML = '';
-
-            if (trendingCategories.includes(catName)) {
-                badgeHTML = '<span class="category-badge badge-trending">🔥 Tendencia</span>';
-            } else if (newCategories.includes(catName)) {
-                badgeHTML = '<span class="category-badge badge-new">✨ Nuevo</span>';
-            }
-
-            li.innerHTML = `<a class="dropdown-item filter-group" href="#" data-filter="${catName}">
-                <span>${catName}</span>
-                ${badgeHTML}
-            </a>`;
+            li.innerHTML = `<a class="dropdown-item filter-group" href="#" data-filter="${catName}">${catName}</a>`;
             categoryDropdownMenu.appendChild(li);
         });
-
+        
+        console.log('✅ Categorías:', categoriesByName.size);
+        
         categoryDropdownMenu.querySelectorAll('.filter-group').forEach(item => {
             item.addEventListener('click', handleFilterClick);
         });
@@ -727,104 +468,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const clickedFilter = e.currentTarget;
 
         document.querySelectorAll('.catalog-filters .filter-group.active').forEach(b => b.classList.remove('active'));
+        clickedFilter.classList.add('active');
 
         if (clickedFilter.classList.contains('dropdown-item')) {
-            // Si es un item del dropdown (categoría), activar el botón del dropdown
-            categoryDropdownButton.classList.add('active');
-            categoryDropdownButton.dataset.filter = clickedFilter.dataset.filter;
             categoryDropdownButton.innerHTML = `${clickedFilter.textContent} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
-        } else {
-            // Si es un botón normal (Todos, Disponibles, Promociones)
-            clickedFilter.classList.add('active');
-            // Resetear el botón del dropdown
-            categoryDropdownButton.classList.remove('active');
-            categoryDropdownButton.removeAttribute('data-filter');
+            categoryDropdownButton.classList.add('active'); 
+        } else if (clickedFilter.dataset.filter === 'all' || clickedFilter.dataset.filter === 'disponible' || clickedFilter.dataset.filter === 'promocion') {
             categoryDropdownButton.innerHTML = `Categorías <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
+            categoryDropdownButton.classList.remove('active');
         }
-
+        
         applyFiltersAndRender();
     }
 
-    // Carga inicial de productos
+    // ✅ CARGA DE PRODUCTOS
     const q = query(productsCollection, where("visible", "==", true), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
         allProducts = [];
         productsMap.clear();
 
+        console.log('📦 === PRODUCTOS ===');
+
         snapshot.forEach(doc => {
             const product = { ...doc.data(), id: doc.id };
             allProducts.push(product);
             productsMap.set(doc.id, product);
+            
+            const catId = product.categoriaId || product.categoria;
+            const catName = categoriesById.get(catId);
+            console.log(`   🎁 ${product.nombre} → ${catName || 'Sin cat'}`);
         });
 
-        loadAvailableColors();
+        console.log('✅ Total:', allProducts.length);
+
         applyFiltersAndRender();
     });
 
-    // ✅ EVENT LISTENERS PARA FILTROS AVANZADOS
-
-    // Filtro de precio - Inputs numéricos
-    const priceMinInput = document.getElementById('price-min');
-    const priceMaxInput = document.getElementById('price-max');
-    const priceRangeMin = document.getElementById('price-range-min');
-    const priceRangeMax = document.getElementById('price-range-max');
-    const priceDisplayMin = document.getElementById('price-display-min');
-    const priceDisplayMax = document.getElementById('price-display-max');
-
-    function updatePriceFilter() {
-        advancedFilters.priceMin = parseInt(priceMinInput.value) || 0;
-        advancedFilters.priceMax = parseInt(priceMaxInput.value) || 500000;
-
-        priceRangeMin.value = advancedFilters.priceMin;
-        priceRangeMax.value = advancedFilters.priceMax;
-
-        priceDisplayMin.textContent = formatCurrency(advancedFilters.priceMin);
-        priceDisplayMax.textContent = formatCurrency(advancedFilters.priceMax);
-
-        applyFiltersAndRender();
-    }
-
-    priceMinInput.addEventListener('input', updatePriceFilter);
-    priceMaxInput.addEventListener('input', updatePriceFilter);
-
-    // Filtro de precio - Sliders
-    priceRangeMin.addEventListener('input', (e) => {
-        const value = parseInt(e.target.value);
-        advancedFilters.priceMin = value;
-        priceMinInput.value = value;
-        priceDisplayMin.textContent = formatCurrency(value);
-        applyFiltersAndRender();
-    });
-
-    priceRangeMax.addEventListener('input', (e) => {
-        const value = parseInt(e.target.value);
-        advancedFilters.priceMax = value;
-        priceMaxInput.value = value;
-        priceDisplayMax.textContent = formatCurrency(value);
-        applyFiltersAndRender();
-    });
-
-    // Filtros de disponibilidad
-    document.getElementById('filter-in-stock').addEventListener('change', (e) => {
-        advancedFilters.inStockOnly = e.target.checked;
-        applyFiltersAndRender();
-    });
-
-    document.getElementById('filter-promo-only').addEventListener('change', (e) => {
-        advancedFilters.promoOnly = e.target.checked;
-        applyFiltersAndRender();
-    });
-
-    // Ordenamiento
-    document.getElementById('sort-products').addEventListener('change', (e) => {
-        advancedFilters.sortBy = e.target.value;
-        applyFiltersAndRender();
-    });
-
-    // Botón resetear filtros
-    document.getElementById('btn-reset-filters').addEventListener('click', resetAllFilters);
-
-    // ✅ Búsqueda en tiempo real MEJORADA
     document.getElementById('search-input').addEventListener('input', applyFiltersAndRedraw);
     document.getElementById('search-modal-input').addEventListener('input', (e) => {
         document.getElementById('search-input').value = e.target.value;
@@ -834,10 +513,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let searchTimeout;
     function applyFiltersAndRedraw() {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(applyFiltersAndRender, 200); // 200ms para búsqueda más rápida
+        searchTimeout = setTimeout(applyFiltersAndRender, 200);
     }
     
-    // Listeners del MODAL DE PRODUCTO
     document.getElementById('select-talla').addEventListener('change', (e) => {
         const productId = document.getElementById('modal-product-id').value;
         const product = productsMap.get(productId);
@@ -1051,7 +729,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ✅ NAVEGACIÓN MÓVIL MEJORADA
     const searchModal = document.getElementById('searchModal');
     const mobileNavItems = document.querySelectorAll('.nav-item');
 
