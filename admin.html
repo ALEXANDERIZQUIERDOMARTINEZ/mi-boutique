@@ -7,10 +7,14 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
+
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="admin-styles.css">  
-    
+    <link rel="stylesheet" href="admin-styles.css">
+
+    <!-- Logo/Icon -->
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <meta name="theme-color" content="#D988B9">
+
     </head>
 <body class="admin-page">
 
@@ -117,69 +121,57 @@
                     </div>
                 </div>
 
-                <!-- Tarjetas Secundarias -->
-                <div class="row g-4 mb-4">
-                    <div class="col-md-3 col-sm-6">
-                        <div class="dashboard-card-secondary">
-                            <div class="d-flex align-items-center">
-                                <div class="icon-badge bg-info">
-                                    <i class="bi bi-globe"></i>
-                                </div>
-                                <div class="ms-3">
-                                    <h6 class="mb-0">Pedidos Web</h6>
-                                    <p class="h5 mb-0" id="db-pedidos-web">0</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3 col-sm-6">
-                        <div class="dashboard-card-secondary">
-                            <div class="d-flex align-items-center">
-                                <div class="icon-badge bg-success">
-                                    <i class="bi bi-people"></i>
-                                </div>
-                                <div class="ms-3">
-                                    <h6 class="mb-0">Clientes</h6>
-                                    <p class="h5 mb-0" id="db-total-clientes">0</p>
+                <!-- Métricas Secundarias Compactas -->
+                <div class="card mb-4">
+                    <div class="card-body p-3">
+                        <div class="row g-3 text-center">
+                            <div class="col-6 col-md-3">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="icon-badge bg-info mb-2">
+                                        <i class="bi bi-globe"></i>
+                                    </div>
+                                    <small class="text-muted mb-1">Pedidos Web</small>
+                                    <h6 class="mb-0 fw-bold" id="db-pedidos-web">0</h6>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3 col-sm-6">
-                        <div class="dashboard-card-secondary">
-                            <div class="d-flex align-items-center">
-                                <div class="icon-badge bg-warning">
-                                    <i class="bi bi-tag"></i>
-                                </div>
-                                <div class="ms-3">
-                                    <h6 class="mb-0">Promociones</h6>
-                                    <p class="h5 mb-0" id="db-promociones-activas">0</p>
+                            <div class="col-6 col-md-3">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="icon-badge bg-success mb-2">
+                                        <i class="bi bi-people"></i>
+                                    </div>
+                                    <small class="text-muted mb-1">Clientes</small>
+                                    <h6 class="mb-0 fw-bold" id="db-total-clientes">0</h6>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3 col-sm-6">
-                        <div class="dashboard-card-secondary">
-                            <div class="d-flex align-items-center">
-                                <div class="icon-badge bg-danger">
-                                    <i class="bi bi-bicycle"></i>
+                            <div class="col-6 col-md-3">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="icon-badge bg-warning mb-2">
+                                        <i class="bi bi-tag"></i>
+                                    </div>
+                                    <small class="text-muted mb-1">Promociones</small>
+                                    <h6 class="mb-0 fw-bold" id="db-promociones-activas">0</h6>
                                 </div>
-                                <div class="ms-3">
-                                    <h6 class="mb-0">Repartidores</h6>
-                                    <p class="h5 mb-0" id="db-total-repartidores">0</p>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="d-flex flex-column align-items-center">
+                                    <div class="icon-badge bg-danger mb-2">
+                                        <i class="bi bi-bicycle"></i>
+                                    </div>
+                                    <small class="text-muted mb-1">Repartidores</small>
+                                    <h6 class="mb-0 fw-bold" id="db-total-repartidores">0</h6>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Gráficos de Análisis -->
+                <!-- Sección: Análisis de Datos -->
+                <div class="mb-3">
+                    <h5 class="text-muted fw-light"><i class="bi bi-bar-chart-line me-2"></i>Análisis de Datos</h5>
+                </div>
                 <div class="row g-4 mb-4">
                     <div class="col-lg-8">
-                        <div class="card">
+                        <div class="card shadow-sm">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Tendencia de Ventas</h5>
                                 <div class="btn-group btn-group-sm" role="group">
@@ -200,7 +192,7 @@
                     </div>
 
                     <div class="col-lg-4">
-                        <div class="card h-100">
+                        <div class="card h-100 shadow-sm">
                             <div class="card-header bg-white">
                                 <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Top Productos</h5>
                             </div>
@@ -211,10 +203,13 @@
                     </div>
                 </div>
 
-                <!-- Productos con Stock Crítico -->
+                <!-- Sección: Alertas y Actividad -->
+                <div class="mb-3">
+                    <h5 class="text-muted fw-light"><i class="bi bi-bell me-2"></i>Alertas y Actividad</h5>
+                </div>
                 <div class="row g-4">
                     <div class="col-lg-6">
-                        <div class="card">
+                        <div class="card shadow-sm">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i>Stock Crítico</h5>
                                 <a href="#productos" data-bs-toggle="pill" class="btn btn-sm btn-outline-primary">Ver todos</a>
@@ -243,7 +238,7 @@
                     </div>
 
                     <div class="col-lg-6">
-                        <div class="card">
+                        <div class="card shadow-sm">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Actividad Reciente</h5>
                                 <a href="#ventas" data-bs-toggle="pill" class="btn btn-sm btn-outline-primary">Ver todas</a>
@@ -423,7 +418,7 @@
                                     <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div>
                                     <div class="col-md-2 mb-3 apartado-fecha-field" style="display: none;">
                                         <label for="apartado-fecha-max" class="form-label">Vence:</label>
-                                        <input type="date" id="apartado-fecha-max" class="form-control form-control-sm" readonly>
+                                        <input type="date" id="apartado-fecha-max" class="form-control form-control-sm">
                                     </div>
                                 </div> 
                                 <div class="row delivery-fields">
@@ -440,16 +435,16 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="venta-whatsapp" disabled>
+                                            <div class="form-check form-switch d-flex align-items-center justify-content-between">
                                                 <label class="form-check-label" for="venta-whatsapp">Pedido WhatsApp</label>
-                                                <small class="d-block text-muted">Se activa automáticamente desde pedidos web</small>
+                                                <input class="form-check-input ms-2" type="checkbox" id="venta-whatsapp" disabled>
                                             </div>
+                                            <small class="d-block text-muted">Se activa automáticamente desde pedidos web</small>
                                         </div>
                                         <div class="mb-3 delivery-fields">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia">
+                                            <div class="form-check form-switch d-flex align-items-center justify-content-between">
                                                 <label class="form-check-label" for="ruta-pagada-transferencia">Ruta pagada por Transferencia</label>
+                                                <input class="form-check-input ms-2" type="checkbox" id="ruta-pagada-transferencia">
                                             </div>
                                         </div>
                                         <label for="venta-observaciones" class="form-label">Observaciones:</label>
@@ -807,11 +802,11 @@
                     </div>
 
                     <div class="mb-3">
-                        <div class="form-check form-switch d-flex align-items-center">
-                            <input class="form-check-input me-2" type="checkbox" id="promo-active">
+                        <div class="form-check form-switch d-flex align-items-center justify-content-between">
                             <label class="form-check-label mb-0" for="promo-active">
                                 <strong>Promoción Activa</strong>
                             </label>
+                            <input class="form-check-input ms-2" type="checkbox" id="promo-active">
                         </div>
                         <small class="text-muted d-block mt-1">Activa o desactiva la promoción en la tienda</small>
                     </div>
