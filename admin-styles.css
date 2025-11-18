@@ -53,6 +53,32 @@ body.admin-page {
     padding: 0.5rem 0;
 }
 
+.admin-navbar .navbar-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--admin-primario-claro) transparent;
+}
+
+.admin-navbar .navbar-nav::-webkit-scrollbar {
+    height: 4px;
+}
+
+.admin-navbar .navbar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.admin-navbar .navbar-nav::-webkit-scrollbar-thumb {
+    background: var(--admin-primario-claro);
+    border-radius: 4px;
+}
+
+.admin-navbar .navbar-nav::-webkit-scrollbar-thumb:hover {
+    background: var(--admin-primario-hover);
+}
+
 .admin-brand {
     font-weight: 700;
     font-size: 1.6rem;
@@ -65,12 +91,13 @@ body.admin-page {
 
 .nav-pills .nav-link {
     color: var(--admin-texto-sec);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 500;
-    padding: 0.7rem 1rem;
-    margin: 0 0.15rem;
+    padding: 0.6rem 0.85rem;
+    margin: 0 0.1rem;
     border-radius: 10px;
     transition: all 0.3s ease;
+    white-space: nowrap;
 }
 
 .nav-pills .nav-link i {
@@ -250,26 +277,31 @@ body.admin-page {
     font-size: 1.3rem;
     transition: all 0.3s;
     box-shadow: var(--sombra-sm);
+    border: 2px solid transparent;
 }
 
 .icon-badge.bg-info {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
-    color: var(--admin-info);
+    background: #DBEAFE;
+    color: #1E40AF;
+    border-color: #93C5FD;
 }
 
 .icon-badge.bg-success {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
-    color: var(--admin-success);
+    background: #D1FAE5;
+    color: #047857;
+    border-color: #6EE7B7;
 }
 
 .icon-badge.bg-warning {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%);
-    color: var(--admin-warning);
+    background: #FEF3C7;
+    color: #B45309;
+    border-color: #FCD34D;
 }
 
 .icon-badge.bg-danger {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
-    color: var(--admin-danger);
+    background: #FEE2E2;
+    color: #B91C1C;
+    border-color: #FCA5A5;
 }
 
 .icon-badge:hover {
@@ -697,6 +729,61 @@ body.admin-page {
 .dashboard-card:nth-child(2) { animation-delay: 0.1s; }
 .dashboard-card:nth-child(3) { animation-delay: 0.15s; }
 .dashboard-card:nth-child(4) { animation-delay: 0.2s; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   NAVEGACIÓN MÓVIL MEJORADA
+   ═══════════════════════════════════════════════════════════════════ */
+.navbar-toggler {
+    border: 2px solid var(--admin-primario);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.3s;
+}
+
+.navbar-toggler:hover {
+    background: var(--admin-primario-claro);
+}
+
+.navbar-toggler:focus {
+    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.15);
+}
+
+.navbar-toggler-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23D988B9' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2.5' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        background: white;
+        border-radius: 12px;
+        margin-top: 1rem;
+        padding: 1rem;
+        box-shadow: var(--sombra-md);
+        border: 1px solid var(--admin-borde);
+    }
+
+    .admin-navbar .navbar-nav {
+        flex-direction: column;
+        overflow-x: visible;
+        overflow-y: visible;
+    }
+
+    .nav-pills .nav-link {
+        margin: 0.25rem 0;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+    }
+
+    .admin-logout {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background: var(--admin-fondo);
+        border-radius: 10px;
+        justify-content: center;
+    }
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    RESPONSIVE
