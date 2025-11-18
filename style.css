@@ -1058,12 +1058,21 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ────────────────────────────────────────────────────────────────────
-   14. FILTROS MÓVIL OPTIMIZADOS
+   14. FILTROS - SOLO MÓVIL/TABLET
    ──────────────────────────────────────────────────────────────────── */
-.filters-sidebar-mobile {
-    display: none;
+
+/* Desktop/Laptop: Filtros siempre visibles */
+@media (min-width: 992px) {
+    .btn-toggle-filters {
+        display: none !important;
+    }
+
+    .filters-overlay {
+        display: none !important;
+    }
 }
 
+/* Tablet/Móvil: Filtros en sidebar */
 .filters-overlay {
     position: fixed;
     top: 0;
@@ -1084,7 +1093,6 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (max-width: 991.98px) {
     .filters-sidebar-mobile {
-        display: block;
         position: fixed;
         top: 0;
         left: -100%;
