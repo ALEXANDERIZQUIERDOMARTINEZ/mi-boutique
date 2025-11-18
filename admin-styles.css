@@ -1,394 +1,296 @@
 /* ═══════════════════════════════════════════════════════════════════
-   MISHELL BOUTIQUE - PANEL ADMINISTRATIVO PREMIUM
-   Dashboard Profesional y Sofisticado
+   MISHELL BOUTIQUE - PANEL ADMINISTRATIVO
+   Diseño Profesional con Paleta Original
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ────────────────────────────────────────────────────────────────────
-   1. VARIABLES DEL SISTEMA ADMINISTRATIVO
-   ──────────────────────────────────────────────────────────────────── */
 :root {
-    /* Paleta de Colores Premium (Admin) */
-    --admin-principal: #1a1a1a;
-    --admin-secundario: #2c2c2c;
-    --admin-acento: #C9A27A;
-    --admin-acento-hover: #b8916a;
-    --admin-rosa-elegante: #D4A5A5;
-    --admin-rosa-suave: #F5E8ED;
-    --admin-dorado: #B8936A;
-    --admin-dorado-claro: #E5D5C3;
+    /* Paleta Original */
+    --admin-primario: #D988B9;
+    --admin-primario-claro: #F5E8ED;
+    --admin-primario-hover: #E3B0CC;
+    --admin-primario-oscuro: #C273A2;
 
-    /* Neutros Sofisticados */
+    /* Colores Base */
     --admin-fondo: #F8F9FA;
-    --admin-fondo-card: #FFFFFF;
-    --admin-texto-primario: #1a1a1a;
-    --admin-texto-secundario: #6B7280;
-    --admin-texto-terciario: #9CA3AF;
-    --admin-borde: #E5E7EB;
-    --admin-borde-hover: #D1D5DB;
+    --admin-card: #FFFFFF;
+    --admin-borde: #E5E5E5;
 
-    /* Colores de Estado */
+    /* Texto */
+    --admin-texto: #333333;
+    --admin-texto-sec: #666666;
+    --admin-texto-claro: #999999;
+
+    /* Estados */
     --admin-success: #10B981;
     --admin-warning: #F59E0B;
     --admin-danger: #EF4444;
     --admin-info: #3B82F6;
 
-    /* Tipografía */
-    --admin-fuente-display: 'Playfair Display', Georgia, serif;
-    --admin-fuente-cuerpo: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-
-    /* Espaciado */
-    --admin-radio-sm: 8px;
-    --admin-radio-md: 12px;
-    --admin-radio-lg: 16px;
-    --admin-radio-xl: 24px;
+    /* Fuente */
+    --admin-fuente: 'Poppins', -apple-system, sans-serif;
 
     /* Sombras */
-    --admin-sombra-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --admin-sombra-sm: 0 2px 4px -1px rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-    --admin-sombra-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -1px rgb(0 0 0 / 0.05);
-    --admin-sombra-lg: 0 10px 15px -3px rgb(0 0 0 / 0.10), 0 4px 6px -2px rgb(0 0 0 / 0.05);
-    --admin-sombra-xl: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 10px 10px -5px rgb(0 0 0 / 0.04);
-
-    /* Transiciones */
-    --admin-transicion-rapida: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --admin-transicion-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-    --admin-transicion-suave: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+    --sombra-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+    --sombra-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+    --sombra-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   2. ESTILOS BASE ADMINISTRATIVOS
-   ──────────────────────────────────────────────────────────────────── */
 body.admin-page {
-    font-family: var(--admin-fuente-cuerpo);
+    font-family: var(--admin-fuente);
     background: var(--admin-fondo);
-    color: var(--admin-texto-primario);
+    color: var(--admin-texto);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   3. NAVBAR ADMINISTRATIVO PREMIUM
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   NAVBAR ADMINISTRATIVO
+   ═══════════════════════════════════════════════════════════════════ */
 .admin-navbar {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: white !important;
     border-bottom: 1px solid var(--admin-borde);
-    box-shadow: var(--admin-sombra-sm);
+    box-shadow: var(--sombra-sm);
     padding: 0.5rem 0;
 }
 
 .admin-brand {
-    font-family: var(--admin-fuente-display);
     font-weight: 700;
-    font-size: 1.75rem;
-    letter-spacing: 0.05em;
+    font-size: 1.6rem;
+    letter-spacing: 0.5px;
 }
 
 .admin-brand span {
-    background: linear-gradient(135deg, var(--admin-principal) 0%, var(--admin-acento) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--admin-primario);
 }
 
-/* Navegación Pills Premium */
 .nav-pills .nav-link {
-    color: var(--admin-texto-secundario);
+    color: var(--admin-texto-sec);
     font-size: 0.9rem;
     font-weight: 500;
     padding: 0.7rem 1rem;
     margin: 0 0.15rem;
-    border-radius: var(--admin-radio-md);
-    transition: all var(--admin-transicion-normal);
-    font-family: var(--admin-fuente-cuerpo);
-    position: relative;
-    overflow: hidden;
+    border-radius: 10px;
+    transition: all 0.3s ease;
 }
 
 .nav-pills .nav-link i {
     vertical-align: text-bottom;
     margin-right: 4px;
-    transition: transform var(--admin-transicion-normal);
 }
 
 .nav-pills .nav-link:hover {
-    background: var(--admin-rosa-suave);
-    color: var(--admin-acento);
-    transform: translateY(-1px);
-}
-
-.nav-pills .nav-link:hover i {
-    transform: scale(1.1);
+    background: var(--admin-primario-claro);
+    color: var(--admin-primario);
 }
 
 .nav-pills .nav-link.active {
-    background: linear-gradient(135deg, var(--admin-acento) 0%, var(--admin-acento-hover) 100%);
+    background: var(--admin-primario);
     color: white;
     font-weight: 600;
-    box-shadow: var(--admin-sombra-md);
+    box-shadow: var(--sombra-sm);
 }
 
-.nav-pills .nav-link.active i {
-    transform: scale(1.05);
-}
-
-/* Badge animado de notificaciones */
 .badge-new-order {
-    animation: pulseAdmin 2s ease-in-out infinite;
+    animation: pulse 2s infinite;
 }
 
-@keyframes pulseAdmin {
-    0%, 100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    50% {
-        opacity: 0.7;
-        transform: scale(1.1);
-    }
+@keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
 }
 
-/* Enlace al catálogo */
 .admin-logout {
     font-weight: 500;
-    transition: all var(--admin-transicion-normal);
+    transition: all 0.3s;
     padding: 0.5rem 1rem;
-    border-radius: var(--admin-radio-md);
+    border-radius: 10px;
 }
 
 .admin-logout:hover {
-    background: var(--admin-rosa-suave);
-    color: var(--admin-acento) !important;
-    transform: translateX(3px);
+    background: var(--admin-primario-claro);
+    color: var(--admin-primario) !important;
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   4. MAIN CONTENT AREA
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN CONTENT
+   ═══════════════════════════════════════════════════════════════════ */
 .admin-main {
     padding: 2rem 1.5rem;
     min-height: calc(100vh - 80px);
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   5. CARDS PREMIUM
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   CARDS
+   ═══════════════════════════════════════════════════════════════════ */
 .card {
     border: 1px solid var(--admin-borde);
-    box-shadow: var(--admin-sombra-sm);
-    border-radius: var(--admin-radio-lg);
+    box-shadow: var(--sombra-sm);
+    border-radius: 12px;
     margin-bottom: 1.5rem;
-    transition: all var(--admin-transicion-normal);
-    background: var(--admin-fondo-card);
-    overflow: hidden;
+    transition: all 0.3s;
+    background: var(--admin-card);
 }
 
 .card:hover {
-    box-shadow: var(--admin-sombra-md);
+    box-shadow: var(--sombra-md);
 }
 
 .card-header {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(249, 250, 251, 1) 100%);
+    background: white;
     border-bottom: 1px solid var(--admin-borde);
     padding: 1.25rem 1.5rem;
     font-weight: 600;
-    color: var(--admin-texto-primario);
 }
 
 .card-header h3,
 .card-header h5 {
-    font-family: var(--admin-fuente-display);
-    color: var(--admin-texto-primario);
+    color: var(--admin-texto);
     margin: 0;
+    font-weight: 600;
 }
 
 .card-body {
     padding: 1.5rem;
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   6. DASHBOARD CARDS PREMIUM
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   DASHBOARD CARDS - ICONOS PROFESIONALES
+   ═══════════════════════════════════════════════════════════════════ */
 .dashboard-card {
     border: 1px solid var(--admin-borde);
-    border-radius: var(--admin-radio-lg);
-    box-shadow: var(--admin-sombra-sm);
-    transition: all var(--admin-transicion-suave);
-    overflow: hidden;
-    background: var(--admin-fondo-card);
+    border-radius: 14px;
+    box-shadow: var(--sombra-sm);
+    transition: all 0.3s;
+    background: var(--admin-card);
     padding: 1.75rem;
     position: relative;
-}
-
-.dashboard-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    opacity: 0;
-    transition: opacity var(--admin-transicion-suave);
-    z-index: 0;
+    overflow: hidden;
 }
 
 .dashboard-card:hover {
     transform: translateY(-4px);
-    box-shadow: var(--admin-sombra-lg);
-    border-color: var(--admin-acento);
-}
-
-.dashboard-card:hover::before {
-    opacity: 1;
-}
-
-/* Variaciones de Dashboard Cards */
-.dashboard-card.card-ventas::before {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
-}
-
-.dashboard-card.card-productos::before {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
-}
-
-.dashboard-card.card-stock::before {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%);
-}
-
-.dashboard-card.card-apartados::before {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%);
+    box-shadow: var(--sombra-lg);
+    border-color: var(--admin-primario);
 }
 
 .dashboard-card .card-icon {
     width: 56px;
     height: 56px;
-    border-radius: var(--admin-radio-lg);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     margin-bottom: 1rem;
-    box-shadow: var(--admin-sombra-md);
-    transition: all var(--admin-transicion-normal);
+    box-shadow: var(--sombra-sm);
+    transition: all 0.3s;
 }
 
 .dashboard-card:hover .card-icon {
-    transform: scale(1.1) rotate(5deg);
+    transform: scale(1.05);
 }
 
-.card-ventas .card-icon {
+/* Iconos con colores profesionales */
+.dashboard-card .card-icon {
+    background: var(--admin-primario);
+    color: white;
+}
+
+.dashboard-card.card-ventas .card-icon {
     background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-    color: white;
 }
 
-.card-productos .card-icon {
+.dashboard-card.card-productos .card-icon {
     background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-    color: white;
 }
 
-.card-stock .card-icon {
+.dashboard-card.card-stock .card-icon {
     background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-    color: white;
 }
 
-.card-apartados .card-icon {
-    background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
-    color: white;
+.dashboard-card.card-apartados .card-icon {
+    background: linear-gradient(135deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 100%);
 }
 
 .dashboard-card .card-content {
     position: relative;
-    z-index: 1;
 }
 
 .dashboard-card .card-label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--admin-texto-secundario);
+    color: var(--admin-texto-sec);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.5px;
     margin-bottom: 0.5rem;
 }
 
 .dashboard-card .card-value {
-    font-size: 2.25rem;
+    font-size: 2rem;
     font-weight: 700;
-    font-family: var(--admin-fuente-display);
-    background: linear-gradient(135deg, var(--admin-acento) 0%, var(--admin-dorado) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--admin-primario);
     margin: 0.5rem 0;
     line-height: 1;
 }
 
 .dashboard-card .card-subtitle {
     font-size: 0.85rem;
-    color: var(--admin-texto-terciario);
+    color: var(--admin-texto-claro);
     font-weight: 500;
 }
 
-/* Icon Badges para métricas secundarias */
+/* Métricas secundarias con iconos mejorados */
 .icon-badge {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--admin-radio-md);
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.3rem;
-    transition: all var(--admin-transicion-normal);
+    transition: all 0.3s;
+    box-shadow: var(--sombra-sm);
 }
 
 .icon-badge.bg-info {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
     color: var(--admin-info);
 }
 
 .icon-badge.bg-success {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
     color: var(--admin-success);
 }
 
 .icon-badge.bg-warning {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%);
     color: var(--admin-warning);
 }
 
 .icon-badge.bg-danger {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
     color: var(--admin-danger);
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   7. TABLAS PREMIUM
-   ──────────────────────────────────────────────────────────────────── */
-.table {
-    border-collapse: separate;
-    border-spacing: 0;
+.icon-badge:hover {
+    transform: scale(1.05);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   TABLAS
+   ═══════════════════════════════════════════════════════════════════ */
 .table thead th {
-    background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+    background: #F9FAFB;
     border-bottom: 2px solid var(--admin-borde);
-    color: var(--admin-texto-secundario);
+    color: var(--admin-texto-sec);
     font-weight: 600;
     font-size: 0.85rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
     padding: 1rem;
-    font-family: var(--admin-fuente-cuerpo);
-}
-
-.table tbody tr {
-    transition: all var(--admin-transicion-normal);
 }
 
 .table-hover tbody tr:hover {
-    background: var(--admin-rosa-suave);
-    transform: scale(1.01);
-    box-shadow: var(--admin-sombra-sm);
+    background: var(--admin-primario-claro);
 }
 
 .table tbody td {
@@ -397,129 +299,97 @@ body.admin-page {
     border-bottom: 1px solid var(--admin-borde);
 }
 
-/* Imágenes en tablas */
 .table-product-img {
     max-width: 65px;
     height: auto;
     max-height: 85px;
     object-fit: cover;
-    border-radius: var(--admin-radio-md);
+    border-radius: 8px;
     border: 2px solid var(--admin-borde);
-    box-shadow: var(--admin-sombra-sm);
-    transition: all var(--admin-transicion-suave);
+    box-shadow: var(--sombra-sm);
+    transition: all 0.3s;
 }
 
 .table-product-img:hover {
     transform: scale(2.2);
     z-index: 100;
     cursor: pointer;
-    box-shadow: var(--admin-sombra-xl);
-    border-color: var(--admin-acento);
+    box-shadow: var(--sombra-lg);
+    border-color: var(--admin-primario);
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   8. FORMULARIOS PREMIUM
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   FORMULARIOS
+   ═══════════════════════════════════════════════════════════════════ */
 .form-label {
     font-weight: 600;
-    color: var(--admin-texto-primario);
+    color: var(--admin-texto);
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
-    font-family: var(--admin-fuente-cuerpo);
 }
 
 .form-control,
 .form-select {
-    border-radius: var(--admin-radio-md);
+    border-radius: 10px;
     border: 1.5px solid var(--admin-borde);
     padding: 0.65rem 0.95rem;
-    transition: all var(--admin-transicion-normal);
-    font-family: var(--admin-fuente-cuerpo);
+    transition: all 0.3s;
 }
 
 .form-control:focus,
 .form-select:focus {
-    border-color: var(--admin-acento);
-    box-shadow: 0 0 0 3px rgba(201, 162, 122, 0.1);
+    border-color: var(--admin-primario);
+    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.1);
     background: white;
 }
 
-.form-control-sm {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-}
-
-/* Inputs de búsqueda mejorados */
 #search-inventory,
 #product-modal-search,
 #client-modal-search,
 #supplier-modal-search {
     border: 1.5px solid var(--admin-borde);
-    border-radius: var(--admin-radio-lg);
+    border-radius: 12px;
     padding: 0.75rem 1rem;
     font-size: 0.95rem;
-    transition: all var(--admin-transicion-normal);
+    transition: all 0.3s;
 }
 
 #search-inventory:focus,
 #product-modal-search:focus,
 #client-modal-search:focus,
 #supplier-modal-search:focus {
-    border-color: var(--admin-acento);
-    box-shadow: 0 0 0 3px rgba(201, 162, 122, 0.15);
+    border-color: var(--admin-primario);
+    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.15);
     outline: none;
 }
 
-/* Botones adicionales inline */
 .add-supplier-btn,
 .add-client-btn {
     padding: 0.5rem 0.75rem;
     line-height: 1;
-    border-radius: var(--admin-radio-md);
-    transition: all var(--admin-transicion-normal);
+    border-radius: 8px;
 }
 
 .client-info-display {
-    background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+    background: #F9FAFB;
     opacity: 1;
     border: 1px solid var(--admin-borde);
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   9. BOTONES PREMIUM
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   BOTONES
+   ═══════════════════════════════════════════════════════════════════ */
 .btn {
-    border-radius: var(--admin-radio-md);
+    border-radius: 10px;
     padding: 0.65rem 1.25rem;
     font-weight: 500;
-    font-family: var(--admin-fuente-cuerpo);
-    transition: all var(--admin-transicion-normal);
-    box-shadow: var(--admin-sombra-xs);
-    position: relative;
-    overflow: hidden;
-}
-
-.btn::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-}
-
-.btn:hover::before {
-    width: 300px;
-    height: 300px;
+    transition: all 0.3s;
+    box-shadow: var(--sombra-sm);
 }
 
 .btn:hover {
     transform: translateY(-2px);
-    box-shadow: var(--admin-sombra-md);
+    box-shadow: var(--sombra-md);
 }
 
 .btn:active {
@@ -527,39 +397,38 @@ body.admin-page {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--admin-acento) 0%, var(--admin-acento-hover) 100%);
-    border-color: transparent;
+    background: var(--admin-primario);
+    border-color: var(--admin-primario);
     color: white;
 }
 
 .btn-primary:hover,
 .btn-primary:focus,
 .btn-primary:active {
-    background: linear-gradient(135deg, var(--admin-acento-hover) 0%, var(--admin-acento) 100%);
-    border-color: transparent;
-    color: white;
-    box-shadow: var(--admin-sombra-md);
+    background: var(--admin-primario-hover) !important;
+    border-color: var(--admin-primario-hover) !important;
+    color: white !important;
 }
 
 .btn-outline-secondary {
     border-color: var(--admin-borde);
-    color: var(--admin-texto-secundario);
+    color: var(--admin-texto-sec);
 }
 
 .btn-outline-secondary:hover {
-    background: var(--admin-rosa-suave);
-    border-color: var(--admin-acento);
-    color: var(--admin-acento);
+    background: var(--admin-primario-claro);
+    border-color: var(--admin-primario);
+    color: var(--admin-primario);
 }
 
 .btn-outline-primary {
-    border-color: var(--admin-acento);
-    color: var(--admin-acento);
+    border-color: var(--admin-primario);
+    color: var(--admin-primario);
 }
 
 .btn-outline-primary:hover {
-    background: var(--admin-acento);
-    border-color: var(--admin-acento);
+    background: var(--admin-primario);
+    border-color: var(--admin-primario);
     color: white;
 }
 
@@ -573,48 +442,38 @@ body.admin-page {
     margin-bottom: 6px;
 }
 
-.action-buttons button:last-child {
-    margin-right: 0;
-}
-
-/* ────────────────────────────────────────────────────────────────────
-   10. MODALES PREMIUM
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   MODALES
+   ═══════════════════════════════════════════════════════════════════ */
 .modal-content {
     border: none;
-    border-radius: var(--admin-radio-lg);
-    box-shadow: var(--admin-sombra-xl);
-    overflow: hidden;
+    border-radius: 14px;
+    box-shadow: var(--sombra-lg);
 }
 
 .modal-header {
-    background: linear-gradient(135deg, var(--admin-fondo-card) 0%, var(--admin-rosa-suave) 100%);
-    color: var(--admin-texto-primario);
+    background: white;
+    color: var(--admin-texto);
     border-bottom: 1px solid var(--admin-borde);
     padding: 1.5rem 1.75rem;
 }
 
 .modal-header h1,
 .modal-header h5 {
-    font-family: var(--admin-fuente-display);
-    font-weight: 700;
+    font-weight: 600;
     margin: 0;
 }
 
 .modal-header .btn-close {
-    filter: none;
     opacity: 0.6;
-    transition: all var(--admin-transicion-normal);
 }
 
 .modal-header .btn-close:hover {
     opacity: 1;
-    transform: rotate(90deg);
 }
 
-/* Modal de eliminación */
 #deleteConfirmModal .modal-header {
-    background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+    background: #FEE2E2;
     color: var(--admin-danger);
     border-bottom: 1px solid #FCA5A5;
 }
@@ -629,66 +488,50 @@ body.admin-page {
     background: var(--admin-fondo);
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   11. BÚSQUEDA DE PRODUCTOS/CLIENTES PREMIUM
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   BÚSQUEDA DE PRODUCTOS/CLIENTES
+   ═══════════════════════════════════════════════════════════════════ */
 .search-modal-list {
     max-height: 520px;
     overflow-y: auto;
-}
-
-.search-modal-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.search-modal-list::-webkit-scrollbar-thumb {
-    background: var(--admin-borde-hover);
-    border-radius: 3px;
-}
-
-.search-modal-list::-webkit-scrollbar-thumb:hover {
-    background: var(--admin-acento);
 }
 
 .search-modal-list .list-group-item {
     cursor: pointer;
     border: 1px solid var(--admin-borde);
     margin-bottom: 10px;
-    border-radius: var(--admin-radio-md);
+    border-radius: 10px;
     padding: 1rem;
-    transition: all var(--admin-transicion-normal);
-    background: var(--admin-fondo-card);
+    transition: all 0.3s;
 }
 
 .search-modal-list .list-group-item:hover:not(.disabled) {
-    background: var(--admin-rosa-suave);
-    border-color: var(--admin-acento);
+    background: var(--admin-primario-claro);
+    border-color: var(--admin-primario);
     transform: translateX(6px);
-    box-shadow: var(--admin-sombra-md);
+    box-shadow: var(--sombra-md);
 }
 
 .search-modal-list .list-group-item.disabled {
     cursor: not-allowed;
     opacity: 0.5;
-    background: var(--admin-fondo);
 }
 
 .product-search-img {
     width: 75px;
     height: 95px;
     object-fit: cover;
-    border-radius: var(--admin-radio-md);
+    border-radius: 10px;
     border: 2px solid var(--admin-borde);
     flex-shrink: 0;
-    box-shadow: var(--admin-sombra-sm);
+    box-shadow: var(--sombra-sm);
 }
 
 .product-search-name {
     font-weight: 600;
     font-size: 0.95rem;
-    color: var(--admin-texto-primario);
+    color: var(--admin-texto);
     line-height: 1.4;
-    font-family: var(--admin-fuente-cuerpo);
 }
 
 .search-modal-list .stock-info {
@@ -704,65 +547,55 @@ body.admin-page {
 
 .search-modal-list .price-info {
     font-weight: 700;
-    background: linear-gradient(135deg, var(--admin-acento) 0%, var(--admin-dorado) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--admin-primario);
     font-size: 1.15rem;
     white-space: nowrap;
-    font-family: var(--admin-fuente-display);
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   12. BADGES Y ESTADOS
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   BADGES
+   ═══════════════════════════════════════════════════════════════════ */
 .badge {
     padding: 0.4em 0.75em;
-    border-radius: var(--admin-radio-sm);
+    border-radius: 8px;
     font-weight: 600;
     font-size: 0.75rem;
-    letter-spacing: 0.02em;
 }
 
 .badge.bg-success {
-    background: linear-gradient(135deg, var(--admin-success) 0%, #059669 100%) !important;
+    background: var(--admin-success) !important;
 }
 
 .badge.bg-warning {
-    background: linear-gradient(135deg, var(--admin-warning) 0%, #D97706 100%) !important;
+    background: var(--admin-warning) !important;
     color: white !important;
 }
 
 .badge.bg-danger {
-    background: linear-gradient(135deg, var(--admin-danger) 0%, #DC2626 100%) !important;
+    background: var(--admin-danger) !important;
 }
 
 .badge.bg-info {
-    background: linear-gradient(135deg, var(--admin-info) 0%, #2563EB 100%) !important;
-}
-
-.badge.bg-secondary {
-    background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%) !important;
+    background: var(--admin-info) !important;
 }
 
 .product-name {
     font-weight: 600;
-    color: var(--admin-texto-primario);
-    font-family: var(--admin-fuente-cuerpo);
+    color: var(--admin-texto);
 }
 
 .product-name small {
-    color: var(--admin-texto-secundario);
+    color: var(--admin-texto-sec);
     font-size: 0.8rem;
     font-weight: 400;
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   13. PEDIDOS WEB
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   PEDIDOS WEB
+   ═══════════════════════════════════════════════════════════════════ */
 .web-order-card {
-    border-left: 4px solid var(--admin-acento);
-    transition: all var(--admin-transicion-normal);
+    border-left: 4px solid var(--admin-primario);
+    transition: all 0.3s;
 }
 
 .web-order-card:hover {
@@ -770,27 +603,24 @@ body.admin-page {
     transform: translateX(4px);
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   14. TOAST NOTIFICATIONS
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   TOASTS
+   ═══════════════════════════════════════════════════════════════════ */
 .toast-container {
     z-index: 1100;
     top: 24px !important;
     left: 24px !important;
-    bottom: auto !important;
-    right: auto !important;
 }
 
 .toast {
-    border-radius: var(--admin-radio-md);
-    box-shadow: var(--admin-sombra-lg);
+    border-radius: 10px;
+    box-shadow: var(--sombra-lg);
     border: none;
-    backdrop-filter: blur(10px);
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   15. VISTAS CONTROLADAS
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   UTILIDADES
+   ═══════════════════════════════════════════════════════════════════ */
 #inventory-view,
 #sales-list-view,
 .delivery-fields,
@@ -799,35 +629,55 @@ body.admin-page {
     display: none;
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   16. CHARTS Y VISUALIZACIONES
-   ──────────────────────────────────────────────────────────────────── */
 .btn-group .btn {
-    border-radius: 0;
     font-size: 0.85rem;
     padding: 0.5rem 1rem;
-    transition: all var(--admin-transicion-normal);
 }
 
 .btn-group .btn:first-child {
-    border-top-left-radius: var(--admin-radio-md);
-    border-bottom-left-radius: var(--admin-radio-md);
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
 }
 
 .btn-group .btn:last-child {
-    border-top-right-radius: var(--admin-radio-md);
-    border-bottom-right-radius: var(--admin-radio-md);
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
 }
 
 .btn-group .btn-check:checked + .btn {
-    background: linear-gradient(135deg, var(--admin-acento) 0%, var(--admin-acento-hover) 100%);
-    border-color: var(--admin-acento);
+    background: var(--admin-primario);
+    border-color: var(--admin-primario);
     color: white;
 }
 
-/* ────────────────────────────────────────────────────────────────────
-   17. ANIMACIONES ESPECIALES
-   ──────────────────────────────────────────────────────────────────── */
+.financial-item {
+    transition: all 0.3s;
+    padding: 0.75rem;
+    border-radius: 10px;
+}
+
+.financial-item:hover {
+    background: var(--admin-primario-claro);
+    transform: translateX(6px);
+}
+
+#filter-category-inventory {
+    border-radius: 10px;
+}
+
+#clear-filters-inventory {
+    border-radius: 10px;
+}
+
+#clear-filters-inventory:hover {
+    background: var(--admin-primario-claro);
+    border-color: var(--admin-primario);
+    color: var(--admin-primario);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ANIMACIONES
+   ═══════════════════════════════════════════════════════════════════ */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -840,7 +690,7 @@ body.admin-page {
 }
 
 .dashboard-card {
-    animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+    animation: fadeInUp 0.5s ease both;
 }
 
 .dashboard-card:nth-child(1) { animation-delay: 0.05s; }
@@ -848,167 +698,34 @@ body.admin-page {
 .dashboard-card:nth-child(3) { animation-delay: 0.15s; }
 .dashboard-card:nth-child(4) { animation-delay: 0.2s; }
 
-/* ────────────────────────────────────────────────────────────────────
-   18. RESPONSIVE
-   ──────────────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════ */
 @media (max-width: 991.98px) {
     .admin-main {
         padding: 1.5rem 1rem;
     }
 
     .dashboard-card .card-value {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
     }
 
     .dashboard-card .card-icon {
         width: 48px;
         height: 48px;
-        font-size: 1.4rem;
+        font-size: 1.3rem;
     }
 
     .icon-badge {
-        width: 42px;
-        height: 42px;
-        font-size: 1.1rem;
-    }
-
-    .table-product-img {
-        max-width: 50px;
-        max-height: 65px;
-    }
-
-    .product-search-img {
-        width: 55px;
-        height: 70px;
-    }
-
-    .nav-pills .nav-link {
-        font-size: 0.85rem;
-        padding: 0.6rem 0.8rem;
+        width: 44px;
+        height: 44px;
+        font-size: 1.2rem;
     }
 }
 
 @media (max-width: 768px) {
-    .table-responsive {
-        font-size: 0.85rem;
-    }
-
     .action-buttons button {
-        padding: 3px 8px !important;
+        padding: 4px 8px !important;
         font-size: 0.8rem;
     }
-
-    .product-search-name {
-        font-size: 0.85rem;
-    }
-
-    .search-modal-list .price-info {
-        font-size: 0.95rem;
-    }
-
-    .btn-sm {
-        padding: 0.35rem 0.7rem;
-        font-size: 0.8rem;
-    }
-}
-
-/* ────────────────────────────────────────────────────────────────────
-   19. UTILIDADES ADICIONALES
-   ──────────────────────────────────────────────────────────────────── */
-.cursor-pointer {
-    cursor: pointer;
-}
-
-.financial-item {
-    transition: all var(--admin-transicion-normal);
-    padding: 0.75rem;
-    border-radius: var(--admin-radio-md);
-}
-
-.financial-item:hover {
-    background: var(--admin-rosa-suave);
-    transform: translateX(6px);
-}
-
-.activity-list {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.activity-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.activity-list::-webkit-scrollbar-thumb {
-    background: var(--admin-borde-hover);
-    border-radius: 3px;
-}
-
-.activity-list::-webkit-scrollbar-thumb:hover {
-    background: var(--admin-acento);
-}
-
-/* Variaciones de producto en formulario */
-.variation-row {
-    margin-bottom: 0.75rem;
-    padding: 0.75rem;
-    background: var(--admin-fondo);
-    border-radius: var(--admin-radio-md);
-    border: 1px solid var(--admin-borde);
-}
-
-.variation-row:hover {
-    background: var(--admin-rosa-suave);
-    border-color: var(--admin-acento);
-}
-
-.remove-variation-btn {
-    transition: all var(--admin-transicion-normal);
-}
-
-.remove-variation-btn:hover {
-    transform: scale(1.1);
-    color: var(--admin-danger);
-}
-
-/* Progress bars personalizados */
-.progress {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 10px;
-    height: 10px;
-    overflow: hidden;
-}
-
-.progress-bar {
-    border-radius: 10px;
-    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    background: linear-gradient(135deg, var(--admin-acento) 0%, var(--admin-dorado) 100%);
-}
-
-/* Toggle buttons mejorados */
-.btn-toggle-filters {
-    box-shadow: var(--admin-sombra-sm);
-    transition: all var(--admin-transicion-normal);
-}
-
-.btn-toggle-filters:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--admin-sombra-md);
-}
-
-/* Filtros de inventario */
-#filter-category-inventory {
-    border-radius: var(--admin-radio-md);
-    border-color: var(--admin-borde);
-}
-
-#clear-filters-inventory {
-    border-radius: var(--admin-radio-md);
-    transition: all var(--admin-transicion-normal);
-}
-
-#clear-filters-inventory:hover {
-    background: var(--admin-rosa-suave);
-    border-color: var(--admin-acento);
-    color: var(--admin-acento);
 }
