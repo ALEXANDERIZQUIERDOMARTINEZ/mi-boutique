@@ -877,23 +877,48 @@ document.addEventListener('DOMContentLoaded', () => {
     // Botón resetear filtros
     document.getElementById('btn-reset-filters').addEventListener('click', resetAllFilters);
 
-    // ✅ Botón aplicar filtros
+    // ✅ Toggle filtros móvil con overlay
+    const btnToggleFilters = document.getElementById('btn-toggle-filters');
+    const filtersSidebar = document.getElementById('filters-sidebar');
+    const filtersOverlay = document.getElementById('filters-overlay');
+
+    function closeFiltersSidebar() {
+        if (filtersSidebar && filtersOverlay && btnToggleFilters) {
+            filtersSidebar.classList.remove('show');
+            filtersOverlay.classList.remove('show');
+            btnToggleFilters.innerHTML = '<i class="bi bi-funnel"></i> Mostrar Filtros';
+        }
+    }
+
+    function openFiltersSidebar() {
+        if (filtersSidebar && filtersOverlay && btnToggleFilters) {
+            filtersSidebar.classList.add('show');
+            filtersOverlay.classList.add('show');
+            btnToggleFilters.innerHTML = '<i class="bi bi-x"></i> Ocultar Filtros';
+        }
+    }
+
+    // ✅ Botón aplicar filtros (cierra sidebar en móvil)
     document.getElementById('btn-apply-filters').addEventListener('click', () => {
         applyFiltersAndRender();
         showToast('Filtros aplicados correctamente', 'success');
+        closeFiltersSidebar(); // Cierra el sidebar automáticamente
     });
 
-    // ✅ Toggle filtros móvil
-    const btnToggleFilters = document.getElementById('btn-toggle-filters');
-    const filtersSidebar = document.getElementById('filters-sidebar');
     if (btnToggleFilters && filtersSidebar) {
         btnToggleFilters.addEventListener('click', () => {
-            filtersSidebar.classList.toggle('show');
             const isShowing = filtersSidebar.classList.contains('show');
-            btnToggleFilters.innerHTML = isShowing
-                ? '<i class="bi bi-x"></i> Ocultar Filtros'
-                : '<i class="bi bi-funnel"></i> Mostrar Filtros';
+            if (isShowing) {
+                closeFiltersSidebar();
+            } else {
+                openFiltersSidebar();
+            }
         });
+    }
+
+    // Cerrar filtros al hacer click en overlay
+    if (filtersOverlay) {
+        filtersOverlay.addEventListener('click', closeFiltersSidebar);
     }
 
     // ✅ Búsqueda en tiempo real MEJORADA

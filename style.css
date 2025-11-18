@@ -918,46 +918,73 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.7rem;
 }
 
-/* Modal de Búsqueda */
+/* Modal de Búsqueda Mejorado */
 .search-modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(255, 255, 255, 0.98);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 1050;
     display: none;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 20px;
-    flex-direction: column;
+    padding: 0;
     overflow-y: auto;
 }
 
 .search-modal-content {
     width: 100%;
-    max-width: 500px;
+    max-width: 100%;
+    background: white;
+    padding: 1rem 1.25rem;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .search-modal-title {
-    font-size: 1.8rem;
+    font-size: 1rem;
     font-weight: 600;
-    text-align: center;
-    margin-bottom: 20px;
-    color: var(--color-primario);
+    text-align: left;
+    margin-bottom: 12px;
+    color: var(--color-texto);
 }
 
 .btn-close-modal {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    font-size: 2.5rem;
-    color: var(--color-texto-claro);
-    background: none;
+    top: 12px;
+    right: 12px;
+    font-size: 1.8rem;
+    color: var(--color-texto-secundario);
+    background: var(--color-fondo-secundario);
     border: none;
     cursor: pointer;
     z-index: 1051;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    line-height: 1;
+    padding: 0;
+}
+
+.btn-close-modal:hover {
+    background: var(--color-primario-claro);
+    color: var(--color-primario);
+}
+
+.search-modal .search-box {
+    width: 100%;
+    max-width: 100%;
+}
+
+.search-modal .search-box input {
+    font-size: 0.95rem;
+    padding: 12px 15px 12px 44px;
 }
 
 /* ────────────────────────────────────────────────────────────────────
@@ -1030,9 +1057,139 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
+/* ────────────────────────────────────────────────────────────────────
+   14. FILTROS MÓVIL OPTIMIZADOS
+   ──────────────────────────────────────────────────────────────────── */
+.filters-sidebar-mobile {
+    display: none;
+}
+
+.filters-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1039;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.filters-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
 @media (max-width: 991.98px) {
+    .filters-sidebar-mobile {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 85%;
+        max-width: 320px;
+        height: 100vh;
+        background: white;
+        z-index: 1040;
+        transition: left 0.3s ease;
+        overflow-y: auto;
+        box-shadow: none;
+    }
+
+    .filters-sidebar-mobile.show {
+        left: 0;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.15);
+    }
+
     .filters-container {
         position: static;
+        border: none;
+        border-radius: 0;
+        padding: 1rem;
+        box-shadow: none;
+        max-height: none;
+    }
+
+    .filters-header {
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+    }
+
+    .filters-title {
+        font-size: 1rem;
+    }
+
+    .btn-reset-filters {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+    }
+
+    .filter-section {
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .filter-section-title {
+        font-size: 0.85rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .price-inputs {
+        gap: 0.5rem;
+    }
+
+    .price-input-group label {
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .price-input-group .form-control {
+        font-size: 0.85rem;
+        padding: 6px 10px;
+    }
+
+    .price-display {
+        font-size: 0.85rem;
+        padding: 6px 10px;
+    }
+
+    .form-range {
+        height: 4px;
+    }
+
+    .color-filter-chip {
+        width: 32px;
+        height: 32px;
+    }
+
+    .form-check {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .form-check-input {
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+
+    .btn-apply-filters {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+        border-radius: var(--radio-md);
+    }
+
+    .btn-toggle-filters {
+        font-size: 0.9rem;
+        padding: 10px 16px;
+        border-radius: var(--radio-md);
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
     }
 
     .products-header {
