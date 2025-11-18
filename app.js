@@ -891,8 +891,8 @@ document.addEventListener('DOMContentLoaded', () => {
             filtersSidebar.classList.toggle('show');
             const isShowing = filtersSidebar.classList.contains('show');
             btnToggleFilters.innerHTML = isShowing
-                ? '<i class="bi bi-x-lg"></i> Ocultar Filtros'
-                : '<i class="bi bi-sliders"></i> Mostrar Filtros';
+                ? '<i class="bi bi-x"></i> Ocultar Filtros'
+                : '<i class="bi bi-funnel"></i> Mostrar Filtros';
         });
     }
 

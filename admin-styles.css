@@ -145,6 +145,65 @@ html, body {
     padding: 7px 14px;
 }
 
+/* Botones de acción con colores representativos */
+.btn-action-edit {
+    color: #2563EB;
+    border-color: #2563EB;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.btn-action-edit:hover {
+    background-color: #2563EB;
+    border-color: #2563EB;
+    color: white;
+}
+
+.btn-action-delete {
+    color: #DC2626;
+    border-color: #DC2626;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.btn-action-delete:hover {
+    background-color: #DC2626;
+    border-color: #DC2626;
+    color: white;
+}
+
+.btn-action-view {
+    color: #059669;
+    border-color: #059669;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.btn-action-view:hover {
+    background-color: #059669;
+    border-color: #059669;
+    color: white;
+}
+
+.btn-action-add {
+    color: #16A34A;
+    border-color: #16A34A;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.btn-action-add:hover {
+    background-color: #16A34A;
+    border-color: #16A34A;
+    color: white;
+}
+
+/* Iconos minimalistas */
+.btn i {
+    font-size: 1rem;
+    line-height: 1;
+}
+
 /* Estilos UI Mínimos */
 #inventory-view, #sales-list-view, .delivery-fields, #delivery-history-view, #closing-history-view { 
     display: none; 

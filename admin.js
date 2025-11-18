@@ -843,7 +843,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <td>${stockTotal}</td>
                                 <td>${promoHtml}</td>
                                 <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
-                                <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-product" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-product" title="Eliminar"><i class="bi bi-trash"></i></button></td>`;
+                                <td class="action-buttons">
+                                    <button class="btn btn-sm btn-action-edit py-0 px-2 btn-edit-product" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-action-delete py-0 px-2 btn-delete-product" title="Eliminar">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </td>`;
                 if(productListTableBody) productListTableBody.appendChild(tr); 
 
                 const li = document.createElement('li');
