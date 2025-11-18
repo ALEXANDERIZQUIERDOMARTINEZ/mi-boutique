@@ -282,11 +282,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <hr>
                     <div class="d-flex justify-content-end gap-2">
-                        <button class="btn btn-danger btn-reject-order" data-order-id="${orderId}">
-                            <i class="bi bi-x-circle me-1"></i>Rechazar
+                        <button class="btn btn-action btn-action-danger btn-reject-order" data-order-id="${orderId}">
+                            <i class="bi bi-x-circle"></i><span class="btn-action-text">Rechazar</span>
                         </button>
-                        <button class="btn btn-success btn-accept-order" data-order-id="${orderId}">
-                            <i class="bi bi-check-circle me-1"></i>Aceptar y Procesar
+                        <button class="btn btn-action btn-action-success btn-accept-order" data-order-id="${orderId}">
+                            <i class="bi bi-check-circle"></i><span class="btn-action-text">Aceptar</span>
                         </button>
                     </div>
                 </div>
@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
     (() => {
         const categoryForm = document.getElementById('form-categoria'); const categoryNameInput = document.getElementById('nombre-categoria'); const categoryList = document.getElementById('lista-categorias'); const categoryDropdown = document.getElementById('categoria-producto'); const editForm = document.getElementById('form-edit-category'); const editIdInput = document.getElementById('edit-category-id'); const editNameInput = document.getElementById('edit-category-nombre');
         if (!categoryForm || !categoryList || !categoryDropdown || !editForm) { console.warn("Elementos de Categorías no encontrados."); return; }
-        const render = (snapshot) => { if (!categoryList) return; categoryList.innerHTML = ''; if (snapshot.empty) { categoryList.innerHTML = '<li class="list-group-item text-muted">No hay categorías.</li>'; return; } snapshot.forEach(doc => { const d = doc.data(); const id = doc.id; const li = document.createElement('li'); li.className = 'list-group-item d-flex justify-content-between align-items-center'; li.dataset.id = id; li.innerHTML = `<span class="category-name">${d.nombre}</span><div class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 me-1 btn-edit-category" title="Modificar"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-category" title="Eliminar"><i class="bi bi-trash"></i></button></div>`; categoryList.appendChild(li); }); };
+        const render = (snapshot) => { if (!categoryList) return; categoryList.innerHTML = ''; if (snapshot.empty) { categoryList.innerHTML = '<li class="list-group-item text-muted">No hay categorías.</li>'; return; } snapshot.forEach(doc => { const d = doc.data(); const id = doc.id; const li = document.createElement('li'); li.className = 'list-group-item d-flex justify-content-between align-items-center'; li.dataset.id = id; li.innerHTML = `<span class="category-name">${d.nombre}</span><div class="action-buttons"><button class="btn btn-action btn-action-edit me-1 btn-edit-category"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button><button class="btn btn-action btn-action-delete btn-delete-category"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></div>`; categoryList.appendChild(li); }); };
         const updateDropdown = (snapshot) => { if (!categoryDropdown) return; const sel = categoryDropdown.value; categoryDropdown.innerHTML = '<option value="">Selecciona...</option>'; snapshot.forEach(doc => { const d = doc.data(); const opt = document.createElement('option'); opt.value = doc.id; opt.textContent = d.nombre; categoryDropdown.appendChild(opt); }); categoryDropdown.value = sel; }
         const checkDuplicate = async (name, currentId = null) => { const lowerCaseName = name.toLowerCase(); const q = query(categoriesCollection, where("nombreLower", "==", lowerCaseName)); const querySnapshot = await getDocs(q); let isDuplicate = false; querySnapshot.forEach((doc) => { if (doc.id !== currentId) { isDuplicate = true; } }); return isDuplicate; };
         onSnapshot(query(categoriesCollection, orderBy("nombre")), (s) => { render(s); updateDropdown(s); }, (e) => { console.error("Error categories: ", e); if(categoryList) categoryList.innerHTML = '<li class="list-group-item text-danger">Error.</li>'; });
@@ -480,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let suppliersMap = new Map();
         if (!addForm || !listTable || !searchModalList || !editForm || !productFormInput) { console.warn("Elementos de Proveedores no encontrados."); return; }
 
-        const renderSuppliers = (snapshot) => { suppliersMap.clear(); listTable.innerHTML = ''; searchModalList.innerHTML = ''; if (snapshot.empty) { listTable.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay proveedores.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; suppliersMap.set(id, d); if (listTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="supplier-name">${d.nombre}</td> <td>${d.contacto || '-'}</td> <td>${d.telefono || '-'}</td> <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-supplier" title="Modificar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-supplier" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; listTable.appendChild(tr); }
+        const renderSuppliers = (snapshot) => { suppliersMap.clear(); listTable.innerHTML = ''; searchModalList.innerHTML = ''; if (snapshot.empty) { listTable.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay proveedores.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; suppliersMap.set(id, d); if (listTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="supplier-name">${d.nombre}</td> <td>${d.contacto || '-'}</td> <td>${d.telefono || '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-edit btn-edit-supplier"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-supplier"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td>`; listTable.appendChild(tr); }
             const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action supplier-search-item'; li.dataset.name = d.nombre; li.dataset.id = id; li.textContent = d.nombre; searchModalList.appendChild(li);
         }); };
         onSnapshot(query(suppliersCollection, orderBy('nombre')), renderSuppliers, (e) => { console.error("Error suppliers:", e); if(listTable) listTable.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error.</td></tr>';});
@@ -513,7 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ventaClienteInput = document.getElementById('venta-cliente'); const ventaCelularInput = document.getElementById('venta-cliente-celular'); const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
         if (!addForm || !editForm || !clientListTable || !searchModalList) { console.warn("Elementos de Clientes no encontrados."); return; }
         
-        const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General"}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-client" title="Modificar"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-client" title="Eliminar"><i class="bi bi-trash"></i></button></td>`; clientListTable.appendChild(tr); }
+        const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General"}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-edit btn-edit-client"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-client"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td>`; clientListTable.appendChild(tr); }
             const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action client-search-item'; li.dataset.name = dataListValue; li.dataset.id = id; li.textContent = dataListValue; searchModalList.appendChild(li);
         }); document.dispatchEvent(new CustomEvent('clientsLoaded', { detail: { clientsMap: localClientsMap } })); window.fillClientInfoSales(); };
         
@@ -653,14 +653,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                     value="0.00" step="0.01" data-expected="${efectivoAEntregar}"></td>
                          <td class="saldo-pendiente ${saldoPendiente <= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatoMoneda.format(saldoPendiente)}</td>
                          <td class="action-buttons">
-                             <button class="btn btn-sm btn-success py-0 px-1 btn-liquidar-repartidor" title="Liquidar">
-                                 <i class="bi bi-check-circle"></i>
+                             <button class="btn btn-action btn-action-success btn-liquidar-repartidor">
+                                 <i class="bi bi-cash-coin"></i><span class="btn-action-text">Liquidar</span>
                              </button>
-                             <button class="btn btn-sm btn-outline-secondary py-0 px-1 btn-edit-repartidor" title="Modificar">
-                                 <i class="bi bi-pencil"></i>
+                             <button class="btn btn-action btn-action-edit btn-edit-repartidor">
+                                 <i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span>
                              </button>
-                             <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-delete-repartidor" title="Eliminar">
-                                 <i class="bi bi-trash"></i>
+                             <button class="btn btn-action btn-action-delete btn-delete-repartidor">
+                                 <i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span>
                              </button>
                          </td>`;
                      repartidorListTableBody.appendChild(tr);
@@ -826,11 +826,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Verificar si tiene promoción
                 const hasPromo = d.promocion && d.promocion.activa;
                 const promoHtml = hasPromo
-                    ? `<button class="btn btn-sm btn-warning py-0 px-2 btn-manage-promo" title="Gestionar Promoción">
-                        <i class="bi bi-tag-fill"></i> ${d.promocion.tipo === 'porcentaje' ? d.promocion.descuento + '%' : 'Precio'}
+                    ? `<button class="btn btn-action btn-action-warning btn-manage-promo">
+                        <i class="bi bi-tag-fill"></i><span class="btn-action-text">${d.promocion.tipo === 'porcentaje' ? d.promocion.descuento + '%' : 'Promo'}</span>
                        </button>`
-                    : `<button class="btn btn-sm btn-outline-secondary py-0 px-2 btn-manage-promo" title="Agregar Promoción">
-                        <i class="bi bi-tag"></i> Agregar
+                    : `<button class="btn btn-action btn-action-edit btn-manage-promo">
+                        <i class="bi bi-tag"></i><span class="btn-action-text">+ Promo</span>
                        </button>`;
 
                 const tr = document.createElement('tr');
@@ -844,11 +844,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <td>${promoHtml}</td>
                                 <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
                                 <td class="action-buttons">
-                                    <button class="btn btn-sm btn-action-edit py-0 px-2 btn-edit-product" title="Editar">
-                                        <i class="bi bi-pencil"></i>
+                                    <button class="btn btn-action btn-action-edit btn-edit-product">
+                                        <i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span>
                                     </button>
-                                    <button class="btn btn-sm btn-action-delete py-0 px-2 btn-delete-product" title="Eliminar">
-                                        <i class="bi bi-trash3"></i>
+                                    <button class="btn btn-action btn-action-delete btn-delete-product">
+                                        <i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span>
                                     </button>
                                 </td>`;
                 if(productListTableBody) productListTableBody.appendChild(tr); 
@@ -1446,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ventaCarritoTbody.innerHTML = ''; 
             window.ventaItems.forEach((item, index) => { 
                 const tr = document.createElement('tr'); 
-                tr.innerHTML = `<td>${item.nombreCompleto}</td><td><input type="number" class="form-control form-control-sm item-qty-input" value="${item.cantidad}" min="1" data-index="${index}"></td><td>${formatoMoneda.format(item.precio)}</td><td>${formatoMoneda.format(item.total)}</td><td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 btn-quitar-item" data-index="${index}">&times;</button></td>`; 
+                tr.innerHTML = `<td>${item.nombreCompleto}</td><td><input type="number" class="form-control form-control-sm item-qty-input" value="${item.cantidad}" min="1" data-index="${index}"></td><td>${formatoMoneda.format(item.precio)}</td><td>${formatoMoneda.format(item.total)}</td><td><button type="button" class="btn btn-action btn-action-delete btn-quitar-item" data-index="${index}"><i class="bi bi-x-lg"></i></button></td>`; 
                 ventaCarritoTbody.appendChild(tr); 
             }); 
          }
@@ -1503,11 +1503,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <td>${repartidor}</td>
                                 <td><span class="badge ${estadoBadgeClass}">${estado}</span></td>
                                 <td class="action-buttons">
-                                    <button class="btn btn-sm btn-outline-primary py-0 px-1 btn-view-sale" title="Ver"><i class="bi bi-eye"></i></button>
-                                    ${!estaAnulada ? `<button class="btn btn-sm btn-outline-info py-0 px-1 btn-change-sale-type" title="Cambiar Tipo" data-tipo="${d.tipoVenta}"><i class="bi bi-arrow-left-right"></i></button>` : ''}
-                                    ${d.tipoVenta === 'apartado' && !estaAnulada ? `<button class="btn btn-sm btn-outline-warning py-0 px-1 btn-manage-apartado" title="Gestionar"><i class="bi bi-calendar-heart"></i></button>` : ''}
-                                    <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-sale" title="Anular" ${estaAnulada ? 'disabled' : ''}>
-                                        <i class="bi bi-trash"></i>
+                                    <button class="btn btn-action btn-action-view btn-view-sale"><i class="bi bi-eye"></i><span class="btn-action-text">Ver</span></button>
+                                    ${!estaAnulada ? `<button class="btn btn-action btn-action-info btn-change-sale-type" data-tipo="${d.tipoVenta}"><i class="bi bi-arrow-left-right"></i><span class="btn-action-text">Cambiar</span></button>` : ''}
+                                    ${d.tipoVenta === 'apartado' && !estaAnulada ? `<button class="btn btn-action btn-action-warning btn-manage-apartado"><i class="bi bi-calendar-heart"></i><span class="btn-action-text">Gestionar</span></button>` : ''}
+                                    <button class="btn btn-action btn-action-danger btn-cancel-sale" ${estaAnulada ? 'disabled' : ''}>
+                                        <i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span>
                                     </button>
                                 </td>`; 
                 salesListTableBody.appendChild(tr); 
@@ -2181,21 +2181,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${diasRestantes < 0 ? '<small class="d-block">(VENCIDO)</small>' : ''}
                     </td>
                     <td class="action-buttons">
-                        <button class="btn btn-sm btn-outline-info py-0 px-1 btn-ver-apartado"
-                                title="Ver Detalles" data-apartado-id="${id}">
-                            <i class="bi bi-eye"></i>
+                        <button class="btn btn-action btn-action-view btn-ver-apartado" data-apartado-id="${id}">
+                            <i class="bi bi-eye"></i><span class="btn-action-text">Ver</span>
                         </button>
-                        <button class="btn btn-sm btn-success py-0 px-1 btn-abono-apartado"
-                                title="Registrar Abono" data-apartado-id="${id}">
-                            <i class="bi bi-cash-coin"></i>
+                        <button class="btn btn-action btn-action-primary btn-abono-apartado" data-apartado-id="${id}">
+                            <i class="bi bi-cash-coin"></i><span class="btn-action-text">Abonar</span>
                         </button>
-                        <button class="btn btn-sm btn-primary py-0 px-1 btn-completar-apartado"
-                                title="Completar" data-apartado-id="${id}" ${saldo > 0 ? 'disabled' : ''}>
-                            <i class="bi bi-check-circle"></i>
+                        <button class="btn btn-action btn-action-success btn-completar-apartado" data-apartado-id="${id}" ${saldo > 0 ? 'disabled' : ''}>
+                            <i class="bi bi-check-circle"></i><span class="btn-action-text">Completar</span>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger py-0 px-1 btn-cancel-apartado"
-                                title="Cancelar" data-apartado-id="${id}">
-                            <i class="bi bi-x-circle"></i>
+                        <button class="btn btn-action btn-action-danger btn-cancel-apartado" data-apartado-id="${id}">
+                            <i class="bi bi-x-circle"></i><span class="btn-action-text">Cancelar</span>
                         </button>
                     </td>
                 `; 
