@@ -1,14 +1,18 @@
-/* Estilos base con identidad de marca */
+/* Estilos base minimalistas y profesionales */
 :root {
     --color-primario: #D988B9;
-    --color-primario-hover: #c473a2;
+    --color-primario-hover: #C77AA8;
     --color-primario-claro: #F5E8ED;
+    --color-fondo: #FAFAFA;
+    --color-borde: #E0E0E0;
+    --color-texto: #2C2C2C;
+    --color-texto-claro: #707070;
 }
 
 body {
     font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #f8f9fa;
-    color: #333;
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
     font-size: 14px;
     line-height: 1.6;
     overflow-x: hidden;
@@ -27,8 +31,8 @@ html, body {
 
 .admin-navbar {
     background-color: white;
-    border-bottom: 1px solid #e0e0e0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border-bottom: 1px solid var(--color-borde);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     flex-shrink: 0;
 }
 
@@ -40,11 +44,11 @@ html, body {
 }
 
 .card {
-    border: none;
-    border-radius: 12px;
+    border: 1px solid var(--color-borde);
+    border-radius: 4px;
     margin-bottom: 1.5rem;
-    background: #ffffff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    background: white;
+    box-shadow: none;
 }
 
 .card-header {
@@ -103,10 +107,21 @@ html, body {
     color: #333;
 }
 
+/* Botones minimalistas y elegantes */
+.btn {
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    padding: 9px 16px;
+    transition: all 0.2s ease;
+    border: 1px solid;
+    letter-spacing: 0.2px;
+}
+
 .btn-primary {
     background-color: var(--color-primario);
     border-color: var(--color-primario);
-    font-weight: 500;
+    color: white;
 }
 
 .btn-primary:hover {
@@ -115,9 +130,19 @@ html, body {
 }
 
 .btn-outline-secondary {
-    border-color: #ddd;
-    color: #666;
-    font-weight: 400;
+    border-color: var(--color-borde);
+    color: var(--color-texto-claro);
+    background-color: transparent;
+}
+
+.btn-outline-secondary:hover {
+    border-color: var(--color-texto);
+    color: var(--color-texto);
+}
+
+.btn-sm {
+    font-size: 0.8rem;
+    padding: 7px 14px;
 }
 
 /* Estilos UI Mínimos */

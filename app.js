@@ -374,7 +374,7 @@ function renderProducts(products) {
         }
         
         const isDisabled = isAgotado || isSoloDetal;
-        let btnText = isAgotado ? 'Agotado' : 'Seleccionar Opciones';
+        let btnText = isAgotado ? 'Agotado' : 'Ver Producto';
         if (isSoloDetal) btnText = 'Solo Detal';
 
         // ✅ HTML para TALLAS
@@ -882,6 +882,19 @@ document.addEventListener('DOMContentLoaded', () => {
         applyFiltersAndRender();
         showToast('Filtros aplicados correctamente', 'success');
     });
+
+    // ✅ Toggle filtros móvil
+    const btnToggleFilters = document.getElementById('btn-toggle-filters');
+    const filtersSidebar = document.getElementById('filters-sidebar');
+    if (btnToggleFilters && filtersSidebar) {
+        btnToggleFilters.addEventListener('click', () => {
+            filtersSidebar.classList.toggle('show');
+            const isShowing = filtersSidebar.classList.contains('show');
+            btnToggleFilters.innerHTML = isShowing
+                ? '<i class="bi bi-x-lg"></i> Ocultar Filtros'
+                : '<i class="bi bi-sliders"></i> Mostrar Filtros';
+        });
+    }
 
     // ✅ Búsqueda en tiempo real MEJORADA
     document.getElementById('search-input').addEventListener('input', applyFiltersAndRedraw);
