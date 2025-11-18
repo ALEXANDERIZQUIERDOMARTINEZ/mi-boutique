@@ -463,9 +463,15 @@ body.admin-page {
     font-size: 0.85rem;
 }
 
+.action-buttons {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
 .action-buttons button {
-    margin-right: 6px;
-    margin-bottom: 6px;
+    margin: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -746,6 +752,167 @@ body.admin-page {
     width: 1.5rem;
     height: 1.5rem;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23D988B9' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2.5' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODERN ACTION BUTTONS
+   ═══════════════════════════════════════════════════════════════════ */
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.btn-action i {
+    font-size: 0.9rem;
+}
+
+/* View/Ver Actions - Soft Blue */
+.btn-action-view {
+    background: #EFF6FF;
+    color: #1E40AF;
+    border-color: #BFDBFE;
+}
+
+.btn-action-view:hover {
+    background: #DBEAFE;
+    border-color: #93C5FD;
+    color: #1E3A8A;
+    transform: translateY(-1px);
+}
+
+/* Edit/Editar Actions - Soft Purple */
+.btn-action-edit {
+    background: #F5F3FF;
+    color: #6D28D9;
+    border-color: #DDD6FE;
+}
+
+.btn-action-edit:hover {
+    background: #EDE9FE;
+    border-color: #C4B5FD;
+    color: #5B21B6;
+    transform: translateY(-1px);
+}
+
+/* Delete/Eliminar Actions - Soft Red */
+.btn-action-delete {
+    background: #FEF2F2;
+    color: #B91C1C;
+    border-color: #FECACA;
+}
+
+.btn-action-delete:hover {
+    background: #FEE2E2;
+    border-color: #FCA5A5;
+    color: #991B1B;
+    transform: translateY(-1px);
+}
+
+/* Success Actions (Aceptar, Liquidar, Completar) - Soft Green */
+.btn-action-success {
+    background: #F0FDF4;
+    color: #15803D;
+    border-color: #BBF7D0;
+}
+
+.btn-action-success:hover {
+    background: #DCFCE7;
+    border-color: #86EFAC;
+    color: #166534;
+    transform: translateY(-1px);
+}
+
+/* Warning Actions (Gestionar, Promoción) - Soft Orange */
+.btn-action-warning {
+    background: #FFFBEB;
+    color: #B45309;
+    border-color: #FDE68A;
+}
+
+.btn-action-warning:hover {
+    background: #FEF3C7;
+    border-color: #FCD34D;
+    color: #92400E;
+    transform: translateY(-1px);
+}
+
+/* Info Actions (Cambiar, Ver detalles) - Soft Cyan */
+.btn-action-info {
+    background: #ECFEFF;
+    color: #0E7490;
+    border-color: #A5F3FC;
+}
+
+.btn-action-info:hover {
+    background: #CFFAFE;
+    border-color: #67E8F9;
+    color: #155E75;
+    transform: translateY(-1px);
+}
+
+/* Danger Actions (Rechazar, Cancelar, Anular) - Soft Pink */
+.btn-action-danger {
+    background: #FFF1F2;
+    color: #BE123C;
+    border-color: #FECDD3;
+}
+
+.btn-action-danger:hover {
+    background: #FFE4E6;
+    border-color: #FDA4AF;
+    color: #9F1239;
+    transform: translateY(-1px);
+}
+
+/* Primary Actions (Abono, Gestionar) - Original Pink Theme */
+.btn-action-primary {
+    background: #FCE7F3;
+    color: #C273A2;
+    border-color: #F9A8D4;
+}
+
+.btn-action-primary:hover {
+    background: #FBCFE8;
+    border-color: #F472B6;
+    color: #A8518A;
+    transform: translateY(-1px);
+}
+
+/* Disabled state */
+.btn-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn-action:disabled:hover {
+    transform: none !important;
+}
+
+/* Responsive sizing */
+@media (max-width: 768px) {
+    .btn-action {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+        gap: 0.3rem;
+    }
+
+    .btn-action i {
+        font-size: 0.85rem;
+    }
+
+    /* Hide text on very small screens, keep icons */
+    .btn-action-text {
+        display: none;
+    }
 }
 
 /* Responsive: Solo iconos en pantallas medianas */
