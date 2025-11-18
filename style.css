@@ -115,10 +115,12 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     color: var(--color-texto);
     text-decoration: none;
     padding: 4px;
-    transition: color 0.2s ease;
+    transition: all 0.2s ease;
+    opacity: 0.8;
 }
 .cart-icon:hover {
     color: var(--color-primario);
+    opacity: 1;
 }
 .cart-icon .cart-counter {
     background-color: var(--color-primario);
@@ -166,6 +168,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     color: var(--color-texto-claro);
     font-size: 1rem;
     pointer-events: none;
+    opacity: 0.6;
 }
 
 .catalog-filters {
@@ -190,15 +193,22 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 }
 .filter-group i {
     font-size: 0.95rem;
+    opacity: 0.8;
 }
 .filter-group:hover {
     color: var(--color-primario);
     border-color: var(--color-primario);
 }
+.filter-group:hover i {
+    opacity: 1;
+}
 .filter-group.active {
     background-color: var(--color-primario);
     border-color: var(--color-primario);
     color: white;
+}
+.filter-group.active i {
+    opacity: 1;
 }
 
 /* Badge de filtros */
@@ -539,6 +549,12 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 .mobile-bottom-nav .nav-item i {
     font-size: 1.3rem;
     margin-bottom: 3px;
+    opacity: 0.75;
+    transition: opacity 0.2s ease;
+}
+.nav-item:hover i,
+.nav-item.active i {
+    opacity: 1;
 }
 .nav-item .cart-badge {
     position: absolute;
