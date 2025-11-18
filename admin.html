@@ -26,16 +26,16 @@
             </button>
             <div class="collapse navbar-collapse" id="adminNavbarContent">
                 <ul class="nav nav-pills navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item"> <a href="#dashboard" class="nav-link active" data-bs-toggle="pill"><i class="bi bi-house-heart-fill me-1"></i> Dashboard</a> </li>
+                    <li class="nav-item"> <a href="#dashboard" class="nav-link active" data-bs-toggle="pill"><i class="bi bi-house-door me-1"></i> Dashboard</a> </li>
                     <li class="nav-item"> <a href="#pedidos-web" class="nav-link position-relative" data-bs-toggle="pill"><i class="bi bi-cart-check me-1"></i> Pedidos Web <span class="badge bg-danger ms-1 badge-new-order" id="pedidos-web-count" style="display: none;">0</span></a> </li>
-                    <li class="nav-item"> <a href="#productos" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bag-heart-fill me-1"></i> Productos</a> </li>
-                    <li class="nav-item"> <a href="#ventas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-cash-stack me-1"></i> Ventas</a> </li>
-                    <li class="nav-item"> <a href="#apartados" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bookmark-heart-fill me-1"></i> Apartados</a> </li>
-                    <li class="nav-item"> <a href="#clientes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-person-hearts me-1"></i> Clientes</a> </li>
+                    <li class="nav-item"> <a href="#productos" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bag me-1"></i> Productos</a> </li>
+                    <li class="nav-item"> <a href="#ventas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-currency-dollar me-1"></i> Ventas</a> </li>
+                    <li class="nav-item"> <a href="#apartados" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bookmark me-1"></i> Apartados</a> </li>
+                    <li class="nav-item"> <a href="#clientes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-person me-1"></i> Clientes</a> </li>
                     <li class="nav-item"> <a href="#repartidores" class="nav-link" data-bs-toggle="pill"><i class="bi bi-truck me-1"></i> Repartidores</a> </li>
                     <li class="nav-item"> <a href="#reportes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-graph-up-arrow me-1"></i> Reportes</a> </li>
                     <li class="nav-item"> <a href="#finanzas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-wallet2 me-1"></i> Finanzas</a> </li>
-                    <li class="nav-item"> <a href="#categorias" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-tags-fill me-1"></i> Categorías </a> </li>
+                    <li class="nav-item"> <a href="#categorias" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-tags me-1"></i> Categorías </a> </li>
                     <li class="nav-item"> <a href="#proveedores" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-shop me-1"></i> Proveedores </a> </li>
                 </ul>
                 <a href="index.html" target="_blank" class="admin-logout d-flex align-items-center text-secondary text-decoration-none ms-lg-auto mt-2 mt-lg-0">
@@ -59,7 +59,7 @@
             <div class="tab-pane fade show active" id="dashboard">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h1 class="h2 mb-0">
-                        <i class="bi bi-grid-1x2-fill me-2"></i>Dashboard
+                        <i class="bi bi-grid-1x2 me-2"></i>Dashboard
                     </h1>
                     <div class="text-muted small">
                         <i class="bi bi-calendar3"></i> Hoy: <span id="dashboard-date"></span>
@@ -71,7 +71,7 @@
                     <div class="col-md-3 col-sm-6">
                         <div class="dashboard-card card-ventas">
                             <div class="card-icon">
-                                <i class="bi bi-cash-stack"></i>
+                                <i class="bi bi-currency-dollar"></i>
                             </div>
                             <div class="card-content">
                                 <h6 class="card-label">Ventas Hoy</h6>
@@ -84,7 +84,7 @@
                     <div class="col-md-3 col-sm-6">
                         <div class="dashboard-card card-productos">
                             <div class="card-icon">
-                                <i class="bi bi-box-seam"></i>
+                                <i class="bi bi-box"></i>
                             </div>
                             <div class="card-content">
                                 <h6 class="card-label">Productos Totales</h6>
@@ -110,7 +110,7 @@
                     <div class="col-md-3 col-sm-6">
                         <div class="dashboard-card card-apartados">
                             <div class="card-icon">
-                                <i class="bi bi-calendar-heart"></i>
+                                <i class="bi bi-calendar3"></i>
                             </div>
                             <div class="card-content">
                                 <h6 class="card-label">Apartados Activos</h6>
@@ -279,7 +279,7 @@
                     <h1 class="h2 mb-0">Productos</h1> 
                     <div class="btn-group"> 
                         <button type="button" id="toggle-inventory-view-btn" class="btn btn-sm btn-outline-secondary active"><i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline"> Inventario</span></button> 
-                        <button type="button" id="toggle-form-view-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Agregar/Editar</span></button> 
+                        <button type="button" id="toggle-form-view-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-circle me-1"></i><span class="d-none d-md-inline"> Agregar/Editar</span></button> 
                     </div> 
                 </div>
                 
@@ -392,7 +392,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3"> 
                     <h1 class="h2 mb-0">Ventas</h1> 
                     <div class="btn-group"> 
-                        <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle-fill me-1"></i><span class="d-none d-md-inline"> Registrar</span></button> 
+                        <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle me-1"></i><span class="d-none d-md-inline"> Registrar</span></button> 
                         <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-list-check me-1"></i><span class="d-none d-md-inline"> Historial</span></button> 
                     </div> 
                 </div> 
