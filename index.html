@@ -78,23 +78,24 @@
 </div>
 
 <div class="row">
+<!-- Botón toggle filtros móvil -->
+<div class="col-12 d-lg-none mb-3">
+<button class="btn btn-outline-primary btn-toggle-filters w-100" id="btn-toggle-filters">
+<i class="bi bi-sliders"></i> Mostrar Filtros
+</button>
+</div>
+
 <!-- Sidebar de Filtros -->
-<aside class="col-lg-3 mb-4" id="filters-sidebar">
+<aside class="col-lg-3 mb-4 filters-sidebar-mobile" id="filters-sidebar">
 <div class="filters-container">
 <div class="filters-header">
-<h5 class="filters-title">
-<i class="bi bi-funnel"></i> Filtros Avanzados
-</h5>
-<button class="btn-reset-filters" id="btn-reset-filters">
-<i class="bi bi-arrow-counterclockwise"></i> Limpiar
-</button>
+<h5 class="filters-title">Filtros</h5>
+<button class="btn-reset-filters" id="btn-reset-filters">Limpiar</button>
 </div>
 
 <!-- Filtro por Precio -->
 <div class="filter-section">
-<h6 class="filter-section-title">
-<i class="bi bi-cash-stack"></i> Rango de Precio
-</h6>
+<h6 class="filter-section-title">Precio</h6>
 <div class="price-filter-content">
 <div class="price-inputs">
 <div class="price-input-group">
@@ -118,9 +119,7 @@
 
 <!-- Filtro por Colores -->
 <div class="filter-section">
-<h6 class="filter-section-title">
-<i class="bi bi-palette"></i> Colores
-</h6>
+<h6 class="filter-section-title">Colores</h6>
 <div class="color-filter-content" id="color-filter-container">
 <!-- Se llenará dinámicamente -->
 </div>
@@ -128,9 +127,7 @@
 
 <!-- Filtro por Disponibilidad -->
 <div class="filter-section">
-<h6 class="filter-section-title">
-<i class="bi bi-box-seam"></i> Disponibilidad
-</h6>
+<h6 class="filter-section-title">Disponibilidad</h6>
 <div class="availability-filter-content">
 <div class="form-check">
 <input class="form-check-input" type="checkbox" id="filter-in-stock">
@@ -150,7 +147,7 @@ Solo en promoción
 <!-- Botón Aplicar Filtros -->
 <div class="filter-actions">
 <button class="btn btn-primary btn-apply-filters w-100" id="btn-apply-filters">
-<i class="bi bi-check-circle-fill"></i> Aplicar Filtros
+Aplicar Filtros
 </button>
 </div>
 </div>
