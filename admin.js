@@ -697,11 +697,11 @@ document.addEventListener('DOMContentLoaded', () => {
                      const manana = new Date(hoy);
                      manana.setDate(manana.getDate() + 1);
 
+                     // Query solo por timestamp (sin índice compuesto)
                      const ventasQuery = query(
                          salesCollection,
                          where('timestamp', '>=', hoy),
-                         where('timestamp', '<', manana),
-                         where('repartidorId', '==', repartidorId)
+                         where('timestamp', '<', manana)
                      );
 
                      const ventasSnap = await getDocs(ventasQuery);
@@ -709,11 +709,14 @@ document.addEventListener('DOMContentLoaded', () => {
                      let totalEfectivo = 0;
                      let totalRutas = 0;
 
+                     // Filtrar por repartidorId en JavaScript
                      ventasSnap.forEach(doc => {
-                         ventasIds.push(doc.id);
                          const venta = doc.data();
-                         totalEfectivo += venta.pagoEfectivo || 0;
-                         totalRutas += venta.costoRuta || 0;
+                         if (venta.repartidorId === repartidorId) {
+                             ventasIds.push(doc.id);
+                             totalEfectivo += venta.pagoEfectivo || 0;
+                             totalRutas += venta.costoRuta || 0;
+                         }
                      });
 
                      // Crear registro de liquidación
@@ -3608,7 +3611,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cargar repartidores en el select
     if (repartidorSelect) {
-        onSnapshot(deliveryCollection, (snapshot) => {
+        onSnapshot(repartidoresCollection, (snapshot) => {
             repartidorSelect.innerHTML = '<option value="">Todos los repartidores</option>';
             snapshot.forEach(doc => {
                 const repartidor = doc.data();
@@ -4189,7 +4192,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cargar repartidores en el select
     if (historyRepartidorSelect) {
-        onSnapshot(deliveryCollection, (snapshot) => {
+        onSnapshot(repartidoresCollection, (snapshot) => {
             historyRepartidorSelect.innerHTML = '<option value="">Todos</option>';
             snapshot.forEach(doc => {
                 const repartidor = doc.data();

@@ -543,18 +543,25 @@ function renderCart() {
     const badgeDesktop = document.getElementById('cart-badge-desktop');
     const badgeMobile = document.getElementById('cart-badge-mobile');
     const empty = document.getElementById('cart-empty');
+
+    // Limpiar container SIEMPRE
+    if (container) container.innerHTML = '';
+
     if (cart.length === 0) {
         if (empty) empty.style.display = 'block';
-        footer.style.display = 'none';
-        badgeDesktop.textContent = '0';
-        badgeMobile.textContent = '0';
-        badgeDesktop.style.opacity = '0';
-        badgeMobile.style.display = 'none';
+        if (footer) footer.style.display = 'none';
+        if (badgeDesktop) {
+            badgeDesktop.textContent = '0';
+            badgeDesktop.style.opacity = '0';
+        }
+        if (badgeMobile) {
+            badgeMobile.textContent = '0';
+            badgeMobile.style.display = 'none';
+        }
         return;
     }
     if (empty) empty.style.display = 'none';
-    footer.style.display = 'block';
-    container.innerHTML = '';
+    if (footer) footer.style.display = 'block';
     let total = 0;
     let itemCount = 0;
     cart.forEach(item => {
@@ -594,13 +601,28 @@ window.confirmRemoveFromCart = function(cartItemId) {
     modal.show();
 };
 
-function saveCart() { localStorage.setItem('mishellCart', JSON.stringify(cart)); }
+function saveCart() {
+    if (cart.length === 0) {
+        localStorage.removeItem('mishellCart'); // Eliminar si está vacío
+    } else {
+        localStorage.setItem('mishellCart', JSON.stringify(cart));
+    }
+}
 function loadCart() {
     const savedCart = localStorage.getItem('mishellCart');
     if (savedCart) {
-        cart = JSON.parse(savedCart);
-        renderCart();
+        try {
+            cart = JSON.parse(savedCart);
+            // Verificar que sea un array válido
+            if (!Array.isArray(cart)) {
+                cart = [];
+            }
+        } catch (e) {
+            console.error('Error cargando carrito:', e);
+            cart = [];
+        }
     }
+    renderCart();
 }
 
 // ✅ FUNCIÓN: Cargar colores disponibles dinámicamente
@@ -1078,13 +1100,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemIndex = cart.findIndex(item => item.cartItemId === itemToDelete);
         if (itemIndex > -1) {
             cart.splice(itemIndex, 1);
+            saveCart(); // Guardar ANTES de renderizar
             renderCart();
-            saveCart();
             showToast('Producto eliminado del carrito', 'success');
         }
         itemToDelete = null;
         const modal = bootstrap.Modal.getInstance(document.getElementById('deleteCartModal'));
-        modal.hide();
+        if (modal) modal.hide();
     });
 
     document.getElementById('checkout-form').addEventListener('submit', async (e) => {
