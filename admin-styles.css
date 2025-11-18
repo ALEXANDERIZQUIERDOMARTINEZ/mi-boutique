@@ -250,26 +250,31 @@ body.admin-page {
     font-size: 1.3rem;
     transition: all 0.3s;
     box-shadow: var(--sombra-sm);
+    border: 2px solid transparent;
 }
 
 .icon-badge.bg-info {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
-    color: var(--admin-info);
+    background: #E0F2FE;
+    color: #0284C7;
+    border-color: #BAE6FD;
 }
 
 .icon-badge.bg-success {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
-    color: var(--admin-success);
+    background: #D1FAE5;
+    color: #059669;
+    border-color: #A7F3D0;
 }
 
 .icon-badge.bg-warning {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%);
-    color: var(--admin-warning);
+    background: #FEF3C7;
+    color: #D97706;
+    border-color: #FDE68A;
 }
 
 .icon-badge.bg-danger {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.1) 100%);
-    color: var(--admin-danger);
+    background: #FFE4E6;
+    color: #DC2626;
+    border-color: #FECDD3;
 }
 
 .icon-badge:hover {
