@@ -4,18 +4,32 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 @import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css');
 
-/* 2. VARIABLES GLOBALES */
+/* 2. PALETA PROFESIONAL ULTRA LIMPIA */
 :root {
-    --color-primario: #D988B9;
-    --color-primario-claro: #F5E8ED;
-    --color-primario-hover: #E3B0CC;
-    --color-fondo: #ffffff;
-    --color-borde-sutil: #f0f0f0;
-    --color-texto: #333333;
-    --color-texto-claro: #777777;
-    --font-base: 'Poppins', sans-serif;
+    /* Colores primarios - Rosa elegante */
+    --color-primario: #E91E63;
+    --color-primario-suave: #FCE4EC;
+    --color-primario-hover: #C2185B;
+
+    /* Fondos neutros */
+    --color-blanco: #FFFFFF;
+    --color-fondo: #FAFAFA;
+    --color-borde: #EEEEEE;
+
+    /* Textos profesionales */
+    --color-texto-principal: #212121;
+    --color-texto-secundario: #757575;
+    --color-texto-terciario: #BDBDBD;
+
+    /* Tipografía */
+    --font-base: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    /* Formas */
     --border-radius: 8px;
-    --shadow-suave: 0 5px 15px rgba(0, 0, 0, 0.06);
+
+    /* Sombras sutiles */
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-hover: 0 4px 16px rgba(0,0,0,0.12);
 }
 
 /* 3. ESTILOS BASE */
@@ -39,26 +53,29 @@ body.modal-search-open {
 main { flex-grow: 1; }
 h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 
-/* 4. COMPONENTES BOOTSTRAP */
+/* 4. COMPONENTES BOOTSTRAP - PROFESIONAL */
 .btn {
     border-radius: var(--border-radius);
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 0.875rem;
     padding: 10px 20px;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    border: 2px solid;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 .btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 .btn-primary {
-    background-color: var(--color-primario);
+    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
     border-color: var(--color-primario);
 }
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
-    background-color: var(--color-primario-hover) !important;
+    background: linear-gradient(135deg, var(--color-primario-hover) 0%, #880E4F 100%) !important;
     border-color: var(--color-primario-hover) !important;
-    box-shadow: 0 6px 15px rgba(217, 136, 185, 0.3) !important;
+    transform: translateY(-2px);
 }
 .btn-primary:disabled {
     background-color: #ccc;
@@ -76,11 +93,11 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     box-shadow: 0 0 0 0.2rem rgba(217, 136, 185, 0.2);
 }
 
-/* 5. HEADER Y FILTROS */
+/* 5. HEADER Y FILTROS - ULTRA PROFESIONAL */
 .navbar {
-    background-color: var(--color-fondo) !important;
-    border-bottom: 1px solid var(--color-borde-sutil);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    background-color: white !important;
+    border-bottom: 2px solid var(--color-borde);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
     padding: 0.75rem 0;
 }
 .navbar > .container { position: relative; }
@@ -144,13 +161,66 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     justify-content: center;
     gap: 0.5rem;
 }
+/* FILTROS - PROFESIONAL Y ELEGANTE */
 .filter-group {
-    border: none;
-    background-color: transparent;
-    color: var(--color-texto-claro);
+    border: 2px solid var(--color-borde);
+    background-color: white;
+    color: var(--color-texto-secundario);
     border-radius: var(--border-radius);
-    font-weight: 500;
-    padding: 8px 15px;
+    font-weight: 600;
+    padding: 10px 18px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+.filter-group i {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+.filter-group:hover {
+    color: var(--color-primario);
+    border-color: var(--color-primario);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.filter-group:hover i {
+    opacity: 1;
+}
+.filter-group.active {
+    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
+    border-color: var(--color-primario);
+    color: white;
+    box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+}
+.filter-group.active i {
+    opacity: 1;
+}
+
+/* Badge de filtros */
+.filter-badge-container {
+    position: relative;
+}
+.filter-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #e74c3c;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.filter-promo {
+    background-color: #e74c3c;
+    color: white !important;
     box-shadow: none;
     font-size: 0.9rem;
 }
@@ -188,13 +258,13 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     }
 }
 
-/* 6. TARJETA DE PRODUCTO */
+/* 6. TARJETA DE PRODUCTO - PROFESIONAL Y ELEGANTE */
 .product-card {
     background: var(--color-fondo);
     border: none;
     border-radius: var(--border-radius);
-    box-shadow: var(--shadow-suave);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: var(--shadow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     height: 100%;
     display: flex;
@@ -202,8 +272,12 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     cursor: pointer;
 }
 .product-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--color-primario);
+}
+.product-card:hover .product-image-wrapper img {
+    transform: scale(1.05);
 }
 .product-image-wrapper {
     overflow: hidden;
@@ -355,20 +429,28 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     z-index: 10;
 }
 .badge-stock, .badge-promo {
-    background: var(--color-primario);
+    background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%);
     color: white;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
     text-transform: uppercase;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
 }
-.badge-promo { background: #e74c3c; }
-.badge-agotado { background-color: #777 !important; }
+.badge-promo {
+    background: linear-gradient(135deg, #FF5252 0%, #D32F2F 100%);
+    box-shadow: 0 2px 8px rgba(255, 82, 82, 0.3);
+}
+.badge-agotado {
+    background: linear-gradient(135deg, #9E9E9E 0%, #616161 100%) !important;
+    box-shadow: 0 2px 8px rgba(158, 158, 158, 0.3);
+}
 .badge-solo-detal {
-    background-color: #6c757d !important;
+    background: linear-gradient(135deg, #607D8B 0%, #455A64 100%) !important;
     color: white;
+    box-shadow: 0 2px 8px rgba(96, 125, 139, 0.3);
 }
 
 /* 7. FOOTER */
