@@ -639,6 +639,7 @@ function renderColorFilters() {
         chip.style.backgroundColor = hexColor;
         chip.dataset.colorName = colorName;
         chip.dataset.color = colorName;
+        chip.title = colorName; // ✅ Tooltip con nombre del color
 
         chip.addEventListener('click', () => {
             chip.classList.toggle('active');
