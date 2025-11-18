@@ -4,33 +4,32 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 @import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css');
 
-/* 2. VARIABLES GLOBALES - PROFESIONAL Y MINIMALISTA */
+/* 2. PALETA PROFESIONAL ULTRA LIMPIA */
 :root {
-    /* Color de marca - uso moderado solo para acentos */
-    --color-primario: #D988B9;
-    --color-primario-suave: #FAF5F8;
-    --color-primario-hover: #C77AA8;
+    /* Colores primarios - Rosa elegante */
+    --color-primario: #E91E63;
+    --color-primario-suave: #FCE4EC;
+    --color-primario-hover: #C2185B;
 
-    /* Paleta neutra profesional */
+    /* Fondos neutros */
     --color-blanco: #FFFFFF;
-    --color-fondo: #F8F9FA;
-    --color-borde: #E0E0E0;
-    --color-borde-claro: #EEEEEE;
+    --color-fondo: #FAFAFA;
+    --color-borde: #EEEEEE;
 
-    /* Escala de grises para texto */
-    --color-texto-principal: #1F2937;
-    --color-texto-secundario: #6B7280;
-    --color-texto-terciario: #9CA3AF;
+    /* Textos profesionales */
+    --color-texto-principal: #212121;
+    --color-texto-secundario: #757575;
+    --color-texto-terciario: #BDBDBD;
 
     /* Tipografía */
     --font-base: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-    /* Espaciado y formas */
-    --border-radius: 2px;
-    --border-radius-sm: 1px;
+    /* Formas */
+    --border-radius: 8px;
 
-    /* Sin sombras - flat design */
-    --shadow: none;
+    /* Sombras sutiles */
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-hover: 0 4px 16px rgba(0,0,0,0.12);
 }
 
 /* 3. ESTILOS BASE */
@@ -54,27 +53,30 @@ body.modal-search-open {
 main { flex-grow: 1; }
 h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 
-/* 4. COMPONENTES BOOTSTRAP - MINIMALISTA Y ELEGANTE */
+/* 4. COMPONENTES BOOTSTRAP - PROFESIONAL */
 .btn {
     border-radius: var(--border-radius);
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.875rem;
-    padding: 9px 16px;
-    transition: all 0.2s ease;
-    border: 1px solid;
-    letter-spacing: 0.2px;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+    border: 2px solid;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 .btn:hover {
-    transform: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 .btn-primary {
-    background-color: var(--color-primario);
+    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
     border-color: var(--color-primario);
     color: white;
 }
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
-    background-color: var(--color-primario-hover) !important;
+    background: linear-gradient(135deg, var(--color-primario-hover) 0%, #880E4F 100%) !important;
     border-color: var(--color-primario-hover) !important;
+    transform: translateY(-2px);
 }
 .btn-primary:disabled {
     background-color: #ccc;
@@ -106,12 +108,12 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     outline: none;
 }
 
-/* 5. HEADER Y FILTROS - MINIMALISTA */
+/* 5. HEADER Y FILTROS - ULTRA PROFESIONAL */
 .navbar {
     background-color: white !important;
-    border-bottom: 1px solid var(--color-borde);
-    box-shadow: var(--shadow);
-    padding: 0.5rem 0;
+    border-bottom: 2px solid var(--color-borde);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    padding: 0.75rem 0;
 }
 .navbar > .container { position: relative; }
 .navbar-brand {
@@ -189,36 +191,40 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     justify-content: center;
     gap: 0.5rem;
 }
-/* FILTROS - MINIMALISTA */
+/* FILTROS - PROFESIONAL Y ELEGANTE */
 .filter-group {
-    border: 1px solid var(--color-borde);
+    border: 2px solid var(--color-borde);
     background-color: white;
     color: var(--color-texto-secundario);
     border-radius: var(--border-radius);
-    font-weight: 500;
-    padding: 8px 14px;
+    font-weight: 600;
+    padding: 10px 18px;
     font-size: 0.85rem;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     position: relative;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
 }
 .filter-group i {
-    font-size: 0.95rem;
-    opacity: 0.8;
+    font-size: 1rem;
+    opacity: 0.9;
 }
 .filter-group:hover {
     color: var(--color-primario);
     border-color: var(--color-primario);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 .filter-group:hover i {
     opacity: 1;
 }
 .filter-group.active {
-    background-color: var(--color-primario);
+    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
     border-color: var(--color-primario);
     color: white;
+    box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
 }
 .filter-group.active i {
     opacity: 1;
@@ -318,17 +324,17 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     .navbar-collapse .catalog-filters {
         position: absolute;
         left: 50%;
-        transform: none;
+        transform: translateX(-50%);
     }
 }
 
-/* 6. TARJETA DE PRODUCTO - MINIMALISTA */
+/* 6. TARJETA DE PRODUCTO - PROFESIONAL Y ELEGANTE */
 .product-card {
     background: white;
     border: 1px solid var(--color-borde);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     height: 100%;
     display: flex;
@@ -336,11 +342,12 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     cursor: pointer;
 }
 .product-card:hover {
-    transform: none;
-    box-shadow: var(--shadow);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--color-primario);
 }
 .product-card:hover .product-image-wrapper img {
-    opacity: 0.95;
+    transform: scale(1.05);
 }
 .product-image-wrapper {
     overflow: hidden;
@@ -352,7 +359,7 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     width: 100%;
     height: 280px;
     object-fit: cover;
-    transition: opacity 0.2s ease;
+    transition: transform 0.4s ease;
 }
 .product-card-body {
     padding: 1rem;
@@ -492,20 +499,28 @@ h1, h2, h3, h4, h5, h6 { font-weight: 600; }
     z-index: 10;
 }
 .badge-stock, .badge-promo {
-    background: var(--color-primario);
+    background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%);
     color: white;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
     text-transform: uppercase;
-    box-shadow: none;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
 }
-.badge-promo { background: #e74c3c; }
-.badge-agotado { background-color: #777 !important; }
+.badge-promo {
+    background: linear-gradient(135deg, #FF5252 0%, #D32F2F 100%);
+    box-shadow: 0 2px 8px rgba(255, 82, 82, 0.3);
+}
+.badge-agotado {
+    background: linear-gradient(135deg, #9E9E9E 0%, #616161 100%) !important;
+    box-shadow: 0 2px 8px rgba(158, 158, 158, 0.3);
+}
 .badge-solo-detal {
-    background-color: #6c757d !important;
+    background: linear-gradient(135deg, #607D8B 0%, #455A64 100%) !important;
     color: white;
+    box-shadow: 0 2px 8px rgba(96, 125, 139, 0.3);
 }
 
 /* 7. FOOTER */
