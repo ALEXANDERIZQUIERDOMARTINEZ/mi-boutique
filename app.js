@@ -877,6 +877,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Botón resetear filtros
     document.getElementById('btn-reset-filters').addEventListener('click', resetAllFilters);
 
+    // ✅ Botón aplicar filtros
+    document.getElementById('btn-apply-filters').addEventListener('click', () => {
+        applyFiltersAndRender();
+        showToast('Filtros aplicados correctamente', 'success');
+    });
+
     // ✅ Búsqueda en tiempo real MEJORADA
     document.getElementById('search-input').addEventListener('input', applyFiltersAndRedraw);
     document.getElementById('search-modal-input').addEventListener('input', (e) => {
