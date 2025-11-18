@@ -617,6 +617,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
              const estadisticas = await calcularEstadisticasRepartidores();
 
+             // ✅ Obtener liquidaciones del día para verificar si ya se liquidó
+             const hoy = new Date();
+             hoy.setHours(0, 0, 0, 0);
+             const manana = new Date(hoy);
+             manana.setDate(manana.getDate() + 1);
+
+             const liquidacionesCollection = collection(db, 'liquidaciones');
+             const liquidacionesQuery = query(
+                 liquidacionesCollection,
+                 where('fecha', '>=', hoy),
+                 where('fecha', '<', manana)
+             );
+             const liquidacionesSnap = await getDocs(liquidacionesQuery);
+             const liquidacionesMap = new Map();
+             liquidacionesSnap.forEach(doc => {
+                 const liq = doc.data();
+                 liquidacionesMap.set(liq.repartidorId, liq.efectivoEntregado || 0);
+             });
+
              snapshot.forEach(docSnap => {
                  const rep = docSnap.data();
                  const id = docSnap.id;
@@ -639,8 +658,10 @@ document.addEventListener('DOMContentLoaded', () => {
                      const rutasTotal = stats.rutasTotal;
                      const rutasTransf = rutasTotal - stats.rutasCash;  // Rutas de pedidos pagados por transferencia
                      const efectivoAEntregar = efectivoRecibido - stats.rutasCash;  // El repartidor se queda con las rutas en cash
-                     const saldoPendiente = efectivoAEntregar;
+                     const efectivoYaEntregado = liquidacionesMap.get(id) || 0;  // Verificar si ya liquidó hoy
+                     const saldoPendiente = efectivoAEntregar - efectivoYaEntregado;  // Restar lo ya liquidado
 
+                     const yaLiquidado = efectivoYaEntregado > 0;
                      const tr = document.createElement('tr');
                      tr.dataset.id = id;
                      tr.innerHTML = `<td class="repartidor-name">${rep.nombre}</td>
@@ -650,11 +671,11 @@ document.addEventListener('DOMContentLoaded', () => {
                          <td>${formatoMoneda.format(rutasTransf)}</td>
                          <td class="fw-bold">${formatoMoneda.format(efectivoAEntregar)}</td>
                          <td><input type="number" class="form-control form-control-sm w-75 d-inline-block input-efectivo-entregado"
-                                    value="0.00" step="0.01" data-expected="${efectivoAEntregar}"></td>
+                                    value="${efectivoYaEntregado.toFixed(2)}" step="0.01" data-expected="${efectivoAEntregar}" ${yaLiquidado ? 'disabled' : ''}></td>
                          <td class="saldo-pendiente ${saldoPendiente <= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatoMoneda.format(saldoPendiente)}</td>
                          <td class="action-buttons">
-                             <button class="btn btn-action btn-action-success btn-liquidar-repartidor">
-                                 <i class="bi bi-cash-coin"></i><span class="btn-action-text">Liquidar</span>
+                             <button class="btn btn-action btn-action-success btn-liquidar-repartidor" ${yaLiquidado ? 'disabled' : ''}>
+                                 <i class="bi bi-cash-coin"></i><span class="btn-action-text">${yaLiquidado ? 'Liquidado' : 'Liquidar'}</span>
                              </button>
                              <button class="btn btn-action btn-action-edit btn-edit-repartidor">
                                  <i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span>
@@ -2187,6 +2208,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="btn btn-action btn-action-view btn-ver-apartado" data-apartado-id="${id}">
                             <i class="bi bi-eye"></i><span class="btn-action-text">Ver</span>
                         </button>
+                        <button class="btn btn-action btn-action-info btn-informar-apartado" data-apartado-id="${id}">
+                            <i class="bi bi-whatsapp"></i><span class="btn-action-text">Informar</span>
+                        </button>
                         <button class="btn btn-action btn-action-primary btn-abono-apartado" data-apartado-id="${id}">
                             <i class="bi bi-cash-coin"></i><span class="btn-action-text">Abonar</span>
                         </button>
@@ -2253,6 +2277,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (target.classList.contains('btn-ver-apartado')) {
                     await abrirModalVerApartado(apartadoId);
+                } else if (target.classList.contains('btn-informar-apartado')) {
+                    await informarApartadoWhatsApp(apartadoId);
                 } else if (target.classList.contains('btn-abono-apartado')) {
                     await abrirModalAbono(apartadoId);
                 } else if (target.classList.contains('btn-completar-apartado')) {
@@ -2261,6 +2287,83 @@ document.addEventListener('DOMContentLoaded', () => {
                     await cancelarApartado(apartadoId);
                 }
             });
+        }
+
+        // ✅ FUNCIÓN: INFORMAR VÍA WHATSAPP
+        async function informarApartadoWhatsApp(apartadoId) {
+            const apartadoRef = doc(db, 'apartados', apartadoId);
+            const apartadoSnap = await getDoc(apartadoRef);
+
+            if (!apartadoSnap.exists()) {
+                showToast('Apartado no encontrado', 'error');
+                return;
+            }
+
+            const apartadoData = apartadoSnap.data();
+            const saldo = apartadoData.saldo || 0;
+            const porcentajePagado = apartadoData.total > 0 ? ((apartadoData.abonado / apartadoData.total) * 100).toFixed(0) : 0;
+
+            // Calcular días restantes
+            const hoy = new Date();
+            const fechaVenc = apartadoData.fechaVencimiento?.toDate ? apartadoData.fechaVencimiento.toDate() : null;
+            let diasRestantes = 0;
+            let mensajeVencimiento = '';
+
+            if (fechaVenc) {
+                diasRestantes = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
+                if (diasRestantes < 0) {
+                    mensajeVencimiento = `⚠️ *VENCIDO* hace ${Math.abs(diasRestantes)} días`;
+                } else if (diasRestantes === 0) {
+                    mensajeVencimiento = `⚠️ *Vence HOY*`;
+                } else if (diasRestantes <= 7) {
+                    mensajeVencimiento = `⏰ Vence en ${diasRestantes} días`;
+                } else {
+                    mensajeVencimiento = `📅 Vence: ${fechaVenc.toLocaleDateString('es-CO')}`;
+                }
+            }
+
+            // Obtener WhatsApp del cliente desde la venta original
+            let whatsapp = '';
+            if (apartadoData.ventaId) {
+                const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
+                const ventaSnap = await getDoc(ventaRef);
+                if (ventaSnap.exists()) {
+                    whatsapp = ventaSnap.data().clienteWhatsapp || '';
+                }
+            }
+
+            if (!whatsapp) {
+                showToast('No hay WhatsApp registrado para este cliente', 'error');
+                return;
+            }
+
+            // Limpiar número de WhatsApp (quitar espacios, guiones, etc)
+            const whatsappLimpio = whatsapp.replace(/\D/g, '');
+
+            // Crear mensaje
+            const mensaje = `Hola *${apartadoData.clienteNombre}*! 👋
+
+Te escribo de *Mishell Boutique* para recordarte sobre tu apartado:
+
+📦 *Productos:* ${apartadoData.productos?.length || 0} item(s)
+💰 *Total:* ${formatoMoneda.format(apartadoData.total || 0)}
+✅ *Abonado:* ${formatoMoneda.format(apartadoData.abonado || 0)} (${porcentajePagado}%)
+⚠️ *Saldo pendiente:* ${formatoMoneda.format(saldo)}
+
+${mensajeVencimiento}
+
+${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡Tu apartado está completamente pagado! Puedes pasar a recogerlo cuando gustes.'}
+
+¡Quedamos atentos! 💕`;
+
+            // Codificar mensaje para URL
+            const mensajeCodificado = encodeURIComponent(mensaje);
+
+            // Abrir WhatsApp
+            const whatsappUrl = `https://wa.me/57${whatsappLimpio}?text=${mensajeCodificado}`;
+            window.open(whatsappUrl, '_blank');
+
+            showToast('Abriendo WhatsApp...', 'success');
         }
 
         // ✅ FUNCIÓN: ABRIR MODAL DE VER APARTADO (con historial de pagos)
