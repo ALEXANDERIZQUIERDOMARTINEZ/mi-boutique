@@ -2268,13 +2268,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // EVENTOS
         if (apartadosListTableBody) {
             apartadosListTableBody.addEventListener('click', async (e) => {
-                e.preventDefault();
                 const target = e.target.closest('button');
                 if (!target) return;
-                
+
                 const apartadoId = target.dataset.apartadoId;
                 if (!apartadoId) return;
-                
+
+                e.preventDefault();
+
                 if (target.classList.contains('btn-ver-apartado')) {
                     await abrirModalVerApartado(apartadoId);
                 } else if (target.classList.contains('btn-informar-apartado')) {
@@ -2284,6 +2285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (target.classList.contains('btn-completar-apartado')) {
                     await completarApartado(apartadoId);
                 } else if (target.classList.contains('btn-cancel-apartado')) {
+                    console.log('🗑️ Cancelando apartado:', apartadoId);
                     await cancelarApartado(apartadoId);
                 }
             });
@@ -2508,49 +2510,60 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         
         // FUNCIÓN: CANCELAR APARTADO
         async function cancelarApartado(apartadoId) {
+            console.log('📋 Iniciando cancelación de apartado:', apartadoId);
+
             if (!confirm('¿Estás seguro de cancelar este apartado?\n\nEsta acción devolverá el stock de los productos.')) {
+                console.log('❌ Cancelación abortada por el usuario');
                 return;
             }
-            
+
             try {
                 const apartadoRef = doc(db, 'apartados', apartadoId);
                 const apartadoSnap = await getDoc(apartadoRef);
-                
+
                 if (!apartadoSnap.exists()) {
+                    console.error('❌ Apartado no encontrado:', apartadoId);
                     showToast('Apartado no encontrado', 'error');
                     return;
                 }
-                
+
                 const apartadoData = apartadoSnap.data();
-                
+                console.log('📦 Datos del apartado:', apartadoData);
+
                 if (apartadoData.ventaId) {
+                    console.log('🔗 Procesando venta asociada:', apartadoData.ventaId);
                     const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
                     const ventaSnap = await getDoc(ventaRef);
-                    
+
                     if (ventaSnap.exists()) {
                         const ventaData = ventaSnap.data();
-                        
+
                         // Solo devolver stock si la venta no estaba ya cancelada
                         if (ventaData.estado !== 'Cancelada' && ventaData.estado !== 'Anulada') {
-                             await actualizarStock(ventaData.items, 'sumar');
+                            console.log('📦 Devolviendo stock...');
+                            await actualizarStock(ventaData.items, 'sumar');
+                        } else {
+                            console.log('⚠️ Venta ya estaba cancelada, no se devuelve stock');
                         }
-                       
+
                         await updateDoc(ventaRef, {
                             estado: 'Cancelada'
                         });
+                        console.log('✅ Venta marcada como cancelada');
                     }
                 }
-                
+
                 await updateDoc(apartadoRef, {
                     estado: 'Cancelado',
                     fechaCancelacion: serverTimestamp()
                 });
-                
+                console.log('✅ Apartado marcado como cancelado');
+
                 showToast('Apartado cancelado y stock devuelto', 'info');
-                
+
             } catch (error) {
-                console.error('Error al cancelar apartado:', error);
-                showToast('Error al cancelar el apartado', 'error');
+                console.error('❌ Error al cancelar apartado:', error);
+                showToast('Error al cancelar el apartado: ' + error.message, 'error');
             }
         }
     })();
@@ -3012,39 +3025,30 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
     
     // ================================================================
-    // 3️⃣ APARTADOS PRÓXIMOS A VENCER
+    // 3️⃣ APARTADOS ACTIVOS
     // ================================================================
     function calcularApartadosVencer() {
-        console.log("📅 Calculando apartados próximos a vencer...");
+        console.log("📅 Calculando apartados activos...");
 
         try {
-            const hoy = new Date();
-            const proximosDias = new Date(hoy);
-            proximosDias.setDate(proximosDias.getDate() + 7); // Próximos 7 días
-
             // Query simplificada - filtrar en memoria
             onSnapshot(apartadosCollection,
                 (snapshot) => {
-                    let countVencer = 0;
+                    let countActivos = 0;
                     let saldoTotal = 0;
 
                     snapshot.forEach(doc => {
                         const apartado = doc.data();
 
-                        // Filtrar en memoria
-                        if (apartado.estado !== 'Pendiente') return;
-
-                        const fechaVenc = apartado.fechaVencimiento?.toDate();
-
-                        // Solo contar los que vencen en los próximos 7 días y aún no han vencido
-                        if (fechaVenc && fechaVenc >= hoy && fechaVenc <= proximosDias) {
-                            countVencer++;
+                        // Contar TODOS los apartados pendientes (no solo los que vencen pronto)
+                        if (apartado.estado === 'Pendiente') {
+                            countActivos++;
                             saldoTotal += apartado.saldo || 0;
                         }
                     });
 
                     // Actualizar UI
-                    dbApartadosVencerEl.textContent = countVencer;
+                    dbApartadosVencerEl.textContent = countActivos;
                     dbApartadosVencerEl.classList.remove('text-danger', 'text-success');
 
                     // Actualizar saldo total
@@ -3053,21 +3057,21 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         saldoEl.textContent = formatoMoneda.format(saldoTotal) + ' pendiente';
                     }
 
-                    if (countVencer > 0) {
-                        dbApartadosVencerEl.classList.add('text-danger');
+                    if (countActivos > 0) {
+                        dbApartadosVencerEl.classList.add('text-warning');
                     } else {
                         dbApartadosVencerEl.classList.add('text-success');
                     }
 
-                    console.log(`✅ Apartados próximos a vencer: ${countVencer}`);
+                    console.log(`✅ Apartados activos: ${countActivos}`);
                 },
                 (error) => {
-                    console.error("❌ Error al calcular apartados por vencer:", error);
+                    console.error("❌ Error al calcular apartados activos:", error);
                     dbApartadosVencerEl.textContent = "Error";
                     dbApartadosVencerEl.classList.add('text-danger');
                 }
             );
-            
+
         } catch (error) {
             console.error("❌ Error fatal al configurar apartados:", error);
             dbApartadosVencerEl.textContent = "Error";
