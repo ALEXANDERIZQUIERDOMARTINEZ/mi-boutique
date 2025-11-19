@@ -59,6 +59,10 @@ const COLOR_MAP = {
     'negra': '#212121',
     'blanca': '#FFFFFF',
     'blanco': '#FFFFFF',
+    'blanco 50%': '#F5F5F5',
+    'blanco50%': '#F5F5F5',
+    'negro%': '#424242',
+    'negro %': '#424242',
     'gris': '#9E9E9E',
     'cafe': '#6D4C41',
     'café': '#6D4C41',
@@ -82,6 +86,8 @@ const COLOR_MAP = {
     // Tonos de azul
     'azul rey': '#1414b8',
     'azul marino': '#0D47A1',
+    'azul oscuro': '#0D47A1',
+    'azul medio': '#1976D2',
     'azul claro': '#64B5F6',
     'azul bebe': '#64B5F6',
     'azul bebé': '#64B5F6',
@@ -108,6 +114,7 @@ const COLOR_MAP = {
     'rosa fuerte': '#D81B60',
     'rosado': '#F8BBD0',
     'durazno': '#FFAB91',
+    'palo de rosa': '#E6C9C9',
     
     // Tonos de gris
     'gris oscuro': '#424242',
@@ -141,6 +148,8 @@ const SPECIAL_COLORS = {
     'animal print': 'radial-gradient(circle at 20% 50%, #C19A6B 0%, #C19A6B 15%, transparent 15%), radial-gradient(circle at 60% 30%, #8B6914 0%, #8B6914 12%, transparent 12%), radial-gradient(circle at 80% 70%, #C19A6B 0%, #C19A6B 15%, transparent 15%), linear-gradient(135deg, #DEB887 0%, #F4A460 100%)',
     'blanco/negro': 'linear-gradient(to right, #FFFFFF 0%, #FFFFFF 50%, #212121 50%, #212121 100%)',
     'blanco lineas beig': 'repeating-linear-gradient(45deg, #FFFFFF 0px, #FFFFFF 8px, #D7CCC8 8px, #D7CCC8 16px)',
+    'blanco con lineas beige': 'repeating-linear-gradient(45deg, #FFFFFF 0px, #FFFFFF 8px, #D7CCC8 8px, #D7CCC8 16px)',
+    'blanco con beige': 'repeating-linear-gradient(45deg, #FFFFFF 0px, #FFFFFF 8px, #D7CCC8 8px, #D7CCC8 16px)',
 };
 
 // ✅ FUNCIÓN: Convertir nombre de color a código hex o gradiente
@@ -277,37 +286,6 @@ function applyFiltersAndRender() {
         filtered = filtered.filter(p => {
             const productColors = (p.variaciones || []).map(v => v.color?.toLowerCase()).filter(Boolean);
             return productColors.some(color => advancedFilters.selectedColors.has(color));
-        });
-    }
-
-    // 3.2.5 Filtro por Color (dropdown integrado)
-    const colorFilterSelect = document.getElementById('color-filter-select');
-    if (colorFilterSelect && colorFilterSelect.value) {
-        const selectedColor = colorFilterSelect.value.toLowerCase();
-        filtered = filtered.filter(p => {
-            const productColors = (p.variaciones || []).map(v => v.color?.toLowerCase().trim()).filter(Boolean);
-
-            // Mapeo de colores consolidados
-            return productColors.some(color => {
-                if (selectedColor === 'café') {
-                    return color.includes('café') || color.includes('cafe') || color.includes('palo de rosa');
-                } else if (selectedColor === 'blanco') {
-                    return color.includes('blanco') || color === 'blanco 50%' || color === 'blanco50%';
-                } else if (selectedColor === 'negro') {
-                    return color.includes('negro');
-                } else if (selectedColor === 'azul oscuro') {
-                    return color.includes('azul oscuro') || color === 'azul oscuro';
-                } else if (selectedColor === 'azul medio') {
-                    return color.includes('azul medio') || color === 'azul medio';
-                } else if (selectedColor === 'animal print') {
-                    return color.includes('animal') || color.includes('leopard') || color.includes('print');
-                } else if (selectedColor === 'blanco con beige') {
-                    return color.includes('blanco con beige') || (color.includes('blanco') && color.includes('beige'));
-                } else {
-                    // Colores estándar: coincidencia directa
-                    return color.includes(selectedColor);
-                }
-            });
         });
     }
 
@@ -836,13 +814,6 @@ document.addEventListener('DOMContentLoaded', () => {
         applyFiltersAndRender();
     }
 
-    // Filtro por color (nuevo dropdown integrado)
-    const colorFilterSelect = document.getElementById('color-filter-select');
-    if (colorFilterSelect) {
-        colorFilterSelect.addEventListener('change', () => {
-            applyFiltersAndRender();
-        });
-    }
 
     // ✅ Carga inicial de productos (sin índice compuesto)
     // Cargar todos los productos y filtrar por visible en memoria

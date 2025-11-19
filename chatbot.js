@@ -16,8 +16,9 @@ const firebaseConfig = {
     appId: "1:399662956877:web:084236f5bb3cf6f0a8f704"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Usar nombre único para evitar conflictos con app.js
+const chatbotApp = initializeApp(firebaseConfig, 'chatbot-app');
+const db = getFirestore(chatbotApp);
 
 // ═══════════════════════════════════════════════════════════════════
 // CONFIGURACIÓN DEL CHATBOT
