@@ -3533,11 +3533,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                 console.log('📅 Buscando ventas del:', inicio.toLocaleString('es-CO'), 'al:', fin.toLocaleString('es-CO'));
 
+                // 🔥 QUITAR el where('estado', '!=', 'Anulada') porque causa problemas con Firebase
                 const qVentas = query(
                     salesCollection,
                     where('timestamp', '>=', Timestamp.fromDate(inicio)),
                     where('timestamp', '<=', Timestamp.fromDate(fin)),
-                    where('estado', '!=', 'Anulada')
+                    orderBy('timestamp', 'desc')
                 );
                 const ventasSnap = await getDocs(qVentas);
 
@@ -3548,6 +3549,14 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                 ventasSnap.forEach(doc => {
                     const venta = doc.data();
+                    const estado = venta.estado || 'Completada';
+
+                    // ✅ Filtrar manualmente las ventas anuladas
+                    if (estado === 'Anulada' || estado === 'Cancelada') {
+                        console.log(`  ⏭️ Venta ${doc.id} - OMITIDA (${estado})`);
+                        return;
+                    }
+
                     const efectivo = venta.pagoEfectivo || 0;
                     const transferencia = venta.pagoTransferencia || 0;
                     console.log(`  💰 Venta ID: ${doc.id} - Efectivo: $${efectivo}, Transferencia: $${transferencia}`);
