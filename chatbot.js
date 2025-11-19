@@ -86,8 +86,8 @@ class Chatbot {
         // Procesar respuesta
         this.processMessage(message);
 
-        // Guardar conversación en Firestore
-        this.saveMessage('user', message);
+        // NO guardamos automáticamente las conversaciones
+        // Solo se guardan cuando el usuario pide hablar con asesor
     }
 
     addUserMessage(text) {
@@ -132,8 +132,8 @@ class Chatbot {
         this.messagesContainer.appendChild(messageEl);
         this.scrollToBottom();
 
-        // Guardar en Firestore
-        this.saveMessage('bot', text);
+        // NO guardamos automáticamente
+        // Solo se guardan cuando piden hablar con asesor
     }
 
     showTyping() {
@@ -270,15 +270,14 @@ class Chatbot {
     handleQuickReply(text) {
         // Manejar respuestas rápidas especiales
         if (text === 'Sí, conectar WhatsApp' || text === 'Sí, conectar asesor' || text === 'Hablar con humano') {
+            // GUARDAR conversación para el asesor
+            this.saveConversationForAdmin(text);
+
             this.showTyping();
             setTimeout(() => {
                 this.hideTyping();
-                this.addBotMessage('Perfecto! Te voy a redirigir a WhatsApp para que hables con un asesor. 📱');
-                setTimeout(() => {
-                    window.open('https://wa.me/573046084971?text=Hola,%20vengo%20del%20chatbot%20y%20necesito%20ayuda', '_blank');
-                }, 1000);
+                this.addBotMessage('✅ Tu consulta ha sido enviada a nuestro equipo. Un asesor te responderá pronto por el chat interno. También puedes escribirnos por WhatsApp si prefieres.');
             }, 500);
-            this.saveMessage('bot', 'Redirigiendo a WhatsApp...');
         } else if (text === 'No, eso es todo') {
             this.showTyping();
             setTimeout(() => {
@@ -349,16 +348,47 @@ class Chatbot {
         return keywords.some(keyword => text.includes(keyword));
     }
 
-    async saveMessage(sender, message) {
+    async saveConversationForAdmin(userRequest) {
         try {
-            await addDoc(collection(db, 'chatConversations'), {
-                conversationId: this.conversationId,
-                sender, // 'user' or 'bot'
-                message,
-                timestamp: serverTimestamp()
+            // Recopilar todos los mensajes de la conversación actual
+            const messages = [];
+            const messageElements = this.messagesContainer.querySelectorAll('.chatbot-message');
+
+            messageElements.forEach(el => {
+                const isUser = el.classList.contains('user');
+                const bubble = el.querySelector('.chatbot-message-bubble');
+                if (bubble) {
+                    messages.push({
+                        sender: isUser ? 'user' : 'bot',
+                        text: bubble.textContent
+                    });
+                }
             });
+
+            // Crear resumen de la conversación
+            let conversationSummary = '💬 SOLICITUD DE ASESORÍA\n\n';
+            conversationSummary += `👤 Cliente solicitó: "${userRequest}"\n\n`;
+            conversationSummary += '--- Historial de conversación ---\n\n';
+
+            messages.forEach(msg => {
+                const prefix = msg.sender === 'user' ? '👤 Cliente:' : '🤖 Bot:';
+                conversationSummary += `${prefix} ${msg.text}\n\n`;
+            });
+
+            // Guardar en Firestore para que el admin la vea
+            await addDoc(collection(db, 'chatConversations'), {
+                type: 'advisor-request',
+                conversationId: this.conversationId,
+                clienteNombre: 'Cliente Web',
+                clienteCelular: 'Por definir',
+                message: conversationSummary,
+                timestamp: serverTimestamp(),
+                read: false
+            });
+
+            console.log('✅ Conversación guardada para el asesor');
         } catch (error) {
-            console.error('Error saving message:', error);
+            console.error('Error guardando conversación:', error);
         }
     }
 

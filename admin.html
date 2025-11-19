@@ -526,12 +526,25 @@
                                 <h3 class="h5 mb-0">Historial</h3>
                             </div>
                             <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label for="filtro-buscar-ventas" class="form-label small">Buscar cliente o producto:</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                        <input type="text" id="filtro-buscar-ventas" class="form-control" placeholder="Nombre de cliente o producto...">
+                                    </div>
+                                </div>
                                 <div class="col-md-3">
-                                    <label for="filtro-fecha-ventas" class="form-label small">Filtrar por fecha:</label>
+                                    <label for="filtro-categoria-ventas" class="form-label small">Categoría:</label>
+                                    <select id="filtro-categoria-ventas" class="form-select form-select-sm">
+                                        <option value="">Todas las categorías</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="filtro-fecha-ventas" class="form-label small">Fecha:</label>
                                     <input type="date" id="filtro-fecha-ventas" class="form-control form-control-sm">
                                 </div>
-                                <div class="col-md-3 d-flex align-items-end">
-                                    <button type="button" id="btn-limpiar-filtro-ventas" class="btn btn-sm btn-outline-secondary">
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="button" id="btn-limpiar-filtro-ventas" class="btn btn-sm btn-outline-secondary w-100">
                                         <i class="bi bi-x-circle"></i> Limpiar
                                     </button>
                                 </div>

@@ -1707,27 +1707,73 @@ document.addEventListener('DOMContentLoaded', () => {
          }
 
          if(costoRutaInput) costoRutaInput.addEventListener('input', window.calcularTotalVentaGeneral); if(ventaDescuentoInput) ventaDescuentoInput.addEventListener('input', window.calcularTotalVentaGeneral); if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', window.calcularTotalVentaGeneral); if(ventaDescuentoTipo) ventaDescuentoTipo.addEventListener('change', window.calcularTotalVentaGeneral);
-         
+
          // --- R (Read) ---
-         const renderSales = (snapshot) => { 
-            if(!salesListTableBody) return; 
-            const emptyRow = document.getElementById('empty-sales-row'); 
-            salesListTableBody.innerHTML = ''; 
-            if (snapshot.empty) { 
-                if(emptyRow) { emptyRow.style.display = ''; salesListTableBody.appendChild(emptyRow); } 
-                return; 
-            } 
-            if(emptyRow) emptyRow.style.display = 'none'; 
-            snapshot.forEach(docSnap => { 
-                const d = docSnap.data(); 
-                const id = docSnap.id; 
-                const tr = document.createElement('tr'); 
-                tr.dataset.id = id; 
-                const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A'; 
-                const pago = (d.pagoEfectivo>0?'Efec.':'') + (d.pagoTransferencia>0?(d.pagoEfectivo>0?'+':''):'') + (d.pagoTransferencia>0?'Transf.':''); 
-                const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge' : '-'); 
+         let allSalesData = []; // Almacenar todas las ventas sin filtrar
+
+         const renderSales = (snapshot) => {
+            if(!salesListTableBody) return;
+            const emptyRow = document.getElementById('empty-sales-row');
+
+            // Guardar todos los datos
+            allSalesData = [];
+            snapshot.forEach(docSnap => {
+                allSalesData.push({ id: docSnap.id, ...docSnap.data() });
+            });
+
+            // Aplicar filtros
+            applyFilters();
+        };
+
+        function applyFilters() {
+            if(!salesListTableBody) return;
+            const emptyRow = document.getElementById('empty-sales-row');
+            salesListTableBody.innerHTML = '';
+
+            // Obtener valores de filtros
+            const searchText = document.getElementById('filtro-buscar-ventas')?.value.toLowerCase() || '';
+            const categoriaFiltro = document.getElementById('filtro-categoria-ventas')?.value || '';
+
+            // Filtrar datos
+            let filteredSales = allSalesData.filter(sale => {
+                // Filtro de búsqueda (cliente o productos)
+                if (searchText) {
+                    const clienteMatch = (sale.clienteNombre || '').toLowerCase().includes(searchText);
+                    const productosMatch = sale.items?.some(item =>
+                        (item.nombre || '').toLowerCase().includes(searchText) ||
+                        (item.nombreCompleto || '').toLowerCase().includes(searchText)
+                    );
+                    if (!clienteMatch && !productosMatch) return false;
+                }
+
+                // Filtro de categoría
+                if (categoriaFiltro) {
+                    const hasProductInCategory = sale.items?.some(item => {
+                        const product = localProductsMap.get(item.productoId);
+                        return product && product.categoria === categoriaFiltro;
+                    });
+                    if (!hasProductInCategory) return false;
+                }
+
+                return true;
+            });
+
+            // Renderizar resultados
+            if (filteredSales.length === 0) {
+                if(emptyRow) { emptyRow.style.display = ''; salesListTableBody.appendChild(emptyRow); }
+                return;
+            }
+            if(emptyRow) emptyRow.style.display = 'none';
+
+            filteredSales.forEach(d => {
+                const id = d.id;
+                const tr = document.createElement('tr');
+                tr.dataset.id = id;
+                const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A';
+                const pago = (d.pagoEfectivo>0?'Efec.':'') + (d.pagoTransferencia>0?(d.pagoEfectivo>0?'+':''):'') + (d.pagoTransferencia>0?'Transf.':'');
+                const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge' : '-');
                 const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
-                
+
                 let estadoBadgeClass = 'bg-success';
                 if (estado === 'Pendiente') {
                     estadoBadgeClass = 'bg-warning text-dark';
@@ -1750,10 +1796,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button class="btn btn-action btn-action-danger btn-cancel-sale" ${estaAnulada ? 'disabled' : ''}>
                                         <i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span>
                                     </button>
-                                </td>`; 
-                salesListTableBody.appendChild(tr); 
-            }); 
-        };
+                                </td>`;
+                salesListTableBody.appendChild(tr);
+            });
+        }
 
         // ✅ FILTRO DE FECHA PARA HISTORIAL
         let ventasUnsubscribe = null;
@@ -1828,8 +1874,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     const mes = String(hoy.getMonth() + 1).padStart(2, '0');
                     const dia = String(hoy.getDate()).padStart(2, '0');
                     filtroFechaInput.value = `${año}-${mes}-${dia}`;
+
+                    // Limpiar otros filtros
+                    const filtroBuscar = document.getElementById('filtro-buscar-ventas');
+                    const filtroCategoria = document.getElementById('filtro-categoria-ventas');
+                    if (filtroBuscar) filtroBuscar.value = '';
+                    if (filtroCategoria) filtroCategoria.value = '';
+
                     cargarVentas();
                 }
+            });
+        }
+
+        // Event listeners para los nuevos filtros
+        const filtroBuscarVentas = document.getElementById('filtro-buscar-ventas');
+        const filtroCategoriaVentas = document.getElementById('filtro-categoria-ventas');
+
+        if (filtroBuscarVentas) {
+            filtroBuscarVentas.addEventListener('input', () => {
+                applyFilters();
+            });
+        }
+
+        if (filtroCategoriaVentas) {
+            filtroCategoriaVentas.addEventListener('change', () => {
+                applyFilters();
+            });
+
+            // Cargar categorías en el select
+            onSnapshot(categoriesCollection, (snapshot) => {
+                filtroCategoriaVentas.innerHTML = '<option value="">Todas las categorías</option>';
+                snapshot.forEach(doc => {
+                    const cat = doc.data();
+                    const option = document.createElement('option');
+                    option.value = cat.nombre;
+                    option.textContent = cat.nombre;
+                    filtroCategoriaVentas.appendChild(option);
+                });
             });
         }
 
@@ -5100,34 +5181,53 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const isOrder = lastMessage.type === 'order';
 
             html += `
-                <a href="#" class="list-group-item list-group-item-action ${selectedConversationId === convId ? 'active' : ''}"
-                   data-conversation-id="${convId}">
-                    <div class="d-flex w-100 justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <div class="d-flex align-items-center mb-1">
-                                ${isOrder ? '<i class="bi bi-bag-check-fill text-success me-2"></i>' : '<i class="bi bi-chat-dots-fill text-primary me-2"></i>'}
-                                <h6 class="mb-0">${lastMessage.clienteNombre || 'Cliente'}</h6>
-                                ${unreadCount > 0 ? `<span class="badge bg-danger ms-2">${unreadCount}</span>` : ''}
+                <div class="list-group-item ${selectedConversationId === convId ? 'active' : ''}" style="position: relative;">
+                    <a href="#" class="conversation-link text-decoration-none text-reset d-block" data-conversation-id="${convId}" style="padding-right: 40px;">
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    ${isOrder ? '<i class="bi bi-bag-check-fill text-success me-2"></i>' : '<i class="bi bi-chat-dots-fill text-primary me-2"></i>'}
+                                    <h6 class="mb-0">${lastMessage.clienteNombre || 'Cliente'}</h6>
+                                    ${unreadCount > 0 ? `<span class="badge bg-danger ms-2">${unreadCount}</span>` : ''}
+                                </div>
+                                <p class="mb-1 small text-truncate">${lastMessage.message?.substring(0, 60) || 'Sin mensaje'}...</p>
+                                <small class="text-muted">
+                                    <i class="bi bi-phone me-1"></i>${lastMessage.clienteCelular || ''}
+                                </small>
                             </div>
-                            <p class="mb-1 small text-truncate">${lastMessage.message?.substring(0, 60) || 'Sin mensaje'}...</p>
-                            <small class="text-muted">
-                                <i class="bi bi-phone me-1"></i>${lastMessage.clienteCelular || ''}
-                            </small>
+                            <small class="text-muted">${formatTimestamp(lastMessage.timestamp)}</small>
                         </div>
-                        <small class="text-muted">${formatTimestamp(lastMessage.timestamp)}</small>
-                    </div>
-                </a>
+                    </a>
+                    <button class="btn btn-sm btn-danger delete-conversation-btn"
+                            data-conversation-id="${convId}"
+                            style="position: absolute; top: 10px; right: 10px; padding: 2px 8px; z-index: 10;"
+                            title="Eliminar conversación">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             `;
         });
 
         conversationsList.innerHTML = html;
 
         // Event listeners para seleccionar conversación
-        conversationsList.querySelectorAll('a').forEach(item => {
-            item.addEventListener('click', (e) => {
+        conversationsList.querySelectorAll('.conversation-link').forEach(link => {
+            link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const convId = item.dataset.conversationId;
+                const convId = link.dataset.conversationId;
                 selectConversation(convId);
+            });
+        });
+
+        // Event listeners para eliminar conversación
+        conversationsList.querySelectorAll('.delete-conversation-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const convId = btn.dataset.conversationId;
+
+                if (confirm('¿Estás seguro de que quieres eliminar esta conversación?')) {
+                    await deleteConversation(convId);
+                }
             });
         });
     }
@@ -5238,6 +5338,38 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             } else {
                 badge.style.display = 'none';
             }
+        }
+    }
+
+    async function deleteConversation(convId) {
+        try {
+            const messages = conversationsMap.get(convId);
+            if (!messages || messages.length === 0) return;
+
+            // Eliminar todos los mensajes de esta conversación
+            const deletePromises = messages.map(msg =>
+                deleteDoc(doc(db, 'chatConversations', msg.id))
+            );
+
+            await Promise.all(deletePromises);
+
+            // Limpiar vista si era la conversación seleccionada
+            if (selectedConversationId === convId) {
+                selectedConversationId = null;
+                conversationMessages.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-chat-left-text" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-3">Selecciona una conversación para ver los mensajes</p>
+                    </div>
+                `;
+                conversationTitle.textContent = 'Selecciona una conversación';
+                replyArea.style.display = 'none';
+            }
+
+            showToast('Conversación eliminada', 'success');
+        } catch (err) {
+            console.error("Error eliminando conversación:", err);
+            showToast('Error al eliminar conversación', 'error');
         }
     }
 
