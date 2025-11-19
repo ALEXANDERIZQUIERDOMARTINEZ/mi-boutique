@@ -3526,13 +3526,20 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         // Función para renderizar movimientos
         const renderMovements = async () => {
-            if (!movimientosTableBody) return;
+            if (!movimientosTableBody) {
+                console.warn('⚠️ Elemento movimientosTableBody no encontrado');
+                return;
+            }
+
+            console.log('🔄 Renderizando movimientos financieros...');
 
             // Calcular ventas del día
             try {
                 const hoy = new Date();
                 const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
                 const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+
+                console.log('📅 Buscando ventas del:', inicio, 'al:', fin);
 
                 const qVentas = query(
                     salesCollection,
@@ -3542,13 +3549,18 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 );
                 const ventasSnap = await getDocs(qVentas);
 
+                console.log(`📦 Ventas encontradas: ${ventasSnap.size}`);
+
                 let ventasEfectivo = 0;
                 let ventasTransferencia = 0;
 
                 ventasSnap.forEach(doc => {
                     const venta = doc.data();
-                    ventasEfectivo += venta.pagoEfectivo || 0;
-                    ventasTransferencia += venta.pagoTransferencia || 0;
+                    const efectivo = venta.pagoEfectivo || 0;
+                    const transferencia = venta.pagoTransferencia || 0;
+                    console.log(`  💰 Venta ID: ${doc.id} - Efectivo: $${efectivo}, Transferencia: $${transferencia}`);
+                    ventasEfectivo += efectivo;
+                    ventasTransferencia += transferencia;
                 });
 
                 ventasDelDia = {
@@ -3556,8 +3568,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     transferencia: ventasTransferencia,
                     total: ventasEfectivo + ventasTransferencia
                 };
+
+                console.log('✅ Ventas del día calculadas:', ventasDelDia);
             } catch (err) {
-                console.error('Error calculando ventas para renderizado:', err);
+                console.error('❌ Error calculando ventas para renderizado:', err);
             }
 
             const filteredMovements = currentFilter === 'all'
@@ -3624,6 +3638,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         // Función para calcular totales (incluyendo ventas del día)
         const calculateTotals = async () => {
+            console.log('💵 Calculando totales de finanzas...');
+
             let totalIngresos = 0;
             let totalGastos = 0;
 
@@ -3632,10 +3648,14 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const monto = movement.data.monto || 0;
                 if (movement.data.tipo === 'ingreso') {
                     totalIngresos += monto;
+                    console.log(`  ➕ Ingreso manual: $${monto}`);
                 } else if (movement.data.tipo === 'gasto') {
                     totalGastos += monto;
+                    console.log(`  ➖ Gasto manual: $${monto}`);
                 }
             });
+
+            console.log(`📊 Movimientos manuales - Ingresos: $${totalIngresos}, Gastos: $${totalGastos}`);
 
             // Agregar ventas en efectivo del día automáticamente
             try {
@@ -3651,37 +3671,57 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 );
                 const ventasSnap = await getDocs(qVentas);
 
+                console.log(`🛍️ Procesando ${ventasSnap.size} ventas del día...`);
+
                 let ventasEfectivo = 0;
                 let ventasTransferencia = 0;
 
                 ventasSnap.forEach(doc => {
                     const venta = doc.data();
-                    ventasEfectivo += venta.pagoEfectivo || 0;
-                    ventasTransferencia += venta.pagoTransferencia || 0;
+                    const efectivo = venta.pagoEfectivo || 0;
+                    const transferencia = venta.pagoTransferencia || 0;
+                    ventasEfectivo += efectivo;
+                    ventasTransferencia += transferencia;
+                    if (efectivo > 0 || transferencia > 0) {
+                        console.log(`  💰 Venta: Efectivo $${efectivo}, Transferencia $${transferencia}`);
+                    }
                 });
 
                 // Agregar ventas al total de ingresos
-                totalIngresos += ventasEfectivo + ventasTransferencia;
+                const totalVentas = ventasEfectivo + ventasTransferencia;
+                totalIngresos += totalVentas;
 
-                console.log(`✅ Ventas del día: Efectivo $${ventasEfectivo}, Transferencia $${ventasTransferencia}`);
+                console.log(`✅ Ventas del día - Efectivo: $${ventasEfectivo}, Transferencia: $${ventasTransferencia}, Total: $${totalVentas}`);
+                console.log(`📈 Total Ingresos (con ventas): $${totalIngresos}`);
             } catch (err) {
-                console.error('Error calculando ventas del día:', err);
+                console.error('❌ Error calculando ventas del día:', err);
             }
 
             const balance = totalIngresos - totalGastos;
 
-            if (totalIngresosEl) totalIngresosEl.textContent = formatoMoneda.format(totalIngresos);
-            if (totalGastosEl) totalGastosEl.textContent = formatoMoneda.format(totalGastos);
+            console.log(`💼 Balance final - Ingresos: $${totalIngresos}, Gastos: $${totalGastos}, Balance: $${balance}`);
+
+            if (totalIngresosEl) {
+                totalIngresosEl.textContent = formatoMoneda.format(totalIngresos);
+                console.log('✅ Total Ingresos actualizado en UI');
+            }
+            if (totalGastosEl) {
+                totalGastosEl.textContent = formatoMoneda.format(totalGastos);
+                console.log('✅ Total Gastos actualizado en UI');
+            }
             if (balanceTotalEl) {
                 balanceTotalEl.textContent = formatoMoneda.format(balance);
                 balanceTotalEl.className = `mb-0 ${balance >= 0 ? 'text-success' : 'text-danger'}`;
+                console.log('✅ Balance actualizado en UI');
             }
         };
 
         // Escuchar cambios en tiempo real
+        console.log('🎧 Iniciando listener de movimientos financieros...');
         onSnapshot(
             query(financesCollection, orderBy('timestamp', 'desc')),
             (snapshot) => {
+                console.log(`📥 Recibidos ${snapshot.docs.length} movimientos financieros`);
                 allMovements = snapshot.docs.map(doc => ({
                     id: doc.id,
                     data: doc.data()
@@ -3690,7 +3730,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 calculateTotals();
             },
             (error) => {
-                console.error('Error loading movements:', error);
+                console.error('❌ Error loading movements:', error);
                 if (movimientosTableBody) {
                     movimientosTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar movimientos</td></tr>';
                 }
