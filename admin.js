@@ -3070,6 +3070,157 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         });
          const renderClosings = (snapshot) => { if(!closingHistoryTableBody) return; closingHistoryTableBody.innerHTML = ''; if (snapshot.empty) { closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay cierres.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A'; tr.innerHTML = `<td>${fecha}</td><td>${formatoMoneda.format(d.ventasEfectivo||0)}</td><td>${formatoMoneda.format(d.abonosEfectivo||0)}</td><td>${formatoMoneda.format(d.recibidoRepartidores||0)}</td><td>${formatoMoneda.format(d.egresos||0)}</td><td>${formatoMoneda.format(d.totalCaja||0)}</td><td>${d.observaciones||'-'}</td>`; closingHistoryTableBody.appendChild(tr); }); };
          onSnapshot(query(closingsCollection, orderBy('timestamp', 'desc')), renderClosings, e => { console.error("Error closings:", e); if(closingHistoryTableBody) closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error.</td></tr>';});
+
+        // ═══════════════════════════════════════════════════════════════════
+        // VISUALIZACIÓN Y GESTIÓN DE MOVIMIENTOS FINANCIEROS
+        // ═══════════════════════════════════════════════════════════════════
+        const movimientosTableBody = document.getElementById('lista-movimientos-financieros');
+        const totalIngresosEl = document.getElementById('total-ingresos');
+        const totalGastosEl = document.getElementById('total-gastos');
+        const balanceTotalEl = document.getElementById('balance-total');
+        const filterAllBtn = document.getElementById('filter-all-movements');
+        const filterIncomeBtn = document.getElementById('filter-income');
+        const filterExpensesBtn = document.getElementById('filter-expenses');
+
+        let allMovements = [];
+        let currentFilter = 'all'; // all, ingreso, gasto
+
+        // Función para renderizar movimientos
+        const renderMovements = () => {
+            if (!movimientosTableBody) return;
+
+            const filteredMovements = currentFilter === 'all'
+                ? allMovements
+                : allMovements.filter(m => m.data.tipo === currentFilter);
+
+            if (filteredMovements.length === 0) {
+                movimientosTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay movimientos registrados</td></tr>';
+                return;
+            }
+
+            movimientosTableBody.innerHTML = '';
+            filteredMovements.forEach(movement => {
+                const { id, data } = movement;
+                const fecha = data.timestamp?.toDate
+                    ? data.timestamp.toDate().toLocaleString('es-CO', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })
+                    : 'N/A';
+
+                const isIncome = data.tipo === 'ingreso';
+                const badgeClass = isIncome ? 'bg-success' : 'bg-danger';
+                const badgeText = isIncome ? 'Ingreso' : 'Gasto';
+                const amountClass = isIncome ? 'text-success' : 'text-danger';
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${fecha}</td>
+                    <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                    <td>${data.descripcion || '-'}</td>
+                    <td class="fw-bold ${amountClass}">${formatoMoneda.format(data.monto || 0)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteMovement('${id}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                movimientosTableBody.appendChild(tr);
+            });
+        };
+
+        // Función para calcular totales
+        const calculateTotals = () => {
+            let totalIngresos = 0;
+            let totalGastos = 0;
+
+            allMovements.forEach(movement => {
+                const monto = movement.data.monto || 0;
+                if (movement.data.tipo === 'ingreso') {
+                    totalIngresos += monto;
+                } else if (movement.data.tipo === 'gasto') {
+                    totalGastos += monto;
+                }
+            });
+
+            const balance = totalIngresos - totalGastos;
+
+            if (totalIngresosEl) totalIngresosEl.textContent = formatoMoneda.format(totalIngresos);
+            if (totalGastosEl) totalGastosEl.textContent = formatoMoneda.format(totalGastos);
+            if (balanceTotalEl) {
+                balanceTotalEl.textContent = formatoMoneda.format(balance);
+                balanceTotalEl.className = `mb-0 ${balance >= 0 ? 'text-success' : 'text-danger'}`;
+            }
+        };
+
+        // Escuchar cambios en tiempo real
+        onSnapshot(
+            query(financesCollection, orderBy('timestamp', 'desc')),
+            (snapshot) => {
+                allMovements = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    data: doc.data()
+                }));
+                renderMovements();
+                calculateTotals();
+            },
+            (error) => {
+                console.error('Error loading movements:', error);
+                if (movimientosTableBody) {
+                    movimientosTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar movimientos</td></tr>';
+                }
+            }
+        );
+
+        // Filtros
+        if (filterAllBtn) {
+            filterAllBtn.addEventListener('click', () => {
+                currentFilter = 'all';
+                filterAllBtn.classList.add('active');
+                filterIncomeBtn.classList.remove('active');
+                filterExpensesBtn.classList.remove('active');
+                renderMovements();
+            });
+        }
+
+        if (filterIncomeBtn) {
+            filterIncomeBtn.addEventListener('click', () => {
+                currentFilter = 'ingreso';
+                filterIncomeBtn.classList.add('active');
+                filterAllBtn.classList.remove('active');
+                filterExpensesBtn.classList.remove('active');
+                renderMovements();
+            });
+        }
+
+        if (filterExpensesBtn) {
+            filterExpensesBtn.addEventListener('click', () => {
+                currentFilter = 'gasto';
+                filterExpensesBtn.classList.add('active');
+                filterAllBtn.classList.remove('active');
+                filterIncomeBtn.classList.remove('active');
+                renderMovements();
+            });
+        }
+
+        // Función global para eliminar movimiento
+        window.deleteMovement = async (movementId) => {
+            if (!confirm('¿Estás seguro de eliminar este movimiento? Esta acción no se puede deshacer.')) {
+                return;
+            }
+
+            try {
+                await deleteDoc(doc(db, 'movimientosFinancieros', movementId));
+                showToast('Movimiento eliminado correctamente', 'success');
+            } catch (error) {
+                console.error('Error deleting movement:', error);
+                showToast(`Error al eliminar: ${error.message}`, 'error');
+            }
+        };
+
     })();
 
     // ========================================================================
