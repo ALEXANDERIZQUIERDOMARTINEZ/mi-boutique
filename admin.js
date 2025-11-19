@@ -67,6 +67,69 @@ let localProductsMap = new Map();
 let repartidoresMap = new Map(); // ✅ Mapa de repartidores para el modal de ver venta
 
 // ========================================================================
+// --- FUNCIÓN GLOBAL: ACTUALIZAR STOCK ---
+// ========================================================================
+async function actualizarStock(itemsVendido, accion = 'restar') {
+    if (!itemsVendido || itemsVendido.length === 0) return;
+
+    const batch = writeBatch(db);
+    let productosParaActualizar = new Map();
+
+    for (const item of itemsVendido) {
+        if (!item.productoId) {
+            console.warn("Item en carrito sin productoId, omitiendo stock:", item);
+            continue;
+        }
+
+        if (!productosParaActualizar.has(item.productoId)) {
+            const productoActual = localProductsMap.get(item.productoId);
+            if (!productoActual) {
+                console.error(`Producto ${item.productoId} no encontrado en localProductsMap. Omitiendo stock.`);
+                continue;
+            }
+            productosParaActualizar.set(item.productoId, JSON.parse(JSON.stringify(productoActual.variaciones)));
+        }
+
+        let variaciones = productosParaActualizar.get(item.productoId);
+        let variacionEncontrada = false;
+
+        let nuevasVariaciones = variaciones.map(v => {
+            if (v.talla === item.talla && v.color === item.color) {
+                variacionEncontrada = true;
+                const stockActual = parseInt(v.stock, 10) || 0;
+                const cantidad = parseInt(item.cantidad, 10);
+
+                if (accion === 'restar') {
+                    v.stock = stockActual - cantidad;
+                } else if (accion === 'sumar') {
+                    v.stock = stockActual + cantidad;
+                }
+            }
+            return v;
+        });
+
+        if (variacionEncontrada) {
+            productosParaActualizar.set(item.productoId, nuevasVariaciones);
+        } else {
+            console.warn(`No se encontró la variación ${item.talla}/${item.color} para el producto ${item.productoId}`);
+        }
+    }
+
+    productosParaActualizar.forEach((nuevasVariaciones, productoId) => {
+        const productRef = doc(db, 'productos', productoId);
+        batch.update(productRef, { variaciones: nuevasVariaciones });
+    });
+
+    try {
+        await batch.commit();
+        console.log(`Stock actualizado (acción: ${accion}) correctamente.`);
+    } catch (error) {
+        console.error("Error al actualizar stock en batch:", error);
+        showToast('Venta guardada, pero falló la actualización de stock.', 'error');
+    }
+}
+
+// ========================================================================
 // --- SCRIPT EJECUTADO AL CARGAR EL DOM ---
 // ========================================================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -1747,66 +1810,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } 
         });
 
-        // --- Función para actualizar stock (restar o sumar) ---
-        async function actualizarStock(itemsVendido, accion = 'restar') {
-            if (!itemsVendido || itemsVendido.length === 0) return;
-            
-            const batch = writeBatch(db);
-            let productosParaActualizar = new Map(); 
-
-            for (const item of itemsVendido) {
-                if (!item.productoId) {
-                    console.warn("Item en carrito sin productoId, omitiendo stock:", item);
-                    continue; 
-                }
-
-                if (!productosParaActualizar.has(item.productoId)) {
-                    const productoActual = localProductsMap.get(item.productoId);
-                    if (!productoActual) {
-                        console.error(`Producto ${item.productoId} no encontrado en localProductsMap. Omitiendo stock.`);
-                        continue;
-                    }
-                    productosParaActualizar.set(item.productoId, JSON.parse(JSON.stringify(productoActual.variaciones)));
-                }
-
-                let variaciones = productosParaActualizar.get(item.productoId);
-                let variacionEncontrada = false;
-
-                let nuevasVariaciones = variaciones.map(v => {
-                    if (v.talla === item.talla && v.color === item.color) {
-                        variacionEncontrada = true;
-                        const stockActual = parseInt(v.stock, 10) || 0;
-                        const cantidad = parseInt(item.cantidad, 10);
-                        
-                        if (accion === 'restar') {
-                            v.stock = stockActual - cantidad;
-                        } else if (accion === 'sumar') {
-                            v.stock = stockActual + cantidad;
-                        }
-                    }
-                    return v;
-                });
-
-                if (variacionEncontrada) {
-                    productosParaActualizar.set(item.productoId, nuevasVariaciones);
-                } else {
-                    console.warn(`No se encontró la variación ${item.talla}/${item.color} para el producto ${item.productoId}`);
-                }
-            }
-
-            productosParaActualizar.forEach((nuevasVariaciones, productoId) => {
-                const productRef = doc(db, 'productos', productoId);
-                batch.update(productRef, { variaciones: nuevasVariaciones });
-            });
-
-            try {
-                await batch.commit();
-                console.log(`Stock actualizado (acción: ${accion}) correctamente.`);
-            } catch (error) {
-                console.error("Error al actualizar stock en batch:", error);
-                showToast('Venta guardada, pero falló la actualización de stock.', 'error');
-            }
-        }
+        // NOTA: actualizarStock ahora es una función global (definida al inicio del archivo)
 
         // --- Función para Anular Venta (D) ---
         async function anularVenta(ventaId) {
