@@ -5181,34 +5181,53 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const isOrder = lastMessage.type === 'order';
 
             html += `
-                <a href="#" class="list-group-item list-group-item-action ${selectedConversationId === convId ? 'active' : ''}"
-                   data-conversation-id="${convId}">
-                    <div class="d-flex w-100 justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <div class="d-flex align-items-center mb-1">
-                                ${isOrder ? '<i class="bi bi-bag-check-fill text-success me-2"></i>' : '<i class="bi bi-chat-dots-fill text-primary me-2"></i>'}
-                                <h6 class="mb-0">${lastMessage.clienteNombre || 'Cliente'}</h6>
-                                ${unreadCount > 0 ? `<span class="badge bg-danger ms-2">${unreadCount}</span>` : ''}
+                <div class="list-group-item ${selectedConversationId === convId ? 'active' : ''}" style="position: relative;">
+                    <a href="#" class="conversation-link text-decoration-none text-reset d-block" data-conversation-id="${convId}" style="padding-right: 40px;">
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1">
+                                    ${isOrder ? '<i class="bi bi-bag-check-fill text-success me-2"></i>' : '<i class="bi bi-chat-dots-fill text-primary me-2"></i>'}
+                                    <h6 class="mb-0">${lastMessage.clienteNombre || 'Cliente'}</h6>
+                                    ${unreadCount > 0 ? `<span class="badge bg-danger ms-2">${unreadCount}</span>` : ''}
+                                </div>
+                                <p class="mb-1 small text-truncate">${lastMessage.message?.substring(0, 60) || 'Sin mensaje'}...</p>
+                                <small class="text-muted">
+                                    <i class="bi bi-phone me-1"></i>${lastMessage.clienteCelular || ''}
+                                </small>
                             </div>
-                            <p class="mb-1 small text-truncate">${lastMessage.message?.substring(0, 60) || 'Sin mensaje'}...</p>
-                            <small class="text-muted">
-                                <i class="bi bi-phone me-1"></i>${lastMessage.clienteCelular || ''}
-                            </small>
+                            <small class="text-muted">${formatTimestamp(lastMessage.timestamp)}</small>
                         </div>
-                        <small class="text-muted">${formatTimestamp(lastMessage.timestamp)}</small>
-                    </div>
-                </a>
+                    </a>
+                    <button class="btn btn-sm btn-danger delete-conversation-btn"
+                            data-conversation-id="${convId}"
+                            style="position: absolute; top: 10px; right: 10px; padding: 2px 8px; z-index: 10;"
+                            title="Eliminar conversación">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             `;
         });
 
         conversationsList.innerHTML = html;
 
         // Event listeners para seleccionar conversación
-        conversationsList.querySelectorAll('a').forEach(item => {
-            item.addEventListener('click', (e) => {
+        conversationsList.querySelectorAll('.conversation-link').forEach(link => {
+            link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const convId = item.dataset.conversationId;
+                const convId = link.dataset.conversationId;
                 selectConversation(convId);
+            });
+        });
+
+        // Event listeners para eliminar conversación
+        conversationsList.querySelectorAll('.delete-conversation-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const convId = btn.dataset.conversationId;
+
+                if (confirm('¿Estás seguro de que quieres eliminar esta conversación?')) {
+                    await deleteConversation(convId);
+                }
             });
         });
     }
@@ -5319,6 +5338,38 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             } else {
                 badge.style.display = 'none';
             }
+        }
+    }
+
+    async function deleteConversation(convId) {
+        try {
+            const messages = conversationsMap.get(convId);
+            if (!messages || messages.length === 0) return;
+
+            // Eliminar todos los mensajes de esta conversación
+            const deletePromises = messages.map(msg =>
+                deleteDoc(doc(db, 'chatConversations', msg.id))
+            );
+
+            await Promise.all(deletePromises);
+
+            // Limpiar vista si era la conversación seleccionada
+            if (selectedConversationId === convId) {
+                selectedConversationId = null;
+                conversationMessages.innerHTML = `
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-chat-left-text" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-3">Selecciona una conversación para ver los mensajes</p>
+                    </div>
+                `;
+                conversationTitle.textContent = 'Selecciona una conversación';
+                replyArea.style.display = 'none';
+            }
+
+            showToast('Conversación eliminada', 'success');
+        } catch (err) {
+            console.error("Error eliminando conversación:", err);
+            showToast('Error al eliminar conversación', 'error');
         }
     }
 
