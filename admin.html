@@ -38,7 +38,6 @@
                     <li class="nav-item"> <a href="#finanzas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-piggy-bank-fill me-1"></i> Finanzas</a> </li>
                     <li class="nav-item"> <a href="#categorias" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-folder-fill me-1"></i> Categorías </a> </li>
                     <li class="nav-item"> <a href="#proveedores" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-building me-1"></i> Proveedores </a> </li>
-                    <li class="nav-item"> <a href="#chatbot" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-robot me-1"></i> Chatbot </a> </li>
                 </ul>
                 <a href="index.html" target="_blank" class="admin-logout d-flex align-items-center text-secondary text-decoration-none ms-lg-auto mt-2 mt-lg-0">
                      Catálogo <i class="bi bi-box-arrow-up-right ms-1"></i>
@@ -904,109 +903,6 @@
             <!-- ═══════════════════════════════════════════════════════════════════
                  SECCIÓN CHATBOT
                  ═══════════════════════════════════════════════════════════════════ -->
-            <div class="tab-pane fade" id="chatbot">
-                <h1 class="h2 mb-4">🤖 Panel de Chatbot</h1>
-
-                <!-- Estadísticas del Chatbot -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-3">
-                        <div class="card border-primary">
-                            <div class="card-body text-center">
-                                <i class="bi bi-chat-dots-fill text-primary" style="font-size: 2rem;"></i>
-                                <h6 class="mt-2 mb-1 text-muted">Conversaciones Hoy</h6>
-                                <h3 class="mb-0 text-primary" id="chatbot-conversations-today">0</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card border-success">
-                            <div class="card-body text-center">
-                                <i class="bi bi-check-circle-fill text-success" style="font-size: 2rem;"></i>
-                                <h6 class="mt-2 mb-1 text-muted">Resueltas Automáticamente</h6>
-                                <h3 class="mb-0 text-success" id="chatbot-auto-resolved">0</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card border-warning">
-                            <div class="card-body text-center">
-                                <i class="bi bi-person-fill text-warning" style="font-size: 2rem;"></i>
-                                <h6 class="mt-2 mb-1 text-muted">Derivadas a Humano</h6>
-                                <h3 class="mb-0 text-warning" id="chatbot-to-human">0</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card border-info">
-                            <div class="card-body text-center">
-                                <i class="bi bi-clock-fill text-info" style="font-size: 2rem;"></i>
-                                <h6 class="mt-2 mb-1 text-muted">Tiempo Promedio</h6>
-                                <h3 class="mb-0 text-info" id="chatbot-avg-time">0m</h3>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Últimas Conversaciones -->
-                <div class="card">
-                    <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
-                        <h3 class="h5 mb-0">Últimas Conversaciones</h3>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-primary active" id="filter-today-chats">Hoy</button>
-                            <button class="btn btn-outline-secondary" id="filter-week-chats">Esta Semana</button>
-                            <button class="btn btn-outline-secondary" id="filter-all-chats">Todas</button>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>ID Conversación</th>
-                                        <th>Fecha/Hora</th>
-                                        <th>Mensajes</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="lista-conversaciones-chatbot">
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">Cargando conversaciones...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Info del Chatbot -->
-                <div class="card mt-4">
-                    <div class="card-header bg-white border-0 pt-3">
-                        <h3 class="h5 mb-0">ℹ️ Información del Chatbot</h3>
-                    </div>
-                    <div class="card-body">
-                        <p><strong>Estado:</strong> <span class="badge bg-success">En línea</span></p>
-                        <p><strong>Última actualización:</strong> Versión 1.0.0</p>
-                        <p><strong>Respuestas configuradas:</strong> 12 categorías</p>
-                        <hr>
-                        <h6>Categorías de Respuestas:</h6>
-                        <div class="row g-2 mt-2">
-                            <div class="col-md-3"><span class="badge bg-light text-dark">👋 Saludos</span></div>
-                            <div class="col-md-3"><span class="badge bg-light text-dark">📦 Catálogo</span></div>
-                            <div class="col-md-3"><span class="badge bg-light text-dark">🔍 Búsqueda</span></div>
-                            <div class="col-md-3"><span class="badge bg-light text-dark">💰 Precios</span></div>
-                            <div class="col-md-3"><span class="badge bg-light text-dark">🕐 Horarios</span></div>
-                            <div class="col-md-3"><span class="badge bg-light text-dark">📍 Ubicación</span></div>
-                            <div class="col-md-3"><span class="badge bg-light text-dark">💳 Pagos</span></div>
-                            <div class="col-md-3"><span class="badge bg-light text-dark">🚚 Envíos</span></div>
-                            <div class="col-md-3"><span class="badge bg-light text-dark">👤 Humano</span></div>
-                            <div class="col-md-3"><span class="badge bg-light text-dark">🙏 Agradecimiento</span></div>
-                            <div class="col-md-3"><span class="badge bg-light text-dark">👋 Despedida</span></div>
-                            <div class="col-md-3"><span class="badge bg-light text-dark">❓ Por defecto</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </main>
 
