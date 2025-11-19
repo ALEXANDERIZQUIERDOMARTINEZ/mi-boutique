@@ -303,67 +303,105 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   TABLAS - FIX GLOBAL
+   TABLAS - FIX GLOBAL AGRESIVO
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Resetear bordes en todas las tablas */
-.table {
-    border-collapse: collapse;
-    margin-bottom: 0;
+/* Resetear bordes en TODAS las tablas con máxima prioridad */
+.admin-page .table,
+.admin-page table.table {
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+    margin-bottom: 0 !important;
+    border: none !important;
 }
 
-/* Encabezados de tabla */
-.table thead th {
-    background: #F9FAFB;
-    border-bottom: 2px solid var(--admin-borde);
+/* Encabezados de tabla con especificidad máxima */
+.admin-page .table thead th,
+.admin-page table.table thead th {
+    background: #F9FAFB !important;
+    border-bottom: 2px solid var(--admin-borde) !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
-    color: var(--admin-texto-sec);
-    font-weight: 600;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    padding: 1rem;
-    vertical-align: middle;
+    color: var(--admin-texto-sec) !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    text-transform: uppercase !important;
+    padding: 1rem !important;
+    vertical-align: middle !important;
 }
 
-/* Filas de tabla - Altura dinámica */
-.table tbody tr {
+/* Filas de tabla - Eliminar TODOS los bordes y altura fija */
+.admin-page .table tbody tr,
+.admin-page table.table tbody tr,
+.admin-page .table-hover tbody tr {
     border: none !important;
-    min-height: auto;
-    height: auto;
+    border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    min-height: auto !important;
+    height: auto !important;
+    box-shadow: none !important;
 }
 
-.table-hover tbody tr:hover {
-    background: var(--admin-primario-claro);
+/* Hover en filas */
+.admin-page .table-hover tbody tr:hover {
+    background: var(--admin-primario-claro) !important;
+    border: none !important;
 }
 
-/* Celdas de tabla - Solo borde inferior, altura dinámica, padding ajustado */
-.table tbody td {
-    padding: 0.85rem 1rem;
-    vertical-align: middle;
+/* Celdas de tabla - SOLO borde inferior, máxima prioridad */
+.admin-page .table tbody td,
+.admin-page table.table tbody td,
+.admin-page .table tbody th,
+.admin-page table.table tbody th {
+    padding: 1rem 1rem !important;
+    vertical-align: middle !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
     border-bottom: 1px solid var(--admin-borde) !important;
-    height: auto;
-    min-height: 60px; /* Altura mínima para acomodar botones */
+    height: auto !important;
+    min-height: 70px !important;
+    line-height: 1.5 !important;
+    box-shadow: none !important;
 }
 
-/* Eliminar borde en la última fila de todas las tablas */
-.table tbody tr:last-child td {
+/* Eliminar borde en la ÚLTIMA fila con especificidad máxima */
+.admin-page .table tbody tr:last-child td,
+.admin-page table.table tbody tr:last-child td,
+.admin-page .table tbody tr:last-child th,
+.admin-page table.table tbody tr:last-child th {
     border-bottom: none !important;
 }
 
-/* Contenedores de tabla sin margen/padding extra */
-.card-body .table-responsive {
-    margin-bottom: 0;
-    overflow-x: auto;
+/* Contenedores de tabla - Sin margen/padding extra */
+.admin-page .card-body .table-responsive,
+.admin-page .table-responsive {
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    overflow-x: auto !important;
+    border: none !important;
 }
 
-/* Padding en card-body con tablas */
-.card-body:has(.table-responsive) {
-    padding: 0;
+/* Card body CON tabla-responsive - Sin padding */
+.admin-page .card-body:has(.table-responsive) {
+    padding: 0 !important;
+}
+
+/* Card body CON tabla directa (sin table-responsive) - Sin padding */
+.admin-page .card-body > .table {
+    margin: 0 !important;
+}
+
+.admin-page .card-body:has(> .table) {
+    padding: 0 !important;
+}
+
+/* Card general sin padding extra */
+.admin-page .card {
+    margin-bottom: 1.5rem !important;
 }
 
 .table-product-img {
