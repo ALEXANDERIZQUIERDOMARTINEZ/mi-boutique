@@ -3521,22 +3521,74 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const filterExpensesBtn = document.getElementById('filter-expenses');
 
         let allMovements = [];
+        let ventasDelDia = { efectivo: 0, transferencia: 0, total: 0 };
         let currentFilter = 'all'; // all, ingreso, gasto
 
         // Función para renderizar movimientos
-        const renderMovements = () => {
+        const renderMovements = async () => {
             if (!movimientosTableBody) return;
+
+            // Calcular ventas del día
+            try {
+                const hoy = new Date();
+                const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+                const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+
+                const qVentas = query(
+                    salesCollection,
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<=', Timestamp.fromDate(fin)),
+                    where('estado', '!=', 'Anulada')
+                );
+                const ventasSnap = await getDocs(qVentas);
+
+                let ventasEfectivo = 0;
+                let ventasTransferencia = 0;
+
+                ventasSnap.forEach(doc => {
+                    const venta = doc.data();
+                    ventasEfectivo += venta.pagoEfectivo || 0;
+                    ventasTransferencia += venta.pagoTransferencia || 0;
+                });
+
+                ventasDelDia = {
+                    efectivo: ventasEfectivo,
+                    transferencia: ventasTransferencia,
+                    total: ventasEfectivo + ventasTransferencia
+                };
+            } catch (err) {
+                console.error('Error calculando ventas para renderizado:', err);
+            }
 
             const filteredMovements = currentFilter === 'all'
                 ? allMovements
                 : allMovements.filter(m => m.data.tipo === currentFilter);
 
-            if (filteredMovements.length === 0) {
+            movimientosTableBody.innerHTML = '';
+
+            // Agregar fila de ventas del día al inicio (solo si hay ventas o si el filtro es 'all' o 'ingreso')
+            if ((currentFilter === 'all' || currentFilter === 'ingreso') && ventasDelDia.total > 0) {
+                const trVentas = document.createElement('tr');
+                trVentas.className = 'table-info';
+                trVentas.innerHTML = `
+                    <td><strong>Hoy</strong></td>
+                    <td><span class="badge bg-info">Ventas del Día</span></td>
+                    <td>
+                        Efectivo: ${formatoMoneda.format(ventasDelDia.efectivo)}<br>
+                        <small class="text-muted">Transferencia: ${formatoMoneda.format(ventasDelDia.transferencia)}</small>
+                    </td>
+                    <td class="fw-bold text-info">${formatoMoneda.format(ventasDelDia.total)}</td>
+                    <td><small class="text-muted">Automático</small></td>
+                `;
+                movimientosTableBody.appendChild(trVentas);
+            }
+
+            // Agregar movimientos manuales
+            if (filteredMovements.length === 0 && ventasDelDia.total === 0) {
                 movimientosTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No hay movimientos registrados</td></tr>';
                 return;
             }
 
-            movimientosTableBody.innerHTML = '';
             filteredMovements.forEach(movement => {
                 const { id, data } = movement;
                 const fecha = data.timestamp?.toDate
@@ -3570,11 +3622,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             });
         };
 
-        // Función para calcular totales
-        const calculateTotals = () => {
+        // Función para calcular totales (incluyendo ventas del día)
+        const calculateTotals = async () => {
             let totalIngresos = 0;
             let totalGastos = 0;
 
+            // Sumar movimientos manuales (ingresos/gastos)
             allMovements.forEach(movement => {
                 const monto = movement.data.monto || 0;
                 if (movement.data.tipo === 'ingreso') {
@@ -3583,6 +3636,37 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     totalGastos += monto;
                 }
             });
+
+            // Agregar ventas en efectivo del día automáticamente
+            try {
+                const hoy = new Date();
+                const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+                const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+
+                const qVentas = query(
+                    salesCollection,
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<=', Timestamp.fromDate(fin)),
+                    where('estado', '!=', 'Anulada')
+                );
+                const ventasSnap = await getDocs(qVentas);
+
+                let ventasEfectivo = 0;
+                let ventasTransferencia = 0;
+
+                ventasSnap.forEach(doc => {
+                    const venta = doc.data();
+                    ventasEfectivo += venta.pagoEfectivo || 0;
+                    ventasTransferencia += venta.pagoTransferencia || 0;
+                });
+
+                // Agregar ventas al total de ingresos
+                totalIngresos += ventasEfectivo + ventasTransferencia;
+
+                console.log(`✅ Ventas del día: Efectivo $${ventasEfectivo}, Transferencia $${ventasTransferencia}`);
+            } catch (err) {
+                console.error('Error calculando ventas del día:', err);
+            }
 
             const balance = totalIngresos - totalGastos;
 
