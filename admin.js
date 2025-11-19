@@ -3684,7 +3684,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             }
         };
 
-        // Escuchar cambios en tiempo real
+        // ✅ Función para actualizar TODO
+        const actualizarFinanzasCompletas = async () => {
+            console.log('🔄 Actualizando finanzas completas...');
+            await obtenerVentasDelDia();
+            renderMovements();
+            calculateTotals();
+        };
+
+        // Escuchar cambios en movimientos financieros (ingresos/gastos manuales)
         console.log('🎧 Iniciando listener de movimientos financieros...');
         onSnapshot(
             query(financesCollection, orderBy('timestamp', 'desc')),
@@ -3694,16 +3702,32 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     id: doc.id,
                     data: doc.data()
                 }));
-                // ✅ ORDEN CORRECTO: 1) Obtener ventas, 2) Renderizar, 3) Calcular
-                await obtenerVentasDelDia();
-                renderMovements();
-                calculateTotals();
+                await actualizarFinanzasCompletas();
             },
             (error) => {
                 console.error('❌ Error loading movements:', error);
                 if (movimientosTableBody) {
                     movimientosTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar movimientos</td></tr>';
                 }
+            }
+        );
+
+        // 🔥 CRÍTICO: Escuchar cambios en VENTAS también
+        console.log('🎧 Iniciando listener de VENTAS para finanzas...');
+        const hoy = new Date();
+        const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+        onSnapshot(
+            query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(inicioHoy)),
+                orderBy('timestamp', 'desc')
+            ),
+            async (snapshot) => {
+                console.log(`🛍️ Cambio detectado en ventas: ${snapshot.docs.length} ventas del día`);
+                await actualizarFinanzasCompletas();
+            },
+            (error) => {
+                console.error('❌ Error loading sales:', error);
             }
         );
 
