@@ -1303,8 +1303,16 @@ document.addEventListener('DOMContentLoaded', () => {
             saveCart();
             document.getElementById('checkout-form').reset();
 
+            // Crear mensaje de WhatsApp
+            const numeroWhatsApp = '573015911901'; // TU NÚMERO DE WHATSAPP (cambiar por el tuyo)
+            const mensajeWhatsApp = encodeURIComponent(mensaje);
+            const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${mensajeWhatsApp}`;
+
+            // Abrir WhatsApp en nueva pestaña (el cliente NO se sale de la app)
+            window.open(urlWhatsApp, '_blank');
+
             // Mostrar mensaje de éxito
-            showToast('✅ ¡Tu pedido ha sido enviado exitosamente!', 'success');
+            showToast('✅ ¡Pedido confirmado! Se abrió WhatsApp para enviar los detalles.', 'success');
 
         } catch (err) {
             console.error("Error al guardar pedido: ", err);
