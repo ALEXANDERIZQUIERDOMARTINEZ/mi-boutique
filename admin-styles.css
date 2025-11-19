@@ -303,26 +303,67 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   TABLAS
+   TABLAS - FIX GLOBAL
    ═══════════════════════════════════════════════════════════════════ */
+
+/* Resetear bordes en todas las tablas */
+.table {
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+/* Encabezados de tabla */
 .table thead th {
     background: #F9FAFB;
     border-bottom: 2px solid var(--admin-borde);
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
     color: var(--admin-texto-sec);
     font-weight: 600;
     font-size: 0.85rem;
     text-transform: uppercase;
     padding: 1rem;
+    vertical-align: middle;
+}
+
+/* Filas de tabla - Altura dinámica */
+.table tbody tr {
+    border: none !important;
+    min-height: auto;
+    height: auto;
 }
 
 .table-hover tbody tr:hover {
     background: var(--admin-primario-claro);
 }
 
+/* Celdas de tabla - Solo borde inferior, altura dinámica, padding ajustado */
 .table tbody td {
-    padding: 1rem;
+    padding: 0.85rem 1rem;
     vertical-align: middle;
-    border-bottom: 1px solid var(--admin-borde);
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--admin-borde) !important;
+    height: auto;
+    min-height: 60px; /* Altura mínima para acomodar botones */
+}
+
+/* Eliminar borde en la última fila de todas las tablas */
+.table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+/* Contenedores de tabla sin margen/padding extra */
+.card-body .table-responsive {
+    margin-bottom: 0;
+    overflow-x: auto;
+}
+
+/* Padding en card-body con tablas */
+.card-body:has(.table-responsive) {
+    padding: 0;
 }
 
 .table-product-img {
@@ -474,56 +515,10 @@ body.admin-page {
     margin: 0;
 }
 
-/* Fix para bordes de tabla con action-buttons */
+/* Action buttons en tablas - Padding especial */
 td.action-buttons {
-    padding: 0.75rem;
+    padding: 0.85rem 1rem;
     vertical-align: middle;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   FIX TABLA DE APARTADOS - Eliminar bordes duplicados
-   ═══════════════════════════════════════════════════════════════════ */
-
-/* Resetear bordes en tabla de apartados */
-#apartados .table {
-    border-collapse: collapse;
-    margin-bottom: 0;
-}
-
-/* Solo borde inferior en celdas de apartados */
-#lista-apartados td {
-    vertical-align: middle;
-    padding: 0.75rem;
-    border-top: none !important;
-    border-left: none !important;
-    border-right: none !important;
-    border-bottom: 1px solid var(--admin-borde) !important;
-}
-
-/* Eliminar borde en la última fila */
-#lista-apartados tr:last-child td {
-    border-bottom: none !important;
-}
-
-/* Resetear bordes de las filas */
-#lista-apartados tr {
-    border: none !important;
-}
-
-/* Contenedor de la tabla sin padding inferior extra */
-#apartados .card-body {
-    padding: 0;
-}
-
-/* Table-responsive sin margen inferior */
-#apartados .table-responsive {
-    margin-bottom: 0;
-    overflow-x: auto;
-}
-
-/* Asegurar que no haya espacio extra en el contenedor */
-#apartados .card {
-    margin-bottom: 1.5rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

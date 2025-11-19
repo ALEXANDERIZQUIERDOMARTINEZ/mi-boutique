@@ -1801,6 +1801,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const apartadoData = {
                         ventaId: docRef.id,
                         clienteNombre: ventaData.clienteNombre,
+                        clienteCelular: ventaData.clienteCelular, // ✅ Guardar celular para WhatsApp
                         total: ventaData.totalVenta,
                         abonado: abonoInicial,
                         saldo: saldoPendiente,
@@ -2365,24 +2366,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Obtener WhatsApp del cliente desde la venta original
+            // ✅ Obtener WhatsApp del cliente (primero del apartado, luego de la venta)
             let whatsapp = '';
 
-            console.log('🔍 Buscando WhatsApp... ventaId:', apartadoData.ventaId);
+            console.log('🔍 Buscando WhatsApp...');
 
-            if (apartadoData.ventaId) {
+            // Primer intento: obtener directamente del apartado (apartados nuevos)
+            if (apartadoData.clienteCelular) {
+                whatsapp = apartadoData.clienteCelular;
+                console.log('✅ Celular encontrado en apartado:', whatsapp);
+            }
+            // Segundo intento: buscar en la venta asociada (apartados antiguos)
+            else if (apartadoData.ventaId) {
+                console.log('⚠️ Celular no en apartado, buscando en venta:', apartadoData.ventaId);
                 const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
                 const ventaSnap = await getDoc(ventaRef);
                 if (ventaSnap.exists()) {
                     const ventaData = ventaSnap.data();
                     console.log('📄 Datos de la venta:', ventaData);
                     whatsapp = ventaData.clienteCelular || '';
-                    console.log('📞 clienteCelular encontrado:', whatsapp);
+                    console.log('📞 clienteCelular desde venta:', whatsapp);
                 } else {
                     console.warn('⚠️ Venta no encontrada:', apartadoData.ventaId);
                 }
             } else {
-                console.warn('⚠️ No hay ventaId en el apartado');
+                console.warn('⚠️ No hay ventaId ni clienteCelular en el apartado');
             }
 
             if (!whatsapp) {
