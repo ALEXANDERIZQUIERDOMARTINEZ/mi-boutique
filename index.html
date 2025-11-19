@@ -340,12 +340,32 @@ Finalizar Pedido
 <div class="modal-body">
 <form id="checkout-form">
 <div class="mb-3">
+<label class="selector-label">Cédula</label>
+<input type="text" class="form-control" id="checkout-cedula" placeholder="Ej: 1234567890" required>
+<small class="text-muted">Si ya eres cliente, tus datos se llenarán automáticamente</small>
+</div>
+<div class="mb-3">
 <label class="selector-label">Nombre Completo</label>
 <input type="text" class="form-control" id="checkout-name" required>
 </div>
 <div class="mb-3">
 <label class="selector-label">WhatsApp</label>
 <input type="tel" class="form-control" id="checkout-phone" placeholder="3001234567" required>
+</div>
+<div class="mb-3">
+<label class="selector-label">Ciudad</label>
+<select class="form-select" id="checkout-city" required>
+<option value="">Seleccione su ciudad</option>
+<option value="Montería">Montería</option>
+<option value="Cereté">Cereté</option>
+<option value="Lorica">Lorica</option>
+<option value="Sahagún">Sahagún</option>
+<option value="Planeta Rica">Planeta Rica</option>
+<option value="Montelíbano">Montelíbano</option>
+<option value="Tierralta">Tierralta</option>
+<option value="Ayapel">Ayapel</option>
+<option value="Otra">Otra ciudad</option>
+</select>
 </div>
 <div class="mb-3">
 <label class="selector-label">Dirección</label>
@@ -359,9 +379,10 @@ Finalizar Pedido
 <label class="selector-label">Método de Pago</label>
 <select class="form-select" id="checkout-payment" required>
 <option value="">Seleccione</option>
-<option value="Efectivo">Efectivo (Pago contra entrega)</option>
+<option value="Efectivo" id="payment-efectivo">Efectivo (Pago contra entrega)</option>
 <option value="Transferencia">Transferencia</option>
 </select>
+<small class="text-muted" id="payment-info"></small>
 </div>
 <button type="submit" class="btn btn-primary btn-lg w-100">
 Confirmar Pedido

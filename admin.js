@@ -31,7 +31,8 @@ const salesCollection = collection(db, 'ventas');
 const apartadosCollection = collection(db, 'apartados');
 const financesCollection = collection(db, 'movimientosFinancieros');
 const closingsCollection = collection(db, 'cierresCaja');
-const webOrdersCollection = collection(db, 'pedidosWeb'); 
+const webOrdersCollection = collection(db, 'pedidosWeb');
+const chatConversationsCollection = collection(db, 'chatConversations'); 
 
 // --- Helper: Format Currency ---
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
@@ -5048,5 +5049,219 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     console.log("✅ Historial de repartidores inicializado");
 })();
 
+// ═══════════════════════════════════════════════════════════════════
+// SECCIÓN: CONVERSACIONES DEL CHAT
+// ═══════════════════════════════════════════════════════════════════
+(function initConversations() {
+    const conversationsList = document.getElementById('conversations-list');
+    const conversationMessages = document.getElementById('conversation-messages');
+    const conversationTitle = document.getElementById('conversation-title');
+    const replyArea = document.getElementById('conversation-reply-area');
+    const replyInput = document.getElementById('admin-reply-input');
+    const replySendBtn = document.getElementById('admin-reply-send');
+
+    let selectedConversationId = null;
+    let conversationsMap = new Map();
+
+    // Cargar conversaciones en tiempo real
+    const q = query(chatConversationsCollection, orderBy('timestamp', 'desc'));
+
+    onSnapshot(q, (snapshot) => {
+        conversationsMap.clear();
+
+        // Agrupar mensajes por conversationId
+        snapshot.forEach(doc => {
+            const data = { id: doc.id, ...doc.data() };
+            const convId = data.conversationId || data.clienteCelular || doc.id;
+
+            if (!conversationsMap.has(convId)) {
+                conversationsMap.set(convId, []);
+            }
+            conversationsMap.get(convId).push(data);
+        });
+
+        renderConversationsList();
+        updateConversationsCount();
+    }, (error) => {
+        console.error("Error cargando conversaciones:", error);
+        conversationsList.innerHTML = '<div class="p-3 text-center text-danger">Error al cargar conversaciones</div>';
+    });
+
+    function renderConversationsList() {
+        if (conversationsMap.size === 0) {
+            conversationsList.innerHTML = '<div class="p-3 text-center text-muted">No hay conversaciones</div>';
+            return;
+        }
+
+        let html = '';
+        conversationsMap.forEach((messages, convId) => {
+            const lastMessage = messages[0]; // El más reciente
+            const unreadCount = messages.filter(m => !m.read && m.type !== 'admin').length;
+            const isOrder = lastMessage.type === 'order';
+
+            html += `
+                <a href="#" class="list-group-item list-group-item-action ${selectedConversationId === convId ? 'active' : ''}"
+                   data-conversation-id="${convId}">
+                    <div class="d-flex w-100 justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-1">
+                                ${isOrder ? '<i class="bi bi-bag-check-fill text-success me-2"></i>' : '<i class="bi bi-chat-dots-fill text-primary me-2"></i>'}
+                                <h6 class="mb-0">${lastMessage.clienteNombre || 'Cliente'}</h6>
+                                ${unreadCount > 0 ? `<span class="badge bg-danger ms-2">${unreadCount}</span>` : ''}
+                            </div>
+                            <p class="mb-1 small text-truncate">${lastMessage.message?.substring(0, 60) || 'Sin mensaje'}...</p>
+                            <small class="text-muted">
+                                <i class="bi bi-phone me-1"></i>${lastMessage.clienteCelular || ''}
+                            </small>
+                        </div>
+                        <small class="text-muted">${formatTimestamp(lastMessage.timestamp)}</small>
+                    </div>
+                </a>
+            `;
+        });
+
+        conversationsList.innerHTML = html;
+
+        // Event listeners para seleccionar conversación
+        conversationsList.querySelectorAll('a').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const convId = item.dataset.conversationId;
+                selectConversation(convId);
+            });
+        });
+    }
+
+    function selectConversation(convId) {
+        selectedConversationId = convId;
+        const messages = conversationsMap.get(convId);
+
+        if (!messages || messages.length === 0) return;
+
+        // Marcar mensajes como leídos
+        messages.forEach(async (msg) => {
+            if (!msg.read && msg.type !== 'admin') {
+                try {
+                    await updateDoc(doc(db, 'chatConversations', msg.id), { read: true });
+                } catch (err) {
+                    console.error("Error marcando como leído:", err);
+                }
+            }
+        });
+
+        renderConversationMessages(messages);
+        renderConversationsList(); // Actualizar lista
+    }
+
+    function renderConversationMessages(messages) {
+        const firstMessage = messages[messages.length - 1];
+        conversationTitle.textContent = `${firstMessage.clienteNombre || 'Cliente'} - ${firstMessage.clienteCelular}`;
+
+        // Ordenar mensajes de más antiguo a más reciente
+        const sortedMessages = [...messages].reverse();
+
+        let html = '<div class="chat-messages">';
+        sortedMessages.forEach(msg => {
+            const isAdmin = msg.type === 'admin';
+            const messageClass = isAdmin ? 'text-end' : 'text-start';
+            const bubbleClass = isAdmin ? 'bg-primary text-white' : 'bg-light';
+
+            html += `
+                <div class="mb-3 ${messageClass}">
+                    <div class="d-inline-block ${bubbleClass} rounded p-3" style="max-width: 70%; white-space: pre-line;">
+                        ${escapeHtml(msg.message || '')}
+                    </div>
+                    <div class="small text-muted mt-1">
+                        ${formatTimestamp(msg.timestamp)}
+                        ${msg.type === 'order' ? '<i class="bi bi-bag-check-fill ms-1"></i>' : ''}
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        conversationMessages.innerHTML = html;
+        conversationMessages.scrollTop = conversationMessages.scrollHeight;
+
+        // Mostrar área de respuesta
+        replyArea.style.display = 'block';
+    }
+
+    // Enviar respuesta del admin
+    replySendBtn.addEventListener('click', async () => {
+        const message = replyInput.value.trim();
+        if (!message || !selectedConversationId) return;
+
+        const messages = conversationsMap.get(selectedConversationId);
+        if (!messages || messages.length === 0) return;
+
+        const firstMessage = messages[0];
+
+        try {
+            await addDoc(chatConversationsCollection, {
+                type: 'admin',
+                conversationId: selectedConversationId,
+                clienteId: firstMessage.clienteId,
+                clienteNombre: firstMessage.clienteNombre,
+                clienteCelular: firstMessage.clienteCelular,
+                message: message,
+                timestamp: serverTimestamp(),
+                read: true
+            });
+
+            replyInput.value = '';
+            showToast('Respuesta enviada', 'success');
+        } catch (err) {
+            console.error("Error enviando respuesta:", err);
+            showToast('Error al enviar respuesta', 'error');
+        }
+    });
+
+    // Enter para enviar
+    replyInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            replySendBtn.click();
+        }
+    });
+
+    function updateConversationsCount() {
+        const unreadCount = Array.from(conversationsMap.values())
+            .flat()
+            .filter(m => !m.read && m.type !== 'admin')
+            .length;
+
+        const badge = document.getElementById('conversaciones-count');
+        if (badge) {
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    function formatTimestamp(timestamp) {
+        if (!timestamp) return '';
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        const now = new Date();
+        const diff = now - date;
+
+        if (diff < 60000) return 'Ahora';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)}m`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h`;
+
+        return date.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    console.log("✅ Conversaciones del chat inicializadas");
+})();
+
 });
-    
+

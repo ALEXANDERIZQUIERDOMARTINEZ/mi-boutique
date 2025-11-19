@@ -270,7 +270,6 @@ class Chatbot {
     handleQuickReply(text) {
         // Manejar respuestas rápidas especiales
         if (text === 'Sí, conectar WhatsApp' || text === 'Sí, conectar asesor' || text === 'Hablar con humano') {
-            this.addUserMessage(text);
             this.showTyping();
             setTimeout(() => {
                 this.hideTyping();
@@ -279,17 +278,17 @@ class Chatbot {
                     window.open('https://wa.me/573046084971?text=Hola,%20vengo%20del%20chatbot%20y%20necesito%20ayuda', '_blank');
                 }, 1000);
             }, 500);
+            this.saveMessage('bot', 'Redirigiendo a WhatsApp...');
         } else if (text === 'No, eso es todo') {
-            this.addUserMessage(text);
             this.showTyping();
             setTimeout(() => {
                 this.hideTyping();
                 this.addBotMessage('¡Perfecto! Que tengas un excelente día. 😊');
             }, 500);
         } else {
-            // Para las demás, simular que el usuario escribió el texto
-            this.input.value = text;
-            this.sendMessage();
+            // Para las demás, enviar automáticamente el mensaje sin mostrarlo
+            // El bot procesará directamente la respuesta
+            this.processMessage(text);
         }
     }
 

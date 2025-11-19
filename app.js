@@ -1,6 +1,6 @@
 // --- IMPORTACIONES DE FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 // *** CONFIGURACIÓN DE FIREBASE ***
 const firebaseConfig = {
@@ -18,7 +18,9 @@ const db = getFirestore(app);
 const productsCollection = collection(db, 'productos');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const promocionesCollection = collection(db, 'promociones');
-const categoriesCollection = collection(db, 'categorias'); 
+const categoriesCollection = collection(db, 'categorias');
+const clientsCollection = collection(db, 'clientes');
+const chatConversationsCollection = collection(db, 'chatConversations'); 
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
 
 let bsToast = null;
@@ -1120,68 +1122,190 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal) modal.hide();
     });
 
+    // Auto-completar datos al digitar cédula
+    document.getElementById('checkout-cedula').addEventListener('blur', async function() {
+        const cedula = this.value.trim();
+        if (!cedula) return;
+
+        try {
+            const q = query(clientsCollection, where('cedula', '==', cedula));
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+                const clientData = snapshot.docs[0].data();
+                document.getElementById('checkout-name').value = clientData.nombre || '';
+                document.getElementById('checkout-phone').value = clientData.celular || '';
+                document.getElementById('checkout-address').value = clientData.direccion || '';
+                if (clientData.ciudad) {
+                    document.getElementById('checkout-city').value = clientData.ciudad;
+                    // Trigger change event para validar método de pago
+                    document.getElementById('checkout-city').dispatchEvent(new Event('change'));
+                }
+                showToast('¡Datos cargados! Bienvenido de nuevo', 'success');
+            }
+        } catch (err) {
+            console.error("Error buscando cliente:", err);
+        }
+    });
+
+    // Validar método de pago según ciudad
+    document.getElementById('checkout-city').addEventListener('change', function() {
+        const ciudad = this.value;
+        const efectivoOption = document.getElementById('payment-efectivo');
+        const paymentInfo = document.getElementById('payment-info');
+        const paymentSelect = document.getElementById('checkout-payment');
+
+        if (ciudad && ciudad !== 'Montería') {
+            efectivoOption.disabled = true;
+            efectivoOption.textContent = 'Efectivo (No disponible fuera de Montería)';
+            paymentInfo.textContent = '⚠️ Solo transferencia disponible para envíos fuera de Montería';
+            paymentInfo.classList.add('text-warning');
+
+            // Si tenía efectivo seleccionado, resetear
+            if (paymentSelect.value === 'Efectivo') {
+                paymentSelect.value = '';
+            }
+        } else if (ciudad === 'Montería') {
+            efectivoOption.disabled = false;
+            efectivoOption.textContent = 'Efectivo (Pago contra entrega)';
+            paymentInfo.textContent = '✅ Efectivo y transferencia disponibles';
+            paymentInfo.classList.remove('text-warning');
+            paymentInfo.classList.add('text-success');
+        } else {
+            efectivoOption.disabled = false;
+            efectivoOption.textContent = 'Efectivo (Pago contra entrega)';
+            paymentInfo.textContent = '';
+            paymentInfo.classList.remove('text-warning', 'text-success');
+        }
+    });
+
     document.getElementById('checkout-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        const cedula = document.getElementById('checkout-cedula').value.trim();
         const nombre = document.getElementById('checkout-name').value.trim();
         const whatsapp = document.getElementById('checkout-phone').value.trim();
+        const ciudad = document.getElementById('checkout-city').value.trim();
         const direccion = document.getElementById('checkout-address').value.trim();
         const observaciones = document.getElementById('checkout-notes').value.trim();
         const pago = document.getElementById('checkout-payment').value;
-        if (!nombre || !whatsapp || !direccion || !pago) {
-            showToast('Complete todos los campos', 'error');
+
+        if (!cedula || !nombre || !whatsapp || !ciudad || !direccion || !pago) {
+            showToast('Complete todos los campos obligatorios', 'error');
             return;
         }
+
+        // Validar que no seleccione efectivo fuera de Montería
+        if (pago === 'Efectivo' && ciudad !== 'Montería') {
+            showToast('El pago en efectivo solo está disponible en Montería', 'error');
+            return;
+        }
+
         const total = cart.reduce((sum, item) => sum + item.total, 0);
-        const pedidoData = {
-            clienteNombre: nombre,
-            clienteCelular: whatsapp,
-            clienteDireccion: direccion,
-            observaciones: observaciones || '',
-            metodoPagoSolicitado: pago,
-            items: cart.map(item => ({
-                productoId: item.id || '',
-                codigo: item.codigo || '',
-                nombre: item.nombre || '',
-                talla: item.talla || '',
-                color: item.color || '',
-                cantidad: item.cantidad || 0,
-                precio: item.precio || 0,
-                total: item.total || 0
-            })),
-            totalPedido: total,
-            estado: "pendiente",
-            timestamp: serverTimestamp(),
-            origen: "web",
-            tipoVenta: isWholesaleActive ? "Mayorista" : "Detal"
-        };
+
         try {
-            const docRef = await addDoc(webOrdersCollection, pedidoData);
-            let mensaje = "¡Nuevo pedido desde el catálogo web!\n\n";
-            mensaje += `*PEDIDO #${docRef.id.substring(0, 6).toUpperCase()}*\n\n`;
-            if (isWholesaleActive) {
-                mensaje += "*TIPO DE VENTA: MAYORISTA*\n\n";
+            // 1. Verificar si el cliente ya existe
+            const clientQuery = query(clientsCollection, where('cedula', '==', cedula));
+            const clientSnapshot = await getDocs(clientQuery);
+
+            let clientId = null;
+            if (!clientSnapshot.empty) {
+                // Cliente existe, actualizar datos
+                clientId = clientSnapshot.docs[0].id;
+                const clientRef = clientSnapshot.docs[0].ref;
+                await updateDoc(clientRef, {
+                    nombre: nombre,
+                    celular: whatsapp,
+                    ciudad: ciudad,
+                    direccion: direccion,
+                    ultimaCompra: serverTimestamp()
+                });
+            } else {
+                // Cliente nuevo, crear
+                const newClientRef = await addDoc(clientsCollection, {
+                    cedula: cedula,
+                    nombre: nombre,
+                    celular: whatsapp,
+                    ciudad: ciudad,
+                    direccion: direccion,
+                    ultimaCompra: serverTimestamp()
+                });
+                clientId = newClientRef.id;
             }
-            mensaje += `*Cliente:* ${nombre}\n`;
-            mensaje += `*WhatsApp:* ${whatsapp}\n`;
-            mensaje += `*Dirección:* ${direccion}\n`;
-            if(observaciones) mensaje += `*Obs:* ${observaciones}\n`;
-            mensaje += `*Pago:* ${pago}\n\n`;
-            mensaje += "--- *PRODUCTOS* ---\n\n";
+
+            // 2. Crear pedido
+            const pedidoData = {
+                clienteId: clientId,
+                clienteCedula: cedula,
+                clienteNombre: nombre,
+                clienteCelular: whatsapp,
+                clienteCiudad: ciudad,
+                clienteDireccion: direccion,
+                observaciones: observaciones || '',
+                metodoPagoSolicitado: pago,
+                items: cart.map(item => ({
+                    productoId: item.id || '',
+                    codigo: item.codigo || '',
+                    nombre: item.nombre || '',
+                    talla: item.talla || '',
+                    color: item.color || '',
+                    cantidad: item.cantidad || 0,
+                    precio: item.precio || 0,
+                    total: item.total || 0
+                })),
+                totalPedido: total,
+                estado: "pendiente",
+                timestamp: serverTimestamp(),
+                origen: "web",
+                tipoVenta: isWholesaleActive ? "Mayorista" : "Detal"
+            };
+
+            const docRef = await addDoc(webOrdersCollection, pedidoData);
+
+            // 3. Guardar en conversaciones del chat
+            let mensaje = `🛍️ NUEVO PEDIDO WEB #${docRef.id.substring(0, 6).toUpperCase()}\n\n`;
+            if (isWholesaleActive) {
+                mensaje += "🏢 TIPO: MAYORISTA\n\n";
+            }
+            mensaje += `👤 Cliente: ${nombre}\n`;
+            mensaje += `📱 WhatsApp: ${whatsapp}\n`;
+            mensaje += `🏙️ Ciudad: ${ciudad}\n`;
+            mensaje += `📍 Dirección: ${direccion}\n`;
+            if(observaciones) mensaje += `📝 Obs: ${observaciones}\n`;
+            mensaje += `💳 Pago: ${pago}\n\n`;
+            mensaje += "📦 PRODUCTOS:\n\n";
             cart.forEach((item, i) => {
-                mensaje += `${i + 1}. *${item.nombre}*\n`;
-                mensaje += `   (${item.talla} / ${item.color})\n`;
+                mensaje += `${i + 1}. ${item.nombre}\n`;
+                mensaje += `   Talla: ${item.talla} | Color: ${item.color}\n`;
                 mensaje += `   ${item.cantidad} unid. x ${formatoMoneda.format(item.precio)}\n`;
-                mensaje += `   *Subtotal: ${formatoMoneda.format(item.total)}*\n\n`;
+                mensaje += `   Subtotal: ${formatoMoneda.format(item.total)}\n\n`;
             });
-            mensaje += `*TOTAL PEDIDO: ${formatoMoneda.format(total)}*`;
-            const url = `https://wa.me/573046084971?text=${encodeURIComponent(mensaje)}`;
-            window.location.href = url;
+            mensaje += `💰 TOTAL: ${formatoMoneda.format(total)}`;
+
+            // Guardar conversación
+            await addDoc(chatConversationsCollection, {
+                type: 'order',
+                clienteId: clientId,
+                clienteNombre: nombre,
+                clienteCelular: whatsapp,
+                pedidoId: docRef.id,
+                message: mensaje,
+                timestamp: serverTimestamp(),
+                read: false,
+                conversationId: `order_${docRef.id}`
+            });
+
+            // Limpiar y cerrar
             bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
             bootstrap.Offcanvas.getInstance(document.getElementById('cartOffcanvas')).hide();
             cart = [];
             renderCart();
             saveCart();
             document.getElementById('checkout-form').reset();
+
+            // Mostrar mensaje de éxito
+            showToast('✅ ¡Tu pedido ha sido enviado exitosamente!', 'success');
+
         } catch (err) {
             console.error("Error al guardar pedido: ", err);
             showToast('Error al procesar el pedido', 'error');
