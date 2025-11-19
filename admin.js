@@ -3513,7 +3513,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         // VISUALIZACIÓN Y GESTIÓN DE MOVIMIENTOS FINANCIEROS
         // ═══════════════════════════════════════════════════════════════════
         const movimientosTableBody = document.getElementById('lista-movimientos-financieros');
-        const totalIngresosEl = document.getElementById('total-ingresos');
+        const totalEfectivoEl = document.getElementById('total-efectivo');
+        const totalTransferenciasEl = document.getElementById('total-transferencias');
         const totalGastosEl = document.getElementById('total-gastos');
         const balanceTotalEl = document.getElementById('balance-total');
         const filterAllBtn = document.getElementById('filter-all-movements');
@@ -3653,34 +3654,47 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const calculateTotals = () => {
             console.log('💵 Calculando totales de finanzas...');
 
-            let totalIngresos = 0;
+            let totalEfectivo = 0;
+            let totalTransferencias = 0;
             let totalGastos = 0;
 
             // Sumar movimientos manuales (ingresos/gastos)
+            // NOTA: Los ingresos manuales se suman como EFECTIVO por defecto
             allMovements.forEach(movement => {
                 const monto = movement.data.monto || 0;
                 if (movement.data.tipo === 'ingreso') {
-                    totalIngresos += monto;
-                    console.log(`  ➕ Ingreso manual: $${monto}`);
+                    totalEfectivo += monto;
+                    console.log(`  ➕ Ingreso manual (efectivo): $${monto}`);
                 } else if (movement.data.tipo === 'gasto') {
                     totalGastos += monto;
-                    console.log(`  ➖ Gasto manual: $${monto}`);
+                    console.log(`  ➖ Gasto: $${monto}`);
                 }
             });
 
-            console.log(`📊 Movimientos manuales - Ingresos: $${totalIngresos}, Gastos: $${totalGastos}`);
+            console.log(`📊 Movimientos manuales - Efectivo: $${totalEfectivo}, Gastos: $${totalGastos}`);
 
-            // ✅ Usar ventasDelDia que ya fue calculado anteriormente
-            totalIngresos += ventasDelDia.total;
+            // ✅ Agregar ventas del día (efectivo y transferencias separados)
+            totalEfectivo += ventasDelDia.efectivo;
+            totalTransferencias += ventasDelDia.transferencia;
 
+            const totalIngresos = totalEfectivo + totalTransferencias;
             const balance = totalIngresos - totalGastos;
 
-            console.log(`💼 Balance final - Ingresos: $${totalIngresos}, Gastos: $${totalGastos}, Balance: $${balance}`);
-            console.log(`🛍️ Incluyendo ventas: Efectivo $${ventasDelDia.efectivo} + Transferencia $${ventasDelDia.transferencia} = Total $${ventasDelDia.total}`);
+            console.log(`💼 Balance final:`);
+            console.log(`   Efectivo: $${totalEfectivo}`);
+            console.log(`   Transferencias: $${totalTransferencias}`);
+            console.log(`   Total Ingresos: $${totalIngresos}`);
+            console.log(`   Gastos: $${totalGastos}`);
+            console.log(`   Balance: $${balance}`);
 
-            if (totalIngresosEl) {
-                totalIngresosEl.textContent = formatoMoneda.format(totalIngresos);
-                console.log('✅ Total Ingresos actualizado en UI');
+            // Actualizar UI
+            if (totalEfectivoEl) {
+                totalEfectivoEl.textContent = formatoMoneda.format(totalEfectivo);
+                console.log('✅ Total Efectivo actualizado en UI');
+            }
+            if (totalTransferenciasEl) {
+                totalTransferenciasEl.textContent = formatoMoneda.format(totalTransferencias);
+                console.log('✅ Total Transferencias actualizado en UI');
             }
             if (totalGastosEl) {
                 totalGastosEl.textContent = formatoMoneda.format(totalGastos);
