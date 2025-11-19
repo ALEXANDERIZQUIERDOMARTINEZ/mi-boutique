@@ -1000,16 +1000,48 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (clearFormBtn) clearFormBtn.addEventListener('click', (e) => { e.preventDefault(); window.clearProductForm(); });
         
-        if (productForm) productForm.addEventListener('submit', async (e) => { 
-            e.preventDefault(); 
+        if (productForm) productForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             if(saveProductBtn) { saveProductBtn.disabled = true; if(saveProductBtnText) saveProductBtnText.textContent = "Guardando..."; if(saveProductBtnSpinner) saveProductBtnSpinner.style.display = 'inline-block'; }
-            
+
             const productId = productIdInput.value;
-            let productData = { nombre: nombreInput.value.trim(), proveedor: proveedorInput.value.trim(), descripcion: descripcionInput.value.trim(), categoriaId: categoriaSelect.value, costoCompra: parseFloat(costoInput.value) || 0, precioDetal: parseFloat(detalInput.value) || 0, precioMayor: parseFloat(mayorInput.value) || 0, visible: visibleCheckbox.checked, timestamp: serverTimestamp(), variaciones: [], imagenUrl: null };
-            
-            const variationRows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)'); 
-            variationRows.forEach(row => { const talla = row.querySelector('[name="variation_talla[]"]').value.trim(); const color = row.querySelector('[name="variation_color[]"]').value.trim(); const stock = parseInt(row.querySelector('[name="variation_stock[]"]').value, 10) || 0; if (talla || color || stock > 0) { productData.variaciones.push({ talla, color, stock }); } }); 
-            
+            const nombreProducto = nombreInput.value.trim();
+
+            // ✅ VALIDACIÓN: No permitir más de 2 productos con el mismo nombre
+            try {
+                const nombreNormalizado = nombreProducto.toLowerCase();
+                let contadorMismoNombre = 0;
+
+                // Contar productos con el mismo nombre (ignorando el producto actual si estamos editando)
+                localProductsMap.forEach((prod, prodId) => {
+                    if (prod.nombre && prod.nombre.toLowerCase() === nombreNormalizado) {
+                        // Si estamos editando, no contar el producto actual
+                        if (!productId || prodId !== productId) {
+                            contadorMismoNombre++;
+                        }
+                    }
+                });
+
+                console.log(`📊 Productos con nombre "${nombreProducto}": ${contadorMismoNombre}`);
+
+                if (contadorMismoNombre >= 2) {
+                    showToast(`⚠️ Ya existen 2 productos con el nombre "${nombreProducto}". No se pueden crear más productos con el mismo nombre.`, 'error');
+                    if(saveProductBtn) {
+                        saveProductBtn.disabled = false;
+                        if(saveProductBtnText) saveProductBtnText.textContent = "Guardar";
+                        if(saveProductBtnSpinner) saveProductBtnSpinner.style.display = 'none';
+                    }
+                    return;
+                }
+            } catch (validationErr) {
+                console.error("Error en validación de nombre:", validationErr);
+            }
+
+            let productData = { nombre: nombreProducto, proveedor: proveedorInput.value.trim(), descripcion: descripcionInput.value.trim(), categoriaId: categoriaSelect.value, costoCompra: parseFloat(costoInput.value) || 0, precioDetal: parseFloat(detalInput.value) || 0, precioMayor: parseFloat(mayorInput.value) || 0, visible: visibleCheckbox.checked, timestamp: serverTimestamp(), variaciones: [], imagenUrl: null };
+
+            const variationRows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)');
+            variationRows.forEach(row => { const talla = row.querySelector('[name="variation_talla[]"]').value.trim(); const color = row.querySelector('[name="variation_color[]"]').value.trim(); const stock = parseInt(row.querySelector('[name="variation_stock[]"]').value, 10) || 0; if (talla || color || stock > 0) { productData.variaciones.push({ talla, color, stock }); } });
+
             try {
                 const files = imagenInput.files;
                 if (files.length > 0) {
@@ -2360,8 +2392,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Limpiar número de WhatsApp (quitar espacios, guiones, etc)
-            const whatsappLimpio = whatsapp.replace(/\D/g, '');
+            let whatsappLimpio = whatsapp.replace(/\D/g, '');
             console.log('✅ Número limpio:', whatsappLimpio);
+
+            // Validar que el número tenga al menos 10 dígitos
+            if (whatsappLimpio.length < 10) {
+                console.error('❌ Número de WhatsApp inválido (muy corto):', whatsappLimpio);
+                showToast('El número de WhatsApp es inválido (muy corto)', 'error');
+                return;
+            }
+
+            // Si el número comienza con 57 (código de Colombia), quitarlo para evitar duplicación
+            if (whatsappLimpio.startsWith('57')) {
+                whatsappLimpio = whatsappLimpio.substring(2);
+                console.log('✅ Número sin prefijo 57:', whatsappLimpio);
+            }
+
+            // Validar que después de quitar el prefijo tenga 10 dígitos (formato colombiano)
+            if (whatsappLimpio.length !== 10) {
+                console.error('❌ Número de WhatsApp no tiene formato colombiano válido:', whatsappLimpio);
+                showToast('El número de WhatsApp no tiene un formato válido (debe tener 10 dígitos)', 'error');
+                return;
+            }
 
             // Crear mensaje
             const mensaje = `Hola *${apartadoData.clienteNombre}*! 👋
