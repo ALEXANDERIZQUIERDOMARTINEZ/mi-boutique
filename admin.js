@@ -576,7 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ventaClienteInput = document.getElementById('venta-cliente'); const ventaCelularInput = document.getElementById('venta-cliente-celular'); const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
         if (!addForm || !editForm || !clientListTable || !searchModalList) { console.warn("Elementos de Clientes no encontrados."); return; }
         
-        const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General"}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-edit btn-edit-client"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-client"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td>`; clientListTable.appendChild(tr); }
+        const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General"}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "", nombre: d.nombre || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-view btn-client-history" data-client-name="${d.nombre}" data-client-celular="${d.celular || ''}"><i class="bi bi-clock-history"></i><span class="btn-action-text">Historial</span></button> <button class="btn btn-action btn-action-edit btn-edit-client"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-client"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td>`; clientListTable.appendChild(tr); }
             const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action client-search-item'; li.dataset.name = dataListValue; li.dataset.id = id; li.textContent = dataListValue; searchModalList.appendChild(li);
         }); document.dispatchEvent(new CustomEvent('clientsLoaded', { detail: { clientsMap: localClientsMap } })); window.fillClientInfoSales(); };
         
@@ -597,13 +597,134 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ventaClienteInput) ventaClienteInput.addEventListener('input', window.fillClientInfoSales);
         if (addForm && addClientModalInstance) addForm.addEventListener('submit', async (e) => { e.preventDefault(); const ced = addCedulaInput.value.trim(); const nom = addNombreInput.value.trim(); const cel = addCelularInput.value.trim(); const dir = addDireccionInput.value.trim(); if (nom && cel) { try { await addDoc(clientsCollection, { nombre: nom, cedula: ced, celular: cel, direccion: dir, ultimaCompra: null }); showToast("Cliente guardado!"); addClientModalInstance.hide(); addForm.reset(); } catch (err) { console.error("Err add client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
         if (editForm && editClientModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const ced = editCedulaInput.value.trim(); const nom = editNombreInput.value.trim(); const cel = editCelularInput.value.trim(); const dir = editDireccionInput.value.trim(); if (id && nom && cel) { try { await updateDoc(doc(db, "clientes", id), { nombre: nom, cedula: ced, celular: cel, direccion: dir }); showToast("Cliente actualizado!"); editClientModalInstance.hide(); } catch (err) { console.error("Err update client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); }});
-        if (clientListTable) clientListTable.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.client-name'); if (!id || !nameTd) return;
-            if (target.classList.contains('btn-delete-client')) {
+        if (clientListTable) clientListTable.addEventListener('click', async (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.client-name'); if (!id || !nameTd) return;
+            if (target.classList.contains('btn-client-history')) {
+                await mostrarHistorialCliente(target.dataset.clientName, target.dataset.clientCelular);
+            } else if (target.classList.contains('btn-delete-client')) {
                 const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'clientes'; deleteItemNameEl.textContent = `Cliente: ${nameTd.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
             } else if (target.classList.contains('btn-edit-client')) {
                  const clientData = localClientsMap.get(id); if (clientData && editClientModalInstance && editIdInput && editCedulaInput && editNombreInput && editCelularInput && editDireccionInput) { editIdInput.value = id; editCedulaInput.value = clientData.cedula || ''; editNombreInput.value = clientData.nombre || ''; editCelularInput.value = clientData.celular || ''; editDireccionInput.value = clientData.direccion || ''; editClientModalInstance.show(); } else { console.error("Edit client modal or data missing"); showToast("Error al abrir editor.", 'error'); }
             }
         });
+
+        // ✅ FUNCIÓN: Mostrar Historial de Compras del Cliente
+        async function mostrarHistorialCliente(clienteNombre, clienteCelular) {
+            console.log('📊 Abriendo historial para:', clienteNombre);
+
+            // Abrir modal
+            const clientHistoryModal = new bootstrap.Modal(document.getElementById('clientHistoryModal'));
+            clientHistoryModal.show();
+
+            // Actualizar nombre en el header
+            document.getElementById('client-history-name').textContent = clienteNombre;
+
+            // Mostrar loading
+            const historyList = document.getElementById('client-history-list');
+            historyList.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>';
+
+            try {
+                // Consultar ventas del cliente (por nombre o celular)
+                const ventasQuery = query(
+                    salesCollection,
+                    where('clienteNombre', '==', clienteNombre)
+                );
+                const ventasSnapshot = await getDocs(ventasQuery);
+
+                console.log(`📦 Ventas encontradas: ${ventasSnapshot.size}`);
+
+                if (ventasSnapshot.empty) {
+                    historyList.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-inbox" style="font-size: 2rem;"></i><p class="mt-2">Este cliente no tiene compras registradas</p></td></tr>';
+
+                    // Resetear estadísticas
+                    document.getElementById('client-total-spent').textContent = '$0';
+                    document.getElementById('client-total-purchases').textContent = '0';
+                    document.getElementById('client-last-purchase').textContent = '-';
+                    document.getElementById('client-avg-ticket').textContent = '$0';
+                    return;
+                }
+
+                // Procesar ventas
+                const ventas = [];
+                let totalGastado = 0;
+                let fechaUltimaCompra = null;
+
+                ventasSnapshot.forEach(docSnap => {
+                    const venta = docSnap.data();
+                    ventas.push({
+                        id: docSnap.id,
+                        ...venta
+                    });
+                    totalGastado += venta.totalVenta || 0;
+
+                    const fechaVenta = venta.timestamp?.toDate ? venta.timestamp.toDate() : null;
+                    if (fechaVenta && (!fechaUltimaCompra || fechaVenta > fechaUltimaCompra)) {
+                        fechaUltimaCompra = fechaVenta;
+                    }
+                });
+
+                // Ordenar por fecha descendente
+                ventas.sort((a, b) => {
+                    const fechaA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(0);
+                    const fechaB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(0);
+                    return fechaB - fechaA;
+                });
+
+                // Actualizar estadísticas
+                const totalCompras = ventas.length;
+                const ticketPromedio = totalCompras > 0 ? totalGastado / totalCompras : 0;
+
+                document.getElementById('client-total-spent').textContent = formatoMoneda.format(totalGastado);
+                document.getElementById('client-total-purchases').textContent = totalCompras;
+                document.getElementById('client-last-purchase').textContent = fechaUltimaCompra ? fechaUltimaCompra.toLocaleDateString('es-CO') : '-';
+                document.getElementById('client-avg-ticket').textContent = formatoMoneda.format(ticketPromedio);
+
+                // Renderizar tabla
+                historyList.innerHTML = '';
+                ventas.forEach(venta => {
+                    const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate().toLocaleDateString('es-CO') : '-';
+                    const productos = venta.items?.length || 0;
+                    const productosTexto = productos === 1 ? '1 producto' : `${productos} productos`;
+
+                    let metodoPago = '';
+                    if (venta.pagoEfectivo > 0 && venta.pagoTransferencia > 0) {
+                        metodoPago = 'Mixto';
+                    } else if (venta.pagoEfectivo > 0) {
+                        metodoPago = 'Efectivo';
+                    } else {
+                        metodoPago = 'Transferencia';
+                    }
+
+                    const estado = venta.estado || 'Completada';
+                    let estadoBadge = 'bg-success';
+                    if (estado === 'Pendiente') estadoBadge = 'bg-warning';
+                    if (estado === 'Cancelada') estadoBadge = 'bg-danger';
+
+                    const tipoVenta = venta.tipoVenta || 'detal';
+                    let tipoTexto = '';
+                    if (tipoVenta === 'detal') tipoTexto = '<span class="badge bg-primary">Detal</span>';
+                    else if (tipoVenta === 'mayor') tipoTexto = '<span class="badge bg-info">Mayor</span>';
+                    else if (tipoVenta === 'apartado') tipoTexto = '<span class="badge bg-warning">Apartado</span>';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${fecha}</td>
+                        <td>${productosTexto}</td>
+                        <td class="fw-bold">${formatoMoneda.format(venta.totalVenta || 0)}</td>
+                        <td>${metodoPago}</td>
+                        <td><span class="badge ${estadoBadge}">${estado}</span></td>
+                        <td>${tipoTexto}</td>
+                    `;
+                    historyList.appendChild(tr);
+                });
+
+                console.log('✅ Historial cargado exitosamente');
+
+            } catch (error) {
+                console.error('❌ Error al cargar historial:', error);
+                historyList.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4"><i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i><p class="mt-2">Error al cargar historial</p></td></tr>';
+                showToast('Error al cargar historial del cliente', 'error');
+            }
+        }
         if (searchInput) searchInput.addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); const items = searchModalList.querySelectorAll('.client-search-item'); items.forEach(item => { item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; }); });
         if (searchModalList && searchClientModalInstance) searchModalList.addEventListener('click', (e) => { const target = e.target.closest('.client-search-item'); if (target) { ventaClienteInput.value = target.dataset.name; window.fillClientInfoSales(); searchClientModalInstance.hide(); } });
         window.fillClientInfoSales();
