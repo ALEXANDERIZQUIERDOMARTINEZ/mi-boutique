@@ -3524,22 +3524,14 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         let ventasDelDia = { efectivo: 0, transferencia: 0, total: 0 };
         let currentFilter = 'all'; // all, ingreso, gasto
 
-        // Función para renderizar movimientos
-        const renderMovements = async () => {
-            if (!movimientosTableBody) {
-                console.warn('⚠️ Elemento movimientosTableBody no encontrado');
-                return;
-            }
-
-            console.log('🔄 Renderizando movimientos financieros...');
-
-            // Calcular ventas del día
+        // ✅ Función centralizada para obtener ventas del día (se llama UNA sola vez)
+        const obtenerVentasDelDia = async () => {
             try {
                 const hoy = new Date();
                 const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
                 const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
 
-                console.log('📅 Buscando ventas del:', inicio, 'al:', fin);
+                console.log('📅 Buscando ventas del:', inicio.toLocaleString('es-CO'), 'al:', fin.toLocaleString('es-CO'));
 
                 const qVentas = query(
                     salesCollection,
@@ -3570,9 +3562,21 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 };
 
                 console.log('✅ Ventas del día calculadas:', ventasDelDia);
+                return ventasDelDia;
             } catch (err) {
-                console.error('❌ Error calculando ventas para renderizado:', err);
+                console.error('❌ Error calculando ventas del día:', err);
+                return { efectivo: 0, transferencia: 0, total: 0 };
             }
+        };
+
+        // Función para renderizar movimientos (NO hace query, usa ventasDelDia)
+        const renderMovements = () => {
+            if (!movimientosTableBody) {
+                console.warn('⚠️ Elemento movimientosTableBody no encontrado');
+                return;
+            }
+
+            console.log('🔄 Renderizando movimientos financieros...')
 
             const filteredMovements = currentFilter === 'all'
                 ? allMovements
@@ -3636,8 +3640,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             });
         };
 
-        // Función para calcular totales (incluyendo ventas del día)
-        const calculateTotals = async () => {
+        // Función para calcular totales (NO hace query, usa ventasDelDia ya calculado)
+        const calculateTotals = () => {
             console.log('💵 Calculando totales de finanzas...');
 
             let totalIngresos = 0;
@@ -3657,49 +3661,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             console.log(`📊 Movimientos manuales - Ingresos: $${totalIngresos}, Gastos: $${totalGastos}`);
 
-            // Agregar ventas en efectivo del día automáticamente
-            try {
-                const hoy = new Date();
-                const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
-                const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
-
-                const qVentas = query(
-                    salesCollection,
-                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
-                    where('timestamp', '<=', Timestamp.fromDate(fin)),
-                    where('estado', '!=', 'Anulada')
-                );
-                const ventasSnap = await getDocs(qVentas);
-
-                console.log(`🛍️ Procesando ${ventasSnap.size} ventas del día...`);
-
-                let ventasEfectivo = 0;
-                let ventasTransferencia = 0;
-
-                ventasSnap.forEach(doc => {
-                    const venta = doc.data();
-                    const efectivo = venta.pagoEfectivo || 0;
-                    const transferencia = venta.pagoTransferencia || 0;
-                    ventasEfectivo += efectivo;
-                    ventasTransferencia += transferencia;
-                    if (efectivo > 0 || transferencia > 0) {
-                        console.log(`  💰 Venta: Efectivo $${efectivo}, Transferencia $${transferencia}`);
-                    }
-                });
-
-                // Agregar ventas al total de ingresos
-                const totalVentas = ventasEfectivo + ventasTransferencia;
-                totalIngresos += totalVentas;
-
-                console.log(`✅ Ventas del día - Efectivo: $${ventasEfectivo}, Transferencia: $${ventasTransferencia}, Total: $${totalVentas}`);
-                console.log(`📈 Total Ingresos (con ventas): $${totalIngresos}`);
-            } catch (err) {
-                console.error('❌ Error calculando ventas del día:', err);
-            }
+            // ✅ Usar ventasDelDia que ya fue calculado anteriormente
+            totalIngresos += ventasDelDia.total;
 
             const balance = totalIngresos - totalGastos;
 
             console.log(`💼 Balance final - Ingresos: $${totalIngresos}, Gastos: $${totalGastos}, Balance: $${balance}`);
+            console.log(`🛍️ Incluyendo ventas: Efectivo $${ventasDelDia.efectivo} + Transferencia $${ventasDelDia.transferencia} = Total $${ventasDelDia.total}`);
 
             if (totalIngresosEl) {
                 totalIngresosEl.textContent = formatoMoneda.format(totalIngresos);
@@ -3720,12 +3688,14 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         console.log('🎧 Iniciando listener de movimientos financieros...');
         onSnapshot(
             query(financesCollection, orderBy('timestamp', 'desc')),
-            (snapshot) => {
+            async (snapshot) => {
                 console.log(`📥 Recibidos ${snapshot.docs.length} movimientos financieros`);
                 allMovements = snapshot.docs.map(doc => ({
                     id: doc.id,
                     data: doc.data()
                 }));
+                // ✅ ORDEN CORRECTO: 1) Obtener ventas, 2) Renderizar, 3) Calcular
+                await obtenerVentasDelDia();
                 renderMovements();
                 calculateTotals();
             },
