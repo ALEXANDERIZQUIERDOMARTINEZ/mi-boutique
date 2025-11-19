@@ -3762,6 +3762,100 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             });
         }
 
+        // 🔍 FUNCIÓN DE DIAGNÓSTICO
+        const btnDiagnostico = document.getElementById('btn-diagnostico-ventas');
+        const diagnosticoArea = document.getElementById('diagnostico-area');
+        const diagnosticoResultado = document.getElementById('diagnostico-resultado');
+
+        if (btnDiagnostico) {
+            btnDiagnostico.addEventListener('click', async () => {
+                diagnosticoArea.classList.remove('d-none');
+                diagnosticoResultado.textContent = '⏳ Analizando base de datos...';
+
+                try {
+                    const hoy = new Date();
+                    const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+                    const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+
+                    // Consultar TODAS las ventas (sin filtro de estado)
+                    const qTodasVentas = query(
+                        salesCollection,
+                        where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                        where('timestamp', '<=', Timestamp.fromDate(fin)),
+                        orderBy('timestamp', 'desc')
+                    );
+                    const todasVentasSnap = await getDocs(qTodasVentas);
+
+                    let resultado = `📅 FECHA: ${hoy.toLocaleDateString('es-CO')} ${hoy.toLocaleTimeString('es-CO')}\n`;
+                    resultado += `📦 TOTAL VENTAS HOY: ${todasVentasSnap.size}\n`;
+                    resultado += `\n${'='.repeat(60)}\n\n`;
+
+                    if (todasVentasSnap.size === 0) {
+                        resultado += '❌ NO HAY VENTAS HOY\n\n';
+                        resultado += 'POSIBLES CAUSAS:\n';
+                        resultado += '  1. No se han registrado ventas hoy\n';
+                        resultado += '  2. Las ventas tienen una fecha diferente\n';
+                        resultado += '  3. Problema con el campo timestamp\n';
+                    } else {
+                        let totalEfectivo = 0;
+                        let totalTransferencia = 0;
+                        let ventasConProblemas = [];
+
+                        todasVentasSnap.forEach((doc, index) => {
+                            const venta = doc.data();
+                            const efectivo = venta.pagoEfectivo || 0;
+                            const transferencia = venta.pagoTransferencia || 0;
+                            const estado = venta.estado || 'N/A';
+                            const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate().toLocaleString('es-CO') : 'SIN FECHA';
+
+                            resultado += `\n🧾 VENTA #${index + 1} (ID: ${doc.id})\n`;
+                            resultado += `   Estado: ${estado}\n`;
+                            resultado += `   Fecha: ${fecha}\n`;
+                            resultado += `   Cliente: ${venta.clienteNombre || 'N/A'}\n`;
+                            resultado += `   Total Venta: $${venta.totalVenta || 0}\n`;
+                            resultado += `   💵 Pago Efectivo: $${efectivo}\n`;
+                            resultado += `   💳 Pago Transferencia: $${transferencia}\n`;
+                            resultado += `   Tipo Venta: ${venta.tipoVenta || 'N/A'}\n`;
+
+                            // Verificar problemas
+                            if (efectivo === 0 && transferencia === 0 && venta.totalVenta > 0) {
+                                ventasConProblemas.push(`Venta ${doc.id}: NO tiene pago registrado pero total > 0`);
+                            }
+                            if (!venta.timestamp) {
+                                ventasConProblemas.push(`Venta ${doc.id}: NO tiene timestamp`);
+                            }
+
+                            if (estado !== 'Anulada' && estado !== 'Cancelada') {
+                                totalEfectivo += efectivo;
+                                totalTransferencia += transferencia;
+                            }
+                        });
+
+                        resultado += `\n${'='.repeat(60)}\n`;
+                        resultado += `\n💰 RESUMEN:\n`;
+                        resultado += `   Total Efectivo: $${totalEfectivo.toLocaleString('es-CO')}\n`;
+                        resultado += `   Total Transferencia: $${totalTransferencia.toLocaleString('es-CO')}\n`;
+                        resultado += `   TOTAL: $${(totalEfectivo + totalTransferencia).toLocaleString('es-CO')}\n`;
+                        resultado += `\n📊 ESTADO ACTUAL ventasDelDia:\n`;
+                        resultado += `   efectivo: $${ventasDelDia.efectivo.toLocaleString('es-CO')}\n`;
+                        resultado += `   transferencia: $${ventasDelDia.transferencia.toLocaleString('es-CO')}\n`;
+                        resultado += `   total: $${ventasDelDia.total.toLocaleString('es-CO')}\n`;
+
+                        if (ventasConProblemas.length > 0) {
+                            resultado += `\n⚠️ PROBLEMAS DETECTADOS:\n`;
+                            ventasConProblemas.forEach(p => resultado += `   - ${p}\n`);
+                        } else {
+                            resultado += `\n✅ NO SE DETECTARON PROBLEMAS\n`;
+                        }
+                    }
+
+                    diagnosticoResultado.textContent = resultado;
+                } catch (error) {
+                    diagnosticoResultado.textContent = `❌ ERROR EN DIAGNÓSTICO:\n${error.message}\n\nStack:\n${error.stack}`;
+                }
+            });
+        }
+
         // Función global para eliminar movimiento
         window.deleteMovement = async (movementId) => {
             if (!confirm('¿Estás seguro de eliminar este movimiento? Esta acción no se puede deshacer.')) {
