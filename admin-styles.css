@@ -356,16 +356,29 @@ body.admin-page {
 .admin-page table.table tbody td,
 .admin-page .table tbody th,
 .admin-page table.table tbody th {
-    padding: 1rem 1rem !important;
+    padding: 1.25rem 1rem !important;
     vertical-align: middle !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
     border-bottom: 1px solid var(--admin-borde) !important;
     height: auto !important;
-    min-height: 70px !important;
+    max-height: none !important;
+    min-height: 90px !important;
     line-height: 1.5 !important;
     box-shadow: none !important;
+    overflow: visible !important;
+}
+
+/* Celdas con action-buttons necesitan MÁS espacio */
+.admin-page .table tbody td.action-buttons,
+.admin-page table.table tbody td.action-buttons {
+    padding: 1.5rem 1rem !important;
+    min-height: 100px !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    vertical-align: middle !important;
 }
 
 /* Eliminar borde en la ÚLTIMA fila con especificidad máxima */
@@ -376,32 +389,48 @@ body.admin-page {
     border-bottom: none !important;
 }
 
-/* Contenedores de tabla - Sin margen/padding extra */
+/* Contenedores de tabla - Sin margen/padding extra y sin restricciones */
 .admin-page .card-body .table-responsive,
 .admin-page .table-responsive {
     margin-bottom: 0 !important;
     padding: 0 !important;
+    padding-bottom: 0 !important;
     overflow-x: auto !important;
+    overflow-y: visible !important;
     border: none !important;
+    height: auto !important;
+    max-height: none !important;
 }
 
-/* Card body CON tabla-responsive - Sin padding */
+/* Card body CON tabla-responsive - Sin padding, sin overflow */
 .admin-page .card-body:has(.table-responsive) {
     padding: 0 !important;
+    padding-bottom: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
 }
 
 /* Card body CON tabla directa (sin table-responsive) - Sin padding */
 .admin-page .card-body > .table {
     margin: 0 !important;
+    margin-bottom: 0 !important;
 }
 
 .admin-page .card-body:has(> .table) {
     padding: 0 !important;
+    padding-bottom: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
 }
 
-/* Card general sin padding extra */
+/* Card general sin padding extra y sin overflow */
 .admin-page .card {
     margin-bottom: 1.5rem !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
 }
 
 .table-product-img {
@@ -544,20 +573,19 @@ body.admin-page {
 
 .action-buttons {
     display: flex;
-    gap: 0.4rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
     align-items: center;
+    width: 100%;
+    min-height: 60px;
 }
 
 .action-buttons button {
     margin: 0;
+    margin-bottom: 0.25rem;
 }
 
-/* Action buttons en tablas - Padding especial */
-td.action-buttons {
-    padding: 0.85rem 1rem;
-    vertical-align: middle;
-}
+/* ELIMINAR - Ya está definido arriba con más especificidad */
 
 /* ═══════════════════════════════════════════════════════════════════
    MODALES
@@ -845,18 +873,19 @@ td.action-buttons {
 .btn-action {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.75rem;
-    font-size: 0.8rem;
+    gap: 0.35rem;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.75rem;
     font-weight: 500;
     border-radius: 6px;
     transition: all 0.2s ease;
     border: 1px solid transparent;
     white-space: nowrap;
+    line-height: 1.3;
 }
 
 .btn-action i {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 /* View/Ver Actions - Soft Blue */
