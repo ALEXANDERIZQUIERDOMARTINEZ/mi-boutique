@@ -480,30 +480,50 @@ td.action-buttons {
     vertical-align: middle;
 }
 
-/* Asegurar bordes consistentes en tabla de apartados */
+/* ═══════════════════════════════════════════════════════════════════
+   FIX TABLA DE APARTADOS - Eliminar bordes duplicados
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Resetear bordes en tabla de apartados */
+#apartados .table {
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+/* Solo borde inferior en celdas de apartados */
 #lista-apartados td {
     vertical-align: middle;
     padding: 0.75rem;
-    border-top: none !important; /* Eliminar borde superior de Bootstrap */
-    border-bottom: 1px solid #dee2e6 !important; /* Solo borde inferior */
+    border-top: none !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--admin-borde) !important;
 }
 
+/* Eliminar borde en la última fila */
 #lista-apartados tr:last-child td {
     border-bottom: none !important;
 }
 
-/* Eliminar bordes duplicados del table-hover de Bootstrap en apartados */
+/* Resetear bordes de las filas */
 #lista-apartados tr {
-    border: none;
+    border: none !important;
 }
 
-/* Espaciado del contenedor de apartados */
+/* Contenedor de la tabla sin padding inferior extra */
 #apartados .card-body {
-    padding-bottom: 0;
+    padding: 0;
 }
 
+/* Table-responsive sin margen inferior */
 #apartados .table-responsive {
     margin-bottom: 0;
+    overflow-x: auto;
+}
+
+/* Asegurar que no haya espacio extra en el contenedor */
+#apartados .card {
+    margin-bottom: 1.5rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
