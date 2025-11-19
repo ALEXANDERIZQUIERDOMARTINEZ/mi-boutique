@@ -1707,27 +1707,73 @@ document.addEventListener('DOMContentLoaded', () => {
          }
 
          if(costoRutaInput) costoRutaInput.addEventListener('input', window.calcularTotalVentaGeneral); if(ventaDescuentoInput) ventaDescuentoInput.addEventListener('input', window.calcularTotalVentaGeneral); if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', window.calcularTotalVentaGeneral); if(ventaDescuentoTipo) ventaDescuentoTipo.addEventListener('change', window.calcularTotalVentaGeneral);
-         
+
          // --- R (Read) ---
-         const renderSales = (snapshot) => { 
-            if(!salesListTableBody) return; 
-            const emptyRow = document.getElementById('empty-sales-row'); 
-            salesListTableBody.innerHTML = ''; 
-            if (snapshot.empty) { 
-                if(emptyRow) { emptyRow.style.display = ''; salesListTableBody.appendChild(emptyRow); } 
-                return; 
-            } 
-            if(emptyRow) emptyRow.style.display = 'none'; 
-            snapshot.forEach(docSnap => { 
-                const d = docSnap.data(); 
-                const id = docSnap.id; 
-                const tr = document.createElement('tr'); 
-                tr.dataset.id = id; 
-                const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A'; 
-                const pago = (d.pagoEfectivo>0?'Efec.':'') + (d.pagoTransferencia>0?(d.pagoEfectivo>0?'+':''):'') + (d.pagoTransferencia>0?'Transf.':''); 
-                const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge' : '-'); 
+         let allSalesData = []; // Almacenar todas las ventas sin filtrar
+
+         const renderSales = (snapshot) => {
+            if(!salesListTableBody) return;
+            const emptyRow = document.getElementById('empty-sales-row');
+
+            // Guardar todos los datos
+            allSalesData = [];
+            snapshot.forEach(docSnap => {
+                allSalesData.push({ id: docSnap.id, ...docSnap.data() });
+            });
+
+            // Aplicar filtros
+            applyFilters();
+        };
+
+        function applyFilters() {
+            if(!salesListTableBody) return;
+            const emptyRow = document.getElementById('empty-sales-row');
+            salesListTableBody.innerHTML = '';
+
+            // Obtener valores de filtros
+            const searchText = document.getElementById('filtro-buscar-ventas')?.value.toLowerCase() || '';
+            const categoriaFiltro = document.getElementById('filtro-categoria-ventas')?.value || '';
+
+            // Filtrar datos
+            let filteredSales = allSalesData.filter(sale => {
+                // Filtro de búsqueda (cliente o productos)
+                if (searchText) {
+                    const clienteMatch = (sale.clienteNombre || '').toLowerCase().includes(searchText);
+                    const productosMatch = sale.items?.some(item =>
+                        (item.nombre || '').toLowerCase().includes(searchText) ||
+                        (item.nombreCompleto || '').toLowerCase().includes(searchText)
+                    );
+                    if (!clienteMatch && !productosMatch) return false;
+                }
+
+                // Filtro de categoría
+                if (categoriaFiltro) {
+                    const hasProductInCategory = sale.items?.some(item => {
+                        const product = localProductsMap.get(item.productoId);
+                        return product && product.categoria === categoriaFiltro;
+                    });
+                    if (!hasProductInCategory) return false;
+                }
+
+                return true;
+            });
+
+            // Renderizar resultados
+            if (filteredSales.length === 0) {
+                if(emptyRow) { emptyRow.style.display = ''; salesListTableBody.appendChild(emptyRow); }
+                return;
+            }
+            if(emptyRow) emptyRow.style.display = 'none';
+
+            filteredSales.forEach(d => {
+                const id = d.id;
+                const tr = document.createElement('tr');
+                tr.dataset.id = id;
+                const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A';
+                const pago = (d.pagoEfectivo>0?'Efec.':'') + (d.pagoTransferencia>0?(d.pagoEfectivo>0?'+':''):'') + (d.pagoTransferencia>0?'Transf.':'');
+                const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge' : '-');
                 const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
-                
+
                 let estadoBadgeClass = 'bg-success';
                 if (estado === 'Pendiente') {
                     estadoBadgeClass = 'bg-warning text-dark';
@@ -1750,10 +1796,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button class="btn btn-action btn-action-danger btn-cancel-sale" ${estaAnulada ? 'disabled' : ''}>
                                         <i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span>
                                     </button>
-                                </td>`; 
-                salesListTableBody.appendChild(tr); 
-            }); 
-        };
+                                </td>`;
+                salesListTableBody.appendChild(tr);
+            });
+        }
 
         // ✅ FILTRO DE FECHA PARA HISTORIAL
         let ventasUnsubscribe = null;
@@ -1828,8 +1874,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     const mes = String(hoy.getMonth() + 1).padStart(2, '0');
                     const dia = String(hoy.getDate()).padStart(2, '0');
                     filtroFechaInput.value = `${año}-${mes}-${dia}`;
+
+                    // Limpiar otros filtros
+                    const filtroBuscar = document.getElementById('filtro-buscar-ventas');
+                    const filtroCategoria = document.getElementById('filtro-categoria-ventas');
+                    if (filtroBuscar) filtroBuscar.value = '';
+                    if (filtroCategoria) filtroCategoria.value = '';
+
                     cargarVentas();
                 }
+            });
+        }
+
+        // Event listeners para los nuevos filtros
+        const filtroBuscarVentas = document.getElementById('filtro-buscar-ventas');
+        const filtroCategoriaVentas = document.getElementById('filtro-categoria-ventas');
+
+        if (filtroBuscarVentas) {
+            filtroBuscarVentas.addEventListener('input', () => {
+                applyFilters();
+            });
+        }
+
+        if (filtroCategoriaVentas) {
+            filtroCategoriaVentas.addEventListener('change', () => {
+                applyFilters();
+            });
+
+            // Cargar categorías en el select
+            onSnapshot(categoriesCollection, (snapshot) => {
+                filtroCategoriaVentas.innerHTML = '<option value="">Todas las categorías</option>';
+                snapshot.forEach(doc => {
+                    const cat = doc.data();
+                    const option = document.createElement('option');
+                    option.value = cat.nombre;
+                    option.textContent = cat.nombre;
+                    filtroCategoriaVentas.appendChild(option);
+                });
             });
         }
 
