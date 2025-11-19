@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="admin-styles.css?v=2.1.0">
+    <link rel="stylesheet" href="admin-styles.css?v=2.2.0">
 
     <!-- Logo/Icon -->
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -772,8 +772,69 @@
                     <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Cierre Diario</h3></div><div class="card-body"><form id="form-cierre-caja"><div class="row"><div class="col-md-3"><label class="form-label">Ventas Efectivo:</label><input type="text" class="form-control" id="caja-efectivo" value="$0" readonly></div><div class="col-md-3"><label class="form-label">Abonos Efectivo:</label><input type="text" class="form-control" id="caja-abonos-efectivo" value="$0" readonly></div><div class="col-md-3"><label class="form-label">Recibido Repart.:</label><input type="text" class="form-control" id="caja-recibido-repartidores" value="$0" readonly></div><div class="col-md-3"><label for="caja-egresos" class="form-label">Gastos ($):</label><input type="number" class="form-control" id="caja-egresos" value="0" step="0.01"></div></div><div class="row mt-3"><div class="col-md-9"><label for="caja-observaciones" class="form-label">Observaciones:</label><input type="text" class="form-control" id="caja-observaciones"></div><div class="col-md-3"><label class="form-label">Total Caja:</label><input type="text" class="form-control fw-bold" id="caja-total" value="$0" readonly></div></div><hr><p class="text-muted small">Nota: Transferencias no afectan efectivo.</p><button type="submit" class="btn btn-primary mt-3">Realizar Cierre</button></form></div></div> 
                 </div> 
                 
-                <div id="closing-history-view"> 
-                    <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Ventas Efec.</th><th>Abonos Efec.</th><th>Recibido Repart.</th><th>Gastos</th><th>Total Caja</th><th>Obs.</th></tr></thead><tbody id="lista-historial-cierres"><tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> 
+                <div id="closing-history-view" style="display: none;">
+                    <!-- Resumen de Cierres Recientes -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-calendar-day text-primary" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Cierre de Hoy</h6>
+                                    <h3 class="mb-0 text-primary" id="cierre-hoy-total">$0</h3>
+                                    <small class="text-muted" id="cierre-hoy-fecha">-</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-secondary">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-calendar-minus text-secondary" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Cierre de Ayer</h6>
+                                    <h3 class="mb-0 text-secondary" id="cierre-ayer-total">$0</h3>
+                                    <small class="text-muted" id="cierre-ayer-fecha">-</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-calendar-week text-success" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Total Semana</h6>
+                                    <h3 class="mb-0 text-success" id="cierre-semana-total">$0</h3>
+                                    <small class="text-muted" id="cierre-semana-cantidad">0 cierres</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Historial -->
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3">
+                            <h3 class="h5 mb-0">Todos los Cierres</h3>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Ventas Efec.</th>
+                                            <th>Abonos Efec.</th>
+                                            <th>Recibido Repart.</th>
+                                            <th>Gastos</th>
+                                            <th>Total Caja</th>
+                                            <th>Obs.</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lista-historial-cierres">
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted">Cargando...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div> 
             </div>
             
@@ -1054,7 +1115,7 @@
 
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script type="module" src="admin.js?v=2.1.0"></script>
+    <script type="module" src="admin.js?v=2.2.0"></script>
 
     <!-- Script para cerrar navegación móvil al hacer clic en un enlace -->
     <script>

@@ -2974,64 +2974,177 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
 
     // ========================================================================
-    // --- LÓGICA FINANZAS (Ingreso/Gasto, Cierre Placeholder) ---
+    // --- LÓGICA FINANZAS (Ingreso/Gasto, Cierre Automático) ---
     // ========================================================================
     (() => {
          const addIncomeForm = document.getElementById('form-add-income'); const incomeAmountInput = document.getElementById('income-amount'); const incomeDescInput = document.getElementById('income-description'); const addExpenseForm = document.getElementById('form-add-expense'); const expenseAmountInput = document.getElementById('expense-amount'); const expenseDescInput = document.getElementById('expense-description'); const closingForm = document.getElementById('form-cierre-caja'); const closingHistoryTableBody = document.getElementById('lista-historial-cierres');
+
+         // Elementos del formulario de cierre
+         const cajaEfectivoInput = document.getElementById('caja-efectivo');
+         const cajaAbonosEfectivoInput = document.getElementById('caja-abonos-efectivo');
+         const cajaRecibidoRepartidoresInput = document.getElementById('caja-recibido-repartidores');
+         const cajaEgresosInput = document.getElementById('caja-egresos');
+         const cajaTotalInput = document.getElementById('caja-total');
+
+         // Variables para almacenar datos del día
+         let datosDelDia = {
+             ventasEfectivo: 0,
+             ventasTransferencia: 0,
+             abonosEfectivo: 0,
+             abonosTransferencia: 0,
+             recibidoRepartidores: 0,
+             totalVentas: 0,
+             detalleProductos: {}
+         };
+
+         // Función para calcular datos del día en tiempo real
+         async function calcularDatosDelDia() {
+             try {
+                 const hoy = new Date();
+                 const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+                 const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+
+                 // 1. VENTAS DEL DÍA
+                 const qVentas = query(
+                     salesCollection,
+                     where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                     where('timestamp', '<=', Timestamp.fromDate(fin)),
+                     where('estado', '!=', 'Anulada')
+                 );
+                 const ventasSnap = await getDocs(qVentas);
+
+                 let ventasEfectivo = 0;
+                 let ventasTransferencia = 0;
+                 let totalVentas = 0;
+                 let detalleProductos = {};
+
+                 ventasSnap.forEach(doc => {
+                     const venta = doc.data();
+                     totalVentas += venta.totalVenta || 0;
+                     ventasEfectivo += venta.pagoEfectivo || 0;
+                     ventasTransferencia += venta.pagoTransferencia || 0;
+
+                     if (venta.items) {
+                         venta.items.forEach(item => {
+                             if (!detalleProductos[item.nombre]) {
+                                 detalleProductos[item.nombre] = 0;
+                             }
+                             detalleProductos[item.nombre] += item.cantidad;
+                         });
+                     }
+                 });
+
+                 // 2. ABONOS DEL DÍA (de apartados)
+                 const qAbonos = query(
+                     collection(db, 'abonos'),
+                     where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                     where('timestamp', '<=', Timestamp.fromDate(fin))
+                 );
+                 const abonosSnap = await getDocs(qAbonos);
+
+                 let abonosEfectivo = 0;
+                 let abonosTransferencia = 0;
+
+                 abonosSnap.forEach(doc => {
+                     const abono = doc.data();
+                     if (abono.metodoPago === 'Efectivo') {
+                         abonosEfectivo += abono.monto || 0;
+                     } else if (abono.metodoPago === 'Transferencia') {
+                         abonosTransferencia += abono.monto || 0;
+                     }
+                 });
+
+                 // 3. DINERO RECIBIDO DE REPARTIDORES (liquidaciones del día)
+                 const qLiquidaciones = query(
+                     collection(db, 'liquidaciones'),
+                     where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                     where('timestamp', '<=', Timestamp.fromDate(fin))
+                 );
+                 const liquidacionesSnap = await getDocs(qLiquidaciones);
+
+                 let recibidoRepartidores = 0;
+                 liquidacionesSnap.forEach(doc => {
+                     const liq = doc.data();
+                     recibidoRepartidores += liq.monto || 0;
+                 });
+
+                 // Actualizar datos
+                 datosDelDia = {
+                     ventasEfectivo,
+                     ventasTransferencia,
+                     abonosEfectivo,
+                     abonosTransferencia,
+                     recibidoRepartidores,
+                     totalVentas,
+                     detalleProductos
+                 };
+
+                 // Actualizar campos del formulario
+                 if (cajaEfectivoInput) cajaEfectivoInput.value = formatoMoneda.format(ventasEfectivo);
+                 if (cajaAbonosEfectivoInput) cajaAbonosEfectivoInput.value = formatoMoneda.format(abonosEfectivo);
+                 if (cajaRecibidoRepartidoresInput) cajaRecibidoRepartidoresInput.value = formatoMoneda.format(recibidoRepartidores);
+
+                 calcularTotalCaja();
+
+                 console.log('✅ Datos del día calculados:', datosDelDia);
+             } catch (err) {
+                 console.error('Error calculando datos del día:', err);
+             }
+         }
+
+         // Función para calcular el total de caja
+         function calcularTotalCaja() {
+             const egresos = parseFloat(cajaEgresosInput?.value) || 0;
+             const totalEfectivo = datosDelDia.ventasEfectivo + datosDelDia.abonosEfectivo + datosDelDia.recibidoRepartidores;
+             const totalCaja = totalEfectivo - egresos;
+
+             if (cajaTotalInput) {
+                 cajaTotalInput.value = formatoMoneda.format(totalCaja);
+             }
+         }
+
+         // Recalcular cuando cambien los egresos
+         if (cajaEgresosInput) {
+             cajaEgresosInput.addEventListener('input', calcularTotalCaja);
+         }
+
+         // Calcular automáticamente cuando se muestra la vista de cierre
+         const toggleClosingTodayBtn = document.getElementById('toggle-closing-today-btn');
+         if (toggleClosingTodayBtn) {
+             toggleClosingTodayBtn.addEventListener('click', () => {
+                 calcularDatosDelDia();
+             });
+         }
+
+         // Calcular al cargar la página si ya está en la vista de cierre
+         if (document.getElementById('closing-today-view')?.style.display !== 'none') {
+             calcularDatosDelDia();
+         }
+
          if(addIncomeForm && addIncomeModalInstance) addIncomeForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(incomeAmountInput.value); const desc = incomeDescInput.value.trim(); if (amount && desc) { try { await addDoc(financesCollection, { tipo: 'ingreso', monto: amount, descripcion: desc, timestamp: serverTimestamp() }); showToast('Ingreso guardado!'); addIncomeModalInstance.hide(); addIncomeForm.reset(); } catch(err) { console.error("Err income:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Monto y descripción requeridos.', 'warning'); } });
          if(addExpenseForm && addExpenseModalInstance) addExpenseForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(expenseAmountInput.value); const desc = expenseDescInput.value.trim(); if (amount && desc) { try { await addDoc(financesCollection, { tipo: 'gasto', monto: amount, descripcion: desc, timestamp: serverTimestamp() }); showToast('Gasto guardado!'); addExpenseModalInstance.hide(); addExpenseForm.reset(); } catch(err) { console.error("Err expense:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Monto y descripción requeridos.', 'warning'); } });
         if (closingForm) closingForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             try {
-                showToast("Calculando cierre de caja...", 'info');
+                showToast("Guardando cierre de caja...", 'info');
 
-                // Obtener fecha actual
                 const hoy = new Date();
-                const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
-                const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
-
-                // Consultar ventas del día
-                const qVentas = query(
-                    salesCollection,
-                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
-                    where('timestamp', '<=', Timestamp.fromDate(fin)),
-                    where('estado', '!=', 'Anulada')
-                );
-                const ventasSnap = await getDocs(qVentas);
-
-                let totalVentas = 0;
-                let ventasEfectivo = 0;
-                let ventasTransferencia = 0;
-                let detalleProductos = {};
-
-                ventasSnap.forEach(doc => {
-                    const venta = doc.data();
-                    totalVentas += venta.totalVenta || 0;
-                    ventasEfectivo += venta.pagoEfectivo || 0;
-                    ventasTransferencia += venta.pagoTransferencia || 0;
-
-                    // Contar productos vendidos
-                    if (venta.items) {
-                        venta.items.forEach(item => {
-                            if (!detalleProductos[item.nombre]) {
-                                detalleProductos[item.nombre] = 0;
-                            }
-                            detalleProductos[item.nombre] += item.cantidad;
-                        });
-                    }
-                });
-
-                const egresos = parseFloat(document.getElementById('caja-egresos').value) || 0;
+                const egresos = parseFloat(cajaEgresosInput.value) || 0;
                 const obs = document.getElementById('caja-observaciones').value.trim();
-                const totalCaja = ventasEfectivo - egresos;
 
-                // Guardar cierre en BD
+                const totalEfectivo = datosDelDia.ventasEfectivo + datosDelDia.abonosEfectivo + datosDelDia.recibidoRepartidores;
+                const totalCaja = totalEfectivo - egresos;
+
+                // Guardar cierre en BD con TODOS los datos
                 const cierreData = {
                     timestamp: serverTimestamp(),
-                    ventasEfectivo,
-                    ventasTransferencia,
-                    totalVentas,
+                    ventasEfectivo: datosDelDia.ventasEfectivo,
+                    ventasTransferencia: datosDelDia.ventasTransferencia,
+                    abonosEfectivo: datosDelDia.abonosEfectivo,
+                    abonosTransferencia: datosDelDia.abonosTransferencia,
+                    recibidoRepartidores: datosDelDia.recibidoRepartidores,
+                    totalVentas: datosDelDia.totalVentas,
                     egresos,
                     totalCaja,
                     observaciones: obs
@@ -3040,35 +3153,155 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 await addDoc(closingsCollection, cierreData);
 
                 // Crear mensaje para WhatsApp
-                let mensaje = `*CIERRE DE CAJA*\\n`;
-                mensaje += `📅 ${hoy.toLocaleDateString('es-CO')}\\n\\n`;
-                mensaje += `💰 *Total Ventas:* $${totalVentas.toLocaleString()}\\n`;
-                mensaje += `💵 Efectivo: $${ventasEfectivo.toLocaleString()}\\n`;
-                mensaje += `💳 Transferencia: $${ventasTransferencia.toLocaleString()}\\n`;
-                mensaje += `📤 Egresos: $${egresos.toLocaleString()}\\n`;
-                mensaje += `💼 *Total en Caja:* $${totalCaja.toLocaleString()}\\n\\n`;
-                mensaje += `📦 *Productos Vendidos:*\\n`;
+                let mensaje = `*📊 CIERRE DE CAJA*\\n`;
+                mensaje += `📅 ${hoy.toLocaleDateString('es-CO')} - ${hoy.toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit'})}\\n\\n`;
 
-                for (let [producto, cantidad] of Object.entries(detalleProductos)) {
-                    mensaje += `• ${producto}: ${cantidad}\\n`;
+                mensaje += `💰 *INGRESOS*\\n`;
+                mensaje += `Ventas: $${datosDelDia.ventasEfectivo.toLocaleString()} (Efec.) + $${datosDelDia.ventasTransferencia.toLocaleString()} (Transf.)\\n`;
+                mensaje += `Abonos: $${datosDelDia.abonosEfectivo.toLocaleString()} (Efec.) + $${datosDelDia.abonosTransferencia.toLocaleString()} (Transf.)\\n`;
+                mensaje += `Repartidores: $${datosDelDia.recibidoRepartidores.toLocaleString()}\\n`;
+                mensaje += `*Total General:* $${datosDelDia.totalVentas.toLocaleString()}\\n\\n`;
+
+                mensaje += `💵 *EFECTIVO*\\n`;
+                mensaje += `Total Ingresado: $${totalEfectivo.toLocaleString()}\\n`;
+                mensaje += `Gastos: $${egresos.toLocaleString()}\\n`;
+                mensaje += `💼 *EN CAJA: $${totalCaja.toLocaleString()}*\\n\\n`;
+
+                mensaje += `📦 *PRODUCTOS VENDIDOS*\\n`;
+                const productos = Object.entries(datosDelDia.detalleProductos);
+                if (productos.length > 0) {
+                    productos.forEach(([producto, cantidad]) => {
+                        mensaje += `• ${producto}: ${cantidad}\\n`;
+                    });
+                } else {
+                    mensaje += `(Sin ventas)\\n`;
                 }
 
                 if (obs) {
-                    mensaje += `\\n📝 Obs: ${obs}`;
+                    mensaje += `\\n📝 *Observaciones:* ${obs}`;
                 }
 
                 // Abrir WhatsApp
                 const whatsappUrl = `https://wa.me/573046084971?text=${encodeURIComponent(mensaje)}`;
                 window.open(whatsappUrl, '_blank');
 
-                showToast("Cierre guardado! Enviando por WhatsApp...", 'success');
+                showToast("✅ Cierre guardado! Enviando por WhatsApp...", 'success');
                 closingForm.reset();
+
+                // Recalcular después de resetear
+                setTimeout(() => {
+                    calcularDatosDelDia();
+                }, 500);
             } catch(err) {
                 console.error("Err closing:", err);
                 showToast(`Error: ${err.message}`, 'error');
             }
         });
-         const renderClosings = (snapshot) => { if(!closingHistoryTableBody) return; closingHistoryTableBody.innerHTML = ''; if (snapshot.empty) { closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay cierres.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const tr = document.createElement('tr'); const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A'; tr.innerHTML = `<td>${fecha}</td><td>${formatoMoneda.format(d.ventasEfectivo||0)}</td><td>${formatoMoneda.format(d.abonosEfectivo||0)}</td><td>${formatoMoneda.format(d.recibidoRepartidores||0)}</td><td>${formatoMoneda.format(d.egresos||0)}</td><td>${formatoMoneda.format(d.totalCaja||0)}</td><td>${d.observaciones||'-'}</td>`; closingHistoryTableBody.appendChild(tr); }); };
+         const renderClosings = (snapshot) => {
+             if(!closingHistoryTableBody) return;
+             closingHistoryTableBody.innerHTML = '';
+
+             if (snapshot.empty) {
+                 closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay cierres.</td></tr>';
+                 return;
+             }
+
+             // Calcular estadísticas
+             const ahora = new Date();
+             const hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+             const ayer = new Date(hoy);
+             ayer.setDate(ayer.getDate() - 1);
+             const inicioSemana = new Date(hoy);
+             inicioSemana.setDate(hoy.getDate() - 7);
+
+             let cierreHoy = null;
+             let cierreAyer = null;
+             let totalSemana = 0;
+             let cantidadSemana = 0;
+
+             snapshot.forEach(docSnap => {
+                 const d = docSnap.data();
+                 const id = docSnap.id;
+                 const fechaCierre = d.timestamp?.toDate ? d.timestamp.toDate() : null;
+                 const fechaSolo = fechaCierre ? new Date(fechaCierre.getFullYear(), fechaCierre.getMonth(), fechaCierre.getDate()) : null;
+
+                 // Estadísticas
+                 if (fechaSolo) {
+                     if (fechaSolo.getTime() === hoy.getTime()) {
+                         cierreHoy = d;
+                     }
+                     if (fechaSolo.getTime() === ayer.getTime()) {
+                         cierreAyer = d;
+                     }
+                     if (fechaCierre >= inicioSemana) {
+                         totalSemana += d.totalCaja || 0;
+                         cantidadSemana++;
+                     }
+                 }
+
+                 // Renderizar fila
+                 const tr = document.createElement('tr');
+                 const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO', {
+                     year: 'numeric',
+                     month: '2-digit',
+                     day: '2-digit',
+                     hour: '2-digit',
+                     minute: '2-digit'
+                 }) : 'N/A';
+                 tr.innerHTML = `<td>${fecha}</td><td>${formatoMoneda.format(d.ventasEfectivo||0)}</td><td>${formatoMoneda.format(d.abonosEfectivo||0)}</td><td>${formatoMoneda.format(d.recibidoRepartidores||0)}</td><td>${formatoMoneda.format(d.egresos||0)}</td><td class="fw-bold">${formatoMoneda.format(d.totalCaja||0)}</td><td>${d.observaciones||'-'}</td>`;
+                 closingHistoryTableBody.appendChild(tr);
+             });
+
+             // Actualizar tarjetas de resumen
+             const cierreHoyTotalEl = document.getElementById('cierre-hoy-total');
+             const cierreHoyFechaEl = document.getElementById('cierre-hoy-fecha');
+             const cierreAyerTotalEl = document.getElementById('cierre-ayer-total');
+             const cierreAyerFechaEl = document.getElementById('cierre-ayer-fecha');
+             const cierreSemanaTotalEl = document.getElementById('cierre-semana-total');
+             const cierreSemanaCantidadEl = document.getElementById('cierre-semana-cantidad');
+
+             if (cierreHoyTotalEl) {
+                 if (cierreHoy) {
+                     cierreHoyTotalEl.textContent = formatoMoneda.format(cierreHoy.totalCaja);
+                     cierreHoyTotalEl.classList.remove('text-muted');
+                     cierreHoyTotalEl.classList.add('text-primary');
+                     if (cierreHoyFechaEl) {
+                         const hora = cierreHoy.timestamp?.toDate ? cierreHoy.timestamp.toDate().toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit'}) : '';
+                         cierreHoyFechaEl.textContent = `Cerrado a las ${hora}`;
+                     }
+                 } else {
+                     cierreHoyTotalEl.textContent = 'Sin cierre';
+                     cierreHoyTotalEl.classList.add('text-muted');
+                     cierreHoyTotalEl.classList.remove('text-primary');
+                     if (cierreHoyFechaEl) cierreHoyFechaEl.textContent = 'No realizado';
+                 }
+             }
+
+             if (cierreAyerTotalEl) {
+                 if (cierreAyer) {
+                     cierreAyerTotalEl.textContent = formatoMoneda.format(cierreAyer.totalCaja);
+                     cierreAyerTotalEl.classList.remove('text-muted');
+                     cierreAyerTotalEl.classList.add('text-secondary');
+                     if (cierreAyerFechaEl) {
+                         const hora = cierreAyer.timestamp?.toDate ? cierreAyer.timestamp.toDate().toLocaleTimeString('es-CO', {hour: '2-digit', minute: '2-digit'}) : '';
+                         cierreAyerFechaEl.textContent = `Cerrado a las ${hora}`;
+                     }
+                 } else {
+                     cierreAyerTotalEl.textContent = 'Sin cierre';
+                     cierreAyerTotalEl.classList.add('text-muted');
+                     cierreAyerTotalEl.classList.remove('text-secondary');
+                     if (cierreAyerFechaEl) cierreAyerFechaEl.textContent = 'No realizado';
+                 }
+             }
+
+             if (cierreSemanaTotalEl) {
+                 cierreSemanaTotalEl.textContent = formatoMoneda.format(totalSemana);
+                 if (cierreSemanaCantidadEl) {
+                     cierreSemanaCantidadEl.textContent = `${cantidadSemana} cierre${cantidadSemana !== 1 ? 's' : ''}`;
+                 }
+             }
+         };
+
          onSnapshot(query(closingsCollection, orderBy('timestamp', 'desc')), renderClosings, e => { console.error("Error closings:", e); if(closingHistoryTableBody) closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error.</td></tr>';});
 
         // ═══════════════════════════════════════════════════════════════════
