@@ -805,6 +805,25 @@ document.addEventListener('DOMContentLoaded', () => {
         applyFiltersAndRender();
     }
 
+    // Botón "Catálogo" en móviles (reemplaza a Promociones)
+    const mobileCatalogBtn = document.getElementById('mobile-catalog-btn');
+    if (mobileCatalogBtn) {
+        mobileCatalogBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Cerrar navbar collapse si está abierto
+            const navCollapse = document.getElementById('navCollapse');
+            if (navCollapse && navCollapse.classList.contains('show')) {
+                const bsCollapse = bootstrap.Collapse.getInstance(navCollapse);
+                if (bsCollapse) bsCollapse.hide();
+            }
+            // Scroll al top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Activar filtro "Todos"
+            const allFilterBtn = document.querySelector('.filter-group[data-filter="all"]');
+            if (allFilterBtn) allFilterBtn.click();
+        });
+    }
+
     // ✅ Carga inicial de productos (sin índice compuesto)
     // Cargar todos los productos y filtrar por visible en memoria
     onSnapshot(productsCollection, (snapshot) => {
