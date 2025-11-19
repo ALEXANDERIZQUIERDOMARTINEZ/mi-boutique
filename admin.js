@@ -2328,21 +2328,21 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // ✅ FUNCIÓN: INFORMAR VÍA WHATSAPP
+        // ✅ FUNCIÓN: INFORMAR VÍA WHATSAPP (VERSIÓN ROBUSTA)
         async function informarApartadoWhatsApp(apartadoId) {
-            console.log('📱 Iniciando informar por WhatsApp:', apartadoId);
+            console.log('📱 [WhatsApp] Iniciando función informar, apartadoId:', apartadoId);
 
             const apartadoRef = doc(db, 'apartados', apartadoId);
             const apartadoSnap = await getDoc(apartadoRef);
 
             if (!apartadoSnap.exists()) {
-                console.error('❌ Apartado no encontrado:', apartadoId);
+                console.error('❌ [WhatsApp] Apartado no encontrado:', apartadoId);
                 showToast('Apartado no encontrado', 'error');
                 return;
             }
 
             const apartadoData = apartadoSnap.data();
-            console.log('📦 Datos del apartado:', apartadoData);
+            console.log('📦 [WhatsApp] Datos del apartado completos:', JSON.stringify(apartadoData, null, 2));
 
             const saldo = apartadoData.saldo || 0;
             const porcentajePagado = apartadoData.total > 0 ? ((apartadoData.abonado / apartadoData.total) * 100).toFixed(0) : 0;
@@ -2366,46 +2366,85 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // ✅ Obtener WhatsApp del cliente (primero del apartado, luego de la venta)
+            // ✅ ESTRATEGIA ROBUSTA DE BÚSQUEDA DE CELULAR
             let whatsapp = '';
 
-            console.log('🔍 Buscando WhatsApp...');
+            console.log('🔍 [WhatsApp] === INICIO BÚSQUEDA DE CELULAR ===');
 
-            // Primer intento: obtener directamente del apartado (apartados nuevos)
-            if (apartadoData.clienteCelular) {
-                whatsapp = apartadoData.clienteCelular;
-                console.log('✅ Celular encontrado en apartado:', whatsapp);
-            }
-            // Segundo intento: buscar en la venta asociada (apartados antiguos)
-            else if (apartadoData.ventaId) {
-                console.log('⚠️ Celular no en apartado, buscando en venta:', apartadoData.ventaId);
-                const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
-                const ventaSnap = await getDoc(ventaRef);
-                if (ventaSnap.exists()) {
-                    const ventaData = ventaSnap.data();
-                    console.log('📄 Datos de la venta:', ventaData);
-                    whatsapp = ventaData.clienteCelular || '';
-                    console.log('📞 clienteCelular desde venta:', whatsapp);
-                } else {
-                    console.warn('⚠️ Venta no encontrada:', apartadoData.ventaId);
+            // INTENTO 1: Buscar en la venta asociada (PRIMERO, porque es más confiable)
+            if (apartadoData.ventaId) {
+                console.log('🔗 [WhatsApp] Intento 1: Buscando en venta asociada:', apartadoData.ventaId);
+                try {
+                    const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
+                    const ventaSnap = await getDoc(ventaRef);
+
+                    if (ventaSnap.exists()) {
+                        const ventaData = ventaSnap.data();
+                        console.log('📄 [WhatsApp] Venta encontrada:', JSON.stringify(ventaData, null, 2));
+
+                        if (ventaData.clienteCelular) {
+                            whatsapp = ventaData.clienteCelular;
+                            console.log('✅ [WhatsApp] Celular encontrado en venta:', whatsapp);
+                        } else {
+                            console.warn('⚠️ [WhatsApp] Venta no tiene campo clienteCelular');
+                        }
+                    } else {
+                        console.warn('⚠️ [WhatsApp] Venta no existe en Firebase');
+                    }
+                } catch (error) {
+                    console.error('❌ [WhatsApp] Error al buscar venta:', error);
                 }
             } else {
-                console.warn('⚠️ No hay ventaId ni clienteCelular en el apartado');
+                console.warn('⚠️ [WhatsApp] Apartado no tiene ventaId');
             }
 
+            // INTENTO 2: Buscar directamente en el apartado (apartados nuevos)
+            if (!whatsapp && apartadoData.clienteCelular) {
+                console.log('🔗 [WhatsApp] Intento 2: Celular encontrado en apartado');
+                whatsapp = apartadoData.clienteCelular;
+                console.log('✅ [WhatsApp] Usando celular del apartado:', whatsapp);
+            }
+
+            // INTENTO 3: Buscar en colección de clientes por nombre
+            if (!whatsapp && apartadoData.clienteNombre) {
+                console.log('🔗 [WhatsApp] Intento 3: Buscando cliente por nombre:', apartadoData.clienteNombre);
+                try {
+                    const clientesRef = collection(db, 'clientes');
+                    const clientesQuery = query(clientesRef, where('nombre', '==', apartadoData.clienteNombre));
+                    const clientesSnap = await getDocs(clientesQuery);
+
+                    if (!clientesSnap.empty) {
+                        const clienteData = clientesSnap.docs[0].data();
+                        console.log('👤 [WhatsApp] Cliente encontrado:', JSON.stringify(clienteData, null, 2));
+
+                        if (clienteData.celular) {
+                            whatsapp = clienteData.celular;
+                            console.log('✅ [WhatsApp] Celular encontrado en cliente:', whatsapp);
+                        }
+                    } else {
+                        console.warn('⚠️ [WhatsApp] No se encontró cliente con nombre:', apartadoData.clienteNombre);
+                    }
+                } catch (error) {
+                    console.error('❌ [WhatsApp] Error al buscar cliente:', error);
+                }
+            }
+
+            console.log('🔍 [WhatsApp] === FIN BÚSQUEDA DE CELULAR ===');
+            console.log('📞 [WhatsApp] Número final obtenido:', whatsapp || 'NO ENCONTRADO');
+
             if (!whatsapp) {
-                console.error('❌ No se encontró número de WhatsApp');
-                showToast('No hay WhatsApp registrado para este cliente', 'error');
+                console.error('❌ [WhatsApp] FALLO TOTAL: No se pudo obtener número de ninguna fuente');
+                showToast('❌ No se encontró número de WhatsApp. Verifica que el cliente tenga celular registrado.', 'error');
                 return;
             }
 
             // Limpiar número de WhatsApp (quitar espacios, guiones, etc)
             let whatsappLimpio = whatsapp.replace(/\D/g, '');
-            console.log('✅ Número limpio:', whatsappLimpio);
+            console.log('🧹 [WhatsApp] Número limpio (sin caracteres):', whatsappLimpio);
 
             // Validar que el número tenga al menos 10 dígitos
             if (whatsappLimpio.length < 10) {
-                console.error('❌ Número de WhatsApp inválido (muy corto):', whatsappLimpio);
+                console.error('❌ [WhatsApp] Número muy corto:', whatsappLimpio);
                 showToast('El número de WhatsApp es inválido (muy corto)', 'error');
                 return;
             }
@@ -2413,12 +2452,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Si el número comienza con 57 (código de Colombia), quitarlo para evitar duplicación
             if (whatsappLimpio.startsWith('57')) {
                 whatsappLimpio = whatsappLimpio.substring(2);
-                console.log('✅ Número sin prefijo 57:', whatsappLimpio);
+                console.log('✂️ [WhatsApp] Prefijo 57 eliminado. Nuevo número:', whatsappLimpio);
             }
 
             // Validar que después de quitar el prefijo tenga 10 dígitos (formato colombiano)
             if (whatsappLimpio.length !== 10) {
-                console.error('❌ Número de WhatsApp no tiene formato colombiano válido:', whatsappLimpio);
+                console.error('❌ [WhatsApp] Número no tiene 10 dígitos:', whatsappLimpio);
                 showToast('El número de WhatsApp no tiene un formato válido (debe tener 10 dígitos)', 'error');
                 return;
             }
@@ -2428,7 +2467,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 Te escribo de *Mishell Boutique* para recordarte sobre tu apartado:
 
-📦 *Productos:* ${apartadoData.productos?.length || 0} item(s)
+📦 *Productos:* ${apartadoData.items?.length || 0} item(s)
 💰 *Total:* ${formatoMoneda.format(apartadoData.total || 0)}
 ✅ *Abonado:* ${formatoMoneda.format(apartadoData.abonado || 0)} (${porcentajePagado}%)
 ⚠️ *Saldo pendiente:* ${formatoMoneda.format(saldo)}
@@ -2444,9 +2483,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             // Abrir WhatsApp
             const whatsappUrl = `https://wa.me/57${whatsappLimpio}?text=${mensajeCodificado}`;
-            console.log('🌐 Abriendo URL:', whatsappUrl);
-            window.open(whatsappUrl, '_blank');
+            console.log('🌐 [WhatsApp] URL final:', whatsappUrl);
+            console.log('🚀 [WhatsApp] Abriendo WhatsApp...');
 
+            window.open(whatsappUrl, '_blank');
             showToast('Abriendo WhatsApp...', 'success');
         }
 
