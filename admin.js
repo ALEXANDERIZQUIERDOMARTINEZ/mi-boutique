@@ -2328,7 +2328,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
                 const ventaSnap = await getDoc(ventaRef);
                 if (ventaSnap.exists()) {
-                    whatsapp = ventaSnap.data().clienteWhatsapp || '';
+                    whatsapp = ventaSnap.data().clienteCelular || '';
                 }
             }
 
