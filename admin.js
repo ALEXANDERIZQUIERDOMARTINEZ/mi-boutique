@@ -3182,7 +3182,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // --- LÓGICA FINANZAS (Ingreso/Gasto, Cierre Automático) ---
     // ========================================================================
     (() => {
-         const addIncomeForm = document.getElementById('form-add-income'); const incomeAmountInput = document.getElementById('income-amount'); const incomeDescInput = document.getElementById('income-description'); const addExpenseForm = document.getElementById('form-add-expense'); const expenseAmountInput = document.getElementById('expense-amount'); const expenseDescInput = document.getElementById('expense-description'); const closingForm = document.getElementById('form-cierre-caja'); const closingHistoryTableBody = document.getElementById('lista-historial-cierres');
+         const addIncomeForm = document.getElementById('form-add-income'); const incomeAmountInput = document.getElementById('income-amount'); const incomeMethodSelect = document.getElementById('income-method'); const incomeDescInput = document.getElementById('income-description'); const addExpenseForm = document.getElementById('form-add-expense'); const expenseAmountInput = document.getElementById('expense-amount'); const expenseDescInput = document.getElementById('expense-description'); const closingForm = document.getElementById('form-cierre-caja'); const closingHistoryTableBody = document.getElementById('lista-historial-cierres');
 
          // Elementos del formulario de cierre
          const cajaEfectivoInput = document.getElementById('caja-efectivo');
@@ -3326,7 +3326,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
              calcularDatosDelDia();
          }
 
-         if(addIncomeForm && addIncomeModalInstance) addIncomeForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(incomeAmountInput.value); const desc = incomeDescInput.value.trim(); if (amount && desc) { try { await addDoc(financesCollection, { tipo: 'ingreso', monto: amount, descripcion: desc, timestamp: serverTimestamp() }); showToast('Ingreso guardado!'); addIncomeModalInstance.hide(); addIncomeForm.reset(); } catch(err) { console.error("Err income:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Monto y descripción requeridos.', 'warning'); } });
+         if(addIncomeForm && addIncomeModalInstance) addIncomeForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(incomeAmountInput.value); const method = incomeMethodSelect.value; const desc = incomeDescInput.value.trim(); if (amount && desc && method) { try { await addDoc(financesCollection, { tipo: 'ingreso', monto: amount, metodoPago: method, descripcion: desc, timestamp: serverTimestamp() }); showToast(`Ingreso en ${method} guardado!`); addIncomeModalInstance.hide(); addIncomeForm.reset(); } catch(err) { console.error("Err income:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Todos los campos son requeridos.', 'warning'); } });
          if(addExpenseForm && addExpenseModalInstance) addExpenseForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(expenseAmountInput.value); const desc = expenseDescInput.value.trim(); if (amount && desc) { try { await addDoc(financesCollection, { tipo: 'gasto', monto: amount, descripcion: desc, timestamp: serverTimestamp() }); showToast('Gasto guardado!'); addExpenseModalInstance.hide(); addExpenseForm.reset(); } catch(err) { console.error("Err expense:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Monto y descripción requeridos.', 'warning'); } });
         if (closingForm) closingForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -3631,7 +3631,14 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                 const isIncome = data.tipo === 'ingreso';
                 const badgeClass = isIncome ? 'bg-success' : 'bg-danger';
-                const badgeText = isIncome ? 'Ingreso' : 'Gasto';
+
+                // Para ingresos, mostrar método de pago
+                let badgeText = 'Gasto';
+                if (isIncome) {
+                    const metodoPago = data.metodoPago || 'efectivo';
+                    badgeText = metodoPago === 'transferencia' ? '💳 Transferencia' : '💵 Efectivo';
+                }
+
                 const amountClass = isIncome ? 'text-success' : 'text-danger';
 
                 const tr = document.createElement('tr');
@@ -3659,19 +3666,24 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             let totalGastos = 0;
 
             // Sumar movimientos manuales (ingresos/gastos)
-            // NOTA: Los ingresos manuales se suman como EFECTIVO por defecto
             allMovements.forEach(movement => {
                 const monto = movement.data.monto || 0;
                 if (movement.data.tipo === 'ingreso') {
-                    totalEfectivo += monto;
-                    console.log(`  ➕ Ingreso manual (efectivo): $${monto}`);
+                    const metodoPago = movement.data.metodoPago || 'efectivo'; // Default efectivo para registros antiguos
+                    if (metodoPago === 'transferencia') {
+                        totalTransferencias += monto;
+                        console.log(`  ➕ Ingreso manual (transferencia): $${monto}`);
+                    } else {
+                        totalEfectivo += monto;
+                        console.log(`  ➕ Ingreso manual (efectivo): $${monto}`);
+                    }
                 } else if (movement.data.tipo === 'gasto') {
                     totalGastos += monto;
                     console.log(`  ➖ Gasto: $${monto}`);
                 }
             });
 
-            console.log(`📊 Movimientos manuales - Efectivo: $${totalEfectivo}, Gastos: $${totalGastos}`);
+            console.log(`📊 Movimientos manuales - Efectivo: $${totalEfectivo}, Transferencias: $${totalTransferencias}, Gastos: $${totalGastos}`);
 
             // ✅ Agregar ventas del día (efectivo y transferencias separados)
             totalEfectivo += ventasDelDia.efectivo;
