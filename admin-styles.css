@@ -480,18 +480,30 @@ td.action-buttons {
     vertical-align: middle;
 }
 
-/* Asegurar bordes consistentes en todas las filas */
-#lista-apartados tr {
-    border-bottom: 1px solid #dee2e6;
-}
-
+/* Asegurar bordes consistentes en tabla de apartados */
 #lista-apartados td {
-    border-bottom: 1px solid #dee2e6;
     vertical-align: middle;
+    padding: 0.75rem;
+    border-top: none !important; /* Eliminar borde superior de Bootstrap */
+    border-bottom: 1px solid #dee2e6 !important; /* Solo borde inferior */
 }
 
 #lista-apartados tr:last-child td {
-    border-bottom: none;
+    border-bottom: none !important;
+}
+
+/* Eliminar bordes duplicados del table-hover de Bootstrap en apartados */
+#lista-apartados tr {
+    border: none;
+}
+
+/* Espaciado del contenedor de apartados */
+#apartados .card-body {
+    padding-bottom: 0;
+}
+
+#apartados .table-responsive {
+    margin-bottom: 0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
