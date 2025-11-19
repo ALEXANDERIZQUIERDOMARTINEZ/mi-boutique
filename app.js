@@ -420,6 +420,7 @@ function renderProducts(products) {
                 </div>
                 <div class="product-card-body">
                     <h3 class="product-title">${product.nombre}</h3>
+                    ${product.descripcion ? `<p class="product-description">${product.descripcion.length > 60 ? product.descripcion.substring(0, 60) + '...' : product.descripcion}</p>` : ''}
                     ${product.observaciones ? `<p class="product-observations">${product.observaciones}</p>` : ''}
                     <div class="price-detal-card">
                         ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
@@ -1242,9 +1243,9 @@ document.addEventListener('DOMContentLoaded', () => {
             input.value = 'MODO MAYORISTA ACTIVO';
             input.disabled = true;
             e.target.querySelector('button').disabled = true;
-            
+
             applyFiltersAndRender();
-            
+
             if (cart.length > 0) {
                 showToast('Vacía tu carrito para agregar productos con precio mayorista', 'warning');
             }
@@ -1253,5 +1254,92 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Código incorrecto', 'error');
         }
     });
+
+    // ═══════════════════════════════════════════════════════════════════
+    // FUNCIONALIDAD DE ZOOM EN IMÁGENES
+    // ═══════════════════════════════════════════════════════════════════
+    const zoomOverlay = document.getElementById('imageZoomOverlay');
+    const zoomedImage = document.getElementById('zoomedImage');
+    const closeZoomBtn = document.getElementById('closeZoomBtn');
+    const modalProductImage = document.getElementById('modal-product-image');
+
+    // Abrir zoom al hacer click en la imagen del modal
+    modalProductImage.addEventListener('click', () => {
+        const imageSrc = modalProductImage.src;
+        if (imageSrc && !imageSrc.includes('placeholder')) {
+            zoomedImage.src = imageSrc;
+            zoomOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevenir scroll
+        }
+    });
+
+    // Cerrar zoom con el botón X
+    closeZoomBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeZoom();
+    });
+
+    // Cerrar zoom al hacer click en el overlay (fondo)
+    zoomOverlay.addEventListener('click', (e) => {
+        if (e.target === zoomOverlay) {
+            closeZoom();
+        }
+    });
+
+    // Cerrar zoom con la tecla ESC
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && zoomOverlay.classList.contains('active')) {
+            closeZoom();
+        }
+    });
+
+    // Función para cerrar el zoom
+    function closeZoom() {
+        zoomOverlay.classList.remove('active');
+        document.body.style.overflow = ''; // Restaurar scroll
+        // Limpiar src después de la animación
+        setTimeout(() => {
+            if (!zoomOverlay.classList.contains('active')) {
+                zoomedImage.src = '';
+            }
+        }, 300);
+    }
+
+    // Soporte para gestos táctiles en móvil (pinch to zoom)
+    let initialDistance = 0;
+    let currentScale = 1;
+
+    zoomedImage.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            initialDistance = getDistance(e.touches[0], e.touches[1]);
+        }
+    });
+
+    zoomedImage.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const currentDistance = getDistance(e.touches[0], e.touches[1]);
+            const scale = currentDistance / initialDistance;
+            currentScale = Math.min(Math.max(1, scale), 3); // Limitar entre 1x y 3x
+            zoomedImage.style.transform = `scale(${currentScale})`;
+        }
+    });
+
+    zoomedImage.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) {
+            // Resetear escala al soltar
+            setTimeout(() => {
+                currentScale = 1;
+                zoomedImage.style.transform = 'scale(1)';
+            }, 300);
+        }
+    });
+
+    function getDistance(touch1, touch2) {
+        const dx = touch1.clientX - touch2.clientX;
+        const dy = touch1.clientY - touch2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
 
 });

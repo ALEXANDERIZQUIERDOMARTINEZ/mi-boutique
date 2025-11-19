@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="admin-styles.css?v=1.9.0">
+    <link rel="stylesheet" href="admin-styles.css?v=2.1.0">
 
     <!-- Logo/Icon -->
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -702,8 +702,72 @@
                         <button type="button" id="toggle-closing-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-box-arrow-in-down me-1"></i><span class="d-none d-md-inline"> Cierre Hoy</span></button> 
                         <button type="button" id="toggle-closing-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-md-inline"> Historial</span></button> 
                     </div> 
-                </div> 
-                
+                </div>
+
+                <!-- Vista de Movimientos Financieros -->
+                <div id="finances-movements-view" class="mb-4">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-arrow-up-circle-fill text-success" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Total Ingresos</h6>
+                                    <h3 class="mb-0 text-success" id="total-ingresos">$0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-danger">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-arrow-down-circle-fill text-danger" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Total Gastos</h6>
+                                    <h3 class="mb-0 text-danger" id="total-gastos">$0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-wallet-fill text-primary" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Balance</h6>
+                                    <h3 class="mb-0" id="balance-total">$0</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                            <h3 class="h5 mb-0">Movimientos Financieros</h3>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary active" id="filter-all-movements">Todos</button>
+                                <button class="btn btn-outline-success" id="filter-income">Ingresos</button>
+                                <button class="btn btn-outline-danger" id="filter-expenses">Gastos</button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Descripción</th>
+                                            <th>Monto</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="lista-movimientos-financieros">
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">Cargando...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="closing-today-view"> 
                     <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Cierre Diario</h3></div><div class="card-body"><form id="form-cierre-caja"><div class="row"><div class="col-md-3"><label class="form-label">Ventas Efectivo:</label><input type="text" class="form-control" id="caja-efectivo" value="$0" readonly></div><div class="col-md-3"><label class="form-label">Abonos Efectivo:</label><input type="text" class="form-control" id="caja-abonos-efectivo" value="$0" readonly></div><div class="col-md-3"><label class="form-label">Recibido Repart.:</label><input type="text" class="form-control" id="caja-recibido-repartidores" value="$0" readonly></div><div class="col-md-3"><label for="caja-egresos" class="form-label">Gastos ($):</label><input type="number" class="form-control" id="caja-egresos" value="0" step="0.01"></div></div><div class="row mt-3"><div class="col-md-9"><label for="caja-observaciones" class="form-label">Observaciones:</label><input type="text" class="form-control" id="caja-observaciones"></div><div class="col-md-3"><label class="form-label">Total Caja:</label><input type="text" class="form-control fw-bold" id="caja-total" value="$0" readonly></div></div><hr><p class="text-muted small">Nota: Transferencias no afectan efectivo.</p><button type="submit" class="btn btn-primary mt-3">Realizar Cierre</button></form></div></div> 
                 </div> 
@@ -905,9 +969,92 @@
         </div>
     </div>
 
+    <!-- Modal Historial de Compras por Cliente -->
+    <div class="modal fade" id="clientHistoryModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-clock-history me-2"></i>Historial de Compras - <span id="client-history-name"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Estadísticas del Cliente -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-cash-stack text-success" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Total Gastado</h6>
+                                    <h4 class="mb-0 text-success" id="client-total-spent">$0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-cart-check text-primary" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Total Compras</h6>
+                                    <h4 class="mb-0 text-primary" id="client-total-purchases">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-calendar-event text-info" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Última Compra</h6>
+                                    <h6 class="mb-0 text-info" id="client-last-purchase">-</h6>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-graph-up text-warning" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Ticket Promedio</h6>
+                                    <h4 class="mb-0 text-warning" id="client-avg-ticket">$0</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Compras -->
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Productos</th>
+                                    <th>Total</th>
+                                    <th>Método Pago</th>
+                                    <th>Estado</th>
+                                    <th>Tipo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="client-history-list">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script type="module" src="admin.js?v=1.9.0"></script>
+    <script type="module" src="admin.js?v=2.1.0"></script>
 
     <!-- Script para cerrar navegación móvil al hacer clic en un enlace -->
     <script>
