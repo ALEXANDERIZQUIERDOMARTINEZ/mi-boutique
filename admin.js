@@ -2293,15 +2293,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ✅ FUNCIÓN: INFORMAR VÍA WHATSAPP
         async function informarApartadoWhatsApp(apartadoId) {
+            console.log('📱 Iniciando informar por WhatsApp:', apartadoId);
+
             const apartadoRef = doc(db, 'apartados', apartadoId);
             const apartadoSnap = await getDoc(apartadoRef);
 
             if (!apartadoSnap.exists()) {
+                console.error('❌ Apartado no encontrado:', apartadoId);
                 showToast('Apartado no encontrado', 'error');
                 return;
             }
 
             const apartadoData = apartadoSnap.data();
+            console.log('📦 Datos del apartado:', apartadoData);
+
             const saldo = apartadoData.saldo || 0;
             const porcentajePagado = apartadoData.total > 0 ? ((apartadoData.abonado / apartadoData.total) * 100).toFixed(0) : 0;
 
@@ -2326,21 +2331,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Obtener WhatsApp del cliente desde la venta original
             let whatsapp = '';
+
+            console.log('🔍 Buscando WhatsApp... ventaId:', apartadoData.ventaId);
+
             if (apartadoData.ventaId) {
                 const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
                 const ventaSnap = await getDoc(ventaRef);
                 if (ventaSnap.exists()) {
-                    whatsapp = ventaSnap.data().clienteCelular || '';
+                    const ventaData = ventaSnap.data();
+                    console.log('📄 Datos de la venta:', ventaData);
+                    whatsapp = ventaData.clienteCelular || '';
+                    console.log('📞 clienteCelular encontrado:', whatsapp);
+                } else {
+                    console.warn('⚠️ Venta no encontrada:', apartadoData.ventaId);
                 }
+            } else {
+                console.warn('⚠️ No hay ventaId en el apartado');
             }
 
             if (!whatsapp) {
+                console.error('❌ No se encontró número de WhatsApp');
                 showToast('No hay WhatsApp registrado para este cliente', 'error');
                 return;
             }
 
             // Limpiar número de WhatsApp (quitar espacios, guiones, etc)
             const whatsappLimpio = whatsapp.replace(/\D/g, '');
+            console.log('✅ Número limpio:', whatsappLimpio);
 
             // Crear mensaje
             const mensaje = `Hola *${apartadoData.clienteNombre}*! 👋
@@ -2363,6 +2380,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             // Abrir WhatsApp
             const whatsappUrl = `https://wa.me/57${whatsappLimpio}?text=${mensajeCodificado}`;
+            console.log('🌐 Abriendo URL:', whatsappUrl);
             window.open(whatsappUrl, '_blank');
 
             showToast('Abriendo WhatsApp...', 'success');
