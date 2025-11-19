@@ -474,6 +474,26 @@ body.admin-page {
     margin: 0;
 }
 
+/* Fix para bordes de tabla con action-buttons */
+td.action-buttons {
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+
+/* Asegurar bordes consistentes en todas las filas */
+#lista-apartados tr {
+    border-bottom: 1px solid #dee2e6;
+}
+
+#lista-apartados td {
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+}
+
+#lista-apartados tr:last-child td {
+    border-bottom: none;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    MODALES
    ═══════════════════════════════════════════════════════════════════ */
