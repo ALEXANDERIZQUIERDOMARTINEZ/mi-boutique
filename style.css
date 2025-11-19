@@ -731,6 +731,24 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 1.1rem;
 }
 
+.products-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.products-controls select {
+    min-width: 120px;
+    font-size: 0.85rem;
+    border-color: var(--color-borde);
+    transition: all var(--transicion);
+}
+
+.products-controls select:focus {
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 0.2rem rgba(217, 136, 185, 0.25);
+}
+
 /* ────────────────────────────────────────────────────────────────────
    8. MODALES
    ──────────────────────────────────────────────────────────────────── */
@@ -1517,15 +1535,17 @@ h1, h2, h3, h4, h5, h6 {
         min-width: 0;
     }
 
-    .products-sort {
+    .products-controls {
         flex-shrink: 0;
+        gap: 0.35rem;
+        flex-wrap: wrap;
     }
 
-    .products-sort select {
-        font-size: 0.8rem;
+    .products-controls select {
+        font-size: 0.75rem;
         padding: 0.35rem 1.75rem 0.35rem 0.5rem;
-        min-width: 85px;
-        max-width: 110px;
+        min-width: 80px;
+        max-width: 100px;
     }
 }
 
@@ -1552,7 +1572,13 @@ h1, h2, h3, h4, h5, h6 {
         font-size: 0.9rem;
     }
 
-    .products-sort select {
-        font-size: 0.85rem;
+    .products-controls {
+        gap: 0.4rem;
+    }
+
+    .products-controls select {
+        font-size: 0.8rem;
+        min-width: 100px;
+        max-width: 120px;
     }
 }
