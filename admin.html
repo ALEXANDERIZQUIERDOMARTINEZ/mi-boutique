@@ -1023,7 +1023,79 @@
     <div class="modal fade" id="searchSupplierModal" tabindex="-1"> <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Buscar Proveedor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <input type="search" class="form-control mb-3" id="supplier-modal-search" placeholder="Buscar por nombre..."> <ul class="list-group search-modal-list" id="supplier-modal-list"> </ul> </div> </div> </div> </div>
     <div class="modal fade" id="searchClientModal" tabindex="-1"> <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Buscar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <input type="search" class="form-control mb-3" id="client-modal-search" placeholder="Buscar por nombre o cédula..."> <ul class="list-group search-modal-list" id="client-modal-list"> </ul> </div> </div> </div> </div>
     
-    <div class="modal fade" id="searchProductModal" tabindex="-1"> <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Buscar Producto</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <input type="search" class="form-control mb-3" id="product-modal-search" placeholder="Buscar por nombre..."> <ul class="list-group search-modal-list" id="product-modal-list"> </ul> </div> </div> </div> </div>
+    <div class="modal fade" id="searchProductModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Buscar Producto</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Filtros Avanzados -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Buscar por nombre o código:</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="search" class="form-control" id="product-modal-search" placeholder="Buscar...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Categoría:</label>
+                            <select class="form-select form-select-sm" id="product-modal-category">
+                                <option value="">Todas las categorías</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="product-modal-clear-filters">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filtros adicionales -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="product-modal-stock-only">
+                                <label class="form-check-label small" for="product-modal-stock-only">
+                                    Solo con stock disponible
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="product-modal-visible-only">
+                                <label class="form-check-label small" for="product-modal-visible-only">
+                                    Solo productos visibles
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Ordenar por:</label>
+                            <select class="form-select form-select-sm" id="product-modal-sort">
+                                <option value="name-asc">Nombre A-Z</option>
+                                <option value="name-desc">Nombre Z-A</option>
+                                <option value="price-asc">Precio ↑</option>
+                                <option value="price-desc">Precio ↓</option>
+                                <option value="stock-desc">Mayor stock</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Lista de productos -->
+                    <div id="product-modal-count" class="mb-2 text-muted small"></div>
+                    <ul class="list-group search-modal-list" id="product-modal-list">
+                        <li class="list-group-item text-center text-muted">
+                            <i class="bi bi-search"></i> Usa los filtros para buscar productos
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="selectVariationModal" tabindex="-1" aria-labelledby="selectVariationModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
