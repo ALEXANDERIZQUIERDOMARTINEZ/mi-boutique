@@ -1067,6 +1067,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.dataset.productId = id;
                 li.dataset.productName = d.nombre.toLowerCase();
                 li.dataset.productCode = (d.codigo || '').toLowerCase();
+                li.dataset.categoria = d.categoriaId || '';
+                li.dataset.stock = stockTotal;
+                li.dataset.visible = d.visible ? 'true' : 'false';
+                li.dataset.precioOriginal = d.precioDetal || 0;
 
                 const defaultImgModal = 'https://via.placeholder.com/70x90.png?text=Sin+Foto';
                 const imagenUrlModal = d.imagenUrl || defaultImgModal; 
@@ -1260,14 +1264,133 @@ document.addEventListener('DOMContentLoaded', () => {
              }
          });
 
-         if (productSearchInput) productSearchInput.addEventListener('input', (e) => { 
-            const searchTerm = e.target.value.toLowerCase(); 
-            const items = productSearchModalList.querySelectorAll('.product-search-item'); 
-            items.forEach(item => { 
-                const itemText = item.textContent.toLowerCase();
-                item.style.display = itemText.includes(searchTerm) ? '' : 'none'; 
-            }); 
-        });
+        // Función avanzada de filtrado de productos
+        function applyProductModalFilters() {
+            const searchTerm = (document.getElementById('product-modal-search')?.value || '').toLowerCase();
+            const categoriaFiltro = document.getElementById('product-modal-category')?.value || '';
+            const stockOnly = document.getElementById('product-modal-stock-only')?.checked || false;
+            const visibleOnly = document.getElementById('product-modal-visible-only')?.checked || false;
+            const sortBy = document.getElementById('product-modal-sort')?.value || 'name-asc';
+
+            const items = Array.from(productSearchModalList?.querySelectorAll('.product-search-item') || []);
+
+            // Filtrar
+            let visibleItems = items.filter(item => {
+                // Filtro de búsqueda (nombre o código)
+                if (searchTerm) {
+                    const itemName = item.dataset.productName || '';
+                    const itemCode = item.dataset.productCode || '';
+                    if (!itemName.includes(searchTerm) && !itemCode.includes(searchTerm)) {
+                        return false;
+                    }
+                }
+
+                // Filtro de categoría
+                if (categoriaFiltro && item.dataset.categoria !== categoriaFiltro) {
+                    return false;
+                }
+
+                // Filtro de stock
+                if (stockOnly && parseInt(item.dataset.stock || 0) <= 0) {
+                    return false;
+                }
+
+                // Filtro de visible
+                if (visibleOnly && item.dataset.visible !== 'true') {
+                    return false;
+                }
+
+                return true;
+            });
+
+            // Ordenar
+            visibleItems.sort((a, b) => {
+                const aName = a.dataset.productName || '';
+                const bName = b.dataset.productName || '';
+                const aPrice = parseFloat(a.dataset.precioOriginal || 0);
+                const bPrice = parseFloat(b.dataset.precioOriginal || 0);
+                const aStock = parseInt(a.dataset.stock || 0);
+                const bStock = parseInt(b.dataset.stock || 0);
+
+                switch(sortBy) {
+                    case 'name-asc':
+                        return aName.localeCompare(bName);
+                    case 'name-desc':
+                        return bName.localeCompare(aName);
+                    case 'price-asc':
+                        return aPrice - bPrice;
+                    case 'price-desc':
+                        return bPrice - aPrice;
+                    case 'stock-desc':
+                        return bStock - aStock;
+                    default:
+                        return 0;
+                }
+            });
+
+            // Aplicar visibilidad y orden
+            items.forEach(item => item.style.display = 'none');
+            visibleItems.forEach((item, index) => {
+                item.style.display = '';
+                productSearchModalList.appendChild(item); // Reordenar
+            });
+
+            // Actualizar contador
+            const countEl = document.getElementById('product-modal-count');
+            if (countEl) {
+                countEl.textContent = `${visibleItems.length} producto(s) encontrado(s)`;
+            }
+        }
+
+        // Event listeners para filtros
+        if (productSearchInput) {
+            productSearchInput.addEventListener('input', applyProductModalFilters);
+        }
+
+        const productModalCategory = document.getElementById('product-modal-category');
+        const productModalStockOnly = document.getElementById('product-modal-stock-only');
+        const productModalVisibleOnly = document.getElementById('product-modal-visible-only');
+        const productModalSort = document.getElementById('product-modal-sort');
+        const productModalClearFilters = document.getElementById('product-modal-clear-filters');
+
+        if (productModalCategory) {
+            productModalCategory.addEventListener('change', applyProductModalFilters);
+
+            // Cargar categorías en el select
+            onSnapshot(categoriesCollection, (snapshot) => {
+                productModalCategory.innerHTML = '<option value="">Todas las categorías</option>';
+                snapshot.forEach(doc => {
+                    const cat = doc.data();
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.textContent = cat.nombre;
+                    productModalCategory.appendChild(option);
+                });
+            });
+        }
+
+        if (productModalStockOnly) {
+            productModalStockOnly.addEventListener('change', applyProductModalFilters);
+        }
+
+        if (productModalVisibleOnly) {
+            productModalVisibleOnly.addEventListener('change', applyProductModalFilters);
+        }
+
+        if (productModalSort) {
+            productModalSort.addEventListener('change', applyProductModalFilters);
+        }
+
+        if (productModalClearFilters) {
+            productModalClearFilters.addEventListener('click', () => {
+                if (productSearchInput) productSearchInput.value = '';
+                if (productModalCategory) productModalCategory.value = '';
+                if (productModalStockOnly) productModalStockOnly.checked = false;
+                if (productModalVisibleOnly) productModalVisibleOnly.checked = false;
+                if (productModalSort) productModalSort.value = 'name-asc';
+                applyProductModalFilters();
+            });
+        }
         
         if (productSearchModalList && searchProductModalInstance) {
             productSearchModalList.addEventListener('click', (e) => {
