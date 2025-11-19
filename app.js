@@ -272,11 +272,42 @@ function applyFiltersAndRender() {
         return price >= advancedFilters.priceMin && price <= advancedFilters.priceMax;
     });
 
-    // 3.2 Filtro por Colores
+    // 3.2 Filtro por Colores (sidebar chips)
     if (advancedFilters.selectedColors.size > 0) {
         filtered = filtered.filter(p => {
             const productColors = (p.variaciones || []).map(v => v.color?.toLowerCase()).filter(Boolean);
             return productColors.some(color => advancedFilters.selectedColors.has(color));
+        });
+    }
+
+    // 3.2.5 Filtro por Color (dropdown integrado)
+    const colorFilterSelect = document.getElementById('color-filter-select');
+    if (colorFilterSelect && colorFilterSelect.value) {
+        const selectedColor = colorFilterSelect.value.toLowerCase();
+        filtered = filtered.filter(p => {
+            const productColors = (p.variaciones || []).map(v => v.color?.toLowerCase().trim()).filter(Boolean);
+
+            // Mapeo de colores consolidados
+            return productColors.some(color => {
+                if (selectedColor === 'café') {
+                    return color.includes('café') || color.includes('cafe') || color.includes('palo de rosa');
+                } else if (selectedColor === 'blanco') {
+                    return color.includes('blanco') || color === 'blanco 50%' || color === 'blanco50%';
+                } else if (selectedColor === 'negro') {
+                    return color.includes('negro');
+                } else if (selectedColor === 'azul oscuro') {
+                    return color.includes('azul oscuro') || color === 'azul oscuro';
+                } else if (selectedColor === 'azul medio') {
+                    return color.includes('azul medio') || color === 'azul medio';
+                } else if (selectedColor === 'animal print') {
+                    return color.includes('animal') || color.includes('leopard') || color.includes('print');
+                } else if (selectedColor === 'blanco con beige') {
+                    return color.includes('blanco con beige') || (color.includes('blanco') && color.includes('beige'));
+                } else {
+                    // Colores estándar: coincidencia directa
+                    return color.includes(selectedColor);
+                }
+            });
         });
     }
 
@@ -805,22 +836,11 @@ document.addEventListener('DOMContentLoaded', () => {
         applyFiltersAndRender();
     }
 
-    // Botón "Catálogo" en móviles (reemplaza a Promociones)
-    const mobileCatalogBtn = document.getElementById('mobile-catalog-btn');
-    if (mobileCatalogBtn) {
-        mobileCatalogBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            // Cerrar navbar collapse si está abierto
-            const navCollapse = document.getElementById('navCollapse');
-            if (navCollapse && navCollapse.classList.contains('show')) {
-                const bsCollapse = bootstrap.Collapse.getInstance(navCollapse);
-                if (bsCollapse) bsCollapse.hide();
-            }
-            // Scroll al top
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            // Activar filtro "Todos"
-            const allFilterBtn = document.querySelector('.filter-group[data-filter="all"]');
-            if (allFilterBtn) allFilterBtn.click();
+    // Filtro por color (nuevo dropdown integrado)
+    const colorFilterSelect = document.getElementById('color-filter-select');
+    if (colorFilterSelect) {
+        colorFilterSelect.addEventListener('change', () => {
+            applyFiltersAndRender();
         });
     }
 
