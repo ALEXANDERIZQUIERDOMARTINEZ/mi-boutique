@@ -37,6 +37,34 @@ const chatConversationsCollection = collection(db, 'chatConversations');
 // --- Helper: Format Currency ---
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
 
+// --- Helper: Open WhatsApp (PWA Compatible) ---
+function openWhatsApp(url) {
+    // Detectar si estamos en una PWA instalada
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                  window.navigator.standalone === true ||
+                  document.referrer.includes('android-app://');
+
+    console.log('🔍 Detectando modo de aplicación:');
+    console.log('  - Es PWA instalada:', isPWA);
+    console.log('  - URL WhatsApp:', url);
+
+    if (isPWA || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        // En PWA o móvil, usar window.location.href para abrir WhatsApp
+        // Esto fuerza a abrir en la app de WhatsApp instalada
+        console.log('📱 Abriendo WhatsApp en app instalada...');
+        window.location.href = url;
+    } else {
+        // En navegador desktop, usar window.open
+        console.log('💻 Abriendo WhatsApp en nueva pestaña...');
+        const ventana = window.open(url, '_blank');
+        if (!ventana) {
+            // Si el popup fue bloqueado, intentar con location
+            console.warn('⚠️ Popup bloqueado, intentando con location.href');
+            window.location.href = url;
+        }
+    }
+}
+
 // --- Helper: Show Toast Notification ---
 let bsToast = null;
 function showToast(message, type = 'success', title = 'Notificación') {
@@ -2823,7 +2851,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             console.log('🌐 [WhatsApp] URL final:', whatsappUrl);
             console.log('🚀 [WhatsApp] Abriendo WhatsApp...');
 
-            window.open(whatsappUrl, '_blank');
+            openWhatsApp(whatsappUrl);
             showToast('Abriendo WhatsApp...', 'success');
         }
 
@@ -3463,7 +3491,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                 // Abrir WhatsApp
                 const whatsappUrl = `https://wa.me/573046084971?text=${encodeURIComponent(mensaje)}`;
-                window.open(whatsappUrl, '_blank');
+                openWhatsApp(whatsappUrl);
 
                 showToast("✅ Cierre guardado! Enviando por WhatsApp...", 'success');
                 closingForm.reset();

@@ -20,8 +20,36 @@ const webOrdersCollection = collection(db, 'pedidosWeb');
 const promocionesCollection = collection(db, 'promociones');
 const categoriesCollection = collection(db, 'categorias');
 const clientsCollection = collection(db, 'clientes');
-const chatConversationsCollection = collection(db, 'chatConversations'); 
+const chatConversationsCollection = collection(db, 'chatConversations');
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
+
+// --- Helper: Open WhatsApp (PWA Compatible) ---
+function openWhatsApp(url) {
+    // Detectar si estamos en una PWA instalada
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                  window.navigator.standalone === true ||
+                  document.referrer.includes('android-app://');
+
+    console.log('🔍 Detectando modo de aplicación:');
+    console.log('  - Es PWA instalada:', isPWA);
+    console.log('  - URL WhatsApp:', url);
+
+    if (isPWA || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        // En PWA o móvil, usar window.location.href para abrir WhatsApp
+        // Esto fuerza a abrir en la app de WhatsApp instalada
+        console.log('📱 Abriendo WhatsApp en app instalada...');
+        window.location.href = url;
+    } else {
+        // En navegador desktop, usar window.open
+        console.log('💻 Abriendo WhatsApp en nueva pestaña...');
+        const ventana = window.open(url, '_blank');
+        if (!ventana) {
+            // Si el popup fue bloqueado, intentar con location
+            console.warn('⚠️ Popup bloqueado, intentando con location.href');
+            window.location.href = url;
+        }
+    }
+}
 
 let bsToast = null;
 let cart = [];
@@ -1303,8 +1331,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const mensajeWhatsAppURL = encodeURIComponent(mensajeWhatsApp);
             const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${mensajeWhatsAppURL}`;
 
-            // Abrir WhatsApp en nueva pestaña (el cliente NO se sale de la app)
-            window.open(urlWhatsApp, '_blank');
+            // Abrir WhatsApp (compatible con PWA)
+            openWhatsApp(urlWhatsApp);
 
             // Mostrar mensaje de éxito
             showToast('✅ ¡Pedido confirmado! Se abrió WhatsApp para enviar los detalles.', 'success');
