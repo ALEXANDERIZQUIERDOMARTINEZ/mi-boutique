@@ -211,50 +211,123 @@
                     </div>
                 </div>
 
-                <!-- Sección: Alertas y Actividad -->
+                <!-- Sección: Métricas Financieras del Mes -->
                 <div class="mb-3">
-                    <h5 class="text-muted fw-light"><i class="bi bi-bell me-2"></i>Alertas y Actividad</h5>
+                    <h5 class="text-muted fw-light"><i class="bi bi-cash-stack me-2"></i>Resumen Financiero del Mes</h5>
                 </div>
-                <div class="row g-4">
-                    <div class="col-lg-6">
-                        <div class="card shadow-sm">
-                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i>Stock Crítico</h5>
-                                <a href="#productos" data-bs-toggle="pill" class="btn btn-sm btn-outline-primary">Ver todos</a>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Producto</th>
-                                                <th class="text-center">Stock</th>
-                                                <th class="text-end">Acción</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="db-tabla-stock-critico">
-                                            <tr>
-                                                <td colspan="3" class="text-center text-muted py-3">
-                                                    Cargando...
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                <div class="row g-3 mb-4">
+                    <!-- Ingresos del Mes -->
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body text-center py-4">
+                                <div class="d-flex align-items-center justify-content-center mb-3">
+                                    <div class="icon-badge bg-success me-2" style="width: 45px; height: 45px; line-height: 45px;">
+                                        <i class="bi bi-arrow-up-circle-fill"></i>
+                                    </div>
+                                    <h6 class="mb-0 text-muted">Ingresos</h6>
                                 </div>
+                                <h3 class="mb-1 fw-bold text-success" id="db-ingresos-mes">$0</h3>
+                                <small class="text-muted" id="db-ingresos-comparativa">
+                                    <i class="bi bi-dash"></i> vs mes anterior
+                                </small>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-lg-6">
-                        <div class="card shadow-sm">
-                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Actividad Reciente</h5>
-                                <a href="#ventas" data-bs-toggle="pill" class="btn btn-sm btn-outline-primary">Ver todas</a>
+                    <!-- Gastos del Mes -->
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body text-center py-4">
+                                <div class="d-flex align-items-center justify-content-center mb-3">
+                                    <div class="icon-badge bg-danger me-2" style="width: 45px; height: 45px; line-height: 45px;">
+                                        <i class="bi bi-arrow-down-circle-fill"></i>
+                                    </div>
+                                    <h6 class="mb-0 text-muted">Gastos</h6>
+                                </div>
+                                <h3 class="mb-1 fw-bold text-danger" id="db-gastos-mes">$0</h3>
+                                <small class="text-muted" id="db-gastos-comparativa">
+                                    <i class="bi bi-dash"></i> vs mes anterior
+                                </small>
                             </div>
-                            <div class="card-body p-0">
-                                <div class="activity-list" id="db-actividad-reciente">
-                                    <div class="text-center text-muted py-3">
-                                        Cargando actividad...
+                        </div>
+                    </div>
+
+                    <!-- Utilidad Neta -->
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body text-center py-4">
+                                <div class="d-flex align-items-center justify-content-center mb-3">
+                                    <div class="icon-badge bg-primary me-2" style="width: 45px; height: 45px; line-height: 45px;">
+                                        <i class="bi bi-graph-up-arrow"></i>
+                                    </div>
+                                    <h6 class="mb-0 text-muted">Utilidad Neta</h6>
+                                </div>
+                                <h3 class="mb-1 fw-bold text-primary" id="db-utilidad-neta">$0</h3>
+                                <small class="text-muted" id="db-utilidad-comparativa">
+                                    <i class="bi bi-dash"></i> vs mes anterior
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Crecimiento % -->
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body text-center py-4">
+                                <div class="d-flex align-items-center justify-content-center mb-3">
+                                    <div class="icon-badge bg-info me-2" style="width: 45px; height: 45px; line-height: 45px;">
+                                        <i class="bi bi-percent"></i>
+                                    </div>
+                                    <h6 class="mb-0 text-muted">Crecimiento</h6>
+                                </div>
+                                <h3 class="mb-1 fw-bold" id="db-crecimiento-porcentaje">0%</h3>
+                                <small class="text-muted">vs mes anterior</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desglose por Método de Pago -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Desglose por Método de Pago (Mes Actual)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Efectivo -->
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-badge bg-success me-3" style="width: 50px; height: 50px; line-height: 50px; font-size: 24px;">
+                                            <i class="bi bi-cash-stack"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 text-muted">Efectivo</h6>
+                                            <h4 class="mb-0 fw-bold text-success" id="db-efectivo-mes">$0</h4>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <h5 class="mb-0 fw-bold text-success" id="db-efectivo-porcentaje">0%</h5>
+                                        <small class="text-muted">del total</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Transferencia -->
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center justify-content-between p-3 border rounded">
+                                    <div class="d-flex align-items-center">
+                                        <div class="icon-badge bg-primary me-3" style="width: 50px; height: 50px; line-height: 50px; font-size: 24px;">
+                                            <i class="bi bi-bank"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 text-muted">Transferencia</h6>
+                                            <h4 class="mb-0 fw-bold text-primary" id="db-transferencia-mes">$0</h4>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <h5 class="mb-0 fw-bold text-primary" id="db-transferencia-porcentaje">0%</h5>
+                                        <small class="text-muted">del total</small>
                                     </div>
                                 </div>
                             </div>
