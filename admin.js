@@ -3225,7 +3225,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                      salesCollection,
                      where('timestamp', '>=', Timestamp.fromDate(inicio)),
                      where('timestamp', '<=', Timestamp.fromDate(fin)),
-                     where('estado', '!=', 'Anulada')
+                     orderBy('timestamp', 'desc')
                  );
                  const ventasSnap = await getDocs(qVentas);
 
@@ -3236,6 +3236,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                  ventasSnap.forEach(doc => {
                      const venta = doc.data();
+                    const estado = venta.estado || 'Completada';
+
+                    // Filtrado manual - omitir ventas anuladas/canceladas
+                    if (estado === 'Anulada' || estado === 'Cancelada') {
+                        return;
+                    }
+
                      totalVentas += venta.totalVenta || 0;
                      ventasEfectivo += venta.pagoEfectivo || 0;
                      ventasTransferencia += venta.pagoTransferencia || 0;
@@ -3281,7 +3288,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                  let recibidoRepartidores = 0;
                  liquidacionesSnap.forEach(doc => {
                      const liq = doc.data();
-                     recibidoRepartidores += liq.monto || 0;
+                     recibidoRepartidores += liq.efectivoEntregado || 0;
                  });
 
                  // Actualizar datos
