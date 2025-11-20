@@ -5597,6 +5597,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     const replyInput = document.getElementById('admin-reply-input');
     const replySendBtn = document.getElementById('admin-reply-send');
 
+    // Validar que los elementos existan antes de continuar
+    if (!conversationsList || !conversationMessages || !conversationTitle || !replyArea) {
+        console.warn('Elementos de conversaciones no encontrados en el DOM. Saltando inicialización.');
+        return;
+    }
+
     let selectedConversationId = null;
     let conversationsMap = new Map();
 
@@ -5621,10 +5627,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         updateConversationsCount();
     }, (error) => {
         console.error("Error cargando conversaciones:", error);
-        conversationsList.innerHTML = '<div class="p-3 text-center text-danger">Error al cargar conversaciones</div>';
+        if (conversationsList) {
+            conversationsList.innerHTML = '<div class="p-3 text-center text-danger">Error al cargar conversaciones</div>';
+        }
     });
 
     function renderConversationsList() {
+        if (!conversationsList) {
+            console.warn('conversationsList element not found');
+            return;
+        }
+
         if (conversationsMap.size === 0) {
             conversationsList.innerHTML = '<div class="p-3 text-center text-muted">No hay conversaciones</div>';
             return;
