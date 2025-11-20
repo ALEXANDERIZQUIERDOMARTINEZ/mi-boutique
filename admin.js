@@ -3337,8 +3337,65 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
              calcularDatosDelDia();
          }
 
-         if(addIncomeForm && addIncomeModalInstance) addIncomeForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(incomeAmountInput.value); const method = incomeMethodSelect.value; const desc = incomeDescInput.value.trim(); if (amount && desc && method) { try { await addDoc(financesCollection, { tipo: 'ingreso', monto: amount, metodoPago: method, descripcion: desc, timestamp: serverTimestamp() }); showToast(`Ingreso en ${method} guardado!`); addIncomeModalInstance.hide(); addIncomeForm.reset(); } catch(err) { console.error("Err income:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Todos los campos son requeridos.', 'warning'); } });
-         if(addExpenseForm && addExpenseModalInstance) addExpenseForm.addEventListener('submit', async (e) => { e.preventDefault(); const amount = parseFloat(expenseAmountInput.value); const desc = expenseDescInput.value.trim(); if (amount && desc) { try { await addDoc(financesCollection, { tipo: 'gasto', monto: amount, descripcion: desc, timestamp: serverTimestamp() }); showToast('Gasto guardado!'); addExpenseModalInstance.hide(); addExpenseForm.reset(); } catch(err) { console.error("Err expense:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Monto y descripción requeridos.', 'warning'); } });
+         if(addIncomeForm) addIncomeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const amount = parseFloat(incomeAmountInput.value);
+            const method = incomeMethodSelect.value;
+            const desc = incomeDescInput.value.trim();
+            if (amount && desc && method) {
+                try {
+                    await addDoc(financesCollection, {
+                        tipo: 'ingreso',
+                        monto: amount,
+                        metodoPago: method,
+                        descripcion: desc,
+                        timestamp: serverTimestamp()
+                    });
+                    showToast(`Ingreso en ${method} guardado!`);
+
+                    // Cerrar modal correctamente
+                    const modalEl = document.getElementById('addIncomeModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modalInstance.hide();
+
+                    addIncomeForm.reset();
+                } catch(err) {
+                    console.error("Err income:", err);
+                    showToast(`Error: ${err.message}`, 'error');
+                }
+            } else {
+                showToast('Todos los campos son requeridos.', 'warning');
+            }
+         });
+
+         if(addExpenseForm) addExpenseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const amount = parseFloat(expenseAmountInput.value);
+            const desc = expenseDescInput.value.trim();
+            if (amount && desc) {
+                try {
+                    await addDoc(financesCollection, {
+                        tipo: 'gasto',
+                        monto: amount,
+                        descripcion: desc,
+                        timestamp: serverTimestamp()
+                    });
+                    showToast('Gasto guardado!');
+
+                    // Cerrar modal correctamente
+                    const modalEl = document.getElementById('addExpenseModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modalInstance.hide();
+
+                    addExpenseForm.reset();
+                } catch(err) {
+                    console.error("Err expense:", err);
+                    showToast(`Error: ${err.message}`, 'error');
+                }
+            } else {
+                showToast('Monto y descripción requeridos.', 'warning');
+            }
+         });
         if (closingForm) closingForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
