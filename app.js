@@ -1282,6 +1282,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             mensaje += `💰 TOTAL: ${formatoMoneda.format(total)}`;
 
+            // Crear mensaje LIMPIO para WhatsApp (sin emojis)
+            let mensajeWhatsApp = `NUEVO PEDIDO WEB #${docRef.id.substring(0, 6).toUpperCase()}\n\n`;
+            if (isWholesaleActive) {
+                mensajeWhatsApp += "TIPO: MAYORISTA\n\n";
+            }
+            mensajeWhatsApp += `Cliente: ${nombre}\n`;
+            mensajeWhatsApp += `WhatsApp: ${whatsapp}\n`;
+            mensajeWhatsApp += `Ciudad: ${ciudad}\n`;
+            mensajeWhatsApp += `Direccion: ${direccion}\n`;
+            if(observaciones) mensajeWhatsApp += `Observaciones: ${observaciones}\n`;
+            mensajeWhatsApp += `Pago: ${pago}\n\n`;
+            mensajeWhatsApp += "PRODUCTOS:\n\n";
+            cart.forEach((item, i) => {
+                mensajeWhatsApp += `${i + 1}. ${item.nombre}\n`;
+                mensajeWhatsApp += `   Talla: ${item.talla} | Color: ${item.color}\n`;
+                mensajeWhatsApp += `   ${item.cantidad} unid. x ${formatoMoneda.format(item.precio)}\n`;
+                mensajeWhatsApp += `   Subtotal: ${formatoMoneda.format(item.total)}\n\n`;
+            });
+            mensajeWhatsApp += `TOTAL: ${formatoMoneda.format(total)}`;
+
             // Guardar conversación
             await addDoc(chatConversationsCollection, {
                 type: 'order',
@@ -1303,10 +1323,10 @@ document.addEventListener('DOMContentLoaded', () => {
             saveCart();
             document.getElementById('checkout-form').reset();
 
-            // Crear mensaje de WhatsApp
-            const numeroWhatsApp = '573015911901'; // TU NÚMERO DE WHATSAPP (cambiar por el tuyo)
-            const mensajeWhatsApp = encodeURIComponent(mensaje);
-            const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${mensajeWhatsApp}`;
+            // Crear URL de WhatsApp con número correcto
+            const numeroWhatsApp = '573046084971'; // Número de la empresa
+            const mensajeWhatsAppURL = encodeURIComponent(mensajeWhatsApp);
+            const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${mensajeWhatsAppURL}`;
 
             // Abrir WhatsApp en nueva pestaña (el cliente NO se sale de la app)
             window.open(urlWhatsApp, '_blank');
