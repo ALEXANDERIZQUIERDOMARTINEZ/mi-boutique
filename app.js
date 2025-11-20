@@ -1262,26 +1262,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const docRef = await addDoc(webOrdersCollection, pedidoData);
 
-            // 3. Guardar en conversaciones del chat
-            let mensaje = `🛍️ NUEVO PEDIDO WEB #${docRef.id.substring(0, 6).toUpperCase()}\n\n`;
-            if (isWholesaleActive) {
-                mensaje += "🏢 TIPO: MAYORISTA\n\n";
-            }
-            mensaje += `👤 Cliente: ${nombre}\n`;
-            mensaje += `📱 WhatsApp: ${whatsapp}\n`;
-            mensaje += `🏙️ Ciudad: ${ciudad}\n`;
-            mensaje += `📍 Dirección: ${direccion}\n`;
-            if(observaciones) mensaje += `📝 Obs: ${observaciones}\n`;
-            mensaje += `💳 Pago: ${pago}\n\n`;
-            mensaje += "📦 PRODUCTOS:\n\n";
-            cart.forEach((item, i) => {
-                mensaje += `${i + 1}. ${item.nombre}\n`;
-                mensaje += `   Talla: ${item.talla} | Color: ${item.color}\n`;
-                mensaje += `   ${item.cantidad} unid. x ${formatoMoneda.format(item.precio)}\n`;
-                mensaje += `   Subtotal: ${formatoMoneda.format(item.total)}\n\n`;
-            });
-            mensaje += `💰 TOTAL: ${formatoMoneda.format(total)}`;
-
             // Crear mensaje LIMPIO para WhatsApp (sin emojis)
             let mensajeWhatsApp = `NUEVO PEDIDO WEB #${docRef.id.substring(0, 6).toUpperCase()}\n\n`;
             if (isWholesaleActive) {
@@ -1301,19 +1281,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 mensajeWhatsApp += `   Subtotal: ${formatoMoneda.format(item.total)}\n\n`;
             });
             mensajeWhatsApp += `TOTAL: ${formatoMoneda.format(total)}`;
-
-            // Guardar conversación
-            await addDoc(chatConversationsCollection, {
-                type: 'order',
-                clienteId: clientId,
-                clienteNombre: nombre,
-                clienteCelular: whatsapp,
-                pedidoId: docRef.id,
-                message: mensaje,
-                timestamp: serverTimestamp(),
-                read: false,
-                conversationId: `order_${docRef.id}`
-            });
 
             // Limpiar y cerrar
             bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
