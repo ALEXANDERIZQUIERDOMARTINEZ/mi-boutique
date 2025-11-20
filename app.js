@@ -1282,9 +1282,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             mensajeWhatsApp += `TOTAL: ${formatoMoneda.format(total)}`;
 
-            // Limpiar y cerrar
-            bootstrap.Modal.getInstance(document.getElementById('checkoutModal')).hide();
-            bootstrap.Offcanvas.getInstance(document.getElementById('cartOffcanvas')).hide();
+            // Limpiar y cerrar modales
+            const checkoutModalEl = document.getElementById('checkoutModal');
+            const cartOffcanvasEl = document.getElementById('cartOffcanvas');
+
+            const checkoutModalInstance = bootstrap.Modal.getInstance(checkoutModalEl) || bootstrap.Modal.getOrCreateInstance(checkoutModalEl);
+            const cartOffcanvasInstance = bootstrap.Offcanvas.getInstance(cartOffcanvasEl) || bootstrap.Offcanvas.getOrCreateInstance(cartOffcanvasEl);
+
+            checkoutModalInstance.hide();
+            cartOffcanvasInstance.hide();
+
+            // Limpiar carrito
             cart = [];
             renderCart();
             saveCart();
