@@ -940,7 +940,18 @@ document.addEventListener('DOMContentLoaded', () => {
                          cantidadVentas: ventasIds.length
                      });
 
-                     showToast('Liquidación registrada correctamente', 'success');
+                     // 🔥 IMPORTANTE: Agregar el efectivo recibido a finanzas
+                     if (efectivoEntregado > 0) {
+                         await addDoc(financesCollection, {
+                             tipo: 'ingreso',
+                             monto: efectivoEntregado,
+                             metodoPago: 'efectivo',
+                             descripcion: `Liquidación ${repartidorNombre} - ${ventasIds.length} domicilios`,
+                             timestamp: serverTimestamp()
+                         });
+                     }
+
+                     showToast('Liquidación registrada y efectivo agregado a finanzas', 'success');
                      liquidateConfirmModalInstance.hide();
 
                      // Deshabilitar botones
@@ -3560,9 +3571,20 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                     const efectivo = venta.pagoEfectivo || 0;
                     const transferencia = venta.pagoTransferencia || 0;
-                    console.log(`  💰 Venta ID: ${doc.id} - Efectivo: $${efectivo}, Transferencia: $${transferencia}`);
-                    ventasEfectivo += efectivo;
-                    ventasTransferencia += transferencia;
+                    const tipoEntrega = venta.tipoEntrega || 'tienda';
+
+                    // 🔥 IMPORTANTE: No sumar efectivo de domicilios (aún no lo tienes)
+                    // Solo se sumará cuando liquides al repartidor
+                    if (tipoEntrega === 'domicilio' && efectivo > 0) {
+                        console.log(`  ⏭️ Venta ${doc.id} - Domicilio $${efectivo} NO sumado (pendiente liquidación)`);
+                        // Solo sumar la transferencia de domicilios (esa ya la tienes)
+                        ventasTransferencia += transferencia;
+                    } else {
+                        // Ventas en tienda: sumar todo normalmente
+                        console.log(`  💰 Venta ID: ${doc.id} - Efectivo: $${efectivo}, Transferencia: $${transferencia}`);
+                        ventasEfectivo += efectivo;
+                        ventasTransferencia += transferencia;
+                    }
                 });
 
                 ventasDelDia = {
