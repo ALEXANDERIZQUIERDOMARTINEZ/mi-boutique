@@ -4249,7 +4249,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ================================================================
     const bajoStockModal = document.getElementById('bajoStockModal');
     if (bajoStockModal) {
-        bajoStockModal.addEventListener('show.bs.modal', () => {
+        bajoStockModal.addEventListener('show.bs.modal', async () => {
             const bajoStockList = document.getElementById('bajo-stock-list');
             if (!bajoStockList) return;
 
@@ -4258,6 +4258,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             if (window.productosBajoStock.length === 0) {
                 bajoStockList.innerHTML = '<tr><td colspan="4" class="text-center text-success">¡No hay productos con bajo stock!</td></tr>';
                 return;
+            }
+
+            // Cargar categorías para mostrar los nombres
+            const categoriesMap = new Map();
+            try {
+                const categoriesSnapshot = await getDocs(query(categoriesCollection, orderBy("nombre")));
+                categoriesSnapshot.forEach(doc => {
+                    categoriesMap.set(doc.id, doc.data().nombre);
+                });
+            } catch (error) {
+                console.error("Error cargando categorías:", error);
             }
 
             // Renderizar cada producto con todas sus variaciones
