@@ -4428,6 +4428,194 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ================================================================
+    // 9️⃣ MÉTRICAS FINANCIERAS DEL MES
+    // ================================================================
+    function calcularMetricasFinancierasMes() {
+        console.log("💰 Calculando métricas financieras del mes...");
+
+        try {
+            // Obtener primer y último día del mes actual
+            const hoy = new Date();
+            const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59);
+
+            // Obtener primer y último día del mes anterior
+            const primerDiaMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+            const ultimoDiaMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth(), 0, 23, 59, 59);
+
+            // Query para el mes actual
+            const qMesActual = query(
+                collection(db, 'finanzas'),
+                where('fecha', '>=', Timestamp.fromDate(primerDiaMes)),
+                where('fecha', '<=', Timestamp.fromDate(ultimoDiaMes))
+            );
+
+            // Query para el mes anterior
+            const qMesAnterior = query(
+                collection(db, 'finanzas'),
+                where('fecha', '>=', Timestamp.fromDate(primerDiaMesAnterior)),
+                where('fecha', '<=', Timestamp.fromDate(ultimoDiaMesAnterior))
+            );
+
+            // Escuchar mes actual
+            onSnapshot(qMesActual, async (snapshotActual) => {
+                let ingresosMesActual = 0;
+                let gastosMesActual = 0;
+                let efectivoMes = 0;
+                let transferenciaMes = 0;
+
+                snapshotActual.forEach(doc => {
+                    const registro = doc.data();
+                    const monto = registro.monto || 0;
+                    const tipo = registro.tipo || '';
+                    const metodo = (registro.metodo || registro.metodoPago || '').toLowerCase();
+
+                    if (tipo === 'ingreso') {
+                        ingresosMesActual += monto;
+
+                        // Desglose por método de pago
+                        if (metodo.includes('efectivo')) {
+                            efectivoMes += monto;
+                        } else if (metodo.includes('transferencia') || metodo.includes('bancaria')) {
+                            transferenciaMes += monto;
+                        }
+                    } else if (tipo === 'gasto') {
+                        gastosMesActual += monto;
+                    }
+                });
+
+                const utilidadNeta = ingresosMesActual - gastosMesActual;
+
+                // Obtener datos del mes anterior
+                const snapshotAnterior = await getDocs(qMesAnterior);
+                let ingresosMesAnterior = 0;
+                let gastosMesAnterior = 0;
+
+                snapshotAnterior.forEach(doc => {
+                    const registro = doc.data();
+                    const monto = registro.monto || 0;
+                    const tipo = registro.tipo || '';
+
+                    if (tipo === 'ingreso') {
+                        ingresosMesAnterior += monto;
+                    } else if (tipo === 'gasto') {
+                        gastosMesAnterior += monto;
+                    }
+                });
+
+                const utilidadMesAnterior = ingresosMesAnterior - gastosMesAnterior;
+
+                // Calcular porcentajes de crecimiento
+                const crecimientoIngresos = ingresosMesAnterior > 0
+                    ? ((ingresosMesActual - ingresosMesAnterior) / ingresosMesAnterior) * 100
+                    : 0;
+                const crecimientoGastos = gastosMesAnterior > 0
+                    ? ((gastosMesActual - gastosMesAnterior) / gastosMesAnterior) * 100
+                    : 0;
+                const crecimientoUtilidad = utilidadMesAnterior > 0
+                    ? ((utilidadNeta - utilidadMesAnterior) / utilidadMesAnterior) * 100
+                    : 0;
+
+                // Actualizar UI - Ingresos
+                const dbIngresosMesEl = document.getElementById('db-ingresos-mes');
+                if (dbIngresosMesEl) {
+                    dbIngresosMesEl.textContent = formatoMoneda.format(ingresosMesActual);
+                }
+
+                const dbIngresosComparativaEl = document.getElementById('db-ingresos-comparativa');
+                if (dbIngresosComparativaEl) {
+                    const iconoIngresos = crecimientoIngresos >= 0 ? 'bi-arrow-up' : 'bi-arrow-down';
+                    const colorIngresos = crecimientoIngresos >= 0 ? 'text-success' : 'text-danger';
+                    dbIngresosComparativaEl.innerHTML = `
+                        <i class="bi ${iconoIngresos} ${colorIngresos}"></i>
+                        ${Math.abs(crecimientoIngresos).toFixed(1)}% vs mes anterior
+                    `;
+                }
+
+                // Actualizar UI - Gastos
+                const dbGastosMesEl = document.getElementById('db-gastos-mes');
+                if (dbGastosMesEl) {
+                    dbGastosMesEl.textContent = formatoMoneda.format(gastosMesActual);
+                }
+
+                const dbGastosComparativaEl = document.getElementById('db-gastos-comparativa');
+                if (dbGastosComparativaEl) {
+                    const iconoGastos = crecimientoGastos >= 0 ? 'bi-arrow-up' : 'bi-arrow-down';
+                    const colorGastos = crecimientoGastos >= 0 ? 'text-danger' : 'text-success';
+                    dbGastosComparativaEl.innerHTML = `
+                        <i class="bi ${iconoGastos} ${colorGastos}"></i>
+                        ${Math.abs(crecimientoGastos).toFixed(1)}% vs mes anterior
+                    `;
+                }
+
+                // Actualizar UI - Utilidad Neta
+                const dbUtilidadNetaEl = document.getElementById('db-utilidad-neta');
+                if (dbUtilidadNetaEl) {
+                    dbUtilidadNetaEl.textContent = formatoMoneda.format(utilidadNeta);
+                    dbUtilidadNetaEl.className = utilidadNeta >= 0
+                        ? 'mb-1 fw-bold text-success'
+                        : 'mb-1 fw-bold text-danger';
+                }
+
+                const dbUtilidadComparativaEl = document.getElementById('db-utilidad-comparativa');
+                if (dbUtilidadComparativaEl) {
+                    const iconoUtilidad = crecimientoUtilidad >= 0 ? 'bi-arrow-up' : 'bi-arrow-down';
+                    const colorUtilidad = crecimientoUtilidad >= 0 ? 'text-success' : 'text-danger';
+                    dbUtilidadComparativaEl.innerHTML = `
+                        <i class="bi ${iconoUtilidad} ${colorUtilidad}"></i>
+                        ${Math.abs(crecimientoUtilidad).toFixed(1)}% vs mes anterior
+                    `;
+                }
+
+                // Actualizar UI - Crecimiento General
+                const dbCrecimientoPorcentajeEl = document.getElementById('db-crecimiento-porcentaje');
+                if (dbCrecimientoPorcentajeEl) {
+                    dbCrecimientoPorcentajeEl.textContent = `${crecimientoIngresos >= 0 ? '+' : ''}${crecimientoIngresos.toFixed(1)}%`;
+                    dbCrecimientoPorcentajeEl.className = crecimientoIngresos >= 0
+                        ? 'mb-1 fw-bold text-success'
+                        : 'mb-1 fw-bold text-danger';
+                }
+
+                // Actualizar UI - Método de Pago: Efectivo
+                const totalIngresos = ingresosMesActual;
+                const porcentajeEfectivo = totalIngresos > 0 ? (efectivoMes / totalIngresos) * 100 : 0;
+                const porcentajeTransferencia = totalIngresos > 0 ? (transferenciaMes / totalIngresos) * 100 : 0;
+
+                const dbEfectivoMesEl = document.getElementById('db-efectivo-mes');
+                if (dbEfectivoMesEl) {
+                    dbEfectivoMesEl.textContent = formatoMoneda.format(efectivoMes);
+                }
+
+                const dbEfectivoPorcentajeEl = document.getElementById('db-efectivo-porcentaje');
+                if (dbEfectivoPorcentajeEl) {
+                    dbEfectivoPorcentajeEl.textContent = `${porcentajeEfectivo.toFixed(0)}%`;
+                }
+
+                // Actualizar UI - Método de Pago: Transferencia
+                const dbTransferenciaMesEl = document.getElementById('db-transferencia-mes');
+                if (dbTransferenciaMesEl) {
+                    dbTransferenciaMesEl.textContent = formatoMoneda.format(transferenciaMes);
+                }
+
+                const dbTransferenciaPorcentajeEl = document.getElementById('db-transferencia-porcentaje');
+                if (dbTransferenciaPorcentajeEl) {
+                    dbTransferenciaPorcentajeEl.textContent = `${porcentajeTransferencia.toFixed(0)}%`;
+                }
+
+                console.log(`✅ Métricas financieras calculadas:
+                    - Ingresos: ${formatoMoneda.format(ingresosMesActual)} (${crecimientoIngresos.toFixed(1)}%)
+                    - Gastos: ${formatoMoneda.format(gastosMesActual)} (${crecimientoGastos.toFixed(1)}%)
+                    - Utilidad: ${formatoMoneda.format(utilidadNeta)} (${crecimientoUtilidad.toFixed(1)}%)
+                    - Efectivo: ${formatoMoneda.format(efectivoMes)} (${porcentajeEfectivo.toFixed(0)}%)
+                    - Transferencia: ${formatoMoneda.format(transferenciaMes)} (${porcentajeTransferencia.toFixed(0)}%)`);
+            });
+
+        } catch (error) {
+            console.error("❌ Error al calcular métricas financieras:", error);
+        }
+    }
+
+    // ================================================================
     // 🚀 INICIALIZAR TODAS LAS FUNCIONES
     // ================================================================
     calcularVentasHoy();
@@ -4438,6 +4626,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     calcularTotalClientes();
     calcularPromocionesActivas();
     calcularTotalRepartidores();
+    calcularMetricasFinancierasMes(); // Nueva función
 
     // Mostrar fecha actual en el dashboard
     const dashboardDateEl = document.getElementById('dashboard-date');
