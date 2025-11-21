@@ -204,6 +204,53 @@
                     </div>
                 </div>
 
+                <!-- Sección: Metas Financieras con IA -->
+                <div class="mb-3">
+                    <h5 class="text-muted fw-light"><i class="bi bi-bullseye me-2"></i>Mis Metas Financieras</h5>
+                </div>
+                <div class="row g-4 mb-4">
+                    <!-- Card: Crear Nueva Meta -->
+                    <div class="col-md-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Crear Nueva Meta</h6>
+                                <button class="btn btn-sm btn-primary" id="btn-toggle-crear-meta">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="card-body" id="form-crear-meta" style="display: none;">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Nombre de la Meta</label>
+                                        <input type="text" class="form-control" id="meta-nombre" placeholder="Ej: Meta Diciembre 2025">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Monto Objetivo</label>
+                                        <input type="number" class="form-control" id="meta-monto" placeholder="60000000">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Fecha Objetivo</label>
+                                        <input type="date" class="form-control" id="meta-fecha">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button class="btn btn-success w-100" id="btn-guardar-meta">
+                                            <i class="bi bi-save"></i> Guardar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Metas Activas -->
+                    <div class="col-md-12">
+                        <div id="metas-container">
+                            <!-- Las metas se cargarán aquí dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Sección: Análisis de Datos -->
                 <div class="mb-3">
                     <h5 class="text-muted fw-light"><i class="bi bi-bar-chart-line me-2"></i>Análisis de Datos</h5>
