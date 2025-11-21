@@ -241,6 +241,14 @@ body.admin-page {
     background: linear-gradient(135deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 100%);
 }
 
+.dashboard-card.card-inversion .card-icon {
+    background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+}
+
+.dashboard-card.card-utilidad .card-icon {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
 .dashboard-card .card-content {
     position: relative;
 }
