@@ -4644,6 +4644,80 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ================================================================
+    // 🔟 INVERSIÓN Y UTILIDAD EN INVENTARIO
+    // ================================================================
+    function calcularInversionInventario() {
+        console.log("💎 Calculando inversión y utilidad en inventario...");
+
+        try {
+            onSnapshot(productsCollection, (snapshot) => {
+                let inversionTotal = 0;
+                let valorPotencialDetal = 0;
+                let valorPotencialMayor = 0;
+                let totalUnidades = 0;
+
+                snapshot.forEach(doc => {
+                    const producto = doc.data();
+                    const costoCompra = parseFloat(producto.costoCompra) || 0;
+                    const precioDetal = parseFloat(producto.precioDetal) || 0;
+                    const precioMayor = parseFloat(producto.precioMayor) || 0;
+
+                    // Calcular stock total del producto
+                    const variaciones = producto.variaciones || [];
+                    const stockTotal = variaciones.reduce((sum, v) => {
+                        return sum + (parseInt(v.stock, 10) || 0);
+                    }, 0);
+
+                    // Calcular inversión y valores potenciales
+                    inversionTotal += costoCompra * stockTotal;
+                    valorPotencialDetal += precioDetal * stockTotal;
+                    valorPotencialMayor += precioMayor * stockTotal;
+                    totalUnidades += stockTotal;
+                });
+
+                // Calcular utilidad potencial (usando precio detal)
+                const utilidadPotencial = valorPotencialDetal - inversionTotal;
+                const margenUtilidad = inversionTotal > 0
+                    ? ((utilidadPotencial / inversionTotal) * 100)
+                    : 0;
+
+                // Actualizar UI - Inversión Total
+                const dbInversionEl = document.getElementById('db-inversion-inventario');
+                if (dbInversionEl) {
+                    dbInversionEl.textContent = formatoMoneda.format(inversionTotal);
+                }
+
+                const dbUnidadesEl = document.getElementById('db-inventario-unidades');
+                if (dbUnidadesEl) {
+                    dbUnidadesEl.textContent = `${totalUnidades} unidades`;
+                }
+
+                // Actualizar UI - Utilidad Potencial
+                const dbUtilidadPotencialEl = document.getElementById('db-utilidad-potencial');
+                if (dbUtilidadPotencialEl) {
+                    dbUtilidadPotencialEl.textContent = formatoMoneda.format(utilidadPotencial);
+                }
+
+                const dbMargenEl = document.getElementById('db-margen-utilidad');
+                if (dbMargenEl) {
+                    dbMargenEl.innerHTML = `
+                        <i class="bi bi-percent"></i> ${margenUtilidad.toFixed(1)}% de margen
+                    `;
+                }
+
+                console.log(`✅ Inversión en inventario calculada:
+                    - Inversión Total: ${formatoMoneda.format(inversionTotal)}
+                    - Valor Potencial Detal: ${formatoMoneda.format(valorPotencialDetal)}
+                    - Utilidad Potencial: ${formatoMoneda.format(utilidadPotencial)}
+                    - Margen: ${margenUtilidad.toFixed(1)}%
+                    - Unidades: ${totalUnidades}`);
+            });
+        } catch (error) {
+            console.error("❌ Error al calcular inversión en inventario:", error);
+        }
+    }
+
+    // ================================================================
     // 🚀 INICIALIZAR TODAS LAS FUNCIONES
     // ================================================================
     calcularVentasHoy();
@@ -4655,6 +4729,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     calcularPromocionesActivas();
     calcularTotalRepartidores();
     calcularMetricasFinancierasMes(); // Nueva función
+    calcularInversionInventario(); // Inversión y utilidad
 
     // Mostrar fecha actual en el dashboard
     const dashboardDateEl = document.getElementById('dashboard-date');
