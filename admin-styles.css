@@ -1121,3 +1121,132 @@ body.admin-page {
         font-size: 0.8rem;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SECCIÓN DE METAS FINANCIERAS CON IA
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Card de Meta con Gradiente */
+.meta-card {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.meta-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Header con gradiente profesional */
+.bg-gradient-meta {
+    background: linear-gradient(135deg, #D988B9 0%, #C273A2 100%);
+    padding: 1rem 1.25rem;
+}
+
+.bg-gradient-meta h6 {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* Progress bar mejorado */
+.meta-card .progress {
+    border-radius: 12px;
+    background-color: #E5E5E5;
+}
+
+.meta-card .progress-bar {
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: width 0.6s ease;
+}
+
+/* Recomendaciones de IA */
+#metas-container [id^="recomendaciones-"] {
+    background: linear-gradient(135deg, #F5E8ED 0%, #FFFFFF 100%);
+    border-left: 4px solid var(--admin-primario);
+    animation: fadeIn 0.3s ease;
+}
+
+#metas-container [id^="recomendaciones-"] h6 {
+    color: var(--admin-primario-oscuro);
+    font-weight: 600;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Iconos en recomendaciones */
+#metas-container [id^="recomendaciones-"] .bi-robot {
+    color: var(--admin-primario);
+    font-size: 1.2rem;
+}
+
+/* Botones de acción */
+.meta-card .btn-sm {
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.meta-card .btn-light {
+    background: white;
+    border: none;
+}
+
+.meta-card .btn-light:hover {
+    background: #F5E8ED;
+    color: var(--admin-primario-oscuro);
+    transform: scale(1.05);
+}
+
+.meta-card .btn-danger {
+    background: #EF4444;
+    border: none;
+}
+
+.meta-card .btn-danger:hover {
+    background: #DC2626;
+    transform: scale(1.05);
+}
+
+/* Estadísticas de la meta */
+.meta-card .card-body small.text-muted {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.meta-card .card-body h5 {
+    font-size: 1.4rem;
+}
+
+/* Responsive para metas */
+@media (max-width: 768px) {
+    .meta-card .card-body h5 {
+        font-size: 1.1rem;
+    }
+
+    .bg-gradient-meta h6 {
+        font-size: 0.95rem;
+    }
+
+    .meta-card .progress {
+        height: 20px !important;
+    }
+
+    .meta-card .progress-bar {
+        font-size: 0.75rem;
+    }
+}
