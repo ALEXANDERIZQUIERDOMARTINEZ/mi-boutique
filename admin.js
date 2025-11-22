@@ -7400,14 +7400,27 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const ventasActuales = await calcularVentasDesde(fechaInicio);
         const progreso = (ventasActuales / meta.montoObjetivo) * 100;
 
+        // Analizar patrones de venta por día de la semana
+        const promediosPorDia = await analizarVentasPorDiaSemana();
+
+        // Generar plan personalizado basado en patrones históricos
+        const planPersonalizado = await generarPlanPersonalizado(meta, fechaInicio, fechaFin, promediosPorDia);
+
         // Calcular días transcurridos y restantes
         const diasTotales = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24));
         const diasTranscurridos = Math.ceil((ahora - fechaInicio) / (1000 * 60 * 60 * 24));
         const diasRestantes = Math.max(0, Math.ceil((fechaFin - ahora) / (1000 * 60 * 60 * 24)));
 
-        // Calcular meta diaria
+        // Calcular meta diaria promedio (informativa)
         const metaDiaria = meta.montoObjetivo / diasTotales;
         const ventasDiariasNecesarias = diasRestantes > 0 ? (meta.montoObjetivo - ventasActuales) / diasRestantes : 0;
+
+        // Obtener meta para hoy según el patrón histórico
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const metaHoy = planPersonalizado.find(p =>
+            p.fecha.getTime() === hoy.getTime()
+        );
 
         // Determinar si va bien o mal
         const progresoEsperado = (diasTranscurridos / diasTotales) * 100;
@@ -7499,6 +7512,98 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             : `Llevas ${progreso.toFixed(1)}% de avance pero ya pasó ${progresoEsperado.toFixed(1)}% del tiempo. Necesitas vender ${formatoMoneda.format(ventasDiariasNecesarias)} diarios.`
                         }
                     </p>
+                </div>
+
+                <!-- Plan Personalizado según tus patrones de venta -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary bg-opacity-10">
+                        <h6 class="mb-0">
+                            <i class="bi bi-calendar-week text-primary"></i>
+                            Plan Personalizado según TUS patrones de venta
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            <i class="bi bi-info-circle"></i>
+                            Analicé tus ventas históricas y calculé cuánto vendes típicamente cada día de la semana.
+                            Este plan se ajusta a TU realidad.
+                        </p>
+
+                        <!-- Análisis de patrones históricos -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <h6 class="fw-bold mb-2">📊 Tus promedios históricos por día:</h6>
+                                <div class="row g-2">
+                                    ${Object.keys(promediosPorDia).map(dia => {
+                                        const datos = promediosPorDia[dia];
+                                        const esMejorDia = datos.porcentajeDelTotal >= 15;
+                                        return `
+                                            <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+                                                <div class="p-2 border rounded ${esMejorDia ? 'bg-success bg-opacity-10 border-success' : ''}">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span class="fw-bold">${datos.nombre}</span>
+                                                        <span class="badge ${esMejorDia ? 'bg-success' : 'bg-secondary'}">
+                                                            ${datos.porcentajeDelTotal.toFixed(1)}%
+                                                        </span>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        ${formatoMoneda.format(datos.promedio)} promedio
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Meta para HOY -->
+                        ${metaHoy ? `
+                        <div class="alert alert-info mb-3">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-calendar-check"></i>
+                                Meta para HOY (${metaHoy.diaSemana})
+                            </h6>
+                            <p class="mb-0 fs-4 fw-bold text-primary">
+                                ${formatoMoneda.format(metaHoy.metaDia)}
+                            </p>
+                            <small class="text-muted">
+                                Basado en que los ${metaHoy.diaSemana}s vendes en promedio ${formatoMoneda.format(metaHoy.promedioHistorico)}
+                            </small>
+                        </div>
+                        ` : ''}
+
+                        <!-- Plan de los próximos 7 días -->
+                        <h6 class="fw-bold mb-2">📅 Plan para los próximos 7 días:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Día</th>
+                                        <th>Meta</th>
+                                        <th>Tu promedio</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${planPersonalizado.slice(0, 7).map(dia => {
+                                        const esHoy = dia.fecha.toDateString() === hoy.toDateString();
+                                        return `
+                                            <tr class="${esHoy ? 'table-active fw-bold' : ''}">
+                                                <td>${dia.fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })}</td>
+                                                <td>
+                                                    ${esHoy ? '<i class="bi bi-arrow-right-circle-fill text-primary me-1"></i>' : ''}
+                                                    ${dia.diaSemana}
+                                                </td>
+                                                <td class="text-success">${formatoMoneda.format(dia.metaDia)}</td>
+                                                <td class="text-muted">${formatoMoneda.format(dia.promedioHistorico)}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Gráfica de progreso (placeholder - se puede agregar Chart.js después) -->
@@ -7594,6 +7699,66 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         });
     }
 
+    // Función para analizar ventas históricas por día de la semana
+    async function analizarVentasPorDiaSemana() {
+        try {
+            const ventasSnapshot = await getDocs(salesCollection);
+
+            // Inicializar contadores por día de semana (0=Domingo, 6=Sábado)
+            const ventasPorDia = {
+                0: { total: 0, cantidad: 0, nombre: 'Domingo' },
+                1: { total: 0, cantidad: 0, nombre: 'Lunes' },
+                2: { total: 0, cantidad: 0, nombre: 'Martes' },
+                3: { total: 0, cantidad: 0, nombre: 'Miércoles' },
+                4: { total: 0, cantidad: 0, nombre: 'Jueves' },
+                5: { total: 0, cantidad: 0, nombre: 'Viernes' },
+                6: { total: 0, cantidad: 0, nombre: 'Sábado' }
+            };
+
+            // Agrupar ventas por día de la semana
+            ventasSnapshot.forEach(doc => {
+                const venta = doc.data();
+                const fechaVenta = venta.timestamp?.toDate();
+
+                if (fechaVenta) {
+                    const diaSemana = fechaVenta.getDay(); // 0=Dom, 1=Lun, ..., 6=Sab
+                    const total = parseFloat(venta.total || 0);
+
+                    ventasPorDia[diaSemana].total += total;
+                    ventasPorDia[diaSemana].cantidad += 1;
+                }
+            });
+
+            // Calcular promedios
+            const promedios = {};
+            let totalVentasSemanal = 0;
+
+            for (let dia in ventasPorDia) {
+                const datos = ventasPorDia[dia];
+                const promedio = datos.cantidad > 0 ? datos.total / datos.cantidad : 0;
+                promedios[dia] = {
+                    promedio: promedio,
+                    nombre: datos.nombre,
+                    totalHistorico: datos.total,
+                    diasConVentas: datos.cantidad
+                };
+                totalVentasSemanal += promedio;
+            }
+
+            // Calcular porcentaje de ventas que representa cada día
+            for (let dia in promedios) {
+                promedios[dia].porcentajeDelTotal = totalVentasSemanal > 0
+                    ? (promedios[dia].promedio / totalVentasSemanal) * 100
+                    : 14.28; // Si no hay datos, asumir distribución uniforme (100/7)
+            }
+
+            return promedios;
+        } catch (error) {
+            console.error('Error analizando ventas por día:', error);
+            return null;
+        }
+    }
+
     // Función auxiliar para calcular ventas desde una fecha
     async function calcularVentasDesde(fechaDesde) {
         try {
@@ -7614,6 +7779,58 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             console.error('Error calculando ventas:', error);
             return 0;
         }
+    }
+
+    // Función para generar plan de metas basado en patrones de venta
+    async function generarPlanPersonalizado(meta, fechaInicio, fechaFin, promediosPorDia) {
+        const plan = [];
+        let fechaActual = new Date(fechaInicio);
+        fechaActual.setHours(0, 0, 0, 0);
+
+        const fechaFinDate = new Date(fechaFin);
+        fechaFinDate.setHours(23, 59, 59, 999);
+
+        let totalEsperadoSemanal = 0;
+
+        // Calcular cuánto se espera vender en una semana según promedios históricos
+        for (let dia in promediosPorDia) {
+            totalEsperadoSemanal += promediosPorDia[dia].promedio;
+        }
+
+        // Si no hay datos históricos suficientes, usar distribución uniforme
+        const usarDistribucionUniforme = totalEsperadoSemanal === 0;
+
+        while (fechaActual <= fechaFinDate) {
+            const diaSemana = fechaActual.getDay();
+            let metaDia;
+
+            if (usarDistribucionUniforme) {
+                // Distribución uniforme si no hay datos históricos
+                const diasRestantes = Math.ceil((fechaFinDate - new Date()) / (1000 * 60 * 60 * 24));
+                metaDia = meta.montoObjetivo / diasRestantes;
+            } else {
+                // Calcular meta proporcional según patrones históricos
+                const porcentajeDia = promediosPorDia[diaSemana].porcentajeDelTotal;
+                const diasTotales = Math.ceil((fechaFinDate - new Date(fechaInicio)) / (1000 * 60 * 60 * 24));
+                const semanasAproximadas = diasTotales / 7;
+
+                // Meta de este día = (porcentaje del día * meta total) / número de veces que aparece este día
+                const vecesQueApareceDia = Math.ceil(semanasAproximadas);
+                metaDia = (meta.montoObjetivo * (porcentajeDia / 100)) / vecesQueApareceDia;
+            }
+
+            plan.push({
+                fecha: new Date(fechaActual),
+                diaSemana: promediosPorDia[diaSemana].nombre,
+                metaDia: metaDia,
+                promedioHistorico: promediosPorDia[diaSemana].promedio
+            });
+
+            // Avanzar al siguiente día
+            fechaActual.setDate(fechaActual.getDate() + 1);
+        }
+
+        return plan;
     }
 
     // Cargar metas en la página
