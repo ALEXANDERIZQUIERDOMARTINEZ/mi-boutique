@@ -7323,13 +7323,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                                     <i class="bi bi-image text-muted fs-3"></i>
                                 </div>
                             </div>
-                            <div class="flex-grow-1">
-                                <select class="form-select producto-select" data-producto-id="${productoId}" required>
-                                    <option value="">Selecciona un producto...</option>
-                                    ${Array.from(localProductsMap.values()).map(p =>
-                                        `<option value="${p.id}" data-producto='${JSON.stringify(p)}'>${p.nombre} (${p.codigo})</option>`
-                                    ).join('')}
-                                </select>
+                            <div class="flex-grow-1 position-relative">
+                                <input type="text"
+                                    class="form-control producto-search-input"
+                                    data-producto-id="${productoId}"
+                                    placeholder="Buscar producto por nombre o código..."
+                                    autocomplete="off"
+                                    required>
+                                <input type="hidden" class="producto-selected-id" data-producto-id="${productoId}">
+                                <div class="producto-dropdown-${productoId}" style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 400px; overflow-y: auto; background: white; border: 1px solid #dee2e6; border-radius: 0.375rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15); z-index: 1000; margin-top: 2px;">
+                                </div>
                                 <small class="text-muted producto-info-${productoId}"></small>
                             </div>
                             <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-producto">
@@ -7354,35 +7357,96 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         productosContainer.appendChild(productoCard);
 
-        // Event listener para selección de producto
-        const productoSelect = productoCard.querySelector('.producto-select');
-        productoSelect.addEventListener('change', (e) => {
-            const selectedOption = e.target.selectedOptions[0];
-            const imagenPreview = productoCard.querySelector(`.producto-imagen-preview-${productoId}`);
-            const productoInfo = productoCard.querySelector(`.producto-info-${productoId}`);
+        // Event listener para búsqueda de producto
+        const searchInput = productoCard.querySelector('.producto-search-input');
+        const dropdown = productoCard.querySelector(`.producto-dropdown-${productoId}`);
+        const selectedIdInput = productoCard.querySelector('.producto-selected-id');
 
-            if (selectedOption.value) {
-                const producto = JSON.parse(selectedOption.dataset.producto);
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
 
-                // Mostrar imagen
-                if (producto.imagenUrl) {
-                    imagenPreview.innerHTML = `<img src="${producto.imagenUrl}" alt="${producto.nombre}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">`;
-                } else {
-                    imagenPreview.innerHTML = '<div style="width: 80px; height: 80px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted fs-3"></i></div>';
-                }
+            if (searchTerm.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
 
-                // Mostrar info
-                const stockTotal = (producto.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-                productoInfo.innerHTML = `Stock actual: <strong>${stockTotal}</strong> unidades`;
+            // Filtrar productos
+            const productos = Array.from(localProductsMap.values()).filter(p =>
+                p.nombre.toLowerCase().includes(searchTerm) ||
+                (p.codigo && p.codigo.toLowerCase().includes(searchTerm))
+            );
 
-                mostrarVariaciones(productoId, producto);
-            } else {
-                imagenPreview.innerHTML = '<div style="width: 80px; height: 80px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted fs-3"></i></div>';
-                productoInfo.innerHTML = '';
-                document.querySelector(`.variaciones-container-${productoId}`).innerHTML =
-                    '<div class="alert alert-info alert-sm mb-0"><i class="bi bi-info-circle me-1"></i>Selecciona un producto para ver sus variaciones</div>';
+            if (productos.length === 0) {
+                dropdown.innerHTML = '<div class="p-3 text-muted text-center">No se encontraron productos</div>';
+                dropdown.style.display = 'block';
+                return;
+            }
+
+            // Mostrar resultados con imágenes
+            dropdown.innerHTML = productos.map(p => `
+                <div class="producto-dropdown-item p-2" style="cursor: pointer; border-bottom: 1px solid #f0f0f0;"
+                     data-producto-id="${p.id}"
+                     data-producto='${JSON.stringify(p)}'
+                     onmouseover="this.style.background='#f8f9fa'"
+                     onmouseout="this.style.background='white'">
+                    <div class="d-flex gap-2 align-items-center">
+                        <div style="min-width: 50px; width: 50px; height: 50px;">
+                            ${p.imagenUrl
+                                ? `<img src="${p.imagenUrl}" alt="${p.nombre}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;">`
+                                : `<div style="width: 50px; height: 50px; background: #e9ecef; border-radius: 6px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted"></i></div>`
+                            }
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">${p.nombre}</div>
+                            <small class="text-muted">Código: ${p.codigo || 'N/A'}</small>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            dropdown.style.display = 'block';
+
+            // Event listeners para los items del dropdown
+            dropdown.querySelectorAll('.producto-dropdown-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const producto = JSON.parse(item.dataset.producto);
+                    seleccionarProducto(productoId, producto);
+                });
+            });
+        });
+
+        // Cerrar dropdown al hacer clic fuera
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest(`.producto-dropdown-${productoId}`) && e.target !== searchInput) {
+                dropdown.style.display = 'none';
             }
         });
+
+        // Función para seleccionar un producto
+        function seleccionarProducto(tempId, producto) {
+            const imagenPreview = productoCard.querySelector(`.producto-imagen-preview-${tempId}`);
+            const productoInfo = productoCard.querySelector(`.producto-info-${tempId}`);
+
+            // Actualizar input y guardar ID
+            searchInput.value = `${producto.nombre} (${producto.codigo})`;
+            selectedIdInput.value = producto.id;
+            dropdown.style.display = 'none';
+
+            // Mostrar imagen
+            if (producto.imagenUrl) {
+                imagenPreview.innerHTML = `<img src="${producto.imagenUrl}" alt="${producto.nombre}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">`;
+            } else {
+                imagenPreview.innerHTML = '<div style="width: 80px; height: 80px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted fs-3"></i></div>';
+            }
+
+            // Mostrar info
+            const stockTotal = (producto.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+            productoInfo.innerHTML = `Stock actual: <strong>${stockTotal}</strong> unidades`;
+
+            // Guardar producto en el elemento para acceso posterior
+            productoCard.dataset.productoData = JSON.stringify(producto);
+
+            mostrarVariaciones(tempId, producto);
+        }
 
         // Event listener para eliminar producto
         productoCard.querySelector('.btn-eliminar-producto').addEventListener('click', () => {
@@ -7414,18 +7478,29 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const varDiv = document.createElement('div');
                 varDiv.className = 'mb-2';
                 varDiv.innerHTML = `
-                    <div class="d-flex gap-2 align-items-center">
-                        <div class="badge bg-primary" style="min-width: 80px;">${variacion.talla}</div>
-                        <div class="badge bg-secondary" style="min-width: 80px;">${variacion.color}</div>
-                        <input type="number" class="form-control form-control-sm"
-                            data-producto-id="${producto.id}"
-                            data-talla="${variacion.talla}"
-                            data-color="${variacion.color}"
-                            data-es-nueva="false"
-                            min="0" value="0" placeholder="Cantidad a recibir"
-                            name="cantidad-variacion"
-                            style="max-width: 150px;">
-                        <small class="text-muted">Stock actual: ${variacion.stock}</small>
+                    <div class="d-flex gap-2 align-items-start flex-wrap">
+                        <div class="badge bg-primary d-flex align-items-center" style="min-width: 80px; height: 38px;">${variacion.talla}</div>
+                        <div class="badge bg-secondary d-flex align-items-center" style="min-width: 80px; height: 38px;">${variacion.color}</div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <input type="text" class="form-control form-control-sm"
+                                data-producto-id="${producto.id}"
+                                data-talla="${variacion.talla}"
+                                data-color="${variacion.color}"
+                                data-field="codigo-barras"
+                                placeholder="Código de barras"
+                                value="${variacion.codigoBarras || ''}"
+                                style="font-family: monospace;">
+                        </div>
+                        <div style="width: 120px;">
+                            <input type="number" class="form-control form-control-sm"
+                                data-producto-id="${producto.id}"
+                                data-talla="${variacion.talla}"
+                                data-color="${variacion.color}"
+                                data-es-nueva="false"
+                                min="0" value="0" placeholder="Cantidad"
+                                name="cantidad-variacion">
+                        </div>
+                        <small class="text-muted w-100 ms-2">Stock actual: ${variacion.stock}</small>
                     </div>
                 `;
                 variacionesExistentes.appendChild(varDiv);
@@ -7440,19 +7515,22 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const nuevaVarDiv = document.createElement('div');
             nuevaVarDiv.className = 'mb-2 nueva-variacion';
             nuevaVarDiv.innerHTML = `
-                <div class="d-flex gap-2 align-items-center bg-success bg-opacity-10 p-2 rounded">
-                    <input type="text" class="form-control form-control-sm" placeholder="Talla" data-field="talla" style="max-width: 100px;">
-                    <input type="text" class="form-control form-control-sm" placeholder="Color" data-field="color" style="max-width: 100px;">
-                    <input type="number" class="form-control form-control-sm"
-                        data-producto-id="${producto.id}"
-                        data-es-nueva="true"
-                        min="0" value="1" placeholder="Cantidad"
-                        name="cantidad-variacion"
-                        style="max-width: 150px;">
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-variacion-nueva">
-                        <i class="bi bi-trash3"></i>
-                    </button>
-                    <small class="text-success"><i class="bi bi-sparkles"></i> Nueva</small>
+                <div class="bg-success bg-opacity-10 p-2 rounded">
+                    <div class="d-flex gap-2 align-items-center mb-2">
+                        <input type="text" class="form-control form-control-sm" placeholder="Talla" data-field="talla" style="width: 100px;">
+                        <input type="text" class="form-control form-control-sm" placeholder="Color" data-field="color" style="width: 100px;">
+                        <input type="text" class="form-control form-control-sm" placeholder="Código de barras" data-field="codigo-barras" style="flex: 1; font-family: monospace;">
+                        <input type="number" class="form-control form-control-sm"
+                            data-producto-id="${producto.id}"
+                            data-es-nueva="true"
+                            min="0" value="1" placeholder="Cantidad"
+                            name="cantidad-variacion"
+                            style="width: 100px;">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-variacion-nueva">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
+                    <small class="text-success"><i class="bi bi-sparkles"></i> Nueva variación</small>
                 </div>
             `;
 
@@ -7481,12 +7559,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             // Recolectar productos y variaciones
             const productos = [];
-            const productoSelects = document.querySelectorAll('.producto-select');
+            const productoCards = document.querySelectorAll('.producto-recepcion-item');
 
-            productoSelects.forEach(select => {
-                if (select.value) {
-                    const producto = JSON.parse(select.selectedOptions[0].dataset.producto);
-                    const productoId = select.dataset.productoId;
+            productoCards.forEach(card => {
+                const selectedIdInput = card.querySelector('.producto-selected-id');
+                if (selectedIdInput && selectedIdInput.value) {
+                    const producto = JSON.parse(card.dataset.productoData);
 
                     // Obtener cantidades de variaciones (existentes y nuevas)
                     const variacionInputs = document.querySelectorAll(`[data-producto-id="${producto.id}"][name="cantidad-variacion"]`);
@@ -7498,18 +7576,21 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             const esNueva = input.dataset.esNueva === 'true';
 
                             if (esNueva) {
-                                // Variación nueva - obtener talla y color de inputs hermanos
+                                // Variación nueva - obtener talla, color y código de barras de inputs hermanos
                                 const contenedor = input.closest('.nueva-variacion');
                                 if (contenedor) {
                                     const tallaInput = contenedor.querySelector('[data-field="talla"]');
                                     const colorInput = contenedor.querySelector('[data-field="color"]');
+                                    const codigoBarrasInput = contenedor.querySelector('[data-field="codigo-barras"]');
                                     const talla = tallaInput?.value.trim();
                                     const color = colorInput?.value.trim();
+                                    const codigoBarras = codigoBarrasInput?.value.trim();
 
                                     if (talla && color) {
                                         variaciones.push({
                                             talla: talla,
                                             color: color,
+                                            codigoBarras: codigoBarras || '',
                                             cantidadEsperada: cantidad,
                                             cantidadRecibida: 0,
                                             esNueva: true
@@ -7517,10 +7598,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                                     }
                                 }
                             } else {
-                                // Variación existente
+                                // Variación existente - obtener código de barras
+                                const contenedor = input.closest('.d-flex');
+                                const codigoBarrasInput = contenedor?.querySelector('[data-field="codigo-barras"]');
+                                const codigoBarras = codigoBarrasInput?.value.trim();
+
                                 variaciones.push({
                                     talla: input.dataset.talla,
                                     color: input.dataset.color,
+                                    codigoBarras: codigoBarras || '',
                                     cantidadEsperada: cantidad,
                                     cantidadRecibida: 0,
                                     esNueva: false
@@ -7732,7 +7818,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             const variacionesHtml = p.variaciones.map(v => `
                 <tr>
-                    <td class="ps-4">└ ${v.talla} - ${v.color}</td>
+                    <td class="ps-4">
+                        └ ${v.talla} - ${v.color}
+                        ${v.codigoBarras ? `<br><small class="text-muted ms-3" style="font-family: monospace;"><i class="bi bi-upc-scan"></i> ${v.codigoBarras}</small>` : ''}
+                    </td>
                     <td class="text-center">${v.cantidadEsperada}</td>
                     <td class="text-center">${v.cantidadRecibida}</td>
                     <td class="text-center">
@@ -7895,10 +7984,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     );
 
                     if (variacionIndex !== -1) {
-                        // Variación existente - actualizar stock
+                        // Variación existente - actualizar stock y código de barras
                         const stockActual = parseInt(nuevasVariaciones[variacionIndex].stock, 10) || 0;
                         const cantidadNueva = variacionOrden.cantidadEsperada - variacionOrden.cantidadRecibida;
                         nuevasVariaciones[variacionIndex].stock = stockActual + cantidadNueva;
+
+                        // Actualizar código de barras si se proporcionó uno nuevo
+                        if (variacionOrden.codigoBarras) {
+                            nuevasVariaciones[variacionIndex].codigoBarras = variacionOrden.codigoBarras;
+                        }
 
                         // Actualizar cantidad recibida en la orden
                         variacionOrden.cantidadRecibida = variacionOrden.cantidadEsperada;
@@ -7907,7 +8001,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         nuevasVariaciones.push({
                             talla: variacionOrden.talla,
                             color: variacionOrden.color,
-                            stock: variacionOrden.cantidadEsperada
+                            stock: variacionOrden.cantidadEsperada,
+                            codigoBarras: variacionOrden.codigoBarras || ''
                         });
 
                         // Actualizar cantidad recibida en la orden
