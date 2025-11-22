@@ -267,27 +267,6 @@ class Analytics {
         console.log(`📊 GA4: Ordenamiento aplicado - ${sortOption}`);
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // EVENTOS DE IMÁGENES
-    // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * Evento: Descarga de imagen de producto
-     * @param {Object} product - Producto cuya imagen se descarga
-     */
-    trackImageDownload(product) {
-        if (!this.isAvailable || !product) return;
-
-        gtag('event', 'image_download', {
-            'event_category': 'engagement',
-            'event_label': product.nombre,
-            'product_id': product.id,
-            'product_name': product.nombre
-        });
-
-        console.log(`📊 GA4: Descarga de imagen - ${product.nombre}`);
-    }
-
     /**
      * Evento: Zoom de imagen
      * @param {Object} product - Producto cuya imagen se amplió
@@ -322,22 +301,6 @@ class Analytics {
         console.log(`📊 GA4: Modo mayorista activado`);
     }
 
-    /**
-     * Evento: Interacción con chatbot
-     * @param {string} action - Acción realizada (open, close, send_message)
-     */
-    trackChatbotInteraction(action) {
-        if (!this.isAvailable) return;
-
-        gtag('event', 'chatbot_interaction', {
-            'event_category': 'engagement',
-            'event_label': action,
-            'action': action
-        });
-
-        console.log(`📊 GA4: Interacción con chatbot - ${action}`);
-    }
-
     // ═══════════════════════════════════════════════════════════════
     // UTILIDADES
     // ═══════════════════════════════════════════════════════════════
@@ -362,28 +325,6 @@ class Analytics {
         return {
             precioFinal: Math.max(0, precioFinal),
             tienePromo: true
-        };
-    }
-
-    /**
-     * Obtener productos más vistos
-     * @param {number} limit - Cantidad de productos a retornar
-     * @returns {Array} - Array de [productId, viewCount]
-     */
-    getMostViewedProducts(limit = 10) {
-        return Array.from(this.viewedProducts.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, limit);
-    }
-
-    /**
-     * Exportar datos de analytics
-     * @returns {Object} - Datos de analytics
-     */
-    getAnalyticsData() {
-        return {
-            mostViewedProducts: this.getMostViewedProducts(),
-            sessionDuration: Math.floor((Date.now() - this.sessionStartTime) / 1000)
         };
     }
 }
