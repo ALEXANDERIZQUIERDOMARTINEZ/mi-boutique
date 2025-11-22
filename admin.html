@@ -205,45 +205,6 @@
                     </div>
                 </div>
 
-                <!-- Sección: Mi Meta de Ventas -->
-                <div class="mb-3">
-                    <h5 class="text-muted fw-light"><i class="bi bi-bullseye me-2"></i>Mi Meta de Ventas</h5>
-                </div>
-                <div class="row g-4 mb-4">
-                    <!-- Formulario Simple -->
-                    <div class="col-md-12">
-                        <div class="card shadow-sm">
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Monto Objetivo</label>
-                                        <input type="text" class="form-control" id="meta-monto-simple" placeholder="10.000.000" inputmode="numeric">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Fecha Inicio</label>
-                                        <input type="date" class="form-control" id="meta-fecha-inicio">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Fecha Límite</label>
-                                        <input type="date" class="form-control" id="meta-fecha-simple">
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label">&nbsp;</label>
-                                        <button class="btn btn-primary w-100" id="btn-generar-plan">
-                                            <i class="bi bi-play-fill"></i> Generar Plan
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Plan Generado -->
-                    <div class="col-md-12" id="plan-ventas-container">
-                        <!-- Se generará aquí -->
-                    </div>
-                </div>
-
                 <!-- Sección: Análisis de Datos -->
                 <div class="mb-3">
                     <h5 class="text-muted fw-light"><i class="bi bi-bar-chart-line me-2"></i>Análisis de Datos</h5>
@@ -1020,7 +981,38 @@
 
             <div class="tab-pane fade" id="metas">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="h2 mb-0"><i class="bi bi-bullseye me-2"></i>Mis Metas Financieras</h1>
+                    <h1 class="h2 mb-0"><i class="bi bi-bullseye me-2"></i>Planificador de Ventas con IA</h1>
+                </div>
+
+                <!-- Formulario: Planificador de Ventas -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Monto Objetivo</label>
+                                <input type="text" class="form-control" id="meta-monto-simple" placeholder="60.000.000" inputmode="numeric">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Fecha Inicio</label>
+                                <input type="date" class="form-control" id="meta-fecha-inicio">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Fecha Límite</label>
+                                <input type="date" class="form-control" id="meta-fecha-simple">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <button class="btn btn-primary w-100" id="btn-generar-plan">
+                                    <i class="bi bi-play-fill"></i> Generar Plan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plan Generado -->
+                <div id="plan-ventas-container" class="mb-4">
+                    <!-- Se generará aquí -->
                 </div>
 
                 <!-- Card: Crear Nueva Meta -->
