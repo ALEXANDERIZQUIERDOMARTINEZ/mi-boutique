@@ -7195,7 +7195,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const metaId = metaDoc.id;
 
         // Calcular progreso
-        const fechaInicio = meta.fechaCreacion?.toDate() || new Date();
+        const fechaInicio = meta.fechaInicio ? new Date(meta.fechaInicio) : (meta.fechaCreacion?.toDate() || new Date());
         const fechaFin = new Date(meta.fechaObjetivo);
         const ahora = new Date();
 
@@ -7270,8 +7270,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const metaDoc = await getDoc(doc(db, 'metas', metaId));
             const meta = metaDoc.data();
 
-            // Calcular ventas actuales
-            const fechaInicio = meta.fechaCreacion?.toDate() || new Date();
+            // Calcular ventas actuales desde la fecha de inicio de la meta
+            const fechaInicio = meta.fechaInicio ? new Date(meta.fechaInicio) : (meta.fechaCreacion?.toDate() || new Date());
             const ventasActuales = await calcularVentasEnRango(fechaInicio, new Date());
 
             // Obtener datos de inventario
@@ -7393,7 +7393,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const metaId = metaDoc.id;
 
         // Calcular datos de progreso
-        const fechaInicio = meta.fechaCreacion?.toDate() || new Date();
+        const fechaInicio = meta.fechaInicio ? new Date(meta.fechaInicio) : (meta.fechaCreacion?.toDate() || new Date());
         const fechaFin = new Date(meta.fechaObjetivo);
         const ahora = new Date();
 
@@ -7978,16 +7978,25 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     if (btnGenerarPlan) {
         btnGenerarPlan.addEventListener('click', async () => {
             const montoInput = document.getElementById('meta-monto-simple').value.trim();
+            const fechaInicio = document.getElementById('meta-fecha-inicio').value;
             const fechaLimite = document.getElementById('meta-fecha-simple').value;
 
-            if (!montoInput || !fechaLimite) {
-                alert('⚠️ Por favor ingresa el monto y la fecha límite');
+            if (!montoInput || !fechaInicio || !fechaLimite) {
+                alert('⚠️ Por favor ingresa el monto, fecha de inicio y fecha límite');
                 return;
             }
 
             const monto = parseFloat(eliminarFormatoNumero(montoInput));
             if (isNaN(monto) || monto <= 0) {
                 alert('⚠️ El monto debe ser un número válido mayor a 0');
+                return;
+            }
+
+            // Validar que la fecha de inicio sea anterior a la fecha límite
+            const fechaInicioDate = new Date(fechaInicio);
+            const fechaLimiteDate = new Date(fechaLimite);
+            if (fechaInicioDate >= fechaLimiteDate) {
+                alert('⚠️ La fecha de inicio debe ser anterior a la fecha límite');
                 return;
             }
 
@@ -8005,6 +8014,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 // Guardar o actualizar meta en Firebase
                 const metaData = {
                     montoObjetivo: monto,
+                    fechaInicio: fechaInicio,
                     fechaLimite: fechaLimite,
                     fechaCreacion: new Date(),
                     activa: true
@@ -8048,8 +8058,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const ventasHistoricas = await obtenerVentasHistoricas();
         const promediosPorDia = calcularPromediosPorDia(ventasHistoricas);
 
-        // 2. Calcular progreso actual
-        const ventasActuales = await calcularVentasDesde(meta.fechaCreacion);
+        // 2. Calcular progreso actual desde la fecha de inicio especificada
+        const fechaInicioMeta = meta.fechaInicio ? new Date(meta.fechaInicio) : (meta.fechaCreacion || new Date());
+        const ventasActuales = await calcularVentasDesde(fechaInicioMeta);
 
         // 3. Motor de recálculo dinámico
         const planDiario = calcularPlanDinamico(meta, ventasActuales, promediosPorDia);
@@ -8190,15 +8201,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ANÁLISIS DE PROGRESO (BURNDOWN)
     // ===============================
     function analizarProgreso(meta, ventasActuales, planDiario) {
-        const fechaInicio = new Date(meta.fechaCreacion);
+        const fechaInicio = meta.fechaInicio ? new Date(meta.fechaInicio) : new Date(meta.fechaCreacion);
         const fechaLimite = new Date(meta.fechaLimite);
         const hoy = new Date();
 
-        const diasTotales = Math.ceil((fechaLimite - fechaInicio) / (1000 * 60 * 60 * 24));
-        const diasTranscurridos = Math.ceil((hoy - fechaInicio) / (1000 * 60 * 60 * 24));
+        const diasTotales = Math.max(1, Math.ceil((fechaLimite - fechaInicio) / (1000 * 60 * 60 * 24)));
+        const diasTranscurridos = Math.max(0, Math.ceil((hoy - fechaInicio) / (1000 * 60 * 60 * 24)));
 
-        const progresoReal = (ventasActuales / meta.montoObjetivo) * 100;
-        const progresoEsperado = (diasTranscurridos / diasTotales) * 100;
+        const progresoReal = meta.montoObjetivo > 0 ? (ventasActuales / meta.montoObjetivo) * 100 : 0;
+        const progresoEsperado = diasTotales > 0 ? (diasTranscurridos / diasTotales) * 100 : 0;
 
         const vaBien = progresoReal >= progresoEsperado;
         const diferenciaPorcentual = progresoReal - progresoEsperado;
@@ -8451,7 +8462,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         const ctx = canvas.getContext('2d');
 
-        const fechaInicio = new Date(meta.fechaCreacion);
+        const fechaInicio = meta.fechaInicio ? new Date(meta.fechaInicio) : new Date(meta.fechaCreacion);
         const fechaLimite = new Date(meta.fechaLimite);
         const hoy = new Date();
 
