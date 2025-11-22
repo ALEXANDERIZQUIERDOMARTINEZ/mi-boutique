@@ -4808,6 +4808,211 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ================================================================
+    // 💡 POBLAR MODALES DE DETALLE
+    // ================================================================
+
+    // Variable global para almacenar datos de inventario
+    let datosInventarioGlobal = {
+        inversionTotal: 0,
+        valorPotencialDetal: 0,
+        utilidadPotencial: 0,
+        margenUtilidad: 0,
+        totalUnidades: 0,
+        totalProductos: 0,
+        productos: []
+    };
+
+    // Función para poblar el modal de Inversión en Inventario
+    function poblarModalInversion() {
+        const { inversionTotal, totalUnidades, totalProductos } = datosInventarioGlobal;
+
+        // Actualizar valores principales
+        document.getElementById('modal-inversion-total').textContent = formatoMoneda.format(inversionTotal);
+        document.getElementById('modal-inventario-unidades').textContent = totalUnidades;
+
+        // Calcular métricas derivadas
+        const inversionPromedio = totalProductos > 0 ? inversionTotal / totalProductos : 0;
+        const inversionPorUnidad = totalUnidades > 0 ? inversionTotal / totalUnidades : 0;
+
+        document.getElementById('modal-inversion-promedio').textContent = formatoMoneda.format(inversionPromedio);
+        document.getElementById('modal-inversion-por-unidad').textContent = formatoMoneda.format(inversionPorUnidad);
+
+        // TODO: Calcular rotación basado en ventas (por ahora 0%)
+        document.getElementById('modal-rotacion-inventario').textContent = '0%';
+    }
+
+    // Función para poblar el modal de Utilidad Potencial
+    function poblarModalUtilidad() {
+        const { inversionTotal, valorPotencialDetal, utilidadPotencial, margenUtilidad, productos } = datosInventarioGlobal;
+
+        // Actualizar valores principales
+        document.getElementById('modal-utilidad-total').textContent = formatoMoneda.format(utilidadPotencial);
+        document.getElementById('modal-margen-porcentaje').textContent = `${margenUtilidad.toFixed(1)}%`;
+        document.getElementById('modal-roi').textContent = `${margenUtilidad.toFixed(1)}%`;
+
+        // Desglose
+        document.getElementById('modal-valor-venta-total').textContent = formatoMoneda.format(valorPotencialDetal);
+        document.getElementById('modal-inversion-total-utilidad').textContent = formatoMoneda.format(inversionTotal);
+
+        // Generar lista de productos más rentables
+        const topProductosDiv = document.getElementById('modal-top-productos-rentables');
+
+        if (productos.length === 0) {
+            topProductosDiv.innerHTML = '<p class="text-muted text-center">No hay productos disponibles</p>';
+            return;
+        }
+
+        // Calcular utilidad por producto y ordenar
+        const productosConUtilidad = productos.map(p => ({
+            nombre: p.nombre,
+            utilidadTotal: (p.precioDetal - p.costoCompra) * p.stock,
+            margenPorcentaje: p.costoCompra > 0 ? ((p.precioDetal - p.costoCompra) / p.costoCompra * 100) : 0,
+            stock: p.stock,
+            precioDetal: p.precioDetal,
+            costoCompra: p.costoCompra
+        })).filter(p => p.stock > 0);
+
+        productosConUtilidad.sort((a, b) => b.utilidadTotal - a.utilidadTotal);
+        const top5 = productosConUtilidad.slice(0, 5);
+
+        let html = '<div class="table-responsive"><table class="table table-sm table-hover">';
+        html += '<thead class="table-light"><tr>';
+        html += '<th>Producto</th>';
+        html += '<th class="text-center">Stock</th>';
+        html += '<th class="text-end">Costo</th>';
+        html += '<th class="text-end">Precio</th>';
+        html += '<th class="text-end">Utilidad Total</th>';
+        html += '<th class="text-end">Margen %</th>';
+        html += '</tr></thead><tbody>';
+
+        top5.forEach((p, index) => {
+            const colorBadge = index === 0 ? 'warning' : index === 1 ? 'secondary' : index === 2 ? 'bronze' : 'light';
+            html += '<tr>';
+            html += `<td>
+                        ${index < 3 ? `<i class="bi bi-trophy-fill text-${colorBadge}"></i> ` : ''}
+                        <strong>${p.nombre}</strong>
+                     </td>`;
+            html += `<td class="text-center"><span class="badge bg-info">${p.stock}</span></td>`;
+            html += `<td class="text-end">${formatoMoneda.format(p.costoCompra)}</td>`;
+            html += `<td class="text-end">${formatoMoneda.format(p.precioDetal)}</td>`;
+            html += `<td class="text-end text-success fw-bold">${formatoMoneda.format(p.utilidadTotal)}</td>`;
+            html += `<td class="text-end"><span class="badge ${p.margenPorcentaje >= 50 ? 'bg-success' : p.margenPorcentaje >= 30 ? 'bg-warning' : 'bg-danger'}">${p.margenPorcentaje.toFixed(0)}%</span></td>`;
+            html += '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+        topProductosDiv.innerHTML = html;
+    }
+
+    // Event listeners para abrir modales
+    const inversionModal = document.getElementById('inversionInventarioModal');
+    if (inversionModal) {
+        inversionModal.addEventListener('show.bs.modal', poblarModalInversion);
+    }
+
+    const utilidadModal = document.getElementById('utilidadPotencialModal');
+    if (utilidadModal) {
+        utilidadModal.addEventListener('show.bs.modal', poblarModalUtilidad);
+    }
+
+    // Modificar calcularInversionInventario para almacenar datos globalmente
+    const calcularInversionInventarioOriginal = calcularInversionInventario;
+    calcularInversionInventario = function() {
+        console.log("💎 Calculando inversión y utilidad en inventario...");
+
+        try {
+            onSnapshot(productsCollection, (snapshot) => {
+                let inversionTotal = 0;
+                let valorPotencialDetal = 0;
+                let valorPotencialMayor = 0;
+                let totalUnidades = 0;
+                let productos = [];
+
+                snapshot.forEach(doc => {
+                    const producto = doc.data();
+                    const costoCompra = parseFloat(producto.costoCompra) || 0;
+                    const precioDetal = parseFloat(producto.precioDetal) || 0;
+                    const precioMayor = parseFloat(producto.precioMayor) || 0;
+
+                    // Calcular stock total del producto
+                    const variaciones = producto.variaciones || [];
+                    const stockTotal = variaciones.reduce((sum, v) => {
+                        return sum + (parseInt(v.stock, 10) || 0);
+                    }, 0);
+
+                    // Calcular inversión y valores potenciales
+                    inversionTotal += costoCompra * stockTotal;
+                    valorPotencialDetal += precioDetal * stockTotal;
+                    valorPotencialMayor += precioMayor * stockTotal;
+                    totalUnidades += stockTotal;
+
+                    // Guardar datos del producto
+                    if (stockTotal > 0) {
+                        productos.push({
+                            nombre: producto.nombre || 'Sin nombre',
+                            costoCompra,
+                            precioDetal,
+                            precioMayor,
+                            stock: stockTotal
+                        });
+                    }
+                });
+
+                // Calcular utilidad potencial (usando precio detal)
+                const utilidadPotencial = valorPotencialDetal - inversionTotal;
+                const margenUtilidad = inversionTotal > 0
+                    ? ((utilidadPotencial / inversionTotal) * 100)
+                    : 0;
+
+                // Guardar datos globalmente
+                datosInventarioGlobal = {
+                    inversionTotal,
+                    valorPotencialDetal,
+                    valorPotencialMayor,
+                    utilidadPotencial,
+                    margenUtilidad,
+                    totalUnidades,
+                    totalProductos: snapshot.size,
+                    productos
+                };
+
+                // Actualizar UI - Inversión Total
+                const dbInversionEl = document.getElementById('db-inversion-inventario');
+                if (dbInversionEl) {
+                    dbInversionEl.textContent = formatoMoneda.format(inversionTotal);
+                }
+
+                const dbUnidadesEl = document.getElementById('db-inventario-unidades');
+                if (dbUnidadesEl) {
+                    dbUnidadesEl.textContent = `${totalUnidades} unidades`;
+                }
+
+                // Actualizar UI - Utilidad Potencial
+                const dbUtilidadPotencialEl = document.getElementById('db-utilidad-potencial');
+                if (dbUtilidadPotencialEl) {
+                    dbUtilidadPotencialEl.textContent = formatoMoneda.format(utilidadPotencial);
+                }
+
+                const dbMargenEl = document.getElementById('db-margen-utilidad');
+                if (dbMargenEl) {
+                    dbMargenEl.innerHTML = `
+                        <i class="bi bi-percent"></i> ${margenUtilidad.toFixed(1)}% de margen
+                    `;
+                }
+
+                console.log(`✅ Inversión en inventario calculada:
+                    - Inversión Total: ${formatoMoneda.format(inversionTotal)}
+                    - Valor Potencial Detal: ${formatoMoneda.format(valorPotencialDetal)}
+                    - Utilidad Potencial: ${formatoMoneda.format(utilidadPotencial)}
+                    - Margen: ${margenUtilidad.toFixed(1)}%
+                    - Unidades: ${totalUnidades}`);
+            });
+        } catch (error) {
+            console.error("❌ Error al calcular inversión en inventario:", error);
+        }
+    };
+
+    // ================================================================
     // 🚀 INICIALIZAR TODAS LAS FUNCIONES
     // ================================================================
     calcularVentasHoy();
