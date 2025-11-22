@@ -34,6 +34,7 @@ const closingsCollection = collection(db, 'cierresCaja');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const chatConversationsCollection = collection(db, 'chatConversations');
 const metasCollection = collection(db, 'metas');
+const recepcionesCollection = collection(db, 'ordenesRecepcion');
 
 // --- Helper: Format Currency ---
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
@@ -7212,6 +7213,602 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     console.log("✅ Sistema de Metas Financieras con IA inicializado");
+})();
+
+// ========================================================================
+// === MÓDULO: RECEPCIONES DE INVENTARIO (PRE-LLEGADA) ===
+// ========================================================================
+(() => {
+    console.log("🚚 Inicializando módulo de Recepciones de Inventario...");
+
+    // --- Variables globales del módulo ---
+    let suppliersMap = new Map();
+    let ordenesRecepcionMap = new Map();
+    let productosSeleccionados = []; // Productos en el formulario actual
+
+    // --- Referencias DOM ---
+    const recepcionesListView = document.getElementById('recepciones-list-view');
+    const recepcionesFormView = document.getElementById('recepciones-form-view');
+    const toggleListBtn = document.getElementById('toggle-recepciones-list-btn');
+    const toggleFormBtn = document.getElementById('toggle-recepciones-form-btn');
+    const formOrdenRecepcion = document.getElementById('form-orden-recepcion');
+    const ordenProveedorSelect = document.getElementById('orden-proveedor');
+    const btnAgregarProducto = document.getElementById('btn-agregar-producto-recepcion');
+    const productosContainer = document.getElementById('productos-recepcion-container');
+    const btnCancelarOrden = document.getElementById('btn-cancelar-orden');
+    const recepcionesContainer = document.getElementById('recepciones-container');
+    const filterEstado = document.getElementById('filter-recepcion-estado');
+    const filterProveedor = document.getElementById('filter-recepcion-proveedor');
+    const searchRecepciones = document.getElementById('search-recepciones');
+
+    // --- Alternar vistas (Lista / Formulario) ---
+    function toggleView(view) {
+        if (view === 'list') {
+            recepcionesListView.style.display = 'block';
+            recepcionesFormView.style.display = 'none';
+            toggleListBtn.classList.add('active');
+            toggleFormBtn.classList.remove('active');
+            productosSeleccionados = [];
+            formOrdenRecepcion.reset();
+            productosContainer.innerHTML = '';
+        } else if (view === 'form') {
+            recepcionesListView.style.display = 'none';
+            recepcionesFormView.style.display = 'block';
+            toggleListBtn.classList.remove('active');
+            toggleFormBtn.classList.add('active');
+        }
+    }
+
+    if (toggleListBtn) {
+        toggleListBtn.addEventListener('click', () => toggleView('list'));
+    }
+
+    if (toggleFormBtn) {
+        toggleFormBtn.addEventListener('click', () => toggleView('form'));
+    }
+
+    if (btnCancelarOrden) {
+        btnCancelarOrden.addEventListener('click', () => toggleView('list'));
+    }
+
+    // --- Cargar proveedores en select ---
+    async function cargarProveedores() {
+        try {
+            const snapshot = await getDocs(suppliersCollection);
+            suppliersMap.clear();
+            ordenProveedorSelect.innerHTML = '<option value="">Selecciona un proveedor...</option>';
+            filterProveedor.innerHTML = '<option value="">Todos los proveedores</option>';
+
+            snapshot.forEach(doc => {
+                const proveedor = { id: doc.id, ...doc.data() };
+                suppliersMap.set(doc.id, proveedor);
+
+                const option = document.createElement('option');
+                option.value = proveedor.nombre;
+                option.textContent = proveedor.nombre;
+                ordenProveedorSelect.appendChild(option);
+
+                const filterOption = document.createElement('option');
+                filterOption.value = proveedor.nombre;
+                filterOption.textContent = proveedor.nombre;
+                filterProveedor.appendChild(filterOption);
+            });
+
+            console.log(`✅ ${suppliersMap.size} proveedores cargados`);
+        } catch (error) {
+            console.error("❌ Error cargando proveedores:", error);
+            showToast('Error al cargar proveedores', 'error');
+        }
+    }
+
+    // --- Agregar producto al formulario de recepción ---
+    function agregarProductoRecepcion() {
+        const productoCard = document.createElement('div');
+        productoCard.className = 'card mb-3 producto-recepcion-item';
+
+        const productoId = 'producto-' + Date.now();
+
+        productoCard.innerHTML = `
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <label class="form-label">Producto</label>
+                        <select class="form-select producto-select" data-producto-id="${productoId}" required>
+                            <option value="">Selecciona un producto...</option>
+                            ${Array.from(localProductsMap.values()).map(p =>
+                                `<option value="${p.id}" data-producto='${JSON.stringify(p)}'>${p.nombre} (${p.codigo})</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Variaciones</label>
+                        <div class="variaciones-container-${productoId}">
+                            <small class="text-muted">Selecciona un producto primero</small>
+                        </div>
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="button" class="btn btn-sm btn-outline-danger w-100 btn-eliminar-producto">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        productosContainer.appendChild(productoCard);
+
+        // Event listener para selección de producto
+        const productoSelect = productoCard.querySelector('.producto-select');
+        productoSelect.addEventListener('change', (e) => {
+            const selectedOption = e.target.selectedOptions[0];
+            if (selectedOption.value) {
+                const producto = JSON.parse(selectedOption.dataset.producto);
+                mostrarVariaciones(productoId, producto);
+            } else {
+                document.querySelector(`.variaciones-container-${productoId}`).innerHTML =
+                    '<small class="text-muted">Selecciona un producto primero</small>';
+            }
+        });
+
+        // Event listener para eliminar producto
+        productoCard.querySelector('.btn-eliminar-producto').addEventListener('click', () => {
+            productoCard.remove();
+        });
+    }
+
+    // --- Mostrar variaciones del producto seleccionado ---
+    function mostrarVariaciones(productoId, producto) {
+        const container = document.querySelector(`.variaciones-container-${productoId}`);
+
+        if (!producto.variaciones || producto.variaciones.length === 0) {
+            container.innerHTML = '<small class="text-muted">Este producto no tiene variaciones</small>';
+            return;
+        }
+
+        container.innerHTML = '';
+
+        producto.variaciones.forEach((variacion, index) => {
+            const varDiv = document.createElement('div');
+            varDiv.className = 'input-group input-group-sm mb-2';
+            varDiv.innerHTML = `
+                <span class="input-group-text" style="min-width: 150px;">
+                    ${variacion.talla} - ${variacion.color}
+                </span>
+                <input type="number" class="form-control"
+                    data-producto-id="${producto.id}"
+                    data-talla="${variacion.talla}"
+                    data-color="${variacion.color}"
+                    min="0" value="0" placeholder="Cantidad"
+                    name="cantidad-variacion">
+            `;
+            container.appendChild(varDiv);
+        });
+    }
+
+    // --- Crear orden de recepción ---
+    if (formOrdenRecepcion) {
+        formOrdenRecepcion.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const proveedor = ordenProveedorSelect.value;
+            const fechaEsperada = document.getElementById('orden-fecha-esperada').value;
+            const notas = document.getElementById('orden-notas').value;
+
+            if (!proveedor) {
+                showToast('Selecciona un proveedor', 'error');
+                return;
+            }
+
+            // Recolectar productos y variaciones
+            const productos = [];
+            const productoSelects = document.querySelectorAll('.producto-select');
+
+            productoSelects.forEach(select => {
+                if (select.value) {
+                    const producto = JSON.parse(select.selectedOptions[0].dataset.producto);
+                    const productoId = select.dataset.productoId;
+
+                    // Obtener cantidades de variaciones
+                    const variacionInputs = document.querySelectorAll(`[data-producto-id="${producto.id}"][name="cantidad-variacion"]`);
+                    const variaciones = [];
+
+                    variacionInputs.forEach(input => {
+                        const cantidad = parseInt(input.value) || 0;
+                        if (cantidad > 0) {
+                            variaciones.push({
+                                talla: input.dataset.talla,
+                                color: input.dataset.color,
+                                cantidadEsperada: cantidad,
+                                cantidadRecibida: 0
+                            });
+                        }
+                    });
+
+                    if (variaciones.length > 0) {
+                        productos.push({
+                            productoId: producto.id,
+                            nombre: producto.nombre,
+                            codigo: producto.codigo,
+                            variaciones: variaciones
+                        });
+                    }
+                }
+            });
+
+            if (productos.length === 0) {
+                showToast('Agrega al menos un producto con cantidad', 'error');
+                return;
+            }
+
+            // Calcular totales
+            const totalProductos = productos.length;
+            const totalUnidades = productos.reduce((sum, p) =>
+                sum + p.variaciones.reduce((vSum, v) => vSum + v.cantidadEsperada, 0), 0
+            );
+
+            // Crear documento
+            const ordenData = {
+                proveedor: proveedor,
+                fechaEsperada: fechaEsperada ? Timestamp.fromDate(new Date(fechaEsperada)) : null,
+                notas: notas,
+                estado: 'pendiente',
+                productos: productos,
+                totalProductos: totalProductos,
+                totalUnidades: totalUnidades,
+                timestamp: serverTimestamp(),
+                fechaRecepcion: null
+            };
+
+            try {
+                await addDoc(recepcionesCollection, ordenData);
+                showToast('✅ Orden de recepción creada exitosamente!', 'success');
+                toggleView('list');
+                formOrdenRecepcion.reset();
+                productosContainer.innerHTML = '';
+            } catch (error) {
+                console.error("❌ Error creando orden:", error);
+                showToast('Error al crear orden de recepción', 'error');
+            }
+        });
+    }
+
+    // --- Botón agregar producto ---
+    if (btnAgregarProducto) {
+        btnAgregarProducto.addEventListener('click', agregarProductoRecepcion);
+    }
+
+    // --- Listar órdenes de recepción ---
+    async function listarOrdenesRecepcion() {
+        if (!recepcionesContainer) return;
+
+        try {
+            const q = query(recepcionesCollection, orderBy('timestamp', 'desc'));
+
+            onSnapshot(q, (snapshot) => {
+                ordenesRecepcionMap.clear();
+                recepcionesContainer.innerHTML = '';
+
+                if (snapshot.empty) {
+                    recepcionesContainer.innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            No hay órdenes de recepción. ¡Crea tu primera orden!
+                        </div>
+                    `;
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const orden = { id: doc.id, ...doc.data() };
+                    ordenesRecepcionMap.set(doc.id, orden);
+                });
+
+                filtrarYRenderizarOrdenes();
+            });
+        } catch (error) {
+            console.error("❌ Error listando órdenes:", error);
+            showToast('Error al cargar órdenes de recepción', 'error');
+        }
+    }
+
+    // --- Filtrar y renderizar órdenes ---
+    function filtrarYRenderizarOrdenes() {
+        const estadoFiltro = filterEstado.value;
+        const proveedorFiltro = filterProveedor.value;
+        const textoBusqueda = searchRecepciones.value.toLowerCase();
+
+        recepcionesContainer.innerHTML = '';
+
+        let ordenesFiltradas = Array.from(ordenesRecepcionMap.values());
+
+        // Filtrar por estado
+        if (estadoFiltro) {
+            ordenesFiltradas = ordenesFiltradas.filter(o => o.estado === estadoFiltro);
+        }
+
+        // Filtrar por proveedor
+        if (proveedorFiltro) {
+            ordenesFiltradas = ordenesFiltradas.filter(o => o.proveedor === proveedorFiltro);
+        }
+
+        // Filtrar por búsqueda de texto
+        if (textoBusqueda) {
+            ordenesFiltradas = ordenesFiltradas.filter(o => {
+                const nombreMatch = o.productos.some(p =>
+                    p.nombre.toLowerCase().includes(textoBusqueda) ||
+                    p.codigo.toLowerCase().includes(textoBusqueda)
+                );
+                const proveedorMatch = o.proveedor.toLowerCase().includes(textoBusqueda);
+                return nombreMatch || proveedorMatch;
+            });
+        }
+
+        if (ordenesFiltradas.length === 0) {
+            recepcionesContainer.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="bi bi-filter-circle me-2"></i>
+                    No se encontraron órdenes con los filtros aplicados.
+                </div>
+            `;
+            return;
+        }
+
+        ordenesFiltradas.forEach(orden => {
+            recepcionesContainer.appendChild(renderizarOrdenCard(orden));
+        });
+    }
+
+    // --- Renderizar card de orden ---
+    function renderizarOrdenCard(orden) {
+        const card = document.createElement('div');
+        card.className = 'card mb-3';
+
+        const fechaTexto = orden.timestamp?.toDate ?
+            orden.timestamp.toDate().toLocaleDateString('es-CO', {
+                dateStyle: 'medium'
+            }) : 'Fecha no disponible';
+
+        const fechaEsperadaTexto = orden.fechaEsperada?.toDate ?
+            orden.fechaEsperada.toDate().toLocaleDateString('es-CO', {
+                dateStyle: 'medium'
+            }) : 'No especificada';
+
+        // Badge de estado
+        let estadoBadge = '';
+        if (orden.estado === 'pendiente') {
+            estadoBadge = '<span class="badge bg-warning text-dark">Pendiente</span>';
+        } else if (orden.estado === 'recibido_parcial') {
+            estadoBadge = '<span class="badge bg-info">Recibido Parcial</span>';
+        } else if (orden.estado === 'recibido') {
+            estadoBadge = '<span class="badge bg-success">Recibido</span>';
+        }
+
+        // Lista de productos
+        let productosHtml = orden.productos.map(p => {
+            const variacionesHtml = p.variaciones.map(v => `
+                <tr>
+                    <td class="ps-4">└ ${v.talla} - ${v.color}</td>
+                    <td class="text-center">${v.cantidadEsperada}</td>
+                    <td class="text-center">${v.cantidadRecibida}</td>
+                    <td class="text-center">
+                        ${v.cantidadRecibida >= v.cantidadEsperada ?
+                            '<i class="bi bi-check-circle-fill text-success"></i>' :
+                            '<i class="bi bi-clock-fill text-warning"></i>'}
+                    </td>
+                </tr>
+            `).join('');
+
+            return `
+                <tr class="table-active">
+                    <td><strong>${p.nombre}</strong> <small class="text-muted">(${p.codigo})</small></td>
+                    <td colspan="3"></td>
+                </tr>
+                ${variacionesHtml}
+            `;
+        }).join('');
+
+        // Botones de acción
+        let botonesAccion = '';
+        if (orden.estado === 'pendiente' || orden.estado === 'recibido_parcial') {
+            botonesAccion = `
+                <button class="btn btn-primary btn-sm btn-confirmar-recepcion" data-orden-id="${orden.id}">
+                    <i class="bi bi-check-circle me-1"></i> Confirmar Recepción
+                </button>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">
+                        <i class="bi bi-box-seam me-2"></i>
+                        Orden #${orden.id.substring(0, 8).toUpperCase()}
+                    </h5>
+                    <small class="text-muted">
+                        <i class="bi bi-building me-1"></i>${orden.proveedor} |
+                        <i class="bi bi-calendar-event me-1"></i>Creada: ${fechaTexto} |
+                        <i class="bi bi-calendar-check me-1"></i>Esperada: ${fechaEsperadaTexto}
+                    </small>
+                </div>
+                ${estadoBadge}
+            </div>
+            <div class="card-body">
+                ${orden.notas ? `<p class="mb-2"><strong>Notas:</strong> ${orden.notas}</p>` : ''}
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="text-center p-2 bg-light rounded">
+                            <small class="text-muted d-block">Total Productos</small>
+                            <strong class="fs-5">${orden.totalProductos}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-2 bg-light rounded">
+                            <small class="text-muted d-block">Total Unidades Esperadas</small>
+                            <strong class="fs-5">${orden.totalUnidades}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-2 bg-light rounded">
+                            <small class="text-muted d-block">Unidades Recibidas</small>
+                            <strong class="fs-5">${calcularUnidadesRecibidas(orden)}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Producto / Variación</th>
+                                <th class="text-center">Esperada</th>
+                                <th class="text-center">Recibida</th>
+                                <th class="text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${productosHtml}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    ${botonesAccion}
+                    <button class="btn btn-outline-danger btn-sm btn-eliminar-orden" data-orden-id="${orden.id}">
+                        <i class="bi bi-trash3 me-1"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Event listeners
+        const btnConfirmar = card.querySelector('.btn-confirmar-recepcion');
+        if (btnConfirmar) {
+            btnConfirmar.addEventListener('click', () => confirmarRecepcion(orden.id));
+        }
+
+        const btnEliminar = card.querySelector('.btn-eliminar-orden');
+        if (btnEliminar) {
+            btnEliminar.addEventListener('click', () => eliminarOrden(orden.id));
+        }
+
+        return card;
+    }
+
+    // --- Calcular unidades recibidas ---
+    function calcularUnidadesRecibidas(orden) {
+        return orden.productos.reduce((sum, p) =>
+            sum + p.variaciones.reduce((vSum, v) => vSum + (v.cantidadRecibida || 0), 0), 0
+        );
+    }
+
+    // --- Confirmar recepción (sumar al inventario) ---
+    async function confirmarRecepcion(ordenId) {
+        const orden = ordenesRecepcionMap.get(ordenId);
+        if (!orden) {
+            showToast('Orden no encontrada', 'error');
+            return;
+        }
+
+        const confirmacion = confirm(
+            `¿Confirmar la recepción de esta orden?\n\n` +
+            `Proveedor: ${orden.proveedor}\n` +
+            `Total de unidades: ${orden.totalUnidades}\n\n` +
+            `Esto sumará las cantidades al inventario real.`
+        );
+
+        if (!confirmacion) return;
+
+        try {
+            const batch = writeBatch(db);
+
+            // Actualizar stock de cada producto
+            for (const producto of orden.productos) {
+                const productoActual = localProductsMap.get(producto.productoId);
+                if (!productoActual) {
+                    console.warn(`Producto ${producto.productoId} no encontrado en localProductsMap`);
+                    continue;
+                }
+
+                let nuevasVariaciones = JSON.parse(JSON.stringify(productoActual.variaciones));
+
+                for (const variacionOrden of producto.variaciones) {
+                    const variacionIndex = nuevasVariaciones.findIndex(v =>
+                        v.talla === variacionOrden.talla && v.color === variacionOrden.color
+                    );
+
+                    if (variacionIndex !== -1) {
+                        const stockActual = parseInt(nuevasVariaciones[variacionIndex].stock, 10) || 0;
+                        const cantidadNueva = variacionOrden.cantidadEsperada - variacionOrden.cantidadRecibida;
+                        nuevasVariaciones[variacionIndex].stock = stockActual + cantidadNueva;
+
+                        // Actualizar cantidad recibida en la orden
+                        variacionOrden.cantidadRecibida = variacionOrden.cantidadEsperada;
+                    }
+                }
+
+                const productRef = doc(db, 'productos', producto.productoId);
+                batch.update(productRef, { variaciones: nuevasVariaciones });
+            }
+
+            // Actualizar estado de la orden
+            const ordenRef = doc(db, 'ordenesRecepcion', ordenId);
+            batch.update(ordenRef, {
+                estado: 'recibido',
+                fechaRecepcion: serverTimestamp()
+            });
+
+            await batch.commit();
+            showToast('✅ Recepción confirmada y stock actualizado!', 'success');
+            console.log(`✅ Orden ${ordenId} confirmada y stock actualizado`);
+
+        } catch (error) {
+            console.error("❌ Error confirmando recepción:", error);
+            showToast('Error al confirmar recepción', 'error');
+        }
+    }
+
+    // --- Eliminar orden ---
+    async function eliminarOrden(ordenId) {
+        const orden = ordenesRecepcionMap.get(ordenId);
+        if (!orden) return;
+
+        const confirmacion = confirm(
+            `¿Eliminar esta orden de recepción?\n\n` +
+            `Proveedor: ${orden.proveedor}\n` +
+            `Productos: ${orden.totalProductos}\n\n` +
+            `Esta acción no se puede deshacer.`
+        );
+
+        if (!confirmacion) return;
+
+        try {
+            await deleteDoc(doc(db, 'ordenesRecepcion', ordenId));
+            showToast('Orden eliminada', 'success');
+        } catch (error) {
+            console.error("❌ Error eliminando orden:", error);
+            showToast('Error al eliminar orden', 'error');
+        }
+    }
+
+    // --- Event listeners de filtros ---
+    if (filterEstado) {
+        filterEstado.addEventListener('change', filtrarYRenderizarOrdenes);
+    }
+
+    if (filterProveedor) {
+        filterProveedor.addEventListener('change', filtrarYRenderizarOrdenes);
+    }
+
+    if (searchRecepciones) {
+        searchRecepciones.addEventListener('input', filtrarYRenderizarOrdenes);
+    }
+
+    // --- Inicializar módulo ---
+    cargarProveedores();
+    listarOrdenesRecepcion();
+
+    console.log("✅ Módulo de Recepciones de Inventario inicializado");
 })();
 
 });
