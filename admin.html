@@ -1582,6 +1582,37 @@
         </div>
     </div>
 
+    <!-- Modal: Plan de Acción con IA -->
+    <div class="modal fade" id="planAccionModal" tabindex="-1" aria-labelledby="planAccionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-gradient-meta text-white">
+                    <h5 class="modal-title" id="planAccionModalLabel">
+                        <i class="bi bi-robot"></i> Plan de Acción con IA
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-success mb-3">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <strong>Meta creada exitosamente:</strong> <span id="plan-meta-nombre"></span>
+                    </div>
+                    <div id="plan-contenido" class="plan-accion-contenido">
+                        <!-- El contenido del plan se cargará aquí -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cerrar
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="window.print()">
+                        <i class="bi bi-printer"></i> Imprimir Plan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- SheetJS para exportación a Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 

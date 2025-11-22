@@ -6933,7 +6933,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             }
 
             try {
-                await addDoc(metasCollection, {
+                // Guardar meta en Firestore
+                const metaRef = await addDoc(metasCollection, {
                     nombre: nombre,
                     montoObjetivo: monto,
                     fechaObjetivo: fecha,
@@ -6948,7 +6949,21 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 formCrearMeta.style.display = 'none';
                 btnToggleCrearMeta.querySelector('i').className = 'bi bi-chevron-down';
 
-                alert('✅ Meta creada exitosamente');
+                // Generar recomendaciones automáticamente
+                const metaData = {
+                    nombre: nombre,
+                    montoObjetivo: monto,
+                    fechaObjetivo: fecha,
+                    fechaCreacion: new Date()
+                };
+
+                const ventasActuales = await calcularVentasEnRango(new Date(), new Date());
+                const datosInventario = await obtenerDatosInventario();
+                const recomendaciones = await generarRecomendacionesIA(metaData, ventasActuales, datosInventario);
+
+                // Mostrar plan de acción con IA
+                mostrarPlanDeAccion(nombre, recomendaciones);
+
             } catch (error) {
                 console.error('Error guardando meta:', error);
                 alert('❌ Error al crear la meta');
@@ -7036,41 +7051,140 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const faltante = meta.montoObjetivo - ventasActuales;
         const ventasDiariasNecesarias = faltante / diasRestantes;
 
-        // Por ahora, generar recomendaciones locales (sin API externa)
-        // TODO: Integrar con Claude API cuando esté disponible
         const recomendaciones = [];
 
         if (faltante > 0) {
-            recomendaciones.push(`📊 **Análisis**: Te faltan ${formatoMoneda.format(faltante)} para alcanzar tu meta.`);
-            recomendaciones.push(`⏰ **Tiempo**: Tienes ${diasRestantes} días restantes.`);
-            recomendaciones.push(`💰 **Meta diaria**: Necesitas vender ${formatoMoneda.format(ventasDiariasNecesarias)} por día.`);
+            // === ANÁLISIS FINANCIERO ===
+            recomendaciones.push(`# 📊 ANÁLISIS DE TU META`);
+            recomendaciones.push(`**Meta**: ${meta.nombre}`);
+            recomendaciones.push(`**Objetivo**: ${formatoMoneda.format(meta.montoObjetivo)}`);
+            recomendaciones.push(`**Progreso actual**: ${formatoMoneda.format(ventasActuales)} (${((ventasActuales/meta.montoObjetivo)*100).toFixed(1)}%)`);
+            recomendaciones.push(`**Faltante**: ${formatoMoneda.format(faltante)}`);
+            recomendaciones.push(`**Días restantes**: ${diasRestantes} días`);
+            recomendaciones.push(`**Meta diaria**: ${formatoMoneda.format(ventasDiariasNecesarias)}/día\n`);
 
-            if (datosInventario) {
-                recomendaciones.push(`\n📦 **Tu inventario actual**:`);
-                recomendaciones.push(`- Inversión total: ${formatoMoneda.format(datosInventario.inversionTotal)}`);
-                recomendaciones.push(`- Utilidad potencial: ${formatoMoneda.format(datosInventario.utilidadPotencial)}`);
+            if (datosInventario && datosInventario.productosConStock.length > 0) {
+                // === ESTRATEGIA ESPECÍFICA ===
+                recomendaciones.push(`# 🎯 PLAN DE ACCIÓN PARA ALCANZAR TU META\n`);
 
-                if (datosInventario.productosConStock.length > 0) {
-                    recomendaciones.push(`\n💎 **Productos más rentables para priorizar**:`);
-                    datosInventario.productosConStock.slice(0, 5).forEach((p, i) => {
-                        recomendaciones.push(`${i + 1}. **${p.nombre}**: Utilidad de ${formatoMoneda.format(p.utilidadUnitaria)} por unidad (${p.stock} disponibles)`);
-                    });
-                }
+                // Calcular cuántas unidades necesita vender de los productos más rentables
+                const top3Productos = datosInventario.productosConStock.slice(0, 3);
 
-                recomendaciones.push(`\n✅ **Recomendaciones estratégicas**:`);
-                recomendaciones.push(`1. Enfócate en vender los productos con mayor margen de utilidad`);
-                recomendaciones.push(`2. Considera promociones en productos de bajo movimiento`);
-                recomendaciones.push(`3. Analiza reabastecer productos que se agotan rápido`);
+                recomendaciones.push(`## PASO 1: Enfócate en tus productos estrella 💎`);
+                recomendaciones.push(`Estos son tus productos más rentables. Priorízalos en tus ventas:\n`);
 
+                top3Productos.forEach((p, i) => {
+                    const unidadesNecesarias = Math.ceil(faltante / p.utilidadUnitaria);
+                    const unidadesReales = Math.min(unidadesNecesarias, p.stock);
+                    const ventaPotencial = unidadesReales * p.utilidadUnitaria;
+
+                    recomendaciones.push(`**${i+1}. ${p.nombre}**`);
+                    recomendaciones.push(`   - Utilidad por unidad: ${formatoMoneda.format(p.utilidadUnitaria)}`);
+                    recomendaciones.push(`   - Stock disponible: ${p.stock} unidades`);
+                    recomendaciones.push(`   - Si vendes ${unidadesReales} unidades → Ganas ${formatoMoneda.format(ventaPotencial)}`);
+                    if (unidadesNecesarias <= p.stock) {
+                        recomendaciones.push(`   - ✅ **Podrías alcanzar tu meta vendiendo solo ${unidadesNecesarias} de este producto**`);
+                    }
+                    recomendaciones.push(``);
+                });
+
+                // === ESTRATEGIA DE VENTAS ===
+                recomendaciones.push(`## PASO 2: Estrategia de ventas diaria 📅\n`);
+
+                // Calcular combinaciones de productos
+                const productoMasRentable = top3Productos[0];
+                const unidadesDiarias = Math.ceil(ventasDiariasNecesarias / productoMasRentable.utilidadUnitaria);
+
+                recomendaciones.push(`**Meta diaria recomendada:**`);
+                recomendaciones.push(`- Vender ${unidadesDiarias} unidades de "${productoMasRentable.nombre}" cada día`);
+                recomendaciones.push(`- Esto te generará ${formatoMoneda.format(unidadesDiarias * productoMasRentable.utilidadUnitaria)} de utilidad diaria`);
+                recomendaciones.push(``);
+
+                // Plan semanal
+                const semanas = Math.ceil(diasRestantes / 7);
+                const ventasSemanales = ventasDiariasNecesarias * 7;
+
+                recomendaciones.push(`**Plan semanal (${semanas} semanas hasta la meta):**`);
+                recomendaciones.push(`- Semana 1-${semanas}: Vender ${formatoMoneda.format(ventasSemanales)} cada semana`);
+                recomendaciones.push(`- Revisa tu progreso cada lunes y ajusta la estrategia\n`);
+
+                // === ACCIONES ESPECÍFICAS ===
+                recomendaciones.push(`## PASO 3: Acciones concretas que debes hacer HOY 🚀\n`);
+
+                recomendaciones.push(`**Marketing y promoción:**`);
+                recomendaciones.push(`1. Publica fotos de "${productoMasRentable.nombre}" en tus redes sociales HOY`);
+                recomendaciones.push(`2. Crea combos atractivos con tus productos más rentables`);
+                recomendaciones.push(`3. Ofrece descuentos por cantidad (ej: 2x1, 3x2) en productos de bajo movimiento`);
+                recomendaciones.push(`4. Envía mensajes a tus mejores clientes ofreciendo los productos estrella\n`);
+
+                recomendaciones.push(`**Optimización de inventario:**`);
                 if (datosInventario.productosSinStock.length > 0) {
-                    recomendaciones.push(`4. Tienes ${datosInventario.productosSinStock.length} productos sin stock - considera reabastecerlos`);
+                    recomendaciones.push(`5. Tienes ${datosInventario.productosSinStock.length} productos sin stock - considera reabastecerlos`);
                 }
+                recomendaciones.push(`6. Organiza tu inventario para tener los productos estrella a la vista`);
+                recomendaciones.push(`7. Prepara paquetes de productos listos para envío rápido\n`);
+
+                // === ANÁLISIS DE INVENTARIO ===
+                recomendaciones.push(`## 📦 ANÁLISIS DE TU INVENTARIO\n`);
+                recomendaciones.push(`**Inversión actual**: ${formatoMoneda.format(datosInventario.inversionTotal)}`);
+                recomendaciones.push(`**Valor potencial**: ${formatoMoneda.format(datosInventario.valorPotencialDetal)}`);
+                recomendaciones.push(`**Utilidad potencial total**: ${formatoMoneda.format(datosInventario.utilidadPotencial)}`);
+
+                const porcentajeMetaVsUtilidad = (faltante / datosInventario.utilidadPotencial) * 100;
+                if (porcentajeMetaVsUtilidad <= 100) {
+                    recomendaciones.push(`\n✅ **¡Excelente!** Solo necesitas vender el ${porcentajeMetaVsUtilidad.toFixed(1)}% de tu inventario para alcanzar la meta.`);
+                } else {
+                    recomendaciones.push(`\n⚠️ **Atención**: Necesitas vender más del 100% de tu inventario actual. Considera reabastecer productos rentables.`);
+                }
+
+                // === SEGUIMIENTO ===
+                recomendaciones.push(`\n## 📈 SEGUIMIENTO Y AJUSTES\n`);
+                recomendaciones.push(`**Revisa tu progreso cada 3 días:**`);
+                recomendaciones.push(`- ¿Estás vendiendo ${formatoMoneda.format(ventasDiariasNecesarias)} por día en promedio?`);
+                recomendaciones.push(`- Si vas atrasado: intensifica marketing de productos estrella`);
+                recomendaciones.push(`- Si vas adelantado: ¡sigue así y considera aumentar tu meta!`);
+
+            } else {
+                // Si no hay datos de inventario
+                recomendaciones.push(`## 🎯 RECOMENDACIONES GENERALES\n`);
+                recomendaciones.push(`1. Vende ${formatoMoneda.format(ventasDiariasNecesarias)} diariamente`);
+                recomendaciones.push(`2. Enfócate en productos con mayor margen de utilidad`);
+                recomendaciones.push(`3. Intensifica marketing en redes sociales`);
+                recomendaciones.push(`4. Ofrece promociones y combos atractivos`);
+                recomendaciones.push(`5. Contacta a tus mejores clientes`);
             }
+
         } else {
-            recomendaciones.push(`🎉 **¡Felicitaciones!** Ya alcanzaste tu meta con ${formatoMoneda.format(Math.abs(faltante))} de excedente.`);
+            recomendaciones.push(`# 🎉 ¡FELICITACIONES!\n`);
+            recomendaciones.push(`Ya alcanzaste tu meta con ${formatoMoneda.format(Math.abs(faltante))} de excedente.`);
+            recomendaciones.push(`\n**Próximos pasos:**`);
+            recomendaciones.push(`1. Celebra tu logro 🎊`);
+            recomendaciones.push(`2. Crea una nueva meta más ambiciosa`);
+            recomendaciones.push(`3. Analiza qué estrategias funcionaron mejor`);
+            recomendaciones.push(`4. Replica el éxito en el próximo período`);
         }
 
         return recomendaciones.join('\n');
+    }
+
+    // Función para mostrar el plan de acción con IA en un modal
+    function mostrarPlanDeAccion(nombreMeta, contenidoPlan) {
+        // Convertir markdown simple a HTML
+        let htmlPlan = contenidoPlan
+            .replace(/# (.*)/g, '<h1>$1</h1>')
+            .replace(/## (.*)/g, '<h2>$1</h2>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/- (.*)/g, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+            .replace(/<\/ul>\n<ul>/g, '');
+
+        // Actualizar el contenido del modal
+        document.getElementById('plan-meta-nombre').textContent = nombreMeta;
+        document.getElementById('plan-contenido').innerHTML = htmlPlan;
+
+        // Mostrar el modal
+        const modal = new bootstrap.Modal(document.getElementById('planAccionModal'));
+        modal.show();
     }
 
     // Función para renderizar una meta
