@@ -7864,3 +7864,69 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
 });
 
+
+// PLANIFICADOR SIMPLE DE VENTAS
+(function() {
+    console.log("Inicializando Planificador...");
+
+    const btnGenerar = document.getElementById('btn-generar-plan');
+    const container = document.getElementById('plan-ventas-container');
+
+    if (btnGenerar) {
+        btnGenerar.addEventListener('click', async () => {
+            const montoInput = document.getElementById('meta-monto-simple').value.trim();
+            const fechaInput = document.getElementById('meta-fecha-simple').value;
+
+            if (!montoInput || !fechaInput) {
+                alert('Por favor completa ambos campos');
+                return;
+            }
+
+            const monto = parseFloat(eliminarFormatoNumero(montoInput));
+            container.innerHTML = '<div class="alert alert-info">Generando plan...</div>';
+
+            try {
+                const hoy = new Date();
+                const fechaLimite = new Date(fechaInput);
+                const diasRestantes = Math.ceil((fechaLimite - hoy) / (1000 * 60 * 60 * 24));
+                const metaDiaria = monto / Math.max(diasRestantes, 1);
+
+                // Obtener productos
+                const productosSnapshot = await getDocs(productsCollection);
+                const productos = [];
+                
+                productosSnapshot.forEach(doc => {
+                    const prod = doc.data();
+                    const stock = (prod.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock) || 0), 0);
+                    const precio = parseFloat(prod.precioDetal) || 0;
+                    
+                    if (stock > 0 && precio > 0) {
+                        productos.push({ nombre: prod.nombre, precio: precio, stock: stock });
+                    }
+                });
+
+                productos.sort((a, b) => b.precio - a.precio);
+                const top5 = productos.slice(0, 5);
+
+                let html = '<div class="alert alert-primary mb-3">';
+                html += '<h5>Meta Diaria: ' + formatoMoneda.format(metaDiaria) + '</h5>';
+                html += '<p>Días restantes: ' + diasRestantes + '</p>';
+                html += '</div>';
+
+                html += '<div class="card"><div class="card-header"><h6>Productos Prioritarios</h6></div><div class="card-body">';
+                top5.forEach(p => {
+                    html += '<div>' + p.nombre + ' - ' + formatoMoneda.format(p.precio) + '</div>';
+                });
+                html += '</div></div>';
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = '<div class="alert alert-danger">Error</div>';
+            }
+        });
+    }
+
+    console.log("Planificador listo");
+})();

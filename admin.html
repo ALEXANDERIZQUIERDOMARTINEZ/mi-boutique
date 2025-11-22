@@ -205,35 +205,28 @@
                     </div>
                 </div>
 
-                <!-- Sección: Planificador de Ventas con IA -->
+                <!-- Sección: Mi Meta de Ventas -->
                 <div class="mb-3">
-                    <h5 class="text-muted fw-light"><i class="bi bi-rocket-takeoff me-2"></i>Planificador de Ventas con IA</h5>
+                    <h5 class="text-muted fw-light"><i class="bi bi-bullseye me-2"></i>Mi Meta de Ventas</h5>
                 </div>
-
-                <!-- Formulario Minimalista: Solo Monto + Fecha -->
                 <div class="row g-4 mb-4">
+                    <!-- Formulario Simple -->
                     <div class="col-md-12">
-                        <div class="card shadow-sm border-primary">
-                            <div class="card-header bg-primary text-white">
-                                <h6 class="mb-0"><i class="bi bi-lightning-charge me-2"></i>Crear Plan de Ventas - Cero Fricción</h6>
-                            </div>
+                        <div class="card shadow-sm">
                             <div class="card-body">
-                                <p class="text-muted mb-3">
-                                    <i class="bi bi-info-circle"></i>
-                                    Solo ingresa tu meta y fecha. La IA calculará automáticamente el plan completo.
-                                </p>
-                                <div class="row g-3 align-items-end">
-                                    <div class="col-md-4">
-                                        <label class="form-label fw-bold">💰 Monto de la Meta</label>
-                                        <input type="text" class="form-control form-control-lg" id="meta-monto-simple" placeholder="Ej: 10.000.000" inputmode="numeric">
+                                <div class="row g-3">
+                                    <div class="col-md-5">
+                                        <label class="form-label">Monto Objetivo</label>
+                                        <input type="text" class="form-control" id="meta-monto-simple" placeholder="10.000.000" inputmode="numeric">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label fw-bold">📅 Fecha Límite</label>
-                                        <input type="date" class="form-control form-control-lg" id="meta-fecha-simple">
+                                        <label class="form-label">Fecha Límite</label>
+                                        <input type="date" class="form-control" id="meta-fecha-simple">
                                     </div>
-                                    <div class="col-md-4">
-                                        <button class="btn btn-success btn-lg w-100" id="btn-generar-plan">
-                                            <i class="bi bi-magic"></i> Generar Plan Automático
+                                    <div class="col-md-3">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button class="btn btn-primary w-100" id="btn-generar-plan">
+                                            <i class="bi bi-play-fill"></i> Generar Plan
                                         </button>
                                     </div>
                                 </div>
@@ -241,11 +234,9 @@
                         </div>
                     </div>
 
-                    <!-- Vista del Plan Generado -->
-                    <div class="col-md-12">
-                        <div id="plan-ventas-container">
-                            <!-- El plan se generará aquí dinámicamente -->
-                        </div>
+                    <!-- Plan Generado -->
+                    <div class="col-md-12" id="plan-ventas-container">
+                        <!-- Se generará aquí -->
                     </div>
                 </div>
 
