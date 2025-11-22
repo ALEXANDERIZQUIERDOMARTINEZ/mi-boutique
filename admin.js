@@ -7865,68 +7865,692 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 });
 
 
-// PLANIFICADOR SIMPLE DE VENTAS
+
+// ============================================================
+// PLANIFICADOR DE VENTAS DINÁMICO CON IA - SISTEMA COMPLETO
+// Sistema completo: Input minimalista + Motor adaptativo + Mix productos + Burndown + Coach IA
+// ============================================================
 (function() {
-    console.log("Inicializando Planificador...");
+    console.log("🚀 Inicializando Planificador de Ventas Dinámico con IA...");
 
-    const btnGenerar = document.getElementById('btn-generar-plan');
-    const container = document.getElementById('plan-ventas-container');
+    const btnGenerarPlan = document.getElementById('btn-generar-plan');
+    const planContainer = document.getElementById('plan-ventas-container');
 
-    if (btnGenerar) {
-        btnGenerar.addEventListener('click', async () => {
+    let metaActual = null; // Variable global para la meta activa
+
+    // ===============================
+    // FUNCIONES AUXILIARES
+    // ===============================
+
+    // Obtener ventas históricas
+    async function obtenerVentasHistoricas() {
+        try {
+            const ventasSnapshot = await getDocs(salesCollection);
+            const ventas = [];
+
+            ventasSnapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.timestamp && venta.total) {
+                    ventas.push({
+                        fecha: venta.timestamp.toDate(),
+                        total: parseFloat(venta.total) || 0
+                    });
+                }
+            });
+
+            return ventas;
+        } catch (error) {
+            console.error('Error obteniendo ventas históricas:', error);
+            return [];
+        }
+    }
+
+    // Calcular promedios por día de la semana
+    function calcularPromediosPorDia(ventas) {
+        const ventasPorDia = {
+            0: { total: 0, cantidad: 0, nombre: 'Domingo' },
+            1: { total: 0, cantidad: 0, nombre: 'Lunes' },
+            2: { total: 0, cantidad: 0, nombre: 'Martes' },
+            3: { total: 0, cantidad: 0, nombre: 'Miércoles' },
+            4: { total: 0, cantidad: 0, nombre: 'Jueves' },
+            5: { total: 0, cantidad: 0, nombre: 'Viernes' },
+            6: { total: 0, cantidad: 0, nombre: 'Sábado' }
+        };
+
+        // Agrupar ventas por día de la semana
+        ventas.forEach(venta => {
+            const diaSemana = venta.fecha.getDay();
+            ventasPorDia[diaSemana].total += venta.total;
+            ventasPorDia[diaSemana].cantidad += 1;
+        });
+
+        // Calcular promedios y porcentajes
+        const promedios = {};
+        let totalSemanal = 0;
+
+        for (let dia in ventasPorDia) {
+            const datos = ventasPorDia[dia];
+            const promedio = datos.cantidad > 0 ? datos.total / datos.cantidad : 0;
+            promedios[dia] = {
+                promedio: promedio,
+                nombre: datos.nombre,
+                totalHistorico: datos.total,
+                diasConVentas: datos.cantidad
+            };
+            totalSemanal += promedio;
+        }
+
+        // Calcular porcentaje que representa cada día
+        for (let dia in promedios) {
+            promedios[dia].porcentajeDelTotal = totalSemanal > 0
+                ? (promedios[dia].promedio / totalSemanal) * 100
+                : 14.28; // Distribución uniforme si no hay datos
+        }
+
+        return promedios;
+    }
+
+    // Calcular ventas desde una fecha
+    async function calcularVentasDesde(fechaDesde) {
+        try {
+            const ventasSnapshot = await getDocs(salesCollection);
+            let total = 0;
+
+            ventasSnapshot.forEach(doc => {
+                const venta = doc.data();
+                const fechaVenta = venta.timestamp?.toDate();
+
+                if (fechaVenta && fechaVenta >= fechaDesde) {
+                    total += parseFloat(venta.total || 0);
+                }
+            });
+
+            return total;
+        } catch (error) {
+            console.error('Error calculando ventas:', error);
+            return 0;
+        }
+    }
+
+    // ===============================
+    // BOTÓN: GENERAR PLAN AUTOMÁTICO
+    // ===============================
+    if (btnGenerarPlan) {
+        btnGenerarPlan.addEventListener('click', async () => {
             const montoInput = document.getElementById('meta-monto-simple').value.trim();
-            const fechaInput = document.getElementById('meta-fecha-simple').value;
+            const fechaLimite = document.getElementById('meta-fecha-simple').value;
 
-            if (!montoInput || !fechaInput) {
-                alert('Por favor completa ambos campos');
+            if (!montoInput || !fechaLimite) {
+                alert('⚠️ Por favor ingresa el monto y la fecha límite');
                 return;
             }
 
             const monto = parseFloat(eliminarFormatoNumero(montoInput));
-            container.innerHTML = '<div class="alert alert-info">Generando plan...</div>';
+            if (isNaN(monto) || monto <= 0) {
+                alert('⚠️ El monto debe ser un número válido mayor a 0');
+                return;
+            }
+
+            // Mostrar loading
+            planContainer.innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Generando plan...</span>
+                    </div>
+                    <p class="text-muted">🤖 La IA está analizando tu historial y generando el plan perfecto...</p>
+                </div>
+            `;
 
             try {
-                const hoy = new Date();
-                const fechaLimite = new Date(fechaInput);
-                const diasRestantes = Math.ceil((fechaLimite - hoy) / (1000 * 60 * 60 * 24));
-                const metaDiaria = monto / Math.max(diasRestantes, 1);
+                // Guardar o actualizar meta en Firebase
+                const metaData = {
+                    montoObjetivo: monto,
+                    fechaLimite: fechaLimite,
+                    fechaCreacion: new Date(),
+                    activa: true
+                };
 
-                // Obtener productos
-                const productosSnapshot = await getDocs(productsCollection);
-                const productos = [];
-                
-                productosSnapshot.forEach(doc => {
-                    const prod = doc.data();
-                    const stock = (prod.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock) || 0), 0);
-                    const precio = parseFloat(prod.precioDetal) || 0;
-                    
-                    if (stock > 0 && precio > 0) {
-                        productos.push({ nombre: prod.nombre, precio: precio, stock: stock });
-                    }
-                });
+                // Buscar si ya existe una meta activa
+                const metasSnapshot = await getDocs(query(metasCollection, where('activa', '==', true)));
 
-                productos.sort((a, b) => b.precio - a.precio);
-                const top5 = productos.slice(0, 5);
+                if (!metasSnapshot.empty) {
+                    // Actualizar meta existente
+                    const metaExistenteDoc = metasSnapshot.docs[0];
+                    await updateDoc(doc(db, 'metas', metaExistenteDoc.id), metaData);
+                    metaActual = { id: metaExistenteDoc.id, ...metaData };
+                } else {
+                    // Crear nueva meta
+                    const nuevaMeta = await addDoc(metasCollection, metaData);
+                    metaActual = { id: nuevaMeta.id, ...metaData };
+                }
 
-                let html = '<div class="alert alert-primary mb-3">';
-                html += '<h5>Meta Diaria: ' + formatoMoneda.format(metaDiaria) + '</h5>';
-                html += '<p>Días restantes: ' + diasRestantes + '</p>';
-                html += '</div>';
+                // Generar y mostrar el plan completo
+                await generarYMostrarPlan(metaActual);
 
-                html += '<div class="card"><div class="card-header"><h6>Productos Prioritarios</h6></div><div class="card-body">';
-                top5.forEach(p => {
-                    html += '<div>' + p.nombre + ' - ' + formatoMoneda.format(p.precio) + '</div>';
-                });
-                html += '</div></div>';
-
-                container.innerHTML = html;
-
+                showToast('✅ Plan generado exitosamente', 'success');
             } catch (error) {
-                console.error('Error:', error);
-                container.innerHTML = '<div class="alert alert-danger">Error</div>';
+                console.error('Error generando plan:', error);
+                planContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Error generando el plan. Intenta de nuevo.
+                    </div>
+                `;
             }
         });
     }
 
-    console.log("Planificador listo");
+    // ===============================
+    // GENERAR Y MOSTRAR PLAN COMPLETO
+    // ===============================
+    async function generarYMostrarPlan(meta) {
+        // 1. Analizar ventas históricas
+        const ventasHistoricas = await obtenerVentasHistoricas();
+        const promediosPorDia = calcularPromediosPorDia(ventasHistoricas);
+
+        // 2. Calcular progreso actual
+        const ventasActuales = await calcularVentasDesde(meta.fechaCreacion);
+
+        // 3. Motor de recálculo dinámico
+        const planDiario = calcularPlanDinamico(meta, ventasActuales, promediosPorDia);
+
+        // 4. Mix de productos recomendado
+        const mixProductos = await calcularMixProductos(planDiario.metaHoy);
+
+        // 5. Análisis de progreso (Burndown)
+        const analisisProgreso = analizarProgreso(meta, ventasActuales, planDiario);
+
+        // 6. Coach con IA
+        const recomendacionesIA = await generarRecomendacionesCoach(meta, analisisProgreso, mixProductos);
+
+        // Renderizar vista completa
+        renderizarPlanCompleto(meta, planDiario, mixProductos, analisisProgreso, recomendacionesIA);
+    }
+
+    // ===============================
+    // MOTOR DINÁMICO: RECÁLCULO DIARIO
+    // ===============================
+    function calcularPlanDinamico(meta, ventasActuales, promediosPorDia) {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        const fechaLimite = new Date(meta.fechaLimite);
+        fechaLimite.setHours(23, 59, 59, 999);
+
+        const diasRestantes = Math.ceil((fechaLimite - hoy) / (1000 * 60 * 60 * 24));
+        const faltante = meta.montoObjetivo - ventasActuales;
+
+        // Si ya se cumplió la meta
+        if (faltante <= 0) {
+            return {
+                diasRestantes: 0,
+                faltante: 0,
+                metaHoy: 0,
+                metaDiaria: 0,
+                tablaDias: []
+            };
+        }
+
+        // LÓGICA DE REBALSE: Redistribuir faltante entre días restantes
+        const metaDiariaPromedio = faltante / Math.max(diasRestantes, 1);
+
+        // Generar tabla día por día
+        const tablaDias = [];
+        let fechaActual = new Date(hoy);
+
+        for (let i = 0; i < Math.min(diasRestantes, 30); i++) {
+            const diaSemana = fechaActual.getDay();
+            const nombreDia = promediosPorDia[diaSemana].nombre;
+            const porcentajeDia = promediosPorDia[diaSemana].porcentajeDelTotal;
+
+            // Ajustar meta según patrón histórico del día
+            const ajuste = porcentajeDia / 14.28; // 14.28 = 100/7 (promedio uniforme)
+            const metaAjustada = metaDiariaPromedio * ajuste;
+
+            tablaDias.push({
+                fecha: new Date(fechaActual),
+                nombreDia: nombreDia,
+                meta: metaAjustada,
+                esHoy: i === 0
+            });
+
+            fechaActual.setDate(fechaActual.getDate() + 1);
+        }
+
+        return {
+            diasRestantes,
+            faltante,
+            metaHoy: tablaDias[0]?.meta || 0,
+            metaDiaria: metaDiariaPromedio,
+            tablaDias
+        };
+    }
+
+    // ===============================
+    // MIX DE PRODUCTOS RECOMENDADO
+    // ===============================
+    async function calcularMixProductos(metaHoy) {
+        try {
+            const productosSnapshot = await getDocs(productsCollection);
+            const productos = [];
+
+            productosSnapshot.forEach(doc => {
+                const producto = doc.data();
+                const costoCompra = parseFloat(producto.costoCompra) || 0;
+                const precioDetal = parseFloat(producto.precioDetal) || 0;
+                const variaciones = producto.variaciones || [];
+
+                const stockTotal = variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+                const margen = precioDetal - costoCompra;
+
+                if (stockTotal > 0 && margen > 0) {
+                    productos.push({
+                        id: doc.id,
+                        nombre: producto.nombre,
+                        precio: precioDetal,
+                        margen: margen,
+                        stock: stockTotal,
+                        rentabilidad: margen / costoCompra // ROI
+                    });
+                }
+            });
+
+            // Ordenar por rentabilidad (mayor ROI primero)
+            productos.sort((a, b) => b.rentabilidad - a.rentabilidad);
+
+            // Calcular mix para alcanzar la meta de hoy
+            const mix = [];
+            let montoAcumulado = 0;
+
+            for (const producto of productos.slice(0, 5)) { // Top 5 productos
+                if (montoAcumulado >= metaHoy) break;
+
+                const faltante = metaHoy - montoAcumulado;
+                const unidadesNecesarias = Math.ceil(faltante / producto.precio);
+                const unidadesRecomendadas = Math.min(unidadesNecesarias, producto.stock);
+
+                if (unidadesRecomendadas > 0) {
+                    mix.push({
+                        ...producto,
+                        unidades: unidadesRecomendadas,
+                        subtotal: unidadesRecomendadas * producto.precio
+                    });
+                    montoAcumulado += unidadesRecomendadas * producto.precio;
+                }
+            }
+
+            return mix;
+        } catch (error) {
+            console.error('Error calculando mix de productos:', error);
+            return [];
+        }
+    }
+
+    // ===============================
+    // ANÁLISIS DE PROGRESO (BURNDOWN)
+    // ===============================
+    function analizarProgreso(meta, ventasActuales, planDiario) {
+        const fechaInicio = new Date(meta.fechaCreacion);
+        const fechaLimite = new Date(meta.fechaLimite);
+        const hoy = new Date();
+
+        const diasTotales = Math.ceil((fechaLimite - fechaInicio) / (1000 * 60 * 60 * 24));
+        const diasTranscurridos = Math.ceil((hoy - fechaInicio) / (1000 * 60 * 60 * 24));
+
+        const progresoReal = (ventasActuales / meta.montoObjetivo) * 100;
+        const progresoEsperado = (diasTranscurridos / diasTotales) * 100;
+
+        const vaBien = progresoReal >= progresoEsperado;
+        const diferenciaPorcentual = progresoReal - progresoEsperado;
+
+        return {
+            progresoReal,
+            progresoEsperado,
+            vaBien,
+            diferenciaPorcentual,
+            ventasActuales,
+            metaTotal: meta.montoObjetivo,
+            diasTranscurridos,
+            diasTotales
+        };
+    }
+
+    // ===============================
+    // COACH CON IA: RECOMENDACIONES CONTEXTUALES
+    // ===============================
+    async function generarRecomendacionesCoach(meta, analisis, mixProductos) {
+        const hoy = new Date();
+        const nombreDia = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][hoy.getDay()];
+
+        let recomendaciones = [];
+
+        // Análisis de brecha
+        if (analisis.vaBien) {
+            recomendaciones.push({
+                tipo: 'exito',
+                titulo: '🎉 ¡Vas por buen camino!',
+                mensaje: `Llevas ${analisis.progresoReal.toFixed(1)}% de avance con ${analisis.progresoEsperado.toFixed(1)}% del tiempo transcurrido. Estás ${Math.abs(analisis.diferenciaPorcentual).toFixed(1)}% adelantado.`
+            });
+        } else {
+            recomendaciones.push({
+                tipo: 'alerta',
+                titulo: '⚠️ Necesitas acelerar el ritmo',
+                mensaje: `Llevas ${analisis.progresoReal.toFixed(1)}% de avance pero ya pasó ${analisis.progresoEsperado.toFixed(1)}% del tiempo. Estás ${Math.abs(analisis.diferenciaPorcentual).toFixed(1)}% rezagado.`
+            });
+        }
+
+        // Estrategia contextual según día de la semana
+        if (['Viernes', 'Sábado'].includes(nombreDia) && !analisis.vaBien) {
+            recomendaciones.push({
+                tipo: 'estrategia',
+                titulo: '💡 Estrategia para el fin de semana',
+                mensaje: `Como hoy es ${nombreDia} y vas rezagado, aprovecha que es un día de mayores ventas. Considera lanzar una promoción flash en tus productos más rentables.`
+            });
+        }
+
+        // Recomendación de productos
+        if (mixProductos.length > 0) {
+            const top3 = mixProductos.slice(0, 3).map(p => p.nombre).join(', ');
+            recomendaciones.push({
+                tipo: 'productos',
+                titulo: '🎯 Enfócate en estos productos',
+                mensaje: `Para maximizar tu utilidad hoy, concéntrate en: ${top3}. Son los que tienen mejor margen de ganancia.`
+            });
+        }
+
+        return recomendaciones;
+    }
+
+    // ===============================
+    // RENDERIZAR PLAN COMPLETO
+    // ===============================
+    function renderizarPlanCompleto(meta, planDiario, mixProductos, analisisProgreso, recomendacionesIA) {
+        let html = '';
+
+        // 1. INDICADOR PERMANENTE "A TOPE" o "VAS MAL"
+        const estadoClass = analisisProgreso.vaBien ? 'success' : 'danger';
+        const estadoIcono = analisisProgreso.vaBien ? 'check-circle-fill' : 'exclamation-triangle-fill';
+        const estadoTexto = analisisProgreso.vaBien ? 'A TOPE' : 'VAS MAL';
+        const estadoMensaje = analisisProgreso.vaBien
+            ? `¡Vas ${Math.abs(analisisProgreso.diferenciaPorcentual).toFixed(1)}% adelantado!`
+            : `Estás ${Math.abs(analisisProgreso.diferenciaPorcentual).toFixed(1)}% rezagado`;
+
+        html += `
+            <div class="alert alert-${estadoClass} d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-${estadoIcono} fs-3 me-3"></i>
+                <div class="flex-grow-1">
+                    <h4 class="alert-heading mb-1">${estadoTexto}</h4>
+                    <p class="mb-0">${estadoMensaje}</p>
+                    <small>Progreso: ${analisisProgreso.progresoReal.toFixed(1)}% | Esperado: ${analisisProgreso.progresoEsperado.toFixed(1)}%</small>
+                </div>
+            </div>
+        `;
+
+        // 2. RESUMEN EJECUTIVO
+        html += `
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <small class="text-muted">Meta Total</small>
+                            <h5 class="mb-0">${formatoMoneda.format(meta.montoObjetivo)}</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <small class="text-muted">Vendido</small>
+                            <h5 class="mb-0">${formatoMoneda.format(analisisProgreso.ventasActuales)}</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <small class="text-muted">Faltante</small>
+                            <h5 class="mb-0">${formatoMoneda.format(planDiario.faltante)}</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <small class="text-muted">Meta Hoy</small>
+                            <h5 class="mb-0 text-primary">${formatoMoneda.format(planDiario.metaHoy)}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 3. RECOMENDACIONES DEL COACH IA
+        if (recomendacionesIA.length > 0) {
+            html += '<div class="mb-4">';
+            recomendacionesIA.forEach(rec => {
+                const alertClass = rec.tipo === 'exito' ? 'success' : rec.tipo === 'alerta' ? 'warning' : 'info';
+                html += `
+                    <div class="alert alert-${alertClass} mb-2">
+                        <h6 class="mb-1">${rec.titulo}</h6>
+                        <small>${rec.mensaje}</small>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+
+        // 4. MIX DE PRODUCTOS RECOMENDADO
+        if (mixProductos.length > 0) {
+            html += `
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-box-seam me-2"></i>Productos Prioritarios para Hoy</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th class="text-end">Precio</th>
+                                        <th class="text-center">Unidades</th>
+                                        <th class="text-end">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+
+            mixProductos.forEach(prod => {
+                html += `
+                    <tr>
+                        <td>${prod.nombre}</td>
+                        <td class="text-end">${formatoMoneda.format(prod.precio)}</td>
+                        <td class="text-center"><span class="badge bg-primary">${prod.unidades}</span></td>
+                        <td class="text-end"><strong>${formatoMoneda.format(prod.subtotal)}</strong></td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 5. TABLA DÍA POR DÍA
+        if (planDiario.tablaDias.length > 0) {
+            html += `
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="bi bi-calendar-week me-2"></i>Plan Día por Día</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Día</th>
+                                        <th class="text-end">Meta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+
+            planDiario.tablaDias.forEach(dia => {
+                const rowClass = dia.esHoy ? 'table-primary' : '';
+                const badge = dia.esHoy ? '<span class="badge bg-primary ms-2">HOY</span>' : '';
+                const fechaFormateada = dia.fecha.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
+
+                html += `
+                    <tr class="${rowClass}">
+                        <td>${fechaFormateada}${badge}</td>
+                        <td>${dia.nombreDia}</td>
+                        <td class="text-end"><strong>${formatoMoneda.format(dia.meta)}</strong></td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 6. GRÁFICO DE PROGRESO (Canvas para Chart.js)
+        html += `
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Progreso vs Objetivo</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="grafico-burndown" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        `;
+
+        // Renderizar HTML
+        planContainer.innerHTML = html;
+
+        // Crear gráfico
+        crearGraficoBurndown(meta, analisisProgreso);
+    }
+
+    // ===============================
+    // GRÁFICO BURNDOWN CON CHART.JS
+    // ===============================
+    function crearGraficoBurndown(meta, analisis) {
+        const canvas = document.getElementById('grafico-burndown');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+
+        const fechaInicio = new Date(meta.fechaCreacion);
+        const fechaLimite = new Date(meta.fechaLimite);
+        const hoy = new Date();
+
+        // Crear etiquetas de días
+        const labels = [];
+        const dataIdeal = [];
+        const dataReal = [];
+
+        const diasTotales = Math.ceil((fechaLimite - fechaInicio) / (1000 * 60 * 60 * 24));
+        const decrementoDiario = meta.montoObjetivo / diasTotales;
+
+        for (let i = 0; i <= diasTotales; i++) {
+            const fecha = new Date(fechaInicio);
+            fecha.setDate(fecha.getDate() + i);
+
+            labels.push(fecha.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' }));
+            dataIdeal.push(meta.montoObjetivo - (decrementoDiario * i));
+
+            // Data real solo hasta hoy
+            if (fecha <= hoy) {
+                dataReal.push(meta.montoObjetivo - analisis.ventasActuales);
+            } else {
+                dataReal.push(null);
+            }
+        }
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Progreso Ideal',
+                        data: dataIdeal,
+                        borderColor: 'rgba(108, 117, 125, 0.5)',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5],
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Progreso Real',
+                        data: dataReal,
+                        borderColor: analisis.vaBien ? 'rgb(25, 135, 84)' : 'rgb(220, 53, 69)',
+                        backgroundColor: analisis.vaBien ? 'rgba(25, 135, 84, 0.1)' : 'rgba(220, 53, 69, 0.1)',
+                        fill: true,
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + (value / 1000).toFixed(0) + 'k';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ===============================
+    // CARGA AUTOMÁTICA AL ABRIR DASHBOARD
+    // ===============================
+    async function cargarMetaActiva() {
+        try {
+            const metasSnapshot = await getDocs(query(metasCollection, where('activa', '==', true)));
+
+            if (!metasSnapshot.empty) {
+                const metaDoc = metasSnapshot.docs[0];
+                metaActual = { id: metaDoc.id, ...metaDoc.data() };
+
+                // Prellenar campos
+                document.getElementById('meta-monto-simple').value = formatearNumeroConPuntos(metaActual.montoObjetivo);
+                document.getElementById('meta-fecha-simple').value = metaActual.fechaLimite;
+
+                // Generar plan automáticamente
+                await generarYMostrarPlan(metaActual);
+
+                console.log('✅ Meta activa cargada automáticamente');
+            }
+        } catch (error) {
+            console.error('Error cargando meta activa:', error);
+        }
+    }
+
+    // Cargar meta activa al inicializar
+    cargarMetaActiva();
+
+    console.log("✅ Planificador de Ventas Dinámico con IA inicializado");
 })();
