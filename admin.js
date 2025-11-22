@@ -64,6 +64,7 @@ function aplicarFormatoDinero() {
         'precio-mayor',
         'costo-ruta',
         'meta-monto',
+        'meta-monto-page',
         'income-amount',
         'expense-amount',
         'venta-descuento',
@@ -7326,6 +7327,321 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     console.log("✅ Sistema de Metas Financieras con IA inicializado");
+})();
+
+// ============================================================
+// PÁGINA DE METAS CON GRÁFICAS Y SEGUIMIENTO DIARIO
+// ============================================================
+(function() {
+    console.log("📊 Inicializando Página de Metas con Seguimiento...");
+
+    // Toggle formulario de crear meta en página
+    const btnToggleCrearMetaPage = document.getElementById('btn-toggle-crear-meta-page');
+    const formCrearMetaPage = document.getElementById('form-crear-meta-page');
+
+    if (btnToggleCrearMetaPage && formCrearMetaPage) {
+        btnToggleCrearMetaPage.addEventListener('click', () => {
+            const isHidden = formCrearMetaPage.style.display === 'none';
+            formCrearMetaPage.style.display = isHidden ? 'block' : 'none';
+            btnToggleCrearMetaPage.querySelector('i').className = isHidden ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+        });
+    }
+
+    // Guardar nueva meta desde página
+    const btnGuardarMetaPage = document.getElementById('btn-guardar-meta-page');
+    if (btnGuardarMetaPage) {
+        btnGuardarMetaPage.addEventListener('click', async () => {
+            const nombre = document.getElementById('meta-nombre-page').value.trim();
+            const monto = parseFloat(eliminarFormatoNumero(document.getElementById('meta-monto-page').value));
+            const fecha = document.getElementById('meta-fecha-page').value;
+
+            if (!nombre || !monto || !fecha) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            try {
+                // Guardar meta en Firestore
+                await addDoc(metasCollection, {
+                    nombre: nombre,
+                    montoObjetivo: monto,
+                    fechaObjetivo: fecha,
+                    fechaCreacion: serverTimestamp(),
+                    activa: true,
+                    progresoDiario: {} // Objeto para guardar progreso día a día
+                });
+
+                // Limpiar formulario
+                document.getElementById('meta-nombre-page').value = '';
+                document.getElementById('meta-monto-page').value = '';
+                document.getElementById('meta-fecha-page').value = '';
+                formCrearMetaPage.style.display = 'none';
+                btnToggleCrearMetaPage.querySelector('i').className = 'bi bi-chevron-down';
+
+                showToast('✅ Meta creada exitosamente', 'success');
+            } catch (error) {
+                console.error('Error guardando meta:', error);
+                alert('❌ Error al crear la meta');
+            }
+        });
+    }
+
+    // Función para renderizar meta con gráfica de progreso
+    async function renderizarMetaConGrafica(metaDoc) {
+        const meta = metaDoc.data();
+        const metaId = metaDoc.id;
+
+        // Calcular datos de progreso
+        const fechaInicio = meta.fechaCreacion?.toDate() || new Date();
+        const fechaFin = new Date(meta.fechaObjetivo);
+        const ahora = new Date();
+
+        // Calcular ventas actuales
+        const ventasActuales = await calcularVentasDesde(fechaInicio);
+        const progreso = (ventasActuales / meta.montoObjetivo) * 100;
+
+        // Calcular días transcurridos y restantes
+        const diasTotales = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24));
+        const diasTranscurridos = Math.ceil((ahora - fechaInicio) / (1000 * 60 * 60 * 24));
+        const diasRestantes = Math.max(0, Math.ceil((fechaFin - ahora) / (1000 * 60 * 60 * 24)));
+
+        // Calcular meta diaria
+        const metaDiaria = meta.montoObjetivo / diasTotales;
+        const ventasDiariasNecesarias = diasRestantes > 0 ? (meta.montoObjetivo - ventasActuales) / diasRestantes : 0;
+
+        // Determinar si va bien o mal
+        const progresoEsperado = (diasTranscurridos / diasTotales) * 100;
+        const vaBien = progreso >= progresoEsperado;
+
+        // Crear card de meta
+        const card = document.createElement('div');
+        card.className = 'card shadow-sm mb-4';
+        card.innerHTML = `
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">${meta.nombre}</h5>
+                    <small class="text-muted">
+                        <i class="bi bi-calendar"></i> Hasta: ${new Date(meta.fechaObjetivo).toLocaleDateString('es-CO')}
+                        (${diasRestantes} días restantes)
+                    </small>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="eliminarMeta('${metaId}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <!-- Métricas principales -->
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded ${vaBien ? 'bg-success' : 'bg-warning'} bg-opacity-10">
+                            <div class="h2 mb-1 fw-bold ${vaBien ? 'text-success' : 'text-warning'}">
+                                ${progreso.toFixed(1)}%
+                            </div>
+                            <small class="text-muted">Progreso</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h2 mb-1 fw-bold text-primary">
+                                ${formatoMoneda.format(ventasActuales)}
+                            </div>
+                            <small class="text-muted">Acumulado</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h2 mb-1 fw-bold">
+                                ${formatoMoneda.format(meta.montoObjetivo - ventasActuales)}
+                            </div>
+                            <small class="text-muted">Faltante</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h4 mb-1 fw-bold ${vaBien ? 'text-success' : 'text-danger'}">
+                                ${formatoMoneda.format(ventasDiariasNecesarias)}
+                            </div>
+                            <small class="text-muted">Meta diaria</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barra de progreso -->
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-bold">
+                            <i class="bi ${vaBien ? 'bi-check-circle-fill text-success' : 'bi-exclamation-triangle-fill text-warning'}"></i>
+                            ${vaBien ? '¡Vas muy bien!' : 'Necesitas acelerar'}
+                        </span>
+                        <span class="text-muted">${formatoMoneda.format(meta.montoObjetivo)} objetivo</span>
+                    </div>
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar ${vaBien ? 'bg-success' : 'bg-warning'}"
+                             role="progressbar"
+                             style="width: ${Math.min(progreso, 100)}%;"
+                             aria-valuenow="${progreso}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            ${progreso.toFixed(1)}%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Indicadores de estado -->
+                <div class="alert ${vaBien ? 'alert-success' : 'alert-warning'} mb-4">
+                    <h6 class="alert-heading">
+                        <i class="bi ${vaBien ? 'bi-emoji-smile' : 'bi-emoji-neutral'}"></i>
+                        ${vaBien ? 'Estado: Buen camino' : 'Estado: Rezagado'}
+                    </h6>
+                    <p class="mb-0">
+                        ${vaBien
+                            ? `Llevas ${progreso.toFixed(1)}% de avance con ${progresoEsperado.toFixed(1)}% del tiempo transcurrido. ¡Sigue así!`
+                            : `Llevas ${progreso.toFixed(1)}% de avance pero ya pasó ${progresoEsperado.toFixed(1)}% del tiempo. Necesitas vender ${formatoMoneda.format(ventasDiariasNecesarias)} diarios.`
+                        }
+                    </p>
+                </div>
+
+                <!-- Gráfica de progreso (placeholder - se puede agregar Chart.js después) -->
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title">Progreso vs. Objetivo</h6>
+                        <canvas id="chart-meta-${metaId}" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Inicializar gráfica si Chart.js está disponible
+        setTimeout(() => {
+            const canvas = card.querySelector(`#chart-meta-${metaId}`);
+            if (canvas && typeof Chart !== 'undefined') {
+                crearGraficaProgreso(canvas, meta, ventasActuales, diasTranscurridos, diasTotales);
+            }
+        }, 100);
+
+        return card;
+    }
+
+    // Función para crear gráfica de progreso
+    function crearGraficaProgreso(canvas, meta, ventasActuales, diasTranscurridos, diasTotales) {
+        const ctx = canvas.getContext('2d');
+
+        // Datos de ejemplo para la gráfica
+        const labels = [];
+        const dataReal = [];
+        const dataEsperado = [];
+
+        const incrementoDiario = meta.montoObjetivo / diasTotales;
+
+        for (let i = 0; i <= diasTotales; i += Math.ceil(diasTotales / 10)) {
+            labels.push(`Día ${i}`);
+
+            // Progreso esperado lineal
+            dataEsperado.push(incrementoDiario * i);
+
+            // Progreso real (simulado - en producción vendría de datos reales)
+            if (i <= diasTranscurridos) {
+                dataReal.push((ventasActuales / diasTranscurridos) * i);
+            } else {
+                dataReal.push(null);
+            }
+        }
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Progreso Real',
+                        data: dataReal,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    },
+                    {
+                        label: 'Progreso Esperado',
+                        data: dataEsperado,
+                        borderColor: 'rgb(255, 159, 64)',
+                        backgroundColor: 'rgba(255, 159, 64, 0.1)',
+                        borderDash: [5, 5],
+                        tension: 0.1,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + (value / 1000000).toFixed(1) + 'M';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Función auxiliar para calcular ventas desde una fecha
+    async function calcularVentasDesde(fechaDesde) {
+        try {
+            const ventasSnapshot = await getDocs(salesCollection);
+            let total = 0;
+
+            ventasSnapshot.forEach(doc => {
+                const venta = doc.data();
+                const fechaVenta = venta.timestamp?.toDate();
+
+                if (fechaVenta && fechaVenta >= fechaDesde) {
+                    total += parseFloat(venta.total || 0);
+                }
+            });
+
+            return total;
+        } catch (error) {
+            console.error('Error calculando ventas:', error);
+            return 0;
+        }
+    }
+
+    // Cargar metas en la página
+    const metasContainerPage = document.getElementById('metas-container-page');
+    if (metasContainerPage) {
+        onSnapshot(
+            query(metasCollection, where('activa', '==', true), orderBy('fechaCreacion', 'desc')),
+            async (snapshot) => {
+                metasContainerPage.innerHTML = '';
+
+                if (snapshot.empty) {
+                    metasContainerPage.innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            No tienes metas activas. ¡Crea una nueva meta para empezar!
+                        </div>
+                    `;
+                } else {
+                    for (const metaDoc of snapshot.docs) {
+                        const metaCard = await renderizarMetaConGrafica(metaDoc);
+                        metasContainerPage.appendChild(metaCard);
+                    }
+                }
+            }
+        );
+    }
+
+    console.log("✅ Página de Metas con Seguimiento inicializado");
 })();
 
 });
