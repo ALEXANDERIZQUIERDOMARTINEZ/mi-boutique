@@ -1486,34 +1486,46 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: var(--sombra-lg);
 }
 
-/* Botón de descarga de imagen */
-.btn-download-image {
+/* ═══════════════════════════════════════════════════════════════════
+   PROTECCIÓN DE IMÁGENES - Anti-descarga
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Deshabilitar selección de imágenes */
+.product-card img,
+.modal-product-image,
+.zoomed-image {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    pointer-events: auto;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+}
+
+/* Deshabilitar arrastrar imágenes */
+img {
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-drag: none;
+}
+
+/* Marca de agua sutil en imágenes de productos (opcional) */
+.product-image-wrapper::after,
+.modal-product-image::after {
+    content: '';
     position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: rgba(217, 136, 185, 0.95);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    z-index: 10;
-}
-
-.btn-download-image:hover {
-    background-color: rgba(217, 136, 185, 1);
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-.btn-download-image i {
-    font-size: 18px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    pointer-events: none;
 }
 
 /* Responsive para móviles */

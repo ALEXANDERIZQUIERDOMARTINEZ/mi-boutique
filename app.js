@@ -1555,62 +1555,86 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // FUNCIONALIDAD DE DESCARGA DE IMAGEN
+    // PROTECCIÓN DE IMÁGENES - Anti-descarga
     // ═══════════════════════════════════════════════════════════════════
 
-    const btnDownloadImage = document.getElementById('btn-download-image');
-
-    if (btnDownloadImage) {
-        btnDownloadImage.addEventListener('click', async (e) => {
-            e.stopPropagation(); // Prevenir que abra el zoom
-
-            const productId = document.getElementById('modal-product-id').value;
-            const product = productsMap.get(productId);
-
-            if (!product || !product.imagenUrl) {
-                showToast('No hay imagen disponible para descargar', 'error');
-                return;
-            }
-
-            try {
-                // Mostrar loading
-                btnDownloadImage.innerHTML = '<i class="bi bi-hourglass-split"></i>';
-                btnDownloadImage.disabled = true;
-
-                // Descargar imagen
-                const response = await fetch(product.imagenUrl);
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-
-                // Crear link de descarga
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `${product.nombre.replace(/\s+/g, '_')}_mishell.jpg`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                // Liberar URL
-                window.URL.revokeObjectURL(url);
-
-                // 📊 Tracking: Descarga de imagen
-                analytics.trackImageDownload(product);
-
-                showToast('Imagen descargada correctamente', 'success');
-
-                // Restaurar botón
-                btnDownloadImage.innerHTML = '<i class="bi bi-download"></i>';
-                btnDownloadImage.disabled = false;
-
-            } catch (error) {
-                console.error('Error descargando imagen:', error);
-                showToast('Error al descargar la imagen', 'error');
-
-                // Restaurar botón
-                btnDownloadImage.innerHTML = '<i class="bi bi-download"></i>';
-                btnDownloadImage.disabled = false;
-            }
+    // Deshabilitar clic derecho en todas las imágenes
+    const allImages = document.querySelectorAll('img');
+    allImages.forEach(img => {
+        img.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showToast('Las imágenes están protegidas', 'warning');
+            return false;
         });
-    }
+
+        // Deshabilitar arrastrar
+        img.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+            return false;
+        });
+    });
+
+    // Proteger nuevas imágenes que se carguen dinámicamente
+    const observeImages = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.tagName === 'IMG') {
+                    node.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        showToast('Las imágenes están protegidas', 'warning');
+                        return false;
+                    });
+
+                    node.addEventListener('dragstart', (e) => {
+                        e.preventDefault();
+                        return false;
+                    });
+                }
+
+                // Si el nodo tiene imágenes hijas
+                if (node.querySelectorAll) {
+                    node.querySelectorAll('img').forEach(img => {
+                        img.addEventListener('contextmenu', (e) => {
+                            e.preventDefault();
+                            showToast('Las imágenes están protegidas', 'warning');
+                            return false;
+                        });
+
+                        img.addEventListener('dragstart', (e) => {
+                            e.preventDefault();
+                            return false;
+                        });
+                    });
+                }
+            });
+        });
+    });
+
+    // Observar cambios en el DOM para proteger imágenes dinámicas
+    observeImages.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+
+    // Deshabilitar teclas de captura de pantalla (limitado)
+    document.addEventListener('keyup', (e) => {
+        // PrintScreen, Ctrl+P, etc.
+        if (e.key === 'PrintScreen') {
+            navigator.clipboard.writeText('');
+            showToast('Captura de pantalla deshabilitada', 'warning');
+        }
+    });
+
+    // Deshabilitar combinaciones de teclas para guardar imágenes
+    document.addEventListener('keydown', (e) => {
+        // Ctrl+S (guardar)
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            showToast('Las imágenes están protegidas', 'warning');
+            return false;
+        }
+    });
+
+    console.log('🔒 Protección de imágenes activada');
 
 });
