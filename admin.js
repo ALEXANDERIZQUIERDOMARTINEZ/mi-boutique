@@ -64,7 +64,6 @@ function aplicarFormatoDinero() {
         'precio-mayor',
         'costo-ruta',
         'meta-monto',
-        'meta-monto-page',
         'meta-monto-simple',
         'income-amount',
         'expense-amount',
@@ -7347,57 +7346,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 // ============================================================
 (function() {
     console.log("📊 Inicializando Página de Metas con Seguimiento...");
-
-    // Toggle formulario de crear meta en página
-    const btnToggleCrearMetaPage = document.getElementById('btn-toggle-crear-meta-page');
-    const formCrearMetaPage = document.getElementById('form-crear-meta-page');
-
-    if (btnToggleCrearMetaPage && formCrearMetaPage) {
-        btnToggleCrearMetaPage.addEventListener('click', () => {
-            const isHidden = formCrearMetaPage.style.display === 'none';
-            formCrearMetaPage.style.display = isHidden ? 'block' : 'none';
-            btnToggleCrearMetaPage.querySelector('i').className = isHidden ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
-        });
-    }
-
-    // Guardar nueva meta desde página
-    const btnGuardarMetaPage = document.getElementById('btn-guardar-meta-page');
-    if (btnGuardarMetaPage) {
-        btnGuardarMetaPage.addEventListener('click', async () => {
-            const nombre = document.getElementById('meta-nombre-page').value.trim();
-            const monto = parseFloat(eliminarFormatoNumero(document.getElementById('meta-monto-page').value));
-            const fecha = document.getElementById('meta-fecha-page').value;
-
-            if (!nombre || !monto || !fecha) {
-                alert('Por favor completa todos los campos');
-                return;
-            }
-
-            try {
-                // Guardar meta en Firestore
-                await addDoc(metasCollection, {
-                    nombre: nombre,
-                    montoObjetivo: monto,
-                    fechaObjetivo: fecha,
-                    fechaCreacion: serverTimestamp(),
-                    activa: true,
-                    progresoDiario: {} // Objeto para guardar progreso día a día
-                });
-
-                // Limpiar formulario
-                document.getElementById('meta-nombre-page').value = '';
-                document.getElementById('meta-monto-page').value = '';
-                document.getElementById('meta-fecha-page').value = '';
-                formCrearMetaPage.style.display = 'none';
-                btnToggleCrearMetaPage.querySelector('i').className = 'bi bi-chevron-down';
-
-                showToast('✅ Meta creada exitosamente', 'success');
-            } catch (error) {
-                console.error('Error guardando meta:', error);
-                alert('❌ Error al crear la meta');
-            }
-        });
-    }
 
     // Función para renderizar meta con gráfica de progreso
     async function renderizarMetaConGrafica(metaDoc) {
