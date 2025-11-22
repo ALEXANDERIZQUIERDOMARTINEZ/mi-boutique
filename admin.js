@@ -7893,10 +7893,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         // Calcular promedios y porcentajes
         const promedios = {};
         let totalSemanal = 0;
+        let hayDatosReales = false;
 
         for (let dia in ventasPorDia) {
             const datos = ventasPorDia[dia];
             const promedio = datos.cantidad > 0 ? datos.total / datos.cantidad : 0;
+            if (datos.cantidad > 0) hayDatosReales = true;
             promedios[dia] = {
                 promedio: promedio,
                 nombre: datos.nombre,
@@ -7906,11 +7908,30 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             totalSemanal += promedio;
         }
 
+        console.log('📊 Datos históricos por día:', promedios);
+        console.log('📊 Total semanal:', totalSemanal, 'Hay datos reales:', hayDatosReales);
+
+        // Si no hay datos históricos, usar distribución realista
+        // Basada en patrones típicos de retail: fin de semana vende más
+        const distribucionDefecto = {
+            0: 12, // Domingo - bajo
+            1: 10, // Lunes - más bajo
+            2: 12, // Martes - bajo
+            3: 14, // Miércoles - medio
+            4: 16, // Jueves - medio-alto
+            5: 18, // Viernes - alto
+            6: 18  // Sábado - alto
+        };
+
         // Calcular porcentaje que representa cada día
         for (let dia in promedios) {
-            promedios[dia].porcentajeDelTotal = totalSemanal > 0
-                ? (promedios[dia].promedio / totalSemanal) * 100
-                : 14.28; // Distribución uniforme si no hay datos
+            if (totalSemanal > 0 && hayDatosReales) {
+                // Usar datos históricos reales
+                promedios[dia].porcentajeDelTotal = (promedios[dia].promedio / totalSemanal) * 100;
+            } else {
+                // Usar distribución por defecto
+                promedios[dia].porcentajeDelTotal = distribucionDefecto[dia];
+            }
         }
 
         return promedios;
@@ -7921,16 +7942,23 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         try {
             const ventasSnapshot = await getDocs(salesCollection);
             let total = 0;
+            let conteo = 0;
+
+            console.log('💰 Calculando ventas desde:', fechaDesde);
 
             ventasSnapshot.forEach(doc => {
                 const venta = doc.data();
                 const fechaVenta = venta.timestamp?.toDate();
 
                 if (fechaVenta && fechaVenta >= fechaDesde) {
-                    total += parseFloat(venta.total || 0);
+                    const montoVenta = parseFloat(venta.total || 0);
+                    total += montoVenta;
+                    conteo++;
+                    console.log(`  ✓ Venta: ${formatoMoneda.format(montoVenta)} el ${fechaVenta.toLocaleDateString()}`);
                 }
             });
 
+            console.log(`💰 Total ventas desde ${fechaDesde.toLocaleDateString()}: ${formatoMoneda.format(total)} (${conteo} ventas)`);
             return total;
         } catch (error) {
             console.error('Error calculando ventas:', error);
@@ -8063,6 +8091,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const diasRestantes = Math.ceil((fechaLimite - hoy) / (1000 * 60 * 60 * 24));
         const faltante = meta.montoObjetivo - ventasActuales;
 
+        console.log('📅 Calculando plan dinámico:');
+        console.log('  - Días restantes:', diasRestantes);
+        console.log('  - Faltante:', formatoMoneda.format(faltante));
+        console.log('  - Ventas actuales:', formatoMoneda.format(ventasActuales));
+        console.log('  - Meta objetivo:', formatoMoneda.format(meta.montoObjetivo));
+
         // Si ya se cumplió la meta
         if (faltante <= 0) {
             return {
@@ -8074,31 +8108,54 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             };
         }
 
-        // LÓGICA DE REBALSE: Redistribuir faltante entre días restantes
-        const metaDiariaPromedio = faltante / Math.max(diasRestantes, 1);
-
-        // Generar tabla día por día
+        // NUEVA LÓGICA: Distribuir inteligentemente según patrones históricos
+        // Primero, identificar qué días de la semana quedan
         const tablaDias = [];
         let fechaActual = new Date(hoy);
+        let sumaPorcentajes = 0;
+
+        // Calcular suma de porcentajes de los días restantes
+        for (let i = 0; i < Math.min(diasRestantes, 30); i++) {
+            const diaSemana = fechaActual.getDay();
+            sumaPorcentajes += promediosPorDia[diaSemana].porcentajeDelTotal;
+            fechaActual.setDate(fechaActual.getDate() + 1);
+        }
+
+        console.log('  - Suma de porcentajes de días restantes:', sumaPorcentajes);
+
+        // Generar tabla día por día con distribución proporcional
+        fechaActual = new Date(hoy);
+        let sumaMetasCalculadas = 0;
 
         for (let i = 0; i < Math.min(diasRestantes, 30); i++) {
             const diaSemana = fechaActual.getDay();
             const nombreDia = promediosPorDia[diaSemana].nombre;
             const porcentajeDia = promediosPorDia[diaSemana].porcentajeDelTotal;
 
-            // Ajustar meta según patrón histórico del día
-            const ajuste = porcentajeDia / 14.28; // 14.28 = 100/7 (promedio uniforme)
-            const metaAjustada = metaDiariaPromedio * ajuste;
+            // Distribuir el faltante proporcionalmente
+            const metaDia = (porcentajeDia / sumaPorcentajes) * faltante;
+            sumaMetasCalculadas += metaDia;
 
             tablaDias.push({
                 fecha: new Date(fechaActual),
                 nombreDia: nombreDia,
-                meta: metaAjustada,
-                esHoy: i === 0
+                meta: metaDia,
+                esHoy: i === 0,
+                porcentaje: porcentajeDia
             });
+
+            if (i < 7) {
+                console.log(`  - ${nombreDia}: ${formatoMoneda.format(metaDia)} (${porcentajeDia.toFixed(1)}%)`);
+            }
 
             fechaActual.setDate(fechaActual.getDate() + 1);
         }
+
+        const metaDiariaPromedio = faltante / Math.max(diasRestantes, 1);
+
+        console.log('  - Meta promedio diaria:', formatoMoneda.format(metaDiariaPromedio));
+        console.log('  - Meta HOY:', formatoMoneda.format(tablaDias[0]?.meta || 0));
+        console.log('  - Suma de metas calculadas:', formatoMoneda.format(sumaMetasCalculadas));
 
         return {
             diasRestantes,
