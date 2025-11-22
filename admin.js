@@ -65,6 +65,7 @@ function aplicarFormatoDinero() {
         'costo-ruta',
         'meta-monto',
         'meta-monto-page',
+        'meta-monto-simple',
         'income-amount',
         'expense-amount',
         'venta-descuento',
