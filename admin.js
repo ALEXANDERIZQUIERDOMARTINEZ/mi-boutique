@@ -7856,10 +7856,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             ventasSnapshot.forEach(doc => {
                 const venta = doc.data();
-                if (venta.timestamp && venta.total) {
+                // El campo correcto es totalVenta, no total
+                const montoVenta = parseFloat(venta.totalVenta || venta.total || 0);
+                if (venta.timestamp && montoVenta > 0) {
                     ventas.push({
                         fecha: venta.timestamp.toDate(),
-                        total: parseFloat(venta.total) || 0
+                        total: montoVenta
                     });
                 }
             });
@@ -7959,7 +7961,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const fechaVenta = venta.timestamp?.toDate();
 
                 if (fechaVenta) {
-                    const montoVenta = parseFloat(venta.total || 0);
+                    // El campo correcto es totalVenta, no total
+                    const montoVenta = parseFloat(venta.totalVenta || venta.total || 0);
                     const esHoy = fechaVenta.toDateString() === new Date().toDateString();
 
                     if (fechaVenta >= fechaDesde) {
