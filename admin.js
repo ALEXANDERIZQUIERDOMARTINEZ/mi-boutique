@@ -7240,6 +7240,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     const filterEstado = document.getElementById('filter-recepcion-estado');
     const filterProveedor = document.getElementById('filter-recepcion-proveedor');
     const searchRecepciones = document.getElementById('search-recepciones');
+    const filterFechaDesde = document.getElementById('filter-fecha-desde');
+    const filterFechaHasta = document.getElementById('filter-fecha-hasta');
+    const filterOrdenar = document.getElementById('filter-ordenar');
+    const btnLimpiarFiltros = document.getElementById('btn-limpiar-filtros');
 
     // --- Alternar vistas (Lista / Formulario) ---
     function toggleView(view) {
@@ -7310,26 +7314,39 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         productoCard.innerHTML = `
             <div class="card-body">
-                <div class="row g-2">
-                    <div class="col-md-5">
+                <div class="row g-2 mb-3">
+                    <div class="col-12">
                         <label class="form-label">Producto</label>
-                        <select class="form-select producto-select" data-producto-id="${productoId}" required>
-                            <option value="">Selecciona un producto...</option>
-                            ${Array.from(localProductsMap.values()).map(p =>
-                                `<option value="${p.id}" data-producto='${JSON.stringify(p)}'>${p.nombre} (${p.codigo})</option>`
-                            ).join('')}
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Variaciones</label>
-                        <div class="variaciones-container-${productoId}">
-                            <small class="text-muted">Selecciona un producto primero</small>
+                        <div class="d-flex gap-2 align-items-start">
+                            <div class="producto-imagen-preview-${productoId}" style="min-width: 80px;">
+                                <div style="width: 80px; height: 80px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-image text-muted fs-3"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <select class="form-select producto-select" data-producto-id="${productoId}" required>
+                                    <option value="">Selecciona un producto...</option>
+                                    ${Array.from(localProductsMap.values()).map(p =>
+                                        `<option value="${p.id}" data-producto='${JSON.stringify(p)}'>${p.nombre} (${p.codigo})</option>`
+                                    ).join('')}
+                                </select>
+                                <small class="text-muted producto-info-${productoId}"></small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-producto">
+                                <i class="bi bi-trash3"></i>
+                            </button>
                         </div>
                     </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                        <button type="button" class="btn btn-sm btn-outline-danger w-100 btn-eliminar-producto">
-                            <i class="bi bi-trash3"></i>
-                        </button>
+                </div>
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label">Variaciones a Recibir</label>
+                        <div class="variaciones-container-${productoId}">
+                            <div class="alert alert-info alert-sm mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Selecciona un producto para ver sus variaciones
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -7341,12 +7358,29 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const productoSelect = productoCard.querySelector('.producto-select');
         productoSelect.addEventListener('change', (e) => {
             const selectedOption = e.target.selectedOptions[0];
+            const imagenPreview = productoCard.querySelector(`.producto-imagen-preview-${productoId}`);
+            const productoInfo = productoCard.querySelector(`.producto-info-${productoId}`);
+
             if (selectedOption.value) {
                 const producto = JSON.parse(selectedOption.dataset.producto);
+
+                // Mostrar imagen
+                if (producto.imagenUrl) {
+                    imagenPreview.innerHTML = `<img src="${producto.imagenUrl}" alt="${producto.nombre}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">`;
+                } else {
+                    imagenPreview.innerHTML = '<div style="width: 80px; height: 80px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted fs-3"></i></div>';
+                }
+
+                // Mostrar info
+                const stockTotal = (producto.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+                productoInfo.innerHTML = `Stock actual: <strong>${stockTotal}</strong> unidades`;
+
                 mostrarVariaciones(productoId, producto);
             } else {
+                imagenPreview.innerHTML = '<div style="width: 80px; height: 80px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted fs-3"></i></div>';
+                productoInfo.innerHTML = '';
                 document.querySelector(`.variaciones-container-${productoId}`).innerHTML =
-                    '<small class="text-muted">Selecciona un producto primero</small>';
+                    '<div class="alert alert-info alert-sm mb-0"><i class="bi bi-info-circle me-1"></i>Selecciona un producto para ver sus variaciones</div>';
             }
         });
 
@@ -7360,28 +7394,74 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     function mostrarVariaciones(productoId, producto) {
         const container = document.querySelector(`.variaciones-container-${productoId}`);
 
-        if (!producto.variaciones || producto.variaciones.length === 0) {
-            container.innerHTML = '<small class="text-muted">Este producto no tiene variaciones</small>';
-            return;
+        container.innerHTML = `
+            <div class="card border-0 bg-light">
+                <div class="card-body p-2">
+                    <div id="variaciones-existentes-${productoId}"></div>
+                    <hr class="my-2">
+                    <button type="button" class="btn btn-sm btn-outline-success w-100 btn-agregar-nueva-variacion" data-producto-id="${producto.id}" data-temp-id="${productoId}">
+                        <i class="bi bi-plus-circle me-1"></i> Agregar Nueva Variación
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const variacionesExistentes = container.querySelector(`#variaciones-existentes-${productoId}`);
+
+        // Mostrar variaciones existentes
+        if (producto.variaciones && producto.variaciones.length > 0) {
+            producto.variaciones.forEach((variacion, index) => {
+                const varDiv = document.createElement('div');
+                varDiv.className = 'mb-2';
+                varDiv.innerHTML = `
+                    <div class="d-flex gap-2 align-items-center">
+                        <div class="badge bg-primary" style="min-width: 80px;">${variacion.talla}</div>
+                        <div class="badge bg-secondary" style="min-width: 80px;">${variacion.color}</div>
+                        <input type="number" class="form-control form-control-sm"
+                            data-producto-id="${producto.id}"
+                            data-talla="${variacion.talla}"
+                            data-color="${variacion.color}"
+                            data-es-nueva="false"
+                            min="0" value="0" placeholder="Cantidad a recibir"
+                            name="cantidad-variacion"
+                            style="max-width: 150px;">
+                        <small class="text-muted">Stock actual: ${variacion.stock}</small>
+                    </div>
+                `;
+                variacionesExistentes.appendChild(varDiv);
+            });
+        } else {
+            variacionesExistentes.innerHTML = '<small class="text-muted">No hay variaciones existentes. Agrega una nueva.</small>';
         }
 
-        container.innerHTML = '';
-
-        producto.variaciones.forEach((variacion, index) => {
-            const varDiv = document.createElement('div');
-            varDiv.className = 'input-group input-group-sm mb-2';
-            varDiv.innerHTML = `
-                <span class="input-group-text" style="min-width: 150px;">
-                    ${variacion.talla} - ${variacion.color}
-                </span>
-                <input type="number" class="form-control"
-                    data-producto-id="${producto.id}"
-                    data-talla="${variacion.talla}"
-                    data-color="${variacion.color}"
-                    min="0" value="0" placeholder="Cantidad"
-                    name="cantidad-variacion">
+        // Event listener para agregar nueva variación
+        const btnAgregarVariacion = container.querySelector('.btn-agregar-nueva-variacion');
+        btnAgregarVariacion.addEventListener('click', () => {
+            const nuevaVarDiv = document.createElement('div');
+            nuevaVarDiv.className = 'mb-2 nueva-variacion';
+            nuevaVarDiv.innerHTML = `
+                <div class="d-flex gap-2 align-items-center bg-success bg-opacity-10 p-2 rounded">
+                    <input type="text" class="form-control form-control-sm" placeholder="Talla" data-field="talla" style="max-width: 100px;">
+                    <input type="text" class="form-control form-control-sm" placeholder="Color" data-field="color" style="max-width: 100px;">
+                    <input type="number" class="form-control form-control-sm"
+                        data-producto-id="${producto.id}"
+                        data-es-nueva="true"
+                        min="0" value="1" placeholder="Cantidad"
+                        name="cantidad-variacion"
+                        style="max-width: 150px;">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-variacion-nueva">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                    <small class="text-success"><i class="bi bi-sparkles"></i> Nueva</small>
+                </div>
             `;
-            container.appendChild(varDiv);
+
+            variacionesExistentes.appendChild(nuevaVarDiv);
+
+            // Event listener para eliminar variación nueva
+            nuevaVarDiv.querySelector('.btn-eliminar-variacion-nueva').addEventListener('click', () => {
+                nuevaVarDiv.remove();
+            });
         });
     }
 
@@ -7408,19 +7488,44 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const producto = JSON.parse(select.selectedOptions[0].dataset.producto);
                     const productoId = select.dataset.productoId;
 
-                    // Obtener cantidades de variaciones
+                    // Obtener cantidades de variaciones (existentes y nuevas)
                     const variacionInputs = document.querySelectorAll(`[data-producto-id="${producto.id}"][name="cantidad-variacion"]`);
                     const variaciones = [];
 
                     variacionInputs.forEach(input => {
                         const cantidad = parseInt(input.value) || 0;
                         if (cantidad > 0) {
-                            variaciones.push({
-                                talla: input.dataset.talla,
-                                color: input.dataset.color,
-                                cantidadEsperada: cantidad,
-                                cantidadRecibida: 0
-                            });
+                            const esNueva = input.dataset.esNueva === 'true';
+
+                            if (esNueva) {
+                                // Variación nueva - obtener talla y color de inputs hermanos
+                                const contenedor = input.closest('.nueva-variacion');
+                                if (contenedor) {
+                                    const tallaInput = contenedor.querySelector('[data-field="talla"]');
+                                    const colorInput = contenedor.querySelector('[data-field="color"]');
+                                    const talla = tallaInput?.value.trim();
+                                    const color = colorInput?.value.trim();
+
+                                    if (talla && color) {
+                                        variaciones.push({
+                                            talla: talla,
+                                            color: color,
+                                            cantidadEsperada: cantidad,
+                                            cantidadRecibida: 0,
+                                            esNueva: true
+                                        });
+                                    }
+                                }
+                            } else {
+                                // Variación existente
+                                variaciones.push({
+                                    talla: input.dataset.talla,
+                                    color: input.dataset.color,
+                                    cantidadEsperada: cantidad,
+                                    cantidadRecibida: 0,
+                                    esNueva: false
+                                });
+                            }
                         }
                     });
 
@@ -7516,6 +7621,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const estadoFiltro = filterEstado.value;
         const proveedorFiltro = filterProveedor.value;
         const textoBusqueda = searchRecepciones.value.toLowerCase();
+        const fechaDesde = filterFechaDesde?.value;
+        const fechaHasta = filterFechaHasta?.value;
+        const ordenar = filterOrdenar?.value || 'reciente';
 
         recepcionesContainer.innerHTML = '';
 
@@ -7531,6 +7639,23 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             ordenesFiltradas = ordenesFiltradas.filter(o => o.proveedor === proveedorFiltro);
         }
 
+        // Filtrar por rango de fechas
+        if (fechaDesde) {
+            const fechaDesdeMs = new Date(fechaDesde).getTime();
+            ordenesFiltradas = ordenesFiltradas.filter(o => {
+                if (!o.timestamp?.toDate) return false;
+                return o.timestamp.toDate().getTime() >= fechaDesdeMs;
+            });
+        }
+
+        if (fechaHasta) {
+            const fechaHastaMs = new Date(fechaHasta).setHours(23, 59, 59, 999);
+            ordenesFiltradas = ordenesFiltradas.filter(o => {
+                if (!o.timestamp?.toDate) return false;
+                return o.timestamp.toDate().getTime() <= fechaHastaMs;
+            });
+        }
+
         // Filtrar por búsqueda de texto
         if (textoBusqueda) {
             ordenesFiltradas = ordenesFiltradas.filter(o => {
@@ -7542,6 +7667,22 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 return nombreMatch || proveedorMatch;
             });
         }
+
+        // Ordenar
+        ordenesFiltradas.sort((a, b) => {
+            switch (ordenar) {
+                case 'reciente':
+                    return (b.timestamp?.toDate?.()?.getTime() || 0) - (a.timestamp?.toDate?.()?.getTime() || 0);
+                case 'antigua':
+                    return (a.timestamp?.toDate?.()?.getTime() || 0) - (b.timestamp?.toDate?.()?.getTime() || 0);
+                case 'proveedor':
+                    return a.proveedor.localeCompare(b.proveedor);
+                case 'unidades':
+                    return (b.totalUnidades || 0) - (a.totalUnidades || 0);
+                default:
+                    return 0;
+            }
+        });
 
         if (ordenesFiltradas.length === 0) {
             recepcionesContainer.innerHTML = `
@@ -7585,6 +7726,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         // Lista de productos
         let productosHtml = orden.productos.map(p => {
+            // Buscar imagen del producto
+            const productoData = localProductsMap.get(p.productoId);
+            const imagenUrl = productoData?.imagenUrl || '';
+
             const variacionesHtml = p.variaciones.map(v => `
                 <tr>
                     <td class="ps-4">└ ${v.talla} - ${v.color}</td>
@@ -7600,7 +7745,19 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             return `
                 <tr class="table-active">
-                    <td><strong>${p.nombre}</strong> <small class="text-muted">(${p.codigo})</small></td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            ${imagenUrl ?
+                                `<img src="${imagenUrl}" alt="${p.nombre}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">` :
+                                '<div style="width: 50px; height: 50px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted"></i></div>'
+                            }
+                            <div>
+                                <strong>${p.nombre}</strong>
+                                <br>
+                                <small class="text-muted">(${p.codigo})</small>
+                            </div>
+                        </div>
+                    </td>
                     <td colspan="3"></td>
                 </tr>
                 ${variacionesHtml}
@@ -7730,7 +7887,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     continue;
                 }
 
-                let nuevasVariaciones = JSON.parse(JSON.stringify(productoActual.variaciones));
+                let nuevasVariaciones = JSON.parse(JSON.stringify(productoActual.variaciones || []));
 
                 for (const variacionOrden of producto.variaciones) {
                     const variacionIndex = nuevasVariaciones.findIndex(v =>
@@ -7738,12 +7895,27 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     );
 
                     if (variacionIndex !== -1) {
+                        // Variación existente - actualizar stock
                         const stockActual = parseInt(nuevasVariaciones[variacionIndex].stock, 10) || 0;
                         const cantidadNueva = variacionOrden.cantidadEsperada - variacionOrden.cantidadRecibida;
                         nuevasVariaciones[variacionIndex].stock = stockActual + cantidadNueva;
 
                         // Actualizar cantidad recibida en la orden
                         variacionOrden.cantidadRecibida = variacionOrden.cantidadEsperada;
+                    } else if (variacionOrden.esNueva) {
+                        // Variación nueva - agregar al producto
+                        nuevasVariaciones.push({
+                            talla: variacionOrden.talla,
+                            color: variacionOrden.color,
+                            stock: variacionOrden.cantidadEsperada
+                        });
+
+                        // Actualizar cantidad recibida en la orden
+                        variacionOrden.cantidadRecibida = variacionOrden.cantidadEsperada;
+
+                        console.log(`✨ Nueva variación agregada: ${variacionOrden.talla} - ${variacionOrden.color} (${variacionOrden.cantidadEsperada} unidades)`);
+                    } else {
+                        console.warn(`Variación ${variacionOrden.talla}/${variacionOrden.color} no encontrada en producto ${producto.productoId}`);
                     }
                 }
 
@@ -7802,6 +7974,31 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
     if (searchRecepciones) {
         searchRecepciones.addEventListener('input', filtrarYRenderizarOrdenes);
+    }
+
+    if (filterFechaDesde) {
+        filterFechaDesde.addEventListener('change', filtrarYRenderizarOrdenes);
+    }
+
+    if (filterFechaHasta) {
+        filterFechaHasta.addEventListener('change', filtrarYRenderizarOrdenes);
+    }
+
+    if (filterOrdenar) {
+        filterOrdenar.addEventListener('change', filtrarYRenderizarOrdenes);
+    }
+
+    // --- Limpiar filtros ---
+    if (btnLimpiarFiltros) {
+        btnLimpiarFiltros.addEventListener('click', () => {
+            if (filterEstado) filterEstado.value = 'pendiente';
+            if (filterProveedor) filterProveedor.value = '';
+            if (filterFechaDesde) filterFechaDesde.value = '';
+            if (filterFechaHasta) filterFechaHasta.value = '';
+            if (filterOrdenar) filterOrdenar.value = 'reciente';
+            if (searchRecepciones) searchRecepciones.value = '';
+            filtrarYRenderizarOrdenes();
+        });
     }
 
     // --- Inicializar módulo ---

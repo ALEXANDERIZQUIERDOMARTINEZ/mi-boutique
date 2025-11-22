@@ -1048,22 +1048,48 @@
                     <!-- Filtros -->
                     <div class="card mb-3">
                         <div class="card-body">
-                            <div class="row g-2">
-                                <div class="col-md-3">
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-2">
+                                    <label class="form-label small mb-1">Estado</label>
                                     <select class="form-select form-select-sm" id="filter-recepcion-estado">
-                                        <option value="">Todos los estados</option>
+                                        <option value="">Todos</option>
                                         <option value="pendiente" selected>Pendientes</option>
                                         <option value="recibido_parcial">Recibido Parcial</option>
                                         <option value="recibido">Recibidos</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
+                                    <label class="form-label small mb-1">Proveedor</label>
                                     <select class="form-select form-select-sm" id="filter-recepcion-proveedor">
-                                        <option value="">Todos los proveedores</option>
+                                        <option value="">Todos</option>
                                     </select>
                                 </div>
-                                <div class="col-md-6">
-                                    <input type="text" class="form-control form-control-sm" id="search-recepciones" placeholder="🔍 Buscar por producto o código...">
+                                <div class="col-md-2">
+                                    <label class="form-label small mb-1">Fecha Desde</label>
+                                    <input type="date" class="form-control form-control-sm" id="filter-fecha-desde">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small mb-1">Fecha Hasta</label>
+                                    <input type="date" class="form-control form-control-sm" id="filter-fecha-hasta">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small mb-1">Ordenar por</label>
+                                    <select class="form-select form-select-sm" id="filter-ordenar">
+                                        <option value="reciente">Más reciente</option>
+                                        <option value="antigua">Más antigua</option>
+                                        <option value="proveedor">Proveedor A-Z</option>
+                                        <option value="unidades">Más unidades</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button class="btn btn-sm btn-outline-secondary w-100" id="btn-limpiar-filtros">
+                                        <i class="bi bi-x-circle me-1"></i> Limpiar
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <input type="text" class="form-control form-control-sm" id="search-recepciones" placeholder="🔍 Buscar por producto, código o proveedor...">
                                 </div>
                             </div>
                         </div>
