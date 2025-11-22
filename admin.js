@@ -38,6 +38,152 @@ const metasCollection = collection(db, 'metas');
 // --- Helper: Format Currency ---
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
 
+// --- Helper: Formatear números con puntos (separadores de miles colombianos) ---
+function formatearNumeroConPuntos(valor) {
+    // Eliminar todo excepto números
+    let numero = valor.toString().replace(/[^\d]/g, '');
+
+    // Si está vacío, retornar vacío
+    if (numero === '') return '';
+
+    // Agregar puntos como separadores de miles
+    return numero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function eliminarFormatoNumero(valor) {
+    // Eliminar todos los puntos y retornar solo números
+    return valor.toString().replace(/\./g, '');
+}
+
+// --- Aplicar formato automático a inputs de dinero ---
+function aplicarFormatoDinero() {
+    // IDs de inputs que requieren formato de dinero
+    const inputsDinero = [
+        'costo-compra',
+        'precio-detal',
+        'precio-mayor',
+        'costo-ruta',
+        'meta-monto',
+        'income-amount',
+        'expense-amount',
+        'venta-descuento',
+        'pago-efectivo',
+        'pago-transferencia',
+        'abono-monto'
+    ];
+
+    inputsDinero.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            // Aplicar formato mientras el usuario escribe
+            input.addEventListener('input', function(e) {
+                const cursorPosition = this.selectionStart;
+                const valorAnterior = this.value;
+                const longitudAnterior = valorAnterior.length;
+
+                // Formatear el valor
+                const valorSinFormato = eliminarFormatoNumero(this.value);
+                const valorFormateado = formatearNumeroConPuntos(valorSinFormato);
+
+                // Actualizar el valor
+                this.value = valorFormateado;
+
+                // Ajustar la posición del cursor
+                const longitudNueva = valorFormateado.length;
+                const diferencia = longitudNueva - longitudAnterior;
+                const nuevaPosicion = cursorPosition + diferencia;
+
+                this.setSelectionRange(nuevaPosicion, nuevaPosicion);
+            });
+
+            // Al hacer blur, asegurar que el formato está correcto
+            input.addEventListener('blur', function() {
+                if (this.value) {
+                    const valorSinFormato = eliminarFormatoNumero(this.value);
+                    this.value = formatearNumeroConPuntos(valorSinFormato);
+                }
+            });
+
+            // Al hacer focus, permitir edición normal
+            input.addEventListener('focus', function() {
+                // Opcional: podrías eliminar el formato al hacer focus
+                // pero es mejor dejarlo formateado para mejor UX
+            });
+        }
+    });
+
+    // También aplicar a inputs dinámicos de variaciones de productos
+    const observador = new MutationObserver(() => {
+        // Inputs de costo de variaciones
+        document.querySelectorAll('.variation-costo').forEach(input => {
+            if (!input.dataset.formatoAplicado) {
+                input.dataset.formatoAplicado = 'true';
+
+                input.addEventListener('input', function(e) {
+                    const cursorPosition = this.selectionStart;
+                    const valorAnterior = this.value;
+                    const longitudAnterior = valorAnterior.length;
+
+                    const valorSinFormato = eliminarFormatoNumero(this.value);
+                    const valorFormateado = formatearNumeroConPuntos(valorSinFormato);
+
+                    this.value = valorFormateado;
+
+                    const longitudNueva = valorFormateado.length;
+                    const diferencia = longitudNueva - longitudAnterior;
+                    const nuevaPosicion = cursorPosition + diferencia;
+
+                    this.setSelectionRange(nuevaPosicion, nuevaPosicion);
+                });
+
+                input.addEventListener('blur', function() {
+                    if (this.value) {
+                        const valorSinFormato = eliminarFormatoNumero(this.value);
+                        this.value = formatearNumeroConPuntos(valorSinFormato);
+                    }
+                });
+            }
+        });
+
+        // Inputs de precio detal y mayor de variaciones
+        document.querySelectorAll('.variation-precio-detal, .variation-precio-mayor').forEach(input => {
+            if (!input.dataset.formatoAplicado) {
+                input.dataset.formatoAplicado = 'true';
+
+                input.addEventListener('input', function(e) {
+                    const cursorPosition = this.selectionStart;
+                    const valorAnterior = this.value;
+                    const longitudAnterior = valorAnterior.length;
+
+                    const valorSinFormato = eliminarFormatoNumero(this.value);
+                    const valorFormateado = formatearNumeroConPuntos(valorSinFormato);
+
+                    this.value = valorFormateado;
+
+                    const longitudNueva = valorFormateado.length;
+                    const diferencia = longitudNueva - longitudAnterior;
+                    const nuevaPosicion = cursorPosition + diferencia;
+
+                    this.setSelectionRange(nuevaPosicion, nuevaPosicion);
+                });
+
+                input.addEventListener('blur', function() {
+                    if (this.value) {
+                        const valorSinFormato = eliminarFormatoNumero(this.value);
+                        this.value = formatearNumeroConPuntos(valorSinFormato);
+                    }
+                });
+            }
+        });
+    });
+
+    // Observar cambios en el DOM para aplicar formato a elementos dinámicos
+    observador.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+}
+
 // --- Helper: Open WhatsApp (PWA Compatible) ---
 function openWhatsApp(url) {
     // Detectar si estamos en una PWA instalada
@@ -232,6 +378,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
      } catch (e) { console.error("Error initializing Modals:", e); }
+
+     // --- Aplicar formato de dinero a todos los inputs ---
+     aplicarFormatoDinero();
 
      // --- Lógica Modal de Confirmación de Borrado ---
      const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
@@ -1025,7 +1174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(aVB)aVB.addEventListener('click',(e) => { e.preventDefault(); aVR(); }); 
         if(vC && vC.querySelectorAll('.variation-row:not(#variation-template):not(.d-none)').length===0){aVR();}
         
-        const cI=document.getElementById('costo-compra'); const pDI=document.getElementById('precio-detal'); const pMI=document.getElementById('precio-mayor'); const mDI=document.getElementById('margen-detal-info'); const mMI=document.getElementById('margen-mayor-info'); const fM_margin=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}); function cYM(){ if(!cI || !pDI || !pMI || !mDI || !mMI) return; const c=parseFloat(cI.value)||0; const pD=parseFloat(pDI.value)||0; const pM=parseFloat(pMI.value)||0; let mDV=0,mDP=0;if(c>0&&pD>=c){mDV=pD-c;mDP=(mDV/c)*100;mDI.textContent=`Margen: ${fM_margin.format(mDV)} (${mDP.toFixed(1)}%)`;mDI.style.color='';mDI.style.fontWeight='';}else{mDI.textContent='Margen: $0 (0.0%)';mDI.style.color=(pD>0&&pD<c)?'red':'';mDI.style.fontWeight=(pD>0&&pD<c)?'bold':'';if(pD>0&&pD<c)mDI.textContent='Margen Negativo';} let mMV=0,mMP=0;if(c>0&&pM>=c){mMV=pM-c;mMP=(mMV/c)*100;mMI.textContent=`Margen: ${fM_margin.format(mMV)} (${mMP.toFixed(1)}%)`;mMI.style.color='';mMI.style.fontWeight='';}else{mMI.textContent='Margen: $0 (0.0%)';mMI.style.color=(pM>0&&pM<c)?'red':'';mMI.style.fontWeight=(pM>0&&pM<c)?'bold':'';if(pM>0&&pM<c)mMI.textContent='Margen Negativo';}} if(cI)cI.addEventListener('input',cYM); if(pDI)pDI.addEventListener('input',cYM); if(pMI)pMI.addEventListener('input',cYM); if(cI) cYM();
+        const cI=document.getElementById('costo-compra'); const pDI=document.getElementById('precio-detal'); const pMI=document.getElementById('precio-mayor'); const mDI=document.getElementById('margen-detal-info'); const mMI=document.getElementById('margen-mayor-info'); const fM_margin=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}); function cYM(){ if(!cI || !pDI || !pMI || !mDI || !mMI) return; const c=parseFloat(eliminarFormatoNumero(cI.value))||0; const pD=parseFloat(eliminarFormatoNumero(pDI.value))||0; const pM=parseFloat(eliminarFormatoNumero(pMI.value))||0; let mDV=0,mDP=0;if(c>0&&pD>=c){mDV=pD-c;mDP=(mDV/c)*100;mDI.textContent=`Margen: ${fM_margin.format(mDV)} (${mDP.toFixed(1)}%)`;mDI.style.color='';mDI.style.fontWeight='';}else{mDI.textContent='Margen: $0 (0.0%)';mDI.style.color=(pD>0&&pD<c)?'red':'';mDI.style.fontWeight=(pD>0&&pD<c)?'bold':'';if(pD>0&&pD<c)mDI.textContent='Margen Negativo';} let mMV=0,mMP=0;if(c>0&&pM>=c){mMV=pM-c;mMP=(mMV/c)*100;mMI.textContent=`Margen: ${fM_margin.format(mMV)} (${mMP.toFixed(1)}%)`;mMI.style.color='';mMI.style.fontWeight='';}else{mMI.textContent='Margen: $0 (0.0%)';mMI.style.color=(pM>0&&pM<c)?'red':'';mMI.style.fontWeight=(pM>0&&pM<c)?'bold':'';if(pM>0&&pM<c)mMI.textContent='Margen Negativo';}} if(cI)cI.addEventListener('input',cYM); if(pDI)pDI.addEventListener('input',cYM); if(pMI)pMI.addEventListener('input',cYM); if(cI) cYM();
         
         const renderProducts = (snapshot) => { 
             localProductsMap.clear(); 
@@ -1203,7 +1352,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Error en validación de nombre:", validationErr);
             }
 
-            let productData = { nombre: nombreProducto, proveedor: proveedorInput.value.trim(), descripcion: descripcionInput.value.trim(), categoriaId: categoriaSelect.value, costoCompra: parseFloat(costoInput.value) || 0, precioDetal: parseFloat(detalInput.value) || 0, precioMayor: parseFloat(mayorInput.value) || 0, visible: visibleCheckbox.checked, timestamp: serverTimestamp(), variaciones: [], imagenUrl: null };
+            let productData = { nombre: nombreProducto, proveedor: proveedorInput.value.trim(), descripcion: descripcionInput.value.trim(), categoriaId: categoriaSelect.value, costoCompra: parseFloat(eliminarFormatoNumero(costoInput.value)) || 0, precioDetal: parseFloat(eliminarFormatoNumero(detalInput.value)) || 0, precioMayor: parseFloat(eliminarFormatoNumero(mayorInput.value)) || 0, visible: visibleCheckbox.checked, timestamp: serverTimestamp(), variaciones: [], imagenUrl: null };
 
             const variationRows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)');
             variationRows.forEach(row => { const talla = row.querySelector('[name="variation_talla[]"]').value.trim(); const color = row.querySelector('[name="variation_color[]"]').value.trim(); const stock = parseInt(row.querySelector('[name="variation_stock[]"]').value, 10) || 0; if (talla || color || stock > 0) { productData.variaciones.push({ talla, color, stock }); } });
@@ -1273,9 +1422,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         proveedorInput.value = product.proveedor || '';
                         descripcionInput.value = product.descripcion || '';
                         categoriaSelect.value = product.categoriaId || '';
-                        costoInput.value = product.costoCompra || 0;
-                        detalInput.value = product.precioDetal || 0;
-                        mayorInput.value = product.precioMayor || 0;
+                        costoInput.value = formatearNumeroConPuntos((product.costoCompra || 0).toString());
+                        detalInput.value = formatearNumeroConPuntos((product.precioDetal || 0).toString());
+                        mayorInput.value = formatearNumeroConPuntos((product.precioMayor || 0).toString());
                         visibleCheckbox.checked = product.visible;
                         imagenInput.required = false; 
                         document.getElementById('product-form-title').textContent = `Editando: ${product.nombre}`;
@@ -2098,17 +2247,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 pedidoWhatsapp: !ventaWhatsappCheckbox.checked, // Invertido para corregir lógica
                 repartidorId: tipoEntregaSelect.value === 'domicilio' ? ventaRepartidorSelect.value : null,
                 repartidorNombre: tipoEntregaSelect.value === 'domicilio' ? (ventaRepartidorSelect.options[ventaRepartidorSelect.selectedIndex]?.text || '') : null,
-                costoRuta: tipoEntregaSelect.value === 'domicilio' ? (parseFloat(costoRutaInput.value) || 0) : 0,
-                rutaPagadaTransferencia: tipoEntregaSelect.value === 'domicilio' ? !rutaPagadaCheckbox.checked : false, // Invertido para corregir lógica 
-                items: window.ventaItems, 
-                observaciones: ventaObservaciones.value.trim(), 
-                descuento: parseFloat(ventaDescuentoInput.value) || 0, 
-                descuentoTipo: ventaDescuentoTipo.value, 
-                pagoEfectivo: parseFloat(pagoEfectivoInput.value) || 0, 
-                pagoTransferencia: parseFloat(pagoTransferenciaInput.value) || 0, 
-                totalVenta: totalCalculado, 
-                estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada', 
-                timestamp: serverTimestamp() 
+                costoRuta: tipoEntregaSelect.value === 'domicilio' ? (parseFloat(eliminarFormatoNumero(costoRutaInput.value)) || 0) : 0,
+                rutaPagadaTransferencia: tipoEntregaSelect.value === 'domicilio' ? !rutaPagadaCheckbox.checked : false, // Invertido para corregir lógica
+                items: window.ventaItems,
+                observaciones: ventaObservaciones.value.trim(),
+                descuento: parseFloat(eliminarFormatoNumero(ventaDescuentoInput.value)) || 0,
+                descuentoTipo: ventaDescuentoTipo.value,
+                pagoEfectivo: parseFloat(eliminarFormatoNumero(pagoEfectivoInput.value)) || 0,
+                pagoTransferencia: parseFloat(eliminarFormatoNumero(pagoTransferenciaInput.value)) || 0,
+                totalVenta: totalCalculado,
+                estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada',
+                timestamp: serverTimestamp()
             }; 
             
             if (ventaData.tipoVenta === 'apartado') {
@@ -3064,7 +3213,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             console.log("📝 Iniciando registro de abono...");
 
             const apartadoId = document.getElementById('abono-apartado-id').value;
-            const monto = parseFloat(document.getElementById('abono-monto').value);
+            const monto = parseFloat(eliminarFormatoNumero(document.getElementById('abono-monto').value));
             const saldoActual = parseFloat(document.getElementById('abono-saldo-actual').value);
             const metodoPago = document.getElementById('abono-metodo-pago').value;
             const observaciones = document.getElementById('abono-observaciones').value.trim();
@@ -3375,7 +3524,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
          if(addIncomeForm) addIncomeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const amount = parseFloat(incomeAmountInput.value);
+            const amount = parseFloat(eliminarFormatoNumero(incomeAmountInput.value));
             const method = incomeMethodSelect.value;
             const desc = incomeDescInput.value.trim();
             if (amount && desc && method) {
@@ -3406,7 +3555,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
          if(addExpenseForm) addExpenseForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const amount = parseFloat(expenseAmountInput.value);
+            const amount = parseFloat(eliminarFormatoNumero(expenseAmountInput.value));
             const desc = expenseDescInput.value.trim();
             if (amount && desc) {
                 try {
@@ -6775,7 +6924,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     if (btnGuardarMeta) {
         btnGuardarMeta.addEventListener('click', async () => {
             const nombre = document.getElementById('meta-nombre').value.trim();
-            const monto = parseFloat(document.getElementById('meta-monto').value);
+            const monto = parseFloat(eliminarFormatoNumero(document.getElementById('meta-monto').value));
             const fecha = document.getElementById('meta-fecha').value;
 
             if (!nombre || !monto || !fecha) {
