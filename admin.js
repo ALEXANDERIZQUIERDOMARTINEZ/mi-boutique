@@ -52,8 +52,8 @@ function formatearNumeroConPuntos(valor) {
 }
 
 function eliminarFormatoNumero(valor) {
-    // Eliminar todos los puntos y retornar solo números
-    return valor.toString().replace(/\./g, '');
+    // Eliminar todo excepto dígitos (puntos, comas, espacios, etc.)
+    return valor.toString().replace(/[^\d]/g, '');
 }
 
 // --- Aplicar formato automático a inputs de dinero ---
