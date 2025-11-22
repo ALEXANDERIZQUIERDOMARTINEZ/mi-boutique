@@ -2,6 +2,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
+// --- IMPORTACIONES DE ANALYTICS ---
+import analytics from './analytics.js';
+
 // *** CONFIGURACIÓN DE FIREBASE ***
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -335,6 +338,13 @@ function applyFiltersAndRender() {
     // 4. Ordenamiento
     filtered = sortProducts(filtered, advancedFilters.sortBy);
 
+    // 📊 Tracking: Búsqueda o vista de categoría
+    if (finalSearchTerm) {
+        analytics.trackSearch(finalSearchTerm, filtered.length);
+    } else if (activeFilter && activeFilter !== 'all') {
+        analytics.trackProductListView(activeFilter, filtered);
+    }
+
     renderProducts(filtered);
 }
 
@@ -575,6 +585,9 @@ function openProductModal(productId) {
     } else if (tallas.length === 0) {
         selectTalla.dispatchEvent(new Event('change'));
     }
+
+    // 📊 Tracking: Vista de producto
+    analytics.trackProductView(product);
 
     const modal = new bootstrap.Modal(document.getElementById('productModal'));
     modal.show();
@@ -1117,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 existing.observacion = observacion;
             }
         } else {
-            cart.push({
+            const newCartItem = {
                 cartItemId,
                 id: productId,
                 codigo: product.codigo || '',
@@ -1129,7 +1142,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 total: cantidad * precioUnitarioFinal,
                 imagenUrl: product.imagenUrl || '',
                 observacion: observacion || ''
-            });
+            };
+            cart.push(newCartItem);
+
+            // 📊 Tracking: Producto agregado al carrito
+            analytics.trackAddToCart(newCartItem);
         }
 
         showToast(`${product.nombre} agregado al carrito`, 'success');
@@ -1144,6 +1161,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (itemToDelete === null) return;
         const itemIndex = cart.findIndex(item => item.cartItemId === itemToDelete);
         if (itemIndex > -1) {
+            const deletedItem = cart[itemIndex];
+
+            // 📊 Tracking: Producto eliminado del carrito
+            analytics.trackRemoveFromCart(deletedItem);
+
             cart.splice(itemIndex, 1);
             saveCart(); // Guardar ANTES de renderizar
             renderCart();
@@ -1235,6 +1257,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const total = cart.reduce((sum, item) => sum + item.total, 0);
 
+        // 📊 Tracking: Inicio de checkout
+        analytics.trackBeginCheckout(cart, total);
+
         try {
             // 1. Verificar si el cliente ya existe
             const clientQuery = query(clientsCollection, where('cedula', '==', cedula));
@@ -1293,6 +1318,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const docRef = await addDoc(webOrdersCollection, pedidoData);
+
+            // 📊 Tracking: Compra completada
+            analytics.trackPurchase({
+                orderId: docRef.id,
+                totalPedido: total,
+                metodoPagoSolicitado: pago,
+                items: pedidoData.items
+            });
 
             // Crear mensaje LIMPIO para WhatsApp (sin emojis)
             let mensajeWhatsApp = `NUEVO PEDIDO WEB #${docRef.id.substring(0, 6).toUpperCase()}\n\n`;
@@ -1413,6 +1446,9 @@ document.addEventListener('DOMContentLoaded', () => {
             input.disabled = true;
             e.target.querySelector('button').disabled = true;
 
+            // 📊 Tracking: Modo mayorista activado
+            analytics.trackWholesaleActivation();
+
             applyFiltersAndRender();
 
             if (cart.length > 0) {
@@ -1439,6 +1475,13 @@ document.addEventListener('DOMContentLoaded', () => {
             zoomedImage.src = imageSrc;
             zoomOverlay.classList.add('active');
             document.body.style.overflow = 'hidden'; // Prevenir scroll
+
+            // 📊 Tracking: Zoom de imagen
+            const productId = document.getElementById('modal-product-id').value;
+            const product = productsMap.get(productId);
+            if (product) {
+                analytics.trackImageZoom(product);
+            }
         }
     });
 
@@ -1509,6 +1552,65 @@ document.addEventListener('DOMContentLoaded', () => {
         const dx = touch1.clientX - touch2.clientX;
         const dy = touch1.clientY - touch2.clientY;
         return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // FUNCIONALIDAD DE DESCARGA DE IMAGEN
+    // ═══════════════════════════════════════════════════════════════════
+
+    const btnDownloadImage = document.getElementById('btn-download-image');
+
+    if (btnDownloadImage) {
+        btnDownloadImage.addEventListener('click', async (e) => {
+            e.stopPropagation(); // Prevenir que abra el zoom
+
+            const productId = document.getElementById('modal-product-id').value;
+            const product = productsMap.get(productId);
+
+            if (!product || !product.imagenUrl) {
+                showToast('No hay imagen disponible para descargar', 'error');
+                return;
+            }
+
+            try {
+                // Mostrar loading
+                btnDownloadImage.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+                btnDownloadImage.disabled = true;
+
+                // Descargar imagen
+                const response = await fetch(product.imagenUrl);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+
+                // Crear link de descarga
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${product.nombre.replace(/\s+/g, '_')}_mishell.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                // Liberar URL
+                window.URL.revokeObjectURL(url);
+
+                // 📊 Tracking: Descarga de imagen
+                analytics.trackImageDownload(product);
+
+                showToast('Imagen descargada correctamente', 'success');
+
+                // Restaurar botón
+                btnDownloadImage.innerHTML = '<i class="bi bi-download"></i>';
+                btnDownloadImage.disabled = false;
+
+            } catch (error) {
+                console.error('Error descargando imagen:', error);
+                showToast('Error al descargar la imagen', 'error');
+
+                // Restaurar botón
+                btnDownloadImage.innerHTML = '<i class="bi bi-download"></i>';
+                btnDownloadImage.disabled = false;
+            }
+        });
     }
 
 });
