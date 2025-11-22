@@ -7195,7 +7195,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const metaId = metaDoc.id;
 
         // Calcular progreso
-        const fechaInicio = meta.fechaInicio ? new Date(meta.fechaInicio) : (meta.fechaCreacion?.toDate() || new Date());
+        let fechaInicio;
+        if (meta.fechaInicio) {
+            fechaInicio = new Date(meta.fechaInicio + 'T00:00:00');
+            fechaInicio.setHours(0, 0, 0, 0);
+        } else {
+            fechaInicio = meta.fechaCreacion?.toDate() || new Date();
+        }
         const fechaFin = new Date(meta.fechaObjetivo);
         const ahora = new Date();
 
@@ -7271,7 +7277,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const meta = metaDoc.data();
 
             // Calcular ventas actuales desde la fecha de inicio de la meta
-            const fechaInicio = meta.fechaInicio ? new Date(meta.fechaInicio) : (meta.fechaCreacion?.toDate() || new Date());
+            let fechaInicio;
+            if (meta.fechaInicio) {
+                fechaInicio = new Date(meta.fechaInicio + 'T00:00:00');
+                fechaInicio.setHours(0, 0, 0, 0);
+            } else {
+                fechaInicio = meta.fechaCreacion?.toDate() || new Date();
+            }
             const ventasActuales = await calcularVentasEnRango(fechaInicio, new Date());
 
             // Obtener datos de inventario
@@ -7393,7 +7405,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const metaId = metaDoc.id;
 
         // Calcular datos de progreso
-        const fechaInicio = meta.fechaInicio ? new Date(meta.fechaInicio) : (meta.fechaCreacion?.toDate() || new Date());
+        let fechaInicio;
+        if (meta.fechaInicio) {
+            fechaInicio = new Date(meta.fechaInicio + 'T00:00:00');
+            fechaInicio.setHours(0, 0, 0, 0);
+        } else {
+            fechaInicio = meta.fechaCreacion?.toDate() || new Date();
+        }
         const fechaFin = new Date(meta.fechaObjetivo);
         const ahora = new Date();
 
@@ -8059,7 +8077,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const promediosPorDia = calcularPromediosPorDia(ventasHistoricas);
 
         // 2. Calcular progreso actual desde la fecha de inicio especificada
-        const fechaInicioMeta = meta.fechaInicio ? new Date(meta.fechaInicio) : (meta.fechaCreacion || new Date());
+        let fechaInicioMeta;
+        if (meta.fechaInicio) {
+            fechaInicioMeta = new Date(meta.fechaInicio + 'T00:00:00');
+        } else {
+            fechaInicioMeta = meta.fechaCreacion || new Date();
+        }
+        fechaInicioMeta.setHours(0, 0, 0, 0);
         const ventasActuales = await calcularVentasDesde(fechaInicioMeta);
 
         // 3. Motor de recálculo dinámico
@@ -8201,8 +8225,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ANÁLISIS DE PROGRESO (BURNDOWN)
     // ===============================
     function analizarProgreso(meta, ventasActuales, planDiario) {
-        const fechaInicio = meta.fechaInicio ? new Date(meta.fechaInicio) : new Date(meta.fechaCreacion);
+        let fechaInicio;
+        if (meta.fechaInicio) {
+            fechaInicio = new Date(meta.fechaInicio + 'T00:00:00');
+        } else {
+            fechaInicio = new Date(meta.fechaCreacion);
+        }
+        fechaInicio.setHours(0, 0, 0, 0);
+
         const fechaLimite = new Date(meta.fechaLimite);
+        fechaLimite.setHours(23, 59, 59, 999);
+
         const hoy = new Date();
 
         const diasTotales = Math.max(1, Math.ceil((fechaLimite - fechaInicio) / (1000 * 60 * 60 * 24)));
@@ -8462,8 +8495,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         const ctx = canvas.getContext('2d');
 
-        const fechaInicio = meta.fechaInicio ? new Date(meta.fechaInicio) : new Date(meta.fechaCreacion);
+        let fechaInicio;
+        if (meta.fechaInicio) {
+            fechaInicio = new Date(meta.fechaInicio + 'T00:00:00');
+        } else {
+            fechaInicio = new Date(meta.fechaCreacion);
+        }
+        fechaInicio.setHours(0, 0, 0, 0);
+
         const fechaLimite = new Date(meta.fechaLimite);
+        fechaLimite.setHours(23, 59, 59, 999);
+
         const hoy = new Date();
 
         // Crear etiquetas de días
