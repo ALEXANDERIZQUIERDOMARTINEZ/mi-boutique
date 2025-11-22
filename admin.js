@@ -7939,6 +7939,42 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         return promedios;
     }
 
+    // Calcular ventas agrupadas por día
+    async function calcularVentasPorDia(fechaDesde, fechaHasta) {
+        try {
+            const ventasSnapshot = await getDocs(salesCollection);
+            const ventasPorDia = {};
+
+            ventasSnapshot.forEach(doc => {
+                const venta = doc.data();
+                const fechaVenta = venta.timestamp?.toDate();
+
+                if (fechaVenta && fechaVenta >= fechaDesde && fechaVenta <= fechaHasta) {
+                    const montoVenta = parseFloat(venta.totalVenta || venta.total || 0);
+
+                    // Obtener fecha sin hora (solo día)
+                    const diaKey = fechaVenta.toISOString().split('T')[0]; // YYYY-MM-DD
+
+                    if (!ventasPorDia[diaKey]) {
+                        ventasPorDia[diaKey] = {
+                            fecha: new Date(fechaVenta.getFullYear(), fechaVenta.getMonth(), fechaVenta.getDate()),
+                            total: 0,
+                            cantidad: 0
+                        };
+                    }
+
+                    ventasPorDia[diaKey].total += montoVenta;
+                    ventasPorDia[diaKey].cantidad += 1;
+                }
+            });
+
+            return ventasPorDia;
+        } catch (error) {
+            console.error('Error calculando ventas por día:', error);
+            return {};
+        }
+    }
+
     // Calcular ventas desde una fecha
     async function calcularVentasDesde(fechaDesde) {
         try {
@@ -8096,6 +8132,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         const ventasActuales = await calcularVentasDesde(fechaInicioMeta);
 
+        // 2b. Obtener ventas agrupadas por día
+        const hoy = new Date();
+        const fechaHasta = new Date(meta.fechaLimite);
+        const ventasPorDia = await calcularVentasPorDia(fechaInicioMeta, fechaHasta);
+
         // 3. Motor de recálculo dinámico
         const planDiario = calcularPlanDinamico(meta, ventasActuales, promediosPorDia);
 
@@ -8109,7 +8150,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const recomendacionesIA = await generarRecomendacionesCoach(meta, analisisProgreso, mixProductos);
 
         // Renderizar vista completa
-        renderizarPlanCompleto(meta, planDiario, mixProductos, analisisProgreso, recomendacionesIA);
+        renderizarPlanCompleto(meta, planDiario, mixProductos, analisisProgreso, recomendacionesIA, ventasPorDia);
     }
 
     // ===============================
@@ -8347,7 +8388,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ===============================
     // RENDERIZAR PLAN COMPLETO
     // ===============================
-    function renderizarPlanCompleto(meta, planDiario, mixProductos, analisisProgreso, recomendacionesIA) {
+    function renderizarPlanCompleto(meta, planDiario, mixProductos, analisisProgreso, recomendacionesIA, ventasPorDia = {}) {
         let html = '';
 
         // 1. INDICADOR PERMANENTE "A TOPE" o "VAS MAL"
@@ -8463,36 +8504,82 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             `;
         }
 
-        // 5. TABLA DÍA POR DÍA
+        // 5. TABLA DÍA POR DÍA CON SEGUIMIENTO
         if (planDiario.tablaDias.length > 0) {
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+
             html += `
                 <div class="card shadow-sm mb-4">
                     <div class="card-header">
-                        <h6 class="mb-0"><i class="bi bi-calendar-week me-2"></i>Plan Día por Día</h6>
+                        <h6 class="mb-0"><i class="bi bi-calendar-week me-2"></i>Plan Día por Día con Seguimiento</h6>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-sm table-striped mb-0">
+                            <table class="table table-sm table-hover mb-0">
                                 <thead>
                                     <tr>
                                         <th>Fecha</th>
                                         <th>Día</th>
                                         <th class="text-end">Meta</th>
+                                        <th class="text-end">Real</th>
+                                        <th class="text-center">Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody>
             `;
 
             planDiario.tablaDias.forEach(dia => {
-                const rowClass = dia.esHoy ? 'table-primary' : '';
-                const badge = dia.esHoy ? '<span class="badge bg-primary ms-2">HOY</span>' : '';
+                const diaDate = new Date(dia.fecha);
+                diaDate.setHours(0, 0, 0, 0);
+                const diaPaso = diaDate < hoy;
+                const esHoy = diaDate.getTime() === hoy.getTime();
+
+                // Obtener ventas reales del día
+                const diaKey = dia.fecha.toISOString().split('T')[0];
+                const ventasDelDia = ventasPorDia[diaKey];
+                const totalReal = ventasDelDia ? ventasDelDia.total : 0;
+
+                // Determinar estado
+                let estadoHtml = '';
+                let rowClass = '';
+                let textDecoration = '';
+
+                if (diaPaso) {
+                    // Día pasado - mostrar si cumplió o no
+                    textDecoration = 'text-decoration: line-through; opacity: 0.7;';
+                    if (totalReal >= dia.meta) {
+                        estadoHtml = '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Cumplido</span>';
+                        rowClass = 'table-success';
+                    } else {
+                        estadoHtml = '<span class="badge bg-danger"><i class="bi bi-x-circle"></i> No cumplido</span>';
+                        rowClass = 'table-danger';
+                    }
+                } else if (esHoy) {
+                    // Día actual
+                    rowClass = 'table-primary';
+                    const progreso = dia.meta > 0 ? (totalReal / dia.meta) * 100 : 0;
+                    if (totalReal >= dia.meta) {
+                        estadoHtml = '<span class="badge bg-success"><i class="bi bi-check-circle"></i> ¡Meta cumplida!</span>';
+                    } else {
+                        estadoHtml = `<span class="badge bg-warning"><i class="bi bi-hourglass-split"></i> ${progreso.toFixed(0)}%</span>`;
+                    }
+                } else {
+                    // Día futuro
+                    estadoHtml = '<span class="badge bg-secondary"><i class="bi bi-calendar"></i> Pendiente</span>';
+                    rowClass = '';
+                }
+
+                const badge = esHoy ? '<span class="badge bg-primary ms-2">HOY</span>' : '';
                 const fechaFormateada = dia.fecha.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit' });
 
                 html += `
                     <tr class="${rowClass}">
-                        <td>${fechaFormateada}${badge}</td>
-                        <td>${dia.nombreDia}</td>
-                        <td class="text-end"><strong>${formatoMoneda.format(dia.meta)}</strong></td>
+                        <td style="${textDecoration}">${fechaFormateada}${badge}</td>
+                        <td style="${textDecoration}">${dia.nombreDia}</td>
+                        <td class="text-end" style="${textDecoration}"><strong>${formatoMoneda.format(dia.meta)}</strong></td>
+                        <td class="text-end">${diaPaso || esHoy ? '<strong>' + formatoMoneda.format(totalReal) + '</strong>' : '-'}</td>
+                        <td class="text-center">${estadoHtml}</td>
                     </tr>
                 `;
             });
@@ -8500,6 +8587,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             html += `
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                Los días pasados se muestran tachados con indicador de cumplimiento.
+                                El día actual muestra el progreso en tiempo real.
+                            </small>
                         </div>
                     </div>
                 </div>
