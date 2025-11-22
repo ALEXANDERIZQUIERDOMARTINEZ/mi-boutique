@@ -7943,25 +7943,46 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const ventasSnapshot = await getDocs(salesCollection);
             let total = 0;
             let conteo = 0;
+            let ventasExcluidas = 0;
 
-            console.log('💰 Calculando ventas desde:', fechaDesde);
+            console.log('💰 ========================================');
+            console.log('💰 CALCULANDO VENTAS DESDE:', fechaDesde.toLocaleString('es-CO'));
+            console.log('💰 Fecha inicio (timestamp):', fechaDesde.getTime());
+            console.log('💰 ========================================');
+
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            console.log('💰 Hoy a las 00:00:00:', hoy.toLocaleString('es-CO'), 'timestamp:', hoy.getTime());
 
             ventasSnapshot.forEach(doc => {
                 const venta = doc.data();
                 const fechaVenta = venta.timestamp?.toDate();
 
-                if (fechaVenta && fechaVenta >= fechaDesde) {
+                if (fechaVenta) {
                     const montoVenta = parseFloat(venta.total || 0);
-                    total += montoVenta;
-                    conteo++;
-                    console.log(`  ✓ Venta: ${formatoMoneda.format(montoVenta)} el ${fechaVenta.toLocaleDateString()}`);
+                    const esHoy = fechaVenta.toDateString() === new Date().toDateString();
+
+                    if (fechaVenta >= fechaDesde) {
+                        total += montoVenta;
+                        conteo++;
+                        console.log(`  ✅ INCLUIDA: ${formatoMoneda.format(montoVenta)} - ${fechaVenta.toLocaleString('es-CO')} ${esHoy ? '🔥 HOY' : ''}`);
+                    } else {
+                        ventasExcluidas++;
+                        if (ventasExcluidas <= 3) {
+                            console.log(`  ❌ EXCLUIDA: ${formatoMoneda.format(montoVenta)} - ${fechaVenta.toLocaleString('es-CO')} (anterior a fecha inicio)`);
+                        }
+                    }
                 }
             });
 
-            console.log(`💰 Total ventas desde ${fechaDesde.toLocaleDateString()}: ${formatoMoneda.format(total)} (${conteo} ventas)`);
+            console.log('💰 ========================================');
+            console.log(`💰 TOTAL: ${formatoMoneda.format(total)}`);
+            console.log(`💰 VENTAS INCLUIDAS: ${conteo}`);
+            console.log(`💰 VENTAS EXCLUIDAS: ${ventasExcluidas}`);
+            console.log('💰 ========================================');
             return total;
         } catch (error) {
-            console.error('Error calculando ventas:', error);
+            console.error('❌ Error calculando ventas:', error);
             return 0;
         }
     }
@@ -8055,11 +8076,21 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         // 2. Calcular progreso actual desde la fecha de inicio especificada
         let fechaInicioMeta;
         if (meta.fechaInicio) {
-            fechaInicioMeta = new Date(meta.fechaInicio + 'T00:00:00');
+            // Crear fecha desde string YYYY-MM-DD en zona horaria local
+            const partes = meta.fechaInicio.split('-');
+            fechaInicioMeta = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
+            fechaInicioMeta.setHours(0, 0, 0, 0);
         } else {
             fechaInicioMeta = meta.fechaCreacion || new Date();
+            if (fechaInicioMeta.setHours) fechaInicioMeta.setHours(0, 0, 0, 0);
         }
-        fechaInicioMeta.setHours(0, 0, 0, 0);
+
+        console.log('📅 ========================================');
+        console.log('📅 FECHA INICIO META (string):', meta.fechaInicio);
+        console.log('📅 FECHA INICIO META (Date):', fechaInicioMeta.toLocaleString('es-CO'));
+        console.log('📅 FECHA INICIO META (timestamp):', fechaInicioMeta.getTime());
+        console.log('📅 ========================================');
+
         const ventasActuales = await calcularVentasDesde(fechaInicioMeta);
 
         // 3. Motor de recálculo dinámico
@@ -8114,8 +8145,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         let fechaActual = new Date(hoy);
         let sumaPorcentajes = 0;
 
-        // Calcular suma de porcentajes de los días restantes
-        for (let i = 0; i < Math.min(diasRestantes, 30); i++) {
+        // Calcular suma de porcentajes de los días restantes (TODOS los días, sin límite)
+        for (let i = 0; i < diasRestantes; i++) {
             const diaSemana = fechaActual.getDay();
             sumaPorcentajes += promediosPorDia[diaSemana].porcentajeDelTotal;
             fechaActual.setDate(fechaActual.getDate() + 1);
@@ -8123,11 +8154,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         console.log('  - Suma de porcentajes de días restantes:', sumaPorcentajes);
 
-        // Generar tabla día por día con distribución proporcional
+        // Generar tabla día por día con distribución proporcional (TODOS los días)
         fechaActual = new Date(hoy);
         let sumaMetasCalculadas = 0;
 
-        for (let i = 0; i < Math.min(diasRestantes, 30); i++) {
+        for (let i = 0; i < diasRestantes; i++) {
             const diaSemana = fechaActual.getDay();
             const nombreDia = promediosPorDia[diaSemana].nombre;
             const porcentajeDia = promediosPorDia[diaSemana].porcentajeDelTotal;
