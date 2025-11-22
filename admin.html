@@ -42,7 +42,6 @@
 
                     <!-- 💼 ADMINISTRACIÓN -->
                     <li class="nav-item"> <a href="#finanzas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-piggy-bank-fill me-1"></i> Finanzas</a> </li>
-                    <li class="nav-item"> <a href="#metas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bullseye me-1"></i> Metas</a> </li>
                     <li class="nav-item"> <a href="#reportes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bar-chart-fill me-1"></i> Reportes</a> </li>
                     <li class="nav-item"> <a href="#proveedores" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-building me-1"></i> Proveedores </a> </li>
                     <li class="nav-item"> <a href="#backup" class="nav-link" data-bs-toggle="pill"><i class="bi bi-cloud-download-fill me-1"></i> Backup</a> </li>
@@ -979,48 +978,6 @@
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="metas">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="h2 mb-0"><i class="bi bi-bullseye me-2"></i>Planificador de Ventas con IA</h1>
-                </div>
-
-                <!-- Formulario: Planificador de Ventas -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Monto Objetivo</label>
-                                <input type="text" class="form-control" id="meta-monto-simple" placeholder="60.000.000" inputmode="numeric">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Fecha Inicio</label>
-                                <input type="date" class="form-control" id="meta-fecha-inicio">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Fecha Límite</label>
-                                <input type="date" class="form-control" id="meta-fecha-simple">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">&nbsp;</label>
-                                <button class="btn btn-primary w-100" id="btn-generar-plan">
-                                    <i class="bi bi-play-fill"></i> Generar Plan
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Plan Generado -->
-                <div id="plan-ventas-container" class="mb-4">
-                    <!-- Se generará aquí -->
-                </div>
-
-                <!-- Lista de Metas Activas con Seguimiento -->
-                <div id="metas-container-page">
-                    <!-- Las metas se cargarán aquí dinámicamente con gráficas -->
-                </div>
-            </div>
-
             <div class="tab-pane fade" id="categorias"> <h1 class="h2">Categorías</h1> <div class="row"><div class="col-md-6"><div class="card"><div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Agregar</h3> </div><div class="card-body"><form id="form-categoria"><div class="mb-3"> <label for="nombre-categoria" class="form-label">Nombre:</label> <input type="text" id="nombre-categoria" class="form-control" required> </div><button type="submit" class="btn btn-primary">Guardar</button></form></div></div></div><div class="col-md-6"><div class="card"><div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Existentes</h3> </div><div class="card-body p-0"><ul class="list-group list-group-flush" id="lista-categorias"><li class="list-group-item text-muted" id="loading-categories">Cargando...</li></ul></div></div></div></div> </div>
             
             <div class="tab-pane fade" id="proveedores"> <h1 class="h2">Proveedores</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSupplierModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Acciones</th></tr></thead><tbody id="lista-proveedores-tabla"><tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
@@ -1572,37 +1529,6 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Plan de Acción con IA -->
-    <div class="modal fade" id="planAccionModal" tabindex="-1" aria-labelledby="planAccionModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-gradient-meta text-white">
-                    <h5 class="modal-title" id="planAccionModalLabel">
-                        <i class="bi bi-robot"></i> Plan de Acción con IA
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-success mb-3">
-                        <i class="bi bi-check-circle-fill me-2"></i>
-                        <strong>Meta creada exitosamente:</strong> <span id="plan-meta-nombre"></span>
-                    </div>
-                    <div id="plan-contenido" class="plan-accion-contenido">
-                        <!-- El contenido del plan se cargará aquí -->
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle"></i> Cerrar
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="window.print()">
-                        <i class="bi bi-printer"></i> Imprimir Plan
-                    </button>
                 </div>
             </div>
         </div>
