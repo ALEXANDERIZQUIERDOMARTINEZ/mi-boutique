@@ -33,6 +33,7 @@ const financesCollection = collection(db, 'movimientosFinancieros');
 const closingsCollection = collection(db, 'cierresCaja');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const chatConversationsCollection = collection(db, 'chatConversations');
+const metasCollection = collection(db, 'metas');
 
 // --- Helper: Format Currency ---
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
@@ -62,6 +63,7 @@ function aplicarFormatoDinero() {
         'precio-detal',
         'precio-mayor',
         'costo-ruta',
+        'meta-monto',
         'income-amount',
         'expense-amount',
         'venta-descuento',
@@ -6898,4 +6900,319 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
     console.log("✅ Sistema de Backup/Exportación inicializado");
 })();
+
+// ============================================================
+// SISTEMA DE METAS FINANCIERAS CON IA
+// ============================================================
+(function() {
+    console.log("🎯 Inicializando Sistema de Metas Financieras con IA...");
+
+    // Toggle formulario de crear meta
+    const btnToggleCrearMeta = document.getElementById('btn-toggle-crear-meta');
+    const formCrearMeta = document.getElementById('form-crear-meta');
+
+    if (btnToggleCrearMeta && formCrearMeta) {
+        btnToggleCrearMeta.addEventListener('click', () => {
+            const isHidden = formCrearMeta.style.display === 'none';
+            formCrearMeta.style.display = isHidden ? 'block' : 'none';
+            btnToggleCrearMeta.querySelector('i').className = isHidden ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+        });
+    }
+
+    // Guardar nueva meta
+    const btnGuardarMeta = document.getElementById('btn-guardar-meta');
+    if (btnGuardarMeta) {
+        btnGuardarMeta.addEventListener('click', async () => {
+            const nombre = document.getElementById('meta-nombre').value.trim();
+            const monto = parseFloat(eliminarFormatoNumero(document.getElementById('meta-monto').value));
+            const fecha = document.getElementById('meta-fecha').value;
+
+            if (!nombre || !monto || !fecha) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            try {
+                await addDoc(metasCollection, {
+                    nombre: nombre,
+                    montoObjetivo: monto,
+                    fechaObjetivo: fecha,
+                    fechaCreacion: serverTimestamp(),
+                    activa: true
+                });
+
+                // Limpiar formulario
+                document.getElementById('meta-nombre').value = '';
+                document.getElementById('meta-monto').value = '';
+                document.getElementById('meta-fecha').value = '';
+                formCrearMeta.style.display = 'none';
+                btnToggleCrearMeta.querySelector('i').className = 'bi bi-chevron-down';
+
+                alert('✅ Meta creada exitosamente');
+            } catch (error) {
+                console.error('Error guardando meta:', error);
+                alert('❌ Error al crear la meta');
+            }
+        });
+    }
+
+    // Función para calcular ventas totales en un rango de fechas
+    async function calcularVentasEnRango(fechaDesde, fechaHasta) {
+        try {
+            const ventasSnapshot = await getDocs(salesCollection);
+            let totalVentas = 0;
+
+            ventasSnapshot.forEach(doc => {
+                const venta = doc.data();
+                const fechaVenta = venta.timestamp?.toDate();
+
+                if (fechaVenta && fechaVenta >= fechaDesde && fechaVenta <= fechaHasta) {
+                    totalVentas += parseFloat(venta.total || 0);
+                }
+            });
+
+            return totalVentas;
+        } catch (error) {
+            console.error('Error calculando ventas:', error);
+            return 0;
+        }
+    }
+
+    // Función para obtener datos de inventario
+    async function obtenerDatosInventario() {
+        try {
+            const productosSnapshot = await getDocs(productsCollection);
+            let inversionTotal = 0;
+            let valorPotencialDetal = 0;
+            let productosConStock = [];
+            let productosSinStock = [];
+
+            productosSnapshot.forEach(doc => {
+                const producto = doc.data();
+                const costoCompra = parseFloat(producto.costoCompra) || 0;
+                const precioDetal = parseFloat(producto.precioDetal) || 0;
+                const variaciones = producto.variaciones || [];
+
+                const stockTotal = variaciones.reduce((sum, v) =>
+                    sum + (parseInt(v.stock, 10) || 0), 0);
+
+                inversionTotal += costoCompra * stockTotal;
+                valorPotencialDetal += precioDetal * stockTotal;
+
+                if (stockTotal > 0) {
+                    productosConStock.push({
+                        nombre: producto.nombre,
+                        stock: stockTotal,
+                        costoUnitario: costoCompra,
+                        precioUnitario: precioDetal,
+                        utilidadUnitaria: precioDetal - costoCompra,
+                        inversionTotal: costoCompra * stockTotal
+                    });
+                } else {
+                    productosSinStock.push(producto.nombre);
+                }
+            });
+
+            // Ordenar productos por utilidad unitaria
+            productosConStock.sort((a, b) => b.utilidadUnitaria - a.utilidadUnitaria);
+
+            return {
+                inversionTotal,
+                valorPotencialDetal,
+                utilidadPotencial: valorPotencialDetal - inversionTotal,
+                productosConStock: productosConStock.slice(0, 10), // Top 10
+                productosSinStock,
+                totalProductosConStock: productosConStock.length
+            };
+        } catch (error) {
+            console.error('Error obteniendo datos de inventario:', error);
+            return null;
+        }
+    }
+
+    // Función para generar recomendaciones con IA (Claude)
+    async function generarRecomendacionesIA(meta, ventasActuales, datosInventario) {
+        const diasRestantes = Math.ceil((new Date(meta.fechaObjetivo) - new Date()) / (1000 * 60 * 60 * 24));
+        const faltante = meta.montoObjetivo - ventasActuales;
+        const ventasDiariasNecesarias = faltante / diasRestantes;
+
+        // Por ahora, generar recomendaciones locales (sin API externa)
+        // TODO: Integrar con Claude API cuando esté disponible
+        const recomendaciones = [];
+
+        if (faltante > 0) {
+            recomendaciones.push(`📊 **Análisis**: Te faltan ${formatoMoneda.format(faltante)} para alcanzar tu meta.`);
+            recomendaciones.push(`⏰ **Tiempo**: Tienes ${diasRestantes} días restantes.`);
+            recomendaciones.push(`💰 **Meta diaria**: Necesitas vender ${formatoMoneda.format(ventasDiariasNecesarias)} por día.`);
+
+            if (datosInventario) {
+                recomendaciones.push(`\n📦 **Tu inventario actual**:`);
+                recomendaciones.push(`- Inversión total: ${formatoMoneda.format(datosInventario.inversionTotal)}`);
+                recomendaciones.push(`- Utilidad potencial: ${formatoMoneda.format(datosInventario.utilidadPotencial)}`);
+
+                if (datosInventario.productosConStock.length > 0) {
+                    recomendaciones.push(`\n💎 **Productos más rentables para priorizar**:`);
+                    datosInventario.productosConStock.slice(0, 5).forEach((p, i) => {
+                        recomendaciones.push(`${i + 1}. **${p.nombre}**: Utilidad de ${formatoMoneda.format(p.utilidadUnitaria)} por unidad (${p.stock} disponibles)`);
+                    });
+                }
+
+                recomendaciones.push(`\n✅ **Recomendaciones estratégicas**:`);
+                recomendaciones.push(`1. Enfócate en vender los productos con mayor margen de utilidad`);
+                recomendaciones.push(`2. Considera promociones en productos de bajo movimiento`);
+                recomendaciones.push(`3. Analiza reabastecer productos que se agotan rápido`);
+
+                if (datosInventario.productosSinStock.length > 0) {
+                    recomendaciones.push(`4. Tienes ${datosInventario.productosSinStock.length} productos sin stock - considera reabastecerlos`);
+                }
+            }
+        } else {
+            recomendaciones.push(`🎉 **¡Felicitaciones!** Ya alcanzaste tu meta con ${formatoMoneda.format(Math.abs(faltante))} de excedente.`);
+        }
+
+        return recomendaciones.join('\n');
+    }
+
+    // Función para renderizar una meta
+    async function renderizarMeta(metaDoc) {
+        const meta = metaDoc.data();
+        const metaId = metaDoc.id;
+
+        // Calcular progreso
+        const fechaInicio = meta.fechaCreacion?.toDate() || new Date();
+        const fechaFin = new Date(meta.fechaObjetivo);
+        const ahora = new Date();
+
+        const ventasActuales = await calcularVentasEnRango(fechaInicio, ahora);
+        const progreso = (ventasActuales / meta.montoObjetivo) * 100;
+        const diasRestantes = Math.ceil((fechaFin - ahora) / (1000 * 60 * 60 * 24));
+
+        const metaCard = document.createElement('div');
+        metaCard.className = 'card shadow-sm mb-3 meta-card';
+        metaCard.innerHTML = `
+            <div class="card-header bg-gradient-meta text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-bullseye"></i> ${meta.nombre}</h6>
+                    <div>
+                        <button class="btn btn-sm btn-light me-2" onclick="toggleRecomendaciones('${metaId}')">
+                            <i class="bi bi-lightbulb"></i> IA
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="eliminarMeta('${metaId}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <small class="text-muted">Meta</small>
+                        <h5 class="mb-0 fw-bold">${formatoMoneda.format(meta.montoObjetivo)}</h5>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Progreso</small>
+                        <h5 class="mb-0 fw-bold text-primary">${formatoMoneda.format(ventasActuales)}</h5>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Fecha Objetivo</small>
+                        <h5 class="mb-0 fw-bold">${new Date(meta.fechaObjetivo).toLocaleDateString('es-ES')}</h5>
+                        <small class="text-muted">${diasRestantes > 0 ? diasRestantes + ' días restantes' : 'Fecha alcanzada'}</small>
+                    </div>
+                </div>
+                <div class="progress mb-2" style="height: 25px;">
+                    <div class="progress-bar ${progreso >= 100 ? 'bg-success' : 'bg-primary'}"
+                         role="progressbar"
+                         style="width: ${Math.min(progreso, 100)}%"
+                         aria-valuenow="${progreso}"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                        ${progreso.toFixed(1)}%
+                    </div>
+                </div>
+                <div id="recomendaciones-${metaId}" style="display: none;" class="mt-3 p-3 bg-light rounded">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="spinner-border spinner-border-sm me-2" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <small>Generando recomendaciones con IA...</small>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        return metaCard;
+    }
+
+    // Función global para toggle de recomendaciones
+    window.toggleRecomendaciones = async function(metaId) {
+        const divRecomendaciones = document.getElementById(`recomendaciones-${metaId}`);
+
+        if (divRecomendaciones.style.display === 'none') {
+            divRecomendaciones.style.display = 'block';
+
+            // Obtener datos de la meta
+            const metaDoc = await getDoc(doc(db, 'metas', metaId));
+            const meta = metaDoc.data();
+
+            // Calcular ventas actuales
+            const fechaInicio = meta.fechaCreacion?.toDate() || new Date();
+            const ventasActuales = await calcularVentasEnRango(fechaInicio, new Date());
+
+            // Obtener datos de inventario
+            const datosInventario = await obtenerDatosInventario();
+
+            // Generar recomendaciones
+            const recomendaciones = await generarRecomendacionesIA(meta, ventasActuales, datosInventario);
+
+            divRecomendaciones.innerHTML = `
+                <h6 class="mb-3"><i class="bi bi-robot"></i> Recomendaciones de IA</h6>
+                <div style="white-space: pre-line; font-size: 0.9rem;">${recomendaciones}</div>
+            `;
+        } else {
+            divRecomendaciones.style.display = 'none';
+        }
+    };
+
+    // Función global para eliminar meta
+    window.eliminarMeta = async function(metaId) {
+        if (!confirm('¿Estás seguro de eliminar esta meta?')) return;
+
+        try {
+            await deleteDoc(doc(db, 'metas', metaId));
+            alert('✅ Meta eliminada');
+        } catch (error) {
+            console.error('Error eliminando meta:', error);
+            alert('❌ Error al eliminar la meta');
+        }
+    };
+
+    // Cargar metas en tiempo real
+    const metasContainer = document.getElementById('metas-container');
+    if (metasContainer) {
+        onSnapshot(query(metasCollection, where('activa', '==', true), orderBy('fechaCreacion', 'desc')),
+            async (snapshot) => {
+                metasContainer.innerHTML = '';
+
+                if (snapshot.empty) {
+                    metasContainer.innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No tienes metas creadas.
+                            ¡Crea tu primera meta para comenzar a planificar tu éxito!
+                        </div>
+                    `;
+                    return;
+                }
+
+                for (const metaDoc of snapshot.docs) {
+                    const metaCard = await renderizarMeta(metaDoc);
+                    metasContainer.appendChild(metaCard);
+                }
+            }
+        );
+    }
+
+    console.log("✅ Sistema de Metas Financieras con IA inicializado");
+})();
+
+});
 
