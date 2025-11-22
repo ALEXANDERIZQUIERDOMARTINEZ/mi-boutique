@@ -1950,8 +1950,8 @@ document.addEventListener('DOMContentLoaded', () => {
          window.calcularTotalVentaGeneral = function() { 
              let subtotalItems = window.ventaItems.reduce((sum, item) => sum + item.total, 0); 
              let costoRuta = 0; 
-             if (tipoEntregaSelect.value === 'domicilio') { costoRuta = parseFloat(costoRutaInput.value) || 0; } 
-             let descuento = parseFloat(ventaDescuentoInput.value) || 0; 
+             if (tipoEntregaSelect.value === 'domicilio') { costoRuta = parseFloat(eliminarFormatoNumero(costoRutaInput.value)) || 0; } 
+             let descuento = parseFloat(eliminarFormatoNumero(ventaDescuentoInput.value)) || 0; 
              if (ventaDescuentoTipo.value === 'porcentaje') { descuento = subtotalItems * (descuento / 100); } 
              const totalFinal = subtotalItems - descuento + costoRuta; 
              if(ventaTotalSpan) ventaTotalSpan.textContent = formatoMoneda.format(totalFinal); 
