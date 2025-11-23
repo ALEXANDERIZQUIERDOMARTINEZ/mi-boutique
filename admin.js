@@ -2277,18 +2277,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // ========================================================================
         // ✅ --- SECCIÓN 3: CORREGIR VENTAS (REEMPLAZO) ---
         // ========================================================================
-         if (salesForm) salesForm.addEventListener('submit', async (e) => { 
-            e.preventDefault(); 
-            if (window.ventaItems.length === 0) { 
-                showToast("Agrega productos.", 'warning'); 
-                return; 
-            } 
-            
+         if (salesForm) salesForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (window.ventaItems.length === 0) {
+                showToast("Agrega productos.", 'warning');
+                return;
+            }
+
+            // Obtener referencias a los elementos del formulario
+            const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
+            const ventaCelularInput = document.getElementById('venta-cliente-celular');
+
             const totalCalculado = window.calcularTotalVentaGeneral();
             const ventaData = {
                 clienteNombre: ventaClienteInput.value || "Cliente General",
-                clienteDireccion: ventaDireccionInput.value || "",
-                clienteCelular: ventaCelularInput.value || "",
+                clienteDireccion: ventaDireccionInput?.value || "",
+                clienteCelular: ventaCelularInput?.value || "",
                 tipoVenta: tipoVentaSelect.value,
                 tipoEntrega: tipoEntregaSelect.value,
                 pedidoWhatsapp: !ventaWhatsappCheckbox.checked, // Invertido para corregir lógica
