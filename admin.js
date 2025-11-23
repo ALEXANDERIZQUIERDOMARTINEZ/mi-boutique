@@ -408,16 +408,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let itemsHtml = '';
             if (order.items && order.items.length > 0) {
-                itemsHtml = order.items.map(item => `
+                itemsHtml = order.items.map(item => {
+                    const product = localProductsMap.get(item.productoId);
+                    const imagenHtml = product && product.imageUrl
+                        ? `<img src="${product.imageUrl}" alt="${item.nombre}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:8px;vertical-align:middle;">`
+                        : '';
+                    const categoria = product && product.categoria
+                        ? `<small class="badge bg-secondary" style="font-size:0.7rem;">${product.categoria}</small>`
+                        : '';
+
+                    return `
                     <tr>
-                        <td>${item.nombre}</td>
+                        <td>${imagenHtml}<span>${item.nombre}</span><br>${categoria}</td>
                         <td>${item.talla || '-'}</td>
                         <td>${item.color || '-'}</td>
                         <td class="text-center">${item.cantidad}</td>
                         <td class="text-end">${formatoMoneda.format(item.precio)}</td>
                         <td class="text-end fw-bold">${formatoMoneda.format(item.total)}</td>
                     </tr>
-                `).join('');
+                    `;
+                }).join('');
             }
 
             card.innerHTML = `
@@ -464,6 +474,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <hr>
                     <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-action btn-action-info btn-whatsapp-order" data-order-id="${orderId}">
+                            <i class="bi bi-whatsapp"></i><span class="btn-action-text">Enviar WhatsApp</span>
+                        </button>
                         <button class="btn btn-action btn-action-danger btn-reject-order" data-order-id="${orderId}">
                             <i class="bi bi-x-circle"></i><span class="btn-action-text">Rechazar</span>
                         </button>
@@ -518,6 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
         webOrdersContainer.addEventListener('click', async (e) => {
             const acceptBtn = e.target.closest('.btn-accept-order');
             const rejectBtn = e.target.closest('.btn-reject-order');
+            const whatsappBtn = e.target.closest('.btn-whatsapp-order');
 
             if (acceptBtn) {
                 e.preventDefault();
@@ -527,6 +541,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 const orderId = rejectBtn.dataset.orderId;
                 await handleRejectOrder(orderId);
+            } else if (whatsappBtn) {
+                e.preventDefault();
+                const orderId = whatsappBtn.dataset.orderId;
+                await handleWhatsAppOrder(orderId);
             }
         });
 
@@ -625,7 +643,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            window.calcularTotalVentaGeneral(); 
+            window.calcularTotalVentaGeneral();
+        }
+
+        async function handleWhatsAppOrder(orderId) {
+            try {
+                const orderRef = doc(db, 'pedidosWeb', orderId);
+                const orderSnap = await getDoc(orderRef);
+
+                if (!orderSnap.exists()) {
+                    showToast('Pedido no encontrado', 'error');
+                    return;
+                }
+
+                const orderData = orderSnap.data();
+
+                // Construir mensaje de WhatsApp con detalles del pedido
+                let mensaje = `*🛍️ CONFIRMACIÓN DE PEDIDO*\\n\\n`;
+                mensaje += `Hola *${orderData.clienteNombre}*,\\n\\n`;
+                mensaje += `Hemos recibido tu pedido. A continuación los detalles:\\n\\n`;
+                mensaje += `*📦 PRODUCTOS:*\\n`;
+
+                if (orderData.items && orderData.items.length > 0) {
+                    orderData.items.forEach((item, index) => {
+                        const product = localProductsMap.get(item.productoId);
+                        const categoria = product && product.categoria ? `[${product.categoria}]` : '';
+                        const imageUrl = product && product.imageUrl ? `\\n🔗 ${product.imageUrl}` : '';
+
+                        mensaje += `\\n${index + 1}. *${item.nombre}* ${categoria}`;
+                        mensaje += `\\n   Talla: ${item.talla || 'N/A'} | Color: ${item.color || 'N/A'}`;
+                        mensaje += `\\n   Cantidad: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}`;
+                        if (imageUrl) mensaje += imageUrl;
+                        mensaje += `\\n`;
+                    });
+                }
+
+                mensaje += `\\n*💰 TOTAL: ${formatoMoneda.format(orderData.totalPedido)}*\\n`;
+                mensaje += `\\n*📍 Dirección de entrega:*\\n${orderData.clienteDireccion}\\n`;
+
+                if (orderData.observaciones) {
+                    mensaje += `\\n*📝 Observaciones:*\\n${orderData.observaciones}\\n`;
+                }
+
+                mensaje += `\\n*💳 Método de pago:* ${orderData.metodoPagoSolicitado}\\n`;
+                mensaje += `\\n¡Gracias por tu compra! 🎉`;
+
+                // Abrir WhatsApp con el mensaje
+                const telefono = orderData.clienteCelular.replace(/\D/g, '');
+                const whatsappUrl = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
+
+                openWhatsApp(whatsappUrl);
+
+                showToast('Abriendo WhatsApp con el mensaje de confirmación', 'success');
+
+            } catch (error) {
+                console.error('Error al generar mensaje de WhatsApp:', error);
+                showToast('Error al generar el mensaje', 'error');
+            }
         }
 
     })(); 
@@ -2034,8 +2108,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const estaAnulada = (estado === 'Anulada' || estado === 'Cancelada');
 
+                // Construir columna de productos con imágenes y categorías
+                let productosHtml = '';
+                if (d.items && d.items.length > 0) {
+                    // Obtener categorías únicas
+                    const categorias = new Set();
+                    const imagenesHtml = [];
+
+                    d.items.forEach(item => {
+                        const product = localProductsMap.get(item.productoId);
+                        if (product) {
+                            if (product.categoria) categorias.add(product.categoria);
+                            if (product.imageUrl) {
+                                imagenesHtml.push(`<img src="${product.imageUrl}" alt="${product.nombre}" style="width:30px;height:30px;object-fit:cover;border-radius:4px;margin-right:2px;" title="${product.nombre}">`);
+                            }
+                        }
+                    });
+
+                    // Limitar a 3 imágenes
+                    const imagenes = imagenesHtml.slice(0, 3).join('');
+                    const masProductos = d.items.length > 3 ? `<small style="color:#666;">+${d.items.length - 3}</small>` : '';
+
+                    const categoriasHtml = Array.from(categorias).map(cat =>
+                        `<span class="badge bg-secondary" style="font-size:0.7rem;">${cat}</span>`
+                    ).join(' ');
+
+                    productosHtml = `<div>${imagenes}${masProductos}</div><div class="mt-1">${categoriasHtml}</div>`;
+                } else {
+                    productosHtml = '<small class="text-muted">Sin productos</small>';
+                }
+
                 tr.innerHTML = `<td>${fecha}</td>
                                 <td>${d.clienteNombre || 'General'}</td>
+                                <td>${productosHtml}</td>
                                 <td>${d.tipoVenta}</td>
                                 <td>${formatoMoneda.format(d.totalVenta||0)}</td>
                                 <td>${pago||'-'}</td>
@@ -2182,6 +2287,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalCalculado = window.calcularTotalVentaGeneral();
             const ventaData = {
                 clienteNombre: ventaClienteInput.value || "Cliente General",
+                clienteDireccion: ventaDireccionInput.value || "",
+                clienteCelular: ventaCelularInput.value || "",
                 tipoVenta: tipoVentaSelect.value,
                 tipoEntrega: tipoEntregaSelect.value,
                 pedidoWhatsapp: !ventaWhatsappCheckbox.checked, // Invertido para corregir lógica
@@ -2652,25 +2759,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const renderApartados = (snapshot) => { 
             apartadosListTableBody.innerHTML = ''; 
             
-            if (snapshot.empty) { 
-                apartadosListTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay apartados pendientes.</td></tr>'; 
-                return; 
+            if (snapshot.empty) {
+                apartadosListTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No hay apartados pendientes.</td></tr>';
+                return;
             } 
             
-            snapshot.forEach(docSnap => { 
-                const ap = docSnap.data(); 
-                const id = docSnap.id; 
-                const tr = document.createElement('tr'); 
-                tr.dataset.id = id; 
-                
-                const vence = ap.fechaVencimiento?.toDate ? 
+            snapshot.forEach(docSnap => {
+                const ap = docSnap.data();
+                const id = docSnap.id;
+                const tr = document.createElement('tr');
+                tr.dataset.id = id;
+
+                const vence = ap.fechaVencimiento?.toDate ?
                     ap.fechaVencimiento.toDate().toLocaleDateString('es-CO') : 'N/A';
-                
+
                 const hoy = new Date();
                 const fechaVenc = ap.fechaVencimiento?.toDate ? ap.fechaVencimiento.toDate() : null;
                 let diasRestantes = 0;
                 let vencimientoClass = '';
-                
+
                 if (fechaVenc) {
                     diasRestantes = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
                     if (diasRestantes < 0) {
@@ -2679,15 +2786,46 @@ document.addEventListener('DOMContentLoaded', () => {
                         vencimientoClass = 'text-warning fw-bold';
                     }
                 }
-                
+
                 const saldo = ap.saldo || 0;
                 const porcentajePagado = ap.total > 0 ? ((ap.abonado / ap.total) * 100).toFixed(0) : 0;
-                
+
+                // Construir columna de productos con imágenes y categorías
+                let productosHtml = '';
+                if (ap.items && ap.items.length > 0) {
+                    // Obtener categorías únicas
+                    const categorias = new Set();
+                    const imagenesHtml = [];
+
+                    ap.items.forEach(item => {
+                        const product = localProductsMap.get(item.productoId);
+                        if (product) {
+                            if (product.categoria) categorias.add(product.categoria);
+                            if (product.imageUrl) {
+                                imagenesHtml.push(`<img src="${product.imageUrl}" alt="${product.nombre}" style="width:30px;height:30px;object-fit:cover;border-radius:4px;margin-right:2px;" title="${product.nombre}">`);
+                            }
+                        }
+                    });
+
+                    // Limitar a 3 imágenes
+                    const imagenes = imagenesHtml.slice(0, 3).join('');
+                    const masProductos = ap.items.length > 3 ? `<small style="color:#666;">+${ap.items.length - 3}</small>` : '';
+
+                    const categoriasHtml = Array.from(categorias).map(cat =>
+                        `<span class="badge bg-secondary" style="font-size:0.7rem;">${cat}</span>`
+                    ).join(' ');
+
+                    productosHtml = `<div>${imagenes}${masProductos}</div><div class="mt-1">${categoriasHtml}</div>`;
+                } else {
+                    productosHtml = '<small class="text-muted">Sin productos</small>';
+                }
+
                 tr.innerHTML = `
                     <td>
                         ${ap.clienteNombre || '?'}
                         <small class="d-block text-muted">${porcentajePagado}% pagado</small>
                     </td>
+                    <td>${productosHtml}</td>
                     <td>${formatoMoneda.format(ap.total || 0)}</td>
                     <td class="text-success">${formatoMoneda.format(ap.abonado || 0)}</td>
                     <td class="text-danger fw-bold">${formatoMoneda.format(saldo)}</td>
@@ -2713,8 +2851,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <i class="bi bi-x-circle"></i><span class="btn-action-text">Cancelar</span>
                         </button>
                     </td>
-                `; 
-                apartadosListTableBody.appendChild(tr); 
+                `;
+                apartadosListTableBody.appendChild(tr);
             }); 
         };
         
