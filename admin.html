@@ -1036,7 +1036,8 @@
                         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modal-recepcion-intuitiva">
                             <i class="bi bi-box-arrow-in-down me-1"></i><span class="d-none d-md-inline">Recibir Mercancía</span>
                         </button>
-                        <div class="btn-group">
+                        <!-- Interfaz antigua oculta -->
+                        <div class="btn-group" style="display: none;">
                             <button type="button" id="toggle-recepciones-list-btn" class="btn btn-sm btn-outline-secondary active">
                                 <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline"> Lista</span>
                             </button>
@@ -1047,8 +1048,8 @@
                     </div>
                 </div>
 
-                <!-- VISTA: LISTA DE ÓRDENES -->
-                <div id="recepciones-list-view">
+                <!-- VISTA: LISTA DE ÓRDENES (Oculta) -->
+                <div id="recepciones-list-view" style="display: none;">
                     <!-- Filtros -->
                     <div class="card mb-3">
                         <div class="card-body">

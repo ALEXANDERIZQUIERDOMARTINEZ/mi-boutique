@@ -8523,6 +8523,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
      * Carga y renderiza el catálogo de productos
      */
     function cargarCatalogo() {
+        if (!catalogoTbody) {
+            console.error('catalogoTbody no encontrado');
+            return;
+        }
+
         if (!localProductsMap || localProductsMap.size === 0) {
             catalogoTbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No hay productos disponibles</td></tr>';
             return;
@@ -8534,10 +8539,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             ...prod
         }));
 
-        // Aplicar filtros
-        const busqueda = inputBuscar.value.toLowerCase().trim();
-        const proveedorSeleccionado = filtroProveedor.value;
-        const categoriaSeleccionada = filtroCategoria.value;
+        // Aplicar filtros (con protección contra null)
+        const busqueda = inputBuscar ? inputBuscar.value.toLowerCase().trim() : '';
+        const proveedorSeleccionado = filtroProveedor ? filtroProveedor.value : '';
+        const categoriaSeleccionada = filtroCategoria ? filtroCategoria.value : '';
 
         productos = productos.filter(p => {
             // Filtro de búsqueda
