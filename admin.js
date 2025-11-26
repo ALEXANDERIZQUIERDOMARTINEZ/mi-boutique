@@ -7684,7 +7684,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         </div>
                         <div class="flex-grow-1">
                             <div class="fw-semibold">${p.nombre}</div>
-                            <small class="text-muted">Código: ${p.codigo || 'N/A'}</small>
+                            <small class="text-muted d-block">Código: ${p.codigo || 'N/A'}</small>
+                            <small class="text-muted"><i class="bi bi-tag-fill me-1"></i>${p.categoria || 'Sin categoría'}</small>
                         </div>
                     </div>
                 </div>
