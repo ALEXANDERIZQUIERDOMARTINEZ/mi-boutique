@@ -7668,28 +7668,52 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 return;
             }
 
-            // Mostrar resultados con imágenes
-            dropdown.innerHTML = productos.map(p => `
-                <div class="producto-dropdown-item p-2" style="cursor: pointer; border-bottom: 1px solid #f0f0f0;"
-                     data-producto-id="${p.id}"
-                     data-producto='${JSON.stringify(p)}'
-                     onmouseover="this.style.background='#f8f9fa'"
-                     onmouseout="this.style.background='white'">
-                    <div class="d-flex gap-2 align-items-center">
-                        <div style="min-width: 50px; width: 50px; height: 50px;">
-                            ${p.imagenUrl
-                                ? `<img src="${p.imagenUrl}" alt="${p.nombre}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;">`
-                                : `<div style="width: 50px; height: 50px; background: #e9ecef; border-radius: 6px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted"></i></div>`
-                            }
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold">${p.nombre}</div>
-                            <small class="text-muted d-block">Código: ${p.codigo || 'N/A'}</small>
-                            <small class="text-muted"><i class="bi bi-tag-fill me-1"></i>${p.categoria || 'Sin categoría'}</small>
+            // Mostrar resultados con imágenes y detalles completos
+            dropdown.innerHTML = productos.map(p => {
+                // Calcular stock total
+                const stockTotal = p.variaciones ? p.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
+
+                // Formatear precio
+                const precio = parseFloat(p.precioDetal) || 0;
+                const precioFormateado = precio.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+                // Número de variaciones
+                const numVariaciones = p.variaciones ? p.variaciones.length : 0;
+
+                // Descripción breve (si existe, máximo 60 caracteres)
+                const descripcion = p.descripcion ?
+                    (p.descripcion.length > 60 ? p.descripcion.substring(0, 60) + '...' : p.descripcion) : '';
+
+                return `
+                    <div class="producto-dropdown-item p-2" style="cursor: pointer; border-bottom: 1px solid #f0f0f0;"
+                         data-producto-id="${p.id}"
+                         data-producto='${JSON.stringify(p)}'
+                         onmouseover="this.style.background='#f8f9fa'"
+                         onmouseout="this.style.background='white'">
+                        <div class="d-flex gap-2 align-items-center">
+                            <div style="min-width: 50px; width: 50px; height: 50px;">
+                                ${p.imagenUrl
+                                    ? `<img src="${p.imagenUrl}" alt="${p.nombre}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;">`
+                                    : `<div style="width: 50px; height: 50px; background: #e9ecef; border-radius: 6px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted"></i></div>`
+                                }
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="fw-semibold">${p.nombre}</div>
+                                    <div class="fw-bold text-primary ms-2">${precioFormateado}</div>
+                                </div>
+                                <small class="text-muted d-block">Código: ${p.codigo || 'N/A'}</small>
+                                <small class="text-muted d-block"><i class="bi bi-tag-fill me-1"></i>${p.categoria || 'Sin categoría'}</small>
+                                ${descripcion ? `<small class="text-muted d-block" style="font-style: italic;">${descripcion}</small>` : ''}
+                                <div class="d-flex gap-3 mt-1">
+                                    <small class="text-muted"><i class="bi bi-box-seam me-1"></i>Stock: ${stockTotal}</small>
+                                    <small class="text-muted"><i class="bi bi-palette me-1"></i>${numVariaciones} variación${numVariaciones !== 1 ? 'es' : ''}</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
             dropdown.style.display = 'block';
 
             // Event listeners para los items del dropdown
