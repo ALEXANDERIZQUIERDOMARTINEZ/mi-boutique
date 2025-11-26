@@ -2117,9 +2117,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         const imagenUrl = product.imagenUrl || product.imageUrl || 'https://via.placeholder.com/40x40/f0f0f0/cccccc?text=?';
                         const nombre = product.nombre || item.nombre || 'Producto';
-                        const categoria = product.categoria || 'Sin categoría';
+
+                        // Resolver categoría desde categoriesMap
+                        let categoria = 'Sin categoría';
+                        if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map && product.categoriaId) {
+                            categoria = categoriesMap.get(product.categoriaId) || 'Sin categoría';
+                        }
+
                         const variacion = item.talla && item.color ? `${item.talla} - ${item.color}` : 'N/A';
-                        const precio = item.precioUnitario ? formatoMoneda.format(item.precioUnitario) : '$0';
+
+                        // El campo correcto es 'precio', no 'precioUnitario'
+                        const precioNum = parseFloat(item.precio) || 0;
+                        const precio = precioNum > 0 ? formatoMoneda.format(precioNum) : '$0';
+
                         const cantidad = item.cantidad || 0;
 
                         return `
@@ -2806,9 +2816,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         const imagenUrl = product.imagenUrl || product.imageUrl || 'https://via.placeholder.com/40x40/f0f0f0/cccccc?text=?';
                         const nombre = product.nombre || item.nombre || 'Producto';
-                        const categoria = product.categoria || 'Sin categoría';
+
+                        // Resolver categoría desde categoriesMap
+                        let categoria = 'Sin categoría';
+                        if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map && product.categoriaId) {
+                            categoria = categoriesMap.get(product.categoriaId) || 'Sin categoría';
+                        }
+
                         const variacion = item.talla && item.color ? `${item.talla} - ${item.color}` : 'N/A';
-                        const precio = item.precioUnitario ? formatoMoneda.format(item.precioUnitario) : '$0';
+
+                        // El campo correcto es 'precio', no 'precioUnitario'
+                        const precioNum = parseFloat(item.precio) || 0;
+                        const precio = precioNum > 0 ? formatoMoneda.format(precioNum) : '$0';
+
                         const cantidad = item.cantidad || 0;
 
                         return `
