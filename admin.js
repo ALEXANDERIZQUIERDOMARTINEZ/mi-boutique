@@ -733,7 +733,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchModalList = document.getElementById('supplier-modal-list');
         const searchInput = document.getElementById('supplier-modal-search');
         const productFormInput = document.getElementById('proveedor-producto');
-        let suppliersMap = new Map();
+        // Hacer suppliersMap global para que otros módulos puedan acceder
+        if (!window.suppliersMap) {
+            window.suppliersMap = new Map();
+        }
+        let suppliersMap = window.suppliersMap;
         if (!addForm || !listTable || !searchModalList || !editForm || !productFormInput) { console.warn("Elementos de Proveedores no encontrados."); return; }
 
         const renderSuppliers = (snapshot) => { suppliersMap.clear(); listTable.innerHTML = ''; searchModalList.innerHTML = ''; if (snapshot.empty) { listTable.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay proveedores.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; suppliersMap.set(id, d); if (listTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="supplier-name">${d.nombre}</td> <td>${d.contacto || '-'}</td> <td>${d.telefono || '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-edit btn-edit-supplier"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-supplier"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td>`; listTable.appendChild(tr); }
@@ -7534,7 +7538,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     console.log("🚚 Inicializando módulo de Recepciones de Inventario...");
 
     // --- Variables globales del módulo ---
-    let suppliersMap = new Map();
+    // Usar suppliersMap global si existe, si no crear una local
+    let suppliersMap = window.suppliersMap || new Map();
     let ordenesRecepcionMap = new Map();
     let productosSeleccionados = []; // Productos en el formulario actual
 
@@ -8498,10 +8503,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
      * Carga los filtros de proveedor y categoría
      */
     function cargarFiltros() {
-        // Cargar proveedores
-        if (filtroProveedor && suppliersMap) {
+        // Cargar proveedores desde el mapa global
+        if (filtroProveedor && window.suppliersMap && window.suppliersMap.size > 0) {
             filtroProveedor.innerHTML = '<option value="">Todos los proveedores</option>';
-            suppliersMap.forEach((proveedor, id) => {
+            window.suppliersMap.forEach((proveedor, id) => {
                 const option = document.createElement('option');
                 option.value = id;
                 option.textContent = proveedor.nombre;
@@ -8831,9 +8836,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 productosRecibidosHoy.push({
                     productoId: productoSeleccionado.id,
                     nombre: productoSeleccionado.nombre,
+                    categoriaId: productoSeleccionado.categoriaId,
                     talla: vr.talla,
                     color: vr.color,
                     cantidad: vr.cantidad,
+                    precioUnitario: parseFloat(productoSeleccionado.precioDetal) || 0,
                     timestamp: new Date()
                 });
             });
@@ -8872,20 +8879,35 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             return;
         }
 
-        listaRecibidos.innerHTML = productosRecibidosHoy.map((item, index) => `
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>${item.nombre}</strong>
-                    <br>
-                    <small class="text-muted">
-                        ${item.talla} - ${item.color} | +${item.cantidad} unidades
-                    </small>
+        listaRecibidos.innerHTML = productosRecibidosHoy.map((item, index) => {
+            // Resolver categoría
+            let categoria = 'Sin categoría';
+            if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map && item.categoriaId) {
+                categoria = categoriesMap.get(item.categoriaId) || 'Sin categoría';
+            }
+
+            // Formatear precio
+            const precio = item.precioUnitario ? formatoMoneda.format(item.precioUnitario) : '$0';
+
+            return `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${item.nombre}</strong>
+                        <br>
+                        <small class="text-muted d-block">
+                            <i class="bi bi-tag-fill me-1"></i>${categoria}
+                        </small>
+                        <small class="text-muted d-block">
+                            ${item.talla} - ${item.color} | x${item.cantidad}
+                        </small>
+                        <small class="fw-bold text-primary">${precio} c/u</small>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="window.eliminarRecibido(${index})">
+                        <i class="bi bi-trash"></i>
+                    </button>
                 </div>
-                <button class="btn btn-sm btn-outline-danger" onclick="window.eliminarRecibido(${index})">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     /**
