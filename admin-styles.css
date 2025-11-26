@@ -1306,33 +1306,78 @@ body.admin-page {
    CORRECCIÓN DE ALINEACIÓN DE TABLAS
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Asegurar alineación vertical consistente en todas las tablas */
+/* Resetear y establecer alineación consistente en TODAS las tablas */
 .table tbody tr td {
-    vertical-align: middle !important;
-    border-top: 1px solid #dee2e6;
+    vertical-align: top !important;
+    padding: 0.75rem !important;
+    border-top: 1px solid #dee2e6 !important;
+    line-height: 1.5;
 }
 
-/* Alineación específica para columna de acciones */
+/* Eliminar margen inferior del último elemento en celdas */
+.table tbody tr td > *:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Contenedores flexbox alineados al inicio */
+.table tbody tr td .d-flex {
+    align-items: flex-start !important;
+}
+
+/* Asegurar que divs con mb-2 (margin-bottom) tengan margen consistente */
+.table tbody tr td .mb-2 {
+    margin-bottom: 0.5rem !important;
+}
+
+/* Eliminar margen del último div con mb-2 */
+.table tbody tr td .mb-2:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Columna de acciones centrada verticalmente */
 .table tbody tr td.action-buttons {
     vertical-align: middle !important;
 }
 
-/* Asegurar que contenedores flexbox dentro de celdas estén centrados */
-.table tbody tr td .d-flex {
-    align-items: center;
+/* Botones de acción alineados */
+.table tbody tr td.action-buttons .btn-action {
+    margin: 2px;
 }
 
-/* Altura mínima consistente para filas */
-.table tbody tr {
-    min-height: 60px;
-}
-
-/* Padding consistente en celdas */
-.table tbody tr td {
-    padding: 0.75rem !important;
-}
-
-/* Asegurar que imágenes no rompan la alineación */
+/* Asegurar que imágenes estén alineadas correctamente */
 .table tbody tr td img {
-    vertical-align: middle;
+    display: block;
+    margin: 0;
+}
+
+/* Corregir alineación de small tags para que no agreguen espacio extra */
+.table tbody tr td small {
+    display: block;
+    line-height: 1.4;
+    margin-top: 2px;
+}
+
+.table tbody tr td small:first-child {
+    margin-top: 0;
+}
+
+/* Asegurar que los badges no agreguen espacio extra */
+.table tbody tr td .badge {
+    margin-top: 2px;
+    margin-bottom: 0;
+}
+
+/* Contenedores de productos con info completa */
+.table tbody tr td .d-flex.gap-2 {
+    gap: 0.5rem !important;
+}
+
+/* Asegurar altura consistente de filas */
+.table tbody tr {
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Eliminar borde doble */
+.table tbody tr + tr td {
+    border-top: 0 !important;
 }
