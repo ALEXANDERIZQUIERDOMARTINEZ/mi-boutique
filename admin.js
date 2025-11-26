@@ -2108,32 +2108,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const estaAnulada = (estado === 'Anulada' || estado === 'Cancelada');
 
-                // Construir columna de productos con imágenes y categorías
+                // Construir columna de productos con información completa
                 let productosHtml = '';
                 if (d.items && d.items.length > 0) {
-                    // Obtener categorías únicas
-                    const categorias = new Set();
-                    const imagenesHtml = [];
-
-                    d.items.forEach(item => {
+                    const productosDetalles = d.items.map(item => {
                         const product = localProductsMap.get(item.productoId);
-                        if (product) {
-                            if (product.categoria) categorias.add(product.categoria);
-                            if (product.imageUrl) {
-                                imagenesHtml.push(`<img src="${product.imageUrl}" alt="${product.nombre}" style="width:30px;height:30px;object-fit:cover;border-radius:4px;margin-right:2px;" title="${product.nombre}">`);
-                            }
-                        }
-                    });
+                        if (!product) return '';
 
-                    // Limitar a 3 imágenes
-                    const imagenes = imagenesHtml.slice(0, 3).join('');
-                    const masProductos = d.items.length > 3 ? `<small style="color:#666;">+${d.items.length - 3}</small>` : '';
+                        const imagenUrl = product.imagenUrl || product.imageUrl || 'https://via.placeholder.com/40x40/f0f0f0/cccccc?text=?';
+                        const nombre = product.nombre || item.nombre || 'Producto';
+                        const categoria = product.categoria || 'Sin categoría';
+                        const variacion = item.talla && item.color ? `${item.talla} - ${item.color}` : 'N/A';
+                        const precio = item.precioUnitario ? formatoMoneda.format(item.precioUnitario) : '$0';
+                        const cantidad = item.cantidad || 0;
 
-                    const categoriasHtml = Array.from(categorias).map(cat =>
-                        `<span class="badge bg-secondary" style="font-size:0.7rem;">${cat}</span>`
-                    ).join(' ');
+                        return `
+                            <div class="d-flex gap-2 mb-2 align-items-start" style="font-size: 0.85rem;">
+                                <img src="${imagenUrl}" alt="${nombre}"
+                                    style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;">
+                                <div class="flex-grow-1" style="min-width:0;">
+                                    <div class="fw-semibold text-truncate" style="max-width:200px;" title="${nombre}">${nombre}</div>
+                                    <small class="text-muted d-block"><i class="bi bi-tag-fill me-1"></i>${categoria}</small>
+                                    <small class="text-muted d-block">${variacion} | x${cantidad}</small>
+                                    <small class="fw-bold text-primary">${precio} c/u</small>
+                                </div>
+                            </div>
+                        `;
+                    }).filter(html => html !== '').join('');
 
-                    productosHtml = `<div>${imagenes}${masProductos}</div><div class="mt-1">${categoriasHtml}</div>`;
+                    productosHtml = productosDetalles || '<small class="text-muted">Sin detalles</small>';
                 } else {
                     productosHtml = '<small class="text-muted">Sin productos</small>';
                 }
@@ -2794,32 +2797,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 const saldo = ap.saldo || 0;
                 const porcentajePagado = ap.total > 0 ? ((ap.abonado / ap.total) * 100).toFixed(0) : 0;
 
-                // Construir columna de productos con imágenes y categorías
+                // Construir columna de productos con información completa
                 let productosHtml = '';
                 if (ap.items && ap.items.length > 0) {
-                    // Obtener categorías únicas
-                    const categorias = new Set();
-                    const imagenesHtml = [];
-
-                    ap.items.forEach(item => {
+                    const productosDetalles = ap.items.map(item => {
                         const product = localProductsMap.get(item.productoId);
-                        if (product) {
-                            if (product.categoria) categorias.add(product.categoria);
-                            if (product.imageUrl) {
-                                imagenesHtml.push(`<img src="${product.imageUrl}" alt="${product.nombre}" style="width:30px;height:30px;object-fit:cover;border-radius:4px;margin-right:2px;" title="${product.nombre}">`);
-                            }
-                        }
-                    });
+                        if (!product) return '';
 
-                    // Limitar a 3 imágenes
-                    const imagenes = imagenesHtml.slice(0, 3).join('');
-                    const masProductos = ap.items.length > 3 ? `<small style="color:#666;">+${ap.items.length - 3}</small>` : '';
+                        const imagenUrl = product.imagenUrl || product.imageUrl || 'https://via.placeholder.com/40x40/f0f0f0/cccccc?text=?';
+                        const nombre = product.nombre || item.nombre || 'Producto';
+                        const categoria = product.categoria || 'Sin categoría';
+                        const variacion = item.talla && item.color ? `${item.talla} - ${item.color}` : 'N/A';
+                        const precio = item.precioUnitario ? formatoMoneda.format(item.precioUnitario) : '$0';
+                        const cantidad = item.cantidad || 0;
 
-                    const categoriasHtml = Array.from(categorias).map(cat =>
-                        `<span class="badge bg-secondary" style="font-size:0.7rem;">${cat}</span>`
-                    ).join(' ');
+                        return `
+                            <div class="d-flex gap-2 mb-2 align-items-start" style="font-size: 0.85rem;">
+                                <img src="${imagenUrl}" alt="${nombre}"
+                                    style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;">
+                                <div class="flex-grow-1" style="min-width:0;">
+                                    <div class="fw-semibold text-truncate" style="max-width:200px;" title="${nombre}">${nombre}</div>
+                                    <small class="text-muted d-block"><i class="bi bi-tag-fill me-1"></i>${categoria}</small>
+                                    <small class="text-muted d-block">${variacion} | x${cantidad}</small>
+                                    <small class="fw-bold text-primary">${precio} c/u</small>
+                                </div>
+                            </div>
+                        `;
+                    }).filter(html => html !== '').join('');
 
-                    productosHtml = `<div>${imagenes}${masProductos}</div><div class="mt-1">${categoriasHtml}</div>`;
+                    productosHtml = productosDetalles || '<small class="text-muted">Sin detalles</small>';
                 } else {
                     productosHtml = '<small class="text-muted">Sin productos</small>';
                 }
