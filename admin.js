@@ -9135,32 +9135,54 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const fecha = orden.fechaCreacion?.toDate();
         const fechaTexto = fecha ? fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
 
+        // Calcular total de la orden
+        let totalOrden = 0;
+        orden.productos.forEach(item => {
+            totalOrden += (item.precioUnitario || 0) * (item.cantidad || 0);
+        });
+
         let html = `
-            <div class="card mb-2 ${esPendiente ? 'border-warning' : 'border-success'}">
-                <div class="card-body">
+            <div class="card mb-3 shadow-sm ${esPendiente ? 'border-warning' : 'border-success'}" style="border-width: 2px;">
+                <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div>
-                            <h6 class="mb-1">Orden del ${fechaTexto}</h6>
-                            <span class="badge ${esPendiente ? 'bg-warning text-dark' : 'bg-success'}">
-                                ${esPendiente ? 'Pendiente' : 'Recibida'}
-                            </span>
-                            <span class="badge bg-secondary ms-2">${orden.totalUnidades || 0} unidades</span>
+                            <h5 class="mb-2 fw-bold">
+                                <i class="bi bi-box-seam me-2 text-${esPendiente ? 'warning' : 'success'}"></i>
+                                Orden del ${fechaTexto}
+                            </h5>
+                            <div class="d-flex gap-2 align-items-center flex-wrap">
+                                <span class="badge ${esPendiente ? 'bg-warning text-dark' : 'bg-success'} fs-6">
+                                    ${esPendiente ? '⏱️ Pendiente' : '✓ Recibida'}
+                                </span>
+                                <span class="badge bg-secondary fs-6">
+                                    <i class="bi bi-stack me-1"></i>${orden.totalUnidades || 0} unidades
+                                </span>
+                                <span class="badge bg-info fs-6">
+                                    <i class="bi bi-currency-dollar me-1"></i>${formatoMoneda.format(totalOrden)}
+                                </span>
+                            </div>
                         </div>
                         ${esPendiente ? `
-                            <button class="btn btn-success btn-sm" onclick="window.marcarComoRecibido('${orden.id}')">
-                                <i class="bi bi-check-circle me-1"></i>Marcar como Recibido
+                            <button class="btn btn-success btn-lg shadow" onclick="window.marcarComoRecibido('${orden.id}')" style="min-width: 200px;">
+                                <i class="bi bi-check-circle-fill me-2"></i>Marcar como Recibido
                             </button>
-                        ` : ''}
+                        ` : `
+                            <div class="text-success fs-4">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                        `}
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm mb-0">
-                            <thead>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
                                 <tr>
+                                    <th style="width: 50px;"></th>
                                     <th>Producto</th>
                                     <th>Categoría</th>
                                     <th>Variación</th>
-                                    <th class="text-end">Cantidad</th>
+                                    <th class="text-center">Cantidad</th>
                                     <th class="text-end">Precio Unit.</th>
+                                    <th class="text-end">Subtotal</th>
                                 </tr>
                             </thead>
                             <tbody>`;
@@ -9173,19 +9195,44 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             }
 
             const precio = item.precioUnitario ? formatoMoneda.format(item.precioUnitario) : '$0';
+            const subtotal = (item.precioUnitario || 0) * (item.cantidad || 0);
+            const imagenUrl = producto?.imagenUrl || producto?.imageUrl || 'https://via.placeholder.com/50x50/f0f0f0/cccccc?text=?';
 
             html += `
                 <tr>
-                    <td><strong>${item.nombre}</strong></td>
-                    <td><small class="text-muted"><i class="bi bi-tag-fill me-1"></i>${categoria}</small></td>
-                    <td><span class="badge bg-light text-dark">${item.talla} - ${item.color}</span></td>
-                    <td class="text-end">${item.cantidad}</td>
-                    <td class="text-end">${precio}</td>
+                    <td>
+                        <img src="${imagenUrl}" alt="${item.nombre}"
+                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 2px solid #dee2e6;">
+                    </td>
+                    <td>
+                        <strong class="text-dark">${item.nombre}</strong>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">
+                            <i class="bi bi-tag-fill me-1"></i>${categoria}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            ${item.talla} - ${item.color}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-primary fs-6">${item.cantidad}</span>
+                    </td>
+                    <td class="text-end fw-semibold">${precio}</td>
+                    <td class="text-end fw-bold text-success">${formatoMoneda.format(subtotal)}</td>
                 </tr>`;
         });
 
         html += `
                             </tbody>
+                            <tfoot>
+                                <tr class="table-light">
+                                    <td colspan="6" class="text-end fw-bold fs-5">Total de la orden:</td>
+                                    <td class="text-end fw-bold fs-5 text-primary">${formatoMoneda.format(totalOrden)}</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -9199,11 +9246,28 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
      */
     window.marcarComoRecibido = async function(ordenId) {
         const orden = ordenesMap.get(ordenId);
-        if (!orden) return;
-
-        if (!confirm(`¿Marcar esta orden como recibida?\n\nEsto SUMARÁ ${orden.totalUnidades} unidades al inventario.`)) {
+        if (!orden) {
+            showToast('❌ Orden no encontrada', 'error');
             return;
         }
+
+        // Crear mensaje de confirmación detallado
+        let confirmMsg = `🔄 ¿Marcar esta orden como recibida?\n\n`;
+        confirmMsg += `📦 Total: ${orden.totalUnidades} unidades\n`;
+        confirmMsg += `📝 Productos:\n`;
+
+        orden.productos.forEach(item => {
+            confirmMsg += `   • ${item.nombre} (${item.talla}/${item.color}): ${item.cantidad} unidades\n`;
+        });
+
+        confirmMsg += `\n✓ Esto SUMARÁ el stock al inventario automáticamente.`;
+
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        // Mostrar indicador de carga
+        showToast('⏳ Procesando orden y actualizando inventario...', 'info');
 
         try {
             // Actualizar stock de cada producto
@@ -9220,9 +9284,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             });
 
             // Actualizar cada producto
+            let productosActualizados = 0;
             for (const [productoId, items] of productosPorActualizar) {
                 const producto = localProductsMap.get(productoId);
-                if (!producto) continue;
+                if (!producto) {
+                    console.warn(`Producto no encontrado: ${productoId}`);
+                    continue;
+                }
 
                 const variacionesActualizadas = [...(producto.variaciones || [])];
 
@@ -9233,13 +9301,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     );
 
                     if (varIndex >= 0) {
-                        variacionesActualizadas[varIndex].stock =
-                            (variacionesActualizadas[varIndex].stock || 0) + item.cantidad;
+                        const stockAnterior = variacionesActualizadas[varIndex].stock || 0;
+                        variacionesActualizadas[varIndex].stock = stockAnterior + item.cantidad;
+                        console.log(`✓ ${item.nombre} (${item.talla}/${item.color}): ${stockAnterior} → ${variacionesActualizadas[varIndex].stock}`);
+                    } else {
+                        console.warn(`Variación no encontrada: ${item.nombre} (${item.talla}/${item.color})`);
                     }
                 });
 
                 const productoRef = doc(db, 'productos', productoId);
                 batch.update(productoRef, { variaciones: variacionesActualizadas });
+                productosActualizados++;
             }
 
             // Actualizar estado de la orden
@@ -9251,11 +9323,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             await batch.commit();
 
-            showToast(`✅ Orden recibida: ${orden.totalUnidades} unidades sumadas al inventario`, 'success');
+            console.log(`✅ Orden ${ordenId} marcada como recibida`);
+            console.log(`✅ ${productosActualizados} productos actualizados`);
+            console.log(`✅ ${orden.totalUnidades} unidades sumadas al inventario`);
+
+            showToast(`✅ ¡Orden recibida exitosamente!\n\n📦 ${orden.totalUnidades} unidades sumadas al inventario\n🔄 ${productosActualizados} productos actualizados`, 'success');
 
         } catch (error) {
-            console.error('Error al marcar como recibido:', error);
-            showToast('Error al actualizar el inventario', 'error');
+            console.error('❌ Error al marcar como recibido:', error);
+            showToast(`❌ Error al actualizar el inventario\n\n${error.message}`, 'error');
         }
     };
 

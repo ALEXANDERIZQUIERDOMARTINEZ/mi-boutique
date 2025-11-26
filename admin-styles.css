@@ -364,15 +364,15 @@ body.admin-page {
 .admin-page table.table tbody td,
 .admin-page .table tbody th,
 .admin-page table.table tbody th {
-    padding: 1.25rem 1rem !important;
-    vertical-align: middle !important;
+    padding: 1rem !important;
+    vertical-align: top !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
     border-bottom: 1px solid var(--admin-borde) !important;
     height: auto !important;
     max-height: none !important;
-    min-height: 90px !important;
+    min-height: auto !important;
     line-height: 1.5 !important;
     box-shadow: none !important;
     overflow: visible !important;
@@ -1380,4 +1380,152 @@ body.admin-page {
 /* Eliminar borde doble */
 .table tbody tr + tr td {
     border-top: 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABLA DE HISTORIAL DE VENTAS - MEJORAS DE ALINEACIÓN
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Filas de la tabla de ventas */
+#lista-ventas-anteriores tr {
+    vertical-align: top !important;
+}
+
+/* Todas las celdas alineadas arriba */
+#lista-ventas-anteriores td {
+    vertical-align: top !important;
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+}
+
+/* Columna de productos con mejor espaciado */
+#lista-ventas-anteriores td:nth-child(3) {
+    max-width: 350px;
+}
+
+/* Productos en la tabla */
+#lista-ventas-anteriores .d-flex.gap-2 {
+    margin-bottom: 0.75rem !important;
+}
+
+#lista-ventas-anteriores .d-flex.gap-2:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Imágenes de productos alineadas */
+#lista-ventas-anteriores .d-flex.gap-2 img {
+    margin-top: 0 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ÓRDENES DE COMPRA - DISEÑO MEJORADO
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Contenedor de recepciones */
+#recepciones-container {
+    padding: 0.5rem;
+}
+
+/* Cards de órdenes con sombra y mejor espaciado */
+#recepciones-container .card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem !important;
+}
+
+#recepciones-container .card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+/* Headers de secciones con gradiente sutil */
+#recepciones-container .card-header {
+    font-weight: 600;
+    padding: 1.25rem 1.5rem;
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+}
+
+#recepciones-container .bg-warning {
+    background: linear-gradient(135deg, #FFF9E6 0%, #FFF3CD 100%) !important;
+    border-bottom: 2px solid #FFE69C !important;
+}
+
+#recepciones-container .bg-success {
+    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%) !important;
+    border-bottom: 2px solid #A5D6A7 !important;
+}
+
+/* Cards individuales de órdenes */
+#recepciones-container .card .card .card-body {
+    padding: 1.5rem;
+}
+
+/* Mejorar la tabla de productos dentro de órdenes */
+#recepciones-container .table {
+    margin-top: 1rem;
+}
+
+#recepciones-container .table thead {
+    background: #F8F9FA;
+    border-bottom: 2px solid #DEE2E6;
+}
+
+#recepciones-container .table thead th {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #495057;
+    padding: 0.875rem 1rem !important;
+}
+
+#recepciones-container .table tbody td {
+    padding: 0.875rem 1rem !important;
+    vertical-align: middle !important;
+}
+
+/* Badges mejorados */
+#recepciones-container .badge {
+    padding: 0.4rem 0.8rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+/* Botón de marcar como recibido */
+#recepciones-container .btn-success {
+    background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+    border: none;
+    box-shadow: 0 2px 6px rgba(76, 175, 80, 0.3);
+    transition: all 0.3s ease;
+}
+
+#recepciones-container .btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+/* Resaltar productos en órdenes */
+#recepciones-container .table tbody tr:hover {
+    background: #F8F9FA;
+    transition: background 0.2s ease;
+}
+
+/* Mensaje de vacío más estilizado */
+#recepciones-container .text-muted.text-center {
+    padding: 3rem 1rem;
+    font-style: italic;
+    color: #6C757D;
+}
+
+/* Iconos en headers */
+#recepciones-container .card-header i {
+    font-size: 1.25rem;
+    vertical-align: middle;
+}
+
+/* Badges de variación */
+#recepciones-container .badge.bg-light {
+    background: #E9ECEF !important;
+    color: #495057 !important;
+    border: 1px solid #DEE2E6;
 }
