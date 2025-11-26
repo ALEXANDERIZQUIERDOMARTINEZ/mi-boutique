@@ -1301,3 +1301,38 @@ body.admin-page {
         font-size: 11pt;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CORRECCIÓN DE ALINEACIÓN DE TABLAS
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Asegurar alineación vertical consistente en todas las tablas */
+.table tbody tr td {
+    vertical-align: middle !important;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Alineación específica para columna de acciones */
+.table tbody tr td.action-buttons {
+    vertical-align: middle !important;
+}
+
+/* Asegurar que contenedores flexbox dentro de celdas estén centrados */
+.table tbody tr td .d-flex {
+    align-items: center;
+}
+
+/* Altura mínima consistente para filas */
+.table tbody tr {
+    min-height: 60px;
+}
+
+/* Padding consistente en celdas */
+.table tbody tr td {
+    padding: 0.75rem !important;
+}
+
+/* Asegurar que imágenes no rompan la alineación */
+.table tbody tr td img {
+    vertical-align: middle;
+}
