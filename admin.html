@@ -1031,25 +1031,16 @@
                  ═══════════════════════════════════════════════════════════════════ -->
             <div class="tab-pane fade" id="recepciones">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h1 class="h2 mb-0"><i class="bi bi-truck me-2"></i>Recepciones de Inventario</h1>
+                    <h1 class="h2 mb-0"><i class="bi bi-truck me-2"></i>Gestión de Recepciones</h1>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modal-recepcion-intuitiva">
-                            <i class="bi bi-box-arrow-in-down me-1"></i><span class="d-none d-md-inline">Recibir Mercancía</span>
+                            <i class="bi bi-plus-circle me-1"></i><span class="d-none d-md-inline">Nueva Orden de Compra</span>
                         </button>
-                        <!-- Interfaz antigua oculta -->
-                        <div class="btn-group" style="display: none;">
-                            <button type="button" id="toggle-recepciones-list-btn" class="btn btn-sm btn-outline-secondary active">
-                                <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline"> Lista</span>
-                            </button>
-                            <button type="button" id="toggle-recepciones-form-btn" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-plus-circle me-1"></i><span class="d-none d-md-inline"> Nueva Orden</span>
-                            </button>
-                        </div>
                     </div>
                 </div>
 
-                <!-- VISTA: LISTA DE ÓRDENES (Oculta) -->
-                <div id="recepciones-list-view" style="display: none;">
+                <!-- VISTA: LISTA DE ÓRDENES -->
+                <div id="recepciones-list-view">
                     <!-- Filtros -->
                     <div class="card mb-3">
                         <div class="card-body">
@@ -1161,7 +1152,7 @@
                     <div class="modal-dialog modal-xl modal-dialog-scrollable">
                         <div class="modal-content">
                             <div class="modal-header bg-primary bg-gradient text-white">
-                                <h5 class="modal-title"><i class="bi bi-box-arrow-in-down me-2"></i>Recibir Mercancía</h5>
+                                <h5 class="modal-title"><i class="bi bi-clipboard-check me-2"></i>Nueva Orden de Compra</h5>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
@@ -1224,16 +1215,16 @@
                                     </div>
                                 </div>
 
-                                <!-- Productos Recibidos Hoy -->
-                                <div class="card border-success">
-                                    <div class="card-header bg-success bg-opacity-10 border-success">
-                                        <h6 class="mb-0 text-success"><i class="bi bi-check-circle me-2"></i>Productos Recibidos en esta Sesión (<span id="recepcion-contador">0</span>)</h6>
+                                <!-- Productos en esta Orden -->
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary bg-opacity-10 border-primary">
+                                        <h6 class="mb-0 text-primary"><i class="bi bi-cart-plus me-2"></i>Productos en esta Orden (<span id="recepcion-contador">0</span>)</h6>
                                     </div>
                                     <div class="card-body">
                                         <div id="recepcion-lista-recibidos" class="list-group list-group-flush">
                                             <div class="text-muted text-center py-3">
                                                 <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                                Aún no has recibido productos en esta sesión
+                                                Aún no has agregado productos a esta orden
                                             </div>
                                         </div>
                                     </div>
@@ -1241,10 +1232,10 @@
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                                    <i class="bi bi-x-circle me-1"></i>Cerrar
+                                    <i class="bi bi-x-circle me-1"></i>Cancelar
                                 </button>
-                                <button type="button" class="btn btn-primary" id="btn-generar-reporte-recepcion">
-                                    <i class="bi bi-file-earmark-text me-1"></i>Generar Reporte
+                                <button type="button" class="btn btn-success" id="btn-crear-orden-compra" disabled>
+                                    <i class="bi bi-save me-1"></i>Crear Orden de Compra
                                 </button>
                             </div>
                         </div>

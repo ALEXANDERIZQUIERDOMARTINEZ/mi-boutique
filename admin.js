@@ -1182,8 +1182,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const saveProductBtnSpinner = saveProductBtn ? saveProductBtn.querySelector('.spinner-border') : null;
         const productSearchModalList = document.getElementById('product-modal-list');
         const productSearchInput = document.getElementById('product-modal-search');
-        
-        let categoriesMap = new Map();
+
+        // Hacer categoriesMap global para que otros módulos puedan acceder
+        if (!window.categoriesMap) {
+            window.categoriesMap = new Map();
+        }
+        let categoriesMap = window.categoriesMap;
 
         if (!productForm) { console.warn("Formulario de producto no encontrado."); return; }
 
@@ -8767,9 +8771,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     /**
-     * Confirma la recepción y actualiza el inventario
+     * Agrega producto a la orden (NO actualiza stock todavía)
      */
-    btnConfirmarRecepcion.addEventListener('click', async () => {
+    btnConfirmarRecepcion.addEventListener('click', () => {
         if (!productoSeleccionado) return;
 
         // Recopilar variaciones con cantidades > 0
@@ -8779,7 +8783,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         variacionesRows.forEach(row => {
             const index = parseInt(row.dataset.index);
             const cantidadInput = row.querySelector('.cantidad-recibir');
-            const codigoBarrasInput = row.querySelector('.codigo-barras-input');
             const cantidad = parseInt(cantidadInput.value) || 0;
 
             if (cantidad > 0) {
@@ -8789,7 +8792,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     talla: variacion.talla,
                     color: variacion.color,
                     cantidad,
-                    codigoBarras: codigoBarrasInput.value.trim(),
                     stockAnterior: variacion.stock || 0
                 });
             }
@@ -8800,67 +8802,32 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             return;
         }
 
-        // Confirmar acción
+        // Agregar a lista de productos en la orden (NO suma al stock aún)
+        variacionesRecibir.forEach(vr => {
+            productosRecibidosHoy.push({
+                productoId: productoSeleccionado.id,
+                nombre: productoSeleccionado.nombre,
+                categoriaId: productoSeleccionado.categoriaId,
+                talla: vr.talla,
+                color: vr.color,
+                cantidad: vr.cantidad,
+                precioUnitario: parseFloat(productoSeleccionado.precioDetal) || 0,
+                timestamp: new Date()
+            });
+        });
+
+        // Actualizar UI
+        actualizarListaRecibidos();
+
+        // Habilitar botón de crear orden
+        const btnCrearOrden = document.getElementById('btn-crear-orden-compra');
+        if (btnCrearOrden) btnCrearOrden.disabled = false;
+
         const totalUnidades = variacionesRecibir.reduce((sum, v) => sum + v.cantidad, 0);
-        if (!confirm(`¿Confirmar recepción de ${totalUnidades} unidades?\n\nEsto SUMARÁ las cantidades al stock actual.`)) {
-            return;
-        }
+        showToast(`✅ ${totalUnidades} unidades agregadas a la orden`, 'success');
 
-        try {
-            btnConfirmarRecepcion.disabled = true;
-            btnConfirmarRecepcion.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
-
-            // Actualizar producto en Firestore
-            const productoRef = doc(db, 'productos', productoSeleccionado.id);
-            const variacionesActualizadas = [...productoSeleccionado.variaciones];
-
-            variacionesRecibir.forEach(vr => {
-                variacionesActualizadas[vr.index].stock = (variacionesActualizadas[vr.index].stock || 0) + vr.cantidad;
-
-                // Actualizar código de barras si se proporcionó
-                if (vr.codigoBarras) {
-                    variacionesActualizadas[vr.index].codigoBarras = vr.codigoBarras;
-                }
-            });
-
-            await updateDoc(productoRef, {
-                variaciones: variacionesActualizadas
-            });
-
-            // Actualizar localProductsMap
-            const productoActualizado = { ...productoSeleccionado, variaciones: variacionesActualizadas };
-            localProductsMap.set(productoSeleccionado.id, productoActualizado);
-
-            // Agregar a lista de recibidos hoy
-            variacionesRecibir.forEach(vr => {
-                productosRecibidosHoy.push({
-                    productoId: productoSeleccionado.id,
-                    nombre: productoSeleccionado.nombre,
-                    categoriaId: productoSeleccionado.categoriaId,
-                    talla: vr.talla,
-                    color: vr.color,
-                    cantidad: vr.cantidad,
-                    precioUnitario: parseFloat(productoSeleccionado.precioDetal) || 0,
-                    timestamp: new Date()
-                });
-            });
-
-            // Actualizar UI
-            actualizarListaRecibidos();
-            cargarCatalogo(); // Recargar catálogo con stock actualizado
-
-            showToast(`✅ Recepción confirmada: ${totalUnidades} unidades agregadas al inventario`, 'success');
-
-            // Cerrar modal de variación
-            bsModalVariacion.hide();
-
-        } catch (error) {
-            console.error('Error al confirmar recepción:', error);
-            showToast('Error al actualizar el inventario', 'error');
-        } finally {
-            btnConfirmarRecepcion.disabled = false;
-            btnConfirmarRecepcion.innerHTML = '<i class="bi bi-check-circle me-1"></i>Agregar al Inventario';
-        }
+        // Cerrar modal de variación
+        bsModalVariacion.hide();
     });
 
     /**
@@ -9011,7 +8978,291 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         };
     }
 
+    /**
+     * Botón para crear orden de compra (guarda en Firestore, NO actualiza stock)
+     */
+    const btnCrearOrdenCompra = document.getElementById('btn-crear-orden-compra');
+    if (btnCrearOrdenCompra) {
+        btnCrearOrdenCompra.addEventListener('click', async () => {
+            if (productosRecibidosHoy.length === 0) {
+                showToast('Agrega al menos un producto a la orden', 'warning');
+                return;
+            }
+
+            try {
+                btnCrearOrdenCompra.disabled = true;
+                btnCrearOrdenCompra.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+                // Crear documento de orden en Firestore
+                const ordenData = {
+                    productos: productosRecibidosHoy.map(item => ({
+                        productoId: item.productoId,
+                        nombre: item.nombre,
+                        categoriaId: item.categoriaId,
+                        talla: item.talla,
+                        color: item.color,
+                        cantidad: item.cantidad,
+                        precioUnitario: item.precioUnitario
+                    })),
+                    estado: 'pendiente', // pendiente | recibida
+                    fechaCreacion: new Date(),
+                    fechaRecepcion: null,
+                    totalUnidades: productosRecibidosHoy.reduce((sum, item) => sum + item.cantidad, 0)
+                };
+
+                await addDoc(collection(db, 'ordenesCompra'), ordenData);
+
+                showToast('✅ Orden de compra creada exitosamente', 'success');
+
+                // Limpiar lista temporal
+                productosRecibidosHoy.length = 0;
+                actualizarListaRecibidos();
+
+                // Deshabilitar botón nuevamente
+                btnCrearOrdenCompra.disabled = true;
+
+                // Cerrar modal
+                const modalElement = document.getElementById('modal-recepcion-intuitiva');
+                const bsModal = bootstrap.Modal.getInstance(modalElement);
+                if (bsModal) bsModal.hide();
+
+            } catch (error) {
+                console.error('Error al crear orden:', error);
+                showToast('Error al crear la orden de compra', 'error');
+            } finally {
+                btnCrearOrdenCompra.disabled = false;
+                btnCrearOrdenCompra.innerHTML = '<i class="bi bi-save me-1"></i>Crear Orden de Compra';
+            }
+        });
+    }
+
     console.log("✅ Módulo de Recepción Intuitiva inicializado");
+})();
+
+/**
+ * ==================================================================
+ * MÓDULO DE GESTIÓN DE ÓRDENES DE COMPRA
+ * ==================================================================
+ */
+(function() {
+    const ordenesContainer = document.getElementById('recepciones-container');
+    if (!ordenesContainer) return;
+
+    let ordenesMap = new Map(); // id -> ordenData
+
+    /**
+     * Cargar órdenes desde Firestore
+     */
+    function cargarOrdenes() {
+        onSnapshot(collection(db, 'ordenesCompra'), snapshot => {
+            ordenesMap.clear();
+
+            snapshot.forEach(doc => {
+                ordenesMap.set(doc.id, { id: doc.id, ...doc.data() });
+            });
+
+            renderizarOrdenes();
+        }, error => {
+            console.error('Error al cargar órdenes:', error);
+        });
+    }
+
+    /**
+     * Renderizar órdenes en la interfaz
+     */
+    function renderizarOrdenes() {
+        const ordenesPendientes = [];
+        const ordenesRecibidas = [];
+
+        ordenesMap.forEach(orden => {
+            if (orden.estado === 'pendiente') {
+                ordenesPendientes.push(orden);
+            } else {
+                ordenesRecibidas.push(orden);
+            }
+        });
+
+        // Ordenar por fecha (más reciente primero)
+        ordenesPendientes.sort((a, b) => b.fechaCreacion?.toMillis() - a.fechaCreacion?.toMillis());
+        ordenesRecibidas.sort((a, b) => b.fechaRecepcion?.toMillis() - a.fechaRecepcion?.toMillis());
+
+        let html = '';
+
+        // Sección de pendientes
+        html += `
+            <div class="card mb-3">
+                <div class="card-header bg-warning bg-opacity-10 border-warning">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Órdenes Pendientes (${ordenesPendientes.length})</h5>
+                </div>
+                <div class="card-body">`;
+
+        if (ordenesPendientes.length === 0) {
+            html += `<p class="text-muted text-center mb-0">No hay órdenes pendientes</p>`;
+        } else {
+            ordenesPendientes.forEach(orden => {
+                html += renderizarOrden(orden, true);
+            });
+        }
+
+        html += `</div></div>`;
+
+        // Sección de recibidas
+        html += `
+            <div class="card">
+                <div class="card-header bg-success bg-opacity-10 border-success">
+                    <h5 class="mb-0"><i class="bi bi-check-circle me-2"></i>Órdenes Recibidas (${ordenesRecibidas.length})</h5>
+                </div>
+                <div class="card-body">`;
+
+        if (ordenesRecibidas.length === 0) {
+            html += `<p class="text-muted text-center mb-0">No hay órdenes recibidas</p>`;
+        } else {
+            ordenesRecibidas.forEach(orden => {
+                html += renderizarOrden(orden, false);
+            });
+        }
+
+        html += `</div></div>`;
+
+        ordenesContainer.innerHTML = html;
+    }
+
+    /**
+     * Renderizar una orden individual
+     */
+    function renderizarOrden(orden, esPendiente) {
+        const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+        const fecha = orden.fechaCreacion?.toDate();
+        const fechaTexto = fecha ? fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+
+        let html = `
+            <div class="card mb-2 ${esPendiente ? 'border-warning' : 'border-success'}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h6 class="mb-1">Orden del ${fechaTexto}</h6>
+                            <span class="badge ${esPendiente ? 'bg-warning text-dark' : 'bg-success'}">
+                                ${esPendiente ? 'Pendiente' : 'Recibida'}
+                            </span>
+                            <span class="badge bg-secondary ms-2">${orden.totalUnidades || 0} unidades</span>
+                        </div>
+                        ${esPendiente ? `
+                            <button class="btn btn-success btn-sm" onclick="window.marcarComoRecibido('${orden.id}')">
+                                <i class="bi bi-check-circle me-1"></i>Marcar como Recibido
+                            </button>
+                        ` : ''}
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Variación</th>
+                                    <th class="text-end">Cantidad</th>
+                                    <th class="text-end">Precio Unit.</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+        orden.productos.forEach(item => {
+            const producto = localProductsMap.get(item.productoId);
+            let categoria = 'Sin categoría';
+            if (typeof window.categoriesMap !== 'undefined' && window.categoriesMap instanceof Map && item.categoriaId) {
+                categoria = window.categoriesMap.get(item.categoriaId) || 'Sin categoría';
+            }
+
+            const precio = item.precioUnitario ? formatoMoneda.format(item.precioUnitario) : '$0';
+
+            html += `
+                <tr>
+                    <td><strong>${item.nombre}</strong></td>
+                    <td><small class="text-muted"><i class="bi bi-tag-fill me-1"></i>${categoria}</small></td>
+                    <td><span class="badge bg-light text-dark">${item.talla} - ${item.color}</span></td>
+                    <td class="text-end">${item.cantidad}</td>
+                    <td class="text-end">${precio}</td>
+                </tr>`;
+        });
+
+        html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>`;
+
+        return html;
+    }
+
+    /**
+     * Marcar orden como recibida (AQUÍ SÍ se actualiza el stock)
+     */
+    window.marcarComoRecibido = async function(ordenId) {
+        const orden = ordenesMap.get(ordenId);
+        if (!orden) return;
+
+        if (!confirm(`¿Marcar esta orden como recibida?\n\nEsto SUMARÁ ${orden.totalUnidades} unidades al inventario.`)) {
+            return;
+        }
+
+        try {
+            // Actualizar stock de cada producto
+            const batch = writeBatch(db);
+
+            // Agrupar variaciones por producto
+            const productosPorActualizar = new Map();
+
+            orden.productos.forEach(item => {
+                if (!productosPorActualizar.has(item.productoId)) {
+                    productosPorActualizar.set(item.productoId, []);
+                }
+                productosPorActualizar.get(item.productoId).push(item);
+            });
+
+            // Actualizar cada producto
+            for (const [productoId, items] of productosPorActualizar) {
+                const producto = localProductsMap.get(productoId);
+                if (!producto) continue;
+
+                const variacionesActualizadas = [...(producto.variaciones || [])];
+
+                items.forEach(item => {
+                    // Buscar índice de la variación
+                    const varIndex = variacionesActualizadas.findIndex(v =>
+                        v.talla === item.talla && v.color === item.color
+                    );
+
+                    if (varIndex >= 0) {
+                        variacionesActualizadas[varIndex].stock =
+                            (variacionesActualizadas[varIndex].stock || 0) + item.cantidad;
+                    }
+                });
+
+                const productoRef = doc(db, 'productos', productoId);
+                batch.update(productoRef, { variaciones: variacionesActualizadas });
+            }
+
+            // Actualizar estado de la orden
+            const ordenRef = doc(db, 'ordenesCompra', ordenId);
+            batch.update(ordenRef, {
+                estado: 'recibida',
+                fechaRecepcion: new Date()
+            });
+
+            await batch.commit();
+
+            showToast(`✅ Orden recibida: ${orden.totalUnidades} unidades sumadas al inventario`, 'success');
+
+        } catch (error) {
+            console.error('Error al marcar como recibido:', error);
+            showToast('Error al actualizar el inventario', 'error');
+        }
+    };
+
+    // Iniciar carga de órdenes
+    cargarOrdenes();
+
+    console.log("✅ Módulo de Gestión de Órdenes inicializado");
 })();
 
 });
