@@ -35,6 +35,7 @@ const webOrdersCollection = collection(db, 'pedidosWeb');
 const chatConversationsCollection = collection(db, 'chatConversations');
 const metasCollection = collection(db, 'metas');
 const recepcionesCollection = collection(db, 'ordenesRecepcion');
+const promocionesGlobalesCollection = collection(db, 'promocionesGlobales');
 
 // --- Helper: Format Currency ---
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
@@ -9340,6 +9341,200 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
     console.log("✅ Módulo de Gestión de Órdenes inicializado");
 })();
+
+// ═══════════════════════════════════════════════════════════════════
+// SECCIÓN: PROMOCIONES GLOBALES
+// ═══════════════════════════════════════════════════════════════════
+
+// ✅ Cargar y mostrar promociones globales
+function loadPromocionesGlobales() {
+    const container = document.getElementById('promociones-globales-container');
+    if (!container) return;
+
+    onSnapshot(promocionesGlobalesCollection, (snapshot) => {
+        container.innerHTML = '';
+
+        if (snapshot.empty) {
+            container.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-tag" style="font-size: 3rem; opacity: 0.3;"></i>
+                    <p class="mt-3">No hay promociones globales configuradas</p>
+                </div>
+            `;
+            return;
+        }
+
+        const promociones = [];
+        snapshot.forEach(doc => {
+            promociones.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Ordenar por fecha de creación (más recientes primero)
+        promociones.sort((a, b) => {
+            const timestampA = a.timestamp?.toMillis?.() || 0;
+            const timestampB = b.timestamp?.toMillis?.() || 0;
+            return timestampB - timestampA;
+        });
+
+        promociones.forEach(promo => {
+            const fechaInicio = promo.fechaInicio?.toDate();
+            const fechaFin = promo.fechaFin?.toDate();
+            const now = new Date();
+
+            // Determinar estado
+            let estadoBadge = '';
+            let estadoClass = '';
+            if (promo.activa && fechaInicio && fechaFin && now >= fechaInicio && now <= fechaFin) {
+                estadoBadge = '<span class="badge bg-success">Activa</span>';
+                estadoClass = 'border-success';
+            } else if (promo.activa && fechaInicio && now < fechaInicio) {
+                estadoBadge = '<span class="badge bg-warning">Programada</span>';
+                estadoClass = 'border-warning';
+            } else if (promo.activa && fechaFin && now > fechaFin) {
+                estadoBadge = '<span class="badge bg-secondary">Finalizada</span>';
+                estadoClass = 'border-secondary';
+            } else {
+                estadoBadge = '<span class="badge bg-secondary">Inactiva</span>';
+                estadoClass = '';
+            }
+
+            const card = document.createElement('div');
+            card.className = `card mb-3 ${estadoClass}`;
+            card.style.borderWidth = '2px';
+            card.innerHTML = `
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="card-title mb-1">
+                                <i class="bi bi-tag-fill me-2"></i>${promo.nombre}
+                                ${estadoBadge}
+                            </h5>
+                            <p class="text-muted mb-0">
+                                <strong>${promo.descuento}%</strong> de descuento en toda la tienda
+                            </p>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarPromocionGlobal('${promo.id}', '${promo.nombre}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Fecha de Inicio:</small>
+                            <strong>${fechaInicio ? fechaInicio.toLocaleString('es-CO') : 'No definida'}</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Fecha de Fin:</small>
+                            <strong>${fechaFin ? fechaFin.toLocaleString('es-CO') : 'No definida'}</strong>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <span class="badge bg-info me-2">
+                            <i class="bi bi-palette-fill me-1"></i>Tema: ${promo.tema || 'default'}
+                        </span>
+                        <div class="form-check form-switch d-inline-block ms-3">
+                            <input class="form-check-input" type="checkbox" id="toggle-promo-${promo.id}"
+                                   ${promo.activa ? 'checked' : ''}
+                                   onchange="togglePromocionGlobal('${promo.id}', this.checked)">
+                            <label class="form-check-label" for="toggle-promo-${promo.id}">
+                                ${promo.activa ? 'Activa' : 'Inactiva'}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(card);
+        });
+    });
+}
+
+// ✅ Crear nueva promoción global
+window.eliminarPromocionGlobal = async function(promoId, promoNombre) {
+    if (!confirm(`¿Estás seguro de eliminar la promoción "${promoNombre}"?`)) return;
+
+    try {
+        await deleteDoc(doc(db, 'promocionesGlobales', promoId));
+        showToast('Promoción eliminada exitosamente', 'success');
+    } catch (error) {
+        console.error('Error al eliminar promoción:', error);
+        showToast('Error al eliminar la promoción', 'error');
+    }
+};
+
+// ✅ Activar/Desactivar promoción
+window.togglePromocionGlobal = async function(promoId, activa) {
+    try {
+        await updateDoc(doc(db, 'promocionesGlobales', promoId), {
+            activa: activa
+        });
+        showToast(activa ? 'Promoción activada' : 'Promoción desactivada', 'success');
+    } catch (error) {
+        console.error('Error al cambiar estado:', error);
+        showToast('Error al cambiar el estado', 'error');
+    }
+};
+
+// ✅ Form handler para crear promoción
+const formAddPromoGlobal = document.getElementById('form-add-promocion-global');
+if (formAddPromoGlobal) {
+    formAddPromoGlobal.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const nombre = document.getElementById('promo-nombre').value.trim();
+        const descuento = parseInt(document.getElementById('promo-descuento').value);
+        const fechaInicio = new Date(document.getElementById('promo-fecha-inicio').value);
+        const fechaFin = new Date(document.getElementById('promo-fecha-fin').value);
+        const tema = document.getElementById('promo-tema').value;
+        const activa = document.getElementById('promo-activa').checked;
+
+        // Validaciones
+        if (!nombre || !descuento || !fechaInicio || !fechaFin) {
+            showToast('Por favor completa todos los campos', 'error');
+            return;
+        }
+
+        if (descuento < 1 || descuento > 99) {
+            showToast('El descuento debe estar entre 1% y 99%', 'error');
+            return;
+        }
+
+        if (fechaFin <= fechaInicio) {
+            showToast('La fecha de fin debe ser posterior a la de inicio', 'error');
+            return;
+        }
+
+        try {
+            await addDoc(promocionesGlobalesCollection, {
+                nombre: nombre,
+                descuento: descuento,
+                tipo: 'porcentaje',
+                fechaInicio: Timestamp.fromDate(fechaInicio),
+                fechaFin: Timestamp.fromDate(fechaFin),
+                tema: tema,
+                activa: activa,
+                timestamp: serverTimestamp()
+            });
+
+            showToast('✅ Promoción creada exitosamente', 'success');
+
+            // Cerrar modal y resetear form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addPromocionGlobalModal'));
+            modal.hide();
+            formAddPromoGlobal.reset();
+
+        } catch (error) {
+            console.error('Error al crear promoción:', error);
+            showToast('Error al crear la promoción', 'error');
+        }
+    });
+}
+
+// ✅ Cargar promociones al inicio
+loadPromocionesGlobales();
+
+console.log("✅ Módulo de Promociones Globales inicializado");
 
 });
 

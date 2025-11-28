@@ -1631,3 +1631,129 @@ img {
         font-size: 0.9rem;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PROMOCIONES GLOBALES - BLACK FRIDAY
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Banner de Promoción Global */
+.global-promo-banner {
+    padding: 12px 0;
+    text-align: center;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+    z-index: 1050;
+}
+
+.global-promo-banner.blackfriday-banner {
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+    color: #fff;
+    animation: gradientShift 8s ease infinite;
+    background-size: 200% 200%;
+    border-bottom: 2px solid #ff0000;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.promo-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    position: relative;
+    z-index: 2;
+}
+
+.promo-icon {
+    font-size: 1.3rem;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+.promo-text {
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.promo-text strong {
+    color: #ff0000;
+    font-weight: 800;
+    text-transform: uppercase;
+    animation: colorPulse 2s ease-in-out infinite;
+}
+
+@keyframes colorPulse {
+    0%, 100% { color: #ff0000; }
+    50% { color: #ff3333; }
+}
+
+/* Tema Black Friday - Ajustes globales */
+body.blackfriday-theme {
+    /* Mantener el diseño original pero con sutiles acentos */
+}
+
+body.blackfriday-theme .navbar {
+    border-bottom: 2px solid rgba(255, 0, 0, 0.2);
+}
+
+body.blackfriday-theme .product-card:hover {
+    box-shadow: 0 8px 24px rgba(255, 0, 0, 0.15);
+}
+
+body.blackfriday-theme .badge-promo {
+    background: linear-gradient(135deg, #ff0000, #cc0000);
+    animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { transform: translateY(0); box-shadow: 0 2px 8px rgba(255, 0, 0, 0.4); }
+    50% { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 0, 0, 0.6); }
+}
+
+body.blackfriday-theme .btn-primary {
+    background: linear-gradient(135deg, #D988B9, #E3B0CC);
+    position: relative;
+    overflow: hidden;
+}
+
+body.blackfriday-theme .btn-primary::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transform: rotate(45deg);
+    animation: shine 3s ease-in-out infinite;
+}
+
+@keyframes shine {
+    0%, 100% { transform: translateX(-100%) rotate(45deg); }
+    50% { transform: translateX(100%) rotate(45deg); }
+}
+
+/* Responsive para el banner */
+@media (max-width: 768px) {
+    .promo-text {
+        font-size: 0.8rem;
+    }
+
+    .promo-icon {
+        font-size: 1.1rem;
+    }
+
+    .global-promo-banner {
+        padding: 10px 0;
+    }
+}
