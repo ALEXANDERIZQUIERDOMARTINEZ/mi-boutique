@@ -1213,25 +1213,72 @@
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
-                                <!-- Filtros y Búsqueda -->
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label small mb-1">Proveedor (opcional)</label>
-                                        <select class="form-select form-select-sm" id="recepcion-filtro-proveedor">
-                                            <option value="">Todos los proveedores</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small mb-1">Categoría</label>
-                                        <select class="form-select form-select-sm" id="recepcion-filtro-categoria">
-                                            <option value="">Todas las categorías</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label small mb-1">Buscar</label>
-                                        <input type="text" class="form-control form-control-sm" id="recepcion-buscar" placeholder="🔍 Buscar por nombre o código...">
+                                <!-- Modo: Entrada Rápida vs Catálogo -->
+                                <div class="btn-group mb-3 w-100" role="group">
+                                    <input type="radio" class="btn-check" name="modo-recepcion" id="modo-entrada-rapida" autocomplete="off" checked>
+                                    <label class="btn btn-outline-primary" for="modo-entrada-rapida">
+                                        <i class="bi bi-lightning-fill me-1"></i>Entrada Rápida
+                                    </label>
+                                    <input type="radio" class="btn-check" name="modo-recepcion" id="modo-catalogo" autocomplete="off">
+                                    <label class="btn btn-outline-primary" for="modo-catalogo">
+                                        <i class="bi bi-grid me-1"></i>Catálogo
+                                    </label>
+                                </div>
+
+                                <!-- MODO: ENTRADA RÁPIDA -->
+                                <div id="vista-entrada-rapida">
+                                    <div class="card bg-light mb-3">
+                                        <div class="card-body">
+                                            <h6 class="mb-3"><i class="bi bi-upc-scan me-2"></i>Escanea o escribe el código del producto</h6>
+                                            <div class="row g-2 align-items-end">
+                                                <div class="col-md-6">
+                                                    <label class="form-label small mb-1">Código de barras / SKU / Nombre</label>
+                                                    <input type="text" class="form-control" id="entrada-rapida-codigo"
+                                                           placeholder="Escanea o escribe..." autofocus>
+                                                    <div id="entrada-rapida-sugerencias" class="list-group position-absolute w-100" style="z-index: 1000; display: none;"></div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small mb-1">Cantidad</label>
+                                                    <input type="number" class="form-control" id="entrada-rapida-cantidad"
+                                                           min="1" value="1">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <button type="button" class="btn btn-primary w-100" id="btn-agregar-rapido">
+                                                        <i class="bi bi-plus-circle me-1"></i>Agregar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="mt-2">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-info-circle me-1"></i>
+                                                    Tip: Escanea el código y presiona Enter para agregar rápidamente
+                                                </small>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+
+                                <!-- MODO: CATÁLOGO -->
+                                <div id="vista-catalogo" style="display: none;">
+                                    <!-- Filtros y Búsqueda -->
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label small mb-1">Proveedor (opcional)</label>
+                                            <select class="form-select form-select-sm" id="recepcion-filtro-proveedor">
+                                                <option value="">Todos los proveedores</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small mb-1">Categoría</label>
+                                            <select class="form-select form-select-sm" id="recepcion-filtro-categoria">
+                                                <option value="">Todas las categorías</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small mb-1">Buscar</label>
+                                            <input type="text" class="form-control form-control-sm" id="recepcion-buscar" placeholder="🔍 Buscar por nombre o código...">
+                                        </div>
+                                    </div>
 
                                 <!-- Catálogo de Productos -->
                                 <div class="card mb-3">
@@ -1271,6 +1318,8 @@
                                         </div>
                                     </div>
                                 </div>
+                                </div>
+                                <!-- FIN MODO: CATÁLOGO -->
 
                                 <!-- Productos en esta Orden -->
                                 <div class="card border-primary">
