@@ -21,6 +21,7 @@ const db = getFirestore(app);
 const productsCollection = collection(db, 'productos');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const promocionesCollection = collection(db, 'promociones');
+const promocionesGlobalesCollection = collection(db, 'promocionesGlobales');
 const categoriesCollection = collection(db, 'categorias');
 const clientsCollection = collection(db, 'clientes');
 const chatConversationsCollection = collection(db, 'chatConversations');
@@ -59,7 +60,8 @@ let cart = [];
 let productsMap = new Map();
 let allProducts = [];
 let activePromotions = new Map();
-let itemToDelete = null; 
+let globalPromotion = null; // Promoción global activa (ej: Black Friday)
+let itemToDelete = null;
 let isWholesaleActive = false;
 const WHOLESALE_CODE = "MISHELLMAYOR"; 
 
@@ -216,15 +218,91 @@ function showToast(message, type = 'success') {
     }
 }
 
+// ✅ CARGAR PROMOCIONES GLOBALES (Black Friday, etc.)
+function loadGlobalPromotions() {
+    const q = query(promocionesGlobalesCollection, where('activa', '==', true));
+    onSnapshot(q, (snapshot) => {
+        globalPromotion = null;
+
+        snapshot.forEach(doc => {
+            const promo = doc.data();
+            const now = new Date();
+            const inicio = promo.fechaInicio?.toDate();
+            const fin = promo.fechaFin?.toDate();
+
+            // Verificar si la promoción está dentro del rango de fechas
+            if (inicio && fin && now >= inicio && now <= fin) {
+                globalPromotion = {
+                    id: doc.id,
+                    nombre: promo.nombre,
+                    descuento: promo.descuento,
+                    tipo: promo.tipo || 'porcentaje',
+                    tema: promo.tema || 'default' // ej: 'blackfriday', 'navidad', etc.
+                };
+
+                // Aplicar tema visual si es Black Friday
+                if (globalPromotion.tema === 'blackfriday') {
+                    document.body.classList.add('blackfriday-theme');
+                    showGlobalPromoBanner();
+                } else {
+                    document.body.classList.remove('blackfriday-theme');
+                    hideGlobalPromoBanner();
+                }
+            }
+        });
+
+        // Si no hay promoción global activa, remover el tema
+        if (!globalPromotion) {
+            document.body.classList.remove('blackfriday-theme');
+            hideGlobalPromoBanner();
+        }
+
+        applyFiltersAndRender();
+    });
+}
+
+function showGlobalPromoBanner() {
+    const existingBanner = document.getElementById('global-promo-banner');
+    if (existingBanner) return; // Ya existe
+
+    const banner = document.createElement('div');
+    banner.id = 'global-promo-banner';
+    banner.className = 'global-promo-banner blackfriday-banner';
+    banner.innerHTML = `
+        <div class="container">
+            <div class="promo-content">
+                <span class="promo-icon">🔥</span>
+                <span class="promo-text">
+                    <strong>${globalPromotion.nombre || 'BLACK FRIDAY'}</strong> -
+                    ${globalPromotion.descuento}% de descuento en toda la tienda
+                </span>
+                <span class="promo-icon">🔥</span>
+            </div>
+        </div>
+    `;
+
+    const header = document.querySelector('header.navbar');
+    if (header) {
+        header.parentNode.insertBefore(banner, header);
+    }
+}
+
+function hideGlobalPromoBanner() {
+    const banner = document.getElementById('global-promo-banner');
+    if (banner) {
+        banner.remove();
+    }
+}
+
 function loadPromotions() {
     const q = query(promocionesCollection, where('activa', '==', true));
     onSnapshot(q, (snapshot) => {
         activePromotions.clear();
         const promotionsContainer = document.getElementById('promotions-container');
         const promotionsSection = document.getElementById('promotions-section');
-        
+
         let hasActivePromos = false;
-        
+
         snapshot.forEach(doc => {
             const promo = doc.data();
             const now = new Date();
@@ -249,22 +327,41 @@ function loadPromotions() {
 }
 
 function calculatePromotionPrice(producto) {
-    // ✅ Leer promoción directamente del campo del producto (administrable desde admin.html)
-    if (!producto.promocion || !producto.promocion.activa || isWholesaleActive) {
+    // No aplicar promociones en modo mayorista
+    if (isWholesaleActive) {
         return { precioFinal: producto.precioDetal, tienePromo: false };
     }
 
     let precioFinal = producto.precioDetal;
-    if (producto.promocion.tipo === 'porcentaje') {
-        precioFinal = producto.precioDetal * (1 - producto.promocion.descuento / 100);
-    } else if (producto.promocion.tipo === 'fijo') {
-        precioFinal = producto.promocion.precioFijo;
+    let tienePromo = false;
+    let nombrePromo = '';
+
+    // 1. Verificar si el producto tiene promoción individual (prioridad)
+    if (producto.promocion && producto.promocion.activa) {
+        tienePromo = true;
+        nombrePromo = 'Oferta Especial';
+
+        if (producto.promocion.tipo === 'porcentaje') {
+            precioFinal = producto.precioDetal * (1 - producto.promocion.descuento / 100);
+        } else if (producto.promocion.tipo === 'fijo') {
+            precioFinal = producto.promocion.precioFijo;
+        }
+    }
+    // 2. Si no tiene promoción individual, aplicar la promoción global (si existe)
+    else if (globalPromotion && globalPromotion.descuento > 0) {
+        tienePromo = true;
+        nombrePromo = globalPromotion.nombre || 'Black Friday';
+
+        if (globalPromotion.tipo === 'porcentaje') {
+            precioFinal = producto.precioDetal * (1 - globalPromotion.descuento / 100);
+        }
     }
 
     return {
         precioFinal: Math.max(0, precioFinal),
-        tienePromo: true,
-        precioOriginal: producto.precioDetal
+        tienePromo: tienePromo,
+        precioOriginal: producto.precioDetal,
+        nombrePromo: nombrePromo
     };
 }
 
@@ -287,7 +384,11 @@ function applyFiltersAndRender() {
             return stock > 0;
         });
     } else if (activeFilter === 'promocion') {
-        filtered = filtered.filter(p => p.promocion?.activa && !isWholesaleActive);
+        filtered = filtered.filter(p => {
+            const tienePromoIndividual = p.promocion?.activa && !isWholesaleActive;
+            const tienePromoGlobal = globalPromotion && !isWholesaleActive;
+            return tienePromoIndividual || tienePromoGlobal;
+        });
     } else if (activeFilter !== 'all') {
         filtered = filtered.filter(p => {
             const categoryId = p.categoriaId || p.categoria;
@@ -332,7 +433,11 @@ function applyFiltersAndRender() {
 
     // 3.4 Filtro solo promociones (del sidebar)
     if (advancedFilters.promoOnly) {
-        filtered = filtered.filter(p => p.promocion?.activa && !isWholesaleActive);
+        filtered = filtered.filter(p => {
+            const tienePromoIndividual = p.promocion?.activa && !isWholesaleActive;
+            const tienePromoGlobal = globalPromotion && !isWholesaleActive;
+            return tienePromoIndividual || tienePromoGlobal;
+        });
     }
 
     // 4. Ordenamiento
@@ -779,6 +884,7 @@ function resetAllFilters() {
 document.addEventListener('DOMContentLoaded', () => {
 
     loadCart();
+    loadGlobalPromotions(); // ✅ Cargar promociones globales (Black Friday, etc.)
     // loadPromotions(); // ✅ Ya no necesario - las promociones se leen del campo producto.promocion
 
     const categoryDropdownMenu = document.getElementById('category-dropdown-menu');

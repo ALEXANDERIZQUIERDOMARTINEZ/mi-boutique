@@ -42,6 +42,7 @@
                     <li class="nav-item"> <a href="#repartidores" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bicycle me-1"></i> Repartidores</a> </li>
 
                     <!-- 💼 ADMINISTRACIÓN -->
+                    <li class="nav-item"> <a href="#promociones" class="nav-link" data-bs-toggle="pill"><i class="bi bi-tag-fill me-1"></i> Promociones</a> </li>
                     <li class="nav-item"> <a href="#finanzas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-piggy-bank-fill me-1"></i> Finanzas</a> </li>
                     <li class="nav-item"> <a href="#reportes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bar-chart-fill me-1"></i> Reportes</a> </li>
                     <li class="nav-item"> <a href="#proveedores" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-building me-1"></i> Proveedores </a> </li>
@@ -887,7 +888,40 @@
                     </div>
                 </div>
             </div>
-            
+
+            <!-- ═══════════════════════════════════════════════════════════════════
+                 SECCIÓN: PROMOCIONES GLOBALES
+                 ═══════════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="promociones">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h2 mb-0"><i class="bi bi-tag-fill me-2"></i>Promociones Globales</h1>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPromocionGlobalModal">
+                        <i class="bi bi-plus-circle me-1"></i> Nueva Promoción
+                    </button>
+                </div>
+
+                <!-- Instrucciones -->
+                <div class="alert alert-info mb-4">
+                    <h6><i class="bi bi-info-circle me-2"></i>Acerca de las Promociones Globales</h6>
+                    <p class="mb-0">Las promociones globales aplican un descuento a <strong>toda la tienda</strong> durante un período específico. Son ideales para eventos como Black Friday, Navidad, etc. Los productos con promociones individuales mantienen su descuento original.</p>
+                </div>
+
+                <!-- Lista de Promociones Globales -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Promociones Configuradas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="promociones-globales-container">
+                            <div class="text-center py-5 text-muted">
+                                <i class="bi bi-tag" style="font-size: 3rem; opacity: 0.3;"></i>
+                                <p class="mt-3">No hay promociones globales configuradas</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="tab-pane fade" id="finanzas">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h1 class="h2 mb-0">Finanzas</h1>
@@ -2277,6 +2311,75 @@
             });
         });
     </script>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MODAL: AGREGAR/EDITAR PROMOCIÓN GLOBAL
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="addPromocionGlobalModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-tag-fill me-2"></i>Nueva Promoción Global</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-add-promocion-global">
+                        <div class="mb-3">
+                            <label for="promo-nombre" class="form-label">Nombre de la Promoción</label>
+                            <input type="text" class="form-control" id="promo-nombre" placeholder="Ej: Black Friday" required>
+                            <small class="text-muted">Este nombre se mostrará en el banner de la tienda</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="promo-descuento" class="form-label">Descuento (%)</label>
+                            <input type="number" class="form-control" id="promo-descuento" min="1" max="99" placeholder="Ej: 10" required>
+                            <small class="text-muted">Porcentaje de descuento para toda la tienda</small>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="promo-fecha-inicio" class="form-label">Fecha de Inicio</label>
+                                <input type="datetime-local" class="form-control" id="promo-fecha-inicio" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="promo-fecha-fin" class="form-label">Fecha de Fin</label>
+                                <input type="datetime-local" class="form-control" id="promo-fecha-fin" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="promo-tema" class="form-label">Tema Visual</label>
+                            <select class="form-select" id="promo-tema" required>
+                                <option value="default">Predeterminado</option>
+                                <option value="blackfriday" selected>Black Friday (Negro/Rojo)</option>
+                                <option value="navidad">Navidad (Rojo/Verde)</option>
+                                <option value="aniversario">Aniversario</option>
+                            </select>
+                            <small class="text-muted">Elige el tema visual que se aplicará a la tienda</small>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="promo-activa" checked>
+                            <label class="form-check-label" for="promo-activa">
+                                <strong>Activar promoción</strong>
+                            </label>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Importante:</strong> Esta promoción se aplicará a todos los productos de la tienda que no tengan una promoción individual activa.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-add-promocion-global" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i> Guardar Promoción
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 </html>
