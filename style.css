@@ -63,8 +63,12 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    padding-bottom: 70px;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
     overflow-x: hidden;
+
+    /* Prevenir bounce scroll en iOS */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
 }
 
 body.modal-search-open {
@@ -150,6 +154,12 @@ h1, h2, h3, h4, h5, h6 {
     border-bottom: 1px solid var(--color-borde);
     box-shadow: var(--sombra-sm);
     padding: 0.75rem 0;
+
+    /* Estabilizar header en móviles */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
 }
 
 .navbar > .container {
@@ -322,11 +332,43 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 991.98px) {
     .navbar-collapse {
         margin-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    /* Reorganizar filtros verticalmente en móvil */
+    .catalog-filters {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .filter-group {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .dropdown {
+        width: 100%;
+    }
+
+    .dropdown-button-wrapper {
+        width: 100%;
+    }
+
+    #category-dropdown-button {
+        width: 100%;
     }
 
     .search-box {
         width: 100%;
-        max-width: 280px;
+        max-width: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Separador visual */
+    .navbar-collapse > div:not(:last-child) {
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--color-borde);
     }
 }
 
@@ -937,6 +979,18 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: space-around;
     align-items: center;
     z-index: 1000;
+
+    /* Safe area para iPhone con notch */
+    padding-bottom: env(safe-area-inset-bottom);
+
+    /* Aceleración por hardware para evitar movimiento */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+
+    /* Forzar posicionamiento fijo sin bounce */
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
 }
 
 .nav-item {
