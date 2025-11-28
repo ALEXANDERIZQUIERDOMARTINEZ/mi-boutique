@@ -7537,27 +7537,29 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 })();
 
 // ========================================================================
-// === MÓDULO: ENTRADA DE PRODUCTOS (INVENTARIO DIRECTO) ===
+// MÓDULO: ENTRADA DE PRODUCTOS (Nueva Versión con Split Screen y Smart Search)
 // ========================================================================
 (() => {
-    console.log("📦 Inicializando módulo de Entrada de Productos...");
+    console.log("📦 Inicializando módulo de Entrada de Productos (Nueva Versión)...");
 
     // --- Collection References ---
     const entradasInventarioCollection = collection(db, 'entradasInventario');
 
     // --- DOM References ---
-    const searchProductoInput = document.getElementById('search-producto-entrada');
-    const suggestionsContainer = document.getElementById('producto-suggestions');
-    const selectedProductInfo = document.getElementById('selected-product-info');
-    const variacionesContainer = document.getElementById('variaciones-entrada-container');
-    const btnGuardarEntrada = document.getElementById('btn-guardar-entrada');
-    const btnCancelarEntrada = document.getElementById('btn-cancelar-entrada');
-    const entradasHistoryContainer = document.getElementById('entradas-history-container');
+    const searchInput = document.getElementById('entrada-buscar-producto');
+    const gridContainer = document.getElementById('productos-grid-container');
+    const crearNuevoContainer = document.getElementById('entrada-crear-nuevo');
+    const textoNuevoProducto = document.getElementById('texto-nuevo-producto');
+    const btnCrearProducto = document.getElementById('btn-crear-producto');
+    const listaAgregados = document.getElementById('entrada-lista-agregados');
+    const btnFinalizarEntrada = document.getElementById('btn-finalizar-entrada');
 
     // --- Variables ---
     let productosMap = new Map();
-    let selectedProduct = null;
-    let entradasData = [];
+    let productosAgregados = []; // Lista de productos a ingresar
+    let selectedProductForVariation = null;
+    let categoriasMap = new Map();
+    let focusedProductIndex = -1; // Para navegación por teclado
 
     // --- Cargar todos los productos ---
     async function cargarProductos() {
@@ -7571,425 +7573,513 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             });
 
             console.log(`✅ ${productosMap.size} productos cargados`);
+            renderizarGrid(Array.from(productosMap.values()));
         } catch (error) {
             console.error('❌ Error cargando productos:', error);
             showToast('Error al cargar productos', 'error');
         }
     }
 
-    // --- Buscar productos con autocomplete ---
-    function buscarProductos(searchTerm) {
-        if (!searchTerm || searchTerm.length < 2) {
-            suggestionsContainer.innerHTML = '';
-            suggestionsContainer.style.display = 'none';
+    // --- Cargar categorías ---
+    async function cargarCategorias() {
+        try {
+            const snapshot = await getDocs(categoriesCollection);
+            categoriasMap.clear();
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                categoriasMap.set(doc.id, { id: doc.id, ...data });
+            });
+
+            // Llenar select de categorías
+            const select = document.getElementById('nuevo-producto-categoria');
+            if (select) {
+                select.innerHTML = '<option value="">Seleccionar categoría...</option>';
+                categoriasMap.forEach(cat => {
+                    select.innerHTML += `<option value="${cat.nombre}">${cat.nombre}</option>`;
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error cargando categorías:', error);
+        }
+    }
+
+    // --- Renderizar Grid de Productos ---
+    function renderizarGrid(productos) {
+        gridContainer.innerHTML = '';
+
+        if (productos.length === 0) {
+            gridContainer.innerHTML = `
+                <div class="col-12 text-center text-muted py-5">
+                    <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+                    <p>No hay productos disponibles</p>
+                </div>
+            `;
             return;
         }
 
-        const term = searchTerm.toLowerCase();
+        productos.forEach((producto, index) => {
+            const card = document.createElement('div');
+            card.className = 'col-6 col-md-4 col-lg-3';
+            card.dataset.productIndex = index;
+
+            const imagenUrl = producto.imagenUrl || 'https://via.placeholder.com/150?text=Sin+Imagen';
+            const tieneVariaciones = producto.variaciones && producto.variaciones.length > 1;
+
+            card.innerHTML = `
+                <div class="card h-100 producto-card" style="cursor: pointer; transition: transform 0.2s;"
+                     data-product-id="${producto.id}">
+                    <img src="${imagenUrl}"
+                         class="card-img-top"
+                         alt="${producto.nombre}"
+                         loading="lazy"
+                         style="height: 120px; object-fit: cover;">
+                    <div class="card-body p-2">
+                        <h6 class="card-title mb-1" style="font-size: 0.85rem;">${producto.nombre}</h6>
+                        <p class="card-text mb-1">
+                            <small class="text-muted">${formatoMoneda.format(producto.precio)}</small>
+                        </p>
+                        ${tieneVariaciones ? '<span class="badge bg-info">Variaciones</span>' : ''}
+                    </div>
+                </div>
+            `;
+
+            // Click en la card
+            card.querySelector('.producto-card').addEventListener('click', () => {
+                if (tieneVariaciones) {
+                    abrirSelectorVariaciones(producto);
+                } else {
+                    agregarProductoALista(producto, null);
+                }
+            });
+
+            gridContainer.appendChild(card);
+        });
+    }
+
+    // --- Smart Search: Filtrar productos ---
+    function filtrarProductos(term) {
+        if (!term || term.length === 0) {
+            renderizarGrid(Array.from(productosMap.values()));
+            crearNuevoContainer.style.display = 'none';
+            return;
+        }
+
+        const termLower = term.toLowerCase();
         const resultados = [];
 
         productosMap.forEach(producto => {
-            const nombreMatch = producto.nombre?.toLowerCase().includes(term);
-            const skuMatch = producto.sku?.toLowerCase().includes(term);
+            const nombreMatch = producto.nombre?.toLowerCase().includes(termLower);
+            const skuMatch = producto.sku?.toLowerCase().includes(termLower);
 
-            // También buscar en variaciones
-            let variacionMatch = false;
-            if (producto.variaciones && Array.isArray(producto.variaciones)) {
-                variacionMatch = producto.variaciones.some(v =>
-                    v.sku?.toLowerCase().includes(term)
-                );
-            }
-
-            if (nombreMatch || skuMatch || variacionMatch) {
+            if (nombreMatch || skuMatch) {
                 resultados.push(producto);
             }
         });
 
-        mostrarSugerencias(resultados);
-    }
+        renderizarGrid(resultados);
 
-    // --- Mostrar sugerencias ---
-    function mostrarSugerencias(productos) {
-        if (productos.length === 0) {
-            suggestionsContainer.innerHTML = '<div class="suggestion-item text-muted">No se encontraron productos</div>';
-            suggestionsContainer.style.display = 'block';
-            return;
+        // Si no hay resultados, mostrar botón "Crear"
+        if (resultados.length === 0) {
+            textoNuevoProducto.textContent = term;
+            crearNuevoContainer.style.display = 'block';
+        } else {
+            crearNuevoContainer.style.display = 'none';
         }
-
-        suggestionsContainer.innerHTML = '';
-
-        productos.slice(0, 8).forEach(producto => {
-            const div = document.createElement('div');
-            div.className = 'suggestion-item';
-            div.innerHTML = `
-                <strong>${producto.nombre}</strong>
-                <br>
-                <small class="text-muted">SKU: ${producto.sku || 'N/A'}</small>
-            `;
-
-            div.addEventListener('click', () => {
-                seleccionarProducto(producto);
-            });
-
-            suggestionsContainer.appendChild(div);
-        });
-
-        suggestionsContainer.style.display = 'block';
     }
 
-    // --- Seleccionar producto ---
-    function seleccionarProducto(producto) {
-        selectedProduct = producto;
-        searchProductoInput.value = producto.nombre;
-        suggestionsContainer.innerHTML = '';
-        suggestionsContainer.style.display = 'none';
+    // --- Abrir Modal para Seleccionar Variación ---
+    function abrirSelectorVariaciones(producto) {
+        selectedProductForVariation = producto;
+        const modalEl = document.getElementById('modalSeleccionarVariacion');
+        const variacionesSelector = document.getElementById('variaciones-selector');
 
-        // Mostrar información del producto
-        selectedProductInfo.innerHTML = `
-            <div class="alert alert-info">
-                <strong>📦 ${producto.nombre}</strong><br>
-                <small>SKU Base: ${producto.sku || 'N/A'} | Categoría: ${producto.categoria || 'N/A'}</small>
-            </div>
-        `;
-        selectedProductInfo.style.display = 'block';
+        document.getElementById('modalSeleccionarVariacionLabel').textContent =
+            `Seleccionar Variación de ${producto.nombre}`;
 
-        // Mostrar variaciones
-        mostrarVariaciones(producto);
-        btnGuardarEntrada.disabled = false;
-    }
-
-    // --- Mostrar variaciones para entrada ---
-    function mostrarVariaciones(producto) {
-        variacionesContainer.innerHTML = '';
+        variacionesSelector.innerHTML = '';
 
         if (!producto.variaciones || producto.variaciones.length === 0) {
-            variacionesContainer.innerHTML = `
-                <div class="alert alert-warning">
-                    Este producto no tiene variaciones configuradas
-                </div>
-            `;
-            return;
+            variacionesSelector.innerHTML = '<p class="text-muted">Este producto no tiene variaciones</p>';
+        } else {
+            const grid = document.createElement('div');
+            grid.className = 'row g-2';
+
+            producto.variaciones.forEach((variacion, index) => {
+                const col = document.createElement('div');
+                col.className = 'col-6';
+
+                const label = `${variacion.talla || 'N/A'} - ${variacion.color || 'N/A'}`;
+                const stock = variacion.stock || 0;
+
+                col.innerHTML = `
+                    <button class="btn btn-outline-primary w-100 d-flex justify-content-between align-items-center"
+                            data-variacion-index="${index}">
+                        <span>${label}</span>
+                        <span class="badge bg-secondary">${stock}</span>
+                    </button>
+                `;
+
+                col.querySelector('button').addEventListener('click', () => {
+                    agregarProductoALista(producto, index);
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    modal.hide();
+                });
+
+                grid.appendChild(col);
+            });
+
+            variacionesSelector.appendChild(grid);
         }
 
-        const table = document.createElement('table');
-        table.className = 'table table-sm table-bordered';
-        table.innerHTML = `
-            <thead class="table-light">
-                <tr>
-                    <th>Talla</th>
-                    <th>Color</th>
-                    <th>SKU</th>
-                    <th>Stock Actual</th>
-                    <th>Cantidad a Agregar</th>
-                </tr>
-            </thead>
-            <tbody id="variaciones-tbody">
-            </tbody>
-        `;
-
-        const tbody = document.createElement('tbody');
-
-        producto.variaciones.forEach((variacion, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${variacion.talla || 'N/A'}</td>
-                <td>${variacion.color || 'N/A'}</td>
-                <td><small>${variacion.sku || 'N/A'}</small></td>
-                <td class="text-center">
-                    <span class="badge bg-secondary">${variacion.stock || 0}</span>
-                </td>
-                <td>
-                    <input
-                        type="number"
-                        class="form-control form-control-sm cantidad-entrada"
-                        data-index="${index}"
-                        min="0"
-                        value="0"
-                        placeholder="0"
-                        style="width: 100px;"
-                    >
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-
-        table.appendChild(tbody);
-        variacionesContainer.appendChild(table);
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
     }
 
-    // --- Guardar entrada de inventario ---
-    async function guardarEntrada() {
-        if (!selectedProduct) {
-            showToast('Selecciona un producto primero', 'error');
+    // --- Agregar Producto a la Lista (Panel Derecho) ---
+    function agregarProductoALista(producto, variacionIndex) {
+        const variacion = variacionIndex !== null ? producto.variaciones[variacionIndex] : null;
+
+        const item = {
+            productoId: producto.id,
+            productoNombre: producto.nombre,
+            productoImagen: producto.imagenUrl || 'https://via.placeholder.com/50?text=?',
+            variacionIndex: variacionIndex,
+            variacion: variacion,
+            cantidad: 1
+        };
+
+        productosAgregados.push(item);
+        renderizarListaAgregados();
+        showToast(`Agregado: ${producto.nombre}`, 'success');
+    }
+
+    // --- Renderizar Lista de Productos Agregados (Panel Derecho) ---
+    function renderizarListaAgregados() {
+        if (productosAgregados.length === 0) {
+            listaAgregados.innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+                    <p>Selecciona productos del catálogo</p>
+                </div>
+            `;
+            btnFinalizarEntrada.disabled = true;
             return;
         }
 
-        const cantidadInputs = document.querySelectorAll('.cantidad-entrada');
-        const actualizaciones = [];
-        let totalUnidades = 0;
+        listaAgregados.innerHTML = '';
 
-        cantidadInputs.forEach(input => {
-            const cantidad = parseInt(input.value) || 0;
-            if (cantidad > 0) {
-                const index = parseInt(input.dataset.index);
-                actualizaciones.push({ index, cantidad });
-                totalUnidades += cantidad;
-            }
+        productosAgregados.forEach((item, index) => {
+            const row = document.createElement('div');
+            row.className = 'd-flex align-items-center mb-3 border-bottom pb-2';
+
+            const variacionTexto = item.variacion
+                ? `<small class="text-muted">${item.variacion.talla || 'N/A'} - ${item.variacion.color || 'N/A'}</small>`
+                : '';
+
+            row.innerHTML = `
+                <img src="${item.productoImagen}"
+                     alt="${item.productoNombre}"
+                     class="rounded me-2"
+                     loading="eager"
+                     style="width: 50px; height: 50px; object-fit: cover;">
+                <div class="flex-grow-1">
+                    <strong style="font-size: 0.9rem;">${item.productoNombre}</strong><br>
+                    ${variacionTexto}
+                </div>
+                <input type="number"
+                       class="form-control form-control-sm text-center me-2"
+                       style="width: 70px;"
+                       min="1"
+                       value="${item.cantidad}"
+                       data-item-index="${index}">
+                <button class="btn btn-sm btn-outline-danger" data-remove-index="${index}">
+                    <i class="bi bi-trash"></i>
+                </button>
+            `;
+
+            // Event: Actualizar cantidad
+            row.querySelector('input').addEventListener('change', (e) => {
+                const newCantidad = parseInt(e.target.value) || 1;
+                productosAgregados[index].cantidad = Math.max(1, newCantidad);
+            });
+
+            // Event: Eliminar
+            row.querySelector('button').addEventListener('click', () => {
+                productosAgregados.splice(index, 1);
+                renderizarListaAgregados();
+            });
+
+            listaAgregados.appendChild(row);
         });
 
-        if (actualizaciones.length === 0) {
-            showToast('Ingresa al menos una cantidad mayor a 0', 'error');
+        btnFinalizarEntrada.disabled = false;
+    }
+
+    // --- Finalizar Entrada (Guardar en Firestore) ---
+    async function finalizarEntrada() {
+        if (productosAgregados.length === 0) {
+            showToast('No hay productos para ingresar', 'warning');
             return;
         }
 
         try {
-            btnGuardarEntrada.disabled = true;
-            btnGuardarEntrada.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
+            btnFinalizarEntrada.disabled = true;
+            btnFinalizarEntrada.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
 
-            // Actualizar stock en las variaciones
-            const productoDoc = doc(db, 'productos', selectedProduct.id);
-            const productoSnapshot = await getDoc(productoDoc);
-            const productoData = productoSnapshot.data();
-            const variacionesActualizadas = [...productoData.variaciones];
+            // Procesar cada producto
+            for (const item of productosAgregados) {
+                const productoDoc = doc(db, 'productos', item.productoId);
+                const productoSnapshot = await getDoc(productoDoc);
+                const productoData = productoSnapshot.data();
 
-            const detalleVariaciones = [];
+                if (item.variacionIndex !== null) {
+                    // Producto con variaciones
+                    const variacionesActualizadas = [...productoData.variaciones];
+                    const stockAnterior = variacionesActualizadas[item.variacionIndex].stock || 0;
+                    variacionesActualizadas[item.variacionIndex].stock = stockAnterior + item.cantidad;
 
-            actualizaciones.forEach(({ index, cantidad }) => {
-                const stockAnterior = variacionesActualizadas[index].stock || 0;
-                variacionesActualizadas[index].stock = stockAnterior + cantidad;
+                    await updateDoc(productoDoc, {
+                        variaciones: variacionesActualizadas
+                    });
 
-                detalleVariaciones.push({
-                    talla: variacionesActualizadas[index].talla,
-                    color: variacionesActualizadas[index].color,
-                    sku: variacionesActualizadas[index].sku,
-                    cantidad: cantidad,
-                    stockAnterior: stockAnterior,
-                    stockNuevo: variacionesActualizadas[index].stock
-                });
-            });
+                    // Registrar entrada
+                    await addDoc(entradasInventarioCollection, {
+                        productoId: item.productoId,
+                        productoNombre: item.productoNombre,
+                        totalUnidades: item.cantidad,
+                        detalleVariaciones: [{
+                            talla: item.variacion.talla,
+                            color: item.variacion.color,
+                            sku: item.variacion.sku,
+                            cantidad: item.cantidad,
+                            stockAnterior: stockAnterior,
+                            stockNuevo: stockAnterior + item.cantidad
+                        }],
+                        timestamp: serverTimestamp()
+                    });
+                } else {
+                    // Producto sin variaciones
+                    const stockAnterior = productoData.stock || 0;
+                    await updateDoc(productoDoc, {
+                        stock: stockAnterior + item.cantidad
+                    });
 
-            // Actualizar producto
-            await updateDoc(productoDoc, {
-                variaciones: variacionesActualizadas
-            });
+                    await addDoc(entradasInventarioCollection, {
+                        productoId: item.productoId,
+                        productoNombre: item.productoNombre,
+                        totalUnidades: item.cantidad,
+                        timestamp: serverTimestamp()
+                    });
+                }
+            }
 
-            // Guardar registro de entrada
-            await addDoc(entradasInventarioCollection, {
-                productoId: selectedProduct.id,
-                productoNombre: selectedProduct.nombre,
-                productoSku: selectedProduct.sku,
-                totalUnidades: totalUnidades,
-                detalleVariaciones: detalleVariaciones,
-                timestamp: serverTimestamp()
-            });
+            showToast(`✅ Entrada completada: ${productosAgregados.length} productos ingresados`, 'success');
 
-            showToast(`✅ Entrada guardada: ${totalUnidades} unidades agregadas`, 'success');
-
-            // Limpiar formulario
-            limpiarFormulario();
-
-            // Recargar productos y historial
+            // Limpiar lista
+            productosAgregados = [];
+            renderizarListaAgregados();
             await cargarProductos();
-            cargarHistorialEntradas();
 
         } catch (error) {
-            console.error('❌ Error al guardar entrada:', error);
+            console.error('❌ Error al finalizar entrada:', error);
             showToast('Error al guardar entrada: ' + error.message, 'error');
         } finally {
-            btnGuardarEntrada.disabled = false;
-            btnGuardarEntrada.innerHTML = '<i class="bi bi-check-circle"></i> Guardar Entrada';
+            btnFinalizarEntrada.disabled = false;
+            btnFinalizarEntrada.innerHTML = '<i class="bi bi-check-circle me-2"></i>Finalizar Entrada';
         }
     }
 
-    // --- Limpiar formulario ---
-    function limpiarFormulario() {
-        selectedProduct = null;
-        searchProductoInput.value = '';
-        selectedProductInfo.innerHTML = '';
-        selectedProductInfo.style.display = 'none';
-        variacionesContainer.innerHTML = '';
-        suggestionsContainer.innerHTML = '';
-        suggestionsContainer.style.display = 'none';
-        btnGuardarEntrada.disabled = true;
+    // --- Abrir Modal Crear Nuevo Producto ---
+    function abrirModalCrearProducto() {
+        const nombreInput = document.getElementById('nuevo-producto-nombre');
+        nombreInput.value = searchInput.value;
+
+        const modal = new bootstrap.Modal(document.getElementById('modalCrearProducto'));
+        modal.show();
     }
 
-    // --- Cargar historial de entradas ---
-    function cargarHistorialEntradas() {
-        const q = query(
-            entradasInventarioCollection,
-            orderBy('timestamp', 'desc')
-        );
+    // --- Guardar Nuevo Producto ---
+    async function guardarNuevoProducto() {
+        const nombre = document.getElementById('nuevo-producto-nombre').value.trim();
+        const precio = parseFloat(document.getElementById('nuevo-producto-precio').value) || 0;
+        const categoria = document.getElementById('nuevo-producto-categoria').value;
+        const imagenFile = document.getElementById('nuevo-producto-imagen').files[0];
+        const tieneVariaciones = document.getElementById('nuevo-producto-tiene-variaciones').checked;
 
-        onSnapshot(q, (snapshot) => {
-            entradasData = [];
-
-            snapshot.forEach(doc => {
-                entradasData.push({ id: doc.id, ...doc.data() });
-            });
-
-            mostrarHistorialEntradas();
-        });
-    }
-
-    // --- Mostrar historial de entradas ---
-    function mostrarHistorialEntradas() {
-        if (entradasData.length === 0) {
-            entradasHistoryContainer.innerHTML = `
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
-                    <p class="mt-3">No hay entradas de inventario registradas</p>
-                </div>
-            `;
+        if (!nombre || precio <= 0) {
+            showToast('Completa los campos obligatorios', 'error');
             return;
         }
 
-        const table = document.createElement('table');
-        table.className = 'table table-hover table-sm';
-        table.innerHTML = `
-            <thead class="table-light">
-                <tr>
-                    <th>Fecha/Hora</th>
-                    <th>Producto</th>
-                    <th>SKU</th>
-                    <th>Unidades</th>
-                    <th>Detalles</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        `;
+        try {
+            const btnGuardar = document.getElementById('btn-guardar-nuevo-producto');
+            btnGuardar.disabled = true;
+            btnGuardar.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
 
-        const tbody = table.querySelector('tbody');
+            let imagenUrl = 'https://via.placeholder.com/150?text=Sin+Imagen';
 
-        // Mostrar solo las últimas 50 entradas
-        entradasData.slice(0, 50).forEach(entrada => {
-            const fecha = entrada.timestamp?.toDate();
-            const fechaStr = fecha ? fecha.toLocaleString('es-CO', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            }) : 'N/A';
+            // Subir imagen si existe
+            if (imagenFile) {
+                const storageRef = ref(storage, `productos/${Date.now()}_${imagenFile.name}`);
+                await uploadBytes(storageRef, imagenFile);
+                imagenUrl = await getDownloadURL(storageRef);
+            }
 
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><small>${fechaStr}</small></td>
-                <td>${entrada.productoNombre}</td>
-                <td><small>${entrada.productoSku || 'N/A'}</small></td>
-                <td class="text-center">
-                    <span class="badge bg-success">${entrada.totalUnidades}</span>
-                </td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="verDetalleEntrada('${entrada.id}')">
-                        <i class="bi bi-eye"></i> Ver
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
+            const nuevoProducto = {
+                nombre: nombre,
+                precio: precio,
+                categoria: categoria,
+                imagenUrl: imagenUrl,
+                stock: 0,
+                variaciones: [],
+                activo: true,
+                fechaCreacion: serverTimestamp()
+            };
 
-        entradasHistoryContainer.innerHTML = '';
-        entradasHistoryContainer.appendChild(table);
+            // Si tiene variaciones, generarlas
+            if (tieneVariaciones) {
+                const tallasInput = document.getElementById('nuevo-producto-tallas').value;
+                const coloresInput = document.getElementById('nuevo-producto-colores').value;
+
+                const tallas = tallasInput.split(',').map(t => t.trim()).filter(t => t);
+                const colores = coloresInput.split(',').map(c => c.trim()).filter(c => c);
+
+                if (tallas.length > 0 && colores.length > 0) {
+                    nuevoProducto.variaciones = [];
+                    tallas.forEach(talla => {
+                        colores.forEach(color => {
+                            nuevoProducto.variaciones.push({
+                                talla: talla,
+                                color: color,
+                                sku: `${nombre.substring(0, 3).toUpperCase()}-${talla}-${color}`.replace(/\s/g, ''),
+                                stock: 0
+                            });
+                        });
+                    });
+                }
+            }
+
+            const docRef = await addDoc(productsCollection, nuevoProducto);
+
+            showToast(`✅ Producto "${nombre}" creado exitosamente`, 'success');
+
+            // Cerrar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalCrearProducto'));
+            modal.hide();
+
+            // Limpiar formulario
+            document.getElementById('form-crear-producto-entrada').reset();
+
+            // Recargar productos
+            await cargarProductos();
+
+            // Agregar automáticamente el producto creado a la lista
+            const productoCreado = { id: docRef.id, ...nuevoProducto };
+            if (nuevoProducto.variaciones.length > 0) {
+                abrirSelectorVariaciones(productoCreado);
+            } else {
+                agregarProductoALista(productoCreado, null);
+            }
+
+        } catch (error) {
+            console.error('❌ Error al crear producto:', error);
+            showToast('Error al crear producto: ' + error.message, 'error');
+        } finally {
+            const btnGuardar = document.getElementById('btn-guardar-nuevo-producto');
+            btnGuardar.disabled = false;
+            btnGuardar.innerHTML = '<i class="bi bi-save me-2"></i>Crear y Agregar';
+        }
     }
 
-    // --- Ver detalle de entrada (función global) ---
-    window.verDetalleEntrada = function(entradaId) {
-        const entrada = entradasData.find(e => e.id === entradaId);
-        if (!entrada) return;
+    // --- Navegación por Teclado ---
+    function handleKeyboardNavigation(e) {
+        const productCards = gridContainer.querySelectorAll('[data-product-index]');
+        const total = productCards.length;
 
-        let detalleHTML = `
-            <div class="modal fade" id="modalDetalleEntrada" tabindex="-1">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Detalle de Entrada</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <h6>${entrada.productoNombre}</h6>
-                            <p class="text-muted">SKU: ${entrada.productoSku || 'N/A'}</p>
-                            <p><strong>Total unidades:</strong> ${entrada.totalUnidades}</p>
+        if (total === 0) return;
 
-                            <table class="table table-sm table-bordered mt-3">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Talla</th>
-                                        <th>Color</th>
-                                        <th>SKU</th>
-                                        <th>Cantidad</th>
-                                        <th>Stock Anterior</th>
-                                        <th>Stock Nuevo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-        `;
-
-        if (entrada.detalleVariaciones && entrada.detalleVariaciones.length > 0) {
-            entrada.detalleVariaciones.forEach(detalle => {
-                detalleHTML += `
-                    <tr>
-                        <td>${detalle.talla || 'N/A'}</td>
-                        <td>${detalle.color || 'N/A'}</td>
-                        <td><small>${detalle.sku || 'N/A'}</small></td>
-                        <td class="text-center"><span class="badge bg-success">${detalle.cantidad}</span></td>
-                        <td class="text-center">${detalle.stockAnterior}</td>
-                        <td class="text-center"><strong>${detalle.stockNuevo}</strong></td>
-                    </tr>
-                `;
-            });
+        switch (e.key) {
+            case 'ArrowRight':
+                e.preventDefault();
+                focusedProductIndex = (focusedProductIndex + 1) % total;
+                highlightProduct(productCards, focusedProductIndex);
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                focusedProductIndex = (focusedProductIndex - 1 + total) % total;
+                highlightProduct(productCards, focusedProductIndex);
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                focusedProductIndex = Math.min(focusedProductIndex + 4, total - 1);
+                highlightProduct(productCards, focusedProductIndex);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                focusedProductIndex = Math.max(focusedProductIndex - 4, 0);
+                highlightProduct(productCards, focusedProductIndex);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (focusedProductIndex >= 0 && focusedProductIndex < total) {
+                    productCards[focusedProductIndex].querySelector('.producto-card').click();
+                }
+                break;
         }
+    }
 
-        detalleHTML += `
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Remover modal anterior si existe
-        const existingModal = document.getElementById('modalDetalleEntrada');
-        if (existingModal) {
-            existingModal.remove();
-        }
-
-        // Agregar nuevo modal
-        document.body.insertAdjacentHTML('beforeend', detalleHTML);
-        const modal = new bootstrap.Modal(document.getElementById('modalDetalleEntrada'));
-        modal.show();
-    };
-
-    // --- Event Listeners ---
-    if (searchProductoInput) {
-        searchProductoInput.addEventListener('input', (e) => {
-            buscarProductos(e.target.value);
-        });
-
-        // Cerrar sugerencias al hacer clic fuera
-        document.addEventListener('click', (e) => {
-            if (!searchProductoInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-                suggestionsContainer.style.display = 'none';
+    function highlightProduct(cards, index) {
+        cards.forEach((card, i) => {
+            if (i === index) {
+                card.querySelector('.producto-card').style.transform = 'scale(1.05)';
+                card.querySelector('.producto-card').style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                card.querySelector('.producto-card').style.transform = 'scale(1)';
+                card.querySelector('.producto-card').style.boxShadow = '';
             }
         });
     }
 
-    if (btnGuardarEntrada) {
-        btnGuardarEntrada.addEventListener('click', guardarEntrada);
+    // --- Event Listeners ---
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            filtrarProductos(e.target.value);
+        });
+
+        // Navegación por teclado
+        searchInput.addEventListener('keydown', handleKeyboardNavigation);
     }
 
-    if (btnCancelarEntrada) {
-        btnCancelarEntrada.addEventListener('click', limpiarFormulario);
+    if (btnCrearProducto) {
+        btnCrearProducto.addEventListener('click', abrirModalCrearProducto);
+    }
+
+    if (btnFinalizarEntrada) {
+        btnFinalizarEntrada.addEventListener('click', finalizarEntrada);
+    }
+
+    // Toggle variaciones en modal crear producto
+    const checkVariaciones = document.getElementById('nuevo-producto-tiene-variaciones');
+    if (checkVariaciones) {
+        checkVariaciones.addEventListener('change', (e) => {
+            document.getElementById('variaciones-container-nuevo').style.display =
+                e.target.checked ? 'block' : 'none';
+        });
+    }
+
+    // Guardar nuevo producto
+    const btnGuardarNuevo = document.getElementById('btn-guardar-nuevo-producto');
+    if (btnGuardarNuevo) {
+        btnGuardarNuevo.addEventListener('click', guardarNuevoProducto);
     }
 
     // --- Inicialización ---
     cargarProductos();
-    cargarHistorialEntradas();
+    cargarCategorias();
 
-    console.log("✅ Módulo de Entrada de Productos inicializado");
+    console.log("✅ Módulo de Entrada de Productos (Nueva Versión) inicializado");
 })();
 // ═══════════════════════════════════════════════════════════════════
 // SECCIÓN: PROMOCIONES GLOBALES
