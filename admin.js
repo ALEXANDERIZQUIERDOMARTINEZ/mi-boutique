@@ -8481,6 +8481,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     const variacionListaContainer = document.getElementById('variacion-lista-container');
     const btnConfirmarRecepcion = document.getElementById('btn-confirmar-recepcion-variacion');
 
+    // Modo de entrada rápida - Referencias
+    const modoEntradaRapida = document.getElementById('modo-entrada-rapida');
+    const modoCatalogo = document.getElementById('modo-catalogo');
+    const vistaEntradaRapida = document.getElementById('vista-entrada-rapida');
+    const vistaCatalogo = document.getElementById('vista-catalogo');
+    const entradaRapidaCodigo = document.getElementById('entrada-rapida-codigo');
+    const entradaRapidaCantidad = document.getElementById('entrada-rapida-cantidad');
+    const entradaRapidaSugerencias = document.getElementById('entrada-rapida-sugerencias');
+    const btnAgregarRapido = document.getElementById('btn-agregar-rapido');
+
     // Instancias de modales Bootstrap
     let bsModalRecepcion, bsModalVariacion;
 
@@ -8495,6 +8505,57 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         bsModalVariacion = new bootstrap.Modal(modalVariacion);
     }
 
+    // === Event Listeners: Cambiar entre modos ===
+    if (modoEntradaRapida) {
+        modoEntradaRapida.addEventListener('change', () => {
+            if (modoEntradaRapida.checked) {
+                vistaEntradaRapida.style.display = 'block';
+                vistaCatalogo.style.display = 'none';
+                if (entradaRapidaCodigo) entradaRapidaCodigo.focus();
+            }
+        });
+    }
+
+    if (modoCatalogo) {
+        modoCatalogo.addEventListener('change', () => {
+            if (modoCatalogo.checked) {
+                vistaEntradaRapida.style.display = 'none';
+                vistaCatalogo.style.display = 'block';
+            }
+        });
+    }
+
+    // === Event Listeners: Entrada Rápida ===
+    if (entradaRapidaCodigo) {
+        // Autocompletado mientras escribe
+        let timeoutId;
+        entradaRapidaCodigo.addEventListener('input', (e) => {
+            clearTimeout(timeoutId);
+            const busqueda = e.target.value.trim();
+
+            if (busqueda.length < 2) {
+                entradaRapidaSugerencias.style.display = 'none';
+                return;
+            }
+
+            timeoutId = setTimeout(() => {
+                mostrarSugerencias(busqueda);
+            }, 300);
+        });
+
+        // Agregar con Enter
+        entradaRapidaCodigo.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                agregarProductoRapido();
+            }
+        });
+    }
+
+    if (btnAgregarRapido) {
+        btnAgregarRapido.addEventListener('click', agregarProductoRapido);
+    }
+
     /**
      * Inicializa el modal de recepción
      */
@@ -8502,6 +8563,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         cargarFiltros();
         cargarCatalogo();
         actualizarListaRecibidos();
+        // Focus en el campo de entrada rápida si está en ese modo
+        if (modoEntradaRapida && modoEntradaRapida.checked && entradaRapidaCodigo) {
+            setTimeout(() => entradaRapidaCodigo.focus(), 100);
+        }
     }
 
     /**
@@ -8602,8 +8667,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 style: 'currency', currency: 'COP', minimumFractionDigits: 0
             });
 
-            return `
-                <tr>
+            // Fila principal
+            let html = `
+                <tr class="producto-row" data-producto-id="${producto.id}">
                     <td>
                         ${producto.imagenUrl
                             ? `<img src="${producto.imagenUrl}" alt="${producto.nombre}" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">`
@@ -8624,19 +8690,143 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         <span class="badge ${stockTotal > 0 ? 'bg-success' : 'bg-danger'}">${stockTotal}</span>
                     </td>
                     <td class="text-center">
-                        <button class="btn btn-sm btn-outline-success" onclick="window.abrirSeleccionVariacion('${producto.id}')">
-                            <i class="bi bi-plus-circle me-1"></i>Recibir
+                        <button class="btn btn-sm btn-outline-primary btn-expandir-variaciones" data-producto-id="${producto.id}">
+                            <i class="bi bi-chevron-down me-1"></i>Ver variaciones
                         </button>
                     </td>
-                </tr>
-            `;
+                </tr>`;
+
+            // Fila expandible con variaciones
+            html += `
+                <tr class="variaciones-row" id="variaciones-${producto.id}" style="display: none;">
+                    <td colspan="8" class="bg-light">
+                        <div class="p-3">
+                            <h6 class="mb-3"><i class="bi bi-box-seam me-2"></i>Variaciones de ${producto.nombre}</h6>
+                            ${producto.variaciones && producto.variaciones.length > 0 ? `
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered bg-white mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Talla</th>
+                                                <th>Color</th>
+                                                <th>Código de barras</th>
+                                                <th class="text-center">Stock actual</th>
+                                                <th style="width: 150px;">Cantidad a recibir</th>
+                                                <th style="width: 100px;">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${producto.variaciones.map((variacion, varIndex) => `
+                                                <tr>
+                                                    <td><span class="badge bg-primary">${variacion.talla || 'N/A'}</span></td>
+                                                    <td><span class="badge bg-secondary">${variacion.color || 'N/A'}</span></td>
+                                                    <td><small class="font-monospace">${variacion.codigoBarras || '-'}</small></td>
+                                                    <td class="text-center"><strong>${variacion.stock || 0}</strong></td>
+                                                    <td>
+                                                        <input type="number" class="form-control form-control-sm cantidad-variacion"
+                                                               data-producto-id="${producto.id}" data-var-index="${varIndex}"
+                                                               min="0" value="0" placeholder="0">
+                                                    </td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-success btn-agregar-variacion-rapido w-100"
+                                                                data-producto-id="${producto.id}" data-var-index="${varIndex}">
+                                                            <i class="bi bi-plus-circle"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : '<p class="text-muted mb-0">Este producto no tiene variaciones definidas.</p>'}
+                        </div>
+                    </td>
+                </tr>`;
+
+            return html;
         }).join('');
 
         // Actualizar contador
         totalProductosSpan.textContent = `${productosFiltrados.length} producto${productosFiltrados.length !== 1 ? 's' : ''}`;
 
+        // Event listeners para expandir variaciones
+        document.querySelectorAll('.btn-expandir-variaciones').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productoId = btn.dataset.productoId;
+                const variacionesRow = document.getElementById(`variaciones-${productoId}`);
+                const icon = btn.querySelector('i');
+
+                if (variacionesRow.style.display === 'none') {
+                    variacionesRow.style.display = 'table-row';
+                    icon.classList.remove('bi-chevron-down');
+                    icon.classList.add('bi-chevron-up');
+                    btn.innerHTML = '<i class="bi bi-chevron-up me-1"></i>Ocultar variaciones';
+                } else {
+                    variacionesRow.style.display = 'none';
+                    icon.classList.remove('bi-chevron-up');
+                    icon.classList.add('bi-chevron-down');
+                    btn.innerHTML = '<i class="bi bi-chevron-down me-1"></i>Ver variaciones';
+                }
+            });
+        });
+
+        // Event listeners para agregar variaciones rápidamente desde el catálogo
+        document.querySelectorAll('.btn-agregar-variacion-rapido').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productoId = btn.dataset.productoId;
+                const varIndex = parseInt(btn.dataset.varIndex);
+                const cantidadInput = document.querySelector(
+                    `.cantidad-variacion[data-producto-id="${productoId}"][data-var-index="${varIndex}"]`
+                );
+                const cantidad = parseInt(cantidadInput.value) || 0;
+
+                if (cantidad <= 0) {
+                    showToast('Debes ingresar una cantidad mayor a 0', 'warning');
+                    cantidadInput.focus();
+                    return;
+                }
+
+                agregarVariacionDesdeCategolo(productoId, varIndex, cantidad);
+                cantidadInput.value = '0'; // Resetear
+            });
+        });
+
         // Renderizar paginación
         renderizarPaginacion();
+    }
+
+    /**
+     * Agrega una variación desde el catálogo
+     */
+    function agregarVariacionDesdeCategolo(productoId, varIndex, cantidad) {
+        const producto = localProductsMap.get(productoId);
+        if (!producto || !producto.variaciones || !producto.variaciones[varIndex]) {
+            showToast('Error al agregar producto', 'error');
+            return;
+        }
+
+        const variacion = producto.variaciones[varIndex];
+
+        // Agregar a la lista de productos recibidos
+        productosRecibidosHoy.push({
+            productoId: productoId,
+            nombre: producto.nombre,
+            categoriaId: producto.categoriaId,
+            talla: variacion.talla,
+            color: variacion.color,
+            cantidad: cantidad,
+            precioUnitario: parseFloat(producto.precioDetal) || 0,
+            timestamp: new Date()
+        });
+
+        // Actualizar UI
+        actualizarListaRecibidos();
+
+        // Habilitar botón de crear orden
+        const btnCrearOrden = document.getElementById('btn-crear-orden-compra');
+        if (btnCrearOrden) btnCrearOrden.disabled = false;
+
+        showToast(`✅ ${cantidad} x ${producto.nombre} (${variacion.talla}/${variacion.color}) agregado`, 'success');
     }
 
     /**
@@ -8832,59 +9022,322 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     });
 
     /**
+     * Muestra sugerencias de autocompletado basadas en la búsqueda
+     */
+    function mostrarSugerencias(busqueda) {
+        if (!localProductsMap || localProductsMap.size === 0) {
+            entradaRapidaSugerencias.style.display = 'none';
+            return;
+        }
+
+        const busquedaLower = busqueda.toLowerCase();
+        const resultados = [];
+
+        // Buscar en productos y variaciones
+        localProductsMap.forEach((producto, productoId) => {
+            if (!producto.variaciones || producto.variaciones.length === 0) return;
+
+            producto.variaciones.forEach((variacion, varIndex) => {
+                // Buscar por código de barras
+                if (variacion.codigoBarras && variacion.codigoBarras.toLowerCase().includes(busquedaLower)) {
+                    resultados.push({
+                        productoId,
+                        producto,
+                        variacion,
+                        varIndex,
+                        matchType: 'codigo'
+                    });
+                }
+                // Buscar por nombre de producto
+                else if (producto.nombre.toLowerCase().includes(busquedaLower)) {
+                    resultados.push({
+                        productoId,
+                        producto,
+                        variacion,
+                        varIndex,
+                        matchType: 'nombre'
+                    });
+                }
+                // Buscar por talla o color
+                else if (
+                    (variacion.talla && variacion.talla.toLowerCase().includes(busquedaLower)) ||
+                    (variacion.color && variacion.color.toLowerCase().includes(busquedaLower))
+                ) {
+                    resultados.push({
+                        productoId,
+                        producto,
+                        variacion,
+                        varIndex,
+                        matchType: 'variacion'
+                    });
+                }
+            });
+        });
+
+        // Limitar resultados
+        const resultadosLimitados = resultados.slice(0, 10);
+
+        if (resultadosLimitados.length === 0) {
+            entradaRapidaSugerencias.innerHTML = `
+                <div class="list-group-item text-muted">
+                    <i class="bi bi-search me-2"></i>No se encontraron resultados
+                </div>
+            `;
+            entradaRapidaSugerencias.style.display = 'block';
+            return;
+        }
+
+        // Renderizar sugerencias
+        entradaRapidaSugerencias.innerHTML = resultadosLimitados.map(item => {
+            const stockActual = item.variacion.stock || 0;
+            return `
+                <button type="button" class="list-group-item list-group-item-action sugerencia-item"
+                        data-producto-id="${item.productoId}" data-var-index="${item.varIndex}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <strong>${item.producto.nombre}</strong>
+                            <br>
+                            <small class="text-muted">
+                                ${item.variacion.talla || 'N/A'} / ${item.variacion.color || 'N/A'}
+                                ${item.variacion.codigoBarras ? ` - ${item.variacion.codigoBarras}` : ''}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-secondary">${stockActual} en stock</span>
+                        </div>
+                    </div>
+                </button>
+            `;
+        }).join('');
+
+        // Event listeners para sugerencias
+        entradaRapidaSugerencias.querySelectorAll('.sugerencia-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const productoId = btn.dataset.productoId;
+                const varIndex = parseInt(btn.dataset.varIndex);
+                seleccionarSugerencia(productoId, varIndex);
+            });
+        });
+
+        entradaRapidaSugerencias.style.display = 'block';
+    }
+
+    /**
+     * Selecciona una sugerencia del autocompletado
+     */
+    function seleccionarSugerencia(productoId, varIndex) {
+        const producto = localProductsMap.get(productoId);
+        if (!producto || !producto.variaciones || !producto.variaciones[varIndex]) {
+            showToast('Error al seleccionar producto', 'error');
+            return;
+        }
+
+        const variacion = producto.variaciones[varIndex];
+        const cantidad = parseInt(entradaRapidaCantidad.value) || 1;
+
+        // Agregar directamente a la orden
+        productosRecibidosHoy.push({
+            productoId: productoId,
+            nombre: producto.nombre,
+            categoriaId: producto.categoriaId,
+            talla: variacion.talla,
+            color: variacion.color,
+            cantidad: cantidad,
+            precioUnitario: parseFloat(producto.precioDetal) || 0,
+            timestamp: new Date()
+        });
+
+        // Actualizar UI
+        actualizarListaRecibidos();
+
+        // Habilitar botón de crear orden
+        const btnCrearOrden = document.getElementById('btn-crear-orden-compra');
+        if (btnCrearOrden) btnCrearOrden.disabled = false;
+
+        // Limpiar campos
+        entradaRapidaCodigo.value = '';
+        entradaRapidaCantidad.value = '1';
+        entradaRapidaSugerencias.style.display = 'none';
+
+        // Regresar foco al campo de código
+        entradaRapidaCodigo.focus();
+
+        showToast(`✅ ${cantidad} x ${producto.nombre} (${variacion.talla}/${variacion.color}) agregado`, 'success');
+    }
+
+    /**
+     * Agrega un producto usando entrada rápida
+     */
+    function agregarProductoRapido() {
+        const codigo = entradaRapidaCodigo.value.trim();
+        if (!codigo) {
+            showToast('Debes ingresar un código o nombre de producto', 'warning');
+            entradaRapidaCodigo.focus();
+            return;
+        }
+
+        const cantidad = parseInt(entradaRapidaCantidad.value) || 1;
+        if (cantidad < 1) {
+            showToast('La cantidad debe ser mayor a 0', 'warning');
+            entradaRapidaCantidad.focus();
+            return;
+        }
+
+        // Buscar coincidencia exacta por código de barras
+        let encontrado = false;
+        localProductsMap.forEach((producto, productoId) => {
+            if (encontrado) return;
+            if (!producto.variaciones) return;
+
+            producto.variaciones.forEach((variacion, varIndex) => {
+                if (encontrado) return;
+                if (variacion.codigoBarras && variacion.codigoBarras.toLowerCase() === codigo.toLowerCase()) {
+                    seleccionarSugerencia(productoId, varIndex);
+                    encontrado = true;
+                }
+            });
+        });
+
+        if (!encontrado) {
+            // Si no hay coincidencia exacta, mostrar sugerencias
+            mostrarSugerencias(codigo);
+            showToast('No se encontró coincidencia exacta. Selecciona de las sugerencias.', 'info');
+        }
+    }
+
+    /**
      * Actualiza la lista de productos recibidos en la sesión
      */
     function actualizarListaRecibidos() {
-        contadorRecibidos.textContent = productosRecibidosHoy.length;
+        const totalItems = productosRecibidosHoy.length;
+        const totalUnidades = productosRecibidosHoy.reduce((sum, item) => sum + item.cantidad, 0);
+
+        contadorRecibidos.textContent = totalUnidades;
 
         if (productosRecibidosHoy.length === 0) {
             listaRecibidos.innerHTML = `
                 <div class="text-muted text-center py-3">
                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                    Aún no has recibido productos en esta sesión
+                    Aún no has agregado productos a esta orden
                 </div>
             `;
             return;
         }
 
-        listaRecibidos.innerHTML = productosRecibidosHoy.map((item, index) => {
-            // Resolver categoría
-            let categoria = 'Sin categoría';
-            if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map && item.categoriaId) {
-                categoria = categoriesMap.get(item.categoriaId) || 'Sin categoría';
-            }
+        // Calcular totales
+        const totalValor = productosRecibidosHoy.reduce((sum, item) =>
+            sum + (item.cantidad * item.precioUnitario), 0
+        );
 
-            // Formatear precio
-            const precio = item.precioUnitario ? formatoMoneda.format(item.precioUnitario) : '$0';
+        listaRecibidos.innerHTML = `
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th>Variación</th>
+                            <th class="text-center" style="width: 120px;">Cantidad</th>
+                            <th class="text-end">P. Unit.</th>
+                            <th class="text-end">Subtotal</th>
+                            <th style="width: 80px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${productosRecibidosHoy.map((item, index) => {
+                            const precio = item.precioUnitario || 0;
+                            const subtotal = precio * item.cantidad;
 
-            return `
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>${item.nombre}</strong>
-                        <br>
-                        <small class="text-muted d-block">
-                            <i class="bi bi-tag-fill me-1"></i>${categoria}
-                        </small>
-                        <small class="text-muted d-block">
-                            ${item.talla} - ${item.color} | x${item.cantidad}
-                        </small>
-                        <small class="fw-bold text-primary">${precio} c/u</small>
-                    </div>
-                    <button class="btn btn-sm btn-outline-danger" onclick="window.eliminarRecibido(${index})">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            `;
-        }).join('');
+                            return `
+                                <tr>
+                                    <td>
+                                        <strong class="d-block">${item.nombre}</strong>
+                                        <small class="text-muted">${item.categoriaId ? (categoriesMap?.get(item.categoriaId) || '') : ''}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary me-1">${item.talla || 'N/A'}</span>
+                                        <span class="badge bg-secondary">${item.color || 'N/A'}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="input-group input-group-sm">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="window.cambiarCantidadRecibido(${index}, -1)">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            <input type="number" class="form-control text-center"
+                                                   value="${item.cantidad}" min="1"
+                                                   onchange="window.actualizarCantidadRecibido(${index}, this.value)"
+                                                   style="max-width: 60px;">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="window.cambiarCantidadRecibido(${index}, 1)">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <small>${formatoMoneda.format(precio)}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>${formatoMoneda.format(subtotal)}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="window.eliminarRecibido(${index})" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="2" class="text-end"><strong>TOTALES:</strong></td>
+                            <td class="text-center"><strong>${totalUnidades} unidades</strong></td>
+                            <td colspan="2" class="text-end"><strong>${formatoMoneda.format(totalValor)}</strong></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
     }
 
     /**
-     * Elimina un producto de la lista de recibidos (no afecta el inventario)
+     * Cambia la cantidad de un producto recibido
+     */
+    window.cambiarCantidadRecibido = function(index, delta) {
+        if (productosRecibidosHoy[index]) {
+            const nuevaCantidad = productosRecibidosHoy[index].cantidad + delta;
+            if (nuevaCantidad > 0) {
+                productosRecibidosHoy[index].cantidad = nuevaCantidad;
+                actualizarListaRecibidos();
+            }
+        }
+    };
+
+    /**
+     * Actualiza la cantidad directamente desde el input
+     */
+    window.actualizarCantidadRecibido = function(index, valor) {
+        const cantidad = parseInt(valor) || 1;
+        if (productosRecibidosHoy[index] && cantidad > 0) {
+            productosRecibidosHoy[index].cantidad = cantidad;
+            actualizarListaRecibidos();
+        }
+    };
+
+    /**
+     * Elimina un producto de la lista de recibidos
      */
     window.eliminarRecibido = function(index) {
-        if (confirm('¿Eliminar de la lista? (No afectará el inventario ya actualizado)')) {
+        if (confirm('¿Eliminar este producto de la orden?')) {
             productosRecibidosHoy.splice(index, 1);
             actualizarListaRecibidos();
+
+            // Deshabilitar botón si no hay productos
+            const btnCrearOrden = document.getElementById('btn-crear-orden-compra');
+            if (btnCrearOrden && productosRecibidosHoy.length === 0) {
+                btnCrearOrden.disabled = true;
+            }
+
+            showToast('Producto eliminado de la orden', 'info');
         }
     };
 
