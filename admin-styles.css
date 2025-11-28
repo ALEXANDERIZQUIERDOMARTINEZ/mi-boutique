@@ -311,7 +311,7 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   TABLAS - FIX GLOBAL AGRESIVO
+   TABLAS - DISEÑO LIMPIO Y CONSISTENTE
    ═══════════════════════════════════════════════════════════════════ */
 
 /* Resetear bordes en TODAS las tablas con máxima prioridad */
@@ -321,6 +321,7 @@ body.admin-page {
     border-spacing: 0 !important;
     margin-bottom: 0 !important;
     border: none !important;
+    width: 100% !important;
 }
 
 /* Encabezados de tabla con especificidad máxima */
@@ -335,110 +336,76 @@ body.admin-page {
     font-weight: 600 !important;
     font-size: 0.85rem !important;
     text-transform: uppercase !important;
-    padding: 1rem !important;
+    padding: 0.875rem 1rem !important;
     vertical-align: middle !important;
+    white-space: nowrap !important;
 }
 
-/* Filas de tabla - Eliminar TODOS los bordes y altura fija */
+/* Filas de tabla - Eliminar TODOS los bordes */
 .admin-page .table tbody tr,
 .admin-page table.table tbody tr,
 .admin-page .table-hover tbody tr {
     border: none !important;
-    border-top: none !important;
-    border-bottom: none !important;
-    border-left: none !important;
-    border-right: none !important;
-    min-height: auto !important;
-    height: auto !important;
     box-shadow: none !important;
+    transition: background-color 0.15s ease !important;
 }
 
 /* Hover en filas */
 .admin-page .table-hover tbody tr:hover {
-    background: var(--admin-primario-claro) !important;
+    background: #F8F9FA !important;
     border: none !important;
 }
 
-/* Celdas de tabla - SOLO borde inferior, máxima prioridad */
+/* Celdas de tabla - Alineación superior consistente */
 .admin-page .table tbody td,
-.admin-page table.table tbody td,
-.admin-page .table tbody th,
-.admin-page table.table tbody th {
+.admin-page table.table tbody td {
     padding: 1rem !important;
     vertical-align: top !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
-    border-bottom: 1px solid var(--admin-borde) !important;
-    height: auto !important;
-    max-height: none !important;
-    min-height: auto !important;
+    border-bottom: 1px solid #E9ECEF !important;
     line-height: 1.5 !important;
-    box-shadow: none !important;
     overflow: visible !important;
 }
 
-/* Celdas con action-buttons necesitan MÁS espacio */
-.admin-page .table tbody td.action-buttons,
-.admin-page table.table tbody td.action-buttons {
-    padding: 1.5rem 1rem !important;
-    min-height: 100px !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    vertical-align: middle !important;
-}
-
-/* Eliminar borde en la ÚLTIMA fila con especificidad máxima */
+/* Eliminar borde en la ÚLTIMA fila */
 .admin-page .table tbody tr:last-child td,
-.admin-page table.table tbody tr:last-child td,
-.admin-page .table tbody tr:last-child th,
-.admin-page table.table tbody tr:last-child th {
+.admin-page table.table tbody tr:last-child td {
     border-bottom: none !important;
 }
 
-/* Contenedores de tabla - Sin margen/padding extra y sin restricciones */
+/* Contenedores de tabla */
 .admin-page .card-body .table-responsive,
 .admin-page .table-responsive {
     margin-bottom: 0 !important;
     padding: 0 !important;
-    padding-bottom: 0 !important;
     overflow-x: auto !important;
     overflow-y: visible !important;
     border: none !important;
-    height: auto !important;
-    max-height: none !important;
+    -webkit-overflow-scrolling: touch !important;
 }
 
-/* Card body CON tabla-responsive - Sin padding, sin overflow */
+/* Card body CON tabla-responsive - Sin padding */
 .admin-page .card-body:has(.table-responsive) {
     padding: 0 !important;
-    padding-bottom: 0 !important;
     overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
 }
 
 /* Card body CON tabla directa (sin table-responsive) - Sin padding */
 .admin-page .card-body > .table {
     margin: 0 !important;
-    margin-bottom: 0 !important;
 }
 
 .admin-page .card-body:has(> .table) {
     padding: 0 !important;
-    padding-bottom: 0 !important;
     overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
 }
 
-/* Card general sin padding extra y sin overflow */
+/* Card general sin overflow */
 .admin-page .card {
     margin-bottom: 1.5rem !important;
     overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
 }
 
 .table-product-img {
@@ -583,17 +550,34 @@ body.admin-page {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
-    min-height: 60px;
+    min-height: auto;
 }
 
 .action-buttons button {
     margin: 0;
-    margin-bottom: 0.25rem;
+    flex: 0 0 auto;
 }
 
-/* ELIMINAR - Ya está definido arriba con más especificidad */
+/* Columnas de acciones en tablas - mejorar alineación */
+.table tbody td.action-buttons {
+    vertical-align: top !important;
+    padding: 1rem !important;
+}
+
+/* Botones apilados verticalmente en columnas de acciones */
+.table .action-buttons {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    align-items: stretch !important;
+}
+
+.table .action-buttons .btn-action {
+    width: 100%;
+    justify-content: center;
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    MODALES
@@ -1303,107 +1287,31 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   CORRECCIÓN DE ALINEACIÓN DE TABLAS
+   HISTORIAL DE VENTAS - ALINEACIÓN MEJORADA
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Resetear y establecer alineación consistente en TODAS las tablas */
-.table tbody tr td {
-    vertical-align: top !important;
-    padding: 0.75rem !important;
-    border-top: 1px solid #dee2e6 !important;
-    line-height: 1.5;
-}
-
-/* Eliminar margen inferior del último elemento en celdas */
-.table tbody tr td > *:last-child {
-    margin-bottom: 0 !important;
-}
-
-/* Contenedores flexbox alineados al inicio */
-.table tbody tr td .d-flex {
-    align-items: flex-start !important;
-}
-
-/* Asegurar que divs con mb-2 (margin-bottom) tengan margen consistente */
-.table tbody tr td .mb-2 {
-    margin-bottom: 0.5rem !important;
-}
-
-/* Eliminar margen del último div con mb-2 */
-.table tbody tr td .mb-2:last-child {
-    margin-bottom: 0 !important;
-}
-
-/* Columna de acciones centrada verticalmente */
-.table tbody tr td.action-buttons {
-    vertical-align: middle !important;
-}
-
-/* Botones de acción alineados */
-.table tbody tr td.action-buttons .btn-action {
-    margin: 2px;
-}
-
-/* Asegurar que imágenes estén alineadas correctamente */
-.table tbody tr td img {
-    display: block;
-    margin: 0;
-}
-
-/* Corregir alineación de small tags para que no agreguen espacio extra */
-.table tbody tr td small {
-    display: block;
-    line-height: 1.4;
-    margin-top: 2px;
-}
-
-.table tbody tr td small:first-child {
-    margin-top: 0;
-}
-
-/* Asegurar que los badges no agreguen espacio extra */
-.table tbody tr td .badge {
-    margin-top: 2px;
-    margin-bottom: 0;
-}
-
-/* Contenedores de productos con info completa */
-.table tbody tr td .d-flex.gap-2 {
-    gap: 0.5rem !important;
-}
-
-/* Asegurar altura consistente de filas */
-.table tbody tr {
-    border-bottom: 1px solid #dee2e6;
-}
-
-/* Eliminar borde doble */
-.table tbody tr + tr td {
-    border-top: 0 !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   TABLA DE HISTORIAL DE VENTAS - MEJORAS DE ALINEACIÓN
-   ═══════════════════════════════════════════════════════════════════ */
-
-/* Filas de la tabla de ventas */
+/* Tabla de ventas - todas las celdas alineadas arriba */
 #lista-ventas-anteriores tr {
     vertical-align: top !important;
 }
 
-/* Todas las celdas alineadas arriba */
 #lista-ventas-anteriores td {
     vertical-align: top !important;
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
+    padding: 1rem !important;
 }
 
-/* Columna de productos con mejor espaciado */
+/* Columna de productos con ancho controlado */
 #lista-ventas-anteriores td:nth-child(3) {
     max-width: 350px;
+    min-width: 280px;
 }
 
-/* Productos en la tabla */
+/* Contenedores de productos con flex */
+#lista-ventas-anteriores .d-flex {
+    align-items: flex-start !important;
+}
+
+/* Productos individuales en la tabla */
 #lista-ventas-anteriores .d-flex.gap-2 {
     margin-bottom: 0.75rem !important;
 }
@@ -1412,57 +1320,75 @@ body.admin-page {
     margin-bottom: 0 !important;
 }
 
-/* Imágenes de productos alineadas */
+/* Imágenes de productos */
 #lista-ventas-anteriores .d-flex.gap-2 img {
     margin-top: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Textos pequeños en productos */
+#lista-ventas-anteriores .d-flex.gap-2 small {
+    display: block;
+    line-height: 1.4;
+}
+
+/* Columna de acciones */
+#lista-ventas-anteriores td.action-buttons {
+    vertical-align: top !important;
+    padding: 1rem !important;
+}
+
+#lista-ventas-anteriores .action-buttons {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    align-items: stretch !important;
+}
+
+/* Badges en la tabla */
+#lista-ventas-anteriores .badge {
+    display: inline-block;
+    white-space: nowrap;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   ÓRDENES DE COMPRA - DISEÑO MEJORADO
+   ÓRDENES DE COMPRA - DISEÑO MEJORADO Y ALINEADO
    ═══════════════════════════════════════════════════════════════════ */
 
 /* Contenedor de recepciones */
 #recepciones-container {
-    padding: 0.5rem;
+    padding: 0;
 }
 
 /* Cards de órdenes con sombra y mejor espaciado */
-#recepciones-container .card {
+#recepciones-container > .card {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
     margin-bottom: 1.5rem !important;
 }
 
-#recepciones-container .card:hover {
+#recepciones-container > .card:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     transform: translateY(-2px);
 }
 
-/* Headers de secciones con gradiente sutil */
+/* Headers de cards con gradiente sutil */
 #recepciones-container .card-header {
     font-weight: 600;
     padding: 1.25rem 1.5rem;
     border-radius: 0.5rem 0.5rem 0 0 !important;
+    border-bottom: 2px solid rgba(0,0,0,0.1) !important;
 }
 
-#recepciones-container .bg-warning {
-    background: linear-gradient(135deg, #FFF9E6 0%, #FFF3CD 100%) !important;
-    border-bottom: 2px solid #FFE69C !important;
-}
-
-#recepciones-container .bg-success {
-    background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%) !important;
-    border-bottom: 2px solid #A5D6A7 !important;
-}
-
-/* Cards individuales de órdenes */
-#recepciones-container .card .card .card-body {
+/* Card body de órdenes */
+#recepciones-container .card-body {
     padding: 1.5rem;
 }
 
-/* Mejorar la tabla de productos dentro de órdenes */
+/* Tabla de productos dentro de órdenes - alineación superior */
 #recepciones-container .table {
     margin-top: 1rem;
+    margin-bottom: 0 !important;
 }
 
 #recepciones-container .table thead {
@@ -1471,16 +1397,56 @@ body.admin-page {
 }
 
 #recepciones-container .table thead th {
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #495057;
-    padding: 0.875rem 1rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: #495057 !important;
+    padding: 0.75rem 1rem !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
 }
 
+/* Celdas de productos - ALINEACIÓN TOP */
 #recepciones-container .table tbody td {
-    padding: 0.875rem 1rem !important;
+    padding: 0.75rem 1rem !important;
+    vertical-align: top !important;
+    border-bottom: 1px solid #E9ECEF !important;
+}
+
+/* Fila principal de producto (con imagen) */
+#recepciones-container .table tbody tr.table-active td {
+    background: #F8F9FA !important;
+    font-weight: 600;
+    padding-top: 1rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+/* Filas de variaciones (indentadas) */
+#recepciones-container .table tbody tr:not(.table-active) td {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+}
+
+/* Contenedor flex de productos */
+#recepciones-container .table tbody td .d-flex {
+    align-items: flex-start !important;
+}
+
+/* Imágenes de productos */
+#recepciones-container .table tbody td img {
+    flex-shrink: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Textos dentro de celdas */
+#recepciones-container .table tbody td small {
+    display: block;
+    line-height: 1.4;
+}
+
+/* Columnas centradas (cantidades y estados) */
+#recepciones-container .table tbody td.text-center {
     vertical-align: middle !important;
 }
 
@@ -1489,6 +1455,12 @@ body.admin-page {
     padding: 0.4rem 0.8rem;
     font-weight: 500;
     font-size: 0.875rem;
+}
+
+#recepciones-container .badge.bg-light {
+    background: #E9ECEF !important;
+    color: #495057 !important;
+    border: 1px solid #DEE2E6;
 }
 
 /* Botón de marcar como recibido */
@@ -1504,9 +1476,9 @@ body.admin-page {
     box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
 }
 
-/* Resaltar productos en órdenes */
-#recepciones-container .table tbody tr:hover {
-    background: #F8F9FA;
+/* Hover en filas de productos */
+#recepciones-container .table tbody tr:not(.table-active):hover {
+    background: #FAFBFC !important;
     transition: background 0.2s ease;
 }
 
@@ -1523,9 +1495,84 @@ body.admin-page {
     vertical-align: middle;
 }
 
-/* Badges de variación */
-#recepciones-container .badge.bg-light {
-    background: #E9ECEF !important;
-    color: #495057 !important;
-    border: 1px solid #DEE2E6;
+/* Estadísticas de orden (unidades, etc) */
+#recepciones-container .bg-light.rounded {
+    border: 1px solid #E9ECEF;
+    transition: all 0.2s ease;
+}
+
+#recepciones-container .bg-light.rounded:hover {
+    background: #F0F1F2 !important;
+    border-color: #DEE2E6;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABLA DE APARTADOS - ALINEACIÓN MEJORADA
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Tabla de apartados - todas las celdas alineadas arriba */
+#lista-apartados tr {
+    vertical-align: top !important;
+}
+
+#lista-apartados td {
+    vertical-align: top !important;
+    padding: 1rem !important;
+}
+
+/* Columna de productos con ancho controlado */
+#lista-apartados td:nth-child(2) {
+    max-width: 350px;
+    min-width: 280px;
+}
+
+/* Contenedores de productos con flex */
+#lista-apartados .d-flex {
+    align-items: flex-start !important;
+}
+
+/* Productos individuales en la tabla */
+#lista-apartados .d-flex.gap-2 {
+    margin-bottom: 0.75rem !important;
+}
+
+#lista-apartados .d-flex.gap-2:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Imágenes de productos */
+#lista-apartados .d-flex.gap-2 img {
+    margin-top: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Textos pequeños en productos */
+#lista-apartados .d-flex.gap-2 small {
+    display: block;
+    line-height: 1.4;
+}
+
+/* Columna de acciones */
+#lista-apartados td.action-buttons {
+    vertical-align: top !important;
+    padding: 1rem !important;
+}
+
+#lista-apartados .action-buttons {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    align-items: stretch !important;
+}
+
+/* Badges en la tabla */
+#lista-apartados .badge {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+/* Botones de acción en apartados */
+#lista-apartados .btn-action {
+    width: 100%;
+    justify-content: center;
 }
