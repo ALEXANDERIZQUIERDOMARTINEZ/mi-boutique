@@ -571,7 +571,6 @@ function renderProducts(products) {
                     <img src="${imgUrl}" alt="${product.nombre}">
                     <div class="product-badges">
                         ${tienePromo ? '<span class="badge-promo">PROMO</span>' : ''}
-                        ${!isAgotado && stockTotal > 0 && stockTotal <= 5 ? '<span class="badge-stock">POCAS UNID.</span>' : ''}
                         ${isAgotado ? '<span class="badge-stock badge-agotado">AGOTADO</span>' : ''}
                         ${isSoloDetal ? '<span class="badge-stock badge-solo-detal">SOLO DETAL</span>' : ''}
                     </div>
