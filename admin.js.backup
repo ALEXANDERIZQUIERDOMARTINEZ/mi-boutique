@@ -7537,460 +7537,2264 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 })();
 
 // ========================================================================
-// === MÓDULO: ENTRADA DE PRODUCTOS (INVENTARIO DIRECTO) ===
+// === MÓDULO: RECEPCIONES DE INVENTARIO (PRE-LLEGADA) ===
 // ========================================================================
 (() => {
-    console.log("📦 Inicializando módulo de Entrada de Productos...");
+    console.log("🚚 Inicializando módulo de Recepciones de Inventario...");
 
-    // --- Collection References ---
-    const entradasInventarioCollection = collection(db, 'entradasInventario');
+    // --- Variables globales del módulo ---
+    // Usar suppliersMap global si existe, si no crear una local
+    let suppliersMap = window.suppliersMap || new Map();
+    let ordenesRecepcionMap = new Map();
+    let productosSeleccionados = []; // Productos en el formulario actual
 
-    // --- DOM References ---
-    const searchProductoInput = document.getElementById('search-producto-entrada');
-    const suggestionsContainer = document.getElementById('producto-suggestions');
-    const selectedProductInfo = document.getElementById('selected-product-info');
-    const variacionesContainer = document.getElementById('variaciones-entrada-container');
-    const btnGuardarEntrada = document.getElementById('btn-guardar-entrada');
-    const btnCancelarEntrada = document.getElementById('btn-cancelar-entrada');
-    const entradasHistoryContainer = document.getElementById('entradas-history-container');
+    // --- Referencias DOM ---
+    const recepcionesListView = document.getElementById('recepciones-list-view');
+    const recepcionesFormView = document.getElementById('recepciones-form-view');
+    const toggleListBtn = document.getElementById('toggle-recepciones-list-btn');
+    const toggleFormBtn = document.getElementById('toggle-recepciones-form-btn');
+    const formOrdenRecepcion = document.getElementById('form-orden-recepcion');
+    const ordenProveedorSelect = document.getElementById('orden-proveedor');
+    const btnAgregarProducto = document.getElementById('btn-agregar-producto-recepcion');
+    const productosContainer = document.getElementById('productos-recepcion-container');
+    const btnCancelarOrden = document.getElementById('btn-cancelar-orden');
+    const recepcionesContainer = document.getElementById('recepciones-container');
+    const filterEstado = document.getElementById('filter-recepcion-estado');
+    const filterProveedor = document.getElementById('filter-recepcion-proveedor');
+    const searchRecepciones = document.getElementById('search-recepciones');
+    const filterFechaDesde = document.getElementById('filter-fecha-desde');
+    const filterFechaHasta = document.getElementById('filter-fecha-hasta');
+    const filterOrdenar = document.getElementById('filter-ordenar');
+    const btnLimpiarFiltros = document.getElementById('btn-limpiar-filtros');
 
-    // --- Variables ---
-    let productosMap = new Map();
-    let selectedProduct = null;
-    let entradasData = [];
+    // --- Alternar vistas (Lista / Formulario) ---
+    function toggleView(view) {
+        if (view === 'list') {
+            recepcionesListView.style.display = 'block';
+            recepcionesFormView.style.display = 'none';
+            toggleListBtn.classList.add('active');
+            toggleFormBtn.classList.remove('active');
+            productosSeleccionados = [];
+            formOrdenRecepcion.reset();
+            productosContainer.innerHTML = '';
+        } else if (view === 'form') {
+            recepcionesListView.style.display = 'none';
+            recepcionesFormView.style.display = 'block';
+            toggleListBtn.classList.remove('active');
+            toggleFormBtn.classList.add('active');
+        }
+    }
 
-    // --- Cargar todos los productos ---
-    async function cargarProductos() {
+    if (toggleListBtn) {
+        toggleListBtn.addEventListener('click', () => toggleView('list'));
+    }
+
+    if (toggleFormBtn) {
+        toggleFormBtn.addEventListener('click', () => toggleView('form'));
+    }
+
+    if (btnCancelarOrden) {
+        btnCancelarOrden.addEventListener('click', () => toggleView('list'));
+    }
+
+    // --- Cargar proveedores en select ---
+    async function cargarProveedores() {
         try {
-            const snapshot = await getDocs(productsCollection);
-            productosMap.clear();
+            const snapshot = await getDocs(suppliersCollection);
+            suppliersMap.clear();
+            ordenProveedorSelect.innerHTML = '<option value="">Selecciona un proveedor...</option>';
+            filterProveedor.innerHTML = '<option value="">Todos los proveedores</option>';
 
             snapshot.forEach(doc => {
-                const data = doc.data();
-                productosMap.set(doc.id, { id: doc.id, ...data });
+                const proveedor = { id: doc.id, ...doc.data() };
+                suppliersMap.set(doc.id, proveedor);
+
+                const option = document.createElement('option');
+                option.value = proveedor.nombre;
+                option.textContent = proveedor.nombre;
+                ordenProveedorSelect.appendChild(option);
+
+                const filterOption = document.createElement('option');
+                filterOption.value = proveedor.nombre;
+                filterOption.textContent = proveedor.nombre;
+                filterProveedor.appendChild(filterOption);
             });
 
-            console.log(`✅ ${productosMap.size} productos cargados`);
+            console.log(`✅ ${suppliersMap.size} proveedores cargados`);
         } catch (error) {
-            console.error('❌ Error cargando productos:', error);
-            showToast('Error al cargar productos', 'error');
+            console.error("❌ Error cargando proveedores:", error);
+            showToast('Error al cargar proveedores', 'error');
         }
     }
 
-    // --- Buscar productos con autocomplete ---
-    function buscarProductos(searchTerm) {
-        if (!searchTerm || searchTerm.length < 2) {
-            suggestionsContainer.innerHTML = '';
-            suggestionsContainer.style.display = 'none';
-            return;
-        }
+    // --- Agregar producto al formulario de recepción ---
+    function agregarProductoRecepcion() {
+        const productoCard = document.createElement('div');
+        productoCard.className = 'card mb-3 producto-recepcion-item';
 
-        const term = searchTerm.toLowerCase();
-        const resultados = [];
+        const productoId = 'producto-' + Date.now();
 
-        productosMap.forEach(producto => {
-            const nombreMatch = producto.nombre?.toLowerCase().includes(term);
-            const skuMatch = producto.sku?.toLowerCase().includes(term);
-
-            // También buscar en variaciones
-            let variacionMatch = false;
-            if (producto.variaciones && Array.isArray(producto.variaciones)) {
-                variacionMatch = producto.variaciones.some(v =>
-                    v.sku?.toLowerCase().includes(term)
-                );
-            }
-
-            if (nombreMatch || skuMatch || variacionMatch) {
-                resultados.push(producto);
-            }
-        });
-
-        mostrarSugerencias(resultados);
-    }
-
-    // --- Mostrar sugerencias ---
-    function mostrarSugerencias(productos) {
-        if (productos.length === 0) {
-            suggestionsContainer.innerHTML = '<div class="suggestion-item text-muted">No se encontraron productos</div>';
-            suggestionsContainer.style.display = 'block';
-            return;
-        }
-
-        suggestionsContainer.innerHTML = '';
-
-        productos.slice(0, 8).forEach(producto => {
-            const div = document.createElement('div');
-            div.className = 'suggestion-item';
-            div.innerHTML = `
-                <strong>${producto.nombre}</strong>
-                <br>
-                <small class="text-muted">SKU: ${producto.sku || 'N/A'}</small>
-            `;
-
-            div.addEventListener('click', () => {
-                seleccionarProducto(producto);
-            });
-
-            suggestionsContainer.appendChild(div);
-        });
-
-        suggestionsContainer.style.display = 'block';
-    }
-
-    // --- Seleccionar producto ---
-    function seleccionarProducto(producto) {
-        selectedProduct = producto;
-        searchProductoInput.value = producto.nombre;
-        suggestionsContainer.innerHTML = '';
-        suggestionsContainer.style.display = 'none';
-
-        // Mostrar información del producto
-        selectedProductInfo.innerHTML = `
-            <div class="alert alert-info">
-                <strong>📦 ${producto.nombre}</strong><br>
-                <small>SKU Base: ${producto.sku || 'N/A'} | Categoría: ${producto.categoria || 'N/A'}</small>
-            </div>
-        `;
-        selectedProductInfo.style.display = 'block';
-
-        // Mostrar variaciones
-        mostrarVariaciones(producto);
-        btnGuardarEntrada.disabled = false;
-    }
-
-    // --- Mostrar variaciones para entrada ---
-    function mostrarVariaciones(producto) {
-        variacionesContainer.innerHTML = '';
-
-        if (!producto.variaciones || producto.variaciones.length === 0) {
-            variacionesContainer.innerHTML = `
-                <div class="alert alert-warning">
-                    Este producto no tiene variaciones configuradas
-                </div>
-            `;
-            return;
-        }
-
-        const table = document.createElement('table');
-        table.className = 'table table-sm table-bordered';
-        table.innerHTML = `
-            <thead class="table-light">
-                <tr>
-                    <th>Talla</th>
-                    <th>Color</th>
-                    <th>SKU</th>
-                    <th>Stock Actual</th>
-                    <th>Cantidad a Agregar</th>
-                </tr>
-            </thead>
-            <tbody id="variaciones-tbody">
-            </tbody>
-        `;
-
-        const tbody = document.createElement('tbody');
-
-        producto.variaciones.forEach((variacion, index) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${variacion.talla || 'N/A'}</td>
-                <td>${variacion.color || 'N/A'}</td>
-                <td><small>${variacion.sku || 'N/A'}</small></td>
-                <td class="text-center">
-                    <span class="badge bg-secondary">${variacion.stock || 0}</span>
-                </td>
-                <td>
-                    <input
-                        type="number"
-                        class="form-control form-control-sm cantidad-entrada"
-                        data-index="${index}"
-                        min="0"
-                        value="0"
-                        placeholder="0"
-                        style="width: 100px;"
-                    >
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-
-        table.appendChild(tbody);
-        variacionesContainer.appendChild(table);
-    }
-
-    // --- Guardar entrada de inventario ---
-    async function guardarEntrada() {
-        if (!selectedProduct) {
-            showToast('Selecciona un producto primero', 'error');
-            return;
-        }
-
-        const cantidadInputs = document.querySelectorAll('.cantidad-entrada');
-        const actualizaciones = [];
-        let totalUnidades = 0;
-
-        cantidadInputs.forEach(input => {
-            const cantidad = parseInt(input.value) || 0;
-            if (cantidad > 0) {
-                const index = parseInt(input.dataset.index);
-                actualizaciones.push({ index, cantidad });
-                totalUnidades += cantidad;
-            }
-        });
-
-        if (actualizaciones.length === 0) {
-            showToast('Ingresa al menos una cantidad mayor a 0', 'error');
-            return;
-        }
-
-        try {
-            btnGuardarEntrada.disabled = true;
-            btnGuardarEntrada.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
-
-            // Actualizar stock en las variaciones
-            const productoDoc = doc(db, 'productos', selectedProduct.id);
-            const productoSnapshot = await getDoc(productoDoc);
-            const productoData = productoSnapshot.data();
-            const variacionesActualizadas = [...productoData.variaciones];
-
-            const detalleVariaciones = [];
-
-            actualizaciones.forEach(({ index, cantidad }) => {
-                const stockAnterior = variacionesActualizadas[index].stock || 0;
-                variacionesActualizadas[index].stock = stockAnterior + cantidad;
-
-                detalleVariaciones.push({
-                    talla: variacionesActualizadas[index].talla,
-                    color: variacionesActualizadas[index].color,
-                    sku: variacionesActualizadas[index].sku,
-                    cantidad: cantidad,
-                    stockAnterior: stockAnterior,
-                    stockNuevo: variacionesActualizadas[index].stock
-                });
-            });
-
-            // Actualizar producto
-            await updateDoc(productoDoc, {
-                variaciones: variacionesActualizadas
-            });
-
-            // Guardar registro de entrada
-            await addDoc(entradasInventarioCollection, {
-                productoId: selectedProduct.id,
-                productoNombre: selectedProduct.nombre,
-                productoSku: selectedProduct.sku,
-                totalUnidades: totalUnidades,
-                detalleVariaciones: detalleVariaciones,
-                timestamp: serverTimestamp()
-            });
-
-            showToast(`✅ Entrada guardada: ${totalUnidades} unidades agregadas`, 'success');
-
-            // Limpiar formulario
-            limpiarFormulario();
-
-            // Recargar productos y historial
-            await cargarProductos();
-            cargarHistorialEntradas();
-
-        } catch (error) {
-            console.error('❌ Error al guardar entrada:', error);
-            showToast('Error al guardar entrada: ' + error.message, 'error');
-        } finally {
-            btnGuardarEntrada.disabled = false;
-            btnGuardarEntrada.innerHTML = '<i class="bi bi-check-circle"></i> Guardar Entrada';
-        }
-    }
-
-    // --- Limpiar formulario ---
-    function limpiarFormulario() {
-        selectedProduct = null;
-        searchProductoInput.value = '';
-        selectedProductInfo.innerHTML = '';
-        selectedProductInfo.style.display = 'none';
-        variacionesContainer.innerHTML = '';
-        suggestionsContainer.innerHTML = '';
-        suggestionsContainer.style.display = 'none';
-        btnGuardarEntrada.disabled = true;
-    }
-
-    // --- Cargar historial de entradas ---
-    function cargarHistorialEntradas() {
-        const q = query(
-            entradasInventarioCollection,
-            orderBy('timestamp', 'desc')
-        );
-
-        onSnapshot(q, (snapshot) => {
-            entradasData = [];
-
-            snapshot.forEach(doc => {
-                entradasData.push({ id: doc.id, ...doc.data() });
-            });
-
-            mostrarHistorialEntradas();
-        });
-    }
-
-    // --- Mostrar historial de entradas ---
-    function mostrarHistorialEntradas() {
-        if (entradasData.length === 0) {
-            entradasHistoryContainer.innerHTML = `
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-inbox" style="font-size: 3rem; opacity: 0.3;"></i>
-                    <p class="mt-3">No hay entradas de inventario registradas</p>
-                </div>
-            `;
-            return;
-        }
-
-        const table = document.createElement('table');
-        table.className = 'table table-hover table-sm';
-        table.innerHTML = `
-            <thead class="table-light">
-                <tr>
-                    <th>Fecha/Hora</th>
-                    <th>Producto</th>
-                    <th>SKU</th>
-                    <th>Unidades</th>
-                    <th>Detalles</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        `;
-
-        const tbody = table.querySelector('tbody');
-
-        // Mostrar solo las últimas 50 entradas
-        entradasData.slice(0, 50).forEach(entrada => {
-            const fecha = entrada.timestamp?.toDate();
-            const fechaStr = fecha ? fecha.toLocaleString('es-CO', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            }) : 'N/A';
-
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><small>${fechaStr}</small></td>
-                <td>${entrada.productoNombre}</td>
-                <td><small>${entrada.productoSku || 'N/A'}</small></td>
-                <td class="text-center">
-                    <span class="badge bg-success">${entrada.totalUnidades}</span>
-                </td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="verDetalleEntrada('${entrada.id}')">
-                        <i class="bi bi-eye"></i> Ver
-                    </button>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-
-        entradasHistoryContainer.innerHTML = '';
-        entradasHistoryContainer.appendChild(table);
-    }
-
-    // --- Ver detalle de entrada (función global) ---
-    window.verDetalleEntrada = function(entradaId) {
-        const entrada = entradasData.find(e => e.id === entradaId);
-        if (!entrada) return;
-
-        let detalleHTML = `
-            <div class="modal fade" id="modalDetalleEntrada" tabindex="-1">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Detalle de Entrada</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        productoCard.innerHTML = `
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-12">
+                        <label class="form-label">Producto</label>
+                        <div class="d-flex gap-2 align-items-start">
+                            <div class="producto-imagen-preview-${productoId}" style="min-width: 80px;">
+                                <div style="width: 80px; height: 80px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-image text-muted fs-3"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 position-relative">
+                                <input type="text"
+                                    class="form-control producto-search-input"
+                                    data-producto-id="${productoId}"
+                                    placeholder="Buscar producto por nombre o código..."
+                                    autocomplete="off"
+                                    required>
+                                <input type="hidden" class="producto-selected-id" data-producto-id="${productoId}">
+                                <div class="producto-dropdown-${productoId}" style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 400px; overflow-y: auto; background: white; border: 1px solid #dee2e6; border-radius: 0.375rem; box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15); z-index: 1000; margin-top: 2px;">
+                                </div>
+                                <small class="text-muted producto-info-${productoId}"></small>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-producto">
+                                <i class="bi bi-trash3"></i>
+                            </button>
                         </div>
-                        <div class="modal-body">
-                            <h6>${entrada.productoNombre}</h6>
-                            <p class="text-muted">SKU: ${entrada.productoSku || 'N/A'}</p>
-                            <p><strong>Total unidades:</strong> ${entrada.totalUnidades}</p>
-
-                            <table class="table table-sm table-bordered mt-3">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Talla</th>
-                                        <th>Color</th>
-                                        <th>SKU</th>
-                                        <th>Cantidad</th>
-                                        <th>Stock Anterior</th>
-                                        <th>Stock Nuevo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-        `;
-
-        if (entrada.detalleVariaciones && entrada.detalleVariaciones.length > 0) {
-            entrada.detalleVariaciones.forEach(detalle => {
-                detalleHTML += `
-                    <tr>
-                        <td>${detalle.talla || 'N/A'}</td>
-                        <td>${detalle.color || 'N/A'}</td>
-                        <td><small>${detalle.sku || 'N/A'}</small></td>
-                        <td class="text-center"><span class="badge bg-success">${detalle.cantidad}</span></td>
-                        <td class="text-center">${detalle.stockAnterior}</td>
-                        <td class="text-center"><strong>${detalle.stockNuevo}</strong></td>
-                    </tr>
-                `;
-            });
-        }
-
-        detalleHTML += `
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label class="form-label">Variaciones a Recibir</label>
+                        <div class="variaciones-container-${productoId}">
+                            <div class="alert alert-info alert-sm mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Selecciona un producto para ver sus variaciones
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         `;
 
-        // Remover modal anterior si existe
-        const existingModal = document.getElementById('modalDetalleEntrada');
-        if (existingModal) {
-            existingModal.remove();
-        }
+        productosContainer.appendChild(productoCard);
 
-        // Agregar nuevo modal
-        document.body.insertAdjacentHTML('beforeend', detalleHTML);
-        const modal = new bootstrap.Modal(document.getElementById('modalDetalleEntrada'));
-        modal.show();
-    };
+        // Event listener para búsqueda de producto
+        const searchInput = productoCard.querySelector('.producto-search-input');
+        const dropdown = productoCard.querySelector(`.producto-dropdown-${productoId}`);
+        const selectedIdInput = productoCard.querySelector('.producto-selected-id');
 
-    // --- Event Listeners ---
-    if (searchProductoInput) {
-        searchProductoInput.addEventListener('input', (e) => {
-            buscarProductos(e.target.value);
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+
+            if (searchTerm.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            // Filtrar productos
+            const productos = Array.from(localProductsMap.values()).filter(p =>
+                p.nombre.toLowerCase().includes(searchTerm) ||
+                (p.codigo && p.codigo.toLowerCase().includes(searchTerm))
+            );
+
+            if (productos.length === 0) {
+                dropdown.innerHTML = '<div class="p-3 text-muted text-center">No se encontraron productos</div>';
+                dropdown.style.display = 'block';
+                return;
+            }
+
+            // Mostrar resultados con imágenes y detalles completos
+            dropdown.innerHTML = productos.map(p => {
+                // Calcular stock total
+                const stockTotal = p.variaciones ? p.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
+
+                // Formatear precio
+                const precio = parseFloat(p.precioDetal) || 0;
+                const precioFormateado = precio.toLocaleString('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+                // Número de variaciones
+                const numVariaciones = p.variaciones ? p.variaciones.length : 0;
+
+                // Descripción breve (si existe, máximo 60 caracteres)
+                const descripcion = p.descripcion ?
+                    (p.descripcion.length > 60 ? p.descripcion.substring(0, 60) + '...' : p.descripcion) : '';
+
+                return `
+                    <div class="producto-dropdown-item p-2" style="cursor: pointer; border-bottom: 1px solid #f0f0f0;"
+                         data-producto-id="${p.id}"
+                         data-producto='${JSON.stringify(p)}'
+                         onmouseover="this.style.background='#f8f9fa'"
+                         onmouseout="this.style.background='white'">
+                        <div class="d-flex gap-2 align-items-center">
+                            <div style="min-width: 50px; width: 50px; height: 50px;">
+                                ${p.imagenUrl
+                                    ? `<img src="${p.imagenUrl}" alt="${p.nombre}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;">`
+                                    : `<div style="width: 50px; height: 50px; background: #e9ecef; border-radius: 6px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted"></i></div>`
+                                }
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="fw-semibold">${p.nombre}</div>
+                                    <div class="fw-bold text-primary ms-2">${precioFormateado}</div>
+                                </div>
+                                <small class="text-muted d-block">Código: ${p.codigo || 'N/A'}</small>
+                                <small class="text-muted d-block"><i class="bi bi-tag-fill me-1"></i>${p.categoria || 'Sin categoría'}</small>
+                                ${descripcion ? `<small class="text-muted d-block" style="font-style: italic;">${descripcion}</small>` : ''}
+                                <div class="d-flex gap-3 mt-1">
+                                    <small class="text-muted"><i class="bi bi-box-seam me-1"></i>Stock: ${stockTotal}</small>
+                                    <small class="text-muted"><i class="bi bi-palette me-1"></i>${numVariaciones} variación${numVariaciones !== 1 ? 'es' : ''}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            dropdown.style.display = 'block';
+
+            // Event listeners para los items del dropdown
+            dropdown.querySelectorAll('.producto-dropdown-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const producto = JSON.parse(item.dataset.producto);
+                    seleccionarProducto(productoId, producto);
+                });
+            });
         });
 
-        // Cerrar sugerencias al hacer clic fuera
+        // Cerrar dropdown al hacer clic fuera
         document.addEventListener('click', (e) => {
-            if (!searchProductoInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-                suggestionsContainer.style.display = 'none';
+            if (!e.target.closest(`.producto-dropdown-${productoId}`) && e.target !== searchInput) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        // Función para seleccionar un producto
+        function seleccionarProducto(tempId, producto) {
+            const imagenPreview = productoCard.querySelector(`.producto-imagen-preview-${tempId}`);
+            const productoInfo = productoCard.querySelector(`.producto-info-${tempId}`);
+
+            // Actualizar input y guardar ID
+            searchInput.value = `${producto.nombre} (${producto.codigo})`;
+            selectedIdInput.value = producto.id;
+            dropdown.style.display = 'none';
+
+            // Mostrar imagen
+            if (producto.imagenUrl) {
+                imagenPreview.innerHTML = `<img src="${producto.imagenUrl}" alt="${producto.nombre}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">`;
+            } else {
+                imagenPreview.innerHTML = '<div style="width: 80px; height: 80px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted fs-3"></i></div>';
+            }
+
+            // Mostrar info
+            const stockTotal = (producto.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+            productoInfo.innerHTML = `Stock actual: <strong>${stockTotal}</strong> unidades`;
+
+            // Guardar producto en el elemento para acceso posterior
+            productoCard.dataset.productoData = JSON.stringify(producto);
+
+            mostrarVariaciones(tempId, producto);
+        }
+
+        // Event listener para eliminar producto
+        productoCard.querySelector('.btn-eliminar-producto').addEventListener('click', () => {
+            productoCard.remove();
+        });
+    }
+
+    // --- Mostrar variaciones del producto seleccionado ---
+    function mostrarVariaciones(productoId, producto) {
+        const container = document.querySelector(`.variaciones-container-${productoId}`);
+
+        container.innerHTML = `
+            <div class="card border-0 bg-light">
+                <div class="card-body p-2">
+                    <div id="variaciones-existentes-${productoId}"></div>
+                    <hr class="my-2">
+                    <button type="button" class="btn btn-sm btn-outline-success w-100 btn-agregar-nueva-variacion" data-producto-id="${producto.id}" data-temp-id="${productoId}">
+                        <i class="bi bi-plus-circle me-1"></i> Agregar Nueva Variación
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const variacionesExistentes = container.querySelector(`#variaciones-existentes-${productoId}`);
+
+        // Mostrar variaciones existentes
+        if (producto.variaciones && producto.variaciones.length > 0) {
+            producto.variaciones.forEach((variacion, index) => {
+                const varDiv = document.createElement('div');
+                varDiv.className = 'mb-2';
+                varDiv.innerHTML = `
+                    <div class="d-flex gap-2 align-items-start flex-wrap">
+                        <div class="badge bg-primary d-flex align-items-center" style="min-width: 80px; height: 38px;">${variacion.talla}</div>
+                        <div class="badge bg-secondary d-flex align-items-center" style="min-width: 80px; height: 38px;">${variacion.color}</div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <input type="text" class="form-control form-control-sm"
+                                data-producto-id="${producto.id}"
+                                data-talla="${variacion.talla}"
+                                data-color="${variacion.color}"
+                                data-field="codigo-barras"
+                                placeholder="Código de barras"
+                                value="${variacion.codigoBarras || ''}"
+                                style="font-family: monospace;">
+                        </div>
+                        <div style="width: 120px;">
+                            <input type="number" class="form-control form-control-sm"
+                                data-producto-id="${producto.id}"
+                                data-talla="${variacion.talla}"
+                                data-color="${variacion.color}"
+                                data-es-nueva="false"
+                                min="0" value="0" placeholder="Cantidad"
+                                name="cantidad-variacion">
+                        </div>
+                        <small class="text-muted w-100 ms-2">Stock actual: ${variacion.stock}</small>
+                    </div>
+                `;
+                variacionesExistentes.appendChild(varDiv);
+            });
+        } else {
+            variacionesExistentes.innerHTML = '<small class="text-muted">No hay variaciones existentes. Agrega una nueva.</small>';
+        }
+
+        // Event listener para agregar nueva variación
+        const btnAgregarVariacion = container.querySelector('.btn-agregar-nueva-variacion');
+        btnAgregarVariacion.addEventListener('click', () => {
+            const nuevaVarDiv = document.createElement('div');
+            nuevaVarDiv.className = 'mb-2 nueva-variacion';
+            nuevaVarDiv.innerHTML = `
+                <div class="bg-success bg-opacity-10 p-2 rounded">
+                    <div class="d-flex gap-2 align-items-center mb-2">
+                        <input type="text" class="form-control form-control-sm" placeholder="Talla" data-field="talla" style="width: 100px;">
+                        <input type="text" class="form-control form-control-sm" placeholder="Color" data-field="color" style="width: 100px;">
+                        <input type="text" class="form-control form-control-sm" placeholder="Código de barras" data-field="codigo-barras" style="flex: 1; font-family: monospace;">
+                        <input type="number" class="form-control form-control-sm"
+                            data-producto-id="${producto.id}"
+                            data-es-nueva="true"
+                            min="0" value="1" placeholder="Cantidad"
+                            name="cantidad-variacion"
+                            style="width: 100px;">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-variacion-nueva">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
+                    <small class="text-success"><i class="bi bi-sparkles"></i> Nueva variación</small>
+                </div>
+            `;
+
+            variacionesExistentes.appendChild(nuevaVarDiv);
+
+            // Event listener para eliminar variación nueva
+            nuevaVarDiv.querySelector('.btn-eliminar-variacion-nueva').addEventListener('click', () => {
+                nuevaVarDiv.remove();
+            });
+        });
+    }
+
+    // --- Crear orden de recepción ---
+    if (formOrdenRecepcion) {
+        formOrdenRecepcion.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const proveedor = ordenProveedorSelect.value;
+            const fechaEsperada = document.getElementById('orden-fecha-esperada').value;
+            const notas = document.getElementById('orden-notas').value;
+
+            if (!proveedor) {
+                showToast('Selecciona un proveedor', 'error');
+                return;
+            }
+
+            // Recolectar productos y variaciones
+            const productos = [];
+            const productoCards = document.querySelectorAll('.producto-recepcion-item');
+
+            productoCards.forEach(card => {
+                const selectedIdInput = card.querySelector('.producto-selected-id');
+                if (selectedIdInput && selectedIdInput.value) {
+                    const producto = JSON.parse(card.dataset.productoData);
+
+                    // Obtener cantidades de variaciones (existentes y nuevas)
+                    const variacionInputs = document.querySelectorAll(`[data-producto-id="${producto.id}"][name="cantidad-variacion"]`);
+                    const variaciones = [];
+
+                    variacionInputs.forEach(input => {
+                        const cantidad = parseInt(input.value) || 0;
+                        if (cantidad > 0) {
+                            const esNueva = input.dataset.esNueva === 'true';
+
+                            if (esNueva) {
+                                // Variación nueva - obtener talla, color y código de barras de inputs hermanos
+                                const contenedor = input.closest('.nueva-variacion');
+                                if (contenedor) {
+                                    const tallaInput = contenedor.querySelector('[data-field="talla"]');
+                                    const colorInput = contenedor.querySelector('[data-field="color"]');
+                                    const codigoBarrasInput = contenedor.querySelector('[data-field="codigo-barras"]');
+                                    const talla = tallaInput?.value.trim();
+                                    const color = colorInput?.value.trim();
+                                    const codigoBarras = codigoBarrasInput?.value.trim();
+
+                                    if (talla && color) {
+                                        variaciones.push({
+                                            talla: talla,
+                                            color: color,
+                                            codigoBarras: codigoBarras || '',
+                                            cantidadEsperada: cantidad,
+                                            cantidadRecibida: 0,
+                                            esNueva: true
+                                        });
+                                    }
+                                }
+                            } else {
+                                // Variación existente - obtener código de barras
+                                const contenedor = input.closest('.d-flex');
+                                const codigoBarrasInput = contenedor?.querySelector('[data-field="codigo-barras"]');
+                                const codigoBarras = codigoBarrasInput?.value.trim();
+
+                                variaciones.push({
+                                    talla: input.dataset.talla,
+                                    color: input.dataset.color,
+                                    codigoBarras: codigoBarras || '',
+                                    cantidadEsperada: cantidad,
+                                    cantidadRecibida: 0,
+                                    esNueva: false
+                                });
+                            }
+                        }
+                    });
+
+                    if (variaciones.length > 0) {
+                        productos.push({
+                            productoId: producto.id,
+                            nombre: producto.nombre,
+                            codigo: producto.codigo,
+                            variaciones: variaciones
+                        });
+                    }
+                }
+            });
+
+            if (productos.length === 0) {
+                showToast('Agrega al menos un producto con cantidad', 'error');
+                return;
+            }
+
+            // Calcular totales
+            const totalProductos = productos.length;
+            const totalUnidades = productos.reduce((sum, p) =>
+                sum + p.variaciones.reduce((vSum, v) => vSum + v.cantidadEsperada, 0), 0
+            );
+
+            // Crear documento
+            const ordenData = {
+                proveedor: proveedor,
+                fechaEsperada: fechaEsperada ? Timestamp.fromDate(new Date(fechaEsperada)) : null,
+                notas: notas,
+                estado: 'pendiente',
+                productos: productos,
+                totalProductos: totalProductos,
+                totalUnidades: totalUnidades,
+                timestamp: serverTimestamp(),
+                fechaRecepcion: null
+            };
+
+            try {
+                await addDoc(recepcionesCollection, ordenData);
+                showToast('✅ Orden de recepción creada exitosamente!', 'success');
+                toggleView('list');
+                formOrdenRecepcion.reset();
+                productosContainer.innerHTML = '';
+            } catch (error) {
+                console.error("❌ Error creando orden:", error);
+                showToast('Error al crear orden de recepción', 'error');
             }
         });
     }
 
-    if (btnGuardarEntrada) {
-        btnGuardarEntrada.addEventListener('click', guardarEntrada);
+    // --- Botón agregar producto ---
+    if (btnAgregarProducto) {
+        btnAgregarProducto.addEventListener('click', agregarProductoRecepcion);
     }
 
-    if (btnCancelarEntrada) {
-        btnCancelarEntrada.addEventListener('click', limpiarFormulario);
+    // --- Listar órdenes de recepción ---
+    async function listarOrdenesRecepcion() {
+        if (!recepcionesContainer) return;
+
+        try {
+            const q = query(recepcionesCollection, orderBy('timestamp', 'desc'));
+
+            onSnapshot(q, (snapshot) => {
+                ordenesRecepcionMap.clear();
+                recepcionesContainer.innerHTML = '';
+
+                if (snapshot.empty) {
+                    recepcionesContainer.innerHTML = `
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            No hay órdenes de recepción. ¡Crea tu primera orden!
+                        </div>
+                    `;
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const orden = { id: doc.id, ...doc.data() };
+                    ordenesRecepcionMap.set(doc.id, orden);
+                });
+
+                filtrarYRenderizarOrdenes();
+            });
+        } catch (error) {
+            console.error("❌ Error listando órdenes:", error);
+            showToast('Error al cargar órdenes de recepción', 'error');
+        }
     }
 
-    // --- Inicialización ---
-    cargarProductos();
-    cargarHistorialEntradas();
+    // --- Filtrar y renderizar órdenes ---
+    function filtrarYRenderizarOrdenes() {
+        const estadoFiltro = filterEstado.value;
+        const proveedorFiltro = filterProveedor.value;
+        const textoBusqueda = searchRecepciones.value.toLowerCase();
+        const fechaDesde = filterFechaDesde?.value;
+        const fechaHasta = filterFechaHasta?.value;
+        const ordenar = filterOrdenar?.value || 'reciente';
 
-    console.log("✅ Módulo de Entrada de Productos inicializado");
+        recepcionesContainer.innerHTML = '';
+
+        let ordenesFiltradas = Array.from(ordenesRecepcionMap.values());
+
+        // Filtrar por estado
+        if (estadoFiltro) {
+            ordenesFiltradas = ordenesFiltradas.filter(o => o.estado === estadoFiltro);
+        }
+
+        // Filtrar por proveedor
+        if (proveedorFiltro) {
+            ordenesFiltradas = ordenesFiltradas.filter(o => o.proveedor === proveedorFiltro);
+        }
+
+        // Filtrar por rango de fechas
+        if (fechaDesde) {
+            const fechaDesdeMs = new Date(fechaDesde).getTime();
+            ordenesFiltradas = ordenesFiltradas.filter(o => {
+                if (!o.timestamp?.toDate) return false;
+                return o.timestamp.toDate().getTime() >= fechaDesdeMs;
+            });
+        }
+
+        if (fechaHasta) {
+            const fechaHastaMs = new Date(fechaHasta).setHours(23, 59, 59, 999);
+            ordenesFiltradas = ordenesFiltradas.filter(o => {
+                if (!o.timestamp?.toDate) return false;
+                return o.timestamp.toDate().getTime() <= fechaHastaMs;
+            });
+        }
+
+        // Filtrar por búsqueda de texto
+        if (textoBusqueda) {
+            ordenesFiltradas = ordenesFiltradas.filter(o => {
+                const nombreMatch = o.productos.some(p =>
+                    p.nombre.toLowerCase().includes(textoBusqueda) ||
+                    p.codigo.toLowerCase().includes(textoBusqueda)
+                );
+                const proveedorMatch = o.proveedor.toLowerCase().includes(textoBusqueda);
+                return nombreMatch || proveedorMatch;
+            });
+        }
+
+        // Ordenar
+        ordenesFiltradas.sort((a, b) => {
+            switch (ordenar) {
+                case 'reciente':
+                    return (b.timestamp?.toDate?.()?.getTime() || 0) - (a.timestamp?.toDate?.()?.getTime() || 0);
+                case 'antigua':
+                    return (a.timestamp?.toDate?.()?.getTime() || 0) - (b.timestamp?.toDate?.()?.getTime() || 0);
+                case 'proveedor':
+                    return a.proveedor.localeCompare(b.proveedor);
+                case 'unidades':
+                    return (b.totalUnidades || 0) - (a.totalUnidades || 0);
+                default:
+                    return 0;
+            }
+        });
+
+        if (ordenesFiltradas.length === 0) {
+            recepcionesContainer.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="bi bi-filter-circle me-2"></i>
+                    No se encontraron órdenes con los filtros aplicados.
+                </div>
+            `;
+            return;
+        }
+
+        ordenesFiltradas.forEach(orden => {
+            recepcionesContainer.appendChild(renderizarOrdenCard(orden));
+        });
+    }
+
+    // --- Renderizar card de orden ---
+    function renderizarOrdenCard(orden) {
+        const card = document.createElement('div');
+        card.className = 'card mb-3';
+
+        const fechaTexto = orden.timestamp?.toDate ?
+            orden.timestamp.toDate().toLocaleDateString('es-CO', {
+                dateStyle: 'medium'
+            }) : 'Fecha no disponible';
+
+        const fechaEsperadaTexto = orden.fechaEsperada?.toDate ?
+            orden.fechaEsperada.toDate().toLocaleDateString('es-CO', {
+                dateStyle: 'medium'
+            }) : 'No especificada';
+
+        // Badge de estado
+        let estadoBadge = '';
+        if (orden.estado === 'pendiente') {
+            estadoBadge = '<span class="badge bg-warning text-dark">Pendiente</span>';
+        } else if (orden.estado === 'recibido_parcial') {
+            estadoBadge = '<span class="badge bg-info">Recibido Parcial</span>';
+        } else if (orden.estado === 'recibido') {
+            estadoBadge = '<span class="badge bg-success">Recibido</span>';
+        }
+
+        // Lista de productos
+        let productosHtml = orden.productos.map(p => {
+            // Buscar imagen del producto
+            const productoData = localProductsMap.get(p.productoId);
+            const imagenUrl = productoData?.imagenUrl || '';
+
+            const variacionesHtml = p.variaciones.map(v => `
+                <tr>
+                    <td class="ps-4">
+                        └ ${v.talla} - ${v.color}
+                        ${v.codigoBarras ? `<br><small class="text-muted ms-3" style="font-family: monospace;"><i class="bi bi-upc-scan"></i> ${v.codigoBarras}</small>` : ''}
+                    </td>
+                    <td class="text-center">${v.cantidadEsperada}</td>
+                    <td class="text-center">${v.cantidadRecibida}</td>
+                    <td class="text-center">
+                        ${v.cantidadRecibida >= v.cantidadEsperada ?
+                            '<i class="bi bi-check-circle-fill text-success"></i>' :
+                            '<i class="bi bi-clock-fill text-warning"></i>'}
+                    </td>
+                </tr>
+            `).join('');
+
+            return `
+                <tr class="table-active">
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            ${imagenUrl ?
+                                `<img src="${imagenUrl}" alt="${p.nombre}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">` :
+                                '<div style="width: 50px; height: 50px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="bi bi-image text-muted"></i></div>'
+                            }
+                            <div>
+                                <strong>${p.nombre}</strong>
+                                <br>
+                                <small class="text-muted">(${p.codigo})</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td colspan="3"></td>
+                </tr>
+                ${variacionesHtml}
+            `;
+        }).join('');
+
+        // Botones de acción
+        let botonesAccion = '';
+        if (orden.estado === 'pendiente' || orden.estado === 'recibido_parcial') {
+            botonesAccion = `
+                <button class="btn btn-primary btn-sm btn-confirmar-recepcion" data-orden-id="${orden.id}">
+                    <i class="bi bi-check-circle me-1"></i> Confirmar Recepción
+                </button>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">
+                        <i class="bi bi-box-seam me-2"></i>
+                        Orden #${orden.id.substring(0, 8).toUpperCase()}
+                    </h5>
+                    <small class="text-muted">
+                        <i class="bi bi-building me-1"></i>${orden.proveedor} |
+                        <i class="bi bi-calendar-event me-1"></i>Creada: ${fechaTexto} |
+                        <i class="bi bi-calendar-check me-1"></i>Esperada: ${fechaEsperadaTexto}
+                    </small>
+                </div>
+                ${estadoBadge}
+            </div>
+            <div class="card-body">
+                ${orden.notas ? `<p class="mb-2"><strong>Notas:</strong> ${orden.notas}</p>` : ''}
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="text-center p-2 bg-light rounded">
+                            <small class="text-muted d-block">Total Productos</small>
+                            <strong class="fs-5">${orden.totalProductos}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-2 bg-light rounded">
+                            <small class="text-muted d-block">Total Unidades Esperadas</small>
+                            <strong class="fs-5">${orden.totalUnidades}</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center p-2 bg-light rounded">
+                            <small class="text-muted d-block">Unidades Recibidas</small>
+                            <strong class="fs-5">${calcularUnidadesRecibidas(orden)}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Producto / Variación</th>
+                                <th class="text-center">Esperada</th>
+                                <th class="text-center">Recibida</th>
+                                <th class="text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${productosHtml}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    ${botonesAccion}
+                    <button class="btn btn-outline-danger btn-sm btn-eliminar-orden" data-orden-id="${orden.id}">
+                        <i class="bi bi-trash3 me-1"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Event listeners
+        const btnConfirmar = card.querySelector('.btn-confirmar-recepcion');
+        if (btnConfirmar) {
+            btnConfirmar.addEventListener('click', () => confirmarRecepcion(orden.id));
+        }
+
+        const btnEliminar = card.querySelector('.btn-eliminar-orden');
+        if (btnEliminar) {
+            btnEliminar.addEventListener('click', () => eliminarOrden(orden.id));
+        }
+
+        return card;
+    }
+
+    // --- Calcular unidades recibidas ---
+    function calcularUnidadesRecibidas(orden) {
+        return orden.productos.reduce((sum, p) =>
+            sum + p.variaciones.reduce((vSum, v) => vSum + (v.cantidadRecibida || 0), 0), 0
+        );
+    }
+
+    // --- Confirmar recepción (sumar al inventario) ---
+    async function confirmarRecepcion(ordenId) {
+        const orden = ordenesRecepcionMap.get(ordenId);
+        if (!orden) {
+            showToast('Orden no encontrada', 'error');
+            return;
+        }
+
+        const confirmacion = confirm(
+            `¿Confirmar la recepción de esta orden?\n\n` +
+            `Proveedor: ${orden.proveedor}\n` +
+            `Total de unidades: ${orden.totalUnidades}\n\n` +
+            `Esto sumará las cantidades al inventario real.`
+        );
+
+        if (!confirmacion) return;
+
+        try {
+            const batch = writeBatch(db);
+
+            // Actualizar stock de cada producto
+            for (const producto of orden.productos) {
+                const productoActual = localProductsMap.get(producto.productoId);
+                if (!productoActual) {
+                    console.warn(`Producto ${producto.productoId} no encontrado en localProductsMap`);
+                    continue;
+                }
+
+                let nuevasVariaciones = JSON.parse(JSON.stringify(productoActual.variaciones || []));
+
+                for (const variacionOrden of producto.variaciones) {
+                    const variacionIndex = nuevasVariaciones.findIndex(v =>
+                        v.talla === variacionOrden.talla && v.color === variacionOrden.color
+                    );
+
+                    if (variacionIndex !== -1) {
+                        // Variación existente - actualizar stock y código de barras
+                        const stockActual = parseInt(nuevasVariaciones[variacionIndex].stock, 10) || 0;
+                        const cantidadNueva = variacionOrden.cantidadEsperada - variacionOrden.cantidadRecibida;
+                        nuevasVariaciones[variacionIndex].stock = stockActual + cantidadNueva;
+
+                        // Actualizar código de barras si se proporcionó uno nuevo
+                        if (variacionOrden.codigoBarras) {
+                            nuevasVariaciones[variacionIndex].codigoBarras = variacionOrden.codigoBarras;
+                        }
+
+                        // Actualizar cantidad recibida en la orden
+                        variacionOrden.cantidadRecibida = variacionOrden.cantidadEsperada;
+                    } else if (variacionOrden.esNueva) {
+                        // Variación nueva - agregar al producto
+                        nuevasVariaciones.push({
+                            talla: variacionOrden.talla,
+                            color: variacionOrden.color,
+                            stock: variacionOrden.cantidadEsperada,
+                            codigoBarras: variacionOrden.codigoBarras || ''
+                        });
+
+                        // Actualizar cantidad recibida en la orden
+                        variacionOrden.cantidadRecibida = variacionOrden.cantidadEsperada;
+
+                        console.log(`✨ Nueva variación agregada: ${variacionOrden.talla} - ${variacionOrden.color} (${variacionOrden.cantidadEsperada} unidades)`);
+                    } else {
+                        console.warn(`Variación ${variacionOrden.talla}/${variacionOrden.color} no encontrada en producto ${producto.productoId}`);
+                    }
+                }
+
+                const productRef = doc(db, 'productos', producto.productoId);
+                batch.update(productRef, { variaciones: nuevasVariaciones });
+            }
+
+            // Actualizar estado de la orden
+            const ordenRef = doc(db, 'ordenesRecepcion', ordenId);
+            batch.update(ordenRef, {
+                estado: 'recibido',
+                fechaRecepcion: serverTimestamp()
+            });
+
+            await batch.commit();
+            showToast('✅ Recepción confirmada y stock actualizado!', 'success');
+            console.log(`✅ Orden ${ordenId} confirmada y stock actualizado`);
+
+        } catch (error) {
+            console.error("❌ Error confirmando recepción:", error);
+            showToast('Error al confirmar recepción', 'error');
+        }
+    }
+
+    // --- Eliminar orden ---
+    async function eliminarOrden(ordenId) {
+        const orden = ordenesRecepcionMap.get(ordenId);
+        if (!orden) return;
+
+        const confirmacion = confirm(
+            `¿Eliminar esta orden de recepción?\n\n` +
+            `Proveedor: ${orden.proveedor}\n` +
+            `Productos: ${orden.totalProductos}\n\n` +
+            `Esta acción no se puede deshacer.`
+        );
+
+        if (!confirmacion) return;
+
+        try {
+            await deleteDoc(doc(db, 'ordenesRecepcion', ordenId));
+            showToast('Orden eliminada', 'success');
+        } catch (error) {
+            console.error("❌ Error eliminando orden:", error);
+            showToast('Error al eliminar orden', 'error');
+        }
+    }
+
+    // --- Event listeners de filtros ---
+    if (filterEstado) {
+        filterEstado.addEventListener('change', filtrarYRenderizarOrdenes);
+    }
+
+    if (filterProveedor) {
+        filterProveedor.addEventListener('change', filtrarYRenderizarOrdenes);
+    }
+
+    if (searchRecepciones) {
+        searchRecepciones.addEventListener('input', filtrarYRenderizarOrdenes);
+    }
+
+    if (filterFechaDesde) {
+        filterFechaDesde.addEventListener('change', filtrarYRenderizarOrdenes);
+    }
+
+    if (filterFechaHasta) {
+        filterFechaHasta.addEventListener('change', filtrarYRenderizarOrdenes);
+    }
+
+    if (filterOrdenar) {
+        filterOrdenar.addEventListener('change', filtrarYRenderizarOrdenes);
+    }
+
+    // --- Limpiar filtros ---
+    if (btnLimpiarFiltros) {
+        btnLimpiarFiltros.addEventListener('click', () => {
+            if (filterEstado) filterEstado.value = 'pendiente';
+            if (filterProveedor) filterProveedor.value = '';
+            if (filterFechaDesde) filterFechaDesde.value = '';
+            if (filterFechaHasta) filterFechaHasta.value = '';
+            if (filterOrdenar) filterOrdenar.value = 'reciente';
+            if (searchRecepciones) searchRecepciones.value = '';
+            filtrarYRenderizarOrdenes();
+        });
+    }
+
+    // --- Inicializar módulo ---
+    cargarProveedores();
+    listarOrdenesRecepcion();
+
+    console.log("✅ Módulo de Recepciones de Inventario inicializado");
 })();
+
+// === MÓDULO: RECEPCIÓN INTUITIVA ===
+(() => {
+    // Variables globales del módulo
+    let productosFiltrados = [];
+    let paginaActual = 1;
+    const productosPorPagina = 10;
+    let productosRecibidosHoy = [];
+    let productoSeleccionado = null;
+
+    // Referencias a elementos del DOM
+    const modalRecepcion = document.getElementById('modal-recepcion-intuitiva');
+    const modalVariacion = document.getElementById('modal-seleccionar-variacion');
+    const catalogoTbody = document.getElementById('recepcion-catalogo-tbody');
+    const filtroProveedor = document.getElementById('recepcion-filtro-proveedor');
+    const filtroCategoria = document.getElementById('recepcion-filtro-categoria');
+    const inputBuscar = document.getElementById('recepcion-buscar');
+    const totalProductosSpan = document.getElementById('recepcion-total-productos');
+    const paginacionDiv = document.getElementById('recepcion-paginacion');
+    const listaRecibidos = document.getElementById('recepcion-lista-recibidos');
+    const contadorRecibidos = document.getElementById('recepcion-contador');
+
+    // Modal de variación - Referencias
+    const variacionProductoNombre = document.getElementById('variacion-producto-nombre');
+    const variacionProductoImagen = document.getElementById('variacion-producto-imagen');
+    const variacionProductoCodigo = document.getElementById('variacion-producto-codigo');
+    const variacionProductoCategoria = document.getElementById('variacion-producto-categoria');
+    const variacionProductoPrecioDetal = document.getElementById('variacion-producto-precio-detal');
+    const variacionProductoPrecioMayor = document.getElementById('variacion-producto-precio-mayor');
+    const variacionListaContainer = document.getElementById('variacion-lista-container');
+    const btnConfirmarRecepcion = document.getElementById('btn-confirmar-recepcion-variacion');
+
+    // Modo de entrada rápida - Referencias
+    const modoEntradaRapida = document.getElementById('modo-entrada-rapida');
+    const modoCatalogo = document.getElementById('modo-catalogo');
+    const vistaEntradaRapida = document.getElementById('vista-entrada-rapida');
+    const vistaCatalogo = document.getElementById('vista-catalogo');
+    const entradaRapidaCodigo = document.getElementById('entrada-rapida-codigo');
+    const entradaRapidaCantidad = document.getElementById('entrada-rapida-cantidad');
+    const entradaRapidaSugerencias = document.getElementById('entrada-rapida-sugerencias');
+    const btnAgregarRapido = document.getElementById('btn-agregar-rapido');
+
+    // Instancias de modales Bootstrap
+    let bsModalRecepcion, bsModalVariacion;
+
+    // Inicializar modales Bootstrap cuando el DOM esté listo
+    if (modalRecepcion) {
+        bsModalRecepcion = new bootstrap.Modal(modalRecepcion);
+        modalRecepcion.addEventListener('show.bs.modal', inicializarModalRecepcion);
+        modalRecepcion.addEventListener('hidden.bs.modal', limpiarFiltros);
+    }
+
+    if (modalVariacion) {
+        bsModalVariacion = new bootstrap.Modal(modalVariacion);
+    }
+
+    // === Event Listeners: Cambiar entre modos ===
+    if (modoEntradaRapida) {
+        modoEntradaRapida.addEventListener('change', () => {
+            if (modoEntradaRapida.checked) {
+                vistaEntradaRapida.style.display = 'block';
+                vistaCatalogo.style.display = 'none';
+                if (entradaRapidaCodigo) entradaRapidaCodigo.focus();
+            }
+        });
+    }
+
+    if (modoCatalogo) {
+        modoCatalogo.addEventListener('change', () => {
+            if (modoCatalogo.checked) {
+                vistaEntradaRapida.style.display = 'none';
+                vistaCatalogo.style.display = 'block';
+            }
+        });
+    }
+
+    // === Event Listeners: Entrada Rápida ===
+    if (entradaRapidaCodigo) {
+        // Autocompletado mientras escribe
+        let timeoutId;
+        entradaRapidaCodigo.addEventListener('input', (e) => {
+            clearTimeout(timeoutId);
+            const busqueda = e.target.value.trim();
+
+            if (busqueda.length < 2) {
+                entradaRapidaSugerencias.style.display = 'none';
+                return;
+            }
+
+            timeoutId = setTimeout(() => {
+                mostrarSugerencias(busqueda);
+            }, 300);
+        });
+
+        // Agregar con Enter
+        entradaRapidaCodigo.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                agregarProductoRapido();
+            }
+        });
+    }
+
+    if (btnAgregarRapido) {
+        btnAgregarRapido.addEventListener('click', agregarProductoRapido);
+    }
+
+    /**
+     * Inicializa el modal de recepción
+     */
+    function inicializarModalRecepcion() {
+        cargarFiltros();
+        cargarCatalogo();
+        actualizarListaRecibidos();
+        // Focus en el campo de entrada rápida si está en ese modo
+        if (modoEntradaRapida && modoEntradaRapida.checked && entradaRapidaCodigo) {
+            setTimeout(() => entradaRapidaCodigo.focus(), 100);
+        }
+    }
+
+    /**
+     * Carga los filtros de proveedor y categoría
+     */
+    function cargarFiltros() {
+        // Cargar proveedores desde el mapa global
+        if (filtroProveedor && window.suppliersMap && window.suppliersMap.size > 0) {
+            filtroProveedor.innerHTML = '<option value="">Todos los proveedores</option>';
+            window.suppliersMap.forEach((proveedor, id) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = proveedor.nombre;
+                filtroProveedor.appendChild(option);
+            });
+        }
+
+        // Cargar categorías
+        if (filtroCategoria) {
+            const selectCategoria = document.getElementById('categoria-producto');
+            if (selectCategoria) {
+                filtroCategoria.innerHTML = selectCategoria.innerHTML;
+                filtroCategoria.value = '';
+            }
+        }
+    }
+
+    /**
+     * Carga y renderiza el catálogo de productos
+     */
+    function cargarCatalogo() {
+        if (!catalogoTbody) {
+            console.error('catalogoTbody no encontrado');
+            return;
+        }
+
+        if (!localProductsMap || localProductsMap.size === 0) {
+            catalogoTbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No hay productos disponibles</td></tr>';
+            return;
+        }
+
+        // Convertir Map a Array
+        let productos = Array.from(localProductsMap.entries()).map(([id, prod]) => ({
+            id,
+            ...prod
+        }));
+
+        // Aplicar filtros (con protección contra null)
+        const busqueda = inputBuscar ? inputBuscar.value.toLowerCase().trim() : '';
+        const proveedorSeleccionado = filtroProveedor ? filtroProveedor.value : '';
+        const categoriaSeleccionada = filtroCategoria ? filtroCategoria.value : '';
+
+        productos = productos.filter(p => {
+            // Filtro de búsqueda
+            const coincideBusqueda = !busqueda ||
+                p.nombre.toLowerCase().includes(busqueda) ||
+                (p.codigo && p.codigo.toLowerCase().includes(busqueda));
+
+            // Filtro de categoría
+            const coincideCategoria = !categoriaSeleccionada || p.categoriaId === categoriaSeleccionada;
+
+            // Filtro de proveedor (si está definido en el producto)
+            const coincideProveedor = !proveedorSeleccionado || p.proveedor === proveedorSeleccionado;
+
+            return coincideBusqueda && coincideCategoria && coincideProveedor;
+        });
+
+        productosFiltrados = productos;
+        paginaActual = 1;
+        renderizarCatalogo();
+    }
+
+    /**
+     * Renderiza el catálogo con paginación
+     */
+    function renderizarCatalogo() {
+        if (productosFiltrados.length === 0) {
+            catalogoTbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No se encontraron productos</td></tr>';
+            totalProductosSpan.textContent = '0 productos';
+            paginacionDiv.innerHTML = '';
+            return;
+        }
+
+        // Calcular paginación
+        const inicio = (paginaActual - 1) * productosPorPagina;
+        const fin = inicio + productosPorPagina;
+        const productosPagina = productosFiltrados.slice(inicio, fin);
+
+        // Renderizar filas
+        catalogoTbody.innerHTML = productosPagina.map(producto => {
+            const stockTotal = producto.variaciones ?
+                producto.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
+            const numVariaciones = producto.variaciones ? producto.variaciones.length : 0;
+            const precioDetal = (parseFloat(producto.precioDetal) || 0).toLocaleString('es-CO', {
+                style: 'currency', currency: 'COP', minimumFractionDigits: 0
+            });
+            const precioMayor = (parseFloat(producto.precioMayor) || 0).toLocaleString('es-CO', {
+                style: 'currency', currency: 'COP', minimumFractionDigits: 0
+            });
+
+            // Fila principal
+            let html = `
+                <tr class="producto-row" data-producto-id="${producto.id}">
+                    <td>
+                        ${producto.imagenUrl
+                            ? `<img src="${producto.imagenUrl}" alt="${producto.nombre}" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;">`
+                            : `<div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;"><i class="bi bi-image text-muted"></i></div>`
+                        }
+                    </td>
+                    <td>
+                        <div class="fw-semibold">${producto.nombre}</div>
+                        <small class="text-muted">Cód: ${producto.codigo || 'N/A'}</small>
+                    </td>
+                    <td>${producto.categoria || 'Sin categoría'}</td>
+                    <td class="text-center">
+                        <span class="badge bg-secondary">${numVariaciones}</span>
+                    </td>
+                    <td class="text-end">${precioDetal}</td>
+                    <td class="text-end">${precioMayor}</td>
+                    <td class="text-center">
+                        <span class="badge ${stockTotal > 0 ? 'bg-success' : 'bg-danger'}">${stockTotal}</span>
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-primary btn-expandir-variaciones" data-producto-id="${producto.id}">
+                            <i class="bi bi-chevron-down me-1"></i>Ver variaciones
+                        </button>
+                    </td>
+                </tr>`;
+
+            // Fila expandible con variaciones
+            html += `
+                <tr class="variaciones-row" id="variaciones-${producto.id}" style="display: none;">
+                    <td colspan="8" class="bg-light">
+                        <div class="p-3">
+                            <h6 class="mb-3"><i class="bi bi-box-seam me-2"></i>Variaciones de ${producto.nombre}</h6>
+                            ${producto.variaciones && producto.variaciones.length > 0 ? `
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered bg-white mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Talla</th>
+                                                <th>Color</th>
+                                                <th>Código de barras</th>
+                                                <th class="text-center">Stock actual</th>
+                                                <th style="width: 150px;">Cantidad a recibir</th>
+                                                <th style="width: 100px;">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${producto.variaciones.map((variacion, varIndex) => `
+                                                <tr>
+                                                    <td><span class="badge bg-primary">${variacion.talla || 'N/A'}</span></td>
+                                                    <td><span class="badge bg-secondary">${variacion.color || 'N/A'}</span></td>
+                                                    <td><small class="font-monospace">${variacion.codigoBarras || '-'}</small></td>
+                                                    <td class="text-center"><strong>${variacion.stock || 0}</strong></td>
+                                                    <td>
+                                                        <input type="number" class="form-control form-control-sm cantidad-variacion"
+                                                               data-producto-id="${producto.id}" data-var-index="${varIndex}"
+                                                               min="0" value="0" placeholder="0">
+                                                    </td>
+                                                    <td>
+                                                        <button class="btn btn-sm btn-success btn-agregar-variacion-rapido w-100"
+                                                                data-producto-id="${producto.id}" data-var-index="${varIndex}">
+                                                            <i class="bi bi-plus-circle"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : '<p class="text-muted mb-0">Este producto no tiene variaciones definidas.</p>'}
+                        </div>
+                    </td>
+                </tr>`;
+
+            return html;
+        }).join('');
+
+        // Actualizar contador
+        totalProductosSpan.textContent = `${productosFiltrados.length} producto${productosFiltrados.length !== 1 ? 's' : ''}`;
+
+        // Event listeners para expandir variaciones
+        document.querySelectorAll('.btn-expandir-variaciones').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productoId = btn.dataset.productoId;
+                const variacionesRow = document.getElementById(`variaciones-${productoId}`);
+                const icon = btn.querySelector('i');
+
+                if (variacionesRow.style.display === 'none') {
+                    variacionesRow.style.display = 'table-row';
+                    icon.classList.remove('bi-chevron-down');
+                    icon.classList.add('bi-chevron-up');
+                    btn.innerHTML = '<i class="bi bi-chevron-up me-1"></i>Ocultar variaciones';
+                } else {
+                    variacionesRow.style.display = 'none';
+                    icon.classList.remove('bi-chevron-up');
+                    icon.classList.add('bi-chevron-down');
+                    btn.innerHTML = '<i class="bi bi-chevron-down me-1"></i>Ver variaciones';
+                }
+            });
+        });
+
+        // Event listeners para agregar variaciones rápidamente desde el catálogo
+        document.querySelectorAll('.btn-agregar-variacion-rapido').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const productoId = btn.dataset.productoId;
+                const varIndex = parseInt(btn.dataset.varIndex);
+                const cantidadInput = document.querySelector(
+                    `.cantidad-variacion[data-producto-id="${productoId}"][data-var-index="${varIndex}"]`
+                );
+                const cantidad = parseInt(cantidadInput.value) || 0;
+
+                if (cantidad <= 0) {
+                    showToast('Debes ingresar una cantidad mayor a 0', 'warning');
+                    cantidadInput.focus();
+                    return;
+                }
+
+                agregarVariacionDesdeCategolo(productoId, varIndex, cantidad);
+                cantidadInput.value = '0'; // Resetear
+            });
+        });
+
+        // Renderizar paginación
+        renderizarPaginacion();
+    }
+
+    /**
+     * Agrega una variación desde el catálogo
+     */
+    function agregarVariacionDesdeCategolo(productoId, varIndex, cantidad) {
+        const producto = localProductsMap.get(productoId);
+        if (!producto || !producto.variaciones || !producto.variaciones[varIndex]) {
+            showToast('Error al agregar producto', 'error');
+            return;
+        }
+
+        const variacion = producto.variaciones[varIndex];
+
+        // Agregar a la lista de productos recibidos
+        productosRecibidosHoy.push({
+            productoId: productoId,
+            nombre: producto.nombre,
+            categoriaId: producto.categoriaId,
+            talla: variacion.talla,
+            color: variacion.color,
+            cantidad: cantidad,
+            precioUnitario: parseFloat(producto.precioDetal) || 0,
+            timestamp: new Date()
+        });
+
+        // Actualizar UI
+        actualizarListaRecibidos();
+
+        // Habilitar botón de crear orden
+        const btnCrearOrden = document.getElementById('btn-crear-orden-compra');
+        if (btnCrearOrden) btnCrearOrden.disabled = false;
+
+        showToast(`✅ ${cantidad} x ${producto.nombre} (${variacion.talla}/${variacion.color}) agregado`, 'success');
+    }
+
+    /**
+     * Renderiza los controles de paginación
+     */
+    function renderizarPaginacion() {
+        const totalPaginas = Math.ceil(productosFiltrados.length / productosPorPagina);
+
+        if (totalPaginas <= 1) {
+            paginacionDiv.innerHTML = '';
+            return;
+        }
+
+        let html = '<nav><ul class="pagination pagination-sm mb-0">';
+
+        // Botón anterior
+        html += `<li class="page-item ${paginaActual === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="window.cambiarPaginaRecepcion(${paginaActual - 1}); return false;">Anterior</a>
+        </li>`;
+
+        // Páginas
+        for (let i = 1; i <= totalPaginas; i++) {
+            if (i === 1 || i === totalPaginas || (i >= paginaActual - 1 && i <= paginaActual + 1)) {
+                html += `<li class="page-item ${i === paginaActual ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="window.cambiarPaginaRecepcion(${i}); return false;">${i}</a>
+                </li>`;
+            } else if (i === paginaActual - 2 || i === paginaActual + 2) {
+                html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+            }
+        }
+
+        // Botón siguiente
+        html += `<li class="page-item ${paginaActual === totalPaginas ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="window.cambiarPaginaRecepcion(${paginaActual + 1}); return false;">Siguiente</a>
+        </li>`;
+
+        html += '</ul></nav>';
+        paginacionDiv.innerHTML = html;
+    }
+
+    /**
+     * Cambia la página del catálogo
+     */
+    window.cambiarPaginaRecepcion = function(nuevaPagina) {
+        const totalPaginas = Math.ceil(productosFiltrados.length / productosPorPagina);
+        if (nuevaPagina < 1 || nuevaPagina > totalPaginas) return;
+
+        paginaActual = nuevaPagina;
+        renderizarCatalogo();
+
+        // Scroll al inicio de la tabla
+        document.querySelector('#recepcion-catalogo-tbody').closest('.table-responsive').scrollTop = 0;
+    };
+
+    /**
+     * Abre el modal de selección de variación
+     */
+    window.abrirSeleccionVariacion = function(productoId) {
+        const producto = localProductsMap.get(productoId);
+        if (!producto) {
+            showToast('Producto no encontrado', 'error');
+            return;
+        }
+
+        productoSeleccionado = { id: productoId, ...producto };
+
+        // Llenar información del producto
+        variacionProductoNombre.textContent = producto.nombre;
+        variacionProductoImagen.src = producto.imagenUrl || 'https://via.placeholder.com/200x200/f0f0f0/cccccc?text=Sin+Imagen';
+        variacionProductoCodigo.textContent = producto.codigo || 'N/A';
+        variacionProductoCategoria.textContent = producto.categoria || 'Sin categoría';
+
+        const precioDetal = (parseFloat(producto.precioDetal) || 0).toLocaleString('es-CO', {
+            style: 'currency', currency: 'COP', minimumFractionDigits: 0
+        });
+        const precioMayor = (parseFloat(producto.precioMayor) || 0).toLocaleString('es-CO', {
+            style: 'currency', currency: 'COP', minimumFractionDigits: 0
+        });
+
+        variacionProductoPrecioDetal.textContent = precioDetal;
+        variacionProductoPrecioMayor.textContent = precioMayor;
+
+        // Renderizar variaciones
+        renderizarVariaciones(producto);
+
+        // Abrir modal
+        bsModalVariacion.show();
+    };
+
+    /**
+     * Renderiza las variaciones del producto seleccionado
+     */
+    function renderizarVariaciones(producto) {
+        if (!producto.variaciones || producto.variaciones.length === 0) {
+            variacionListaContainer.innerHTML = `
+                <div class="alert alert-warning mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Este producto no tiene variaciones definidas.
+                    Por favor, edita el producto para agregar variaciones antes de recibirlo.
+                </div>
+            `;
+            btnConfirmarRecepcion.disabled = true;
+            return;
+        }
+
+        btnConfirmarRecepcion.disabled = false;
+
+        variacionListaContainer.innerHTML = producto.variaciones.map((variacion, index) => {
+            return `
+                <div class="row g-2 mb-3 align-items-center variacion-row" data-index="${index}">
+                    <div class="col-md-3">
+                        <span class="badge bg-primary me-1">${variacion.talla || 'N/A'}</span>
+                        <span class="badge bg-secondary">${variacion.color || 'N/A'}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">Stock actual</small>
+                        <strong>${variacion.stock || 0} unidades</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small mb-1">Cantidad a recibir</label>
+                        <input type="number" class="form-control form-control-sm cantidad-recibir"
+                            min="0" value="0" data-index="${index}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small mb-1">Código de barras (opcional)</label>
+                        <input type="text" class="form-control form-control-sm codigo-barras-input"
+                            value="${variacion.codigoBarras || ''}" data-index="${index}"
+                            placeholder="Escanear o escribir">
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Agrega producto a la orden (NO actualiza stock todavía)
+     */
+    btnConfirmarRecepcion.addEventListener('click', () => {
+        if (!productoSeleccionado) return;
+
+        // Recopilar variaciones con cantidades > 0
+        const variacionesRows = variacionListaContainer.querySelectorAll('.variacion-row');
+        const variacionesRecibir = [];
+
+        variacionesRows.forEach(row => {
+            const index = parseInt(row.dataset.index);
+            const cantidadInput = row.querySelector('.cantidad-recibir');
+            const cantidad = parseInt(cantidadInput.value) || 0;
+
+            if (cantidad > 0) {
+                const variacion = productoSeleccionado.variaciones[index];
+                variacionesRecibir.push({
+                    index,
+                    talla: variacion.talla,
+                    color: variacion.color,
+                    cantidad,
+                    stockAnterior: variacion.stock || 0
+                });
+            }
+        });
+
+        if (variacionesRecibir.length === 0) {
+            showToast('Debes ingresar al menos una cantidad mayor a 0', 'warning');
+            return;
+        }
+
+        // Agregar a lista de productos en la orden (NO suma al stock aún)
+        variacionesRecibir.forEach(vr => {
+            productosRecibidosHoy.push({
+                productoId: productoSeleccionado.id,
+                nombre: productoSeleccionado.nombre,
+                categoriaId: productoSeleccionado.categoriaId,
+                talla: vr.talla,
+                color: vr.color,
+                cantidad: vr.cantidad,
+                precioUnitario: parseFloat(productoSeleccionado.precioDetal) || 0,
+                timestamp: new Date()
+            });
+        });
+
+        // Actualizar UI
+        actualizarListaRecibidos();
+
+        // Habilitar botón de crear orden
+        const btnCrearOrden = document.getElementById('btn-crear-orden-compra');
+        if (btnCrearOrden) btnCrearOrden.disabled = false;
+
+        const totalUnidades = variacionesRecibir.reduce((sum, v) => sum + v.cantidad, 0);
+        showToast(`✅ ${totalUnidades} unidades agregadas a la orden`, 'success');
+
+        // Cerrar modal de variación
+        bsModalVariacion.hide();
+    });
+
+    /**
+     * Muestra sugerencias de autocompletado basadas en la búsqueda
+     */
+    function mostrarSugerencias(busqueda) {
+        if (!localProductsMap || localProductsMap.size === 0) {
+            entradaRapidaSugerencias.style.display = 'none';
+            return;
+        }
+
+        const busquedaLower = busqueda.toLowerCase();
+        const resultados = [];
+
+        // Buscar en productos y variaciones
+        localProductsMap.forEach((producto, productoId) => {
+            if (!producto.variaciones || producto.variaciones.length === 0) return;
+
+            producto.variaciones.forEach((variacion, varIndex) => {
+                // Buscar por código de barras
+                if (variacion.codigoBarras && variacion.codigoBarras.toLowerCase().includes(busquedaLower)) {
+                    resultados.push({
+                        productoId,
+                        producto,
+                        variacion,
+                        varIndex,
+                        matchType: 'codigo'
+                    });
+                }
+                // Buscar por nombre de producto
+                else if (producto.nombre.toLowerCase().includes(busquedaLower)) {
+                    resultados.push({
+                        productoId,
+                        producto,
+                        variacion,
+                        varIndex,
+                        matchType: 'nombre'
+                    });
+                }
+                // Buscar por talla o color
+                else if (
+                    (variacion.talla && variacion.talla.toLowerCase().includes(busquedaLower)) ||
+                    (variacion.color && variacion.color.toLowerCase().includes(busquedaLower))
+                ) {
+                    resultados.push({
+                        productoId,
+                        producto,
+                        variacion,
+                        varIndex,
+                        matchType: 'variacion'
+                    });
+                }
+            });
+        });
+
+        // Limitar resultados
+        const resultadosLimitados = resultados.slice(0, 10);
+
+        if (resultadosLimitados.length === 0) {
+            entradaRapidaSugerencias.innerHTML = `
+                <div class="list-group-item text-muted">
+                    <i class="bi bi-search me-2"></i>No se encontraron resultados
+                </div>
+            `;
+            entradaRapidaSugerencias.style.display = 'block';
+            return;
+        }
+
+        // Renderizar sugerencias
+        entradaRapidaSugerencias.innerHTML = resultadosLimitados.map(item => {
+            const stockActual = item.variacion.stock || 0;
+            return `
+                <button type="button" class="list-group-item list-group-item-action sugerencia-item"
+                        data-producto-id="${item.productoId}" data-var-index="${item.varIndex}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <strong>${item.producto.nombre}</strong>
+                            <br>
+                            <small class="text-muted">
+                                ${item.variacion.talla || 'N/A'} / ${item.variacion.color || 'N/A'}
+                                ${item.variacion.codigoBarras ? ` - ${item.variacion.codigoBarras}` : ''}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-secondary">${stockActual} en stock</span>
+                        </div>
+                    </div>
+                </button>
+            `;
+        }).join('');
+
+        // Event listeners para sugerencias
+        entradaRapidaSugerencias.querySelectorAll('.sugerencia-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const productoId = btn.dataset.productoId;
+                const varIndex = parseInt(btn.dataset.varIndex);
+                seleccionarSugerencia(productoId, varIndex);
+            });
+        });
+
+        entradaRapidaSugerencias.style.display = 'block';
+    }
+
+    /**
+     * Selecciona una sugerencia del autocompletado
+     */
+    function seleccionarSugerencia(productoId, varIndex) {
+        const producto = localProductsMap.get(productoId);
+        if (!producto || !producto.variaciones || !producto.variaciones[varIndex]) {
+            showToast('Error al seleccionar producto', 'error');
+            return;
+        }
+
+        const variacion = producto.variaciones[varIndex];
+        const cantidad = parseInt(entradaRapidaCantidad.value) || 1;
+
+        // Agregar directamente a la orden
+        productosRecibidosHoy.push({
+            productoId: productoId,
+            nombre: producto.nombre,
+            categoriaId: producto.categoriaId,
+            talla: variacion.talla,
+            color: variacion.color,
+            cantidad: cantidad,
+            precioUnitario: parseFloat(producto.precioDetal) || 0,
+            timestamp: new Date()
+        });
+
+        // Actualizar UI
+        actualizarListaRecibidos();
+
+        // Habilitar botón de crear orden
+        const btnCrearOrden = document.getElementById('btn-crear-orden-compra');
+        if (btnCrearOrden) btnCrearOrden.disabled = false;
+
+        // Limpiar campos
+        entradaRapidaCodigo.value = '';
+        entradaRapidaCantidad.value = '1';
+        entradaRapidaSugerencias.style.display = 'none';
+
+        // Regresar foco al campo de código
+        entradaRapidaCodigo.focus();
+
+        showToast(`✅ ${cantidad} x ${producto.nombre} (${variacion.talla}/${variacion.color}) agregado`, 'success');
+    }
+
+    /**
+     * Agrega un producto usando entrada rápida
+     */
+    function agregarProductoRapido() {
+        const codigo = entradaRapidaCodigo.value.trim();
+        if (!codigo) {
+            showToast('Debes ingresar un código o nombre de producto', 'warning');
+            entradaRapidaCodigo.focus();
+            return;
+        }
+
+        const cantidad = parseInt(entradaRapidaCantidad.value) || 1;
+        if (cantidad < 1) {
+            showToast('La cantidad debe ser mayor a 0', 'warning');
+            entradaRapidaCantidad.focus();
+            return;
+        }
+
+        // Buscar coincidencia exacta por código de barras
+        let encontrado = false;
+        localProductsMap.forEach((producto, productoId) => {
+            if (encontrado) return;
+            if (!producto.variaciones) return;
+
+            producto.variaciones.forEach((variacion, varIndex) => {
+                if (encontrado) return;
+                if (variacion.codigoBarras && variacion.codigoBarras.toLowerCase() === codigo.toLowerCase()) {
+                    seleccionarSugerencia(productoId, varIndex);
+                    encontrado = true;
+                }
+            });
+        });
+
+        if (!encontrado) {
+            // Si no hay coincidencia exacta, mostrar sugerencias
+            mostrarSugerencias(codigo);
+            showToast('No se encontró coincidencia exacta. Selecciona de las sugerencias.', 'info');
+        }
+    }
+
+    /**
+     * Actualiza la lista de productos recibidos en la sesión
+     */
+    function actualizarListaRecibidos() {
+        const totalItems = productosRecibidosHoy.length;
+        const totalUnidades = productosRecibidosHoy.reduce((sum, item) => sum + item.cantidad, 0);
+
+        contadorRecibidos.textContent = totalUnidades;
+
+        if (productosRecibidosHoy.length === 0) {
+            listaRecibidos.innerHTML = `
+                <div class="text-muted text-center py-3">
+                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                    Aún no has agregado productos a esta orden
+                </div>
+            `;
+            return;
+        }
+
+        // Calcular totales
+        const totalValor = productosRecibidosHoy.reduce((sum, item) =>
+            sum + (item.cantidad * item.precioUnitario), 0
+        );
+
+        listaRecibidos.innerHTML = `
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th>Variación</th>
+                            <th class="text-center" style="width: 120px;">Cantidad</th>
+                            <th class="text-end">P. Unit.</th>
+                            <th class="text-end">Subtotal</th>
+                            <th style="width: 80px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${productosRecibidosHoy.map((item, index) => {
+                            const precio = item.precioUnitario || 0;
+                            const subtotal = precio * item.cantidad;
+
+                            return `
+                                <tr>
+                                    <td>
+                                        <strong class="d-block">${item.nombre}</strong>
+                                        <small class="text-muted">${item.categoriaId ? (categoriesMap?.get(item.categoriaId) || '') : ''}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary me-1">${item.talla || 'N/A'}</span>
+                                        <span class="badge bg-secondary">${item.color || 'N/A'}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="input-group input-group-sm">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="window.cambiarCantidadRecibido(${index}, -1)">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            <input type="number" class="form-control text-center"
+                                                   value="${item.cantidad}" min="1"
+                                                   onchange="window.actualizarCantidadRecibido(${index}, this.value)"
+                                                   style="max-width: 60px;">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="window.cambiarCantidadRecibido(${index}, 1)">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <small>${formatoMoneda.format(precio)}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>${formatoMoneda.format(subtotal)}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-danger" onclick="window.eliminarRecibido(${index})" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="2" class="text-end"><strong>TOTALES:</strong></td>
+                            <td class="text-center"><strong>${totalUnidades} unidades</strong></td>
+                            <td colspan="2" class="text-end"><strong>${formatoMoneda.format(totalValor)}</strong></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+    }
+
+    /**
+     * Cambia la cantidad de un producto recibido
+     */
+    window.cambiarCantidadRecibido = function(index, delta) {
+        if (productosRecibidosHoy[index]) {
+            const nuevaCantidad = productosRecibidosHoy[index].cantidad + delta;
+            if (nuevaCantidad > 0) {
+                productosRecibidosHoy[index].cantidad = nuevaCantidad;
+                actualizarListaRecibidos();
+            }
+        }
+    };
+
+    /**
+     * Actualiza la cantidad directamente desde el input
+     */
+    window.actualizarCantidadRecibido = function(index, valor) {
+        const cantidad = parseInt(valor) || 1;
+        if (productosRecibidosHoy[index] && cantidad > 0) {
+            productosRecibidosHoy[index].cantidad = cantidad;
+            actualizarListaRecibidos();
+        }
+    };
+
+    /**
+     * Elimina un producto de la lista de recibidos
+     */
+    window.eliminarRecibido = function(index) {
+        if (confirm('¿Eliminar este producto de la orden?')) {
+            productosRecibidosHoy.splice(index, 1);
+            actualizarListaRecibidos();
+
+            // Deshabilitar botón si no hay productos
+            const btnCrearOrden = document.getElementById('btn-crear-orden-compra');
+            if (btnCrearOrden && productosRecibidosHoy.length === 0) {
+                btnCrearOrden.disabled = true;
+            }
+
+            showToast('Producto eliminado de la orden', 'info');
+        }
+    };
+
+    /**
+     * Limpia los filtros al cerrar el modal
+     */
+    function limpiarFiltros() {
+        if (inputBuscar) inputBuscar.value = '';
+        if (filtroProveedor) filtroProveedor.value = '';
+        if (filtroCategoria) filtroCategoria.value = '';
+    }
+
+    /**
+     * Genera un reporte de la recepción
+     */
+    document.getElementById('btn-generar-reporte-recepcion')?.addEventListener('click', () => {
+        if (productosRecibidosHoy.length === 0) {
+            showToast('No hay productos recibidos para generar reporte', 'warning');
+            return;
+        }
+
+        // Agrupar por producto
+        const agrupados = {};
+        productosRecibidosHoy.forEach(item => {
+            const key = item.productoId;
+            if (!agrupados[key]) {
+                agrupados[key] = {
+                    nombre: item.nombre,
+                    variaciones: []
+                };
+            }
+            agrupados[key].variaciones.push({
+                talla: item.talla,
+                color: item.color,
+                cantidad: item.cantidad
+            });
+        });
+
+        // Generar reporte en texto
+        let reporte = '=== REPORTE DE RECEPCIÓN ===\n';
+        reporte += `Fecha: ${new Date().toLocaleString('es-CO')}\n\n`;
+
+        Object.values(agrupados).forEach(prod => {
+            reporte += `${prod.nombre}:\n`;
+            prod.variaciones.forEach(v => {
+                reporte += `  - ${v.talla} ${v.color}: +${v.cantidad} unidades\n`;
+            });
+            reporte += '\n';
+        });
+
+        const totalUnidades = productosRecibidosHoy.reduce((sum, item) => sum + item.cantidad, 0);
+        reporte += `\nTotal recibido: ${totalUnidades} unidades`;
+
+        // Copiar al portapapeles y descargar
+        navigator.clipboard.writeText(reporte).then(() => {
+            showToast('Reporte copiado al portapapeles', 'success');
+        });
+
+        // También crear archivo descargable
+        const blob = new Blob([reporte], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `recepcion-${new Date().toISOString().split('T')[0]}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    // Event listeners para filtros
+    if (inputBuscar) {
+        inputBuscar.addEventListener('input', debounce(cargarCatalogo, 300));
+    }
+
+    if (filtroProveedor) {
+        filtroProveedor.addEventListener('change', cargarCatalogo);
+    }
+
+    if (filtroCategoria) {
+        filtroCategoria.addEventListener('change', cargarCatalogo);
+    }
+
+    // Función debounce para optimizar búsqueda
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    /**
+     * Botón para crear orden de compra (guarda en Firestore, NO actualiza stock)
+     */
+    const btnCrearOrdenCompra = document.getElementById('btn-crear-orden-compra');
+    if (btnCrearOrdenCompra) {
+        btnCrearOrdenCompra.addEventListener('click', async () => {
+            if (productosRecibidosHoy.length === 0) {
+                showToast('Agrega al menos un producto a la orden', 'warning');
+                return;
+            }
+
+            try {
+                btnCrearOrdenCompra.disabled = true;
+                btnCrearOrdenCompra.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+                // Crear documento de orden en Firestore
+                const ordenData = {
+                    productos: productosRecibidosHoy.map(item => ({
+                        productoId: item.productoId,
+                        nombre: item.nombre,
+                        categoriaId: item.categoriaId,
+                        talla: item.talla,
+                        color: item.color,
+                        cantidad: item.cantidad,
+                        precioUnitario: item.precioUnitario
+                    })),
+                    estado: 'pendiente', // pendiente | recibida
+                    fechaCreacion: new Date(),
+                    fechaRecepcion: null,
+                    totalUnidades: productosRecibidosHoy.reduce((sum, item) => sum + item.cantidad, 0)
+                };
+
+                await addDoc(collection(db, 'ordenesCompra'), ordenData);
+
+                showToast('✅ Orden de compra creada exitosamente', 'success');
+
+                // Limpiar lista temporal
+                productosRecibidosHoy.length = 0;
+                actualizarListaRecibidos();
+
+                // Deshabilitar botón nuevamente
+                btnCrearOrdenCompra.disabled = true;
+
+                // Cerrar modal
+                const modalElement = document.getElementById('modal-recepcion-intuitiva');
+                const bsModal = bootstrap.Modal.getInstance(modalElement);
+                if (bsModal) bsModal.hide();
+
+            } catch (error) {
+                console.error('Error al crear orden:', error);
+                showToast('Error al crear la orden de compra', 'error');
+            } finally {
+                btnCrearOrdenCompra.disabled = false;
+                btnCrearOrdenCompra.innerHTML = '<i class="bi bi-save me-1"></i>Crear Orden de Compra';
+            }
+        });
+    }
+
+    console.log("✅ Módulo de Recepción Intuitiva inicializado");
+})();
+
+/**
+ * ==================================================================
+ * MÓDULO DE GESTIÓN DE ÓRDENES DE COMPRA
+ * ==================================================================
+ */
+(function() {
+    const ordenesContainer = document.getElementById('recepciones-container');
+    if (!ordenesContainer) return;
+
+    let ordenesMap = new Map(); // id -> ordenData
+
+    /**
+     * Cargar órdenes desde Firestore
+     */
+    function cargarOrdenes() {
+        onSnapshot(collection(db, 'ordenesCompra'), snapshot => {
+            ordenesMap.clear();
+
+            snapshot.forEach(doc => {
+                ordenesMap.set(doc.id, { id: doc.id, ...doc.data() });
+            });
+
+            renderizarOrdenes();
+        }, error => {
+            console.error('Error al cargar órdenes:', error);
+        });
+    }
+
+    /**
+     * Renderizar órdenes en la interfaz
+     */
+    function renderizarOrdenes() {
+        const ordenesPendientes = [];
+        const ordenesRecibidas = [];
+
+        ordenesMap.forEach(orden => {
+            if (orden.estado === 'pendiente') {
+                ordenesPendientes.push(orden);
+            } else {
+                ordenesRecibidas.push(orden);
+            }
+        });
+
+        // Ordenar por fecha (más reciente primero)
+        ordenesPendientes.sort((a, b) => b.fechaCreacion?.toMillis() - a.fechaCreacion?.toMillis());
+        ordenesRecibidas.sort((a, b) => b.fechaRecepcion?.toMillis() - a.fechaRecepcion?.toMillis());
+
+        let html = '';
+
+        // Sección de pendientes
+        html += `
+            <div class="card mb-3">
+                <div class="card-header bg-warning bg-opacity-10 border-warning">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Órdenes Pendientes (${ordenesPendientes.length})</h5>
+                </div>
+                <div class="card-body">`;
+
+        if (ordenesPendientes.length === 0) {
+            html += `<p class="text-muted text-center mb-0">No hay órdenes pendientes</p>`;
+        } else {
+            ordenesPendientes.forEach(orden => {
+                html += renderizarOrden(orden, true);
+            });
+        }
+
+        html += `</div></div>`;
+
+        // Sección de recibidas
+        html += `
+            <div class="card">
+                <div class="card-header bg-success bg-opacity-10 border-success">
+                    <h5 class="mb-0"><i class="bi bi-check-circle me-2"></i>Órdenes Recibidas (${ordenesRecibidas.length})</h5>
+                </div>
+                <div class="card-body">`;
+
+        if (ordenesRecibidas.length === 0) {
+            html += `<p class="text-muted text-center mb-0">No hay órdenes recibidas</p>`;
+        } else {
+            ordenesRecibidas.forEach(orden => {
+                html += renderizarOrden(orden, false);
+            });
+        }
+
+        html += `</div></div>`;
+
+        ordenesContainer.innerHTML = html;
+    }
+
+    /**
+     * Renderizar una orden individual
+     */
+    function renderizarOrden(orden, esPendiente) {
+        const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+        const fecha = orden.fechaCreacion?.toDate();
+        const fechaTexto = fecha ? fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+
+        // Calcular total de la orden
+        let totalOrden = 0;
+        orden.productos.forEach(item => {
+            totalOrden += (item.precioUnitario || 0) * (item.cantidad || 0);
+        });
+
+        let html = `
+            <div class="card mb-3 shadow-sm ${esPendiente ? 'border-warning' : 'border-success'}" style="border-width: 2px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="mb-2 fw-bold">
+                                <i class="bi bi-box-seam me-2 text-${esPendiente ? 'warning' : 'success'}"></i>
+                                Orden del ${fechaTexto}
+                            </h5>
+                            <div class="d-flex gap-2 align-items-center flex-wrap">
+                                <span class="badge ${esPendiente ? 'bg-warning text-dark' : 'bg-success'} fs-6">
+                                    ${esPendiente ? '⏱️ Pendiente' : '✓ Recibida'}
+                                </span>
+                                <span class="badge bg-secondary fs-6">
+                                    <i class="bi bi-stack me-1"></i>${orden.totalUnidades || 0} unidades
+                                </span>
+                                <span class="badge bg-info fs-6">
+                                    <i class="bi bi-currency-dollar me-1"></i>${formatoMoneda.format(totalOrden)}
+                                </span>
+                            </div>
+                        </div>
+                        ${esPendiente ? `
+                            <button class="btn btn-success btn-lg shadow" onclick="window.marcarComoRecibido('${orden.id}')" style="min-width: 200px;">
+                                <i class="bi bi-check-circle-fill me-2"></i>Marcar como Recibido
+                            </button>
+                        ` : `
+                            <div class="text-success fs-4">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                        `}
+                    </div>
+                    <div class="table-responsive mt-3">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 50px;"></th>
+                                    <th>Producto</th>
+                                    <th>Categoría</th>
+                                    <th>Variación</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-end">Precio Unit.</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+        orden.productos.forEach(item => {
+            const producto = localProductsMap.get(item.productoId);
+            let categoria = 'Sin categoría';
+            if (typeof window.categoriesMap !== 'undefined' && window.categoriesMap instanceof Map && item.categoriaId) {
+                categoria = window.categoriesMap.get(item.categoriaId) || 'Sin categoría';
+            }
+
+            const precio = item.precioUnitario ? formatoMoneda.format(item.precioUnitario) : '$0';
+            const subtotal = (item.precioUnitario || 0) * (item.cantidad || 0);
+            const imagenUrl = producto?.imagenUrl || producto?.imageUrl || 'https://via.placeholder.com/50x50/f0f0f0/cccccc?text=?';
+
+            html += `
+                <tr>
+                    <td>
+                        <img src="${imagenUrl}" alt="${item.nombre}"
+                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 2px solid #dee2e6;">
+                    </td>
+                    <td>
+                        <strong class="text-dark">${item.nombre}</strong>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border">
+                            <i class="bi bi-tag-fill me-1"></i>${categoria}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                            ${item.talla} - ${item.color}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-primary fs-6">${item.cantidad}</span>
+                    </td>
+                    <td class="text-end fw-semibold">${precio}</td>
+                    <td class="text-end fw-bold text-success">${formatoMoneda.format(subtotal)}</td>
+                </tr>`;
+        });
+
+        html += `
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-light">
+                                    <td colspan="6" class="text-end fw-bold fs-5">Total de la orden:</td>
+                                    <td class="text-end fw-bold fs-5 text-primary">${formatoMoneda.format(totalOrden)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>`;
+
+        return html;
+    }
+
+    /**
+     * Marcar orden como recibida (AQUÍ SÍ se actualiza el stock)
+     */
+    window.marcarComoRecibido = async function(ordenId) {
+        const orden = ordenesMap.get(ordenId);
+        if (!orden) {
+            showToast('❌ Orden no encontrada', 'error');
+            return;
+        }
+
+        // Crear mensaje de confirmación detallado
+        let confirmMsg = `🔄 ¿Marcar esta orden como recibida?\n\n`;
+        confirmMsg += `📦 Total: ${orden.totalUnidades} unidades\n`;
+        confirmMsg += `📝 Productos:\n`;
+
+        orden.productos.forEach(item => {
+            confirmMsg += `   • ${item.nombre} (${item.talla}/${item.color}): ${item.cantidad} unidades\n`;
+        });
+
+        confirmMsg += `\n✓ Esto SUMARÁ el stock al inventario automáticamente.`;
+
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        // Mostrar indicador de carga
+        showToast('⏳ Procesando orden y actualizando inventario...', 'info');
+
+        try {
+            // Actualizar stock de cada producto
+            const batch = writeBatch(db);
+
+            // Agrupar variaciones por producto
+            const productosPorActualizar = new Map();
+
+            orden.productos.forEach(item => {
+                if (!productosPorActualizar.has(item.productoId)) {
+                    productosPorActualizar.set(item.productoId, []);
+                }
+                productosPorActualizar.get(item.productoId).push(item);
+            });
+
+            // Actualizar cada producto
+            let productosActualizados = 0;
+            for (const [productoId, items] of productosPorActualizar) {
+                const producto = localProductsMap.get(productoId);
+                if (!producto) {
+                    console.warn(`Producto no encontrado: ${productoId}`);
+                    continue;
+                }
+
+                const variacionesActualizadas = [...(producto.variaciones || [])];
+
+                items.forEach(item => {
+                    // Buscar índice de la variación
+                    const varIndex = variacionesActualizadas.findIndex(v =>
+                        v.talla === item.talla && v.color === item.color
+                    );
+
+                    if (varIndex >= 0) {
+                        const stockAnterior = variacionesActualizadas[varIndex].stock || 0;
+                        variacionesActualizadas[varIndex].stock = stockAnterior + item.cantidad;
+                        console.log(`✓ ${item.nombre} (${item.talla}/${item.color}): ${stockAnterior} → ${variacionesActualizadas[varIndex].stock}`);
+                    } else {
+                        console.warn(`Variación no encontrada: ${item.nombre} (${item.talla}/${item.color})`);
+                    }
+                });
+
+                const productoRef = doc(db, 'productos', productoId);
+                batch.update(productoRef, { variaciones: variacionesActualizadas });
+                productosActualizados++;
+            }
+
+            // Actualizar estado de la orden
+            const ordenRef = doc(db, 'ordenesCompra', ordenId);
+            batch.update(ordenRef, {
+                estado: 'recibida',
+                fechaRecepcion: new Date()
+            });
+
+            await batch.commit();
+
+            console.log(`✅ Orden ${ordenId} marcada como recibida`);
+            console.log(`✅ ${productosActualizados} productos actualizados`);
+            console.log(`✅ ${orden.totalUnidades} unidades sumadas al inventario`);
+
+            showToast(`✅ ¡Orden recibida exitosamente!\n\n📦 ${orden.totalUnidades} unidades sumadas al inventario\n🔄 ${productosActualizados} productos actualizados`, 'success');
+
+        } catch (error) {
+            console.error('❌ Error al marcar como recibido:', error);
+            showToast(`❌ Error al actualizar el inventario\n\n${error.message}`, 'error');
+        }
+    };
+
+    // Iniciar carga de órdenes
+    cargarOrdenes();
+
+    console.log("✅ Módulo de Gestión de Órdenes inicializado");
+})();
+
 // ═══════════════════════════════════════════════════════════════════
 // SECCIÓN: PROMOCIONES GLOBALES
 // ═══════════════════════════════════════════════════════════════════
