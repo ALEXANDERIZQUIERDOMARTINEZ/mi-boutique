@@ -368,9 +368,10 @@ function calculatePromotionPrice(producto) {
 // ✅ FUNCIÓN DE FILTRO MEJORADA CON FILTROS AVANZADOS
 function applyFiltersAndRender() {
     const activeFilterEl = document.querySelector('.filter-group.active');
-    if (!activeFilterEl) return;
 
-    const activeFilter = activeFilterEl.dataset.filter;
+    // Si no hay filtro activo, mostrar productos disponibles por defecto
+    const activeFilter = activeFilterEl ? activeFilterEl.dataset.filter : 'disponible';
+
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
     const searchModalTerm = document.getElementById('search-modal-input').value.toLowerCase();
     const finalSearchTerm = searchTerm || searchModalTerm;
