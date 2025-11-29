@@ -2175,6 +2175,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button class="btn btn-action btn-action-danger btn-cancel-sale" ${estaAnulada ? 'disabled' : ''}>
                                         <i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span>
                                     </button>
+                                    <button class="btn btn-action btn-action-danger btn-delete-sale" title="Eliminar venta (requiere contraseña)">
+                                        <i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span>
+                                    </button>
                                 </td>`;
                 salesListTableBody.appendChild(tr);
             });
@@ -2408,6 +2411,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const apartadoRef = await addDoc(apartadosCollection, apartadoData);
                         console.log("✅ Apartado creado exitosamente con ID:", apartadoRef.id);
+
+                        // ✅ Registrar abono inicial en la colección 'abonos' para el cierre de caja
+                        const abonoInicialParaCaja = {
+                            apartadoId: apartadoRef.id,
+                            ventaId: docRef.id,
+                            clienteNombre: ventaData.clienteNombre,
+                            monto: abonoInicial,
+                            metodoPago: metodoPagoInicial,
+                            observaciones: 'Abono inicial',
+                            timestamp: Timestamp.fromDate(new Date())
+                        };
+                        await addDoc(collection(db, 'abonos'), abonoInicialParaCaja);
+                        console.log("✅ Abono inicial registrado en la colección de abonos");
+
                         showToast(`Apartado creado! Saldo: ${formatoMoneda.format(saldoPendiente)}. Vence: ${fechaVencimiento.toLocaleDateString('es-CO')}`, 'success');
                     } catch (apErr) {
                         console.error("❌ Error crítico al crear apartado:", apErr);
@@ -2481,13 +2498,86 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 showToast('Venta anulada y stock repuesto.', 'info');
-                
+
             } catch (error) {
                 console.error("Error al anular la venta:", error);
                 showToast('Error al anular la venta.', 'error');
             }
         }
-        
+
+        // --- Función para ELIMINAR Venta con Contraseña ---
+        async function eliminarVentaConPassword(ventaId) {
+            if (!ventaId) return;
+
+            // Solicitar contraseña
+            const password = prompt('⚠️ ELIMINAR VENTA DE LA BASE DE DATOS\n\nEsta acción es PERMANENTE y NO se puede deshacer.\nSe eliminará completamente de la base de datos y se devolverá el stock.\n\nIngresa la contraseña de administrador:');
+
+            if (!password) {
+                showToast('Operación cancelada', 'info');
+                return;
+            }
+
+            // Validar contraseña (cambia esto por tu contraseña deseada)
+            const PASSWORD_ADMIN = 'admin123'; // 🔑 CAMBIAR ESTA CONTRASEÑA
+
+            if (password !== PASSWORD_ADMIN) {
+                showToast('❌ Contraseña incorrecta', 'error');
+                return;
+            }
+
+            // Confirmar eliminación
+            if (!confirm('⚠️ ÚLTIMA CONFIRMACIÓN\n\n¿Estás COMPLETAMENTE SEGURO de eliminar esta venta?\n\nEsta acción es IRREVERSIBLE y eliminará:\n- La venta de la base de datos\n- El apartado (si existe)\n- Los abonos asociados\n- Devolverá el stock\n\n¿Continuar?')) {
+                return;
+            }
+
+            const ventaRef = doc(db, 'ventas', ventaId);
+
+            try {
+                const ventaSnap = await getDoc(ventaRef);
+                if (!ventaSnap.exists()) {
+                    showToast('Error: No se encontró la venta.', 'error');
+                    return;
+                }
+
+                const ventaData = ventaSnap.data();
+
+                // 1. Devolver stock si la venta no está anulada
+                if (ventaData.estado !== 'Anulada' && ventaData.estado !== 'Cancelada') {
+                    await actualizarStock(ventaData.items, 'sumar');
+                    console.log('✅ Stock devuelto');
+                }
+
+                // 2. Si es un apartado, eliminar el documento del apartado y los abonos
+                if (ventaData.tipoVenta === 'apartado') {
+                    const qApartado = query(apartadosCollection, where("ventaId", "==", ventaId));
+                    const apartadosSnap = await getDocs(qApartado);
+
+                    for (const apartadoDoc of apartadosSnap.docs) {
+                        await deleteDoc(apartadoDoc.ref);
+                        console.log('✅ Apartado eliminado:', apartadoDoc.id);
+
+                        // Eliminar abonos asociados a este apartado
+                        const qAbonos = query(collection(db, 'abonos'), where('apartadoId', '==', apartadoDoc.id));
+                        const abonosSnap = await getDocs(qAbonos);
+                        for (const abonoDoc of abonosSnap.docs) {
+                            await deleteDoc(abonoDoc.ref);
+                            console.log('✅ Abono eliminado:', abonoDoc.id);
+                        }
+                    }
+                }
+
+                // 3. Eliminar la venta
+                await deleteDoc(ventaRef);
+                console.log('✅ Venta eliminada:', ventaId);
+
+                showToast('✅ Venta eliminada completamente de la base de datos', 'success');
+
+            } catch (error) {
+                console.error("❌ Error al eliminar la venta:", error);
+                showToast(`Error al eliminar la venta: ${error.message}`, 'error');
+            }
+        }
+
         // --- Función para Ver Venta (R-Detalle) ---
         async function handleViewSale(ventaId) {
             if (!viewSaleModalInstance) {
@@ -2611,6 +2701,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Cambiar tipo de venta (detal/mayorista)
             if(target.classList.contains('btn-change-sale-type')) {
                 cambiarTipoVenta(id, target.dataset.tipo);
+            }
+
+            // Eliminar venta con contraseña
+            if(target.classList.contains('btn-delete-sale')) {
+                eliminarVentaConPassword(id);
             }
         });
 
@@ -3408,6 +3503,19 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     ultimaModificacion: serverTimestamp()
                 });
                 console.log("✅ Apartado actualizado correctamente");
+
+                // ✅ PASO 4.5: Registrar abono en la colección 'abonos' para el cierre de caja
+                const abonoParaCaja = {
+                    apartadoId: apartadoId,
+                    ventaId: apartadoData.ventaId,
+                    clienteNombre: apartadoData.clienteNombre,
+                    monto: monto,
+                    metodoPago: metodoPago,
+                    observaciones: observaciones || 'Sin observaciones',
+                    timestamp: Timestamp.fromDate(new Date())
+                };
+                await addDoc(collection(db, 'abonos'), abonoParaCaja);
+                console.log("✅ Abono registrado en la colección de abonos para el cierre de caja");
 
                 // ✅ PASO 5: Actualizar venta asociada
                 if (apartadoData.ventaId) {
