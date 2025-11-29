@@ -512,6 +512,16 @@ body.admin-page {
     overflow: visible !important;
 }
 
+/* Wrapper para celdas de productos en historial de ventas */
+.productos-cell-wrapper {
+    max-width: 300px;
+    overflow: visible;
+}
+
+.productos-cell-wrapper > div {
+    width: 100%;
+}
+
 .table-product-img {
     max-width: 65px;
     height: auto;
