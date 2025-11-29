@@ -8795,4 +8795,3 @@ if (sociosTab) {
 console.log("✅ Módulo de Socios y Utilidades inicializado");
 
 });
-
