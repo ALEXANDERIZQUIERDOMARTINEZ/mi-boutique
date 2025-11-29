@@ -61,7 +61,9 @@ body.admin-page {
     scrollbar-width: thin;
     scrollbar-color: var(--admin-primario-claro) transparent;
     margin: 0 auto;
-    justify-content: center;
+    justify-content: flex-start;
+    gap: 0.2rem;
+    padding: 0.25rem 0.5rem;
 }
 
 .admin-navbar .navbar-nav::-webkit-scrollbar {
@@ -93,18 +95,20 @@ body.admin-page {
 
 .nav-pills .nav-link {
     color: var(--admin-texto-sec);
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     font-weight: 500;
-    padding: 0.6rem 0.85rem;
-    margin: 0 0.1rem;
-    border-radius: 10px;
+    padding: 0.5rem 0.7rem;
+    margin: 0;
+    border-radius: 8px;
     transition: all 0.3s ease;
     white-space: nowrap;
+    line-height: 1.3;
 }
 
 .nav-pills .nav-link i {
     vertical-align: text-bottom;
-    margin-right: 4px;
+    margin-right: 3px;
+    font-size: 0.85rem;
 }
 
 .nav-pills .nav-link:hover {
@@ -1021,18 +1025,31 @@ body.admin-page {
     }
 }
 
-/* Responsive: Solo iconos en pantallas medianas */
-@media (max-width: 1400px) and (min-width: 992px) {
+/* Pantallas muy grandes: Centrar y espaciar mejor */
+@media (min-width: 1400px) {
+    .admin-navbar .navbar-nav {
+        justify-content: center;
+        gap: 0.25rem;
+    }
+
     .nav-pills .nav-link {
-        padding: 0.6rem 0.65rem;
-        margin: 0 0.05rem;
+        padding: 0.55rem 0.75rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Responsive: Solo iconos en pantallas medianas */
+@media (max-width: 1399px) and (min-width: 992px) {
+    .nav-pills .nav-link {
+        padding: 0.55rem 0.6rem;
+        margin: 0;
         font-size: 0;
         position: relative;
     }
 
     .nav-pills .nav-link i {
         margin-right: 0;
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
 
     .nav-pills .nav-link .badge-new-order {
