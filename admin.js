@@ -1144,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                              monto: efectivoEntregado,
                              metodoPago: 'efectivo',
                              descripcion: `Liquidación ${repartidorNombre} - ${ventasIds.length} domicilios`,
-                             timestamp: serverTimestamp()
+                             timestamp: Timestamp.fromDate(new Date())
                          });
                      }
 
@@ -2333,7 +2333,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 pagoTransferencia: parseFloat(eliminarFormatoNumero(pagoTransferenciaInput.value)) || 0,
                 totalVenta: totalCalculado,
                 estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada',
-                timestamp: serverTimestamp()
+                timestamp: Timestamp.fromDate(new Date()) // ✅ Usar hora local para consistencia con filtros
             }; 
             
             if (ventaData.tipoVenta === 'apartado') {
@@ -2396,7 +2396,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         total: ventaData.totalVenta,
                         abonado: abonoInicial,
                         saldo: saldoPendiente,
-                        fechaCreacion: serverTimestamp(),
+                        fechaCreacion: Timestamp.fromDate(new Date()),
                         fechaVencimiento: Timestamp.fromDate(fechaVencimiento),
                         estado: 'Pendiente',
                         items: ventaData.items, // Guardar items para referencia
@@ -3339,7 +3339,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             try {
                 await updateDoc(apartadoRef, {
                     estado: 'Completado',
-                    fechaCompletado: serverTimestamp()
+                    fechaCompletado: Timestamp.fromDate(new Date())
                 });
                 
                 if (apartadoData.ventaId) {
@@ -3404,7 +3404,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                 await updateDoc(apartadoRef, {
                     estado: 'Cancelado',
-                    fechaCancelacion: serverTimestamp()
+                    fechaCancelacion: Timestamp.fromDate(new Date())
                 });
                 console.log('✅ Apartado marcado como cancelado');
 
@@ -3500,7 +3500,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     saldo: nuevoSaldo,
                     abonos: abonosConvertidos,
                     estado: nuevoSaldo <= 0 ? 'Completado' : 'Pendiente',
-                    ultimaModificacion: serverTimestamp()
+                    ultimaModificacion: Timestamp.fromDate(new Date())
                 });
                 console.log("✅ Apartado actualizado correctamente");
 
@@ -3759,7 +3759,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         monto: amount,
                         metodoPago: method,
                         descripcion: desc,
-                        timestamp: serverTimestamp()
+                        timestamp: Timestamp.fromDate(new Date())
                     });
                     showToast(`Ingreso en ${method} guardado!`);
 
@@ -3788,7 +3788,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         tipo: 'gasto',
                         monto: amount,
                         descripcion: desc,
-                        timestamp: serverTimestamp()
+                        timestamp: Timestamp.fromDate(new Date())
                     });
                     showToast('Gasto guardado!');
 
@@ -3821,7 +3821,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                 // Guardar cierre en BD con TODOS los datos
                 const cierreData = {
-                    timestamp: serverTimestamp(),
+                    timestamp: Timestamp.fromDate(new Date()),
                     ventasEfectivo: datosDelDia.ventasEfectivo,
                     ventasTransferencia: datosDelDia.ventasTransferencia,
                     abonosEfectivo: datosDelDia.abonosEfectivo,
