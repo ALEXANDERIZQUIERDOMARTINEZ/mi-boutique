@@ -2195,23 +2195,32 @@ document.addEventListener('DOMContentLoaded', () => {
         async function combinarYRenderizarVentas() {
             try {
                 const todasLasVentas = new Map(ventasDelDia);
+                console.log(`📊 [Ventas] Combinando: ${ventasDelDia.size} ventas del día + ${ventasIdsDeAbonos.size} ventas con abonos`);
 
                 // Agregar ventas de apartados con abonos en la fecha (si no están ya)
                 if (ventasIdsDeAbonos.size > 0) {
                     for (const ventaId of ventasIdsDeAbonos) {
                         if (!todasLasVentas.has(ventaId)) {
                             try {
+                                console.log(`📊 [Ventas] Obteniendo venta de abono: ${ventaId}`);
                                 const ventaRef = doc(db, 'ventas', ventaId);
                                 const ventaSnap = await getDoc(ventaRef);
                                 if (ventaSnap.exists()) {
                                     todasLasVentas.set(ventaId, { id: ventaId, ...ventaSnap.data() });
+                                    console.log(`✅ [Ventas] Venta agregada:`, ventaSnap.data().clienteNombre);
+                                } else {
+                                    console.warn(`⚠️ [Ventas] Venta no encontrada: ${ventaId}`);
                                 }
                             } catch (err) {
-                                console.error('Error al obtener venta:', ventaId, err);
+                                console.error('❌ [Ventas] Error al obtener venta:', ventaId, err);
                             }
+                        } else {
+                            console.log(`📊 [Ventas] Venta ya estaba en el día: ${ventaId}`);
                         }
                     }
                 }
+
+                console.log(`📊 [Ventas] Total de ventas a mostrar: ${todasLasVentas.size}`);
 
                 // Crear snapshot simulado para renderSales
                 const ventasArray = Array.from(todasLasVentas.values());
@@ -2282,12 +2291,23 @@ document.addEventListener('DOMContentLoaded', () => {
             abonosUnsubscribe = onSnapshot(qAbonos, async (abonosSnapshot) => {
                 // Obtener ventaIds de los abonos del día
                 ventasIdsDeAbonos.clear();
+                console.log(`📊 [Ventas] Abonos encontrados del día: ${abonosSnapshot.size}`);
+
                 abonosSnapshot.forEach(doc => {
                     const abono = doc.data();
+                    console.log('📊 [Ventas] Abono encontrado:', {
+                        id: doc.id,
+                        ventaId: abono.ventaId,
+                        monto: abono.monto,
+                        timestamp: abono.timestamp?.toDate ? abono.timestamp.toDate().toLocaleString('es-CO') : abono.timestamp
+                    });
+
                     if (abono.ventaId) {
                         ventasIdsDeAbonos.add(abono.ventaId);
                     }
                 });
+
+                console.log(`📊 [Ventas] IDs de ventas de abonos:`, Array.from(ventasIdsDeAbonos));
 
                 // Re-renderizar con los nuevos datos de abonos
                 await combinarYRenderizarVentas();
@@ -2297,6 +2317,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ventasUnsubscribe = onSnapshot(qVentas, async (ventasSnapshot) => {
                 // Actualizar ventas del día
                 ventasDelDia.clear();
+                console.log(`📊 [Ventas] Ventas creadas del día: ${ventasSnapshot.size}`);
+
                 ventasSnapshot.forEach(docSnap => {
                     ventasDelDia.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
                 });
