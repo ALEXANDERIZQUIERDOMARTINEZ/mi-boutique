@@ -280,30 +280,58 @@ document.addEventListener('DOMContentLoaded', () => {
         const verApartadoModalEl = document.getElementById('verApartadoModal');
         if (verApartadoModalEl) verApartadoModalInstance = new bootstrap.Modal(verApartadoModalEl);
 
-        // --- Sidebar Toggle ---
+        // --- Sidebar Toggle y Funcionalidad ---
         const sidebarToggle = document.getElementById('sidebarToggle');
         const sidebar = document.getElementById('adminSidebar');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
 
         if (sidebarToggle && sidebar && sidebarOverlay) {
-            sidebarToggle.addEventListener('click', () => {
+            // Toggle sidebar en móvil
+            sidebarToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
                 sidebar.classList.toggle('show');
                 sidebarOverlay.classList.toggle('show');
             });
 
+            // Cerrar sidebar al hacer clic en overlay
             sidebarOverlay.addEventListener('click', () => {
                 sidebar.classList.remove('show');
                 sidebarOverlay.classList.remove('show');
             });
 
-            // Cerrar sidebar al hacer clic en un link (solo en móvil)
+            // Manejar clics en los links del sidebar
             const navLinks = sidebar.querySelectorAll('.nav-link-item');
             navLinks.forEach(link => {
-                link.addEventListener('click', () => {
+                link.addEventListener('click', (e) => {
+                    // Remover active de todos los links
+                    navLinks.forEach(l => l.classList.remove('active'));
+
+                    // Agregar active al link clickeado
+                    link.classList.add('active');
+
+                    // Cerrar sidebar en móvil
                     if (window.innerWidth < 992) {
-                        sidebar.classList.remove('show');
-                        sidebarOverlay.classList.remove('show');
+                        setTimeout(() => {
+                            sidebar.classList.remove('show');
+                            sidebarOverlay.classList.remove('show');
+                        }, 300);
                     }
+                });
+            });
+
+            // Manejar estados activos basados en el tab actual
+            const tabLinks = document.querySelectorAll('[data-bs-toggle="pill"]');
+            tabLinks.forEach(tabLink => {
+                tabLink.addEventListener('shown.bs.tab', (e) => {
+                    const targetId = e.target.getAttribute('href').substring(1);
+
+                    // Encontrar el link correspondiente en el sidebar y marcarlo como activo
+                    navLinks.forEach(link => {
+                        if (link.getAttribute('href') === `#${targetId}`) {
+                            navLinks.forEach(l => l.classList.remove('active'));
+                            link.classList.add('active');
+                        }
+                    });
                 });
             });
         }
