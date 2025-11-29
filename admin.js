@@ -2185,44 +2185,127 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ✅ FILTRO DE FECHA PARA HISTORIAL
         let ventasUnsubscribe = null;
+        let abonosUnsubscribe = null;
 
-        function cargarVentas(fechaFiltro = null) {
-            // Cancelar listener anterior si existe
+        // Variables compartidas para sincronizar los dos listeners
+        let ventasDelDia = new Map();
+        let ventasIdsDeAbonos = new Set();
+
+        // Función para combinar y renderizar todas las ventas
+        async function combinarYRenderizarVentas() {
+            try {
+                const todasLasVentas = new Map(ventasDelDia);
+
+                // Agregar ventas de apartados con abonos en la fecha (si no están ya)
+                if (ventasIdsDeAbonos.size > 0) {
+                    for (const ventaId of ventasIdsDeAbonos) {
+                        if (!todasLasVentas.has(ventaId)) {
+                            try {
+                                const ventaRef = doc(db, 'ventas', ventaId);
+                                const ventaSnap = await getDoc(ventaRef);
+                                if (ventaSnap.exists()) {
+                                    todasLasVentas.set(ventaId, { id: ventaId, ...ventaSnap.data() });
+                                }
+                            } catch (err) {
+                                console.error('Error al obtener venta:', ventaId, err);
+                            }
+                        }
+                    }
+                }
+
+                // Crear snapshot simulado para renderSales
+                const ventasArray = Array.from(todasLasVentas.values());
+                const snapshotSimulado = {
+                    forEach: (callback) => {
+                        ventasArray.forEach(venta => {
+                            callback({
+                                id: venta.id,
+                                data: () => {
+                                    const { id, ...data } = venta;
+                                    return data;
+                                }
+                            });
+                        });
+                    }
+                };
+
+                renderSales(snapshotSimulado);
+            } catch (error) {
+                console.error("Error procesando ventas:", error);
+                if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error procesando ventas.</td></tr>';
+            }
+        }
+
+        async function cargarVentas(fechaFiltro = null) {
+            // Cancelar listeners anteriores si existen
             if (ventasUnsubscribe) {
                 ventasUnsubscribe();
             }
+            if (abonosUnsubscribe) {
+                abonosUnsubscribe();
+            }
 
-            let q;
+            // Limpiar datos previos
+            ventasDelDia.clear();
+            ventasIdsDeAbonos.clear();
+
+            let inicio, fin;
             if (fechaFiltro) {
                 // Filtrar por fecha específica
                 // ✅ Crear fecha en zona horaria local para evitar problemas
                 const partes = fechaFiltro.split('-');
-                const inicio = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 0, 0, 0, 0);
-                const fin = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 23, 59, 59, 999);
-
-                q = query(
-                    salesCollection,
-                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
-                    where('timestamp', '<=', Timestamp.fromDate(fin)),
-                    orderBy('timestamp', 'desc')
-                );
+                inicio = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 0, 0, 0, 0);
+                fin = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 23, 59, 59, 999);
             } else {
                 // Sin filtro, mostrar solo del día actual por defecto
                 const hoy = new Date();
-                const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
-                const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
-
-                q = query(
-                    salesCollection,
-                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
-                    where('timestamp', '<=', Timestamp.fromDate(fin)),
-                    orderBy('timestamp', 'desc')
-                );
+                inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+                fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
             }
 
-            ventasUnsubscribe = onSnapshot(q, renderSales, e => {
+            // ✅ PASO 1: Consultar ventas creadas en la fecha
+            const qVentas = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                where('timestamp', '<=', Timestamp.fromDate(fin)),
+                orderBy('timestamp', 'desc')
+            );
+
+            // ✅ PASO 2: Consultar abonos realizados en la fecha para incluir apartados con movimientos
+            const qAbonos = query(
+                collection(db, 'abonos'),
+                where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                where('timestamp', '<=', Timestamp.fromDate(fin))
+            );
+
+            // Listener para abonos
+            abonosUnsubscribe = onSnapshot(qAbonos, async (abonosSnapshot) => {
+                // Obtener ventaIds de los abonos del día
+                ventasIdsDeAbonos.clear();
+                abonosSnapshot.forEach(doc => {
+                    const abono = doc.data();
+                    if (abono.ventaId) {
+                        ventasIdsDeAbonos.add(abono.ventaId);
+                    }
+                });
+
+                // Re-renderizar con los nuevos datos de abonos
+                await combinarYRenderizarVentas();
+            });
+
+            // Listener para ventas
+            ventasUnsubscribe = onSnapshot(qVentas, async (ventasSnapshot) => {
+                // Actualizar ventas del día
+                ventasDelDia.clear();
+                ventasSnapshot.forEach(docSnap => {
+                    ventasDelDia.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
+                });
+
+                // Re-renderizar con los nuevos datos de ventas
+                await combinarYRenderizarVentas();
+            }, e => {
                 console.error("Error sales:", e);
-                if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';
+                if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error cargando ventas.</td></tr>';
             });
         }
 
