@@ -2189,7 +2189,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 tr.innerHTML = `<td>${fecha}</td>
                                 <td>${d.clienteNombre || 'General'}</td>
-                                <td>${productosHtml}</td>
+                                <td><div class="productos-cell-wrapper">${productosHtml}</div></td>
                                 <td>${d.tipoVenta}</td>
                                 <td>${formatoMoneda.format(d.totalVenta||0)}</td>
                                 <td>${pago||'-'}</td>
@@ -2197,7 +2197,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <td><span class="badge ${estadoBadgeClass}">${estado}</span></td>
                                 <td class="action-buttons">
                                     <button class="btn btn-action btn-action-view btn-view-sale"><i class="bi bi-eye"></i><span class="btn-action-text">Ver</span></button>
-                                    ${!estaAnulada ? `<button class="btn btn-action btn-action-info btn-change-sale-type" data-tipo="${d.tipoVenta}"><i class="bi bi-arrow-left-right"></i><span class="btn-action-text">Cambiar</span></button>` : ''}
+                                    ${!estaAnulada ? `<button class="btn btn-action btn-action-info btn-change-sale-type" data-tipo="${d.tipoVenta}"><i class="bi bi-arrow-left-right"></i><span class="btn-action-text">Editar Venta</span></button>` : ''}
                                     ${d.tipoVenta === 'apartado' && !estaAnulada ? `<button class="btn btn-action btn-action-warning btn-manage-apartado"><i class="bi bi-calendar-heart"></i><span class="btn-action-text">Gestionar</span></button>` : ''}
                                     <button class="btn btn-action btn-action-danger btn-cancel-sale" ${estaAnulada ? 'disabled' : ''}>
                                         <i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span>
