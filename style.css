@@ -248,7 +248,7 @@ h1, h2, h3, h4, h5, h6 {
 .catalog-filters {
     display: flex;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 1rem;
 }
 
 .filter-group {
@@ -257,12 +257,12 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--color-texto-secundario);
     border-radius: var(--radio-md);
     font-weight: 500;
-    padding: 8px 15px;
+    padding: 10px 20px;
     box-shadow: none;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     position: relative;
     transition: all var(--transicion);
 }
