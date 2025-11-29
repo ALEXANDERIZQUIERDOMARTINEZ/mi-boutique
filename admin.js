@@ -3626,6 +3626,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
              cajaEgresosInput.addEventListener('input', calcularTotalCaja);
          }
 
+         // ✅ Listener global para recalcular datos del día
+         document.addEventListener('calcularDatosDelDia', () => {
+             console.log('🔔 Evento calcularDatosDelDia recibido');
+             calcularDatosDelDia();
+         });
+
          // Calcular automáticamente cuando se muestra la vista de cierre
          const toggleClosingTodayBtn = document.getElementById('toggle-closing-today-btn');
          if (toggleClosingTodayBtn) {
@@ -3635,9 +3641,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
          }
 
          // Calcular al cargar la página si ya está en la vista de cierre
-         if (document.getElementById('closing-today-view')?.style.display !== 'none') {
-             calcularDatosDelDia();
-         }
+         setTimeout(() => {
+             if (document.getElementById('closing-today-view')?.style.display !== 'none') {
+                 calcularDatosDelDia();
+             }
+         }, 500);
 
          if(addIncomeForm) addIncomeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -4296,7 +4304,54 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const fV_prod = document.getElementById('form-view'); const iV_prod = document.getElementById('inventory-view'); const tIB_prod = document.getElementById('toggle-inventory-view-btn'); const tFB_prod = document.getElementById('toggle-form-view-btn'); if(fV_prod && iV_prod && tIB_prod && tFB_prod){ tIB_prod.addEventListener('click',(e)=>{ e.preventDefault(); fV_prod.style.display='none'; iV_prod.style.display='block'; tIB_prod.classList.add('active'); tFB_prod.classList.remove('active');}); tFB_prod.addEventListener('click',(e)=>{ e.preventDefault(); iV_prod.style.display='none'; fV_prod.style.display='block'; tFB_prod.classList.add('active'); tIB_prod.classList.remove('active'); window.clearProductForm(); }); iV_prod.style.display='block'; tIB_prod.classList.add('active'); } else { console.warn("Product view toggle missing."); }
         const sFV = document.getElementById('sales-form-view'); const sLV = document.getElementById('sales-list-view'); const tSLB = document.getElementById('toggle-sales-list-view-btn'); const tSFB = document.getElementById('toggle-sales-form-view-btn'); if(sFV && sLV && tSLB && tSFB){ tSLB.addEventListener('click',(e)=>{ e.preventDefault(); sFV.style.display='none'; sLV.style.display='block'; tSLB.classList.add('active'); tSFB.classList.remove('active'); }); tSFB.addEventListener('click',(e)=>{ e.preventDefault(); sLV.style.display='none'; sFV.style.display='block'; tSFB.classList.add('active'); tSLB.classList.remove('active'); }); sFV.style.display='block'; tSFB.classList.add('active'); } else { console.warn("Sales view toggle missing."); }
          const todayViewR = document.getElementById('delivery-today-view'); const historyViewR = document.getElementById('delivery-history-view'); const toggleHistoryBtnR = document.getElementById('toggle-delivery-history-btn'); const toggleTodayBtnR = document.getElementById('toggle-delivery-today-btn'); if (todayViewR && historyViewR && toggleHistoryBtnR && toggleTodayBtnR) { toggleHistoryBtnR.addEventListener('click', (e) => { e.preventDefault(); todayViewR.style.display = 'none'; historyViewR.style.display = 'block'; toggleHistoryBtnR.classList.add('active'); toggleTodayBtnR.classList.remove('active'); }); toggleTodayBtnR.addEventListener('click', (e) => { e.preventDefault(); historyViewR.style.display = 'none'; todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); toggleHistoryBtnR.classList.remove('active'); }); todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); } else { console.warn("Delivery view toggle missing."); }
-        const tCV = document.getElementById('closing-today-view'); const hCV = document.getElementById('closing-history-view'); const tHB = document.getElementById('toggle-closing-history-btn'); const tTB = document.getElementById('toggle-closing-today-btn'); if (tCV && hCV && tHB && tTB) { tHB.addEventListener('click', (e) => { e.preventDefault(); tCV.style.display = 'none'; hCV.style.display = 'block'; tHB.classList.add('active'); tTB.classList.remove('active'); }); tTB.addEventListener('click', (e) => { e.preventDefault(); hCV.style.display = 'none'; tCV.style.display = 'block'; tTB.classList.add('active'); tHB.classList.remove('active'); }); tCV.style.display = 'block'; tTB.classList.add('active'); } else { console.warn("Finance closing view toggle missing."); }
+        // ✅ Toggle para las 3 vistas de Finanzas
+        const financesMovementsView = document.getElementById('finances-movements-view');
+        const tCV = document.getElementById('closing-today-view');
+        const hCV = document.getElementById('closing-history-view');
+        const tHB = document.getElementById('toggle-closing-history-btn');
+        const tTB = document.getElementById('toggle-closing-today-btn');
+
+        if (financesMovementsView && tCV && hCV && tHB && tTB) {
+            // Historial de cierres
+            tHB.addEventListener('click', (e) => {
+                e.preventDefault();
+                financesMovementsView.style.display = 'none';
+                tCV.style.display = 'none';
+                hCV.style.display = 'block';
+                tHB.classList.add('active');
+                tTB.classList.remove('active');
+            });
+
+            // Cierre del día (también muestra movimientos)
+            tTB.addEventListener('click', (e) => {
+                e.preventDefault();
+                financesMovementsView.style.display = 'block';
+                hCV.style.display = 'none';
+                tCV.style.display = 'block';
+                tTB.classList.add('active');
+                tHB.classList.remove('active');
+                // Recalcular datos al mostrar
+                const calcularBtn = tTB;
+                if (calcularBtn && calcularBtn.dataset.calcularListener !== 'true') {
+                    const calcularEvent = new Event('calcularDatosDelDia');
+                    document.dispatchEvent(calcularEvent);
+                }
+            });
+
+            // Vista inicial: Mostrar movimientos financieros y cierre del día
+            financesMovementsView.style.display = 'block';
+            tCV.style.display = 'block';
+            hCV.style.display = 'none';
+            tTB.classList.add('active');
+        } else {
+            console.warn("Finance closing view toggle missing.", {
+                financesMovementsView: !!financesMovementsView,
+                tCV: !!tCV,
+                hCV: !!hCV,
+                tHB: !!tHB,
+                tTB: !!tTB
+            });
+        }
                         
         const tES = document.getElementById('tipo-entrega-select'); const dFD = document.querySelector('.delivery-fields'); const cRI = document.getElementById('costo-ruta'); const vCI_fill = document.getElementById('venta-cliente'); const cCI_fill = document.getElementById('venta-cliente-celular'); const cDI_fill = document.getElementById('venta-cliente-direccion'); 
         document.addEventListener('clientsLoaded', (event) => { localClientsMap = event.detail.clientsMap; window.fillClientInfoSales(); }); 
