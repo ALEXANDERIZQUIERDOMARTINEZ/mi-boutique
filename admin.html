@@ -18,42 +18,181 @@
     </head>
 <body class="admin-page">
 
-    <nav class="admin-navbar navbar navbar-expand-lg sticky-top">
-        <div class="container-fluid">
-            <a class="admin-brand navbar-brand" href="#"><span>Mishell</span></a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbarContent" aria-controls="adminNavbarContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
+    <!-- Top Bar -->
+    <nav class="admin-topbar">
+        <div class="d-flex align-items-center justify-content-between w-100 px-3">
+            <button class="btn btn-link text-dark sidebar-toggle" id="sidebarToggle">
+                <i class="bi bi-list fs-4"></i>
             </button>
-            <div class="collapse navbar-collapse" id="adminNavbarContent">
-                <ul class="nav nav-pills navbar-nav me-auto mb-2 mb-lg-0">
-                    <!-- 📊 OPERACIONES DIARIAS -->
-                    <li class="nav-item"> <a href="#dashboard" class="nav-link active" data-bs-toggle="pill"><i class="bi bi-grid-1x2-fill me-1"></i> Dashboard</a> </li>
-                    <li class="nav-item"> <a href="#ventas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-receipt me-1"></i> Ventas</a> </li>
-                    <li class="nav-item"> <a href="#pedidos-web" class="nav-link position-relative" data-bs-toggle="pill"><i class="bi bi-bag-check-fill me-1"></i> Pedidos Web <span class="badge bg-danger ms-1 badge-new-order" id="pedidos-web-count" style="display: none;">0</span></a> </li>
-
-                    <!-- 📦 INVENTARIO -->
-                    <li class="nav-item"> <a href="#productos" class="nav-link" data-bs-toggle="pill"><i class="bi bi-boxes me-1"></i> Productos</a> </li>
-                    <li class="nav-item"> <a href="#entrada-productos" class="nav-link" data-bs-toggle="pill"><i class="bi bi-box-arrow-in-down me-1"></i> Entrada de Productos</a> </li>
-                    <li class="nav-item"> <a href="#categorias" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-folder-fill me-1"></i> Categorías </a> </li>
-
-                    <!-- 👥 CLIENTES & LOGÍSTICA -->
-                    <li class="nav-item"> <a href="#clientes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-people-fill me-1"></i> Clientes</a> </li>
-                    <li class="nav-item"> <a href="#apartados" class="nav-link" data-bs-toggle="pill"><i class="bi bi-calendar-check-fill me-1"></i> Apartados</a> </li>
-                    <li class="nav-item"> <a href="#repartidores" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bicycle me-1"></i> Repartidores</a> </li>
-
-                    <!-- 💼 ADMINISTRACIÓN -->
-                    <li class="nav-item"> <a href="#promociones" class="nav-link" data-bs-toggle="pill"><i class="bi bi-tag-fill me-1"></i> Promociones</a> </li>
-                    <li class="nav-item"> <a href="#finanzas" class="nav-link" data-bs-toggle="pill"><i class="bi bi-piggy-bank-fill me-1"></i> Finanzas</a> </li>
-                    <li class="nav-item"> <a href="#reportes" class="nav-link" data-bs-toggle="pill"><i class="bi bi-bar-chart-fill me-1"></i> Reportes</a> </li>
-                    <li class="nav-item"> <a href="#proveedores" class="nav-link" data-bs-toggle="pill"> <i class="bi bi-building me-1"></i> Proveedores </a> </li>
-                    <li class="nav-item"> <a href="#backup" class="nav-link" data-bs-toggle="pill"><i class="bi bi-cloud-download-fill me-1"></i> Backup</a> </li>
-                </ul>
-                <a href="index.html" target="_blank" class="admin-logout d-flex align-items-center text-secondary text-decoration-none ms-lg-auto mt-2 mt-lg-0">
-                     Catálogo <i class="bi bi-box-arrow-up-right ms-1"></i>
-                 </a>
-            </div>
+            <a class="admin-brand" href="#"><span>Mishell</span> Boutique</a>
+            <a href="index.html" target="_blank" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-box-arrow-up-right"></i> Catálogo
+            </a>
         </div>
     </nav>
+
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <div class="sidebar-header">
+            <h5 class="mb-0">Menu</h5>
+        </div>
+
+        <div class="sidebar-body">
+            <ul class="nav flex-column">
+                <!-- Ventas -->
+                <li class="nav-item">
+                    <a class="nav-link section-header" data-bs-toggle="collapse" href="#collapseVentas" role="button" aria-expanded="true">
+                        <i class="bi bi-graph-up-arrow me-2"></i>
+                        <span>Ventas</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse show" id="collapseVentas">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item">
+                                <a href="#dashboard" class="nav-link nav-link-item active" data-bs-toggle="pill">
+                                    <i class="bi bi-grid-1x2-fill me-2"></i>Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#ventas" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-receipt me-2"></i>Ventas
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#pedidos-web" class="nav-link nav-link-item position-relative" data-bs-toggle="pill">
+                                    <i class="bi bi-bag-check-fill me-2"></i>Pedidos Web
+                                    <span class="badge bg-danger ms-1 badge-new-order" id="pedidos-web-count" style="display: none;">0</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- Inventario -->
+                <li class="nav-item">
+                    <a class="nav-link section-header" data-bs-toggle="collapse" href="#collapseInventario" role="button" aria-expanded="false">
+                        <i class="bi bi-box-seam me-2"></i>
+                        <span>Inventario</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse" id="collapseInventario">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item">
+                                <a href="#productos" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-boxes me-2"></i>Productos
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#entrada-productos" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-box-arrow-in-down me-2"></i>Entrada de Productos
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#categorias" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-folder-fill me-2"></i>Categorías
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#proveedores" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-building me-2"></i>Proveedores
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- Clientes -->
+                <li class="nav-item">
+                    <a class="nav-link section-header" data-bs-toggle="collapse" href="#collapseClientes" role="button" aria-expanded="false">
+                        <i class="bi bi-people me-2"></i>
+                        <span>Clientes</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse" id="collapseClientes">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item">
+                                <a href="#clientes" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-people-fill me-2"></i>Clientes
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#apartados" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-calendar-check-fill me-2"></i>Apartados
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#repartidores" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-bicycle me-2"></i>Repartidores
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- Marketing -->
+                <li class="nav-item">
+                    <a class="nav-link section-header" data-bs-toggle="collapse" href="#collapseMarketing" role="button" aria-expanded="false">
+                        <i class="bi bi-megaphone me-2"></i>
+                        <span>Marketing</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse" id="collapseMarketing">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item">
+                                <a href="#promociones" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-tag-fill me-2"></i>Promociones
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- Finanzas -->
+                <li class="nav-item">
+                    <a class="nav-link section-header" data-bs-toggle="collapse" href="#collapseFinanzas" role="button" aria-expanded="false">
+                        <i class="bi bi-cash-stack me-2"></i>
+                        <span>Finanzas</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse" id="collapseFinanzas">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item">
+                                <a href="#finanzas" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-piggy-bank-fill me-2"></i>Finanzas
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#reportes" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-bar-chart-fill me-2"></i>Reportes
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
+                <!-- Sistema -->
+                <li class="nav-item">
+                    <a class="nav-link section-header" data-bs-toggle="collapse" href="#collapseSistema" role="button" aria-expanded="false">
+                        <i class="bi bi-gear me-2"></i>
+                        <span>Sistema</span>
+                        <i class="bi bi-chevron-down ms-auto"></i>
+                    </a>
+                    <div class="collapse" id="collapseSistema">
+                        <ul class="nav flex-column ms-3">
+                            <li class="nav-item">
+                                <a href="#backup" class="nav-link nav-link-item" data-bs-toggle="pill">
+                                    <i class="bi bi-cloud-download-fill me-2"></i>Backup
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Overlay para móvil -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <div class="toast-container position-fixed top-0 start-0 p-3">
       <div id="liveToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -940,6 +1079,24 @@
                     <pre id="diagnostico-resultado" style="max-height: 300px; overflow-y: auto; background: #fff; padding: 10px; border-radius: 5px;"></pre>
                 </div>
 
+                <!-- Pestañas de Finanzas -->
+                <ul class="nav nav-tabs mb-3" id="finanzasTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="movimientos-tab" data-bs-toggle="tab" data-bs-target="#finanzas-movimientos" type="button">
+                            <i class="bi bi-cash-stack me-1"></i> Movimientos
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="socios-tab" data-bs-toggle="tab" data-bs-target="#finanzas-socios" type="button">
+                            <i class="bi bi-people-fill me-1"></i> Socios & Utilidades
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="finanzasTabContent">
+                    <!-- TAB: Movimientos y Cierres -->
+                    <div class="tab-pane fade show active" id="finanzas-movimientos" role="tabpanel">
+
                 <!-- Vista de Movimientos Financieros -->
                 <div id="finances-movements-view" class="mb-4">
                     <div class="row g-3 mb-3">
@@ -1081,6 +1238,117 @@
                         </div>
                     </div>
                 </div>
+                    </div>
+                    <!-- Fin TAB: Movimientos -->
+
+                    <!-- TAB: Socios & Utilidades -->
+                    <div class="tab-pane fade" id="finanzas-socios" role="tabpanel">
+                        <!-- Gestión de Socios -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Gestión de Socios</h5>
+                                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addSocioModal">
+                                    <i class="bi bi-plus-circle me-1"></i> Agregar Socio
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Socio</th>
+                                                <th>Porcentaje</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="lista-socios">
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted">No hay socios configurados</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Distribución de Utilidades -->
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>Distribución de Utilidades</h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Selector de Período -->
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-12">
+                                        <div class="btn-group w-100" role="group">
+                                            <button type="button" class="btn btn-outline-primary active" id="btn-utilidad-diaria">
+                                                <i class="bi bi-calendar-day me-1"></i> Diario
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary" id="btn-utilidad-semanal">
+                                                <i class="bi bi-calendar-week me-1"></i> Semanal
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary" id="btn-utilidad-mensual">
+                                                <i class="bi bi-calendar-month me-1"></i> Mensual
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary" id="btn-utilidad-anual">
+                                                <i class="bi bi-calendar-range me-1"></i> Anual
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Resumen de Período -->
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-3">
+                                        <div class="p-3 bg-light rounded">
+                                            <div class="text-muted small">Período</div>
+                                            <div class="h6 mb-0" id="utilidad-periodo-texto">Hoy</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="p-3 bg-light rounded">
+                                            <div class="text-muted small">Total Ventas</div>
+                                            <div class="h5 mb-0" id="utilidad-total-ventas">$0</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="p-3 bg-light rounded">
+                                            <div class="text-muted small">Costo Total</div>
+                                            <div class="h5 mb-0" id="utilidad-total-costo">$0</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="p-3 bg-success text-white rounded">
+                                            <div class="small">Utilidad Neta</div>
+                                            <div class="h5 mb-0" id="utilidad-neta-total">$0</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tabla de Distribución -->
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Socio</th>
+                                                <th>Porcentaje</th>
+                                                <th>Monto</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla-distribucion-utilidades">
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted">Selecciona un período y calcula</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Fin TAB: Socios -->
+
+                </div>
+                <!-- Fin tabs de Finanzas -->
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════════════
@@ -1442,6 +1710,65 @@
     <div class="modal fade" id="addRepartidorModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Repartidor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-repartidor"> <div class="mb-3"> <label for="new-repartidor-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-repartidor-nombre" required> </div> <div class="mb-3"> <label for="new-repartidor-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-repartidor-celular" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-repartidor" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addIncomeModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Ingreso Extra</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-income"> <div class="mb-3"> <label for="income-amount" class="form-label">Monto ($):</label> <input type="text" inputmode="numeric" class="form-control" id="income-amount" required> </div> <div class="mb-3"> <label for="income-method" class="form-label">Método de Pago:</label> <select class="form-select" id="income-method" required> <option value="efectivo" selected>💵 Efectivo</option> <option value="transferencia">💳 Transferencia</option> </select> </div> <div class="mb-3"> <label for="income-description" class="form-label">Descripción:</label> <input type="text" class="form-control" id="income-description" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-income" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addExpenseModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Gasto</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-expense"> <div class="mb-3"> <label for="expense-amount" class="form-label">Monto ($):</label> <input type="text" inputmode="numeric" class="form-control" id="expense-amount" required> </div> <div class="mb-3"> <label for="expense-description" class="form-label">Descripción:</label> <input type="text" class="form-control" id="expense-description" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-expense" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
+
+    <!-- Modal: Agregar Socio -->
+    <div class="modal fade" id="addSocioModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Agregar Socio</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-add-socio">
+                        <div class="mb-3">
+                            <label for="socio-nombre" class="form-label">Nombre del Socio:</label>
+                            <input type="text" class="form-control" id="socio-nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="socio-porcentaje" class="form-label">Porcentaje (%):</label>
+                            <input type="number" class="form-control" id="socio-porcentaje" min="0" max="100" step="0.01" required>
+                            <small class="text-muted">Ejemplo: 50 para 50%</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-add-socio" class="btn btn-primary">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Editar Socio -->
+    <div class="modal fade" id="editSocioModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Editar Socio</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-edit-socio">
+                        <input type="hidden" id="edit-socio-id">
+                        <div class="mb-3">
+                            <label for="edit-socio-nombre" class="form-label">Nombre del Socio:</label>
+                            <input type="text" class="form-control" id="edit-socio-nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-socio-porcentaje" class="form-label">Porcentaje (%):</label>
+                            <input type="number" class="form-control" id="edit-socio-porcentaje" min="0" max="100" step="0.01" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-edit-socio" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="addSupplierModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Proveedor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-supplier"> <div class="mb-3"> <label for="new-supplier-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-supplier-nombre" required> </div> <div class="mb-3"> <label for="new-supplier-contacto" class="form-label">Contacto:</label> <input type="text" class="form-control" id="new-supplier-contacto"> </div> <div class="mb-3"> <label for="new-supplier-telefono" class="form-label">Teléfono:</label> <input type="tel" class="form-control" id="new-supplier-telefono"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-supplier" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="editCategoryModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Editar Categoría</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-edit-category"> <input type="hidden" id="edit-category-id"> <div class="mb-3"> <label for="edit-category-nombre" class="form-label">Nuevo Nombre:</label> <input type="text" class="form-control" id="edit-category-nombre" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-edit-category" class="btn btn-primary">Guardar Cambios</button> </div> </div> </div> </div>
     <div class="modal fade" id="editSupplierModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Editar Proveedor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-edit-supplier"> <input type="hidden" id="edit-supplier-id"> <div class="mb-3"> <label for="edit-supplier-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="edit-supplier-nombre" required> </div> <div class="mb-3"> <label for="edit-supplier-contacto" class="form-label">Contacto:</label> <input type="text" class="form-control" id="edit-supplier-contacto"> </div> <div class="mb-3"> <label for="edit-supplier-telefono" class="form-label">Teléfono:</label> <input type="tel" class="form-control" id="edit-supplier-telefono"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-edit-supplier" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>

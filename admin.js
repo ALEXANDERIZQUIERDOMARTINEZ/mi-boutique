@@ -280,6 +280,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const verApartadoModalEl = document.getElementById('verApartadoModal');
         if (verApartadoModalEl) verApartadoModalInstance = new bootstrap.Modal(verApartadoModalEl);
 
+        // --- Sidebar Toggle ---
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.getElementById('adminSidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        if (sidebarToggle && sidebar && sidebarOverlay) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('show');
+                sidebarOverlay.classList.toggle('show');
+            });
+
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
+            });
+
+            // Cerrar sidebar al hacer clic en un link (solo en móvil)
+            const navLinks = sidebar.querySelectorAll('.nav-link-item');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 992) {
+                        sidebar.classList.remove('show');
+                        sidebarOverlay.classList.remove('show');
+                    }
+                });
+            });
+        }
 
         // --- Lógica para limpiar modales de búsqueda al cerrar ---
         if (searchProductModalEl) {
@@ -5902,6 +5929,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const snapshot = await getDocs(q);
         let totalVentas = 0;
         let totalCosto = 0;
+        const productosDetalle = {};
 
         snapshot.forEach(doc => {
             const venta = doc.data();
@@ -5911,12 +5939,125 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const precioCosto = (item.precioCosto || 0) * item.cantidad;
                     totalVentas += precioVenta;
                     totalCosto += precioCosto;
+
+                    // Desglose por producto
+                    if (!productosDetalle[item.nombre]) {
+                        productosDetalle[item.nombre] = {
+                            nombre: item.nombre,
+                            cantidad: 0,
+                            totalVenta: 0,
+                            totalCosto: 0,
+                            utilidad: 0
+                        };
+                    }
+                    productosDetalle[item.nombre].cantidad += item.cantidad;
+                    productosDetalle[item.nombre].totalVenta += precioVenta;
+                    productosDetalle[item.nombre].totalCosto += precioCosto;
+                    productosDetalle[item.nombre].utilidad = productosDetalle[item.nombre].totalVenta - productosDetalle[item.nombre].totalCosto;
                 });
             }
         });
 
         const utilidad = totalVentas - totalCosto;
         const margen = totalVentas > 0 ? ((utilidad / totalVentas) * 100).toFixed(2) : 0;
+
+        // Ordenar productos por utilidad
+        const productosArray = Object.values(productosDetalle).sort((a, b) => b.utilidad - a.utilidad);
+
+        // Generar HTML de tabla de productos
+        let productosHTML = '';
+        if (productosArray.length > 0) {
+            productosHTML = `
+                <div class="card mt-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Desglose por Producto</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th>Cantidad</th>
+                                        <th>Venta Total</th>
+                                        <th>Costo Total</th>
+                                        <th>Utilidad</th>
+                                        <th>Margen %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+
+            productosArray.forEach(prod => {
+                const margenProd = prod.totalVenta > 0 ? ((prod.utilidad / prod.totalVenta) * 100).toFixed(2) : 0;
+                const utilidadColor = prod.utilidad >= 0 ? 'text-success' : 'text-danger';
+                productosHTML += `
+                    <tr>
+                        <td><strong>${prod.nombre}</strong></td>
+                        <td>${prod.cantidad}</td>
+                        <td>${formatoMoneda.format(prod.totalVenta)}</td>
+                        <td>${formatoMoneda.format(prod.totalCosto)}</td>
+                        <td class="${utilidadColor}"><strong>${formatoMoneda.format(prod.utilidad)}</strong></td>
+                        <td>${margenProd}%</td>
+                    </tr>
+                `;
+            });
+
+            productosHTML += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Obtener socios y calcular distribución
+        let sociosHTML = '';
+        try {
+            const sociosSnapshot = await getDocs(collection(db, 'socios'));
+            if (!sociosSnapshot.empty) {
+                sociosHTML = `
+                    <div class="card mt-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Distribución de Utilidades por Socios</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Socio</th>
+                                            <th>Porcentaje</th>
+                                            <th>Monto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                `;
+
+                sociosSnapshot.forEach(doc => {
+                    const socio = doc.data();
+                    const montoSocio = (utilidad * socio.porcentaje) / 100;
+                    sociosHTML += `
+                        <tr>
+                            <td><strong>${socio.nombre}</strong></td>
+                            <td>${socio.porcentaje}%</td>
+                            <td class="text-success"><strong>${formatoMoneda.format(montoSocio)}</strong></td>
+                        </tr>
+                    `;
+                });
+
+                sociosHTML += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error al cargar socios:', error);
+        }
 
         return `
             <div class="card">
@@ -5953,6 +6094,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     </div>
                 </div>
             </div>
+            ${productosHTML}
+            ${sociosHTML}
         `;
     }
 
@@ -8329,6 +8472,299 @@ if (formAddPromoGlobal) {
 loadPromocionesGlobales();
 
 console.log("✅ Módulo de Promociones Globales inicializado");
+
+// ═══════════════════════════════════════════════════════════════════
+// MÓDULO: GESTIÓN DE SOCIOS Y UTILIDADES
+// ═══════════════════════════════════════════════════════════════════
+
+const sociosCollection = collection(db, 'socios');
+let addSocioModalInstance, editSocioModalInstance;
+
+// Inicializar modales
+const addSocioModalEl = document.getElementById('addSocioModal');
+if (addSocioModalEl) addSocioModalInstance = new bootstrap.Modal(addSocioModalEl);
+
+const editSocioModalEl = document.getElementById('editSocioModal');
+if (editSocioModalEl) editSocioModalInstance = new bootstrap.Modal(editSocioModalEl);
+
+// Cargar socios
+async function cargarSocios() {
+    try {
+        const querySnapshot = await getDocs(sociosCollection);
+        const listaSocios = document.getElementById('lista-socios');
+
+        if (querySnapshot.empty) {
+            listaSocios.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No hay socios configurados</td></tr>';
+            return;
+        }
+
+        let html = '';
+        let totalPorcentaje = 0;
+
+        querySnapshot.forEach((doc) => {
+            const socio = doc.data();
+            totalPorcentaje += socio.porcentaje;
+            html += `
+                <tr>
+                    <td><strong>${socio.nombre}</strong></td>
+                    <td>${socio.porcentaje}%</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editarSocio('${doc.id}', '${socio.nombre}', ${socio.porcentaje})">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarSocio('${doc.id}', '${socio.nombre}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        // Agregar fila de total
+        const colorTotal = totalPorcentaje === 100 ? 'text-success' : 'text-warning';
+        html += `
+            <tr class="table-light">
+                <td><strong>Total</strong></td>
+                <td class="${colorTotal}"><strong>${totalPorcentaje.toFixed(2)}%</strong></td>
+                <td>${totalPorcentaje === 100 ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-exclamation-triangle-fill text-warning"></i> Debe sumar 100%'}</td>
+            </tr>
+        `;
+
+        listaSocios.innerHTML = html;
+    } catch (error) {
+        console.error('Error al cargar socios:', error);
+        showToast('Error al cargar socios', 'error');
+    }
+}
+
+// Agregar socio
+const formAddSocio = document.getElementById('form-add-socio');
+if (formAddSocio) {
+    formAddSocio.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const nombre = document.getElementById('socio-nombre').value.trim();
+        const porcentaje = parseFloat(document.getElementById('socio-porcentaje').value);
+
+        if (!nombre || porcentaje < 0 || porcentaje > 100) {
+            showToast('Datos inválidos', 'error');
+            return;
+        }
+
+        try {
+            await addDoc(sociosCollection, {
+                nombre: nombre,
+                porcentaje: porcentaje,
+                fechaCreacion: Timestamp.now()
+            });
+
+            showToast('Socio agregado correctamente', 'success');
+            formAddSocio.reset();
+            addSocioModalInstance.hide();
+            cargarSocios();
+        } catch (error) {
+            console.error('Error al agregar socio:', error);
+            showToast('Error al agregar socio', 'error');
+        }
+    });
+}
+
+// Editar socio
+window.editarSocio = function(id, nombre, porcentaje) {
+    document.getElementById('edit-socio-id').value = id;
+    document.getElementById('edit-socio-nombre').value = nombre;
+    document.getElementById('edit-socio-porcentaje').value = porcentaje;
+    editSocioModalInstance.show();
+};
+
+const formEditSocio = document.getElementById('form-edit-socio');
+if (formEditSocio) {
+    formEditSocio.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const id = document.getElementById('edit-socio-id').value;
+        const nombre = document.getElementById('edit-socio-nombre').value.trim();
+        const porcentaje = parseFloat(document.getElementById('edit-socio-porcentaje').value);
+
+        if (!nombre || porcentaje < 0 || porcentaje > 100) {
+            showToast('Datos inválidos', 'error');
+            return;
+        }
+
+        try {
+            await updateDoc(doc(db, 'socios', id), {
+                nombre: nombre,
+                porcentaje: porcentaje
+            });
+
+            showToast('Socio actualizado correctamente', 'success');
+            editSocioModalInstance.hide();
+            cargarSocios();
+        } catch (error) {
+            console.error('Error al actualizar socio:', error);
+            showToast('Error al actualizar socio', 'error');
+        }
+    });
+}
+
+// Eliminar socio
+window.eliminarSocio = async function(id, nombre) {
+    if (!confirm(`¿Estás seguro de eliminar al socio "${nombre}"?`)) return;
+
+    try {
+        await deleteDoc(doc(db, 'socios', id));
+        showToast('Socio eliminado correctamente', 'success');
+        cargarSocios();
+    } catch (error) {
+        console.error('Error al eliminar socio:', error);
+        showToast('Error al eliminar socio', 'error');
+    }
+};
+
+// Calcular utilidades por período
+async function calcularUtilidadesPeriodo(tipoPeriodo) {
+    const ahora = new Date();
+    let desde, hasta;
+    let textoPeriodo;
+
+    switch (tipoPeriodo) {
+        case 'diario':
+            desde = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 0, 0, 0);
+            hasta = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 59);
+            textoPeriodo = `Hoy (${desde.toLocaleDateString('es-CO')})`;
+            break;
+
+        case 'semanal':
+            desde = new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000);
+            desde.setHours(0, 0, 0, 0);
+            hasta = new Date(ahora);
+            hasta.setHours(23, 59, 59, 999);
+            textoPeriodo = `Últimos 7 días (${desde.toLocaleDateString('es-CO')} - ${hasta.toLocaleDateString('es-CO')})`;
+            break;
+
+        case 'mensual':
+            desde = new Date(ahora.getFullYear(), ahora.getMonth(), 1, 0, 0, 0);
+            hasta = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0, 23, 59, 59);
+            textoPeriodo = `Este mes (${desde.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })})`;
+            break;
+
+        case 'anual':
+            desde = new Date(ahora.getFullYear(), 0, 1, 0, 0, 0);
+            hasta = new Date(ahora.getFullYear(), 11, 31, 23, 59, 59);
+            textoPeriodo = `Este año (${ahora.getFullYear()})`;
+            break;
+    }
+
+    try {
+        // Obtener ventas del período
+        const q = query(
+            salesCollection,
+            where('timestamp', '>=', Timestamp.fromDate(desde)),
+            where('timestamp', '<=', Timestamp.fromDate(hasta))
+        );
+
+        const snapshot = await getDocs(q);
+        let totalVentas = 0;
+        let totalCosto = 0;
+
+        snapshot.forEach(docSnap => {
+            const venta = docSnap.data();
+            if (venta.estado !== 'Anulada' && venta.items) {
+                venta.items.forEach(item => {
+                    const precioVenta = item.precioUnitario * item.cantidad;
+                    const precioCosto = (item.precioCosto || 0) * item.cantidad;
+                    totalVentas += precioVenta;
+                    totalCosto += precioCosto;
+                });
+            }
+        });
+
+        const utilidadNeta = totalVentas - totalCosto;
+
+        // Actualizar UI
+        document.getElementById('utilidad-periodo-texto').textContent = textoPeriodo;
+        document.getElementById('utilidad-total-ventas').textContent = formatoMoneda.format(totalVentas);
+        document.getElementById('utilidad-total-costo').textContent = formatoMoneda.format(totalCosto);
+        document.getElementById('utilidad-neta-total').textContent = formatoMoneda.format(utilidadNeta);
+
+        // Cargar socios y calcular distribución
+        const sociosSnapshot = await getDocs(sociosCollection);
+        const tablaDistribucion = document.getElementById('tabla-distribucion-utilidades');
+
+        if (sociosSnapshot.empty) {
+            tablaDistribucion.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No hay socios configurados</td></tr>';
+            return;
+        }
+
+        let htmlTabla = '';
+        sociosSnapshot.forEach(docSnap => {
+            const socio = docSnap.data();
+            const montoSocio = (utilidadNeta * socio.porcentaje) / 100;
+            htmlTabla += `
+                <tr>
+                    <td><strong>${socio.nombre}</strong></td>
+                    <td>${socio.porcentaje}%</td>
+                    <td class="text-success"><strong>${formatoMoneda.format(montoSocio)}</strong></td>
+                </tr>
+            `;
+        });
+
+        tablaDistribucion.innerHTML = htmlTabla;
+
+    } catch (error) {
+        console.error('Error al calcular utilidades:', error);
+        showToast('Error al calcular utilidades', 'error');
+    }
+}
+
+// Event listeners para botones de período
+const btnDiario = document.getElementById('btn-utilidad-diaria');
+const btnSemanal = document.getElementById('btn-utilidad-semanal');
+const btnMensual = document.getElementById('btn-utilidad-mensual');
+const btnAnual = document.getElementById('btn-utilidad-anual');
+
+if (btnDiario) {
+    btnDiario.addEventListener('click', () => {
+        document.querySelectorAll('[id^="btn-utilidad-"]').forEach(btn => btn.classList.remove('active'));
+        btnDiario.classList.add('active');
+        calcularUtilidadesPeriodo('diario');
+    });
+}
+
+if (btnSemanal) {
+    btnSemanal.addEventListener('click', () => {
+        document.querySelectorAll('[id^="btn-utilidad-"]').forEach(btn => btn.classList.remove('active'));
+        btnSemanal.classList.add('active');
+        calcularUtilidadesPeriodo('semanal');
+    });
+}
+
+if (btnMensual) {
+    btnMensual.addEventListener('click', () => {
+        document.querySelectorAll('[id^="btn-utilidad-"]').forEach(btn => btn.classList.remove('active'));
+        btnMensual.classList.add('active');
+        calcularUtilidadesPeriodo('mensual');
+    });
+}
+
+if (btnAnual) {
+    btnAnual.addEventListener('click', () => {
+        document.querySelectorAll('[id^="btn-utilidad-"]').forEach(btn => btn.classList.remove('active'));
+        btnAnual.classList.add('active');
+        calcularUtilidadesPeriodo('anual');
+    });
+}
+
+// Cargar tab de socios al hacer clic
+const sociosTab = document.getElementById('socios-tab');
+if (sociosTab) {
+    sociosTab.addEventListener('shown.bs.tab', () => {
+        cargarSocios();
+        calcularUtilidadesPeriodo('diario'); // Cargar diario por defecto
+    });
+}
+
+console.log("✅ Módulo de Socios y Utilidades inicializado");
 
 });
 
