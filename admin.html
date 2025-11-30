@@ -683,9 +683,14 @@
                         <div class="card-header bg-white border-0 pt-3">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h3 class="h5 mb-0">Historial</h3>
-                                <button type="button" id="btn-exportar-ventas" class="btn btn-sm btn-success">
-                                    <i class="bi bi-file-earmark-excel"></i> Exportar Excel
-                                </button>
+                                <div class="d-flex gap-2">
+                                    <button type="button" id="btn-migrar-horas-ventas" class="btn btn-sm btn-warning" title="Corregir horas de ventas antiguas (12:00 PM)">
+                                        <i class="bi bi-clock-history"></i> Corregir Horas
+                                    </button>
+                                    <button type="button" id="btn-exportar-ventas" class="btn btn-sm btn-success">
+                                        <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Filtros - Primera fila -->
