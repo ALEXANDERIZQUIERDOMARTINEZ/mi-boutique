@@ -1680,7 +1680,7 @@ document.addEventListener('DOMContentLoaded', () => {
             stockDisplay.style.display = 'none';
             addBtn.disabled = true;
 
-            // ✅ MEJORA: Solo mostrar variaciones con stock > 0
+            // ✅ Obtener tallas y colores únicos SOLO de variaciones con stock > 0
             const variacionesConStock = product.variaciones.filter(v => (parseInt(v.stock, 10) || 0) > 0);
 
             if (variacionesConStock.length === 0) {
@@ -1694,7 +1694,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Obtener tallas y colores únicos SOLO de variaciones con stock
             const tallasConStock = [...new Set(variacionesConStock.map(v => v.talla || ''))];
             const coloresConStock = [...new Set(variacionesConStock.map(v => v.color || ''))];
 
@@ -1719,40 +1718,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectTalla = document.getElementById('select-talla');
             const selectColor = document.getElementById('select-color');
 
-            // ✅ MEJORA: Actualizar opciones disponibles dinámicamente
-            function actualizarOpcionesDisponibles() {
-                const tallaSeleccionada = selectTalla.value;
-                const colorSeleccionado = selectColor.value;
-
-                // Si se seleccionó una talla, filtrar colores disponibles para esa talla
-                if (tallaSeleccionada !== '') {
-                    const coloresDisponibles = [...new Set(
-                        variacionesConStock
-                            .filter(v => v.talla === tallaSeleccionada && (parseInt(v.stock, 10) || 0) > 0)
-                            .map(v => v.color || '')
-                    )];
-
-                    selectColor.innerHTML = `
-                        <option value="" selected>Selecciona un color...</option>
-                        ${coloresDisponibles.map(c => `<option value="${c}">${c || 'Único'}</option>`).join('')}
-                    `;
-                }
-
-                // Si se seleccionó un color, filtrar tallas disponibles para ese color
-                if (colorSeleccionado !== '' && tallaSeleccionada === '') {
-                    const tallasDisponibles = [...new Set(
-                        variacionesConStock
-                            .filter(v => v.color === colorSeleccionado && (parseInt(v.stock, 10) || 0) > 0)
-                            .map(v => v.talla || '')
-                    )];
-
-                    selectTalla.innerHTML = `
-                        <option value="" selected>Selecciona una talla...</option>
-                        ${tallasDisponibles.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
-                    `;
-                }
-            }
-
             function checkStock() {
                 const talla = selectTalla.value;
                 const color = selectColor.value;
@@ -1772,6 +1737,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         stockDisplay.classList.remove('alert-success');
                         stockDisplay.classList.add('alert-danger');
                         addBtn.disabled = true;
+                        showToast("Esta combinación no tiene stock disponible", "warning");
                     }
                 } else {
                     stockDisplay.style.display = 'none';
@@ -1779,15 +1745,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            selectTalla.addEventListener('change', () => {
-                actualizarOpcionesDisponibles();
-                checkStock();
-            });
-
-            selectColor.addEventListener('change', () => {
-                actualizarOpcionesDisponibles();
-                checkStock();
-            });
+            selectTalla.addEventListener('change', checkStock);
+            selectColor.addEventListener('change', checkStock);
 
             selectVariationModalInstance.show();
         }
