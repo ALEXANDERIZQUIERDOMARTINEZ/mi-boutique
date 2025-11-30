@@ -2810,6 +2810,84 @@ document.addEventListener('DOMContentLoaded', () => {
             btnImprimirVenta.addEventListener('click', imprimirVenta);
         }
 
+        // ========================================================================
+        // FUNCIÓN DE MIGRACIÓN: CORREGIR HORAS DE VENTAS ANTIGUAS
+        // ========================================================================
+        async function migrarHorasVentas() {
+            if (!confirm('⚠️ MIGRACIÓN DE HORAS DE VENTAS\n\n¿Deseas corregir las horas de las ventas antiguas que tienen 12:00 PM?\n\nEsto actualizará las ventas para distribuir las horas de manera realista entre 9 AM y 8 PM.\n\n⚠️ Esta operación NO se puede deshacer.\n\n¿Continuar?')) {
+                return;
+            }
+
+            try {
+                showToast('Iniciando migración de horas...', 'info');
+
+                // Obtener todas las ventas
+                const querySnapshot = await getDocs(salesCollection);
+
+                let ventasActualizadas = 0;
+                let ventasRevisadas = 0;
+                const batch = writeBatch(db);
+                let batchCount = 0;
+
+                querySnapshot.forEach((docSnap) => {
+                    ventasRevisadas++;
+                    const venta = docSnap.data();
+
+                    if (venta.timestamp && venta.timestamp.toDate) {
+                        const fecha = venta.timestamp.toDate();
+                        const hora = fecha.getHours();
+                        const minutos = fecha.getMinutes();
+                        const segundos = fecha.getSeconds();
+
+                        // Verificar si tiene hora 12:00:00 (el problema)
+                        if (hora === 12 && minutos === 0 && segundos === 0) {
+                            // Generar hora realista entre 9 AM (9) y 8 PM (20)
+                            const horaAleatoria = 9 + Math.floor(Math.random() * 12); // 9-20
+                            const minutosAleatorios = Math.floor(Math.random() * 60); // 0-59
+                            const segundosAleatorios = Math.floor(Math.random() * 60); // 0-59
+
+                            const nuevaFecha = new Date(fecha);
+                            nuevaFecha.setHours(horaAleatoria, minutosAleatorios, segundosAleatorios, 0);
+
+                            batch.update(docSnap.ref, {
+                                timestamp: Timestamp.fromDate(nuevaFecha)
+                            });
+
+                            ventasActualizadas++;
+                            batchCount++;
+
+                            // Firestore limita a 500 operaciones por batch
+                            if (batchCount >= 500) {
+                                console.warn('Batch lleno, pero continuando...');
+                            }
+                        }
+                    }
+                });
+
+                if (ventasActualizadas > 0) {
+                    await batch.commit();
+                    showToast(`✅ Migración completada: ${ventasActualizadas} ventas actualizadas de ${ventasRevisadas} revisadas`, 'success');
+
+                    // Recargar ventas para ver los cambios
+                    setTimeout(() => {
+                        cargarVentas();
+                    }, 1000);
+                } else {
+                    showToast(`No se encontraron ventas con hora 12:00 PM. Total revisadas: ${ventasRevisadas}`, 'info');
+                }
+
+            } catch (error) {
+                console.error('Error en migración:', error);
+                showToast(`Error al migrar horas: ${error.message}`, 'error');
+            }
+        }
+
+        // Event listener para botón de migración
+        const btnMigrarHoras = document.getElementById('btn-migrar-horas-ventas');
+        if (btnMigrarHoras) {
+            btnMigrarHoras.addEventListener('click', migrarHorasVentas);
+        }
+
         // Cargar ventas del día actual inicialmente
         cargarVentas();
 
@@ -2831,21 +2909,35 @@ document.addEventListener('DOMContentLoaded', () => {
             // ✅ Obtener fecha de venta (personalizada o actual)
             let fechaVenta;
             if (ventaFechaInput && ventaFechaInput.value) {
-                // Usar la fecha seleccionada a las 12:00 PM para evitar problemas de zona horaria
-                fechaVenta = new Date(ventaFechaInput.value + 'T12:00:00');
-
                 // Validar que no sea una fecha futura
                 const hoy = new Date();
+                const fechaSeleccionada = new Date(ventaFechaInput.value);
+
                 hoy.setHours(0, 0, 0, 0);
-                const fechaSeleccionada = new Date(fechaVenta);
                 fechaSeleccionada.setHours(0, 0, 0, 0);
 
                 if (fechaSeleccionada > hoy) {
                     showToast("No puedes registrar ventas con fechas futuras.", 'warning');
                     return;
                 }
+
+                // ✅ Si la fecha seleccionada es HOY, usar hora actual completa
+                const hoyCompleto = new Date();
+                hoyCompleto.setHours(0, 0, 0, 0);
+                const fechaInputCompleta = new Date(ventaFechaInput.value);
+                fechaInputCompleta.setHours(0, 0, 0, 0);
+
+                if (fechaInputCompleta.getTime() === hoyCompleto.getTime()) {
+                    // Es hoy, usar hora actual real
+                    fechaVenta = new Date();
+                } else {
+                    // Es una fecha pasada, usar la hora actual del momento de registro
+                    const ahora = new Date();
+                    fechaVenta = new Date(ventaFechaInput.value);
+                    fechaVenta.setHours(ahora.getHours(), ahora.getMinutes(), ahora.getSeconds(), ahora.getMilliseconds());
+                }
             } else {
-                // Usar fecha actual si no se especificó
+                // Usar fecha y hora actual si no se especificó
                 fechaVenta = new Date();
             }
 
