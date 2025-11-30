@@ -2119,6 +2119,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return true;
             });
 
+            // Ordenar por fecha descendente (más recientes primero)
+            filteredSales.sort((a, b) => {
+                const fechaA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(0);
+                const fechaB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(0);
+                return fechaB - fechaA;
+            });
+
             // Renderizar resultados
             if (filteredSales.length === 0) {
                 if(emptyRow) { emptyRow.style.display = ''; salesListTableBody.appendChild(emptyRow); }
