@@ -1996,8 +1996,18 @@ document.addEventListener('DOMContentLoaded', () => {
     (() => {
          const salesForm = document.getElementById('form-venta'); const ventaClienteInput = document.getElementById('venta-cliente'); const tipoVentaSelect = document.getElementById('tipo-venta-select'); const tipoEntregaSelect = document.getElementById('tipo-entrega-select'); const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp'); const ventaRepartidorSelect = document.getElementById('venta-repartidor'); const costoRutaInput = document.getElementById('costo-ruta'); const rutaPagadaCheckbox = document.getElementById('ruta-pagada-transferencia'); const ventaProductoInput = document.getElementById('venta-producto'); const ventaCarritoTbody = document.getElementById('venta-carrito'); const ventaObservaciones = document.getElementById('venta-observaciones'); const ventaDescuentoInput = document.getElementById('venta-descuento'); const ventaDescuentoTipo = document.getElementById('venta-descuento-tipo'); const pagoEfectivoInput = document.getElementById('pago-efectivo'); const pagoTransferenciaInput = document.getElementById('pago-transferencia'); const ventaTotalSpan = document.getElementById('venta-total'); const salesListTableBody = document.getElementById('lista-ventas-anteriores'); 
          
-         window.ventaItems = []; 
-         
+         window.ventaItems = [];
+
+         // ✅ Inicializar campo de fecha de venta con fecha actual
+         const ventaFechaInput = document.getElementById('venta-fecha');
+         if (ventaFechaInput) {
+             const hoy = new Date();
+             const year = hoy.getFullYear();
+             const month = String(hoy.getMonth() + 1).padStart(2, '0');
+             const day = String(hoy.getDate()).padStart(2, '0');
+             ventaFechaInput.value = `${year}-${month}-${day}`;
+         }
+
          if(!salesForm) { console.warn("Elementos de Ventas no encontrados."); return; }
          
          window.addEventListener('addItemToCart', (e) => { 
@@ -2433,6 +2443,28 @@ document.addEventListener('DOMContentLoaded', () => {
             // Obtener referencias a los elementos del formulario
             const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
             const ventaCelularInput = document.getElementById('venta-cliente-celular');
+            const ventaFechaInput = document.getElementById('venta-fecha');
+
+            // ✅ Obtener fecha de venta (personalizada o actual)
+            let fechaVenta;
+            if (ventaFechaInput && ventaFechaInput.value) {
+                // Usar la fecha seleccionada a las 12:00 PM para evitar problemas de zona horaria
+                fechaVenta = new Date(ventaFechaInput.value + 'T12:00:00');
+
+                // Validar que no sea una fecha futura
+                const hoy = new Date();
+                hoy.setHours(0, 0, 0, 0);
+                const fechaSeleccionada = new Date(fechaVenta);
+                fechaSeleccionada.setHours(0, 0, 0, 0);
+
+                if (fechaSeleccionada > hoy) {
+                    showToast("No puedes registrar ventas con fechas futuras.", 'warning');
+                    return;
+                }
+            } else {
+                // Usar fecha actual si no se especificó
+                fechaVenta = new Date();
+            }
 
             const totalCalculado = window.calcularTotalVentaGeneral();
             const ventaData = {
@@ -2454,7 +2486,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 pagoTransferencia: parseFloat(eliminarFormatoNumero(pagoTransferenciaInput.value)) || 0,
                 totalVenta: totalCalculado,
                 estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada',
-                timestamp: Timestamp.fromDate(new Date()) // ✅ Usar hora local para consistencia con filtros
+                timestamp: Timestamp.fromDate(fechaVenta) // ✅ Usar fecha personalizada o actual
             }; 
             
             if (ventaData.tipoVenta === 'apartado') {
@@ -2517,12 +2549,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         total: ventaData.totalVenta,
                         abonado: abonoInicial,
                         saldo: saldoPendiente,
-                        fechaCreacion: Timestamp.fromDate(new Date()),
+                        fechaCreacion: Timestamp.fromDate(fechaVenta), // ✅ Usar fecha personalizada
                         fechaVencimiento: Timestamp.fromDate(fechaVencimiento),
                         estado: 'Pendiente',
                         items: ventaData.items, // Guardar items para referencia
                         abonos: [{
-                            fecha: Timestamp.fromDate(new Date()), // ✅ Usar Timestamp en lugar de serverTimestamp
+                            fecha: Timestamp.fromDate(fechaVenta), // ✅ Usar fecha personalizada
                             monto: abonoInicial,
                             metodoPago: metodoPagoInicial,
                             observaciones: 'Abono inicial'
@@ -2541,7 +2573,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             monto: abonoInicial,
                             metodoPago: metodoPagoInicial,
                             observaciones: 'Abono inicial',
-                            timestamp: Timestamp.fromDate(new Date())
+                            timestamp: Timestamp.fromDate(fechaVenta) // ✅ Usar fecha personalizada
                         };
                         await addDoc(collection(db, 'abonos'), abonoInicialParaCaja);
                         console.log("✅ Abono inicial registrado en la colección de abonos");
@@ -2555,14 +2587,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast("Venta registrada exitosamente!", 'success');
                 } 
                 
-                salesForm.reset(); 
-                window.ventaItems = []; 
-                renderCarrito(); 
-                window.fillClientInfoSales(); 
-                tipoVentaSelect.value='detal'; 
-                tipoEntregaSelect.value='tienda'; 
-                toggleDeliveryFields(); 
-                window.calcularTotalVentaGeneral(); 
+                salesForm.reset();
+                window.ventaItems = [];
+                renderCarrito();
+                window.fillClientInfoSales();
+                tipoVentaSelect.value='detal';
+                tipoEntregaSelect.value='tienda';
+                toggleDeliveryFields();
+                window.calcularTotalVentaGeneral();
+
+                // ✅ Restablecer fecha de venta a hoy
+                const ventaFechaInput = document.getElementById('venta-fecha');
+                if (ventaFechaInput) {
+                    const hoy = new Date();
+                    const year = hoy.getFullYear();
+                    const month = String(hoy.getMonth() + 1).padStart(2, '0');
+                    const day = String(hoy.getDate()).padStart(2, '0');
+                    ventaFechaInput.value = `${year}-${month}-${day}`;
+                } 
             } catch (err) { 
                 console.error("Error saving sale:", err); 
                 showToast(`Error: ${err.message}`, 'error'); 
