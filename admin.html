@@ -639,12 +639,57 @@
                 </div> 
                 
                 <div id="sales-list-view">
+                    <!-- Panel de Estadísticas -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-cart-check fs-3 text-primary"></i>
+                                    <h6 class="text-muted small mb-1 mt-2">Total Ventas</h6>
+                                    <h4 class="mb-0 text-primary" id="stat-total-ventas">$0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-receipt fs-3 text-success"></i>
+                                    <h6 class="text-muted small mb-1 mt-2">Cantidad</h6>
+                                    <h4 class="mb-0 text-success" id="stat-cantidad-ventas">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-info">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-graph-up fs-3 text-info"></i>
+                                    <h6 class="text-muted small mb-1 mt-2">Promedio</h6>
+                                    <h4 class="mb-0 text-info" id="stat-promedio-ventas">$0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-cash-stack fs-3 text-warning"></i>
+                                    <h6 class="text-muted small mb-1 mt-2">Efectivo</h6>
+                                    <h4 class="mb-0 text-warning" id="stat-efectivo-ventas">$0</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="card">
                         <div class="card-header bg-white border-0 pt-3">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h3 class="h5 mb-0">Historial</h3>
+                                <button type="button" id="btn-exportar-ventas" class="btn btn-sm btn-success">
+                                    <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+                                </button>
                             </div>
-                            <div class="row g-2">
+
+                            <!-- Filtros - Primera fila -->
+                            <div class="row g-2 mb-2">
                                 <div class="col-md-4">
                                     <label for="filtro-buscar-ventas" class="form-label small">Buscar cliente o producto:</label>
                                     <div class="input-group input-group-sm">
@@ -652,15 +697,63 @@
                                         <input type="text" id="filtro-buscar-ventas" class="form-control" placeholder="Nombre de cliente o producto...">
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label for="filtro-categoria-ventas" class="form-label small">Categoría:</label>
                                     <select id="filtro-categoria-ventas" class="form-select form-select-sm">
-                                        <option value="">Todas las categorías</option>
+                                        <option value="">Todas</option>
                                     </select>
                                 </div>
+                                <div class="col-md-2">
+                                    <label for="filtro-tipo-venta" class="form-label small">Tipo de Venta:</label>
+                                    <select id="filtro-tipo-venta" class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        <option value="detal">Detal</option>
+                                        <option value="mayorista">Mayorista</option>
+                                        <option value="apartado">Apartado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="filtro-estado-venta" class="form-label small">Estado:</label>
+                                    <select id="filtro-estado-venta" class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        <option value="Completada">Completada</option>
+                                        <option value="Pendiente">Pendiente</option>
+                                        <option value="Anulada">Anulada</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="filtro-metodo-pago" class="form-label small">Método de Pago:</label>
+                                    <select id="filtro-metodo-pago" class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        <option value="efectivo">Efectivo</option>
+                                        <option value="transferencia">Transferencia</option>
+                                        <option value="mixto">Mixto</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Filtros - Segunda fila -->
+                            <div class="row g-2">
                                 <div class="col-md-3">
                                     <label for="filtro-fecha-ventas" class="form-label small">Fecha:</label>
                                     <input type="date" id="filtro-fecha-ventas" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="filtro-repartidor" class="form-label small">Repartidor:</label>
+                                    <select id="filtro-repartidor" class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small">Ordenar por:</label>
+                                    <select id="ordenar-por" class="form-select form-select-sm">
+                                        <option value="fecha-desc">Fecha (más reciente)</option>
+                                        <option value="fecha-asc">Fecha (más antigua)</option>
+                                        <option value="total-desc">Total (mayor a menor)</option>
+                                        <option value="total-asc">Total (menor a mayor)</option>
+                                        <option value="cliente-asc">Cliente (A-Z)</option>
+                                        <option value="cliente-desc">Cliente (Z-A)</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <button type="button" id="btn-limpiar-filtro-ventas" class="btn btn-sm btn-outline-secondary w-100">
@@ -1570,6 +1663,9 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="btn-imprimir-venta">
+                        <i class="bi bi-printer"></i> Imprimir
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
