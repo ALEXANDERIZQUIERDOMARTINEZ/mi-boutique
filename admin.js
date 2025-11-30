@@ -353,13 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 console.log("Imagen eliminada de Storage:", imageUrl);
                             } catch (storageErr) {
                                 console.error("Error al eliminar imagen de Storage:", storageErr);
-
-                                // Check for Firebase Storage permissions error (code 412)
-                                if (storageErr.code === 'storage/unauthorized' || storageErr.message?.includes('service account') || storageErr.message?.includes('412')) {
-                                    showToast('⚠️ Error de permisos de Firebase Storage. Consulta FIREBASE_PERMISSIONS_FIX.md', 'error');
-                                } else {
-                                    showToast("Producto eliminado, pero la imagen no se pudo borrar.", 'warning');
-                                }
+                                showToast("Producto eliminado, pero la imagen no se pudo borrar.", 'warning');
                             }
                         }
                     }
@@ -879,27 +873,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 document.getElementById('client-total-spent').textContent = formatoMoneda.format(totalGastado);
                 document.getElementById('client-total-purchases').textContent = totalCompras;
-                document.getElementById('client-last-purchase').textContent = fechaUltimaCompra ? fechaUltimaCompra.toLocaleString('es-CO', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
-                }) : '-';
+                document.getElementById('client-last-purchase').textContent = fechaUltimaCompra ? fechaUltimaCompra.toLocaleDateString('es-CO') : '-';
                 document.getElementById('client-avg-ticket').textContent = formatoMoneda.format(ticketPromedio);
 
                 // Renderizar tabla
                 historyList.innerHTML = '';
                 ventas.forEach(venta => {
-                    const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate().toLocaleString('es-CO', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                    }) : '-';
+                    const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate().toLocaleDateString('es-CO') : '-';
                     const productos = venta.items?.length || 0;
                     const productosTexto = productos === 1 ? '1 producto' : `${productos} productos`;
 
@@ -1164,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', () => {
                              monto: efectivoEntregado,
                              metodoPago: 'efectivo',
                              descripcion: `Liquidación ${repartidorNombre} - ${ventasIds.length} domicilios`,
-                             timestamp: Timestamp.fromDate(new Date())
+                             timestamp: serverTimestamp()
                          });
                      }
 
@@ -1250,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 localProductsMap.set(id, d);
 
-                const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
+                const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
                 const defaultImgTabla = 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto';
                 const imagenUrl = d.imagenUrl || defaultImgTabla; 
 
@@ -1427,15 +1407,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast("Producto guardado!"); 
                     window.clearProductForm(); 
                 } 
-            } catch (err) {
-                console.error("Error saving product or image:", err);
-
-                // Check for Firebase Storage permissions error (code 412)
-                if (err.code === 'storage/unauthorized' || err.message?.includes('service account') || err.message?.includes('412')) {
-                    showToast('⚠️ Error de permisos de Firebase Storage. Consulta FIREBASE_PERMISSIONS_FIX.md para solucionar.', 'error');
-                    console.error('Firebase Storage permissions error. Please check FIREBASE_PERMISSIONS_FIX.md for instructions.');
-                } else if (err.message !== "Imagen requerida") {
-                    showToast(`Error: ${err.message}`, 'error');
+            } catch (err) { 
+                console.error("Error saving product or image:", err); 
+                if (err.message !== "Imagen requerida") {
+                    showToast(`Error: ${err.message}`, 'error'); 
                 }
             } finally {
                  if(saveProductBtn) { saveProductBtn.disabled = false; if(saveProductBtnText) saveProductBtnText.textContent = "Guardar"; if(saveProductBtnSpinner) saveProductBtnSpinner.style.display = 'none'; }
@@ -1665,7 +1640,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             document.getElementById('variation-product-price').value = precioAplicar;
-
+            
             const titleEl = document.getElementById('selectVariationModalTitle');
             const optionsContainer = document.getElementById('variation-options-container');
             const stockDisplay = document.getElementById('variation-stock-display');
@@ -1675,36 +1650,22 @@ document.addEventListener('DOMContentLoaded', () => {
             stockDisplay.style.display = 'none';
             addBtn.disabled = true;
 
-            // ✅ Obtener tallas y colores únicos SOLO de variaciones con stock > 0
-            const variacionesConStock = product.variaciones.filter(v => (parseInt(v.stock, 10) || 0) > 0);
-
-            if (variacionesConStock.length === 0) {
-                optionsContainer.innerHTML = `
-                    <div class="alert alert-warning text-center">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        No hay variaciones disponibles con stock para este producto.
-                    </div>
-                `;
-                selectVariationModalInstance.show();
-                return;
-            }
-
-            const tallasConStock = [...new Set(variacionesConStock.map(v => v.talla || ''))];
-            const coloresConStock = [...new Set(variacionesConStock.map(v => v.color || ''))];
+            const tallas = [...new Set(product.variaciones.map(v => v.talla || ''))];
+            const colores = [...new Set(product.variaciones.map(v => v.color || ''))];
 
             let optionsHtml = `
                 <div class="mb-3">
                     <label for="select-talla" class="form-label">Talla:</label>
                     <select class="form-select" id="select-talla">
                         <option value="" selected>Selecciona una talla...</option>
-                        ${tallasConStock.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
+                        ${tallas.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
                     </select>
                 </div>
                 <div class="mb-3">
                     <label for="select-color" class="form-label">Color:</label>
                     <select class="form-select" id="select-color">
                         <option value="" selected>Selecciona un color...</option>
-                        ${coloresConStock.map(c => `<option value="${c}">${c || 'Único'}</option>`).join('')}
+                        ${colores.map(c => `<option value="${c}">${c || 'Único'}</option>`).join('')}
                     </select>
                 </div>
             `;
@@ -1717,10 +1678,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const talla = selectTalla.value;
                 const color = selectColor.value;
 
-                if (talla && color) {
+                if (talla && color) { 
                     const variacion = product.variaciones.find(v => v.talla === talla && v.color === color);
                     const stock = variacion ? (parseInt(variacion.stock, 10) || 0) : 0;
-
+                    
                     stockDisplay.style.display = 'block';
                     stockDisplay.querySelector('span').textContent = stock;
 
@@ -1732,7 +1693,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         stockDisplay.classList.remove('alert-success');
                         stockDisplay.classList.add('alert-danger');
                         addBtn.disabled = true;
-                        showToast("Esta combinación no tiene stock disponible", "warning");
                     }
                 } else {
                     stockDisplay.style.display = 'none';
@@ -2020,18 +1980,8 @@ document.addEventListener('DOMContentLoaded', () => {
     (() => {
          const salesForm = document.getElementById('form-venta'); const ventaClienteInput = document.getElementById('venta-cliente'); const tipoVentaSelect = document.getElementById('tipo-venta-select'); const tipoEntregaSelect = document.getElementById('tipo-entrega-select'); const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp'); const ventaRepartidorSelect = document.getElementById('venta-repartidor'); const costoRutaInput = document.getElementById('costo-ruta'); const rutaPagadaCheckbox = document.getElementById('ruta-pagada-transferencia'); const ventaProductoInput = document.getElementById('venta-producto'); const ventaCarritoTbody = document.getElementById('venta-carrito'); const ventaObservaciones = document.getElementById('venta-observaciones'); const ventaDescuentoInput = document.getElementById('venta-descuento'); const ventaDescuentoTipo = document.getElementById('venta-descuento-tipo'); const pagoEfectivoInput = document.getElementById('pago-efectivo'); const pagoTransferenciaInput = document.getElementById('pago-transferencia'); const ventaTotalSpan = document.getElementById('venta-total'); const salesListTableBody = document.getElementById('lista-ventas-anteriores'); 
          
-         window.ventaItems = [];
-
-         // ✅ Inicializar campo de fecha de venta con fecha actual
-         const ventaFechaInput = document.getElementById('venta-fecha');
-         if (ventaFechaInput) {
-             const hoy = new Date();
-             const year = hoy.getFullYear();
-             const month = String(hoy.getMonth() + 1).padStart(2, '0');
-             const day = String(hoy.getDate()).padStart(2, '0');
-             ventaFechaInput.value = `${year}-${month}-${day}`;
-         }
-
+         window.ventaItems = []; 
+         
          if(!salesForm) { console.warn("Elementos de Ventas no encontrados."); return; }
          
          window.addEventListener('addItemToCart', (e) => { 
@@ -2110,38 +2060,6 @@ document.addEventListener('DOMContentLoaded', () => {
             applyFilters();
         };
 
-        // Función para calcular y mostrar estadísticas
-        function calcularEstadisticas(ventas) {
-            let totalVentas = 0;
-            let cantidadVentas = 0;
-            let totalEfectivo = 0;
-            let totalTransferencia = 0;
-
-            ventas.forEach(venta => {
-                // Solo contar ventas completadas (no anuladas)
-                const estado = venta.estado || (venta.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
-                if (estado !== 'Anulada' && estado !== 'Cancelada') {
-                    totalVentas += (venta.totalVenta || 0);
-                    cantidadVentas++;
-                    totalEfectivo += (venta.pagoEfectivo || 0);
-                    totalTransferencia += (venta.pagoTransferencia || 0);
-                }
-            });
-
-            const promedioVentas = cantidadVentas > 0 ? totalVentas / cantidadVentas : 0;
-
-            // Actualizar el DOM
-            const statTotalVentas = document.getElementById('stat-total-ventas');
-            const statCantidadVentas = document.getElementById('stat-cantidad-ventas');
-            const statPromedioVentas = document.getElementById('stat-promedio-ventas');
-            const statEfectivoVentas = document.getElementById('stat-efectivo-ventas');
-
-            if (statTotalVentas) statTotalVentas.textContent = formatoMoneda.format(totalVentas);
-            if (statCantidadVentas) statCantidadVentas.textContent = cantidadVentas;
-            if (statPromedioVentas) statPromedioVentas.textContent = formatoMoneda.format(promedioVentas);
-            if (statEfectivoVentas) statEfectivoVentas.textContent = formatoMoneda.format(totalEfectivo);
-        }
-
         function applyFilters() {
             if(!salesListTableBody) return;
             const emptyRow = document.getElementById('empty-sales-row');
@@ -2150,11 +2068,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Obtener valores de filtros
             const searchText = document.getElementById('filtro-buscar-ventas')?.value.toLowerCase() || '';
             const categoriaFiltro = document.getElementById('filtro-categoria-ventas')?.value || '';
-            const tipoVentaFiltro = document.getElementById('filtro-tipo-venta')?.value || '';
-            const estadoFiltro = document.getElementById('filtro-estado-venta')?.value || '';
-            const metodoPagoFiltro = document.getElementById('filtro-metodo-pago')?.value || '';
-            const repartidorFiltro = document.getElementById('filtro-repartidor')?.value || '';
-            const ordenarPor = document.getElementById('ordenar-por')?.value || 'fecha-desc';
 
             // Filtrar datos
             let filteredSales = allSalesData.filter(sale => {
@@ -2177,66 +2090,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!hasProductInCategory) return false;
                 }
 
-                // Filtro de tipo de venta
-                if (tipoVentaFiltro && sale.tipoVenta !== tipoVentaFiltro) {
-                    return false;
-                }
-
-                // Filtro de estado
-                if (estadoFiltro) {
-                    const estado = sale.estado || (sale.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
-                    if (estado !== estadoFiltro) return false;
-                }
-
-                // Filtro de método de pago
-                if (metodoPagoFiltro) {
-                    const tieneEfectivo = (sale.pagoEfectivo || 0) > 0;
-                    const tieneTransferencia = (sale.pagoTransferencia || 0) > 0;
-
-                    if (metodoPagoFiltro === 'efectivo' && !tieneEfectivo) return false;
-                    if (metodoPagoFiltro === 'transferencia' && !tieneTransferencia) return false;
-                    if (metodoPagoFiltro === 'mixto' && !(tieneEfectivo && tieneTransferencia)) return false;
-                }
-
-                // Filtro de repartidor
-                if (repartidorFiltro) {
-                    if (repartidorFiltro === 'tienda') {
-                        if (sale.tipoEntrega !== 'tienda') return false;
-                    } else {
-                        if (sale.repartidorId !== repartidorFiltro && sale.repartidorNombre !== repartidorFiltro) return false;
-                    }
-                }
-
                 return true;
-            });
-
-            // Calcular y mostrar estadísticas
-            calcularEstadisticas(filteredSales);
-
-            // Ordenar según selección
-            filteredSales.sort((a, b) => {
-                switch(ordenarPor) {
-                    case 'fecha-desc':
-                        const fechaA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(0);
-                        const fechaB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(0);
-                        return fechaB - fechaA;
-                    case 'fecha-asc':
-                        const fechaA2 = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(0);
-                        const fechaB2 = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(0);
-                        return fechaA2 - fechaB2;
-                    case 'total-desc':
-                        return (b.totalVenta || 0) - (a.totalVenta || 0);
-                    case 'total-asc':
-                        return (a.totalVenta || 0) - (b.totalVenta || 0);
-                    case 'cliente-asc':
-                        return (a.clienteNombre || '').localeCompare(b.clienteNombre || '');
-                    case 'cliente-desc':
-                        return (b.clienteNombre || '').localeCompare(a.clienteNombre || '');
-                    default:
-                        const fechaDef1 = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(0);
-                        const fechaDef2 = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(0);
-                        return fechaDef2 - fechaDef1;
-                }
             });
 
             // Renderizar resultados
@@ -2250,14 +2104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = d.id;
                 const tr = document.createElement('tr');
                 tr.dataset.id = id;
-                const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('es-CO', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
-                }) : 'N/A';
+                const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A';
                 const pago = (d.pagoEfectivo>0?'Efec.':'') + (d.pagoTransferencia>0?(d.pagoEfectivo>0?'+':''):'') + (d.pagoTransferencia>0?'Transf.':'');
                 const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge' : '-');
                 const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
@@ -2328,9 +2175,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button class="btn btn-action btn-action-danger btn-cancel-sale" ${estaAnulada ? 'disabled' : ''}>
                                         <i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span>
                                     </button>
-                                    <button class="btn btn-action btn-action-danger btn-delete-sale" title="Eliminar venta (requiere contraseña)">
-                                        <i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span>
-                                    </button>
                                 </td>`;
                 salesListTableBody.appendChild(tr);
             });
@@ -2338,149 +2182,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ✅ FILTRO DE FECHA PARA HISTORIAL
         let ventasUnsubscribe = null;
-        let abonosUnsubscribe = null;
 
-        // Variables compartidas para sincronizar los dos listeners
-        let ventasDelDia = new Map();
-        let ventasIdsDeAbonos = new Set();
-
-        // Función para combinar y renderizar todas las ventas
-        async function combinarYRenderizarVentas() {
-            try {
-                const todasLasVentas = new Map(ventasDelDia);
-                console.log(`📊 [Ventas] Combinando: ${ventasDelDia.size} ventas del día + ${ventasIdsDeAbonos.size} ventas con abonos`);
-
-                // Agregar ventas de apartados con abonos en la fecha (si no están ya)
-                if (ventasIdsDeAbonos.size > 0) {
-                    for (const ventaId of ventasIdsDeAbonos) {
-                        if (!todasLasVentas.has(ventaId)) {
-                            try {
-                                console.log(`📊 [Ventas] Obteniendo venta de abono: ${ventaId}`);
-                                const ventaRef = doc(db, 'ventas', ventaId);
-                                const ventaSnap = await getDoc(ventaRef);
-                                if (ventaSnap.exists()) {
-                                    todasLasVentas.set(ventaId, { id: ventaId, ...ventaSnap.data() });
-                                    console.log(`✅ [Ventas] Venta agregada:`, ventaSnap.data().clienteNombre);
-                                } else {
-                                    console.warn(`⚠️ [Ventas] Venta no encontrada: ${ventaId}`);
-                                }
-                            } catch (err) {
-                                console.error('❌ [Ventas] Error al obtener venta:', ventaId, err);
-                            }
-                        } else {
-                            console.log(`📊 [Ventas] Venta ya estaba en el día: ${ventaId}`);
-                        }
-                    }
-                }
-
-                console.log(`📊 [Ventas] Total de ventas a mostrar: ${todasLasVentas.size}`);
-
-                // Crear snapshot simulado para renderSales
-                const ventasArray = Array.from(todasLasVentas.values());
-                const snapshotSimulado = {
-                    forEach: (callback) => {
-                        ventasArray.forEach(venta => {
-                            callback({
-                                id: venta.id,
-                                data: () => {
-                                    const { id, ...data } = venta;
-                                    return data;
-                                }
-                            });
-                        });
-                    }
-                };
-
-                renderSales(snapshotSimulado);
-            } catch (error) {
-                console.error("Error procesando ventas:", error);
-                if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error procesando ventas.</td></tr>';
-            }
-        }
-
-        async function cargarVentas(fechaFiltro = null) {
-            // Cancelar listeners anteriores si existen
+        function cargarVentas(fechaFiltro = null) {
+            // Cancelar listener anterior si existe
             if (ventasUnsubscribe) {
                 ventasUnsubscribe();
             }
-            if (abonosUnsubscribe) {
-                abonosUnsubscribe();
-            }
 
-            // Limpiar datos previos
-            ventasDelDia.clear();
-            ventasIdsDeAbonos.clear();
-
-            let inicio, fin;
+            let q;
             if (fechaFiltro) {
                 // Filtrar por fecha específica
                 // ✅ Crear fecha en zona horaria local para evitar problemas
                 const partes = fechaFiltro.split('-');
-                inicio = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 0, 0, 0, 0);
-                fin = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 23, 59, 59, 999);
+                const inicio = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 0, 0, 0, 0);
+                const fin = new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 23, 59, 59, 999);
+
+                q = query(
+                    salesCollection,
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<=', Timestamp.fromDate(fin)),
+                    orderBy('timestamp', 'desc')
+                );
             } else {
                 // Sin filtro, mostrar solo del día actual por defecto
                 const hoy = new Date();
-                inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
-                fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+                const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+                const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59, 999);
+
+                q = query(
+                    salesCollection,
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<=', Timestamp.fromDate(fin)),
+                    orderBy('timestamp', 'desc')
+                );
             }
 
-            // ✅ PASO 1: Consultar ventas creadas en la fecha
-            const qVentas = query(
-                salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(inicio)),
-                where('timestamp', '<=', Timestamp.fromDate(fin)),
-                orderBy('timestamp', 'desc')
-            );
-
-            // ✅ PASO 2: Consultar abonos realizados en la fecha para incluir apartados con movimientos
-            const qAbonos = query(
-                collection(db, 'abonos'),
-                where('timestamp', '>=', Timestamp.fromDate(inicio)),
-                where('timestamp', '<=', Timestamp.fromDate(fin))
-            );
-
-            // Listener para abonos
-            abonosUnsubscribe = onSnapshot(qAbonos, async (abonosSnapshot) => {
-                // Obtener ventaIds de los abonos del día
-                ventasIdsDeAbonos.clear();
-                console.log(`📊 [Ventas] Abonos encontrados del día: ${abonosSnapshot.size}`);
-
-                abonosSnapshot.forEach(doc => {
-                    const abono = doc.data();
-                    console.log('📊 [Ventas] Abono encontrado:', {
-                        id: doc.id,
-                        ventaId: abono.ventaId,
-                        monto: abono.monto,
-                        timestamp: abono.timestamp?.toDate ? abono.timestamp.toDate().toLocaleString('es-CO') : abono.timestamp
-                    });
-
-                    if (abono.ventaId) {
-                        ventasIdsDeAbonos.add(abono.ventaId);
-                    }
-                });
-
-                console.log(`📊 [Ventas] IDs de ventas de abonos:`, Array.from(ventasIdsDeAbonos));
-
-                // Re-renderizar con los nuevos datos de abonos
-                await combinarYRenderizarVentas();
-            });
-
-            // Listener para ventas
-            ventasUnsubscribe = onSnapshot(qVentas, async (ventasSnapshot) => {
-                // Actualizar ventas del día
-                ventasDelDia.clear();
-                console.log(`📊 [Ventas] Ventas creadas del día: ${ventasSnapshot.size}`);
-
-                ventasSnapshot.forEach(docSnap => {
-                    ventasDelDia.set(docSnap.id, { id: docSnap.id, ...docSnap.data() });
-                });
-
-                // Re-renderizar con los nuevos datos de ventas
-                await combinarYRenderizarVentas();
-            }, e => {
+            ventasUnsubscribe = onSnapshot(q, renderSales, e => {
                 console.error("Error sales:", e);
-                if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error cargando ventas.</td></tr>';
+                if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';
             });
         }
 
@@ -2515,36 +2254,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     const dia = String(hoy.getDate()).padStart(2, '0');
                     filtroFechaInput.value = `${año}-${mes}-${dia}`;
 
-                    // Limpiar todos los filtros
+                    // Limpiar otros filtros
                     const filtroBuscar = document.getElementById('filtro-buscar-ventas');
                     const filtroCategoria = document.getElementById('filtro-categoria-ventas');
-                    const filtroTipo = document.getElementById('filtro-tipo-venta');
-                    const filtroEstado = document.getElementById('filtro-estado-venta');
-                    const filtroMetodo = document.getElementById('filtro-metodo-pago');
-                    const filtroRep = document.getElementById('filtro-repartidor');
-                    const ordenar = document.getElementById('ordenar-por');
-
                     if (filtroBuscar) filtroBuscar.value = '';
                     if (filtroCategoria) filtroCategoria.value = '';
-                    if (filtroTipo) filtroTipo.value = '';
-                    if (filtroEstado) filtroEstado.value = '';
-                    if (filtroMetodo) filtroMetodo.value = '';
-                    if (filtroRep) filtroRep.value = '';
-                    if (ordenar) ordenar.value = 'fecha-desc';
 
                     cargarVentas();
                 }
             });
         }
 
-        // Event listeners para los filtros
+        // Event listeners para los nuevos filtros
         const filtroBuscarVentas = document.getElementById('filtro-buscar-ventas');
         const filtroCategoriaVentas = document.getElementById('filtro-categoria-ventas');
-        const filtroTipoVenta = document.getElementById('filtro-tipo-venta');
-        const filtroEstadoVenta = document.getElementById('filtro-estado-venta');
-        const filtroMetodoPago = document.getElementById('filtro-metodo-pago');
-        const filtroRepartidor = document.getElementById('filtro-repartidor');
-        const ordenarPorSelect = document.getElementById('ordenar-por');
 
         if (filtroBuscarVentas) {
             filtroBuscarVentas.addEventListener('input', () => {
@@ -2559,7 +2282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Cargar categorías en el select
             onSnapshot(categoriesCollection, (snapshot) => {
-                filtroCategoriaVentas.innerHTML = '<option value="">Todas</option>';
+                filtroCategoriaVentas.innerHTML = '<option value="">Todas las categorías</option>';
                 snapshot.forEach(doc => {
                     const cat = doc.data();
                     const option = document.createElement('option');
@@ -2568,200 +2291,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     filtroCategoriaVentas.appendChild(option);
                 });
             });
-        }
-
-        if (filtroTipoVenta) {
-            filtroTipoVenta.addEventListener('change', () => {
-                applyFilters();
-            });
-        }
-
-        if (filtroEstadoVenta) {
-            filtroEstadoVenta.addEventListener('change', () => {
-                applyFilters();
-            });
-        }
-
-        if (filtroMetodoPago) {
-            filtroMetodoPago.addEventListener('change', () => {
-                applyFilters();
-            });
-        }
-
-        if (filtroRepartidor) {
-            filtroRepartidor.addEventListener('change', () => {
-                applyFilters();
-            });
-
-            // Cargar repartidores en el select
-            onSnapshot(repartidoresCollection, (snapshot) => {
-                filtroRepartidor.innerHTML = '<option value="">Todos</option><option value="tienda">Recoge en Tienda</option>';
-                snapshot.forEach(doc => {
-                    const rep = doc.data();
-                    const option = document.createElement('option');
-                    option.value = doc.id;
-                    option.textContent = rep.nombre;
-                    filtroRepartidor.appendChild(option);
-                });
-            });
-        }
-
-        if (ordenarPorSelect) {
-            ordenarPorSelect.addEventListener('change', () => {
-                applyFilters();
-            });
-        }
-
-        // ========================================================================
-        // FUNCIONES DE EXPORTACIÓN E IMPRESIÓN
-        // ========================================================================
-
-        // Función para exportar ventas a CSV
-        function exportarVentasAExcel() {
-            if (allSalesData.length === 0) {
-                showToast('No hay ventas para exportar', 'warning');
-                return;
-            }
-
-            // Obtener ventas filtradas actuales
-            const searchText = document.getElementById('filtro-buscar-ventas')?.value.toLowerCase() || '';
-            const categoriaFiltro = document.getElementById('filtro-categoria-ventas')?.value || '';
-            const tipoVentaFiltro = document.getElementById('filtro-tipo-venta')?.value || '';
-            const estadoFiltro = document.getElementById('filtro-estado-venta')?.value || '';
-            const metodoPagoFiltro = document.getElementById('filtro-metodo-pago')?.value || '';
-            const repartidorFiltro = document.getElementById('filtro-repartidor')?.value || '';
-
-            let ventasParaExportar = allSalesData.filter(sale => {
-                if (searchText) {
-                    const clienteMatch = (sale.clienteNombre || '').toLowerCase().includes(searchText);
-                    const productosMatch = sale.items?.some(item =>
-                        (item.nombre || '').toLowerCase().includes(searchText) ||
-                        (item.nombreCompleto || '').toLowerCase().includes(searchText)
-                    );
-                    if (!clienteMatch && !productosMatch) return false;
-                }
-                if (categoriaFiltro) {
-                    const hasProductInCategory = sale.items?.some(item => {
-                        const product = localProductsMap.get(item.productoId);
-                        return product && product.categoria === categoriaFiltro;
-                    });
-                    if (!hasProductInCategory) return false;
-                }
-                if (tipoVentaFiltro && sale.tipoVenta !== tipoVentaFiltro) return false;
-                if (estadoFiltro) {
-                    const estado = sale.estado || (sale.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
-                    if (estado !== estadoFiltro) return false;
-                }
-                if (metodoPagoFiltro) {
-                    const tieneEfectivo = (sale.pagoEfectivo || 0) > 0;
-                    const tieneTransferencia = (sale.pagoTransferencia || 0) > 0;
-                    if (metodoPagoFiltro === 'efectivo' && !tieneEfectivo) return false;
-                    if (metodoPagoFiltro === 'transferencia' && !tieneTransferencia) return false;
-                    if (metodoPagoFiltro === 'mixto' && !(tieneEfectivo && tieneTransferencia)) return false;
-                }
-                if (repartidorFiltro) {
-                    if (repartidorFiltro === 'tienda') {
-                        if (sale.tipoEntrega !== 'tienda') return false;
-                    } else {
-                        if (sale.repartidorId !== repartidorFiltro && sale.repartidorNombre !== repartidorFiltro) return false;
-                    }
-                }
-                return true;
-            });
-
-            // Crear CSV
-            let csv = 'Fecha,Cliente,Productos,Tipo Venta,Total,Pago Efectivo,Pago Transferencia,Repartidor,Estado\n';
-
-            ventasParaExportar.forEach(venta => {
-                const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate().toLocaleString('es-CO') : 'N/A';
-                const cliente = (venta.clienteNombre || 'General').replace(/,/g, ' ');
-                const productos = venta.items?.map(item => `${item.nombreCompleto || item.nombre} (x${item.cantidad})`).join(' | ').replace(/,/g, ' ') || '';
-                const tipoVenta = venta.tipoVenta || '';
-                const total = venta.totalVenta || 0;
-                const pagoEfectivo = venta.pagoEfectivo || 0;
-                const pagoTransferencia = venta.pagoTransferencia || 0;
-                const repartidor = venta.repartidorNombre || (venta.tipoEntrega === 'tienda' ? 'Recoge' : '-');
-                const estado = venta.estado || (venta.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
-
-                csv += `"${fecha}","${cliente}","${productos}","${tipoVenta}",${total},${pagoEfectivo},${pagoTransferencia},"${repartidor}","${estado}"\n`;
-            });
-
-            // Descargar archivo
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            const fechaActual = new Date().toISOString().split('T')[0];
-            link.setAttribute('href', url);
-            link.setAttribute('download', `ventas_${fechaActual}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            showToast(`${ventasParaExportar.length} ventas exportadas exitosamente`, 'success');
-        }
-
-        // Event listener para botón de exportar
-        const btnExportarVentas = document.getElementById('btn-exportar-ventas');
-        if (btnExportarVentas) {
-            btnExportarVentas.addEventListener('click', exportarVentasAExcel);
-        }
-
-        // Función para imprimir recibo de venta
-        function imprimirVenta() {
-            const modalBody = document.getElementById('viewSaleModalBody');
-            if (!modalBody) return;
-
-            // Crear ventana de impresión
-            const printWindow = window.open('', '_blank');
-            const contenido = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Recibo de Venta</title>
-                    <style>
-                        body {
-                            font-family: Arial, sans-serif;
-                            padding: 20px;
-                            max-width: 800px;
-                            margin: 0 auto;
-                        }
-                        h1 { color: #333; text-align: center; }
-                        h5 { color: #666; margin-top: 20px; }
-                        ul { list-style: none; padding: 0; }
-                        li { padding: 5px 0; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                        th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
-                        th { background-color: #f8f9fa; }
-                        .text-end { text-align: right; }
-                        .fw-bold { font-weight: bold; }
-                        .fs-5 { font-size: 1.25rem; }
-                        .mt-2 { margin-top: 0.5rem; }
-                        hr { margin: 20px 0; }
-                        @media print {
-                            button { display: none; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    <button onclick="window.print()" style="padding: 10px 20px; margin-bottom: 20px; cursor: pointer;">
-                        Imprimir
-                    </button>
-                    ${modalBody.innerHTML}
-                </body>
-                </html>
-            `;
-
-            printWindow.document.open();
-            printWindow.document.write(contenido);
-            printWindow.document.close();
-        }
-
-        // Event listener para botón de imprimir
-        const btnImprimirVenta = document.getElementById('btn-imprimir-venta');
-        if (btnImprimirVenta) {
-            btnImprimirVenta.addEventListener('click', imprimirVenta);
         }
 
         // Cargar ventas del día actual inicialmente
@@ -2780,42 +2309,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Obtener referencias a los elementos del formulario
             const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
             const ventaCelularInput = document.getElementById('venta-cliente-celular');
-            const ventaFechaInput = document.getElementById('venta-fecha');
-
-            // ✅ Obtener fecha de venta (personalizada o actual)
-            let fechaVenta;
-            if (ventaFechaInput && ventaFechaInput.value) {
-                // Validar que no sea una fecha futura
-                const hoy = new Date();
-                const fechaSeleccionada = new Date(ventaFechaInput.value);
-
-                hoy.setHours(0, 0, 0, 0);
-                fechaSeleccionada.setHours(0, 0, 0, 0);
-
-                if (fechaSeleccionada > hoy) {
-                    showToast("No puedes registrar ventas con fechas futuras.", 'warning');
-                    return;
-                }
-
-                // ✅ Si la fecha seleccionada es HOY, usar hora actual completa
-                const hoyCompleto = new Date();
-                hoyCompleto.setHours(0, 0, 0, 0);
-                const fechaInputCompleta = new Date(ventaFechaInput.value);
-                fechaInputCompleta.setHours(0, 0, 0, 0);
-
-                if (fechaInputCompleta.getTime() === hoyCompleto.getTime()) {
-                    // Es hoy, usar hora actual real
-                    fechaVenta = new Date();
-                } else {
-                    // Es una fecha pasada, usar la hora actual del momento de registro
-                    const ahora = new Date();
-                    fechaVenta = new Date(ventaFechaInput.value);
-                    fechaVenta.setHours(ahora.getHours(), ahora.getMinutes(), ahora.getSeconds(), ahora.getMilliseconds());
-                }
-            } else {
-                // Usar fecha y hora actual si no se especificó
-                fechaVenta = new Date();
-            }
 
             const totalCalculado = window.calcularTotalVentaGeneral();
             const ventaData = {
@@ -2837,7 +2330,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 pagoTransferencia: parseFloat(eliminarFormatoNumero(pagoTransferenciaInput.value)) || 0,
                 totalVenta: totalCalculado,
                 estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada',
-                timestamp: Timestamp.fromDate(fechaVenta) // ✅ Usar fecha personalizada o actual
+                timestamp: serverTimestamp()
             }; 
             
             if (ventaData.tipoVenta === 'apartado') {
@@ -2900,12 +2393,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         total: ventaData.totalVenta,
                         abonado: abonoInicial,
                         saldo: saldoPendiente,
-                        fechaCreacion: Timestamp.fromDate(fechaVenta), // ✅ Usar fecha personalizada
+                        fechaCreacion: serverTimestamp(),
                         fechaVencimiento: Timestamp.fromDate(fechaVencimiento),
                         estado: 'Pendiente',
                         items: ventaData.items, // Guardar items para referencia
                         abonos: [{
-                            fecha: Timestamp.fromDate(fechaVenta), // ✅ Usar fecha personalizada
+                            fecha: Timestamp.fromDate(new Date()), // ✅ Usar Timestamp en lugar de serverTimestamp
                             monto: abonoInicial,
                             metodoPago: metodoPagoInicial,
                             observaciones: 'Abono inicial'
@@ -2915,20 +2408,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         const apartadoRef = await addDoc(apartadosCollection, apartadoData);
                         console.log("✅ Apartado creado exitosamente con ID:", apartadoRef.id);
-
-                        // ✅ Registrar abono inicial en la colección 'abonos' para el cierre de caja
-                        const abonoInicialParaCaja = {
-                            apartadoId: apartadoRef.id,
-                            ventaId: docRef.id,
-                            clienteNombre: ventaData.clienteNombre,
-                            monto: abonoInicial,
-                            metodoPago: metodoPagoInicial,
-                            observaciones: 'Abono inicial',
-                            timestamp: Timestamp.fromDate(fechaVenta) // ✅ Usar fecha personalizada
-                        };
-                        await addDoc(collection(db, 'abonos'), abonoInicialParaCaja);
-                        console.log("✅ Abono inicial registrado en la colección de abonos");
-
                         showToast(`Apartado creado! Saldo: ${formatoMoneda.format(saldoPendiente)}. Vence: ${fechaVencimiento.toLocaleDateString('es-CO')}`, 'success');
                     } catch (apErr) {
                         console.error("❌ Error crítico al crear apartado:", apErr);
@@ -2938,24 +2417,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast("Venta registrada exitosamente!", 'success');
                 } 
                 
-                salesForm.reset();
-                window.ventaItems = [];
-                renderCarrito();
-                window.fillClientInfoSales();
-                tipoVentaSelect.value='detal';
-                tipoEntregaSelect.value='tienda';
-                toggleDeliveryFields();
-                window.calcularTotalVentaGeneral();
-
-                // ✅ Restablecer fecha de venta a hoy
-                const ventaFechaInput = document.getElementById('venta-fecha');
-                if (ventaFechaInput) {
-                    const hoy = new Date();
-                    const year = hoy.getFullYear();
-                    const month = String(hoy.getMonth() + 1).padStart(2, '0');
-                    const day = String(hoy.getDate()).padStart(2, '0');
-                    ventaFechaInput.value = `${year}-${month}-${day}`;
-                } 
+                salesForm.reset(); 
+                window.ventaItems = []; 
+                renderCarrito(); 
+                window.fillClientInfoSales(); 
+                tipoVentaSelect.value='detal'; 
+                tipoEntregaSelect.value='tienda'; 
+                toggleDeliveryFields(); 
+                window.calcularTotalVentaGeneral(); 
             } catch (err) { 
                 console.error("Error saving sale:", err); 
                 showToast(`Error: ${err.message}`, 'error'); 
@@ -3012,86 +2481,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 showToast('Venta anulada y stock repuesto.', 'info');
-
+                
             } catch (error) {
                 console.error("Error al anular la venta:", error);
                 showToast('Error al anular la venta.', 'error');
             }
         }
-
-        // --- Función para ELIMINAR Venta con Contraseña ---
-        async function eliminarVentaConPassword(ventaId) {
-            if (!ventaId) return;
-
-            // Solicitar contraseña
-            const password = prompt('⚠️ ELIMINAR VENTA DE LA BASE DE DATOS\n\nEsta acción es PERMANENTE y NO se puede deshacer.\nSe eliminará completamente de la base de datos y se devolverá el stock.\n\nIngresa la contraseña de administrador:');
-
-            if (!password) {
-                showToast('Operación cancelada', 'info');
-                return;
-            }
-
-            // Validar contraseña (cambia esto por tu contraseña deseada)
-            const PASSWORD_ADMIN = 'admin123'; // 🔑 CAMBIAR ESTA CONTRASEÑA
-
-            if (password !== PASSWORD_ADMIN) {
-                showToast('❌ Contraseña incorrecta', 'error');
-                return;
-            }
-
-            // Confirmar eliminación
-            if (!confirm('⚠️ ÚLTIMA CONFIRMACIÓN\n\n¿Estás COMPLETAMENTE SEGURO de eliminar esta venta?\n\nEsta acción es IRREVERSIBLE y eliminará:\n- La venta de la base de datos\n- El apartado (si existe)\n- Los abonos asociados\n- Devolverá el stock\n\n¿Continuar?')) {
-                return;
-            }
-
-            const ventaRef = doc(db, 'ventas', ventaId);
-
-            try {
-                const ventaSnap = await getDoc(ventaRef);
-                if (!ventaSnap.exists()) {
-                    showToast('Error: No se encontró la venta.', 'error');
-                    return;
-                }
-
-                const ventaData = ventaSnap.data();
-
-                // 1. Devolver stock si la venta no está anulada
-                if (ventaData.estado !== 'Anulada' && ventaData.estado !== 'Cancelada') {
-                    await actualizarStock(ventaData.items, 'sumar');
-                    console.log('✅ Stock devuelto');
-                }
-
-                // 2. Si es un apartado, eliminar el documento del apartado y los abonos
-                if (ventaData.tipoVenta === 'apartado') {
-                    const qApartado = query(apartadosCollection, where("ventaId", "==", ventaId));
-                    const apartadosSnap = await getDocs(qApartado);
-
-                    for (const apartadoDoc of apartadosSnap.docs) {
-                        await deleteDoc(apartadoDoc.ref);
-                        console.log('✅ Apartado eliminado:', apartadoDoc.id);
-
-                        // Eliminar abonos asociados a este apartado
-                        const qAbonos = query(collection(db, 'abonos'), where('apartadoId', '==', apartadoDoc.id));
-                        const abonosSnap = await getDocs(qAbonos);
-                        for (const abonoDoc of abonosSnap.docs) {
-                            await deleteDoc(abonoDoc.ref);
-                            console.log('✅ Abono eliminado:', abonoDoc.id);
-                        }
-                    }
-                }
-
-                // 3. Eliminar la venta
-                await deleteDoc(ventaRef);
-                console.log('✅ Venta eliminada:', ventaId);
-
-                showToast('✅ Venta eliminada completamente de la base de datos', 'success');
-
-            } catch (error) {
-                console.error("❌ Error al eliminar la venta:", error);
-                showToast(`Error al eliminar la venta: ${error.message}`, 'error');
-            }
-        }
-
+        
         // --- Función para Ver Venta (R-Detalle) ---
         async function handleViewSale(ventaId) {
             if (!viewSaleModalInstance) {
@@ -3215,11 +2611,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Cambiar tipo de venta (detal/mayorista)
             if(target.classList.contains('btn-change-sale-type')) {
                 cambiarTipoVenta(id, target.dataset.tipo);
-            }
-
-            // Eliminar venta con contraseña
-            if(target.classList.contains('btn-delete-sale')) {
-                eliminarVentaConPassword(id);
             }
         });
 
@@ -3853,7 +3244,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             try {
                 await updateDoc(apartadoRef, {
                     estado: 'Completado',
-                    fechaCompletado: Timestamp.fromDate(new Date())
+                    fechaCompletado: serverTimestamp()
                 });
                 
                 if (apartadoData.ventaId) {
@@ -3918,7 +3309,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                 await updateDoc(apartadoRef, {
                     estado: 'Cancelado',
-                    fechaCancelacion: Timestamp.fromDate(new Date())
+                    fechaCancelacion: serverTimestamp()
                 });
                 console.log('✅ Apartado marcado como cancelado');
 
@@ -4014,22 +3405,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     saldo: nuevoSaldo,
                     abonos: abonosConvertidos,
                     estado: nuevoSaldo <= 0 ? 'Completado' : 'Pendiente',
-                    ultimaModificacion: Timestamp.fromDate(new Date())
+                    ultimaModificacion: serverTimestamp()
                 });
                 console.log("✅ Apartado actualizado correctamente");
-
-                // ✅ PASO 4.5: Registrar abono en la colección 'abonos' para el cierre de caja
-                const abonoParaCaja = {
-                    apartadoId: apartadoId,
-                    ventaId: apartadoData.ventaId,
-                    clienteNombre: apartadoData.clienteNombre,
-                    monto: monto,
-                    metodoPago: metodoPago,
-                    observaciones: observaciones || 'Sin observaciones',
-                    timestamp: Timestamp.fromDate(new Date())
-                };
-                await addDoc(collection(db, 'abonos'), abonoParaCaja);
-                console.log("✅ Abono registrado en la colección de abonos para el cierre de caja");
 
                 // ✅ PASO 5: Actualizar venta asociada
                 if (apartadoData.ventaId) {
@@ -4208,11 +3586,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                      recibidoRepartidores += liq.efectivoEntregado || 0;
                  });
 
-                 // Calcular el total general incluyendo ventas, abonos y repartidores
-                 totalVentas = (ventasEfectivo + ventasTransferencia) +
-                               (abonosEfectivo + abonosTransferencia) +
-                               recibidoRepartidores;
-
                  // Actualizar datos
                  datosDelDia = {
                      ventasEfectivo,
@@ -4278,7 +3651,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         monto: amount,
                         metodoPago: method,
                         descripcion: desc,
-                        timestamp: Timestamp.fromDate(new Date())
+                        timestamp: serverTimestamp()
                     });
                     showToast(`Ingreso en ${method} guardado!`);
 
@@ -4307,7 +3680,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         tipo: 'gasto',
                         monto: amount,
                         descripcion: desc,
-                        timestamp: Timestamp.fromDate(new Date())
+                        timestamp: serverTimestamp()
                     });
                     showToast('Gasto guardado!');
 
@@ -4340,7 +3713,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                 // Guardar cierre en BD con TODOS los datos
                 const cierreData = {
-                    timestamp: Timestamp.fromDate(new Date()),
+                    timestamp: serverTimestamp(),
                     ventasEfectivo: datosDelDia.ventasEfectivo,
                     ventasTransferencia: datosDelDia.ventasTransferencia,
                     abonosEfectivo: datosDelDia.abonosEfectivo,
@@ -4573,42 +3946,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     }
                 });
 
-                // 💰 CONSULTAR ABONOS DE APARTADOS DEL DÍA
-                const qAbonos = query(
-                    collection(db, 'abonos'),
-                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
-                    where('timestamp', '<=', Timestamp.fromDate(fin))
-                );
-                const abonosSnap = await getDocs(qAbonos);
-
-                console.log(`💳 Abonos de apartados encontrados: ${abonosSnap.size}`);
-
-                let abonosEfectivo = 0;
-                let abonosTransferencia = 0;
-
-                abonosSnap.forEach(doc => {
-                    const abono = doc.data();
-                    const monto = abono.monto || 0;
-                    const metodoPago = abono.metodoPago || 'Efectivo';
-
-                    if (metodoPago === 'Efectivo') {
-                        abonosEfectivo += monto;
-                        console.log(`  💵 Abono ID: ${doc.id} - Efectivo: $${monto}`);
-                    } else if (metodoPago === 'Transferencia') {
-                        abonosTransferencia += monto;
-                        console.log(`  💳 Abono ID: ${doc.id} - Transferencia: $${monto}`);
-                    }
-                });
-
-                console.log(`💰 Total abonos - Efectivo: $${abonosEfectivo}, Transferencia: $${abonosTransferencia}`);
-
                 ventasDelDia = {
-                    efectivo: ventasEfectivo + abonosEfectivo,
-                    transferencia: ventasTransferencia + abonosTransferencia,
-                    total: ventasEfectivo + ventasTransferencia + abonosEfectivo + abonosTransferencia
+                    efectivo: ventasEfectivo,
+                    transferencia: ventasTransferencia,
+                    total: ventasEfectivo + ventasTransferencia
                 };
 
-                console.log('✅ Ventas del día calculadas (con abonos):', ventasDelDia);
+                console.log('✅ Ventas del día calculadas:', ventasDelDia);
                 return ventasDelDia;
             } catch (err) {
                 console.error('❌ Error calculando ventas del día:', err);
@@ -5022,38 +4366,22 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             );
             
             // Escuchar cambios en tiempo real
-            onSnapshot(q,
-                async (snapshot) => {
+            onSnapshot(q, 
+                (snapshot) => {
                     let totalVentas = 0;
                     let ventasContadas = 0;
-
+                    
                     snapshot.forEach(doc => {
                         const venta = doc.data();
                         const estado = venta.estado || '';
-
+                        
                         // ✅ Filtrar el estado AQUÍ en el cliente
                         if (estado !== 'Anulada' && estado !== 'Cancelada') {
                             totalVentas += (venta.totalVenta || 0);
                             ventasContadas++;
                         }
                     });
-
-                    // Sumar abonos de apartados del día
-                    try {
-                        const qAbonos = query(
-                            collection(db, 'abonos'),
-                            where('timestamp', '>=', Timestamp.fromDate(hoy)),
-                            where('timestamp', '<', Timestamp.fromDate(manana))
-                        );
-                        const abonosSnap = await getDocs(qAbonos);
-                        abonosSnap.forEach(doc => {
-                            const abono = doc.data();
-                            totalVentas += (abono.monto || 0);
-                        });
-                    } catch (error) {
-                        console.error("❌ Error al sumar abonos:", error);
-                    }
-
+                    
                     // Actualizar UI
                     dbVentasHoyEl.textContent = formatoMoneda.format(totalVentas);
                     dbVentasHoyEl.classList.add('text-success');
@@ -8656,13 +7984,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         } catch (error) {
             console.error('❌ Error al crear producto:', error);
-
-            // Check for Firebase Storage permissions error (code 412)
-            if (error.code === 'storage/unauthorized' || error.message?.includes('service account') || error.message?.includes('412')) {
-                showToast('⚠️ Error de permisos de Firebase Storage. Consulta FIREBASE_PERMISSIONS_FIX.md para solucionar.', 'error');
-            } else {
-                showToast('Error al crear producto: ' + error.message, 'error');
-            }
+            showToast('Error al crear producto: ' + error.message, 'error');
         } finally {
             const btnGuardar = document.getElementById('btn-guardar-nuevo-producto');
             btnGuardar.disabled = false;
