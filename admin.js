@@ -353,7 +353,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                 console.log("Imagen eliminada de Storage:", imageUrl);
                             } catch (storageErr) {
                                 console.error("Error al eliminar imagen de Storage:", storageErr);
-                                showToast("Producto eliminado, pero la imagen no se pudo borrar.", 'warning');
+
+                                // Check for Firebase Storage permissions error (code 412)
+                                if (storageErr.code === 'storage/unauthorized' || storageErr.message?.includes('service account') || storageErr.message?.includes('412')) {
+                                    showToast('⚠️ Error de permisos de Firebase Storage. Consulta FIREBASE_PERMISSIONS_FIX.md', 'error');
+                                } else {
+                                    showToast("Producto eliminado, pero la imagen no se pudo borrar.", 'warning');
+                                }
                             }
                         }
                     }
@@ -1412,10 +1418,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast("Producto guardado!"); 
                     window.clearProductForm(); 
                 } 
-            } catch (err) { 
-                console.error("Error saving product or image:", err); 
-                if (err.message !== "Imagen requerida") {
-                    showToast(`Error: ${err.message}`, 'error'); 
+            } catch (err) {
+                console.error("Error saving product or image:", err);
+
+                // Check for Firebase Storage permissions error (code 412)
+                if (err.code === 'storage/unauthorized' || err.message?.includes('service account') || err.message?.includes('412')) {
+                    showToast('⚠️ Error de permisos de Firebase Storage. Consulta FIREBASE_PERMISSIONS_FIX.md para solucionar.', 'error');
+                    console.error('Firebase Storage permissions error. Please check FIREBASE_PERMISSIONS_FIX.md for instructions.');
+                } else if (err.message !== "Imagen requerida") {
+                    showToast(`Error: ${err.message}`, 'error');
                 }
             } finally {
                  if(saveProductBtn) { saveProductBtn.disabled = false; if(saveProductBtnText) saveProductBtnText.textContent = "Guardar"; if(saveProductBtnSpinner) saveProductBtnSpinner.style.display = 'none'; }
@@ -8252,7 +8263,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         } catch (error) {
             console.error('❌ Error al crear producto:', error);
-            showToast('Error al crear producto: ' + error.message, 'error');
+
+            // Check for Firebase Storage permissions error (code 412)
+            if (error.code === 'storage/unauthorized' || error.message?.includes('service account') || error.message?.includes('412')) {
+                showToast('⚠️ Error de permisos de Firebase Storage. Consulta FIREBASE_PERMISSIONS_FIX.md para solucionar.', 'error');
+            } else {
+                showToast('Error al crear producto: ' + error.message, 'error');
+            }
         } finally {
             const btnGuardar = document.getElementById('btn-guardar-nuevo-producto');
             btnGuardar.disabled = false;
