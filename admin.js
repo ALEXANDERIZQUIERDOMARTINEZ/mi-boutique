@@ -879,13 +879,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 document.getElementById('client-total-spent').textContent = formatoMoneda.format(totalGastado);
                 document.getElementById('client-total-purchases').textContent = totalCompras;
-                document.getElementById('client-last-purchase').textContent = fechaUltimaCompra ? fechaUltimaCompra.toLocaleDateString('es-CO') : '-';
+                document.getElementById('client-last-purchase').textContent = fechaUltimaCompra ? fechaUltimaCompra.toLocaleString('es-CO', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                }) : '-';
                 document.getElementById('client-avg-ticket').textContent = formatoMoneda.format(ticketPromedio);
 
                 // Renderizar tabla
                 historyList.innerHTML = '';
                 ventas.forEach(venta => {
-                    const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate().toLocaleDateString('es-CO') : '-';
+                    const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate().toLocaleString('es-CO', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    }) : '-';
                     const productos = venta.items?.length || 0;
                     const productosTexto = productos === 1 ? '1 producto' : `${productos} productos`;
 
@@ -2137,7 +2151,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = d.id;
                 const tr = document.createElement('tr');
                 tr.dataset.id = id;
-                const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleDateString('es-CO') : 'N/A';
+                const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('es-CO', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                }) : 'N/A';
                 const pago = (d.pagoEfectivo>0?'Efec.':'') + (d.pagoTransferencia>0?(d.pagoEfectivo>0?'+':''):'') + (d.pagoTransferencia>0?'Transf.':'');
                 const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge' : '-');
                 const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
