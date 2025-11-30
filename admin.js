@@ -1232,14 +1232,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
                 const defaultImgTabla = 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto';
-                const imagenUrl = d.imagenUrl || defaultImgTabla;
-
-                // Debug: verificar URLs de imágenes
-                if (!d.imagenUrl) {
-                    console.log(`⚠️ Producto sin imagen: ${d.nombre} (ID: ${id})`);
-                } else {
-                    console.log(`✅ Producto con imagen: ${d.nombre} - URL: ${d.imagenUrl}`);
-                } 
+                const imagenUrl = d.imagenUrl || defaultImgTabla; 
 
                 let variacionesHtml = (d.variaciones || [])
                     .map(v => `<span class="badge bg-light text-dark me-1">${v.talla || ''} / ${v.color || ''} (Stock: ${v.stock})</span>`)
