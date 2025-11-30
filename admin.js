@@ -3799,6 +3799,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                      recibidoRepartidores += liq.efectivoEntregado || 0;
                  });
 
+                 // Calcular el total general incluyendo ventas, abonos y repartidores
+                 totalVentas = (ventasEfectivo + ventasTransferencia) +
+                               (abonosEfectivo + abonosTransferencia) +
+                               recibidoRepartidores;
+
                  // Actualizar datos
                  datosDelDia = {
                      ventasEfectivo,
@@ -4608,22 +4613,38 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             );
             
             // Escuchar cambios en tiempo real
-            onSnapshot(q, 
-                (snapshot) => {
+            onSnapshot(q,
+                async (snapshot) => {
                     let totalVentas = 0;
                     let ventasContadas = 0;
-                    
+
                     snapshot.forEach(doc => {
                         const venta = doc.data();
                         const estado = venta.estado || '';
-                        
+
                         // ✅ Filtrar el estado AQUÍ en el cliente
                         if (estado !== 'Anulada' && estado !== 'Cancelada') {
                             totalVentas += (venta.totalVenta || 0);
                             ventasContadas++;
                         }
                     });
-                    
+
+                    // Sumar abonos de apartados del día
+                    try {
+                        const qAbonos = query(
+                            collection(db, 'abonos'),
+                            where('timestamp', '>=', Timestamp.fromDate(hoy)),
+                            where('timestamp', '<', Timestamp.fromDate(manana))
+                        );
+                        const abonosSnap = await getDocs(qAbonos);
+                        abonosSnap.forEach(doc => {
+                            const abono = doc.data();
+                            totalVentas += (abono.monto || 0);
+                        });
+                    } catch (error) {
+                        console.error("❌ Error al sumar abonos:", error);
+                    }
+
                     // Actualizar UI
                     dbVentasHoyEl.textContent = formatoMoneda.format(totalVentas);
                     dbVentasHoyEl.classList.add('text-success');
