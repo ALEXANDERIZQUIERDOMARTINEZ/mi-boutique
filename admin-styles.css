@@ -409,17 +409,14 @@ body.admin-page {
 }
 
 .table-product-img {
-    width: 60px;
-    height: 80px;
     max-width: 65px;
+    height: auto;
     max-height: 85px;
     object-fit: cover;
     border-radius: 8px;
     border: 2px solid var(--admin-borde);
     box-shadow: var(--sombra-sm);
     transition: all 0.3s;
-    display: block;
-    background-color: #f8f9fa;
 }
 
 .table-product-img:hover {
