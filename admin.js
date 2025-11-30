@@ -4159,13 +4159,42 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     }
                 });
 
+                // 💰 CONSULTAR ABONOS DE APARTADOS DEL DÍA
+                const qAbonos = query(
+                    collection(db, 'abonos'),
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<=', Timestamp.fromDate(fin))
+                );
+                const abonosSnap = await getDocs(qAbonos);
+
+                console.log(`💳 Abonos de apartados encontrados: ${abonosSnap.size}`);
+
+                let abonosEfectivo = 0;
+                let abonosTransferencia = 0;
+
+                abonosSnap.forEach(doc => {
+                    const abono = doc.data();
+                    const monto = abono.monto || 0;
+                    const metodoPago = abono.metodoPago || 'Efectivo';
+
+                    if (metodoPago === 'Efectivo') {
+                        abonosEfectivo += monto;
+                        console.log(`  💵 Abono ID: ${doc.id} - Efectivo: $${monto}`);
+                    } else if (metodoPago === 'Transferencia') {
+                        abonosTransferencia += monto;
+                        console.log(`  💳 Abono ID: ${doc.id} - Transferencia: $${monto}`);
+                    }
+                });
+
+                console.log(`💰 Total abonos - Efectivo: $${abonosEfectivo}, Transferencia: $${abonosTransferencia}`);
+
                 ventasDelDia = {
-                    efectivo: ventasEfectivo,
-                    transferencia: ventasTransferencia,
-                    total: ventasEfectivo + ventasTransferencia
+                    efectivo: ventasEfectivo + abonosEfectivo,
+                    transferencia: ventasTransferencia + abonosTransferencia,
+                    total: ventasEfectivo + ventasTransferencia + abonosEfectivo + abonosTransferencia
                 };
 
-                console.log('✅ Ventas del día calculadas:', ventasDelDia);
+                console.log('✅ Ventas del día calculadas (con abonos):', ventasDelDia);
                 return ventasDelDia;
             } catch (err) {
                 console.error('❌ Error calculando ventas del día:', err);
