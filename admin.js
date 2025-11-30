@@ -1230,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 localProductsMap.set(id, d);
 
-                const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
+                const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
                 const defaultImgTabla = 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto';
                 const imagenUrl = d.imagenUrl || defaultImgTabla; 
 
