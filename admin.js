@@ -1670,7 +1670,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             document.getElementById('variation-product-price').value = precioAplicar;
-            
+
             const titleEl = document.getElementById('selectVariationModalTitle');
             const optionsContainer = document.getElementById('variation-options-container');
             const stockDisplay = document.getElementById('variation-stock-display');
@@ -1680,22 +1680,37 @@ document.addEventListener('DOMContentLoaded', () => {
             stockDisplay.style.display = 'none';
             addBtn.disabled = true;
 
-            const tallas = [...new Set(product.variaciones.map(v => v.talla || ''))];
-            const colores = [...new Set(product.variaciones.map(v => v.color || ''))];
+            // ✅ MEJORA: Solo mostrar variaciones con stock > 0
+            const variacionesConStock = product.variaciones.filter(v => (parseInt(v.stock, 10) || 0) > 0);
+
+            if (variacionesConStock.length === 0) {
+                optionsContainer.innerHTML = `
+                    <div class="alert alert-warning text-center">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        No hay variaciones disponibles con stock para este producto.
+                    </div>
+                `;
+                selectVariationModalInstance.show();
+                return;
+            }
+
+            // Obtener tallas y colores únicos SOLO de variaciones con stock
+            const tallasConStock = [...new Set(variacionesConStock.map(v => v.talla || ''))];
+            const coloresConStock = [...new Set(variacionesConStock.map(v => v.color || ''))];
 
             let optionsHtml = `
                 <div class="mb-3">
                     <label for="select-talla" class="form-label">Talla:</label>
                     <select class="form-select" id="select-talla">
                         <option value="" selected>Selecciona una talla...</option>
-                        ${tallas.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
+                        ${tallasConStock.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
                     </select>
                 </div>
                 <div class="mb-3">
                     <label for="select-color" class="form-label">Color:</label>
                     <select class="form-select" id="select-color">
                         <option value="" selected>Selecciona un color...</option>
-                        ${colores.map(c => `<option value="${c}">${c || 'Único'}</option>`).join('')}
+                        ${coloresConStock.map(c => `<option value="${c}">${c || 'Único'}</option>`).join('')}
                     </select>
                 </div>
             `;
@@ -1704,14 +1719,48 @@ document.addEventListener('DOMContentLoaded', () => {
             const selectTalla = document.getElementById('select-talla');
             const selectColor = document.getElementById('select-color');
 
+            // ✅ MEJORA: Actualizar opciones disponibles dinámicamente
+            function actualizarOpcionesDisponibles() {
+                const tallaSeleccionada = selectTalla.value;
+                const colorSeleccionado = selectColor.value;
+
+                // Si se seleccionó una talla, filtrar colores disponibles para esa talla
+                if (tallaSeleccionada !== '') {
+                    const coloresDisponibles = [...new Set(
+                        variacionesConStock
+                            .filter(v => v.talla === tallaSeleccionada && (parseInt(v.stock, 10) || 0) > 0)
+                            .map(v => v.color || '')
+                    )];
+
+                    selectColor.innerHTML = `
+                        <option value="" selected>Selecciona un color...</option>
+                        ${coloresDisponibles.map(c => `<option value="${c}">${c || 'Único'}</option>`).join('')}
+                    `;
+                }
+
+                // Si se seleccionó un color, filtrar tallas disponibles para ese color
+                if (colorSeleccionado !== '' && tallaSeleccionada === '') {
+                    const tallasDisponibles = [...new Set(
+                        variacionesConStock
+                            .filter(v => v.color === colorSeleccionado && (parseInt(v.stock, 10) || 0) > 0)
+                            .map(v => v.talla || '')
+                    )];
+
+                    selectTalla.innerHTML = `
+                        <option value="" selected>Selecciona una talla...</option>
+                        ${tallasDisponibles.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
+                    `;
+                }
+            }
+
             function checkStock() {
                 const talla = selectTalla.value;
                 const color = selectColor.value;
 
-                if (talla && color) { 
+                if (talla && color) {
                     const variacion = product.variaciones.find(v => v.talla === talla && v.color === color);
                     const stock = variacion ? (parseInt(variacion.stock, 10) || 0) : 0;
-                    
+
                     stockDisplay.style.display = 'block';
                     stockDisplay.querySelector('span').textContent = stock;
 
@@ -1730,8 +1779,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            selectTalla.addEventListener('change', checkStock);
-            selectColor.addEventListener('change', checkStock);
+            selectTalla.addEventListener('change', () => {
+                actualizarOpcionesDisponibles();
+                checkStock();
+            });
+
+            selectColor.addEventListener('change', () => {
+                actualizarOpcionesDisponibles();
+                checkStock();
+            });
 
             selectVariationModalInstance.show();
         }
