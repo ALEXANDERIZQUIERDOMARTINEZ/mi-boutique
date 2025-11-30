@@ -2831,21 +2831,35 @@ document.addEventListener('DOMContentLoaded', () => {
             // ✅ Obtener fecha de venta (personalizada o actual)
             let fechaVenta;
             if (ventaFechaInput && ventaFechaInput.value) {
-                // Usar la fecha seleccionada a las 12:00 PM para evitar problemas de zona horaria
-                fechaVenta = new Date(ventaFechaInput.value + 'T12:00:00');
-
                 // Validar que no sea una fecha futura
                 const hoy = new Date();
+                const fechaSeleccionada = new Date(ventaFechaInput.value);
+
                 hoy.setHours(0, 0, 0, 0);
-                const fechaSeleccionada = new Date(fechaVenta);
                 fechaSeleccionada.setHours(0, 0, 0, 0);
 
                 if (fechaSeleccionada > hoy) {
                     showToast("No puedes registrar ventas con fechas futuras.", 'warning');
                     return;
                 }
+
+                // ✅ Si la fecha seleccionada es HOY, usar hora actual completa
+                const hoyCompleto = new Date();
+                hoyCompleto.setHours(0, 0, 0, 0);
+                const fechaInputCompleta = new Date(ventaFechaInput.value);
+                fechaInputCompleta.setHours(0, 0, 0, 0);
+
+                if (fechaInputCompleta.getTime() === hoyCompleto.getTime()) {
+                    // Es hoy, usar hora actual real
+                    fechaVenta = new Date();
+                } else {
+                    // Es una fecha pasada, usar la hora actual del momento de registro
+                    const ahora = new Date();
+                    fechaVenta = new Date(ventaFechaInput.value);
+                    fechaVenta.setHours(ahora.getHours(), ahora.getMinutes(), ahora.getSeconds(), ahora.getMilliseconds());
+                }
             } else {
-                // Usar fecha actual si no se especificó
+                // Usar fecha y hora actual si no se especificó
                 fechaVenta = new Date();
             }
 
