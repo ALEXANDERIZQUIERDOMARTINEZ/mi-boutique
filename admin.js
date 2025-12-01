@@ -8285,5 +8285,44 @@ console.log("✅ Módulo de Promociones Globales inicializado");
     console.log("✅ Sistema de navegación inicializado - Bootstrap maneja dropdowns");
 })();
 
+// ========================================================================
+// --- SIDEBAR TOGGLE PARA MÓVIL ---
+// ========================================================================
+(() => {
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('adminSidebar');
+
+    if (sidebarToggle && sidebar) {
+        // Toggle sidebar al hacer click en el botón
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('show');
+            document.body.classList.toggle('sidebar-open');
+        });
+
+        // Cerrar sidebar al hacer click fuera (en el overlay)
+        document.body.addEventListener('click', (e) => {
+            if (sidebar.classList.contains('show') &&
+                !sidebar.contains(e.target) &&
+                !sidebarToggle.contains(e.target)) {
+                sidebar.classList.remove('show');
+                document.body.classList.remove('sidebar-open');
+            }
+        });
+
+        // Cerrar sidebar al hacer click en un link de navegación
+        const navLinks = sidebar.querySelectorAll('.nav-link[data-bs-toggle="pill"], .dropdown-item[data-bs-toggle="pill"]');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 992) {
+                    sidebar.classList.remove('show');
+                    document.body.classList.remove('sidebar-open');
+                }
+            });
+        });
+
+        console.log("✅ Sidebar toggle inicializado");
+    }
+})();
+
 });
 

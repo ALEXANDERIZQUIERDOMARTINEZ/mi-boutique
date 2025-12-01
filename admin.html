@@ -18,93 +18,109 @@
     </head>
 <body class="admin-page">
 
-    <nav class="admin-navbar navbar navbar-expand-lg sticky-top">
-        <div class="container-fluid">
-            <a class="admin-brand navbar-brand" href="#"><span>Mishell</span></a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbarContent" aria-controls="adminNavbarContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="adminNavbarContent">
-                <ul class="nav nav-pills navbar-nav me-auto mb-2 mb-lg-0">
-                    <!-- 1️⃣ DASHBOARD (Principal - Primer elemento) -->
-                    <li class="nav-item">
-                        <a href="#dashboard" class="nav-link active" data-bs-toggle="pill">
-                            <i class="bi bi-grid-1x2-fill me-1"></i> Dashboard
-                        </a>
-                    </li>
-
-                    <!-- 2️⃣ VENTAS (Agrupado) -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-receipt me-1"></i> Ventas
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#ventas" data-bs-toggle="pill"><i class="bi bi-plus-circle me-2"></i>Registrar Venta</a></li>
-                            <li><a class="dropdown-item position-relative" href="#pedidos-web" data-bs-toggle="pill">
-                                <i class="bi bi-bag-check-fill me-2"></i>Pedidos Web
-                                <span class="badge bg-danger ms-1 badge-new-order" id="pedidos-web-count" style="display: none;">0</span>
-                            </a></li>
-                            <li><a class="dropdown-item" href="#apartados" data-bs-toggle="pill"><i class="bi bi-calendar-check-fill me-2"></i>Apartados</a></li>
-                        </ul>
-                    </li>
-
-                    <!-- 3️⃣ INVENTARIO (Agrupado) -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-boxes me-1"></i> Inventario
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#productos" data-bs-toggle="pill"><i class="bi bi-grid-3x3-gap me-2"></i>Productos</a></li>
-                            <li><a class="dropdown-item" href="#entrada-productos" data-bs-toggle="pill"><i class="bi bi-box-arrow-in-down me-2"></i>Entrada de Productos</a></li>
-                            <li><a class="dropdown-item" href="#categorias" data-bs-toggle="pill"><i class="bi bi-folder-fill me-2"></i>Categorías</a></li>
-                        </ul>
-                    </li>
-
-                    <!-- 4️⃣ CLIENTES (Directo) -->
-                    <li class="nav-item">
-                        <a href="#clientes" class="nav-link" data-bs-toggle="pill">
-                            <i class="bi bi-people-fill me-1"></i> Clientes
-                        </a>
-                    </li>
-
-                    <!-- 5️⃣ LOGÍSTICA (Agrupado) -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-bicycle me-1"></i> Logística
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#repartidores" data-bs-toggle="pill"><i class="bi bi-bicycle me-2"></i>Repartidores</a></li>
-                            <li><a class="dropdown-item" href="#promociones" data-bs-toggle="pill"><i class="bi bi-tag-fill me-2"></i>Promociones</a></li>
-                        </ul>
-                    </li>
-
-                    <!-- 6️⃣ FINANZAS (Agrupado) -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-piggy-bank-fill me-1"></i> Finanzas
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#finanzas" data-bs-toggle="pill"><i class="bi bi-cash-stack me-2"></i>Gestión Financiera</a></li>
-                            <li><a class="dropdown-item" href="#reportes" data-bs-toggle="pill"><i class="bi bi-bar-chart-fill me-2"></i>Reportes</a></li>
-                            <li><a class="dropdown-item" href="#proveedores" data-bs-toggle="pill"><i class="bi bi-building me-2"></i>Proveedores</a></li>
-                        </ul>
-                    </li>
-
-                    <!-- 7️⃣ ADMINISTRACIÓN (Agrupado - Último) -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-gear-fill me-1"></i> Config
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#backup" data-bs-toggle="pill"><i class="bi bi-cloud-download-fill me-2"></i>Backup</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="index.html" target="_blank"><i class="bi bi-box-arrow-up-right me-2"></i>Ver Catálogo</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
+    <!-- 🎯 SIDEBAR VERTICAL FIJO - Full Height -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <!-- Brand / Logo -->
+        <div class="sidebar-brand">
+            <span>Mishell</span>
         </div>
-    </nav>
+
+        <!-- Navegación Vertical -->
+        <nav class="sidebar-nav">
+            <ul class="nav flex-column">
+                <!-- 1️⃣ DASHBOARD -->
+                <li class="nav-item">
+                    <a href="#dashboard" class="nav-link active" data-bs-toggle="pill">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+
+                <!-- 2️⃣ VENTAS -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-receipt"></i>
+                        <span>Ventas</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#ventas" data-bs-toggle="pill"><i class="bi bi-plus-circle"></i>Registrar Venta</a></li>
+                        <li><a class="dropdown-item position-relative" href="#pedidos-web" data-bs-toggle="pill">
+                            <i class="bi bi-bag-check-fill"></i>Pedidos Web
+                            <span class="badge bg-danger ms-auto badge-new-order" id="pedidos-web-count" style="display: none;">0</span>
+                        </a></li>
+                        <li><a class="dropdown-item" href="#apartados" data-bs-toggle="pill"><i class="bi bi-calendar-check-fill"></i>Apartados</a></li>
+                    </ul>
+                </li>
+
+                <!-- 3️⃣ INVENTARIO -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-boxes"></i>
+                        <span>Inventario</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#productos" data-bs-toggle="pill"><i class="bi bi-grid-3x3-gap"></i>Productos</a></li>
+                        <li><a class="dropdown-item" href="#entrada-productos" data-bs-toggle="pill"><i class="bi bi-box-arrow-in-down"></i>Entrada de Productos</a></li>
+                        <li><a class="dropdown-item" href="#categorias" data-bs-toggle="pill"><i class="bi bi-folder-fill"></i>Categorías</a></li>
+                    </ul>
+                </li>
+
+                <!-- 4️⃣ CLIENTES -->
+                <li class="nav-item">
+                    <a href="#clientes" class="nav-link" data-bs-toggle="pill">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Clientes</span>
+                    </a>
+                </li>
+
+                <!-- 5️⃣ LOGÍSTICA -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-bicycle"></i>
+                        <span>Logística</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#repartidores" data-bs-toggle="pill"><i class="bi bi-bicycle"></i>Repartidores</a></li>
+                        <li><a class="dropdown-item" href="#promociones" data-bs-toggle="pill"><i class="bi bi-tag-fill"></i>Promociones</a></li>
+                    </ul>
+                </li>
+
+                <!-- 6️⃣ FINANZAS -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-piggy-bank-fill"></i>
+                        <span>Finanzas</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#finanzas" data-bs-toggle="pill"><i class="bi bi-cash-stack"></i>Gestión Financiera</a></li>
+                        <li><a class="dropdown-item" href="#reportes" data-bs-toggle="pill"><i class="bi bi-bar-chart-fill"></i>Reportes</a></li>
+                        <li><a class="dropdown-item" href="#proveedores" data-bs-toggle="pill"><i class="bi bi-building"></i>Proveedores</a></li>
+                    </ul>
+                </li>
+
+                <!-- 7️⃣ CONFIG -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-gear-fill"></i>
+                        <span>Config</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#backup" data-bs-toggle="pill"><i class="bi bi-cloud-download-fill"></i>Backup</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="index.html" target="_blank"><i class="bi bi-box-arrow-up-right"></i>Ver Catálogo</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- 🔘 MOBILE TOGGLE BUTTON -->
+    <button class="sidebar-toggle d-lg-none" id="sidebarToggle" type="button">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- 📄 MAIN CONTENT WRAPPER -->
+    <div class="admin-content-wrapper">
 
     <div class="toast-container position-fixed top-0 start-0 p-3">
       <div id="liveToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -1441,6 +1457,7 @@
             </div>
         </div>
     </main>
+    </div><!-- /.admin-content-wrapper -->
 
     <div class="modal fade" id="addClientModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-client"> <div class="mb-3"> <label for="new-client-cedula" class="form-label">Cédula:</label> <input type="text" class="form-control" id="new-client-cedula"> </div> <div class="mb-3"> <label for="new-client-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-client-nombre" required> </div> <div class="mb-3"> <label for="new-client-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-client-celular" required> </div> <div class="mb-3"> <label for="new-client-direccion" class="form-label">Dirección:</label> <input type="text" class="form-control" id="new-client-direccion"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-client" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addRepartidorModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Repartidor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-repartidor"> <div class="mb-3"> <label for="new-repartidor-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-repartidor-nombre" required> </div> <div class="mb-3"> <label for="new-repartidor-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-repartidor-celular" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-repartidor" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
