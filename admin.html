@@ -18,6 +18,11 @@
     </head>
 <body class="admin-page">
 
+    <!-- 🔘 MOBILE TOGGLE BUTTON -->
+    <button class="sidebar-toggle" id="sidebarToggle" type="button">
+        <i class="bi bi-list"></i>
+    </button>
+
     <!-- 🎯 SIDEBAR VERTICAL FIJO - Full Height -->
     <aside class="admin-sidebar" id="adminSidebar">
         <!-- Brand / Logo -->
@@ -30,82 +35,82 @@
             <ul class="nav flex-column">
                 <!-- 1️⃣ DASHBOARD -->
                 <li class="nav-item">
-                    <a href="#dashboard" class="nav-link active" data-bs-toggle="pill">
-                        <i class="bi bi-house-fill"></i>
+                    <a href="#dashboard" class="nav-link active" data-bs-toggle="pill" data-tooltip="Dashboard">
+                        <i class="bi bi-grid-1x2"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
 
                 <!-- 2️⃣ VENTAS -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="javascript:void(0)">
-                        <i class="bi bi-cart-check-fill"></i>
+                    <a class="nav-link dropdown-toggle" href="javascript:void(0)" data-tooltip="Ventas">
+                        <i class="bi bi-cart3"></i>
                         <span>Ventas</span>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#ventas" data-bs-toggle="pill"><i class="bi bi-plus-circle-fill"></i>Registrar Venta</a></li>
+                        <li><a class="dropdown-item" href="#ventas" data-bs-toggle="pill"><i class="bi bi-plus-circle"></i>Registrar Venta</a></li>
                         <li><a class="dropdown-item position-relative" href="#pedidos-web" data-bs-toggle="pill">
-                            <i class="bi bi-bag-check-fill"></i>Pedidos Web
+                            <i class="bi bi-bag-check"></i>Pedidos Web
                             <span class="badge bg-danger ms-auto badge-new-order" id="pedidos-web-count" style="display: none;">0</span>
                         </a></li>
-                        <li><a class="dropdown-item" href="#apartados" data-bs-toggle="pill"><i class="bi bi-bookmark-star-fill"></i>Apartados</a></li>
+                        <li><a class="dropdown-item" href="#apartados" data-bs-toggle="pill"><i class="bi bi-bookmark-star"></i>Apartados</a></li>
                     </ul>
                 </li>
 
                 <!-- 3️⃣ INVENTARIO -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="javascript:void(0)">
-                        <i class="bi bi-box-seam-fill"></i>
+                    <a class="nav-link dropdown-toggle" href="javascript:void(0)" data-tooltip="Inventario">
+                        <i class="bi bi-box-seam"></i>
                         <span>Inventario</span>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#productos" data-bs-toggle="pill"><i class="bi bi-grid-fill"></i>Productos</a></li>
-                        <li><a class="dropdown-item" href="#entrada-productos" data-bs-toggle="pill"><i class="bi bi-box-arrow-in-down-fill"></i>Entrada de Productos</a></li>
-                        <li><a class="dropdown-item" href="#categorias" data-bs-toggle="pill"><i class="bi bi-tags-fill"></i>Categorías</a></li>
+                        <li><a class="dropdown-item" href="#productos" data-bs-toggle="pill"><i class="bi bi-grid"></i>Productos</a></li>
+                        <li><a class="dropdown-item" href="#entrada-productos" data-bs-toggle="pill"><i class="bi bi-box-arrow-in-down"></i>Entrada de Productos</a></li>
+                        <li><a class="dropdown-item" href="#categorias" data-bs-toggle="pill"><i class="bi bi-tags"></i>Categorías</a></li>
                     </ul>
                 </li>
 
                 <!-- 4️⃣ CLIENTES -->
                 <li class="nav-item">
-                    <a href="#clientes" class="nav-link" data-bs-toggle="pill">
-                        <i class="bi bi-person-hearts"></i>
+                    <a href="#clientes" class="nav-link" data-bs-toggle="pill" data-tooltip="Clientes">
+                        <i class="bi bi-people"></i>
                         <span>Clientes</span>
                     </a>
                 </li>
 
                 <!-- 5️⃣ LOGÍSTICA -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="javascript:void(0)">
+                    <a class="nav-link dropdown-toggle" href="javascript:void(0)" data-tooltip="Logística">
                         <i class="bi bi-truck"></i>
                         <span>Logística</span>
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#repartidores" data-bs-toggle="pill"><i class="bi bi-bicycle"></i>Repartidores</a></li>
-                        <li><a class="dropdown-item" href="#promociones" data-bs-toggle="pill"><i class="bi bi-megaphone-fill"></i>Promociones</a></li>
+                        <li><a class="dropdown-item" href="#promociones" data-bs-toggle="pill"><i class="bi bi-megaphone"></i>Promociones</a></li>
                     </ul>
                 </li>
 
                 <!-- 6️⃣ FINANZAS -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="javascript:void(0)">
+                    <a class="nav-link dropdown-toggle" href="javascript:void(0)" data-tooltip="Finanzas">
                         <i class="bi bi-wallet2"></i>
                         <span>Finanzas</span>
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#finanzas" data-bs-toggle="pill"><i class="bi bi-cash-coin"></i>Gestión Financiera</a></li>
                         <li><a class="dropdown-item" href="#reportes" data-bs-toggle="pill"><i class="bi bi-graph-up-arrow"></i>Reportes</a></li>
-                        <li><a class="dropdown-item" href="#proveedores" data-bs-toggle="pill"><i class="bi bi-building-fill"></i>Proveedores</a></li>
+                        <li><a class="dropdown-item" href="#proveedores" data-bs-toggle="pill"><i class="bi bi-building"></i>Proveedores</a></li>
                     </ul>
                 </li>
 
                 <!-- 7️⃣ CONFIG -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="javascript:void(0)">
-                        <i class="bi bi-sliders"></i>
+                    <a class="nav-link dropdown-toggle" href="javascript:void(0)" data-tooltip="Configuración">
+                        <i class="bi bi-gear"></i>
                         <span>Config</span>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#backup" data-bs-toggle="pill"><i class="bi bi-cloud-arrow-down-fill"></i>Backup</a></li>
+                        <li><a class="dropdown-item" href="#backup" data-bs-toggle="pill"><i class="bi bi-cloud-arrow-down"></i>Backup</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="index.html" target="_blank"><i class="bi bi-shop"></i>Ver Catálogo</a></li>
                     </ul>
@@ -113,11 +118,6 @@
             </ul>
         </nav>
     </aside>
-
-    <!-- 🔘 MOBILE TOGGLE BUTTON -->
-    <button class="sidebar-toggle d-lg-none" id="sidebarToggle" type="button">
-        <i class="bi bi-list"></i>
-    </button>
 
     <!-- 📄 MAIN CONTENT WRAPPER -->
     <div class="admin-content-wrapper">
@@ -2323,6 +2323,46 @@
 
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Script para manejar el sidebar toggle en móvil (funciona independientemente) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.getElementById('adminSidebar');
+            
+            if (sidebarToggle && sidebar) {
+                // Toggle sidebar al hacer click en el botón
+                sidebarToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    sidebar.classList.toggle('show');
+                    document.body.classList.toggle('sidebar-open');
+                });
+                
+                // Cerrar sidebar al hacer click fuera (en el overlay)
+                document.addEventListener('click', function(e) {
+                    if (sidebar.classList.contains('show') &&
+                        !sidebar.contains(e.target) &&
+                        !sidebarToggle.contains(e.target)) {
+                        sidebar.classList.remove('show');
+                        document.body.classList.remove('sidebar-open');
+                    }
+                });
+                
+                // Cerrar sidebar al hacer click en un link de navegación
+                const navLinks = sidebar.querySelectorAll('.nav-link[data-bs-toggle="pill"], .dropdown-item[data-bs-toggle="pill"]');
+                navLinks.forEach(function(link) {
+                    link.addEventListener('click', function() {
+                        if (window.innerWidth < 992) {
+                            sidebar.classList.remove('show');
+                            document.body.classList.remove('sidebar-open');
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+    
     <script type="module" src="admin.js?v=2.3.0"></script>
 
     <!-- Script para cerrar navegación móvil al hacer clic en un enlace -->

@@ -59,6 +59,8 @@ body.admin-page {
     overflow-x: hidden;
     z-index: 1040;
     transition: width 0.3s ease, transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Expandir sidebar al hover */
@@ -94,7 +96,7 @@ body.admin-page {
     color: var(--admin-primario);
     text-align: center;
     white-space: nowrap;
-    overflow: hidden;
+    overflow: visible;
     transition: all 0.3s ease;
     background: linear-gradient(135deg, #FAFAFA 0%, #FFFFFF 100%);
     position: relative;
@@ -102,6 +104,12 @@ body.admin-page {
     align-items: center;
     justify-content: center;
     min-height: 80px;
+    flex-shrink: 0;
+}
+
+/* Ocultar el span del brand */
+.sidebar-brand span {
+    display: none;
 }
 
 /* Inicial elegante cuando colapsado */
@@ -144,9 +152,14 @@ body.admin-page {
     opacity: 1;
 }
 
-/* Navegación vertical */
+/* Navegación vertical - Centrada como Instagram */
 .sidebar-nav {
-    padding: 1rem 0;
+    padding: 2rem 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+    min-height: 0;
 }
 
 .sidebar-nav .nav {
@@ -166,21 +179,55 @@ body.admin-page {
     align-items: center;
     gap: 1rem;
     white-space: nowrap;
-    overflow: hidden;
+    overflow: visible;
     justify-content: flex-start;
     line-height: 1.4;
+    position: relative;
+}
+
+/* Cuando el sidebar está colapsado, eliminar el gap para que solo se vea el icono */
+.admin-sidebar:not(:hover) .sidebar-nav .nav-link {
+    justify-content: flex-start;
+    padding: 0.8rem 0.75rem;
+    margin: 0.25rem 0;
+    gap: 0 !important;
 }
 
 .sidebar-nav .nav-link i {
-    font-size: 1.25rem;
-    min-width: 24px;
-    width: 24px;
-    height: 24px;
+    font-size: 1.4rem;
+    min-width: 26px;
+    width: 26px;
+    height: 26px;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    text-align: center;
+    justify-content: flex-start;
     flex-shrink: 0;
+    font-weight: 400;
+    line-height: 1;
+}
+
+/* Tooltip para nav-links cuando está colapsado */
+.admin-sidebar:not(:hover) .sidebar-nav .nav-link::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 70px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #333;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 1060;
+    box-shadow: var(--sombra-md);
+}
+
+.admin-sidebar:not(:hover) .sidebar-nav .nav-link:hover::after {
+    opacity: 1;
 }
 
 /* Ocultar texto cuando sidebar colapsado */
@@ -189,9 +236,15 @@ body.admin-page {
     transition: opacity 0.3s ease;
 }
 
+/* IMPORTANTE: Cuando está colapsado, ocultar COMPLETAMENTE los spans */
+.admin-sidebar:not(:hover) .sidebar-nav .nav-link span {
+    display: none;
+}
+
 /* Mostrar texto cuando sidebar expandido */
 .admin-sidebar:hover .sidebar-nav .nav-link span {
     opacity: 1;
+    display: inline;
 }
 
 .sidebar-nav .nav-link:hover {
@@ -199,15 +252,21 @@ body.admin-page {
     color: var(--admin-primario);
 }
 
+.sidebar-nav .nav-link:hover i {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+
 .sidebar-nav .nav-link.active {
-    background: var(--admin-primario);
+    background: linear-gradient(135deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 100%);
     color: white;
     font-weight: 600;
-    box-shadow: var(--sombra-sm);
+    box-shadow: var(--sombra-md);
 }
 
 .sidebar-nav .nav-link.active i {
     color: white;
+    font-weight: 500;
 }
 
 /* Main content wrapper - offset por sidebar colapsado */
@@ -293,6 +352,24 @@ body.admin-page {
     transform: rotate(180deg);
 }
 
+/* Indicador visual de dropdown cuando está colapsado */
+.admin-sidebar:not(:hover) .nav-item.dropdown .nav-link::before {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 8px;
+    width: 4px;
+    height: 4px;
+    background: var(--admin-primario);
+    border-radius: 50%;
+    opacity: 0.6;
+}
+
+.admin-sidebar:not(:hover) .nav-item.dropdown .nav-link:hover::before {
+    opacity: 1;
+    box-shadow: 0 0 8px var(--admin-primario);
+}
+
 /* Dropdown Menu - Espaciado y contraste */
 .dropdown-menu {
     border: 1px solid var(--admin-borde);
@@ -306,6 +383,10 @@ body.admin-page {
     opacity: 0;
     transform: translateY(-10px);
     transition: opacity 0.2s ease, transform 0.2s ease;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    z-index: 1050;
 }
 
 /* Mostrar dropdown cuando tiene clase 'show' O al hover */
@@ -314,6 +395,33 @@ body.admin-page {
     display: block;
     opacity: 1;
     transform: translateY(0);
+}
+
+/* Cuando el sidebar está colapsado, los dropdowns aparecen a la derecha */
+.admin-sidebar:not(:hover) .nav-item.dropdown {
+    position: relative;
+}
+
+.admin-sidebar:not(:hover) .nav-item.dropdown .dropdown-menu {
+    left: 70px;
+    top: 0;
+    margin-left: 0;
+    margin-top: 0;
+}
+
+/* Cuando el sidebar está expandido, dropdowns debajo del item */
+.admin-sidebar:hover .nav-item.dropdown {
+    position: relative;
+}
+
+.admin-sidebar:hover .nav-item.dropdown .dropdown-menu {
+    position: static;
+    width: 100%;
+    box-shadow: none;
+    border: none;
+    margin-top: 0.5rem;
+    padding-left: 1rem;
+    transform: none;
 }
 
 /* Dropdown Items - Micro-interacciones */
@@ -1303,6 +1411,7 @@ body.admin-page {
         transform: translateX(-100%) !important;
         width: 280px; /* Ancho fijo en móvil */
         box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+        z-index: 1050 !important;
     }
 
     /* NO expandir al hover en móvil */
@@ -1312,7 +1421,13 @@ body.admin-page {
 
     /* Mostrar texto siempre en móvil */
     .admin-sidebar .sidebar-nav .nav-link span {
-        opacity: 1;
+        opacity: 1 !important;
+        display: inline !important;
+    }
+
+    /* Restaurar gap en móvil para que se vea bien el texto */
+    .admin-sidebar .sidebar-nav .nav-link {
+        gap: 1rem !important;
     }
 
     /* Logo en móvil - mostrar texto completo */
@@ -1328,6 +1443,7 @@ body.admin-page {
     /* Mostrar sidebar cuando está activo */
     .admin-sidebar.show {
         transform: translateX(0) !important;
+        z-index: 1055 !important;
     }
 
     /* Overlay oscuro cuando sidebar está abierto */
@@ -1339,7 +1455,7 @@ body.admin-page {
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.6);
-        z-index: 1039;
+        z-index: 1045;
         animation: fadeIn 0.3s ease;
     }
 
@@ -1367,7 +1483,7 @@ body.admin-page {
         position: fixed;
         top: 1rem;
         left: 1rem;
-        z-index: 1050;
+        z-index: 1060 !important;
     }
 
     /* Ajustar padding del main content para el botón - SIN SUPERPOSICIÓN */
