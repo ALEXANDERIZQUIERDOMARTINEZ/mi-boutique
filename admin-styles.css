@@ -50,7 +50,7 @@ body.admin-page {
     position: fixed;
     top: 0;
     left: 0;
-    width: 260px;
+    width: 70px; /* Colapsado por defecto - solo iconos */
     height: 100vh;
     background: white;
     border-right: 1px solid var(--admin-borde);
@@ -58,7 +58,12 @@ body.admin-page {
     overflow-y: auto;
     overflow-x: hidden;
     z-index: 1040;
-    transition: transform 0.3s ease;
+    transition: width 0.3s ease, transform 0.3s ease;
+}
+
+/* Expandir sidebar al hover */
+.admin-sidebar:hover {
+    width: 260px;
 }
 
 /* Custom scrollbar para sidebar */
@@ -81,13 +86,25 @@ body.admin-page {
 
 /* Sidebar Brand / Logo */
 .sidebar-brand {
-    padding: 1.5rem 1.25rem;
+    padding: 1.5rem 0;
     font-weight: 700;
-    font-size: 1.6rem;
+    font-size: 1.2rem;
     letter-spacing: 0.5px;
     border-bottom: 1px solid var(--admin-borde);
     color: var(--admin-primario);
     text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+/* Solo mostrar inicial cuando colapsado */
+.admin-sidebar .sidebar-brand {
+    font-size: 1.4rem;
+}
+
+.admin-sidebar:hover .sidebar-brand {
+    font-size: 1.6rem;
 }
 
 /* Navegación vertical */
@@ -96,7 +113,7 @@ body.admin-page {
 }
 
 .sidebar-nav .nav {
-    padding: 0 0.75rem;
+    padding: 0 0.5rem;
 }
 
 /* Sidebar nav-links */
@@ -104,24 +121,38 @@ body.admin-page {
     color: var(--admin-texto-sec);
     font-size: 0.9rem;
     font-weight: 500;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem;
     margin: 0.25rem 0;
     border-radius: 10px;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    justify-content: flex-start;
 }
 
 .sidebar-nav .nav-link i {
-    font-size: 1.1rem;
-    min-width: 20px;
+    font-size: 1.2rem;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* Ocultar texto cuando sidebar colapsado */
+.sidebar-nav .nav-link span {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Mostrar texto cuando sidebar expandido */
+.admin-sidebar:hover .sidebar-nav .nav-link span {
+    opacity: 1;
 }
 
 .sidebar-nav .nav-link:hover {
     background: var(--admin-primario-claro);
     color: var(--admin-primario);
-    transform: translateX(4px);
 }
 
 .sidebar-nav .nav-link.active {
@@ -135,9 +166,9 @@ body.admin-page {
     color: white;
 }
 
-/* Main content wrapper - offset por sidebar */
+/* Main content wrapper - offset por sidebar colapsado */
 .admin-content-wrapper {
-    margin-left: 260px;
+    margin-left: 70px;
     min-height: 100vh;
     transition: margin-left 0.3s ease;
 }
@@ -187,13 +218,19 @@ body.admin-page {
 /* Dropdown Toggle - Sutil y elegante */
 .nav-item.dropdown .nav-link.dropdown-toggle {
     position: relative;
-    padding-right: 1.5rem;
+    padding-right: 0.75rem;
 }
 
 .nav-item.dropdown .nav-link.dropdown-toggle::after {
-    margin-left: 0.5rem;
+    margin-left: auto;
     vertical-align: 0.15em;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, opacity 0.3s ease;
+    opacity: 0; /* Oculto cuando sidebar colapsado */
+}
+
+/* Mostrar flecha cuando sidebar expandido */
+.admin-sidebar:hover .nav-item.dropdown .nav-link.dropdown-toggle::after {
+    opacity: 1;
 }
 
 .nav-item.dropdown.show .nav-link.dropdown-toggle::after {
@@ -206,7 +243,8 @@ body.admin-page {
     box-shadow: var(--sombra-lg);
     border-radius: 12px;
     padding: 0.5rem;
-    margin-top: 0.5rem;
+    margin-top: 0.25rem;
+    margin-left: 0.25rem;
     min-width: 200px;
     display: none; /* Oculto por defecto */
     opacity: 0;
@@ -214,8 +252,9 @@ body.admin-page {
     transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-/* Mostrar dropdown cuando tiene clase 'show' */
-.dropdown-menu.show {
+/* Mostrar dropdown cuando tiene clase 'show' O al hover */
+.dropdown-menu.show,
+.nav-item.dropdown:hover .dropdown-menu {
     display: block;
     opacity: 1;
     transform: translateY(0);
