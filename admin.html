@@ -1599,36 +1599,150 @@
         </div>
     </div>
 
-    <!-- Modal Confirmar Eliminar Venta con Contraseña -->
-    <div class="modal fade" id="deleteConfirmPassword" tabindex="-1">
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MODAL: EDITAR VENTA
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="editSaleModal" tabindex="-1" aria-labelledby="editSaleModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h1 class="modal-title fs-5" id="editSaleModalTitle">
+                        <i class="bi bi-pencil-square me-2"></i>Editar Venta
+                    </h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-sale-id">
+
+                    <!-- Información de la Venta -->
+                    <div class="alert alert-info mb-3">
+                        <strong><i class="bi bi-info-circle me-2"></i>Folio:</strong> <span id="edit-sale-folio"></span><br>
+                        <strong><i class="bi bi-calendar3 me-2"></i>Fecha:</strong> <span id="edit-sale-date"></span>
+                    </div>
+
+                    <!-- Cliente -->
+                    <div class="mb-3">
+                        <label for="edit-sale-cliente" class="form-label">
+                            <i class="bi bi-person me-2"></i>Cliente
+                        </label>
+                        <input type="text" class="form-control" id="edit-sale-cliente" readonly>
+                    </div>
+
+                    <!-- Tipo de Venta -->
+                    <div class="mb-3">
+                        <label for="edit-sale-tipo" class="form-label">
+                            <i class="bi bi-tag me-2"></i>Tipo de Venta
+                        </label>
+                        <select class="form-select" id="edit-sale-tipo">
+                            <option value="detal">Detal</option>
+                            <option value="mayorista">Mayorista</option>
+                            <option value="apartado">Apartado</option>
+                        </select>
+                        <small class="text-muted">Cambiar el tipo recalculará los precios automáticamente</small>
+                    </div>
+
+                    <!-- Productos -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="bi bi-box-seam me-2"></i>Productos
+                        </label>
+                        <div id="edit-sale-productos" class="border rounded p-3">
+                            <!-- Los productos se cargarán aquí -->
+                        </div>
+                    </div>
+
+                    <!-- Método de Pago -->
+                    <div class="mb-3">
+                        <label for="edit-sale-pago" class="form-label">
+                            <i class="bi bi-credit-card me-2"></i>Método de Pago
+                        </label>
+                        <select class="form-select" id="edit-sale-pago">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="transferencia">Transferencia</option>
+                            <option value="tarjeta">Tarjeta</option>
+                            <option value="otro">Otro</option>
+                        </select>
+                    </div>
+
+                    <!-- Repartidor (si aplica) -->
+                    <div class="mb-3" id="edit-sale-repartidor-container">
+                        <label for="edit-sale-repartidor" class="form-label">
+                            <i class="bi bi-bicycle me-2"></i>Repartidor
+                        </label>
+                        <select class="form-select" id="edit-sale-repartidor">
+                            <option value="">Ninguno</option>
+                            <!-- Los repartidores se cargarán dinámicamente -->
+                        </select>
+                    </div>
+
+                    <!-- Total Actualizado -->
+                    <div class="alert alert-success mb-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong><i class="bi bi-cash-stack me-2"></i>Total:</strong>
+                            <h4 class="mb-0" id="edit-sale-total">$0.00</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btn-save-edit-sale">
+                        <i class="bi bi-check-circle me-1"></i>Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MODAL: ELIMINAR VENTA CON CONTRASEÑA
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="deleteSaleModal" tabindex="-1" aria-labelledby="deleteSaleModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">
-                        <i class="bi bi-shield-lock me-2"></i>Confirmar Eliminación de Venta
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <h1 class="modal-title fs-5" id="deleteSaleModalTitle">
+                        <i class="bi bi-trash me-2"></i>Eliminar Venta
+                    </h1>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>¡Atención!</strong> Esta acción eliminará permanentemente la venta y repondrá el stock.
+                    <input type="hidden" id="delete-sale-id">
+
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>¡ATENCIÓN!</strong> Esta acción eliminará permanentemente la venta de la base de datos.
                     </div>
-                    <form id="form-delete-sale-password">
-                        <div class="mb-3">
-                            <label for="delete-sale-password" class="form-label">
-                                <i class="bi bi-key me-1"></i>Contraseña Administrativa:
-                            </label>
-                            <input type="password" class="form-control" id="delete-sale-password"
-                                   placeholder="Ingresa la contraseña" required>
-                            <small class="text-muted">Se requiere contraseña para eliminar ventas</small>
-                        </div>
-                    </form>
+
+                    <div class="mb-3">
+                        <strong>Folio:</strong> <span id="delete-sale-folio"></span><br>
+                        <strong>Cliente:</strong> <span id="delete-sale-cliente"></span><br>
+                        <strong>Total:</strong> <span id="delete-sale-total"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="delete-sale-password" class="form-label">
+                            <i class="bi bi-shield-lock me-2"></i>Contraseña de Administrador
+                        </label>
+                        <input type="password" class="form-control" id="delete-sale-password"
+                               placeholder="Ingresa la contraseña para confirmar" required>
+                        <small class="text-muted">Se requiere contraseña para eliminar ventas</small>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="delete-sale-confirm">
+                        <label class="form-check-label" for="delete-sale-confirm">
+                            Confirmo que quiero eliminar esta venta permanentemente
+                        </label>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" form="form-delete-sale-password" class="btn btn-danger">
-                        <i class="bi bi-trash"></i> Eliminar Venta
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btn-confirm-delete-sale" disabled>
+                        <i class="bi bi-trash me-1"></i>Eliminar Definitivamente
                     </button>
                 </div>
             </div>
