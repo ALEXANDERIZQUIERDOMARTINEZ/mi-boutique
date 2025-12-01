@@ -8279,89 +8279,10 @@ loadPromocionesGlobales();
 console.log("✅ Módulo de Promociones Globales inicializado");
 
 // ========================================================================
-// --- INDICADORES DE ESTADO PARA NAVEGACIÓN CON DROPDOWNS ---
+// --- NAVEGACIÓN SIMPLE - Bootstrap maneja dropdowns automáticamente ---
 // ========================================================================
 (() => {
-    // Mapeo de tabs a su dropdown padre
-    const tabToDropdown = {
-        'ventas': 'dropdown-ventas',
-        'pedidos-web': 'dropdown-ventas',
-        'apartados': 'dropdown-ventas',
-        'productos': 'dropdown-inventario',
-        'entrada-productos': 'dropdown-inventario',
-        'categorias': 'dropdown-inventario',
-        'repartidores': 'dropdown-logistica',
-        'promociones': 'dropdown-logistica',
-        'finanzas': 'dropdown-finanzas',
-        'reportes': 'dropdown-finanzas',
-        'proveedores': 'dropdown-finanzas',
-        'backup': 'dropdown-config'
-    };
-
-    function updateActiveStates() {
-        // Remover todos los estados activos de nav-links de dropdowns
-        document.querySelectorAll('.nav-item.dropdown .nav-link.dropdown-toggle').forEach(link => {
-            link.classList.remove('active');
-        });
-
-        // Encontrar el tab activo
-        const activeTab = document.querySelector('.tab-pane.active');
-        if (activeTab) {
-            const tabId = activeTab.id;
-            const dropdownId = tabToDropdown[tabId];
-
-            if (dropdownId) {
-                // Marcar el dropdown padre como activo
-                const dropdownToggle = document.querySelector(`[data-dropdown-id="${dropdownId}"]`);
-                if (dropdownToggle) {
-                    dropdownToggle.classList.add('active');
-                }
-            }
-        }
-    }
-
-    // Agregar data-dropdown-id a los dropdowns para fácil identificación
-    const dropdowns = {
-        'dropdown-ventas': document.querySelector('.nav-item.dropdown a[href="#"]:has(i.bi-receipt)'),
-        'dropdown-inventario': document.querySelector('.nav-item.dropdown a[href="#"]:has(i.bi-boxes)'),
-        'dropdown-logistica': document.querySelector('.nav-item.dropdown a[href="#"]:has(i.bi-bicycle)'),
-        'dropdown-finanzas': document.querySelector('.nav-item.dropdown a[href="#"]:has(i.bi-piggy-bank-fill)'),
-        'dropdown-config': document.querySelector('.nav-item.dropdown a[href="#"]:has(i.bi-gear-fill)')
-    };
-
-    Object.entries(dropdowns).forEach(([id, element]) => {
-        if (element) {
-            element.setAttribute('data-dropdown-id', id);
-        }
-    });
-
-    // ✅ FIX: Hacer que los dropdown items activen tabs correctamente
-    // IMPORTANTE: NO usar preventDefault para no bloquear el dropdown
-    document.querySelectorAll('.dropdown-item[data-bs-toggle="pill"]').forEach(item => {
-        item.addEventListener('shown.bs.tab', function() {
-            // Cuando el tab se muestra, cerrar el dropdown
-            const dropdownElement = this.closest('.dropdown');
-            if (dropdownElement) {
-                const dropdownToggle = dropdownElement.querySelector('[data-bs-toggle="dropdown"]');
-                if (dropdownToggle) {
-                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdownToggle);
-                    if (bsDropdown) {
-                        bsDropdown.hide();
-                    }
-                }
-            }
-        });
-    });
-
-    // Escuchar cambios de tab
-    document.querySelectorAll('a[data-bs-toggle="pill"]').forEach(tab => {
-        tab.addEventListener('shown.bs.tab', updateActiveStates);
-    });
-
-    // Actualizar estado inicial
-    updateActiveStates();
-
-    console.log("✅ Indicadores de estado de navegación inicializados");
+    console.log("✅ Sistema de navegación inicializado - Bootstrap maneja dropdowns");
 })();
 
 });
