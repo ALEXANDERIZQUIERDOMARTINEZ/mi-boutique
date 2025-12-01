@@ -8767,87 +8767,8 @@ console.log("✅ Módulo de Promociones Globales inicializado");
 // ========================================================================
 // --- SIDEBAR TOGGLE PARA MÓVIL ---
 // ========================================================================
-const sidebarToggle = document.getElementById('sidebarToggle');
-const sidebar = document.getElementById('adminSidebar');
-
-if (sidebarToggle && sidebar) {
-    // IMPORTANTE: Asegurar que el sidebar esté cerrado al iniciar en móvil
-    if (window.innerWidth < 992) {
-        sidebar.classList.remove('show');
-        document.body.classList.remove('sidebar-open');
-        console.log("🧹 Limpiado estado inicial del sidebar en móvil");
-    }
-
-    console.log("✅ Sidebar toggle inicializado", {
-        toggleButton: sidebarToggle,
-        sidebar: sidebar,
-        initialClasses: sidebar.className,
-        buttonVisible: window.getComputedStyle(sidebarToggle).display
-    });
-
-    // Toggle sidebar al hacer click en el botón
-    sidebarToggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        console.log("🔘 ANTES del toggle:", {
-            sidebarClasses: sidebar.className,
-            bodyClasses: document.body.className,
-            hasShow: sidebar.classList.contains('show')
-        });
-
-        const isOpen = sidebar.classList.contains('show');
-
-        if (isOpen) {
-            sidebar.classList.remove('show');
-            document.body.classList.remove('sidebar-open');
-        } else {
-            sidebar.classList.add('show');
-            document.body.classList.add('sidebar-open');
-        }
-
-        console.log("🔄 DESPUÉS del toggle:", {
-            sidebarClasses: sidebar.className,
-            bodyClasses: document.body.className,
-            hasShow: sidebar.classList.contains('show'),
-            transform: window.getComputedStyle(sidebar).transform
-        });
-    });
-
-    // Cerrar sidebar al hacer click en el overlay - DESHABILITADO TEMPORALMENTE PARA DEBUG
-    // document.addEventListener('click', (e) => {
-    //     if (sidebar.classList.contains('show') &&
-    //         !sidebar.contains(e.target) &&
-    //         !sidebarToggle.contains(e.target)) {
-    //         sidebar.classList.remove('show');
-    //         document.body.classList.remove('sidebar-open');
-    //         console.log("🔄 Closed sidebar - clicked outside");
-    //     }
-    // }, true);
-
-    // Cerrar sidebar al hacer click en un link de navegación
-    const navLinks = sidebar.querySelectorAll('.nav-link[data-bs-toggle="pill"], .dropdown-item[data-bs-toggle="pill"]');
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            if (window.innerWidth < 992) {
-                sidebar.classList.remove('show');
-                document.body.classList.remove('sidebar-open');
-                console.log("🔄 Closed sidebar - nav link clicked");
-            }
-        });
-    });
-
-    console.log("✅ Sidebar toggle inicializado", {
-        toggleButton: sidebarToggle,
-        sidebar: sidebar,
-        buttonVisible: window.getComputedStyle(sidebarToggle).display
-    });
-} else {
-    console.error("❌ No se encontró el botón toggle o el sidebar", {
-        sidebarToggle,
-        sidebar
-    });
-}
+// NOTA: El manejo del sidebar toggle se hace en admin.html mediante script inline
+// para evitar conflictos con event listeners duplicados
 
 });
 
