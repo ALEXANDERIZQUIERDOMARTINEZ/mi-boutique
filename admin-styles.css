@@ -128,6 +128,90 @@ body.admin-page {
     50% { opacity: 0.7; transform: scale(1.1); }
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   DROPDOWN NAVIGATION - UX MEJORADO
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Dropdown Toggle - Sutil y elegante */
+.nav-item.dropdown .nav-link.dropdown-toggle {
+    position: relative;
+    padding-right: 1.5rem;
+}
+
+.nav-item.dropdown .nav-link.dropdown-toggle::after {
+    margin-left: 0.5rem;
+    vertical-align: 0.15em;
+    transition: transform 0.2s ease;
+}
+
+.nav-item.dropdown.show .nav-link.dropdown-toggle::after {
+    transform: rotate(180deg);
+}
+
+/* Dropdown Menu - Espaciado y contraste */
+.dropdown-menu {
+    border: 1px solid var(--admin-borde);
+    box-shadow: var(--sombra-lg);
+    border-radius: 12px;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    min-width: 200px;
+}
+
+/* Dropdown Items - Micro-interacciones */
+.dropdown-item {
+    padding: 0.65rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--admin-texto-sec);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-item i {
+    color: var(--admin-texto-claro);
+    transition: color 0.2s ease;
+    width: 1.2rem;
+}
+
+.dropdown-item:hover {
+    background: var(--admin-primario-claro);
+    color: var(--admin-primario);
+    transform: translateX(4px);
+}
+
+.dropdown-item:hover i {
+    color: var(--admin-primario);
+}
+
+.dropdown-item:active {
+    background: var(--admin-primario);
+    color: white;
+}
+
+/* Indicador de sección activa en dropdown */
+.dropdown-item.active {
+    background: var(--admin-primario);
+    color: white;
+    font-weight: 600;
+}
+
+.dropdown-item.active i {
+    color: white;
+}
+
+/* Divider en dropdown */
+.dropdown-divider {
+    margin: 0.5rem 0;
+    border-color: var(--admin-borde);
+}
+
+/* Badge dentro de dropdown items */
+.dropdown-item .badge {
+    margin-left: auto;
+}
+
 .admin-logout {
     font-weight: 500;
     transition: all 0.3s;
@@ -1059,17 +1143,45 @@ body.admin-page {
         overflow-y: visible;
     }
 
-    .nav-pills .nav-link {
+    /* Áreas de toque móvil - Mínimo 44x44px (Apple HIG y Material Design) */
+    .nav-pills .nav-link,
+    .nav-item.dropdown .nav-link.dropdown-toggle {
         margin: 0.25rem 0;
-        padding: 0.75rem 1rem;
+        padding: 0.85rem 1rem; /* 44px mínimo con fuente 0.95rem */
         font-size: 0.95rem;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Dropdown en móvil - Full width */
+    .dropdown-menu {
+        width: 100%;
+        margin-top: 0.25rem;
+    }
+
+    /* Dropdown items con área de toque adecuada */
+    .dropdown-item {
+        padding: 0.85rem 1.25rem;
+        min-height: 44px;
+        font-size: 0.95rem;
+    }
+
+    /* Espaciado entre grupos de navegación */
+    .nav-item {
+        width: 100%;
+    }
+
+    .nav-item + .nav-item {
+        margin-top: 0.5rem;
     }
 
     .admin-logout {
         margin-top: 1rem;
-        padding: 0.75rem 1rem;
+        padding: 0.85rem 1rem;
         background: var(--admin-fondo);
         border-radius: 10px;
+        min-height: 44px;
         justify-content: center;
     }
 }
