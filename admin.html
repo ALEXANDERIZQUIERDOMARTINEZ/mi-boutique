@@ -1587,11 +1587,54 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" id="btn-delete-sale">
+                        <i class="bi bi-trash"></i> Eliminar Venta
+                    </button>
+                    <button type="button" class="btn btn-warning" id="btn-edit-sale">
+                        <i class="bi bi-pencil"></i> Editar Venta
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Modal Confirmar Eliminar Venta con Contraseña -->
+    <div class="modal fade" id="deleteConfirmPassword" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-shield-lock me-2"></i>Confirmar Eliminación de Venta
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>¡Atención!</strong> Esta acción eliminará permanentemente la venta y repondrá el stock.
+                    </div>
+                    <form id="form-delete-sale-password">
+                        <div class="mb-3">
+                            <label for="delete-sale-password" class="form-label">
+                                <i class="bi bi-key me-1"></i>Contraseña Administrativa:
+                            </label>
+                            <input type="password" class="form-control" id="delete-sale-password"
+                                   placeholder="Ingresa la contraseña" required>
+                            <small class="text-muted">Se requiere contraseña para eliminar ventas</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-delete-sale-password" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Eliminar Venta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
     <!-- Modal de Gestión de Promociones -->
