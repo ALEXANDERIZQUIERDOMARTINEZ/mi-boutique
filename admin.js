@@ -8279,10 +8279,88 @@ loadPromocionesGlobales();
 console.log("✅ Módulo de Promociones Globales inicializado");
 
 // ========================================================================
-// --- NAVEGACIÓN SIMPLE - Bootstrap maneja dropdowns automáticamente ---
+// --- DROPDOWNS MANUALES - JavaScript Puro (SIN Bootstrap) ---
 // ========================================================================
 (() => {
-    console.log("✅ Sistema de navegación inicializado - Bootstrap maneja dropdowns");
+    // Obtener todos los dropdown toggles
+    const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+
+    dropdownToggles.forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const parentLi = this.closest('.nav-item.dropdown');
+            const dropdownMenu = parentLi.querySelector('.dropdown-menu');
+
+            // Cerrar otros dropdowns abiertos
+            document.querySelectorAll('.nav-item.dropdown').forEach(item => {
+                if (item !== parentLi) {
+                    item.classList.remove('show');
+                    const menu = item.querySelector('.dropdown-menu');
+                    if (menu) menu.classList.remove('show');
+                }
+            });
+
+            // Toggle el dropdown actual
+            parentLi.classList.toggle('show');
+            if (dropdownMenu) {
+                dropdownMenu.classList.toggle('show');
+            }
+        });
+    });
+
+    // Cerrar dropdowns al hacer click fuera
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.nav-item.dropdown')) {
+            document.querySelectorAll('.nav-item.dropdown').forEach(item => {
+                item.classList.remove('show');
+                const menu = item.querySelector('.dropdown-menu');
+                if (menu) menu.classList.remove('show');
+            });
+        }
+    });
+
+    console.log("✅ Dropdowns manuales inicializados");
+})();
+
+// ========================================================================
+// --- SIDEBAR TOGGLE PARA MÓVIL ---
+// ========================================================================
+(() => {
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('adminSidebar');
+
+    if (sidebarToggle && sidebar) {
+        // Toggle sidebar al hacer click en el botón
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('show');
+            document.body.classList.toggle('sidebar-open');
+        });
+
+        // Cerrar sidebar al hacer click fuera (en el overlay)
+        document.body.addEventListener('click', (e) => {
+            if (sidebar.classList.contains('show') &&
+                !sidebar.contains(e.target) &&
+                !sidebarToggle.contains(e.target)) {
+                sidebar.classList.remove('show');
+                document.body.classList.remove('sidebar-open');
+            }
+        });
+
+        // Cerrar sidebar al hacer click en un link de navegación
+        const navLinks = sidebar.querySelectorAll('.nav-link[data-bs-toggle="pill"], .dropdown-item[data-bs-toggle="pill"]');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 992) {
+                    sidebar.classList.remove('show');
+                    document.body.classList.remove('sidebar-open');
+                }
+            });
+        });
+
+        console.log("✅ Sidebar toggle inicializado");
+    }
 })();
 
 });
