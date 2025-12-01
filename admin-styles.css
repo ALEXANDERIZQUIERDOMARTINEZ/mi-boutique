@@ -208,6 +208,17 @@ body.admin-page {
     padding: 0.5rem;
     margin-top: 0.5rem;
     min-width: 200px;
+    display: none; /* Oculto por defecto */
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Mostrar dropdown cuando tiene clase 'show' */
+.dropdown-menu.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
 }
 
 /* Dropdown Items - Micro-interacciones */

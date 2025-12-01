@@ -8279,10 +8279,49 @@ loadPromocionesGlobales();
 console.log("✅ Módulo de Promociones Globales inicializado");
 
 // ========================================================================
-// --- NAVEGACIÓN SIMPLE - Bootstrap maneja dropdowns automáticamente ---
+// --- DROPDOWNS MANUALES - JavaScript Puro (SIN Bootstrap) ---
 // ========================================================================
 (() => {
-    console.log("✅ Sistema de navegación inicializado - Bootstrap maneja dropdowns");
+    // Obtener todos los dropdown toggles
+    const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+
+    dropdownToggles.forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const parentLi = this.closest('.nav-item.dropdown');
+            const dropdownMenu = parentLi.querySelector('.dropdown-menu');
+
+            // Cerrar otros dropdowns abiertos
+            document.querySelectorAll('.nav-item.dropdown').forEach(item => {
+                if (item !== parentLi) {
+                    item.classList.remove('show');
+                    const menu = item.querySelector('.dropdown-menu');
+                    if (menu) menu.classList.remove('show');
+                }
+            });
+
+            // Toggle el dropdown actual
+            parentLi.classList.toggle('show');
+            if (dropdownMenu) {
+                dropdownMenu.classList.toggle('show');
+            }
+        });
+    });
+
+    // Cerrar dropdowns al hacer click fuera
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.nav-item.dropdown')) {
+            document.querySelectorAll('.nav-item.dropdown').forEach(item => {
+                item.classList.remove('show');
+                const menu = item.querySelector('.dropdown-menu');
+                if (menu) menu.classList.remove('show');
+            });
+        }
+    });
+
+    console.log("✅ Dropdowns manuales inicializados");
 })();
 
 // ========================================================================
