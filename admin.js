@@ -8773,14 +8773,23 @@ const sidebar = document.getElementById('adminSidebar');
 if (sidebarToggle && sidebar) {
     // Toggle sidebar al hacer click en el botón
     sidebarToggle.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
-        sidebar.classList.toggle('show');
-        document.body.classList.toggle('sidebar-open');
+        const isOpen = sidebar.classList.contains('show');
+
+        if (isOpen) {
+            sidebar.classList.remove('show');
+            document.body.classList.remove('sidebar-open');
+        } else {
+            sidebar.classList.add('show');
+            document.body.classList.add('sidebar-open');
+        }
+
         console.log("🔄 Toggle clicked - sidebar show:", sidebar.classList.contains('show'));
     });
 
-    // Cerrar sidebar al hacer click fuera (en el overlay)
-    document.body.addEventListener('click', (e) => {
+    // Cerrar sidebar al hacer click en el overlay (usando el pseudo-elemento ::before del body)
+    document.addEventListener('click', (e) => {
         if (sidebar.classList.contains('show') &&
             !sidebar.contains(e.target) &&
             !sidebarToggle.contains(e.target)) {
@@ -8788,7 +8797,7 @@ if (sidebarToggle && sidebar) {
             document.body.classList.remove('sidebar-open');
             console.log("🔄 Closed sidebar - clicked outside");
         }
-    });
+    }, true);
 
     // Cerrar sidebar al hacer click en un link de navegación
     const navLinks = sidebar.querySelectorAll('.nav-link[data-bs-toggle="pill"], .dropdown-item[data-bs-toggle="pill"]');
