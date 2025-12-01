@@ -1434,24 +1434,31 @@ body.admin-page {
         gap: 1rem !important;
     }
 
-    /* Logo en móvil - mostrar texto completo y reducir espacio */
+    /* Logo en móvil - mostrar texto completo y reducir espacio al mínimo */
     .admin-sidebar .sidebar-brand {
-        padding: 1rem 1rem !important; /* Reducir padding vertical */
-        min-height: 60px !important; /* Reducir altura mínima */
+        padding: 0.5rem 1rem !important; /* Reducir padding vertical al mínimo */
+        min-height: 45px !important; /* Reducir altura mínima */
+        margin-bottom: 0 !important; /* Eliminar margen inferior */
     }
 
     .admin-sidebar .sidebar-brand::before {
         content: 'Mishell';
-        font-size: 1.5rem;
+        font-size: 1.3rem; /* Reducir tamaño de fuente */
     }
 
     .admin-sidebar .sidebar-brand::after {
-        opacity: 1;
+        display: none !important; /* Ocultar badge "BOUTIQUE" en móvil */
     }
 
-    /* Navegación en móvil - reducir espacio superior */
+    /* Navegación en móvil - eliminar espacio superior */
     .sidebar-nav {
-        padding: 0.5rem 0 !important; /* Reducir padding vertical */
+        padding: 0 0 1rem 0 !important; /* Eliminar padding superior */
+    }
+
+    /* Reducir espacios en los items del menú en móvil */
+    .sidebar-nav .nav-link {
+        padding: 0.6rem 0.75rem !important; /* Reducir padding de los items */
+        margin: 0.15rem 0 !important; /* Reducir margen entre items */
     }
 
     /* Mostrar sidebar cuando está activo */
