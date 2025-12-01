@@ -1143,13 +1143,13 @@ body.admin-page {
         overflow-y: visible;
     }
 
-    /* Áreas de toque móvil - Mínimo 44x44px (Apple HIG y Material Design) */
+    /* Áreas de toque móvil - Optimizado para no ocupar tanto espacio */
     .nav-pills .nav-link,
     .nav-item.dropdown .nav-link.dropdown-toggle {
-        margin: 0.25rem 0;
-        padding: 0.85rem 1rem; /* 44px mínimo con fuente 0.95rem */
-        font-size: 0.95rem;
-        min-height: 44px;
+        margin: 0.15rem 0;
+        padding: 0.6rem 0.85rem;
+        font-size: 0.9rem;
+        min-height: 40px;
         display: flex;
         align-items: center;
     }
@@ -1158,13 +1158,14 @@ body.admin-page {
     .dropdown-menu {
         width: 100%;
         margin-top: 0.25rem;
+        padding: 0.35rem;
     }
 
-    /* Dropdown items con área de toque adecuada */
+    /* Dropdown items con área de toque adecuada pero compacta */
     .dropdown-item {
-        padding: 0.85rem 1.25rem;
-        min-height: 44px;
-        font-size: 0.95rem;
+        padding: 0.6rem 1rem;
+        min-height: 40px;
+        font-size: 0.88rem;
     }
 
     /* Espaciado entre grupos de navegación */
@@ -1173,15 +1174,15 @@ body.admin-page {
     }
 
     .nav-item + .nav-item {
-        margin-top: 0.5rem;
+        margin-top: 0.2rem;
     }
 
     .admin-logout {
-        margin-top: 1rem;
-        padding: 0.85rem 1rem;
+        margin-top: 0.75rem;
+        padding: 0.6rem 0.85rem;
         background: var(--admin-fondo);
         border-radius: 10px;
-        min-height: 44px;
+        min-height: 40px;
         justify-content: center;
     }
 }

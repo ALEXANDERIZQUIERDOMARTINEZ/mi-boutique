@@ -8335,6 +8335,35 @@ console.log("✅ Módulo de Promociones Globales inicializado");
         }
     });
 
+    // ✅ FIX: Hacer que los dropdown items activen tabs correctamente
+    document.querySelectorAll('.dropdown-item[data-bs-toggle="pill"]').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            // Obtener el target tab
+            const targetId = this.getAttribute('href');
+            const targetTab = document.querySelector(targetId);
+
+            if (targetTab) {
+                // Activar el tab usando Bootstrap
+                const tabTrigger = new bootstrap.Tab(this);
+                tabTrigger.show();
+
+                // Cerrar el dropdown
+                const dropdownElement = this.closest('.dropdown');
+                if (dropdownElement) {
+                    const dropdownToggle = dropdownElement.querySelector('[data-bs-toggle="dropdown"]');
+                    if (dropdownToggle) {
+                        const bsDropdown = bootstrap.Dropdown.getInstance(dropdownToggle);
+                        if (bsDropdown) {
+                            bsDropdown.hide();
+                        }
+                    }
+                }
+            }
+        });
+    });
+
     // Escuchar cambios de tab
     document.querySelectorAll('a[data-bs-toggle="pill"]').forEach(tab => {
         tab.addEventListener('shown.bs.tab', updateActiveStates);
