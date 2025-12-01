@@ -1434,7 +1434,12 @@ body.admin-page {
         gap: 1rem !important;
     }
 
-    /* Logo en móvil - mostrar texto completo */
+    /* Logo en móvil - mostrar texto completo y reducir espacio */
+    .admin-sidebar .sidebar-brand {
+        padding: 1rem 1rem !important; /* Reducir padding vertical */
+        min-height: 60px !important; /* Reducir altura mínima */
+    }
+
     .admin-sidebar .sidebar-brand::before {
         content: 'Mishell';
         font-size: 1.5rem;
@@ -1442,6 +1447,11 @@ body.admin-page {
 
     .admin-sidebar .sidebar-brand::after {
         opacity: 1;
+    }
+
+    /* Navegación en móvil - reducir espacio superior */
+    .sidebar-nav {
+        padding: 0.5rem 0 !important; /* Reducir padding vertical */
     }
 
     /* Mostrar sidebar cuando está activo */
