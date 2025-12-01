@@ -8771,10 +8771,24 @@ const sidebarToggle = document.getElementById('sidebarToggle');
 const sidebar = document.getElementById('adminSidebar');
 
 if (sidebarToggle && sidebar) {
+    console.log("✅ Sidebar toggle inicializado", {
+        toggleButton: sidebarToggle,
+        sidebar: sidebar,
+        initialClasses: sidebar.className,
+        buttonVisible: window.getComputedStyle(sidebarToggle).display
+    });
+
     // Toggle sidebar al hacer click en el botón
     sidebarToggle.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
+
+        console.log("🔘 ANTES del toggle:", {
+            sidebarClasses: sidebar.className,
+            bodyClasses: document.body.className,
+            hasShow: sidebar.classList.contains('show')
+        });
+
         const isOpen = sidebar.classList.contains('show');
 
         if (isOpen) {
@@ -8785,19 +8799,24 @@ if (sidebarToggle && sidebar) {
             document.body.classList.add('sidebar-open');
         }
 
-        console.log("🔄 Toggle clicked - sidebar show:", sidebar.classList.contains('show'));
+        console.log("🔄 DESPUÉS del toggle:", {
+            sidebarClasses: sidebar.className,
+            bodyClasses: document.body.className,
+            hasShow: sidebar.classList.contains('show'),
+            transform: window.getComputedStyle(sidebar).transform
+        });
     });
 
-    // Cerrar sidebar al hacer click en el overlay (usando el pseudo-elemento ::before del body)
-    document.addEventListener('click', (e) => {
-        if (sidebar.classList.contains('show') &&
-            !sidebar.contains(e.target) &&
-            !sidebarToggle.contains(e.target)) {
-            sidebar.classList.remove('show');
-            document.body.classList.remove('sidebar-open');
-            console.log("🔄 Closed sidebar - clicked outside");
-        }
-    }, true);
+    // Cerrar sidebar al hacer click en el overlay - DESHABILITADO TEMPORALMENTE PARA DEBUG
+    // document.addEventListener('click', (e) => {
+    //     if (sidebar.classList.contains('show') &&
+    //         !sidebar.contains(e.target) &&
+    //         !sidebarToggle.contains(e.target)) {
+    //         sidebar.classList.remove('show');
+    //         document.body.classList.remove('sidebar-open');
+    //         console.log("🔄 Closed sidebar - clicked outside");
+    //     }
+    // }, true);
 
     // Cerrar sidebar al hacer click en un link de navegación
     const navLinks = sidebar.querySelectorAll('.nav-link[data-bs-toggle="pill"], .dropdown-item[data-bs-toggle="pill"]');
