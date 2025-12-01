@@ -185,12 +185,13 @@ body.admin-page {
     width: 44px;
     height: 44px;
     border-radius: 10px;
-    display: none;
+    display: none !important; /* Oculto por defecto */
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
     box-shadow: var(--sombra-md);
     transition: all 0.2s ease;
+    cursor: pointer;
 }
 
 .sidebar-toggle:hover {
@@ -200,6 +201,17 @@ body.admin-page {
 
 .sidebar-toggle:active {
     transform: scale(0.95);
+}
+
+/* Asegurar que el sidebar está visible en desktop */
+@media (min-width: 992px) {
+    .admin-sidebar {
+        transform: translateX(0) !important;
+    }
+
+    .sidebar-toggle {
+        display: none !important;
+    }
 }
 
 .badge-new-order {
@@ -1235,12 +1247,24 @@ body.admin-page {
 @media (max-width: 991.98px) {
     /* Ocultar sidebar por defecto en móvil */
     .admin-sidebar {
-        transform: translateX(-100%);
+        transform: translateX(-100%) !important;
+        width: 280px; /* Ancho fijo en móvil */
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* NO expandir al hover en móvil */
+    .admin-sidebar:hover {
+        width: 280px;
+    }
+
+    /* Mostrar texto siempre en móvil */
+    .admin-sidebar .sidebar-nav .nav-link span {
+        opacity: 1;
     }
 
     /* Mostrar sidebar cuando está activo */
     .admin-sidebar.show {
-        transform: translateX(0);
+        transform: translateX(0) !important;
     }
 
     /* Overlay oscuro cuando sidebar está abierto */
@@ -1251,18 +1275,33 @@ body.admin-page {
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.6);
         z-index: 1039;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
 
     /* Main content sin offset en móvil */
     .admin-content-wrapper {
-        margin-left: 0;
+        margin-left: 0 !important;
     }
 
     /* Mostrar botón toggle en móvil */
     .sidebar-toggle {
-        display: flex;
+        display: flex !important;
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 1050;
+    }
+
+    /* Ajustar padding del main content para el botón */
+    .admin-main {
+        padding-top: 4rem;
     }
 
     /* Dropdown menu más compacto en móvil */
@@ -1305,6 +1344,62 @@ body.admin-page {
     .action-buttons button {
         padding: 4px 8px !important;
         font-size: 0.8rem;
+    }
+
+    /* Cards del dashboard más compactos en móvil */
+    .dashboard-card {
+        padding: 1.25rem;
+    }
+
+    .dashboard-card .card-label {
+        font-size: 0.75rem;
+    }
+
+    .dashboard-card .card-value {
+        font-size: 1.5rem;
+    }
+
+    /* Ajustar header del dashboard */
+    .admin-main h1 {
+        font-size: 1.5rem;
+    }
+
+    /* Cards ocupan todo el ancho en móvil */
+    .col-md-3 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .col-sm-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+/* Tablets - Entre 768px y 991.98px */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    /* En tablets, sidebar también oculto por defecto */
+    .admin-sidebar {
+        transform: translateX(-100%) !important;
+        width: 280px;
+    }
+
+    .admin-sidebar.show {
+        transform: translateX(0) !important;
+    }
+
+    .admin-content-wrapper {
+        margin-left: 0 !important;
+    }
+
+    .sidebar-toggle {
+        display: flex !important;
+    }
+
+    /* Cards en 2 columnas en tablets */
+    .col-md-3 {
+        flex: 0 0 50%;
+        max-width: 50%;
     }
 }
 
