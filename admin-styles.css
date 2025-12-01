@@ -1580,7 +1580,7 @@ body.admin-page {
 @media (min-width: 768px) and (max-width: 991.98px) {
     /* En tablets, sidebar también oculto por defecto */
     .admin-sidebar {
-        transform: translateX(-100%) !important;
+        transform: translateX(-100%);
         width: 280px;
     }
 
