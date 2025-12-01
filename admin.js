@@ -8733,20 +8733,24 @@ console.log("✅ Módulo de Promociones Globales inicializado");
             const parentLi = this.closest('.nav-item.dropdown');
             const dropdownMenu = parentLi.querySelector('.dropdown-menu');
 
-            // Cerrar otros dropdowns abiertos
+            // Verificar si este dropdown ya está abierto
+            const isCurrentlyOpen = parentLi.classList.contains('show');
+
+            // Cerrar TODOS los dropdowns primero
             document.querySelectorAll('.nav-item.dropdown').forEach(item => {
-                if (item !== parentLi) {
-                    item.classList.remove('show');
-                    const menu = item.querySelector('.dropdown-menu');
-                    if (menu) menu.classList.remove('show');
-                }
+                item.classList.remove('show');
+                const menu = item.querySelector('.dropdown-menu');
+                if (menu) menu.classList.remove('show');
             });
 
-            // Toggle el dropdown actual
-            parentLi.classList.toggle('show');
-            if (dropdownMenu) {
-                dropdownMenu.classList.toggle('show');
+            // Si NO estaba abierto, abrirlo
+            if (!isCurrentlyOpen) {
+                parentLi.classList.add('show');
+                if (dropdownMenu) {
+                    dropdownMenu.classList.add('show');
+                }
             }
+            // Si SÍ estaba abierto, ya se cerró arriba, no hacer nada más
         });
     });
 
