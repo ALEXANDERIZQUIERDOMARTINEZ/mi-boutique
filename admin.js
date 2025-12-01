@@ -1393,13 +1393,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log("Imagen subida:", productData.imagenUrl);
                 }
                 
-                if (productId) { 
+                if (productId) {
                     if (!productData.imagenUrl) {
                         const existingDoc = localProductsMap.get(productId);
                         productData.imagenUrl = existingDoc?.imagenUrl || null;
                     }
-                    await updateDoc(doc(db, "productos", productId), productData); 
-                    showToast("Producto actualizado!"); 
+                    await updateDoc(doc(db, "productos", productId), productData);
+                    showToast("Producto actualizado!");
+
+                    // ✅ AUTO-SCROLL: Cambiar a vista de inventario y hacer scroll
+                    const formView = document.getElementById('form-view');
+                    const inventoryView = document.getElementById('inventory-view');
+                    const toggleFormBtn = document.getElementById('toggle-form-view-btn');
+                    const toggleInventoryBtn = document.getElementById('toggle-inventory-view-btn');
+
+                    if (formView && inventoryView && toggleFormBtn && toggleInventoryBtn) {
+                        // Cambiar a vista de inventario
+                        formView.style.display = 'none';
+                        inventoryView.style.display = 'block';
+                        toggleFormBtn.classList.remove('active');
+                        toggleInventoryBtn.classList.add('active');
+
+                        // Hacer scroll suave al inventario
+                        setTimeout(() => {
+                            inventoryView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 300);
+                    }
                 } else { 
                     if (!productData.imagenUrl) { showToast("Se requiere una imagen para crear un producto nuevo.", 'warning'); throw new Error("Imagen requerida"); }
                     productData.codigo = "P" + Date.now().toString().slice(-5); 
@@ -2354,13 +2373,46 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             try {
-                // ✅ PASO 1: Registrar la venta primero
-                const docRef = await addDoc(salesCollection, ventaData);
-                console.log("✅ Venta registrada con ID:", docRef.id);
+                let docRef;
+                let ventaId;
+                const isEditMode = !!window.editingVentaId;
 
-                // ✅ PASO 2: Actualizar stock inmediatamente
-                await actualizarStock(ventaData.items, 'restar');
-                console.log("✅ Stock actualizado correctamente");
+                // ✅ DETECTAR SI ESTAMOS EDITANDO O CREANDO
+                if (window.editingVentaId) {
+                    // MODO EDICIÓN: Actualizar venta existente
+                    ventaId = window.editingVentaId;
+                    const ventaRef = doc(db, 'ventas', ventaId);
+
+                    // Obtener datos de la venta anterior para reponer stock
+                    const ventaAnteriorSnap = await getDoc(ventaRef);
+                    if (ventaAnteriorSnap.exists()) {
+                        const ventaAnterior = ventaAnteriorSnap.data();
+                        // Reponer stock de la venta anterior
+                        await actualizarStock(ventaAnterior.items, 'sumar');
+                        console.log("✅ Stock anterior repuesto");
+                    }
+
+                    // Actualizar la venta
+                    await updateDoc(ventaRef, ventaData);
+                    console.log("✅ Venta actualizada con ID:", ventaId);
+
+                    // Descontar nuevo stock
+                    await actualizarStock(ventaData.items, 'restar');
+                    console.log("✅ Nuevo stock actualizado");
+
+                    // Limpiar flag de edición
+                    delete window.editingVentaId;
+
+                } else {
+                    // MODO CREACIÓN: Registrar nueva venta
+                    docRef = await addDoc(salesCollection, ventaData);
+                    ventaId = docRef.id;
+                    console.log("✅ Venta registrada con ID:", ventaId);
+
+                    // Actualizar stock
+                    await actualizarStock(ventaData.items, 'restar');
+                    console.log("✅ Stock actualizado correctamente");
+                }
 
                 // ✅ PASO 3: Si es apartado, crear documento apartado
                 if (ventaData.tipoVenta === 'apartado') {
@@ -2390,7 +2442,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Crear documento apartado
                     const apartadoData = {
-                        ventaId: docRef.id,
+                        ventaId: ventaId,
                         clienteNombre: ventaData.clienteNombre,
                         clienteCelular: ventaData.clienteCelular, // ✅ Guardar celular para WhatsApp
                         total: ventaData.totalVenta,
@@ -2417,9 +2469,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         showToast("Error al crear apartado. La venta fue registrada pero el apartado falló.", 'error');
                     }
                 } else {
-                    showToast("Venta registrada exitosamente!", 'success');
-                } 
-                
+                    // Mostrar mensaje según si fue edición o creación
+                    const mensaje = isEditMode ? "Venta actualizada exitosamente!" : "Venta registrada exitosamente!";
+                    showToast(mensaje, 'success');
+                }
+
                 salesForm.reset(); 
                 window.ventaItems = []; 
                 renderCarrito(); 
@@ -2584,7 +2638,150 @@ document.addEventListener('DOMContentLoaded', () => {
                 modalBody.innerHTML = `<p class="text-danger text-center">Error al cargar datos: ${error.message}</p>`;
             }
         }
-        
+
+        // ========================================================================
+        // --- ELIMINAR Y EDITAR VENTAS (NUEVAS FUNCIONALIDADES) ---
+        // ========================================================================
+
+        let currentVentaId = null; // Variable para guardar el ID de la venta actual
+        let currentVentaData = null; // Variable para guardar los datos de la venta actual
+
+        // Contraseña administrativa (puedes cambiarla)
+        const ADMIN_PASSWORD = 'mishell2025';
+
+        // --- Botón Eliminar Venta ---
+        const btnDeleteSale = document.getElementById('btn-delete-sale');
+        if (btnDeleteSale) {
+            btnDeleteSale.addEventListener('click', () => {
+                if (!currentVentaId) {
+                    showToast('Error: No hay venta seleccionada', 'error');
+                    return;
+                }
+
+                // Cerrar modal de detalles y abrir modal de contraseña
+                viewSaleModalInstance.hide();
+                const deletePasswordModal = new bootstrap.Modal(document.getElementById('deleteConfirmPassword'));
+                deletePasswordModal.show();
+            });
+        }
+
+        // --- Formulario Eliminar con Contraseña ---
+        const formDeletePassword = document.getElementById('form-delete-sale-password');
+        if (formDeletePassword) {
+            formDeletePassword.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const passwordInput = document.getElementById('delete-sale-password');
+                const password = passwordInput.value;
+
+                // Verificar contraseña
+                if (password !== ADMIN_PASSWORD) {
+                    showToast('❌ Contraseña incorrecta', 'error');
+                    passwordInput.value = '';
+                    return;
+                }
+
+                try {
+                    // Reponer stock
+                    await actualizarStock(currentVentaData.items, 'sumar');
+
+                    // Eliminar venta
+                    await deleteDoc(doc(db, 'ventas', currentVentaId));
+
+                    showToast('✅ Venta eliminada y stock repuesto correctamente', 'success');
+
+                    // Cerrar modales
+                    bootstrap.Modal.getInstance(document.getElementById('deleteConfirmPassword')).hide();
+                    passwordInput.value = '';
+
+                    // Limpiar variables
+                    currentVentaId = null;
+                    currentVentaData = null;
+
+                } catch (error) {
+                    console.error('Error al eliminar venta:', error);
+                    showToast('Error al eliminar venta: ' + error.message, 'error');
+                }
+            });
+        }
+
+        // --- Botón Editar Venta ---
+        const btnEditSale = document.getElementById('btn-edit-sale');
+        if (btnEditSale) {
+            btnEditSale.addEventListener('click', () => {
+                if (!currentVentaData) {
+                    showToast('Error: No hay datos de venta', 'error');
+                    return;
+                }
+
+                // Cargar datos en el formulario de ventas
+                loadSaleDataToForm(currentVentaData, currentVentaId);
+
+                // Cerrar modal
+                viewSaleModalInstance.hide();
+
+                // Ir a la pestaña de ventas
+                const ventasTab = document.querySelector('a[href="#ventas"]');
+                if (ventasTab) {
+                    const tab = bootstrap.Tab.getOrCreateInstance(ventasTab);
+                    tab.show();
+                }
+
+                showToast('📝 Editando venta - Modifica los datos y guarda', 'info');
+            });
+        }
+
+        // Función para cargar datos de venta en el formulario
+        function loadSaleDataToForm(ventaData, ventaId) {
+            // Cargar items en el carrito
+            window.ventaItems = [...ventaData.items];
+            actualizarCarritoVenta();
+
+            // Cargar datos del cliente
+            const ventaClienteInput = document.getElementById('venta-cliente');
+            const ventaCelularInput = document.getElementById('venta-cliente-celular');
+            const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
+
+            if (ventaClienteInput) ventaClienteInput.value = ventaData.clienteNombre || '';
+            if (ventaCelularInput) ventaCelularInput.value = ventaData.clienteCelular || '';
+            if (ventaDireccionInput) ventaDireccionInput.value = ventaData.clienteDireccion || '';
+
+            // Cargar tipo de venta
+            const tipoVentaSelect = document.getElementById('tipo-venta');
+            if (tipoVentaSelect) tipoVentaSelect.value = ventaData.tipoVenta || 'detal';
+
+            // Cargar tipo de entrega
+            const tipoEntregaSelect = document.getElementById('tipo-entrega');
+            if (tipoEntregaSelect) {
+                tipoEntregaSelect.value = ventaData.tipoEntrega || 'tienda';
+                tipoEntregaSelect.dispatchEvent(new Event('change'));
+            }
+
+            // Cargar observaciones
+            const ventaObservaciones = document.getElementById('venta-observaciones');
+            if (ventaObservaciones) ventaObservaciones.value = ventaData.observaciones || '';
+
+            // Guardar ID para actualizar en lugar de crear nueva
+            window.editingVentaId = ventaId;
+        }
+
+        // Modificar función handleViewSale para guardar datos
+        const originalHandleViewSale = handleViewSale;
+        handleViewSale = async function(ventaId) {
+            currentVentaId = ventaId;
+
+            // Obtener datos de la venta
+            const ventaRef = doc(db, 'ventas', ventaId);
+            const ventaSnap = await getDoc(ventaRef);
+
+            if (ventaSnap.exists()) {
+                currentVentaData = ventaSnap.data();
+            }
+
+            // Llamar función original
+            return originalHandleViewSale(ventaId);
+        };
+
         // --- Listener de la lista de ventas (Actualizado) ---
         if(salesListTableBody) salesListTableBody.addEventListener('click', (e)=>{ 
             e.preventDefault(); 
