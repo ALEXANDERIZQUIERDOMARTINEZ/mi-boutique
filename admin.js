@@ -2173,11 +2173,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <td><span class="badge ${estadoBadgeClass}">${estado}</span></td>
                                 <td class="action-buttons">
                                     <button class="btn btn-action btn-action-view btn-view-sale"><i class="bi bi-eye"></i><span class="btn-action-text">Ver</span></button>
-                                    ${!estaAnulada ? `<button class="btn btn-action btn-action-info btn-change-sale-type" data-tipo="${d.tipoVenta}"><i class="bi bi-arrow-left-right"></i><span class="btn-action-text">Cambiar</span></button>` : ''}
+                                    ${!estaAnulada ? `<button class="btn btn-action btn-action-edit btn-edit-sale"><i class="bi bi-pencil-square"></i><span class="btn-action-text">Editar</span></button>` : ''}
                                     ${d.tipoVenta === 'apartado' && !estaAnulada ? `<button class="btn btn-action btn-action-warning btn-manage-apartado"><i class="bi bi-calendar-heart"></i><span class="btn-action-text">Gestionar</span></button>` : ''}
                                     <button class="btn btn-action btn-action-danger btn-cancel-sale" ${estaAnulada ? 'disabled' : ''}>
                                         <i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span>
                                     </button>
+                                    ${!estaAnulada ? `<button class="btn btn-action btn-action-delete btn-delete-sale"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button>` : ''}
                                 </td>`;
                 salesListTableBody.appendChild(tr);
             });
@@ -2611,14 +2612,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Cambiar tipo de venta (detal/mayorista)
-            if(target.classList.contains('btn-change-sale-type')) {
-                cambiarTipoVenta(id, target.dataset.tipo);
+            // Editar venta
+            if(target.classList.contains('btn-edit-sale')) {
+                abrirModalEditarVenta(id);
+            }
+
+            // Eliminar venta
+            if(target.classList.contains('btn-delete-sale')) {
+                abrirModalEliminarVenta(id);
             }
         });
 
-        // Función para cambiar tipo de venta y recalcular precios
-        async function cambiarTipoVenta(ventaId, tipoActual) {
+        // ═══════════════════════════════════════════════════════════════════
+        // FUNCIÓN: ABRIR MODAL EDITAR VENTA
+        // ═══════════════════════════════════════════════════════════════════
+        async function abrirModalEditarVenta(ventaId) {
             try {
                 const ventaRef = doc(db, 'ventas', ventaId);
                 const ventaSnap = await getDoc(ventaRef);
@@ -2630,101 +2638,336 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const ventaData = ventaSnap.data();
 
-                // Validar que ventaData y ventaData.items existan
-                if (!ventaData || !ventaData.items || !Array.isArray(ventaData.items)) {
-                    showToast('Error: La venta no tiene items válidos', 'error');
-                    console.error('ventaData.items no es válido:', ventaData);
-                    return;
-                }
+                // Guardar ID
+                document.getElementById('edit-sale-id').value = ventaId;
 
-                const nuevoTipo = tipoActual === 'detal' ? 'mayorista' : 'detal';
+                // Llenar datos
+                document.getElementById('edit-sale-folio').textContent = ventaId.substring(0, 8).toUpperCase();
+                const fechaVenta = ventaData.timestamp ? new Date(ventaData.timestamp.toDate()) : new Date();
+                document.getElementById('edit-sale-date').textContent = fechaVenta.toLocaleDateString('es-MX', {
+                    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                document.getElementById('edit-sale-cliente').value = ventaData.clienteNombre || 'General';
+                document.getElementById('edit-sale-tipo').value = ventaData.tipoVenta || 'detal';
+                document.getElementById('edit-sale-pago').value = ventaData.metodoPago || 'efectivo';
 
-                // Confirmar cambio
-                if (!confirm(`¿Cambiar venta de ${tipoActual} a ${nuevoTipo}?`)) {
-                    return;
-                }
+                // Cargar repartidores
+                await cargarRepartidoresEdit();
+                document.getElementById('edit-sale-repartidor').value = ventaData.repartidor || '';
 
-                console.log('=== CAMBIO DE TIPO DE VENTA ===');
-                console.log('Tipo actual:', tipoActual);
-                console.log('Nuevo tipo:', nuevoTipo);
-                console.log('Items originales:', ventaData.items);
+                // Mostrar productos
+                mostrarProductosEdit(ventaData.items || []);
 
-                // Recalcular precios de items
+                // Mostrar total
+                document.getElementById('edit-sale-total').textContent = formatoMoneda.format(ventaData.totalVenta || 0);
+
+                // Abrir modal
+                const modal = new bootstrap.Modal(document.getElementById('editSaleModal'));
+                modal.show();
+            } catch (error) {
+                console.error('Error al abrir modal de edición:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Cargar repartidores para el selector de edición
+        async function cargarRepartidoresEdit() {
+            const select = document.getElementById('edit-sale-repartidor');
+            try {
+                const repartidoresSnap = await getDocs(collection(db, 'repartidores'));
+                select.innerHTML = '<option value="">Ninguno</option>';
+                repartidoresSnap.forEach((doc) => {
+                    const r = doc.data();
+                    select.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
+                });
+            } catch (error) {
+                console.error('Error al cargar repartidores:', error);
+            }
+        }
+
+        // Mostrar productos en el modal de edición
+        function mostrarProductosEdit(items) {
+            const container = document.getElementById('edit-sale-productos');
+            if (!items || items.length === 0) {
+                container.innerHTML = '<p class="text-muted">No hay productos en esta venta</p>';
+                return;
+            }
+
+            let html = '<div class="list-group">';
+            items.forEach((item) => {
+                const precioUnit = parseFloat(item.precioUnitario) || 0;
+                const cantidad = parseFloat(item.cantidad) || 1;
+                const total = precioUnit * cantidad;
+
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>${item.nombre || 'Producto'}</strong><br>
+                                <small class="text-muted">
+                                    ${item.talla ? `Talla: ${item.talla}` : ''}
+                                    ${item.color ? ` • Color: ${item.color}` : ''}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <strong>${formatoMoneda.format(total)}</strong><br>
+                                <small class="text-muted">${cantidad} x ${formatoMoneda.format(precioUnit)}</small>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Listener para cambio de tipo de venta en el modal
+        document.getElementById('edit-sale-tipo').addEventListener('change', async function() {
+            const ventaId = document.getElementById('edit-sale-id').value;
+            if (!ventaId) return;
+
+            try {
+                const ventaRef = doc(db, 'ventas', ventaId);
+                const ventaSnap = await getDoc(ventaRef);
+
+                if (!ventaSnap.exists()) return;
+
+                const ventaData = ventaSnap.data();
+                const nuevoTipo = this.value;
+
+                // Recalcular precios según nuevo tipo
+                let nuevoTotal = 0;
                 const itemsActualizados = await Promise.all(ventaData.items.map(async (item) => {
-                    if (!item || !item.id) {
-                        console.warn('Item inválido encontrado:', item);
-                        return item;
-                    }
-
                     const prodRef = doc(db, 'productos', item.id);
                     const prodSnap = await getDoc(prodRef);
 
                     if (prodSnap.exists()) {
                         const prodData = prodSnap.data();
-                        const nuevoPrecio = nuevoTipo === 'mayorista' ?
-                            (prodData.precioMayor || prodData.precioDetal) :
-                            prodData.precioDetal;
+                        let nuevoPrecio = prodData.precioDetal;
+
+                        if (nuevoTipo === 'mayorista') {
+                            nuevoPrecio = prodData.precioMayor || prodData.precioDetal;
+                        }
 
                         const cantidad = parseFloat(item.cantidad) || 1;
-                        const precioFinal = parseFloat(nuevoPrecio) || parseFloat(item.precioUnitario) || 0;
-                        const totalItem = precioFinal * cantidad;
+                        const totalItem = nuevoPrecio * cantidad;
+                        nuevoTotal += totalItem;
 
-                        console.log(`Item: ${item.nombre || item.id}`);
-                        console.log(`  - Cantidad: ${cantidad}`);
-                        console.log(`  - Precio anterior: $${item.precioUnitario}`);
-                        console.log(`  - Precio nuevo (${nuevoTipo}): $${precioFinal}`);
-                        console.log(`  - Total item: $${totalItem}`);
-
-                        return {
-                            ...item,
-                            precioUnitario: precioFinal,
-                            totalItem: totalItem
-                        };
+                        return { ...item, precioUnitario: nuevoPrecio, totalItem: totalItem };
                     }
-
-                    console.warn('Producto no encontrado:', item.id);
                     return item;
                 }));
 
-                console.log('Items actualizados:', itemsActualizados);
-
-                // Recalcular total con validación estricta
-                let subtotal = 0;
-                itemsActualizados.forEach((item, index) => {
-                    const itemTotal = parseFloat(item.totalItem) || 0;
-                    console.log(`Item ${index + 1} total: $${itemTotal}`);
-                    subtotal += itemTotal;
-                });
-
+                // Aplicar descuento y costo ruta
                 const descuento = parseFloat(ventaData.descuento) || 0;
                 const costoRuta = parseFloat(ventaData.costoRuta) || 0;
-                const nuevoTotal = subtotal - descuento + costoRuta;
+                nuevoTotal = nuevoTotal - descuento + costoRuta;
 
-                console.log('=== TOTALES ===');
-                console.log('Subtotal (suma items):', subtotal);
-                console.log('Descuento:', descuento);
-                console.log('Costo ruta:', costoRuta);
-                console.log('Total final:', nuevoTotal);
+                // Actualizar vista
+                mostrarProductosEdit(itemsActualizados);
+                document.getElementById('edit-sale-total').textContent = formatoMoneda.format(nuevoTotal);
+            } catch (error) {
+                console.error('Error al recalcular precios:', error);
+            }
+        });
+
+        // Guardar cambios de edición
+        document.getElementById('btn-save-edit-sale').addEventListener('click', async function() {
+            const ventaId = document.getElementById('edit-sale-id').value;
+            if (!ventaId) return;
+
+            try {
+                const nuevoTipo = document.getElementById('edit-sale-tipo').value;
+                const nuevoPago = document.getElementById('edit-sale-pago').value;
+                const nuevoRepartidor = document.getElementById('edit-sale-repartidor').value;
+
+                // Obtener venta actual
+                const ventaRef = doc(db, 'ventas', ventaId);
+                const ventaSnap = await getDoc(ventaRef);
+
+                if (!ventaSnap.exists()) {
+                    showToast('Venta no encontrada', 'error');
+                    return;
+                }
+
+                const ventaData = ventaSnap.data();
+
+                // Recalcular items si cambió el tipo
+                let itemsActualizados = ventaData.items;
+                let nuevoTotal = ventaData.totalVenta;
+
+                if (nuevoTipo !== ventaData.tipoVenta) {
+                    let subtotal = 0;
+                    itemsActualizados = await Promise.all(ventaData.items.map(async (item) => {
+                        const prodRef = doc(db, 'productos', item.id);
+                        const prodSnap = await getDoc(prodRef);
+
+                        if (prodSnap.exists()) {
+                            const prodData = prodSnap.data();
+                            let nuevoPrecio = prodData.precioDetal;
+
+                            if (nuevoTipo === 'mayorista') {
+                                nuevoPrecio = prodData.precioMayor || prodData.precioDetal;
+                            }
+
+                            const cantidad = parseFloat(item.cantidad) || 1;
+                            const totalItem = nuevoPrecio * cantidad;
+                            subtotal += totalItem;
+
+                            return { ...item, precioUnitario: nuevoPrecio, totalItem: totalItem };
+                        }
+                        return item;
+                    }));
+
+                    const descuento = parseFloat(ventaData.descuento) || 0;
+                    const costoRuta = parseFloat(ventaData.costoRuta) || 0;
+                    nuevoTotal = subtotal - descuento + costoRuta;
+                }
 
                 // Actualizar venta
                 await updateDoc(ventaRef, {
                     tipoVenta: nuevoTipo,
+                    metodoPago: nuevoPago,
+                    repartidor: nuevoRepartidor,
                     items: itemsActualizados,
-                    subtotal: subtotal,
-                    totalVenta: nuevoTotal
+                    totalVenta: nuevoTotal,
+                    ultimaModificacion: serverTimestamp()
                 });
 
-                showToast(`Venta cambiada a ${nuevoTipo} exitosamente. Total: $${nuevoTotal.toFixed(2)}`, 'success');
+                showToast('Venta actualizada exitosamente', 'success');
 
-                // Recargar la tabla de ventas si existe la función
-                if (typeof renderVentas === 'function') {
-                    renderVentas();
-                }
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editSaleModal'));
+                modal.hide();
             } catch (error) {
-                console.error('Error al cambiar tipo de venta:', error);
+                console.error('Error al guardar cambios:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        });
+
+        // ═══════════════════════════════════════════════════════════════════
+        // FUNCIÓN: ABRIR MODAL ELIMINAR VENTA
+        // ═══════════════════════════════════════════════════════════════════
+        async function abrirModalEliminarVenta(ventaId) {
+            try {
+                const ventaRef = doc(db, 'ventas', ventaId);
+                const ventaSnap = await getDoc(ventaRef);
+
+                if (!ventaSnap.exists()) {
+                    showToast('Venta no encontrada', 'error');
+                    return;
+                }
+
+                const ventaData = ventaSnap.data();
+
+                // Guardar ID
+                document.getElementById('delete-sale-id').value = ventaId;
+
+                // Llenar información
+                document.getElementById('delete-sale-folio').textContent = ventaId.substring(0, 8).toUpperCase();
+                document.getElementById('delete-sale-cliente').textContent = ventaData.clienteNombre || 'General';
+                document.getElementById('delete-sale-total').textContent = formatoMoneda.format(ventaData.totalVenta || 0);
+
+                // Limpiar campos
+                document.getElementById('delete-sale-password').value = '';
+                document.getElementById('delete-sale-confirm').checked = false;
+                document.getElementById('btn-confirm-delete-sale').disabled = true;
+
+                // Abrir modal
+                const modal = new bootstrap.Modal(document.getElementById('deleteSaleModal'));
+                modal.show();
+            } catch (error) {
+                console.error('Error al abrir modal de eliminación:', error);
                 showToast(`Error: ${error.message}`, 'error');
             }
         }
+
+        // Habilitar botón de eliminar solo si checkbox está marcado
+        document.getElementById('delete-sale-confirm').addEventListener('change', function() {
+            const password = document.getElementById('delete-sale-password').value.trim();
+            document.getElementById('btn-confirm-delete-sale').disabled = !(this.checked && password.length > 0);
+        });
+
+        document.getElementById('delete-sale-password').addEventListener('input', function() {
+            const checkbox = document.getElementById('delete-sale-confirm').checked;
+            document.getElementById('btn-confirm-delete-sale').disabled = !(checkbox && this.value.trim().length > 0);
+        });
+
+        // Confirmar eliminación con contraseña
+        document.getElementById('btn-confirm-delete-sale').addEventListener('click', async function() {
+            const ventaId = document.getElementById('delete-sale-id').value;
+            const password = document.getElementById('delete-sale-password').value;
+
+            if (!ventaId || !password) {
+                showToast('Datos incompletos', 'error');
+                return;
+            }
+
+            // Contraseña de administrador (puedes cambiarla)
+            const ADMIN_PASSWORD = 'admin123'; // ⚠️ CAMBIAR POR UNA CONTRASEÑA SEGURA
+
+            if (password !== ADMIN_PASSWORD) {
+                showToast('Contraseña incorrecta', 'error');
+                document.getElementById('delete-sale-password').value = '';
+                document.getElementById('delete-sale-password').focus();
+                return;
+            }
+
+            try {
+                // Obtener venta antes de eliminar para revertir stock si es necesario
+                const ventaRef = doc(db, 'ventas', ventaId);
+                const ventaSnap = await getDoc(ventaRef);
+
+                if (!ventaSnap.exists()) {
+                    showToast('Venta no encontrada', 'error');
+                    return;
+                }
+
+                const ventaData = ventaSnap.data();
+
+                // Revertir stock de productos (devolver al inventario)
+                if (ventaData.items && Array.isArray(ventaData.items)) {
+                    for (const item of ventaData.items) {
+                        const prodRef = doc(db, 'productos', item.id);
+                        const prodSnap = await getDoc(prodRef);
+
+                        if (prodSnap.exists()) {
+                            const prodData = prodSnap.data();
+
+                            if (item.talla && item.color) {
+                                // Producto con variaciones
+                                const variaciones = prodData.variaciones || [];
+                                const varIndex = variaciones.findIndex(v =>
+                                    v.talla === item.talla && v.color === item.color
+                                );
+
+                                if (varIndex !== -1) {
+                                    variaciones[varIndex].stock += parseFloat(item.cantidad) || 0;
+                                    await updateDoc(prodRef, { variaciones: variaciones });
+                                }
+                            } else {
+                                // Producto simple
+                                const nuevoStock = (prodData.stock || 0) + (parseFloat(item.cantidad) || 0);
+                                await updateDoc(prodRef, { stock: nuevoStock });
+                            }
+                        }
+                    }
+                }
+
+                // Eliminar venta
+                await deleteDoc(ventaRef);
+
+                showToast('Venta eliminada exitosamente. Stock restaurado.', 'success');
+
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteSaleModal'));
+                modal.hide();
+
+                console.log(`✅ Venta ${ventaId} eliminada permanentemente`);
+            } catch (error) {
+                console.error('Error al eliminar venta:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        });
         
         function toggleDeliveryFields(){
             const tES = document.getElementById('tipo-entrega-select');

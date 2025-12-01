@@ -1092,31 +1092,31 @@ body.admin-page {
     transform: translateY(-1px);
 }
 
-/* Edit/Editar Actions - Soft Purple */
+/* Edit/Editar Actions - Soft Amber */
 .btn-action-edit {
-    background: #F5F3FF;
-    color: #6D28D9;
-    border-color: #DDD6FE;
+    background: #FFFBEB;
+    color: #B45309;
+    border-color: #FDE68A;
 }
 
 .btn-action-edit:hover {
-    background: #EDE9FE;
-    border-color: #C4B5FD;
-    color: #5B21B6;
+    background: #FEF3C7;
+    border-color: #FCD34D;
+    color: #92400E;
     transform: translateY(-1px);
 }
 
-/* Delete/Eliminar Actions - Soft Red */
+/* Delete/Eliminar Actions - Soft Red/Pink */
 .btn-action-delete {
-    background: #FEF2F2;
-    color: #B91C1C;
-    border-color: #FECACA;
+    background: #FFF1F2;
+    color: #BE123C;
+    border-color: #FECDD3;
 }
 
 .btn-action-delete:hover {
-    background: #FEE2E2;
-    border-color: #FCA5A5;
-    color: #991B1B;
+    background: #FFE4E6;
+    border-color: #FDA4AF;
+    color: #9F1239;
     transform: translateY(-1px);
 }
 
