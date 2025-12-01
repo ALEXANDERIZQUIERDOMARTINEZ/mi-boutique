@@ -1408,10 +1408,10 @@ body.admin-page {
 @media (max-width: 991.98px) {
     /* Ocultar sidebar por defecto en móvil */
     .admin-sidebar {
-        transform: translateX(-100%) !important;
+        transform: translateX(-100%);
         width: 280px; /* Ancho fijo en móvil */
         box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
-        z-index: 1050 !important;
+        z-index: 1050;
     }
 
     /* NO expandir al hover en móvil */
