@@ -8771,6 +8771,13 @@ const sidebarToggle = document.getElementById('sidebarToggle');
 const sidebar = document.getElementById('adminSidebar');
 
 if (sidebarToggle && sidebar) {
+    // IMPORTANTE: Asegurar que el sidebar esté cerrado al iniciar en móvil
+    if (window.innerWidth < 992) {
+        sidebar.classList.remove('show');
+        document.body.classList.remove('sidebar-open');
+        console.log("🧹 Limpiado estado inicial del sidebar en móvil");
+    }
+
     console.log("✅ Sidebar toggle inicializado", {
         toggleButton: sidebarToggle,
         sidebar: sidebar,
