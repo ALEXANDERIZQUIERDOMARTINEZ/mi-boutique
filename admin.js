@@ -3852,26 +3852,21 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 });
                 console.log("✅ Apartado actualizado correctamente");
 
-                // ✅ PASO 5: Actualizar venta asociada
+                // ✅ PASO 5: Actualizar venta asociada (solo el estado, NO los montos)
                 if (apartadoData.ventaId) {
                     const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
                     const ventaSnap = await getDoc(ventaRef);
 
                     if (ventaSnap.exists()) {
-                        const ventaData = ventaSnap.data();
+                        // Solo actualizar el estado, NO los montos de pago
+                        // Los montos ya se registraron con el abono inicial
+                        // Los abonos posteriores se contarán desde el historial de abonos
                         const updateVenta = {
                             estado: nuevoSaldo <= 0 ? 'Completada' : 'Pendiente'
                         };
 
-                        // Actualizar montos de pago según método
-                        if (metodoPago === 'Efectivo') {
-                            updateVenta.pagoEfectivo = (ventaData.pagoEfectivo || 0) + monto;
-                        } else if (metodoPago === 'Transferencia') {
-                            updateVenta.pagoTransferencia = (ventaData.pagoTransferencia || 0) + monto;
-                        }
-
                         await updateDoc(ventaRef, updateVenta);
-                        console.log("✅ Venta actualizada correctamente");
+                        console.log("✅ Venta actualizada correctamente (solo estado)");
                     } else {
                         console.warn("⚠️ Venta asociada no encontrada:", apartadoData.ventaId);
                     }
@@ -4389,13 +4384,49 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     }
                 });
 
+                // 💰 SUMAR ABONOS DEL DÍA desde apartados
+                console.log('💰 Buscando abonos del día en apartados...');
+                const apartadosSnap = await getDocs(apartadosCollection);
+
+                let abonosEfectivo = 0;
+                let abonosTransferencia = 0;
+
+                apartadosSnap.forEach(doc => {
+                    const apartado = doc.data();
+                    const abonos = apartado.abonos || [];
+
+                    // Revisar cada abono del apartado
+                    abonos.forEach((abono, index) => {
+                        // Saltar el abono inicial (índice 0) porque ya está en la venta original
+                        if (index === 0) return;
+
+                        const fechaAbono = abono.fecha?.toDate ? abono.fecha.toDate() : new Date(abono.fecha);
+
+                        // Verificar si el abono fue hecho HOY
+                        if (fechaAbono >= inicio && fechaAbono <= fin) {
+                            const montoAbono = abono.monto || 0;
+                            const metodoPago = abono.metodoPago || 'Efectivo';
+
+                            if (metodoPago === 'Efectivo') {
+                                abonosEfectivo += montoAbono;
+                            } else if (metodoPago === 'Transferencia') {
+                                abonosTransferencia += montoAbono;
+                            }
+
+                            console.log(`  💵 Abono #${index} del apartado ${doc.id}: ${metodoPago} $${montoAbono}`);
+                        }
+                    });
+                });
+
+                console.log(`✅ Abonos del día: Efectivo=$${abonosEfectivo}, Transferencia=$${abonosTransferencia}`);
+
                 ventasDelDia = {
-                    efectivo: ventasEfectivo,
-                    transferencia: ventasTransferencia,
-                    total: ventasEfectivo + ventasTransferencia
+                    efectivo: ventasEfectivo + abonosEfectivo,
+                    transferencia: ventasTransferencia + abonosTransferencia,
+                    total: ventasEfectivo + ventasTransferencia + abonosEfectivo + abonosTransferencia
                 };
 
-                console.log('✅ Ventas del día calculadas:', ventasDelDia);
+                console.log('✅ Ventas del día calculadas (incluyendo abonos):', ventasDelDia);
                 return ventasDelDia;
             } catch (err) {
                 console.error('❌ Error calculando ventas del día:', err);
@@ -4809,24 +4840,51 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             );
             
             // Escuchar cambios en tiempo real
-            onSnapshot(q, 
-                (snapshot) => {
-                    let totalVentas = 0;
+            onSnapshot(q,
+                async (snapshot) => {
+                    let totalDineroRecibido = 0;
                     let ventasContadas = 0;
-                    
+
                     snapshot.forEach(doc => {
                         const venta = doc.data();
                         const estado = venta.estado || '';
-                        
+
                         // ✅ Filtrar el estado AQUÍ en el cliente
                         if (estado !== 'Anulada' && estado !== 'Cancelada') {
-                            totalVentas += (venta.totalVenta || 0);
+                            // Sumar solo el dinero recibido (efectivo + transferencia)
+                            // NO el total de la venta
+                            const efectivo = venta.pagoEfectivo || 0;
+                            const transferencia = venta.pagoTransferencia || 0;
+                            totalDineroRecibido += efectivo + transferencia;
                             ventasContadas++;
                         }
                     });
-                    
+
+                    // 💰 SUMAR ABONOS DEL DÍA desde apartados
+                    try {
+                        const apartadosSnap = await getDocs(apartadosCollection);
+                        apartadosSnap.forEach(doc => {
+                            const apartado = doc.data();
+                            const abonos = apartado.abonos || [];
+
+                            abonos.forEach((abono, index) => {
+                                // Saltar el abono inicial (índice 0) porque ya está en la venta original
+                                if (index === 0) return;
+
+                                const fechaAbono = abono.fecha?.toDate ? abono.fecha.toDate() : new Date(abono.fecha);
+
+                                // Verificar si el abono fue hecho HOY
+                                if (fechaAbono >= hoy && fechaAbono < manana) {
+                                    totalDineroRecibido += (abono.monto || 0);
+                                }
+                            });
+                        });
+                    } catch (err) {
+                        console.error('Error sumando abonos del día:', err);
+                    }
+
                     // Actualizar UI
-                    dbVentasHoyEl.textContent = formatoMoneda.format(totalVentas);
+                    dbVentasHoyEl.textContent = formatoMoneda.format(totalDineroRecibido);
                     dbVentasHoyEl.classList.add('text-success');
 
                     // Actualizar contador de ventas
@@ -4835,7 +4893,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         dbVentasCountEl.textContent = `${ventasContadas} ${ventasContadas === 1 ? 'venta' : 'ventas'}`;
                     }
 
-                    console.log(`✅ Ventas hoy: ${formatoMoneda.format(totalVentas)} (${ventasContadas} ventas)`);
+                    console.log(`✅ Ventas hoy (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas)`);
                 },
                 (error) => {
                     console.error("❌ Error al calcular ventas del día:", error);
