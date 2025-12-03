@@ -8094,17 +8094,27 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         return;
                     }
 
-                    const columnas = Object.keys(datos[0]);
-                    const columnasRequeridas = ['nombre', 'descripcion', 'categoria', 'proveedor', 'costo', 'precio_detal', 'precio_mayor', 'talla', 'color', 'cantidad'];
+                    // Normalizar nombres de columnas (trim y lowercase)
+                    const datosNormalizados = datos.map(fila => {
+                        const filaNormalizada = {};
+                        for (let key in fila) {
+                            const keyNormalizada = key.trim().toLowerCase();
+                            filaNormalizada[keyNormalizada] = fila[key];
+                        }
+                        return filaNormalizada;
+                    });
 
-                    const columnasFaltantes = columnasRequeridas.filter(col => !columnas.includes(col));
+                    const columnas = Object.keys(datosNormalizados[0]);
+                    const columnasObligatorias = ['nombre', 'categoria', 'proveedor', 'precio_detal', 'precio_mayor', 'talla', 'color', 'cantidad'];
+
+                    const columnasFaltantes = columnasObligatorias.filter(col => !columnas.includes(col));
                     if (columnasFaltantes.length > 0) {
                         reject(new Error(`Faltan columnas obligatorias: ${columnasFaltantes.join(', ')}`));
                         return;
                     }
 
                     actualizarProgreso(30);
-                    resolve(datos);
+                    resolve(datosNormalizados);
 
                 } catch (error) {
                     reject(error);
@@ -8141,19 +8151,24 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         }
 
         // Validar precios
-        const costo = parseFloat(fila.costo);
         const precioDetal = parseFloat(fila.precio_detal);
         const precioMayor = parseFloat(fila.precio_mayor);
 
-        if (isNaN(costo) || costo < 0) {
-            errores.push('Costo inválido');
-        }
         if (isNaN(precioDetal) || precioDetal < 0) {
             errores.push('Precio detal inválido');
         }
         if (isNaN(precioMayor) || precioMayor < 0) {
             errores.push('Precio mayor inválido');
         }
+
+        // Costo: opcional, si no existe se calcula como 50% del precio_detal
+        let costo = parseFloat(fila.costo);
+        if (isNaN(costo) || costo < 0) {
+            costo = precioDetal * 0.5; // 50% del precio detal por defecto
+        }
+
+        // Descripción: opcional, si no existe se usa cadena vacía
+        const descripcion = fila.descripcion?.trim() || '';
 
         // Validar cantidad
         const cantidad = parseInt(fila.cantidad);
@@ -8163,10 +8178,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         return {
             index: index,
-            ...fila,
+            nombre: fila.nombre?.trim() || '',
+            descripcion: descripcion,
+            categoria: fila.categoria?.trim() || '',
+            proveedor: fila.proveedor?.trim() || '',
             costo: costo,
             precio_detal: precioDetal,
             precio_mayor: precioMayor,
+            talla: fila.talla?.trim() || '',
+            color: fila.color?.trim() || '',
             cantidad: cantidad,
             errores: errores,
             valida: errores.length === 0

@@ -1131,14 +1131,21 @@
 
                             <!-- Formato obligatorio -->
                             <div class="alert alert-info text-start mb-4">
-                                <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Formato Obligatorio del Excel</h6>
-                                <p class="mb-2">La primera fila debe contener exactamente estos encabezados:</p>
+                                <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Formato del Excel</h6>
+                                <p class="mb-2"><strong>Columnas obligatorias (primera fila):</strong></p>
+                                <code class="d-block bg-white p-2 rounded mb-2">
+                                    nombre | categoria | proveedor | precio_detal | precio_mayor | talla | color | cantidad
+                                </code>
+                                <p class="mb-2 mt-2"><strong>Columnas opcionales:</strong></p>
                                 <code class="d-block bg-white p-2 rounded">
-                                    nombre | descripcion | categoria | proveedor | costo | precio_detal | precio_mayor | talla | color | cantidad
+                                    descripcion | costo
                                 </code>
                                 <small class="text-muted d-block mt-2">
+                                    • Si no incluyes <strong>costo</strong>, se calculará automáticamente como el 50% del precio_detal<br>
+                                    • Si no incluyes <strong>descripcion</strong>, quedará vacía<br>
                                     • Cada fila representa una variación del producto<br>
-                                    • Los campos vacíos en talla/color se permiten para productos sin variaciones
+                                    • Los campos vacíos en talla/color se permiten para productos sin variaciones<br>
+                                    • Los nombres de columnas no distinguen mayúsculas/minúsculas
                                 </small>
                             </div>
 
