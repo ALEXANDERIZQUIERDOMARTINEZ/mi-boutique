@@ -8239,31 +8239,56 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         mostrarLoader('Validando duplicados en inventario...', 80);
 
         try {
+            // Asegurar que tenemos las categorías y proveedores cargados
+            if (categoriasMap.size === 0 || proveedoresMap.size === 0) {
+                await cargarDatosIniciales();
+            }
+
             // Cargar todos los productos existentes
             const snapshot = await getDocs(productsCollection);
             productosExistentes = [];
 
             snapshot.forEach(docSnap => {
                 const data = docSnap.data();
+
+                // Convertir IDs a nombres
+                const categoriaNombre = categoriasMap.get(data.categoriaId)?.nombre || '';
+                const proveedorNombre = proveedoresMap.get(data.proveedorId)?.nombre || '';
+
                 productosExistentes.push({
                     id: docSnap.id,
-                    nombre: data.nombre?.toLowerCase(),
-                    categoria: data.categoriaId?.toLowerCase(),
-                    proveedor: data.proveedorId?.toLowerCase(),
+                    nombre: data.nombre?.toLowerCase().trim(),
+                    categoria: categoriaNombre.toLowerCase().trim(),
+                    proveedor: proveedorNombre.toLowerCase().trim(),
+                    categoriaId: data.categoriaId,
+                    proveedorId: data.proveedorId,
+                    stock: data.stock,
+                    variaciones: data.variaciones,
                     ...data
                 });
             });
 
+            console.log(`✅ Productos existentes cargados: ${productosExistentes.length}`);
+
             // Marcar duplicados
             productos.forEach(producto => {
+                const nombreNorm = producto.nombre.toLowerCase().trim();
+                const categoriaNorm = producto.categoria.toLowerCase().trim();
+                const proveedorNorm = producto.proveedor.toLowerCase().trim();
+
                 const duplicado = productosExistentes.find(existente =>
-                    existente.nombre === producto.nombre.toLowerCase() &&
-                    existente.categoria === producto.categoria.toLowerCase() &&
-                    existente.proveedor === producto.proveedor.toLowerCase()
+                    existente.nombre === nombreNorm &&
+                    existente.categoria === categoriaNorm &&
+                    existente.proveedor === proveedorNorm
                 );
+
+                if (duplicado) {
+                    console.log(`🔍 Duplicado detectado: ${producto.nombre} (${producto.categoria} - ${producto.proveedor})`);
+                }
 
                 producto.esDuplicado = !!duplicado;
                 producto.productoExistenteId = duplicado?.id;
+                producto.productoExistente = duplicado;
                 producto.accionDuplicado = 'sumar'; // Por defecto: sumar stock
             });
 
@@ -8613,18 +8638,48 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         contenedor.innerHTML = '';
 
         duplicados.forEach((producto, index) => {
+            const productoExistente = producto.productoExistente;
+
+            // Calcular stock actual
+            let stockActual = 0;
+            if (productoExistente.variaciones && productoExistente.variaciones.length > 0) {
+                stockActual = productoExistente.variaciones.reduce((sum, v) => sum + (v.stock || 0), 0);
+            } else {
+                stockActual = productoExistente.stock || 0;
+            }
+
+            // Calcular unidades a agregar
+            const unidadesNuevas = producto.variaciones.reduce((sum, v) => sum + v.cantidad, 0);
+
             const div = document.createElement('div');
-            div.className = 'card mb-2';
+            div.className = 'card mb-2 border-warning';
             div.innerHTML = `
                 <div class="card-body p-3">
-                    <h6 class="mb-2">${producto.nombre}</h6>
-                    <small class="text-muted">Categoría: ${producto.categoria} | Proveedor: ${producto.proveedor}</small>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="mb-1">${producto.nombre}</h6>
+                            <small class="text-muted d-block">Categoría: ${producto.categoria} | Proveedor: ${producto.proveedor}</small>
+                        </div>
+                        <span class="badge bg-warning text-dark">Duplicado</span>
+                    </div>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Stock actual:</small>
+                            <strong class="text-primary">${stockActual} unidades</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">A cargar:</small>
+                            <strong class="text-success">+${unidadesNuevas} unidades</strong>
+                        </div>
+                    </div>
+
                     <div class="mt-2">
-                        <label class="form-label">Acción:</label>
+                        <label class="form-label mb-1"><strong>¿Qué deseas hacer?</strong></label>
                         <select class="form-select form-select-sm" data-duplicado-index="${index}">
-                            <option value="sumar">Sumar al stock existente</option>
-                            <option value="reemplazar">Reemplazar stock</option>
-                            <option value="omitir">Omitir producto</option>
+                            <option value="sumar">✅ Sumar al stock existente (Stock final: ${stockActual + unidadesNuevas})</option>
+                            <option value="reemplazar">🔄 Reemplazar stock (Stock final: ${unidadesNuevas})</option>
+                            <option value="omitir">❌ Omitir este producto</option>
                         </select>
                     </div>
                 </div>
@@ -8655,24 +8710,65 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                     // Actualizar producto existente
                     const productoRef = doc(db, 'productos', producto.productoExistenteId);
-                    const snapshot = await getDoc(productoRef);
-                    const data = snapshot.data();
+                    const productoExistente = producto.productoExistente;
 
-                    if (producto.accionDuplicado === 'sumar') {
-                        // Sumar stock
-                        const stockActual = data.stock || 0;
-                        const nuevoStock = stockActual + producto.variaciones.reduce((sum, v) => sum + v.cantidad, 0);
-                        await updateDoc(productoRef, { stock: nuevoStock });
-                    } else if (producto.accionDuplicado === 'reemplazar') {
-                        // Reemplazar stock
-                        const nuevoStock = producto.variaciones.reduce((sum, v) => sum + v.cantidad, 0);
-                        await updateDoc(productoRef, { stock: nuevoStock });
+                    // Verificar si el producto existente tiene variaciones
+                    const tieneVariaciones = productoExistente.variaciones && productoExistente.variaciones.length > 0;
+
+                    if (tieneVariaciones) {
+                        // Producto con variaciones: actualizar cada variación
+                        const variacionesActuales = [...productoExistente.variaciones];
+
+                        producto.variaciones.forEach(nuevaVar => {
+                            const tallaVar = nuevaVar.talla || 'Única';
+                            const colorVar = nuevaVar.color || 'Único';
+
+                            // Buscar si la variación ya existe
+                            const indexExistente = variacionesActuales.findIndex(v =>
+                                v.talla === tallaVar && v.color === colorVar
+                            );
+
+                            if (indexExistente >= 0) {
+                                // Variación existe: sumar o reemplazar
+                                if (producto.accionDuplicado === 'sumar') {
+                                    variacionesActuales[indexExistente].stock += nuevaVar.cantidad;
+                                } else if (producto.accionDuplicado === 'reemplazar') {
+                                    variacionesActuales[indexExistente].stock = nuevaVar.cantidad;
+                                }
+                            } else {
+                                // Variación no existe: agregar nueva
+                                variacionesActuales.push({
+                                    talla: tallaVar,
+                                    color: colorVar,
+                                    stock: nuevaVar.cantidad,
+                                    sku: `${producto.productoExistenteId.substring(0, 6).toUpperCase()}-${tallaVar}-${colorVar}`
+                                });
+                            }
+                        });
+
+                        await updateDoc(productoRef, {
+                            variaciones: variacionesActuales
+                        });
+
+                    } else {
+                        // Producto sin variaciones: actualizar stock general
+                        if (producto.accionDuplicado === 'sumar') {
+                            const stockActual = productoExistente.stock || 0;
+                            const nuevoStock = stockActual + producto.variaciones.reduce((sum, v) => sum + v.cantidad, 0);
+                            await updateDoc(productoRef, { stock: nuevoStock });
+                        } else if (producto.accionDuplicado === 'reemplazar') {
+                            const nuevoStock = producto.variaciones.reduce((sum, v) => sum + v.cantidad, 0);
+                            await updateDoc(productoRef, { stock: nuevoStock });
+                        }
                     }
+
+                    console.log(`✅ Actualizado: ${producto.nombre} (${producto.accionDuplicado})`);
 
                 } else {
                     // Crear nuevo producto
                     const productoId = await guardarProductoFirestore(producto);
                     await guardarVariacionesFirestore(productoId, producto.variaciones);
+                    console.log(`✅ Creado: ${producto.nombre}`);
                 }
 
                 contador++;
