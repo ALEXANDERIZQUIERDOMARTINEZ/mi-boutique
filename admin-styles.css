@@ -2094,3 +2094,124 @@ body.admin-page {
     width: 100%;
     justify-content: center;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ESTILOS PARA CARGUE MASIVO DE PRODUCTOS
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Contenedor del loader animado */
+.cargue-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loader-content {
+    background: white;
+    padding: 3rem;
+    border-radius: 1rem;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Estilos para la tabla de vista previa */
+#tabla-vista-previa {
+    font-size: 0.875rem;
+}
+
+#tabla-vista-previa thead {
+    position: sticky;
+    top: 0;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#tabla-vista-previa tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+#tabla-vista-previa td[contenteditable="true"] {
+    cursor: text;
+    transition: background-color 0.2s;
+}
+
+#tabla-vista-previa td[contenteditable="true"]:hover {
+    background-color: #e9ecef;
+}
+
+#tabla-vista-previa td[contenteditable="true"]:focus {
+    background-color: #fff3cd;
+    outline: 2px solid #ffc107;
+}
+
+/* Filas con errores */
+#tabla-vista-previa .table-danger td {
+    background-color: #f8d7da !important;
+}
+
+/* Pasos del wizard */
+.cargue-paso {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Iconos grandes */
+.bi-cloud-upload {
+    color: var(--admin-primario);
+}
+
+/* Cards de resumen */
+#paso-confirmacion .alert {
+    border-left: 4px solid var(--admin-primario);
+}
+
+/* Botones del módulo */
+#cargue-masivo .btn-primary {
+    background-color: var(--admin-primario);
+    border-color: var(--admin-primario);
+}
+
+#cargue-masivo .btn-primary:hover {
+    background-color: var(--admin-primario-hover);
+    border-color: var(--admin-primario-hover);
+}
+
+/* Tabla responsiva */
+.table-responsive {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+}
+
+/* Mensajes de formato */
+#cargue-masivo code {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+}
+
+/* Progress bar personalizada */
+#cargue-masivo .progress {
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+#cargue-masivo .progress-bar {
+    font-weight: bold;
+    font-size: 1rem;
+}
