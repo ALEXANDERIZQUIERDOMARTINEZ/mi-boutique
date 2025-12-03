@@ -15,6 +15,9 @@
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
 
+    <!-- SheetJS para leer archivos Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
     </head>
 <body class="admin-page">
 
@@ -65,7 +68,7 @@
                     </a>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" href="#productos" data-bs-toggle="pill"><i class="bi bi-grid"></i>Productos</a></li>
-                        <li><a class="dropdown-item" href="#entrada-productos" data-bs-toggle="pill"><i class="bi bi-box-arrow-in-down"></i>Entrada de Productos</a></li>
+                        <li><a class="dropdown-item" href="#cargue-masivo" data-bs-toggle="pill"><i class="bi bi-file-earmark-excel"></i>Cargue Masivo</a></li>
                         <li><a class="dropdown-item" href="#categorias" data-bs-toggle="pill"><i class="bi bi-tags"></i>Categorías</a></li>
                     </ul>
                 </li>
@@ -1104,139 +1107,187 @@
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════════════
-                 SECCIÓN ENTRADA DE PRODUCTOS
+                 SECCIÓN CARGUE MASIVO DE PRODUCTOS DESDE EXCEL
                  ═══════════════════════════════════════════════════════════════════ -->
-            <div class="tab-pane fade" id="entrada-productos">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h1 class="h2 mb-0"><i class="bi bi-box-arrow-in-down me-2"></i>Entrada de Productos</h1>
-                    <button type="button" class="btn btn-success btn-lg" id="btn-finalizar-entrada" disabled>
-                        <i class="bi bi-check-circle me-2"></i>Finalizar Entrada
-                    </button>
+            <div class="tab-pane fade" id="cargue-masivo">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h2 mb-0">
+                        <i class="bi bi-file-earmark-excel me-2"></i>Cargue Masivo de Productos
+                    </h1>
                 </div>
 
-                <!-- PANTALLA DIVIDIDA -->
-                <div class="row g-3" style="height: calc(100vh - 200px);">
-                    <!-- PANEL IZQUIERDO: Catálogo y Búsqueda -->
-                    <div class="col-lg-7">
-                        <div class="card shadow-sm h-100 d-flex flex-column">
-                            <div class="card-body p-3">
-                                <!-- SMART SEARCH -->
-                                <div class="mb-3 position-relative">
-                                    <input type="text"
-                                           class="form-control form-control-lg"
-                                           id="entrada-buscar-producto"
-                                           placeholder="Buscar producto o crear nuevo..."
-                                           autocomplete="off">
-                                    <div id="entrada-crear-nuevo" style="display: none;" class="mt-2">
-                                        <button type="button" class="btn btn-primary w-100" id="btn-crear-producto">
-                                            <i class="bi bi-plus-circle me-2"></i>Crear "<span id="texto-nuevo-producto"></span>"
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- CUADRÍCULA DE PRODUCTOS -->
-                                <div id="entrada-grid-productos" class="overflow-auto" style="flex: 1; max-height: calc(100vh - 320px);">
-                                    <div class="row g-2" id="productos-grid-container">
-                                        <!-- Los productos se cargan aquí -->
-                                    </div>
-                                </div>
+                <!-- PASO 1: SUBIR ARCHIVO -->
+                <div id="paso-subir" class="cargue-paso active">
+                    <div class="card shadow-sm">
+                        <div class="card-body p-5 text-center">
+                            <div class="mb-4">
+                                <i class="bi bi-cloud-upload text-primary" style="font-size: 4rem;"></i>
                             </div>
-                        </div>
-                    </div>
+                            <h3 class="mb-3">Paso 1: Subir Archivo Excel</h3>
+                            <p class="text-muted mb-4">
+                                Sube un archivo .xlsx o .csv con tus productos.
+                                La primera fila debe contener los encabezados obligatorios.
+                            </p>
 
-                    <!-- PANEL DERECHO: Lista de Productos Agregados -->
-                    <div class="col-lg-5">
-                        <div class="card shadow-sm h-100 d-flex flex-column">
-                            <div class="card-header bg-white border-0 pt-3">
-                                <h5 class="mb-0"><i class="bi bi-cart-plus me-2"></i>Productos a Ingresar</h5>
+                            <!-- Formato obligatorio -->
+                            <div class="alert alert-info text-start mb-4">
+                                <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Formato Obligatorio del Excel</h6>
+                                <p class="mb-2">La primera fila debe contener exactamente estos encabezados:</p>
+                                <code class="d-block bg-white p-2 rounded">
+                                    nombre | descripcion | categoria | proveedor | costo | precio_detal | precio_mayor | talla | color | cantidad
+                                </code>
+                                <small class="text-muted d-block mt-2">
+                                    • Cada fila representa una variación del producto<br>
+                                    • Los campos vacíos en talla/color se permiten para productos sin variaciones
+                                </small>
                             </div>
-                            <div class="card-body p-3 overflow-auto flex-grow-1">
-                                <div id="entrada-lista-agregados">
-                                    <div class="text-center text-muted py-5">
-                                        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
-                                        <p>Selecciona productos del catálogo</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- MODAL: Crear Nuevo Producto -->
-            <div class="modal fade" id="modalCrearProducto" tabindex="-1" aria-labelledby="modalCrearProductoLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalCrearProductoLabel">Crear Nuevo Producto</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="form-crear-producto-entrada">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label for="nuevo-producto-nombre" class="form-label">Nombre *</label>
-                                        <input type="text" class="form-control" id="nuevo-producto-nombre" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="nuevo-producto-precio" class="form-label">Precio *</label>
-                                        <input type="number" class="form-control" id="nuevo-producto-precio" min="0" step="100" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="nuevo-producto-categoria" class="form-label">Categoría</label>
-                                        <select class="form-select" id="nuevo-producto-categoria">
-                                            <option value="">Seleccionar categoría...</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="nuevo-producto-imagen" class="form-label">Imagen</label>
-                                        <input type="file" class="form-control" id="nuevo-producto-imagen" accept="image/*">
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="nuevo-producto-tiene-variaciones">
-                                            <label class="form-check-label" for="nuevo-producto-tiene-variaciones">
-                                                Tiene Variaciones
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-12" id="variaciones-container-nuevo" style="display: none;">
-                                        <label class="form-label">Variaciones (separadas por comas)</label>
-                                        <div class="row g-2">
-                                            <div class="col-md-6">
-                                                <input type="text" class="form-control" id="nuevo-producto-tallas" placeholder="Ej: S, M, L, XL">
-                                                <small class="text-muted">Tallas</small>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <input type="text" class="form-control" id="nuevo-producto-colores" placeholder="Ej: Rojo, Azul, Negro">
-                                                <small class="text-muted">Colores</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="button" class="btn btn-primary" id="btn-guardar-nuevo-producto">
-                                <i class="bi bi-save me-2"></i>Crear y Agregar
+                            <input type="file"
+                                   id="input-archivo-excel"
+                                   accept=".xlsx,.xls,.csv"
+                                   style="display: none;">
+
+                            <button type="button" class="btn btn-primary btn-lg" id="btn-seleccionar-archivo">
+                                <i class="bi bi-folder2-open me-2"></i>Seleccionar Archivo
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- MODAL: Seleccionar Variación -->
-            <div class="modal fade" id="modalSeleccionarVariacion" tabindex="-1" aria-labelledby="modalSeleccionarVariacionLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalSeleccionarVariacionLabel">Seleccionar Variación</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <!-- PASO 2: VISTA PREVIA Y EDICIÓN -->
+                <div id="paso-vista-previa" class="cargue-paso" style="display: none;">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                            <h5 class="mb-0">
+                                <i class="bi bi-table me-2"></i>Paso 2: Vista Previa y Validación
+                            </h5>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary me-2" id="btn-cancelar-cargue">
+                                    <i class="bi bi-x-circle me-1"></i>Cancelar
+                                </button>
+                                <button type="button" class="btn btn-success" id="btn-procesar-datos" disabled>
+                                    <i class="bi bi-check-circle me-1"></i>Procesar Datos
+                                </button>
+                            </div>
                         </div>
-                        <div class="modal-body">
-                            <div id="variaciones-selector">
-                                <!-- Las variaciones se cargan aquí -->
+                        <div class="card-body p-0">
+                            <!-- Resumen de archivo -->
+                            <div class="p-3 bg-light border-bottom">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Archivo:</small>
+                                        <strong id="nombre-archivo">-</strong>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Total Filas:</small>
+                                        <strong id="total-filas">0</strong>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Filas Válidas:</small>
+                                        <strong class="text-success" id="filas-validas">0</strong>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted d-block">Filas con Errores:</small>
+                                        <strong class="text-danger" id="filas-errores">0</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tabla editable -->
+                            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                                <table class="table table-hover table-sm mb-0" id="tabla-vista-previa">
+                                    <thead class="sticky-top bg-white" style="top: 0; z-index: 10;">
+                                        <tr>
+                                            <th width="40">#</th>
+                                            <th>Nombre</th>
+                                            <th>Descripción</th>
+                                            <th>Categoría</th>
+                                            <th>Proveedor</th>
+                                            <th width="100">Costo</th>
+                                            <th width="100">P. Detal</th>
+                                            <th width="100">P. Mayor</th>
+                                            <th width="80">Talla</th>
+                                            <th width="80">Color</th>
+                                            <th width="80">Cantidad</th>
+                                            <th width="60">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-vista-previa">
+                                        <!-- Las filas se cargan dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 3: CONFIRMACIÓN Y DUPLICADOS -->
+                <div id="paso-confirmacion" class="cargue-paso" style="display: none;">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>Paso 3: Confirmación y Duplicados
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- Resumen de productos agrupados -->
+                            <div class="alert alert-info mb-4">
+                                <h6 class="alert-heading">Resumen de Productos Procesados</h6>
+                                <div class="row mt-3">
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Total Productos:</small>
+                                        <strong id="resumen-total-productos">0</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Total Variaciones:</small>
+                                        <strong id="resumen-total-variaciones">0</strong>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Total Unidades:</small>
+                                        <strong id="resumen-total-unidades">0</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Productos duplicados -->
+                            <div id="seccion-duplicados" style="display: none;">
+                                <div class="alert alert-warning">
+                                    <h6 class="alert-heading">
+                                        <i class="bi bi-exclamation-circle me-2"></i>Productos Duplicados Detectados
+                                    </h6>
+                                    <p class="mb-0">Los siguientes productos ya existen en el inventario. Selecciona una acción:</p>
+                                </div>
+                                <div id="lista-duplicados" class="mb-4">
+                                    <!-- Se llenan dinámicamente -->
+                                </div>
+                            </div>
+
+                            <!-- Botones de acción -->
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary" id="btn-volver-edicion">
+                                    <i class="bi bi-arrow-left me-1"></i>Volver a Editar
+                                </button>
+                                <button type="button" class="btn btn-success btn-lg" id="btn-confirmar-carga">
+                                    <i class="bi bi-check-circle me-2"></i>Confirmar Carga al Inventario
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOADER ANIMADO -->
+                <div id="cargue-loader" class="cargue-loader" style="display: none;">
+                    <div class="loader-content">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 4rem; height: 4rem;">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <h4 id="loader-mensaje">Procesando...</h4>
+                        <div class="progress mt-3" style="height: 30px; width: 300px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                 role="progressbar"
+                                 id="loader-progreso"
+                                 style="width: 0%;">
+                                <span id="loader-porcentaje">0%</span>
                             </div>
                         </div>
                     </div>
