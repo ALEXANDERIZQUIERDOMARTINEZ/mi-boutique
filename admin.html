@@ -245,6 +245,31 @@
                     </div>
                 </div>
 
+                <!-- Sección: Herramientas del Catálogo -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-lg-8">
+                                <div class="d-flex align-items-center mb-3 mb-lg-0">
+                                    <div class="icon-badge bg-primary me-3" style="width: 50px; height: 50px;">
+                                        <i class="bi bi-file-pdf" style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1 fw-bold">Catálogo en PDF</h5>
+                                        <p class="text-muted mb-0 small">Descarga el catálogo completo para compartir por WhatsApp sin necesidad de internet</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 text-lg-end">
+                                <button class="btn btn-primary btn-lg" id="btn-descargar-catalogo-pdf">
+                                    <i class="bi bi-download me-2"></i>
+                                    Descargar catálogo en PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Sección: Inversión e Inventario -->
                 <div class="mb-3">
                     <h5 class="text-muted fw-light"><i class="bi bi-box-seam me-2"></i>Inversión e Inventario</h5>
@@ -2390,7 +2415,10 @@
 
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    
+
+    <!-- html2pdf.js para generar PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <!-- Script para manejar el sidebar toggle en móvil (funciona independientemente) -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -2429,8 +2457,11 @@
             }
         });
     </script>
-    
+
     <script type="module" src="admin.js?v=2.4.4"></script>
+
+    <!-- Script para generar catálogo en PDF -->
+    <script type="module" src="catalogoPDF.js?v=1.0.0"></script>
 
     <!-- Script para cerrar navegación móvil al hacer clic en un enlace -->
     <script>
