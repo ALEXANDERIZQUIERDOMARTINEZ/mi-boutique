@@ -505,11 +505,20 @@
                                 <div id="variaciones-container"> </div> 
                                 <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir</button> 
                                 <hr class="my-4"> 
-                                <div class="row"> 
-                                    <div class="col-md-8 mb-3"> <label for="imagen" class="form-label">Fotos:</label> <input type="file" class="form-control" id="imagen" accept="image/*" multiple> <small class="text-muted" id="image-upload-label">La 1ra será la principal. Si editas y no subes una nueva, se mantendrá la anterior.</small> </div> 
-                                    <div class="col-md-4 d-flex align-items-center"> 
-                                        <div class="form-check form-switch fs-5 w-100"> <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked> <label class="form-check-label" for="visibilidad">Visible</label> </div> 
-                                    </div> 
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <label for="imagen" class="form-label">Fotos:</label>
+                                        <input type="file" class="form-control" id="imagen" accept="image/*" multiple>
+                                        <small class="text-muted" id="image-upload-label">La 1ra será la principal. Si editas y no subes una nueva, se mantendrá la anterior.</small>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label d-block">Visibilidad en Tienda:</label>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked style="width: 3em; height: 1.5em;">
+                                            <label class="form-check-label ms-2" for="visibilidad" style="font-size: 1.1rem; font-weight: 500;">Visible</label>
+                                        </div>
+                                        <small class="text-muted d-block mt-1">Activa para mostrar en catálogo público</small>
+                                    </div>
                                 </div> 
                                 <hr class="my-4"> 
                                 <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> 
