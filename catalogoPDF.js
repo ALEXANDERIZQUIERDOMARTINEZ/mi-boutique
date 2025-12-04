@@ -332,6 +332,12 @@ async function leerProductosDesdeFirebase() {
 
         snapshot.forEach(doc => {
             const product = { ...doc.data(), id: doc.id };
+
+            // 🔍 DEBUG: Ver qué URL de imagen tiene cada producto
+            console.log(`📦 Producto: ${product.nombre}`);
+            console.log(`   🖼️  URL imagen: "${product.imagen || 'NO TIENE'}"`);
+            console.log(`   🔗 Tipo: ${typeof product.imagen}`);
+
             productos.push(product);
         });
 
@@ -394,33 +400,41 @@ function construirHTMLCatalogo(productos) {
 const PLACEHOLDER_SVG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5TaW4gSW1hZ2VuPC90ZXh0Pjwvc3ZnPg==';
 
 // 🛡️ FUNCIÓN: Validar y sanitizar URL de imagen
-function validarUrlImagen(url) {
+function validarUrlImagen(url, nombreProducto = 'Desconocido') {
+    console.log(`🔍 VALIDANDO IMAGEN para: ${nombreProducto}`);
+    console.log(`   📥 URL recibida: "${url}"`);
+    console.log(`   📊 Tipo: ${typeof url}`);
+
     // Si no hay URL, usar placeholder SVG embebido
     if (!url || typeof url !== 'string' || url.trim() === '') {
+        console.warn(`   ❌ RECHAZADA: URL vacía o no es string`);
         return PLACEHOLDER_SVG;
     }
 
     // Si la URL no comienza con http:// o https://, es inválida
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        console.warn(`⚠️ URL de imagen inválida: ${url} - Usando placeholder`);
+    if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('data:')) {
+        console.warn(`   ❌ RECHAZADA: No tiene protocolo http/https/data`);
         return PLACEHOLDER_SVG;
     }
 
     // Validar que sea una URL válida
     try {
-        new URL(url);
+        if (!url.startsWith('data:')) {
+            new URL(url);
+        }
+        console.log(`   ✅ ACEPTADA: URL válida`);
         return url;
     } catch (error) {
-        console.warn(`⚠️ URL de imagen malformada: ${url} - Usando placeholder`);
+        console.warn(`   ❌ RECHAZADA: URL malformada - ${error.message}`);
         return PLACEHOLDER_SVG;
     }
 }
 
 // 🎴 FUNCIÓN: Construir tarjeta individual de producto (basado en index.html)
 function construirTarjetaProducto(producto) {
-    // Validar y sanitizar URL de imagen
-    const imgUrl = validarUrlImagen(producto.imagen);
     const nombre = producto.nombre || 'Sin nombre';
+    // Validar y sanitizar URL de imagen
+    const imgUrl = validarUrlImagen(producto.imagen, nombre);
     const descripcion = producto.descripcion || '';
     const precioDetal = parseFloat(producto.precioDetal) || 0;
     const precioMayor = parseFloat(producto.precioMayor) || 0;
