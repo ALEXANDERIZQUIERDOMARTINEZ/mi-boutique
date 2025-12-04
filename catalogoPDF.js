@@ -335,8 +335,10 @@ async function leerProductosDesdeFirebase() {
 
             // 🔍 DEBUG: Ver qué URL de imagen tiene cada producto
             console.log(`📦 Producto: ${product.nombre}`);
-            console.log(`   🖼️  URL imagen: "${product.imagen || 'NO TIENE'}"`);
-            console.log(`   🔗 Tipo: ${typeof product.imagen}`);
+            console.log(`   🖼️  URL imagen (campo 'imagen'): "${product.imagen || 'NO TIENE'}"`);
+            console.log(`   🖼️  URL imagenUrl (campo 'imagenUrl'): "${product.imagenUrl || 'NO TIENE'}"`);
+            console.log(`   🔗 Tipo imagen: ${typeof product.imagen}`);
+            console.log(`   🔗 Tipo imagenUrl: ${typeof product.imagenUrl}`);
 
             productos.push(product);
         });
@@ -433,8 +435,8 @@ function validarUrlImagen(url, nombreProducto = 'Desconocido') {
 // 🎴 FUNCIÓN: Construir tarjeta individual de producto (basado en index.html)
 function construirTarjetaProducto(producto) {
     const nombre = producto.nombre || 'Sin nombre';
-    // Validar y sanitizar URL de imagen
-    const imgUrl = validarUrlImagen(producto.imagen, nombre);
+    // Validar y sanitizar URL de imagen (usar imagenUrl que es el campo correcto en Firebase)
+    const imgUrl = validarUrlImagen(producto.imagenUrl || producto.imagen, nombre);
     const descripcion = producto.descripcion || '';
     const precioDetal = parseFloat(producto.precioDetal) || 0;
     const precioMayor = parseFloat(producto.precioMayor) || 0;
