@@ -314,6 +314,8 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: var(--radio-md);
     padding: 0.5rem;
     min-width: 220px;
+    max-height: none;
+    overflow-y: visible;
 }
 
 .dropdown-menu-enhanced .dropdown-item {
@@ -357,6 +359,33 @@ h1, h2, h3, h4, h5, h6 {
 
     #category-dropdown-button {
         width: 100%;
+    }
+
+    /* Dropdown de categorías con scroll en móvil */
+    .dropdown-menu-enhanced {
+        max-height: 60vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Scrollbar personalizado para el dropdown en móvil */
+    .dropdown-menu-enhanced::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .dropdown-menu-enhanced::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .dropdown-menu-enhanced::-webkit-scrollbar-thumb {
+        background: var(--color-primario);
+        border-radius: 10px;
+    }
+
+    .dropdown-menu-enhanced::-webkit-scrollbar-thumb:hover {
+        background: var(--color-primario-oscuro);
     }
 
     .search-box {
