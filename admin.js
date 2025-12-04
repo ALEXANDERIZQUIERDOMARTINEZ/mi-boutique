@@ -8343,7 +8343,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 precioDetal: producto.precio_detal,
                 precioMayor: producto.precio_mayor,
                 codigo: codigo,
-                visible: true,
+                visible: false, // Oculto por defecto en tienda virtual
                 timestamp: serverTimestamp(),
                 stock: 0, // Se actualiza con variaciones
                 variaciones: []
