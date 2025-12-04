@@ -297,16 +297,21 @@ function construirTarjetaProducto(producto) {
         `;
     }
 
-    // Badge de stock
+    // Badge de stock y clase especial para agotados
+    const isAgotado = stockTotal === 0;
     let stockBadge = '';
-    if (stockTotal === 0) {
+    if (isAgotado) {
         stockBadge = '<span class="badge-agotado">AGOTADO</span>';
     }
 
+    // Clase especial para imagen agotada (aplicar filtro grayscale)
+    const imagenClase = isAgotado ? 'producto-imagen producto-imagen-agotado' : 'producto-imagen';
+    const cardClase = isAgotado ? 'producto-card producto-agotado' : 'producto-card';
+
     return `
-        <div class="producto-card">
+        <div class="${cardClase}">
             <div class="producto-imagen-wrapper">
-                <img src="${imgUrl}" alt="${nombre}" class="producto-imagen" crossorigin="anonymous">
+                <img src="${imgUrl}" alt="${nombre}" class="${imagenClase}" crossorigin="anonymous">
                 ${stockBadge ? `<div class="producto-badges">${stockBadge}</div>` : ''}
             </div>
             <div class="producto-body">
@@ -407,22 +412,50 @@ function obtenerEstilosPDF() {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: filter 0.3s ease;
+        }
+
+        /* Imagen en blanco y negro cuando está agotado */
+        .producto-imagen-agotado {
+            filter: grayscale(100%) brightness(1.1);
+            opacity: 0.75;
         }
 
         .producto-badges {
             position: absolute;
-            top: 6px;
-            left: 6px;
-            z-index: 2;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            width: 100%;
+            text-align: center;
         }
 
+        /* Badge AGOTADO más grande y llamativo */
         .badge-agotado {
             background: #dc3545;
             color: white;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 9px;
-            font-weight: bold;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+            border: 3px solid white;
+            display: inline-block;
+        }
+
+        /* Overlay oscuro para productos agotados */
+        .producto-agotado .producto-imagen-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.15);
+            z-index: 2;
         }
 
         .producto-body {
