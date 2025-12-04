@@ -118,6 +118,10 @@ async function generarCatalogoPDF() {
 
         console.log(`✅ ${productos.length} productos cargados`);
 
+        // Limitar productos para testing (opcional - comentar/descomentar según necesites)
+        // const productosLimitados = productos.slice(0, 20);
+        // console.log(`⚠️ MODO TEST: Limitado a ${productosLimitados.length} productos`);
+
         // 2. Construir HTML del catálogo
         console.log('🎨 Construyendo catálogo HTML...');
         const htmlCatalogo = construirHTMLCatalogo(productos);
@@ -135,23 +139,24 @@ async function generarCatalogoPDF() {
         // Esperar un momento para que se renderice el contenedor
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // 4. Generar PDF usando html2pdf con opciones optimizadas
+        // 4. Generar PDF usando html2pdf con opciones SIMPLIFICADAS
         console.log('📄 Generando PDF (esto puede tomar unos segundos)...');
+        console.log(`📊 Procesando ${productos.length} productos...`);
+
         const opciones = {
             margin: [8, 8, 8, 8],
             filename: 'catalogo-mishell.pdf',
             image: {
                 type: 'jpeg',
-                quality: 0.75
+                quality: 0.7
             },
             html2canvas: {
-                scale: 1.5,
-                useCORS: true,
-                logging: false,
-                allowTaint: false,
-                letterRendering: true,
-                imageTimeout: 15000,
-                removeContainer: false
+                scale: 1.2,
+                useCORS: false,
+                allowTaint: true,
+                logging: true,
+                imageTimeout: 0,
+                backgroundColor: '#ffffff'
             },
             jsPDF: {
                 unit: 'mm',
@@ -160,20 +165,28 @@ async function generarCatalogoPDF() {
                 compress: true
             },
             pagebreak: {
-                mode: ['avoid-all', 'css', 'legacy'],
-                avoid: ['.producto-card']
+                mode: 'avoid-all',
+                avoid: '.producto-card'
             }
         };
 
-        console.log('⏳ Procesando contenido...');
+        console.log('⏳ Procesando contenido (esto puede tomar 10-60 segundos)...');
+
+        // Crear promesa del PDF
         const pdfPromise = html2pdf().set(opciones).from(contenedor).save();
 
-        // Timeout de 60 segundos
+        // Timeout de 120 segundos (2 minutos)
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout: La generación del PDF tomó demasiado tiempo')), 60000)
+            setTimeout(() => {
+                console.error('❌ Timeout alcanzado después de 120 segundos');
+                reject(new Error('Timeout: La generación del PDF tomó demasiado tiempo. Intenta con menos productos.'));
+            }, 120000)
         );
 
+        // Esperar a que termine o timeout
         await Promise.race([pdfPromise, timeoutPromise]);
+
+        console.log('✅ PDF procesado exitosamente');
 
         // 5. Limpiar
         console.log('🧹 Limpiando...');
