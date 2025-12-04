@@ -130,10 +130,32 @@ async function generarCatalogoPDF() {
         console.log('🎨 Creando contenedor temporal...');
         const contenedor = document.createElement('div');
         contenedor.innerHTML = htmlCatalogo;
-        contenedor.style.position = 'absolute';
-        contenedor.style.left = '-9999px';
+        contenedor.style.position = 'fixed';
         contenedor.style.top = '0';
-        contenedor.style.width = '210mm'; // Ancho A4
+        contenedor.style.left = '0';
+        contenedor.style.width = '210mm';
+        contenedor.style.zIndex = '99999';
+        contenedor.style.backgroundColor = 'white';
+        contenedor.style.overflow = 'auto';
+        contenedor.style.maxHeight = '100vh';
+
+        // Overlay oscuro para que el usuario sepa que está procesando
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backgroundColor = 'rgba(0,0,0,0.8)';
+        overlay.style.zIndex = '99998';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.color = 'white';
+        overlay.style.fontSize = '24px';
+        overlay.innerHTML = '<div><i class="bi bi-hourglass-split"></i> Generando PDF...</div>';
+
+        document.body.appendChild(overlay);
         document.body.appendChild(contenedor);
 
         // Esperar un momento para que se renderice el contenedor
@@ -231,6 +253,9 @@ async function generarCatalogoPDF() {
         if (contenedor && contenedor.parentNode) {
             document.body.removeChild(contenedor);
         }
+        if (overlay && overlay.parentNode) {
+            document.body.removeChild(overlay);
+        }
         console.log('✅ PDF generado correctamente');
 
         // Mostrar mensaje de éxito
@@ -239,10 +264,14 @@ async function generarCatalogoPDF() {
     } catch (error) {
         console.error('❌ Error al generar PDF:', error);
 
-        // Limpiar contenedor si existe
-        const contenedor = document.querySelector('body > div[style*="-9999px"]');
+        // Limpiar contenedor y overlay si existen
+        const contenedor = document.querySelector('body > div[style*="z-index: 99999"]');
         if (contenedor && contenedor.parentNode) {
             document.body.removeChild(contenedor);
+        }
+        const overlay = document.querySelector('body > div[style*="z-index: 99998"]');
+        if (overlay && overlay.parentNode) {
+            document.body.removeChild(overlay);
         }
 
         // Mensaje de error más informativo
