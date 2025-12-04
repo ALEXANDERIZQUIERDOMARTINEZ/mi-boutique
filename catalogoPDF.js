@@ -141,32 +141,52 @@ async function generarCatalogoPDF() {
 
         // 4. Generar PDF usando html2pdf con opciones SIMPLIFICADAS
         console.log('📄 Generando PDF (esto puede tomar unos segundos)...');
-        console.log(`📊 Procesando ${productos.length} productos...`);
+        console.log(`📊 Procesando ${productosLimitados.length} productos...`);
 
         const opciones = {
             margin: [8, 8, 8, 8],
             filename: 'catalogo-mishell.pdf',
             image: {
                 type: 'jpeg',
-                quality: 0.7
+                quality: 0.6
             },
             html2canvas: {
-                scale: 1.2,
+                scale: 1,
                 useCORS: false,
                 allowTaint: true,
-                logging: true,
-                imageTimeout: 0,
-                backgroundColor: '#ffffff'
+                logging: false,
+                ignoreElements: (element) => {
+                    // Ignorar imágenes que fallen
+                    if (element.tagName === 'IMG' && !element.complete) {
+                        return true;
+                    }
+                    return false;
+                },
+                onclone: (clonedDoc) => {
+                    // Reemplazar imágenes problemáticas con div gris
+                    const images = clonedDoc.querySelectorAll('img');
+                    images.forEach(img => {
+                        if (!img.complete || img.naturalHeight === 0) {
+                            const div = clonedDoc.createElement('div');
+                            div.style.width = '100%';
+                            div.style.height = '150px';
+                            div.style.backgroundColor = '#e0e0e0';
+                            div.style.display = 'flex';
+                            div.style.alignItems = 'center';
+                            div.style.justifyContent = 'center';
+                            div.style.color = '#999';
+                            div.style.fontSize = '12px';
+                            div.textContent = 'Sin Imagen';
+                            img.parentNode.replaceChild(div, img);
+                        }
+                    });
+                }
             },
             jsPDF: {
                 unit: 'mm',
                 format: 'a4',
                 orientation: 'portrait',
                 compress: true
-            },
-            pagebreak: {
-                mode: 'avoid-all',
-                avoid: '.producto-card'
             }
         };
 
