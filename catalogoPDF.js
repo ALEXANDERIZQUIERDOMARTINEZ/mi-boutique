@@ -230,40 +230,43 @@ async function generarCatalogoPDF() {
         console.log(`📊 Procesando ${productos.length} productos...`);
 
         const opciones = {
-            margin: [8, 8, 8, 8],
+            margin: [5, 5, 5, 5],
             filename: 'catalogo-mishell.pdf',
             image: {
                 type: 'jpeg',
-                quality: 0.7
+                quality: 0.5
             },
             html2canvas: {
-                scale: 2,
+                scale: 1,
                 useCORS: false,
                 allowTaint: true,
                 logging: false,
                 backgroundColor: '#ffffff',
                 imageTimeout: 0,
-                removeContainer: false
+                removeContainer: false,
+                windowWidth: 800,
+                windowHeight: 1200
             },
             jsPDF: {
                 unit: 'mm',
                 format: 'a4',
                 orientation: 'portrait',
                 compress: true
-            }
+            },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
-        console.log('⏳ Procesando contenido (esto puede tomar 10-60 segundos)...');
+        console.log('⏳ Procesando contenido (esto puede tomar 2-5 minutos con 236 productos)...');
 
         // Crear promesa del PDF
         const pdfPromise = html2pdf().set(opciones).from(contenedor).save();
 
-        // Timeout de 120 segundos (2 minutos)
+        // Timeout de 300 segundos (5 minutos) - necesario para 236 productos
         const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => {
-                console.error('❌ Timeout alcanzado después de 120 segundos');
-                reject(new Error('Timeout: La generación del PDF tomó demasiado tiempo. Intenta con menos productos.'));
-            }, 120000)
+                console.error('❌ Timeout alcanzado después de 300 segundos');
+                reject(new Error('Timeout: La generación del PDF tomó demasiado tiempo.'));
+            }, 300000)
         );
 
         // Esperar a que termine o timeout
