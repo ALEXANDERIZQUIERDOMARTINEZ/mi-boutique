@@ -318,17 +318,20 @@ function construirHTMLCatalogo(productos) {
     `;
 }
 
+// 🛡️ PLACEHOLDER SVG embebido (evita problemas de red)
+const PLACEHOLDER_SVG = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5TaW4gSW1hZ2VuPC90ZXh0Pjwvc3ZnPg==';
+
 // 🛡️ FUNCIÓN: Validar y sanitizar URL de imagen
 function validarUrlImagen(url) {
-    // Si no hay URL, usar placeholder
+    // Si no hay URL, usar placeholder SVG embebido
     if (!url || typeof url !== 'string' || url.trim() === '') {
-        return 'https://via.placeholder.com/300x400?text=Sin+Imagen';
+        return PLACEHOLDER_SVG;
     }
 
     // Si la URL no comienza con http:// o https://, es inválida
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        console.warn(`⚠️ URL de imagen inválida: ${url}`);
-        return 'https://via.placeholder.com/300x400?text=Sin+Imagen';
+        console.warn(`⚠️ URL de imagen inválida: ${url} - Usando placeholder`);
+        return PLACEHOLDER_SVG;
     }
 
     // Validar que sea una URL válida
@@ -336,8 +339,8 @@ function validarUrlImagen(url) {
         new URL(url);
         return url;
     } catch (error) {
-        console.warn(`⚠️ URL de imagen malformada: ${url}`);
-        return 'https://via.placeholder.com/300x400?text=Sin+Imagen';
+        console.warn(`⚠️ URL de imagen malformada: ${url} - Usando placeholder`);
+        return PLACEHOLDER_SVG;
     }
 }
 
@@ -414,7 +417,7 @@ function construirTarjetaProducto(producto) {
     return `
         <div class="${cardClase}">
             <div class="producto-imagen-wrapper">
-                <img src="${imgUrl}" alt="${nombre}" class="${imagenClase}" crossorigin="anonymous">
+                <img src="${imgUrl}" alt="${nombre}" class="${imagenClase}">
                 ${stockBadge ? `<div class="producto-badges">${stockBadge}</div>` : ''}
             </div>
             <div class="producto-body">
