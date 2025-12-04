@@ -119,12 +119,12 @@ async function generarCatalogoPDF() {
         console.log(`✅ ${productos.length} productos cargados`);
 
         // Limitar productos para testing (opcional - comentar/descomentar según necesites)
-        // const productosLimitados = productos.slice(0, 20);
-        // console.log(`⚠️ MODO TEST: Limitado a ${productosLimitados.length} productos`);
+        const productosLimitados = productos.slice(0, 20);
+        console.log(`⚠️ MODO TEST: Limitado a ${productosLimitados.length} productos`);
 
         // 2. Construir HTML del catálogo
         console.log('🎨 Construyendo catálogo HTML...');
-        const htmlCatalogo = construirHTMLCatalogo(productos);
+        const htmlCatalogo = construirHTMLCatalogo(productosLimitados);
 
         // 3. Crear elemento temporal para el PDF
         console.log('🎨 Creando contenedor temporal...');
