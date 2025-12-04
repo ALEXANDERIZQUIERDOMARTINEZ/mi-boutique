@@ -261,9 +261,33 @@ function construirHTMLCatalogo(productos) {
     `;
 }
 
+// 🛡️ FUNCIÓN: Validar y sanitizar URL de imagen
+function validarUrlImagen(url) {
+    // Si no hay URL, usar placeholder
+    if (!url || typeof url !== 'string' || url.trim() === '') {
+        return 'https://via.placeholder.com/300x400?text=Sin+Imagen';
+    }
+
+    // Si la URL no comienza con http:// o https://, es inválida
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        console.warn(`⚠️ URL de imagen inválida: ${url}`);
+        return 'https://via.placeholder.com/300x400?text=Sin+Imagen';
+    }
+
+    // Validar que sea una URL válida
+    try {
+        new URL(url);
+        return url;
+    } catch (error) {
+        console.warn(`⚠️ URL de imagen malformada: ${url}`);
+        return 'https://via.placeholder.com/300x400?text=Sin+Imagen';
+    }
+}
+
 // 🎴 FUNCIÓN: Construir tarjeta individual de producto (basado en index.html)
 function construirTarjetaProducto(producto) {
-    const imgUrl = producto.imagen || 'https://via.placeholder.com/300x400?text=Sin+Imagen';
+    // Validar y sanitizar URL de imagen
+    const imgUrl = validarUrlImagen(producto.imagen);
     const nombre = producto.nombre || 'Sin nombre';
     const descripcion = producto.descripcion || '';
     const precioDetal = parseFloat(producto.precioDetal) || 0;
