@@ -333,55 +333,35 @@ function construirHTMLCatalogo(productos) {
         day: 'numeric'
     });
 
-    // Logo SVG de Mishell
-    const logoSVG = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 512 512">
-            <rect width="512" height="512" fill="#D988B9" rx="80"/>
-            <text x="256" y="320" font-family="Arial, sans-serif" font-size="200" font-weight="bold" fill="white" text-anchor="middle">M</text>
-        </svg>
-    `;
-
     // Construir tarjetas de productos
     let productosHTML = '';
     productos.forEach(producto => {
         productosHTML += construirTarjetaProducto(producto);
     });
 
-    // HTML completo del catálogo
+    // HTML SIN estilos en <style> tag - los inyectaremos después
     return `
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo Mishell</title>
-    ${obtenerEstilosPDF()}
-</head>
-<body>
+<div style="font-family: Arial, sans-serif; padding: 20px; background: white;">
     <!-- Encabezado -->
-    <div class="catalogo-header">
-        <div class="logo-container">
-            ${logoSVG}
-        </div>
-        <h1 class="catalogo-titulo">MISHELL</h1>
-        <p class="catalogo-subtitulo">Catálogo de Productos</p>
-        <p class="catalogo-fecha">Generado el ${fechaActual}</p>
+    <div style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #D988B9;">
+        <h1 style="font-size: 36px; color: #D988B9; letter-spacing: 3px; margin: 20px 0;">MISHELL</h1>
+        <p style="font-size: 16px; color: #666; margin: 5px 0;">Catálogo de Productos</p>
+        <p style="font-size: 12px; color: #999; margin: 5px 0;">Generado el ${fechaActual}</p>
     </div>
 
     <!-- Productos Grid -->
-    <div class="productos-grid">
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px;">
         ${productosHTML}
     </div>
 
     <!-- Footer -->
-    <div class="catalogo-footer">
-        <p><strong>Contacto:</strong></p>
-        <p><i>📱 WhatsApp:</i> <strong>+57 300 123 4567</strong></p>
-        <p class="footer-nota">¡Haz tu pedido por WhatsApp!</p>
-        <p class="footer-copyright">© ${new Date().getFullYear()} Mishell Boutique - Todos los derechos reservados</p>
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #D988B9;">
+        <p style="margin: 8px 0; font-size: 13px; color: #555;"><strong>Contacto:</strong></p>
+        <p style="margin: 8px 0; font-size: 13px; color: #555;">📱 WhatsApp: <strong style="color: #D988B9;">+57 300 123 4567</strong></p>
+        <p style="margin: 8px 0; font-size: 11px; color: #999; font-style: italic;">¡Haz tu pedido por WhatsApp!</p>
+        <p style="margin: 10px 0; font-size: 10px; color: #999;">© ${new Date().getFullYear()} Mishell Boutique - Todos los derechos reservados</p>
     </div>
-</body>
-</html>
+</div>
     `;
 }
 
@@ -481,20 +461,30 @@ function construirTarjetaProducto(producto) {
     const imagenClase = isAgotado ? 'producto-imagen producto-imagen-agotado' : 'producto-imagen';
     const cardClase = isAgotado ? 'producto-card producto-agotado' : 'producto-card';
 
+    // Estilos inline
+    const cardStyle = "background: white; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;";
+    const imgWrapperStyle = "position: relative; width: 100%; height: 180px; overflow: hidden; background: #f8f8f8;";
+    const imgStyle = `width: 100%; height: 100%; object-fit: cover; ${isAgotado ? 'filter: grayscale(100%); opacity: 0.75;' : ''}`;
+    const badgeStyle = "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #dc3545; color: white; padding: 6px 15px; border-radius: 5px; font-size: 14px; font-weight: bold; border: 2px solid white;";
+    const bodyStyle = "padding: 10px; display: flex; flex-direction: column; gap: 5px;";
+    const titleStyle = "font-size: 13px; font-weight: 600; color: #2c3e50; margin: 0; min-height: 32px;";
+    const descStyle = "font-size: 10px; color: #7f8c8d; margin: 0;";
+    const priceDetalStyle = "font-size: 14px; font-weight: bold; color: #D988B9; margin: 3px 0;";
+    const priceMayorStyle = "font-size: 12px; font-weight: 600; color: #27ae60; margin: 3px 0;";
+
     return `
-        <div class="${cardClase}">
-            <div class="producto-imagen-wrapper">
-                <img src="${imgUrl}" alt="${nombre}" class="${imagenClase}">
-                ${stockBadge ? `<div class="producto-badges">${stockBadge}</div>` : ''}
+        <div style="${cardStyle}">
+            <div style="${imgWrapperStyle}">
+                <img src="${imgUrl}" alt="${nombre}" style="${imgStyle}">
+                ${stockBadge ? `<div style="${badgeStyle}">AGOTADO</div>` : ''}
             </div>
-            <div class="producto-body">
-                <h3 class="producto-titulo">${nombre}</h3>
-                ${descripcion ? `<p class="producto-descripcion">${descripcion.length > 80 ? descripcion.substring(0, 80) + '...' : descripcion}</p>` : ''}
-                <div class="precio-detal-card">
-                    ${formatoMoneda.format(precioDetal)} <span class="precio-label">(Detal)</span>
+            <div style="${bodyStyle}">
+                <h3 style="${titleStyle}">${nombre}</h3>
+                ${descripcion ? `<p style="${descStyle}">${descripcion.length > 70 ? descripcion.substring(0, 70) + '...' : descripcion}</p>` : ''}
+                <div style="${priceDetalStyle}">
+                    ${formatoMoneda.format(precioDetal)} <span style="font-size: 10px; color: #95a5a6;">(Detal)</span>
                 </div>
-                ${precioMayorHTML}
-                ${tallasHTML || coloresHTML ? `<div class="producto-variaciones">${tallasHTML}${coloresHTML}</div>` : ''}
+                ${precioMayor > 0 ? `<div style="${priceMayorStyle}">${formatoMoneda.format(precioMayor)} <span style="font-size: 10px; color: #95a5a6;">(Mayor)</span></div>` : ''}
             </div>
         </div>
     `;
