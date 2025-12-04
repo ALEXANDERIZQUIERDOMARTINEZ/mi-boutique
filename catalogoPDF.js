@@ -118,13 +118,9 @@ async function generarCatalogoPDF() {
 
         console.log(`✅ ${productos.length} productos cargados`);
 
-        // Limitar productos para testing (opcional - comentar/descomentar según necesites)
-        const productosLimitados = productos.slice(0, 20);
-        console.log(`⚠️ MODO TEST: Limitado a ${productosLimitados.length} productos`);
-
         // 2. Construir HTML del catálogo
         console.log('🎨 Construyendo catálogo HTML...');
-        const htmlCatalogo = construirHTMLCatalogo(productosLimitados);
+        const htmlCatalogo = construirHTMLCatalogo(productos);
 
         // 3. Crear elemento temporal para el PDF
         console.log('🎨 Creando contenedor temporal...');
@@ -226,7 +222,7 @@ async function generarCatalogoPDF() {
 
         // 4. Generar PDF usando html2pdf con opciones SIMPLIFICADAS
         console.log('📄 Generando PDF (esto puede tomar unos segundos)...');
-        console.log(`📊 Procesando ${productosLimitados.length} productos...`);
+        console.log(`📊 Procesando ${productos.length} productos...`);
 
         const opciones = {
             margin: [8, 8, 8, 8],
@@ -385,7 +381,7 @@ function construirHTMLCatalogo(productos) {
     <!-- Footer -->
     <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #D988B9;">
         <p style="margin: 8px 0; font-size: 13px; color: #555;"><strong>Contacto:</strong></p>
-        <p style="margin: 8px 0; font-size: 13px; color: #555;">📱 WhatsApp: <strong style="color: #D988B9;">+57 300 123 4567</strong></p>
+        <p style="margin: 8px 0; font-size: 13px; color: #555;">📱 WhatsApp: <strong style="color: #D988B9;">+57 304 608 4971</strong></p>
         <p style="margin: 8px 0; font-size: 11px; color: #999; font-style: italic;">¡Haz tu pedido por WhatsApp!</p>
         <p style="margin: 10px 0; font-size: 10px; color: #999;">© ${new Date().getFullYear()} Mishell Boutique - Todos los derechos reservados</p>
     </div>
