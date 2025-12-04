@@ -1,21 +1,40 @@
 // --- IMPORTACIONES DE FIREBASE ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-// *** CONFIGURACIÓN DE FIREBASE ***
-const firebaseConfig = {
-    apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
-    authDomain: "mishell-boutique-admin.firebaseapp.com",
-    projectId: "mishell-boutique-admin",
-    storageBucket: "mishell-boutique-admin.firebasestorage.app",
-    messagingSenderId: "399662956877",
-    appId: "1:399662956877:web:084236f5bb3cf6f0a8f704"
-};
+import { getApp, getApps, initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 // --- INICIALIZACIÓN ---
-const app = initializeApp(firebaseConfig, 'catalogoPDFApp');
-const db = getFirestore(app);
-const productsCollection = collection(db, 'productos');
+// Usar la instancia existente de Firebase si ya está inicializada, o crear una nueva
+let app;
+let db;
+let productsCollection;
+
+function initFirebase() {
+    try {
+        // Intentar obtener la app existente (la que inicializó admin.js)
+        if (getApps().length > 0) {
+            app = getApp();
+            console.log('✅ Usando instancia de Firebase existente');
+        } else {
+            // Si no existe, inicializar una nueva (por si acaso)
+            const firebaseConfig = {
+                apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
+                authDomain: "mishell-boutique-admin.firebaseapp.com",
+                projectId: "mishell-boutique-admin",
+                storageBucket: "mishell-boutique-admin.firebasestorage.app",
+                messagingSenderId: "399662956877",
+                appId: "1:399662956877:web:084236f5bb3cf6f0a8f704"
+            };
+            app = initializeApp(firebaseConfig);
+            console.log('✅ Inicializada nueva instancia de Firebase');
+        }
+
+        db = getFirestore(app);
+        productsCollection = collection(db, 'productos');
+    } catch (error) {
+        console.error('❌ Error al inicializar Firebase:', error);
+        throw error;
+    }
+}
 const formatoMoneda = new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
@@ -85,6 +104,9 @@ async function generarCatalogoPDF() {
     button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando PDF...';
 
     try {
+        // 0. Inicializar Firebase
+        initFirebase();
+
         // 1. Leer productos desde Firebase
         console.log('📦 Leyendo productos desde Firebase...');
         const productos = await leerProductosDesdeFirebase();
