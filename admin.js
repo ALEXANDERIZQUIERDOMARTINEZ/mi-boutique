@@ -8264,11 +8264,18 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     proveedorId: data.proveedorId,
                     stock: data.stock,
                     variaciones: data.variaciones,
+                    nombreOriginal: data.nombre,
+                    categoriaOriginal: categoriaNombre,
+                    proveedorOriginal: proveedorNombre,
                     ...data
                 });
             });
 
             console.log(`✅ Productos existentes cargados: ${productosExistentes.length}`);
+            console.log('📋 Lista de productos existentes:');
+            productosExistentes.forEach(p => {
+                console.log(`  - "${p.nombreOriginal}" | Cat: "${p.categoriaOriginal}" | Prov: "${p.proveedorOriginal}"`);
+            });
 
             // Marcar duplicados
             productos.forEach(producto => {
@@ -8276,14 +8283,25 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const categoriaNorm = producto.categoria.toLowerCase().trim();
                 const proveedorNorm = producto.proveedor.toLowerCase().trim();
 
-                const duplicado = productosExistentes.find(existente =>
-                    existente.nombre === nombreNorm &&
-                    existente.categoria === categoriaNorm &&
-                    existente.proveedor === proveedorNorm
-                );
+                console.log(`\n🔍 Verificando producto del Excel: "${producto.nombre}"`);
+                console.log(`   Normalizado: nombre="${nombreNorm}" | cat="${categoriaNorm}" | prov="${proveedorNorm}"`);
+
+                const duplicado = productosExistentes.find(existente => {
+                    const match = existente.nombre === nombreNorm &&
+                                  existente.categoria === categoriaNorm &&
+                                  existente.proveedor === proveedorNorm;
+
+                    if (match) {
+                        console.log(`   ✅ MATCH encontrado con: "${existente.nombreOriginal}" (ID: ${existente.id})`);
+                    }
+
+                    return match;
+                });
 
                 if (duplicado) {
-                    console.log(`🔍 Duplicado detectado: ${producto.nombre} (${producto.categoria} - ${producto.proveedor})`);
+                    console.log(`🔍 ✅ Duplicado detectado: ${producto.nombre} (${producto.categoria} - ${producto.proveedor})`);
+                } else {
+                    console.log(`   ❌ No es duplicado, se creará como nuevo producto`);
                 }
 
                 producto.esDuplicado = !!duplicado;
@@ -8400,60 +8418,78 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // FUNCIONES AUXILIARES
     // =====================================================================
     async function buscarOCrearCategoria(nombreCategoria) {
-        // Buscar en caché
+        const nombreNormalizado = nombreCategoria.trim();
+
+        console.log(`🔍 Buscando categoría: "${nombreNormalizado}"`);
+
+        // Buscar en caché (case-insensitive)
         for (let [id, cat] of categoriasMap) {
-            if (cat.nombre.toLowerCase() === nombreCategoria.toLowerCase()) {
+            if (cat.nombre.toLowerCase().trim() === nombreNormalizado.toLowerCase()) {
+                console.log(`✅ Categoría encontrada en caché: "${cat.nombre}" (ID: ${id})`);
                 return id;
             }
         }
 
-        // Buscar en Firestore
-        const q = query(categoriesCollection, where('nombre', '==', nombreCategoria));
-        const snapshot = await getDocs(q);
+        // Buscar en Firestore (cargar todas y comparar en memoria porque Firestore no soporta case-insensitive)
+        const snapshot = await getDocs(categoriesCollection);
 
-        if (!snapshot.empty) {
-            const doc = snapshot.docs[0];
-            categoriasMap.set(doc.id, { id: doc.id, ...doc.data() });
-            return doc.id;
+        for (let doc of snapshot.docs) {
+            const data = doc.data();
+            if (data.nombre.toLowerCase().trim() === nombreNormalizado.toLowerCase()) {
+                console.log(`✅ Categoría encontrada en Firestore: "${data.nombre}" (ID: ${doc.id})`);
+                categoriasMap.set(doc.id, { id: doc.id, ...data });
+                return doc.id;
+            }
         }
 
         // Crear nueva categoría
+        console.log(`➕ Creando nueva categoría: "${nombreNormalizado}"`);
         const docRef = await addDoc(categoriesCollection, {
-            nombre: nombreCategoria,
+            nombre: nombreNormalizado,
             timestamp: serverTimestamp()
         });
 
-        categoriasMap.set(docRef.id, { id: docRef.id, nombre: nombreCategoria });
+        categoriasMap.set(docRef.id, { id: docRef.id, nombre: nombreNormalizado });
+        console.log(`✅ Categoría creada con ID: ${docRef.id}`);
         return docRef.id;
     }
 
     async function buscarOCrearProveedor(nombreProveedor) {
-        // Buscar en caché
+        const nombreNormalizado = nombreProveedor.trim();
+
+        console.log(`🔍 Buscando proveedor: "${nombreNormalizado}"`);
+
+        // Buscar en caché (case-insensitive)
         for (let [id, prov] of proveedoresMap) {
-            if (prov.nombre.toLowerCase() === nombreProveedor.toLowerCase()) {
+            if (prov.nombre.toLowerCase().trim() === nombreNormalizado.toLowerCase()) {
+                console.log(`✅ Proveedor encontrado en caché: "${prov.nombre}" (ID: ${id})`);
                 return id;
             }
         }
 
-        // Buscar en Firestore
-        const q = query(suppliersCollection, where('nombre', '==', nombreProveedor));
-        const snapshot = await getDocs(q);
+        // Buscar en Firestore (cargar todas y comparar en memoria)
+        const snapshot = await getDocs(suppliersCollection);
 
-        if (!snapshot.empty) {
-            const doc = snapshot.docs[0];
-            proveedoresMap.set(doc.id, { id: doc.id, ...doc.data() });
-            return doc.id;
+        for (let doc of snapshot.docs) {
+            const data = doc.data();
+            if (data.nombre.toLowerCase().trim() === nombreNormalizado.toLowerCase()) {
+                console.log(`✅ Proveedor encontrado en Firestore: "${data.nombre}" (ID: ${doc.id})`);
+                proveedoresMap.set(doc.id, { id: doc.id, ...data });
+                return doc.id;
+            }
         }
 
         // Crear nuevo proveedor
+        console.log(`➕ Creando nuevo proveedor: "${nombreNormalizado}"`);
         const docRef = await addDoc(suppliersCollection, {
-            nombre: nombreProveedor,
+            nombre: nombreNormalizado,
             contacto: '',
             telefono: '',
             timestamp: serverTimestamp()
         });
 
-        proveedoresMap.set(docRef.id, { id: docRef.id, nombre: nombreProveedor });
+        proveedoresMap.set(docRef.id, { id: docRef.id, nombre: nombreNormalizado });
+        console.log(`✅ Proveedor creado con ID: ${docRef.id}`);
         return docRef.id;
     }
 
