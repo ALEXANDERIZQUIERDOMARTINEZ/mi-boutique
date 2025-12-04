@@ -139,6 +139,14 @@ async function generarCatalogoPDF() {
         // Esperar un momento para que se renderice el contenedor
         await new Promise(resolve => setTimeout(resolve, 500));
 
+        // Verificar que el contenedor tenga contenido
+        console.log(`📦 Contenedor tiene ${contenedor.children.length} elementos hijos`);
+        console.log(`📏 Alto del contenedor: ${contenedor.offsetHeight}px`);
+
+        if (contenedor.children.length === 0 || contenedor.offsetHeight === 0) {
+            throw new Error('El contenedor está vacío. No se puede generar el PDF.');
+        }
+
         // 4. Generar PDF usando html2pdf con opciones SIMPLIFICADAS
         console.log('📄 Generando PDF (esto puede tomar unos segundos)...');
         console.log(`📊 Procesando ${productosLimitados.length} productos...`);
@@ -163,23 +171,33 @@ async function generarCatalogoPDF() {
                     return false;
                 },
                 onclone: (clonedDoc) => {
-                    // Reemplazar imágenes problemáticas con div gris
+                    console.log('🔄 Clonando documento...');
+                    // Asegurar que todos los elementos sean visibles
+                    const body = clonedDoc.body;
+                    body.style.visibility = 'visible';
+                    body.style.display = 'block';
+
+                    // Reemplazar imágenes problemáticas
                     const images = clonedDoc.querySelectorAll('img');
+                    console.log(`📸 Procesando ${images.length} imágenes...`);
+
+                    let reemplazadas = 0;
                     images.forEach(img => {
-                        if (!img.complete || img.naturalHeight === 0) {
-                            const div = clonedDoc.createElement('div');
-                            div.style.width = '100%';
-                            div.style.height = '150px';
-                            div.style.backgroundColor = '#e0e0e0';
-                            div.style.display = 'flex';
-                            div.style.alignItems = 'center';
-                            div.style.justifyContent = 'center';
-                            div.style.color = '#999';
-                            div.style.fontSize = '12px';
-                            div.textContent = 'Sin Imagen';
-                            img.parentNode.replaceChild(div, img);
+                        // Si la imagen es base64 (nuestro placeholder), dejarla
+                        if (img.src.startsWith('data:image')) {
+                            return;
+                        }
+
+                        // Si la imagen no ha cargado o es inválida, reemplazar
+                        if (!img.complete || img.naturalHeight === 0 || img.src.includes('via.placeholder')) {
+                            reemplazadas++;
+                            img.src = PLACEHOLDER_SVG;
+                            img.style.width = '100%';
+                            img.style.height = '150px';
+                            img.style.objectFit = 'cover';
                         }
                     });
+                    console.log(`✅ ${reemplazadas} imágenes reemplazadas con placeholder`);
                 }
             },
             jsPDF: {
