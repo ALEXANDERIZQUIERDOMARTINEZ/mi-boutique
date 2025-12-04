@@ -158,7 +158,32 @@ async function generarCatalogoPDF() {
         document.body.appendChild(overlay);
         document.body.appendChild(contenedor);
 
-        // Esperar un momento para que se renderice el contenedor
+        // ESPERAR A QUE TODAS LAS IMÁGENES CARGUEN
+        console.log('⏳ Esperando a que carguen las imágenes...');
+        const images = contenedor.querySelectorAll('img');
+        console.log(`📸 ${images.length} imágenes detectadas`);
+
+        await Promise.all(
+            Array.from(images).map(img => {
+                if (img.complete && img.naturalHeight !== 0) {
+                    return Promise.resolve();
+                }
+                return new Promise(resolve => {
+                    img.onload = () => {
+                        console.log(`✅ Imagen cargada: ${img.alt}`);
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        console.warn(`⚠️ Error cargando imagen: ${img.alt}`);
+                        resolve();
+                    };
+                    // Timeout de 3 segundos por imagen
+                    setTimeout(resolve, 3000);
+                });
+            })
+        );
+
+        console.log('✅ Todas las imágenes procesadas');
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Verificar que el contenedor tenga contenido
