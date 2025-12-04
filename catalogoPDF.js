@@ -123,37 +123,63 @@ async function generarCatalogoPDF() {
         const htmlCatalogo = construirHTMLCatalogo(productos);
 
         // 3. Crear elemento temporal para el PDF
+        console.log('🎨 Creando contenedor temporal...');
         const contenedor = document.createElement('div');
         contenedor.innerHTML = htmlCatalogo;
         contenedor.style.position = 'absolute';
         contenedor.style.left = '-9999px';
         contenedor.style.top = '0';
+        contenedor.style.width = '210mm'; // Ancho A4
         document.body.appendChild(contenedor);
 
-        // 4. Generar PDF usando html2pdf
-        console.log('📄 Generando PDF...');
+        // Esperar un momento para que se renderice el contenedor
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // 4. Generar PDF usando html2pdf con opciones optimizadas
+        console.log('📄 Generando PDF (esto puede tomar unos segundos)...');
         const opciones = {
-            margin: [10, 10, 10, 10],
+            margin: [8, 8, 8, 8],
             filename: 'catalogo-mishell.pdf',
-            image: { type: 'jpeg', quality: 0.85 },
+            image: {
+                type: 'jpeg',
+                quality: 0.75
+            },
             html2canvas: {
-                scale: 2,
+                scale: 1.5,
                 useCORS: true,
                 logging: false,
-                letterRendering: true
+                allowTaint: false,
+                letterRendering: true,
+                imageTimeout: 15000,
+                removeContainer: false
             },
             jsPDF: {
                 unit: 'mm',
                 format: 'a4',
-                orientation: 'portrait'
+                orientation: 'portrait',
+                compress: true
             },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            pagebreak: {
+                mode: ['avoid-all', 'css', 'legacy'],
+                avoid: ['.producto-card']
+            }
         };
 
-        await html2pdf().set(opciones).from(contenedor).save();
+        console.log('⏳ Procesando contenido...');
+        const pdfPromise = html2pdf().set(opciones).from(contenedor).save();
+
+        // Timeout de 60 segundos
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout: La generación del PDF tomó demasiado tiempo')), 60000)
+        );
+
+        await Promise.race([pdfPromise, timeoutPromise]);
 
         // 5. Limpiar
-        document.body.removeChild(contenedor);
+        console.log('🧹 Limpiando...');
+        if (contenedor && contenedor.parentNode) {
+            document.body.removeChild(contenedor);
+        }
         console.log('✅ PDF generado correctamente');
 
         // Mostrar mensaje de éxito
@@ -161,11 +187,29 @@ async function generarCatalogoPDF() {
 
     } catch (error) {
         console.error('❌ Error al generar PDF:', error);
-        alert('Hubo un error al generar el PDF. Por favor intenta de nuevo.');
+
+        // Limpiar contenedor si existe
+        const contenedor = document.querySelector('body > div[style*="-9999px"]');
+        if (contenedor && contenedor.parentNode) {
+            document.body.removeChild(contenedor);
+        }
+
+        // Mensaje de error más informativo
+        let mensajeError = 'Hubo un error al generar el PDF.';
+        if (error.message && error.message.includes('Timeout')) {
+            mensajeError = 'La generación del PDF está tomando demasiado tiempo. Intenta de nuevo o contacta al soporte.';
+        } else if (error.message) {
+            mensajeError = `Error: ${error.message}`;
+        }
+
+        alert(mensajeError);
+        mostrarToast('Error al generar PDF', 'error');
     } finally {
-        // Restaurar botón
-        button.disabled = false;
-        button.innerHTML = '<i class="bi bi-download me-2"></i>Descargar catálogo en PDF';
+        // Restaurar botón siempre
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '<i class="bi bi-download me-2"></i>Descargar catálogo en PDF';
+        }
     }
 }
 
