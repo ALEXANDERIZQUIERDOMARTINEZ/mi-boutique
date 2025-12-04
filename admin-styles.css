@@ -389,9 +389,8 @@ body.admin-page {
     z-index: 1050;
 }
 
-/* Mostrar dropdown cuando tiene clase 'show' O al hover */
-.dropdown-menu.show,
-.nav-item.dropdown:hover .dropdown-menu {
+/* Mostrar dropdown solo cuando tiene clase 'show' (al hacer click) */
+.dropdown-menu.show {
     display: block;
     opacity: 1;
     transform: translateY(0);
