@@ -190,21 +190,26 @@ async function generarCatalogoPDF() {
                     try {
                         const base64 = canvas.toDataURL('image/jpeg', 0.8);
                         img.src = base64;
+                        // Remover crossorigin después de convertir
+                        img.removeAttribute('crossorigin');
                         convertidas++;
                         console.log(`✅ Convertida a base64: ${img.alt}`);
                     } catch (e) {
                         console.warn(`⚠️ Error al convertir a base64 (CORS): ${img.alt}`);
                         img.src = PLACEHOLDER_SVG;
+                        img.removeAttribute('crossorigin');
                         fallidas++;
                     }
                 } else {
                     console.warn(`⚠️ Imagen no cargó: ${img.alt}`);
                     img.src = PLACEHOLDER_SVG;
+                    img.removeAttribute('crossorigin');
                     fallidas++;
                 }
             } catch (error) {
                 console.error(`❌ Error procesando imagen: ${img.alt}`, error);
                 img.src = PLACEHOLDER_SVG;
+                img.removeAttribute('crossorigin');
                 fallidas++;
             }
         }
@@ -229,14 +234,16 @@ async function generarCatalogoPDF() {
             filename: 'catalogo-mishell.pdf',
             image: {
                 type: 'jpeg',
-                quality: 0.8
+                quality: 0.7
             },
             html2canvas: {
                 scale: 2,
                 useCORS: false,
                 allowTaint: true,
-                logging: true,
-                backgroundColor: '#ffffff'
+                logging: false,
+                backgroundColor: '#ffffff',
+                imageTimeout: 0,
+                removeContainer: false
             },
             jsPDF: {
                 unit: 'mm',
