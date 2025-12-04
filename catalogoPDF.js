@@ -158,32 +158,62 @@ async function generarCatalogoPDF() {
         document.body.appendChild(overlay);
         document.body.appendChild(contenedor);
 
-        // ESPERAR A QUE TODAS LAS IMÁGENES CARGUEN
-        console.log('⏳ Esperando a que carguen las imágenes...');
+        // CONVERTIR IMÁGENES A BASE64 PARA EVITAR PROBLEMAS DE CORS
+        console.log('🔄 Convirtiendo imágenes a base64 para evitar CORS...');
         const images = contenedor.querySelectorAll('img');
         console.log(`📸 ${images.length} imágenes detectadas`);
 
-        await Promise.all(
-            Array.from(images).map(img => {
-                if (img.complete && img.naturalHeight !== 0) {
-                    return Promise.resolve();
-                }
-                return new Promise(resolve => {
-                    img.onload = () => {
-                        console.log(`✅ Imagen cargada: ${img.alt}`);
-                        resolve();
-                    };
-                    img.onerror = () => {
-                        console.warn(`⚠️ Error cargando imagen: ${img.alt}`);
-                        resolve();
-                    };
-                    // Timeout de 3 segundos por imagen
-                    setTimeout(resolve, 3000);
-                });
-            })
-        );
+        let convertidas = 0;
+        let fallidas = 0;
 
-        console.log('✅ Todas las imágenes procesadas');
+        for (const img of images) {
+            // Si ya es base64, saltar
+            if (img.src.startsWith('data:')) {
+                console.log(`⏭️ Imagen ya es base64: ${img.alt}`);
+                continue;
+            }
+
+            try {
+                // Esperar a que la imagen cargue
+                if (!img.complete) {
+                    await new Promise((resolve) => {
+                        img.onload = resolve;
+                        img.onerror = resolve;
+                        setTimeout(resolve, 3000);
+                    });
+                }
+
+                // Convertir a base64
+                if (img.complete && img.naturalHeight > 0) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    try {
+                        const base64 = canvas.toDataURL('image/jpeg', 0.8);
+                        img.src = base64;
+                        convertidas++;
+                        console.log(`✅ Convertida a base64: ${img.alt}`);
+                    } catch (e) {
+                        console.warn(`⚠️ Error al convertir a base64 (CORS): ${img.alt}`);
+                        img.src = PLACEHOLDER_SVG;
+                        fallidas++;
+                    }
+                } else {
+                    console.warn(`⚠️ Imagen no cargó: ${img.alt}`);
+                    img.src = PLACEHOLDER_SVG;
+                    fallidas++;
+                }
+            } catch (error) {
+                console.error(`❌ Error procesando imagen: ${img.alt}`, error);
+                img.src = PLACEHOLDER_SVG;
+                fallidas++;
+            }
+        }
+
+        console.log(`✅ Conversión completada: ${convertidas} exitosas, ${fallidas} fallidas`);
         await new Promise(resolve => setTimeout(resolve, 500));
 
         // Verificar que el contenedor tenga contenido
@@ -203,49 +233,14 @@ async function generarCatalogoPDF() {
             filename: 'catalogo-mishell.pdf',
             image: {
                 type: 'jpeg',
-                quality: 0.6
+                quality: 0.8
             },
             html2canvas: {
-                scale: 1,
+                scale: 2,
                 useCORS: false,
                 allowTaint: true,
-                logging: false,
-                ignoreElements: (element) => {
-                    // Ignorar imágenes que fallen
-                    if (element.tagName === 'IMG' && !element.complete) {
-                        return true;
-                    }
-                    return false;
-                },
-                onclone: (clonedDoc) => {
-                    console.log('🔄 Clonando documento...');
-                    // Asegurar que todos los elementos sean visibles
-                    const body = clonedDoc.body;
-                    body.style.visibility = 'visible';
-                    body.style.display = 'block';
-
-                    // Reemplazar imágenes problemáticas
-                    const images = clonedDoc.querySelectorAll('img');
-                    console.log(`📸 Procesando ${images.length} imágenes...`);
-
-                    let reemplazadas = 0;
-                    images.forEach(img => {
-                        // Si la imagen es base64 (nuestro placeholder), dejarla
-                        if (img.src.startsWith('data:image')) {
-                            return;
-                        }
-
-                        // Si la imagen no ha cargado o es inválida, reemplazar
-                        if (!img.complete || img.naturalHeight === 0 || img.src.includes('via.placeholder')) {
-                            reemplazadas++;
-                            img.src = PLACEHOLDER_SVG;
-                            img.style.width = '100%';
-                            img.style.height = '150px';
-                            img.style.objectFit = 'cover';
-                        }
-                    });
-                    console.log(`✅ ${reemplazadas} imágenes reemplazadas con placeholder`);
-                }
+                logging: true,
+                backgroundColor: '#ffffff'
             },
             jsPDF: {
                 unit: 'mm',
@@ -516,7 +511,7 @@ function construirTarjetaProducto(producto) {
     return `
         <div style="${cardStyle}">
             <div style="${imgWrapperStyle}">
-                <img src="${imgUrl}" alt="${nombre}" style="${imgStyle}">
+                <img src="${imgUrl}" alt="${nombre}" style="${imgStyle}" crossorigin="anonymous">
                 ${stockBadge ? `<div style="${badgeStyle}">AGOTADO</div>` : ''}
             </div>
             <div style="${bodyStyle}">
