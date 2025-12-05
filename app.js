@@ -430,20 +430,17 @@ function applyFiltersAndRender() {
     let filtered = allProducts;
 
     // 1. Filtrar por Categoría (filtros principales del header)
-    // ⚠️ COMENTADO: Ahora mostramos productos agotados también (en gris con badge rojo)
-    // if (activeFilter === 'disponible') {
-    //     filtered = filtered.filter(p => {
-    //         const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-    //         return stock > 0;
-    //     });
-    // } else
-    if (activeFilter === 'promocion') {
+    if (activeFilter === 'disponible' || activeFilter === 'all') {
+        // Mostrar todos los productos (disponibles y agotados)
+        filtered = allProducts;
+    } else if (activeFilter === 'promocion') {
         filtered = filtered.filter(p => {
             const tienePromoIndividual = p.promocion?.activa && !isWholesaleActive;
             const tienePromoGlobal = globalPromotion && !isWholesaleActive;
             return tienePromoIndividual || tienePromoGlobal;
         });
-    } else if (activeFilter !== 'all') {
+    } else {
+        // Filtrar por categoría específica
         filtered = filtered.filter(p => {
             const categoryId = p.categoriaId || p.categoria;
             const categoryName = categoriesMap.get(categoryId) || '';
