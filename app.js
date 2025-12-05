@@ -379,12 +379,14 @@ function applyFiltersAndRender() {
     let filtered = allProducts;
 
     // 1. Filtrar por Categoría (filtros principales del header)
-    if (activeFilter === 'disponible') {
-        filtered = filtered.filter(p => {
-            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-            return stock > 0;
-        });
-    } else if (activeFilter === 'promocion') {
+    // ⚠️ COMENTADO: Ahora mostramos productos agotados también (en gris con badge rojo)
+    // if (activeFilter === 'disponible') {
+    //     filtered = filtered.filter(p => {
+    //         const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+    //         return stock > 0;
+    //     });
+    // } else
+    if (activeFilter === 'promocion') {
         filtered = filtered.filter(p => {
             const tienePromoIndividual = p.promocion?.activa && !isWholesaleActive;
             const tienePromoGlobal = globalPromotion && !isWholesaleActive;
