@@ -2980,8 +2980,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!ventaId) return;
 
             try {
+                const nuevoCliente = document.getElementById('edit-sale-cliente').value;
                 const nuevoTipo = document.getElementById('edit-sale-tipo').value;
-                const nuevoPago = document.getElementById('edit-sale-pago').value;
                 const nuevoRepartidor = document.getElementById('edit-sale-repartidor').value;
 
                 // Obtener venta actual
@@ -3002,7 +3002,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (nuevoTipo !== ventaData.tipoVenta) {
                     let subtotal = 0;
                     itemsActualizados = await Promise.all(ventaData.items.map(async (item) => {
-                        const prodRef = doc(db, 'productos', item.id);
+                        const prodRef = doc(db, 'productos', item.productoId);
                         const prodSnap = await getDoc(prodRef);
 
                         if (prodSnap.exists()) {
@@ -3017,7 +3017,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const totalItem = nuevoPrecio * cantidad;
                             subtotal += totalItem;
 
-                            return { ...item, precioUnitario: nuevoPrecio, totalItem: totalItem };
+                            return { ...item, precio: nuevoPrecio };
                         }
                         return item;
                     }));
@@ -3027,21 +3027,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     nuevoTotal = subtotal - descuento + costoRuta;
                 }
 
-                // Actualizar venta
-                await updateDoc(ventaRef, {
+                // Preparar objeto de actualización con los campos correctos
+                const updateData = {
+                    clienteNombre: nuevoCliente,
                     tipoVenta: nuevoTipo,
-                    metodoPago: nuevoPago,
-                    repartidor: nuevoRepartidor,
                     items: itemsActualizados,
                     totalVenta: nuevoTotal,
                     ultimaModificacion: serverTimestamp()
-                });
+                };
+
+                // Solo actualizar repartidor si hay uno seleccionado
+                if (nuevoRepartidor) {
+                    // Buscar el ID del repartidor por nombre
+                    const repartidoresSnap = await getDocs(collection(db, 'repartidores'));
+                    let repartidorId = '';
+                    repartidoresSnap.forEach((doc) => {
+                        if (doc.data().nombre === nuevoRepartidor) {
+                            repartidorId = doc.id;
+                        }
+                    });
+
+                    updateData.repartidorId = repartidorId;
+                    updateData.repartidorNombre = nuevoRepartidor;
+                }
+
+                // Actualizar venta
+                await updateDoc(ventaRef, updateData);
 
                 showToast('Venta actualizada exitosamente', 'success');
 
                 // Cerrar modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editSaleModal'));
-                modal.hide();
+                if (modal) {
+                    modal.hide();
+                }
+
+                // Forzar recarga de la vista después de un breve delay para asegurar sincronización
+                setTimeout(() => {
+                    // La vista se actualizará automáticamente gracias al onSnapshot
+                    console.log('✅ Venta actualizada, esperando sincronización...');
+                }, 500);
+
             } catch (error) {
                 console.error('Error al guardar cambios:', error);
                 showToast(`Error: ${error.message}`, 'error');
