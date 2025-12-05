@@ -2340,6 +2340,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const ventaCelularInput = document.getElementById('venta-cliente-celular');
 
             const totalCalculado = window.calcularTotalVentaGeneral();
+            const esCatalogo = tipoVentaSelect.value === 'catalogo';
+
             const ventaData = {
                 clienteNombre: ventaClienteInput.value || "Cliente General",
                 clienteDireccion: ventaDireccionInput?.value || "",
@@ -2359,6 +2361,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 pagoTransferencia: parseFloat(eliminarFormatoNumero(pagoTransferenciaInput.value)) || 0,
                 totalVenta: totalCalculado,
                 estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada',
+                esCatalogoExterno: esCatalogo, // Flag para identificar ventas por catálogo
                 timestamp: serverTimestamp()
             }; 
             
@@ -2394,18 +2397,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     const ventaAnteriorSnap = await getDoc(ventaRef);
                     if (ventaAnteriorSnap.exists()) {
                         const ventaAnterior = ventaAnteriorSnap.data();
-                        // Reponer stock de la venta anterior
-                        await actualizarStock(ventaAnterior.items, 'sumar');
-                        console.log("✅ Stock anterior repuesto");
+                        // Reponer stock de la venta anterior (solo si no era catálogo externo)
+                        if (!ventaAnterior.esCatalogoExterno) {
+                            await actualizarStock(ventaAnterior.items, 'sumar');
+                            console.log("✅ Stock anterior repuesto");
+                        }
                     }
 
                     // Actualizar la venta
                     await updateDoc(ventaRef, ventaData);
                     console.log("✅ Venta actualizada con ID:", ventaId);
 
-                    // Descontar nuevo stock
-                    await actualizarStock(ventaData.items, 'restar');
-                    console.log("✅ Nuevo stock actualizado");
+                    // Descontar nuevo stock (solo si no es catálogo externo)
+                    if (!esCatalogo) {
+                        await actualizarStock(ventaData.items, 'restar');
+                        console.log("✅ Nuevo stock actualizado");
+                    } else {
+                        console.log("ℹ️ Venta por catálogo - Stock NO afectado");
+                    }
 
                     // Limpiar flag de edición
                     delete window.editingVentaId;
@@ -2416,9 +2425,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     ventaId = docRef.id;
                     console.log("✅ Venta registrada con ID:", ventaId);
 
-                    // Actualizar stock
-                    await actualizarStock(ventaData.items, 'restar');
-                    console.log("✅ Stock actualizado correctamente");
+                    // Actualizar stock (solo si no es catálogo externo)
+                    if (!esCatalogo) {
+                        await actualizarStock(ventaData.items, 'restar');
+                        console.log("✅ Stock actualizado correctamente");
+                    } else {
+                        console.log("ℹ️ Venta por catálogo externo - Stock NO afectado");
+                    }
                 }
 
                 // ✅ PASO 3: Si es apartado, crear documento apartado
@@ -3062,11 +3075,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     modal.hide();
                 }
 
-                // Forzar recarga de la vista después de un breve delay para asegurar sincronización
-                setTimeout(() => {
-                    // La vista se actualizará automáticamente gracias al onSnapshot
-                    console.log('✅ Venta actualizada, esperando sincronización...');
-                }, 500);
+                // Forzar actualización inmediata del historial
+                // Obtener la fecha actual del filtro para recargar
+                const filtroFechaInput = document.getElementById('filtro-fecha-ventas');
+                if (filtroFechaInput && filtroFechaInput.value) {
+                    // Si hay un filtro de fecha, recargar con esa fecha
+                    cargarVentas(filtroFechaInput.value);
+                } else {
+                    // Si no hay filtro, recargar con la fecha de hoy
+                    cargarVentas();
+                }
+
+                console.log('✅ Venta actualizada y vista recargada');
 
             } catch (error) {
                 console.error('Error al guardar cambios:', error);
@@ -3219,6 +3239,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const tipoVenta = document.getElementById('tipo-venta-select');
             const apartadoFechaField = document.querySelector('.apartado-fecha-field');
             const apartadoFechaInput = document.getElementById('apartado-fecha-max');
+            const productoTiendaField = document.querySelector('.producto-tienda-field');
+            const productoCatalogoField = document.querySelector('.producto-catalogo-field');
 
             // Advertir si hay productos en el carrito al cambiar el tipo de venta
             if (tipoVenta && window.ventaItems && window.ventaItems.length > 0) {
@@ -3238,6 +3260,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     apartadoFechaInput.value = '';
                 }
             }
+
+            // Mostrar/ocultar campos según el tipo de venta
+            if (tipoVenta && productoTiendaField && productoCatalogoField) {
+                if (tipoVenta.value === 'catalogo') {
+                    // Venta por catálogo: mostrar campos manuales
+                    productoTiendaField.style.display = 'none';
+                    productoCatalogoField.style.display = 'block';
+                } else {
+                    // Venta normal: mostrar buscador de productos
+                    productoTiendaField.style.display = 'block';
+                    productoCatalogoField.style.display = 'none';
+                }
+            }
         }
 
         document.getElementById('tipo-entrega-select').addEventListener('change', toggleDeliveryFields);
@@ -3245,6 +3280,55 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleDeliveryFields();
         toggleApartadoFields();
         window.calcularTotalVentaGeneral();
+
+        // Lógica para agregar items de catálogo externo
+        const btnAgregarItemCatalogo = document.getElementById('btn-agregar-item-catalogo');
+        const catalogoPrecioInput = document.getElementById('catalogo-precio');
+
+        // Aplicar formato de dinero al campo precio de catálogo
+        if (catalogoPrecioInput) {
+            catalogoPrecioInput.addEventListener('input', function() {
+                aplicarFormatoDinero.call(this);
+            });
+        }
+
+        if (btnAgregarItemCatalogo) {
+            btnAgregarItemCatalogo.addEventListener('click', () => {
+                const descripcion = document.getElementById('catalogo-descripcion');
+                const cantidad = document.getElementById('catalogo-cantidad');
+                const precio = document.getElementById('catalogo-precio');
+
+                if (!descripcion || !cantidad || !precio) return;
+
+                const desc = descripcion.value.trim();
+                const cant = parseInt(cantidad.value) || 1;
+                const prec = parseFloat(eliminarFormatoNumero(precio.value)) || 0;
+
+                if (!desc || cant <= 0 || prec <= 0) {
+                    showToast('Complete todos los campos correctamente', 'warning');
+                    return;
+                }
+
+                // Agregar item al carrito con un ID especial para catálogo
+                const catalogoId = 'catalogo-' + Date.now();
+                window.agregarItemAlCarrito(
+                    catalogoId,
+                    desc,
+                    cant,
+                    prec,
+                    'N/A',  // talla
+                    'N/A',  // color
+                    desc    // nombreCompleto
+                );
+
+                // Limpiar campos
+                descripcion.value = '';
+                cantidad.value = '1';
+                precio.value = '';
+
+                showToast('Item de catálogo agregado', 'success');
+            });
+        }
 
         // Establecer cliente "General" por defecto al cargar
         if (ventaClienteInput) {

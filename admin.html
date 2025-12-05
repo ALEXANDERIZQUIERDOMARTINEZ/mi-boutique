@@ -631,7 +631,7 @@
                                             <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> </select> </div>
+                                    <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> <option value="catalogo">Por Catálogo</option> </select> </div>
                                     <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div>
                                     <div class="col-md-2 mb-3 apartado-fecha-field" style="display: none;">
                                         <label for="apartado-fecha-max" class="form-label">Vence:</label>
@@ -642,8 +642,34 @@
                                     <div class="col-md-6 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div>
                                     <div class="col-md-6 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="text" inputmode="numeric" id="costo-ruta" class="form-control" value="0"> </div>
                                 </div> 
-                                <label for="venta-producto" class="form-label">Buscar Producto:</label> 
-                                <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;"> 
+                                <div class="producto-tienda-field">
+                                    <label for="venta-producto" class="form-label">Buscar Producto:</label>
+                                    <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;">
+                                </div>
+
+                                <div class="producto-catalogo-field" style="display: none;">
+                                    <label class="form-label">Agregar Item de Catálogo:</label>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-5">
+                                            <input type="text" id="catalogo-descripcion" class="form-control form-control-sm" placeholder="Descripción del producto">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="number" id="catalogo-cantidad" class="form-control form-control-sm" placeholder="Cant." min="1" value="1">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <input type="text" inputmode="numeric" id="catalogo-precio" class="form-control form-control-sm" placeholder="Precio unitario">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-primary btn-sm w-100" id="btn-agregar-item-catalogo">
+                                                <i class="bi bi-plus-lg"></i> Agregar
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle"></i> Los productos de catálogo NO afectan el inventario de la tienda
+                                    </small>
+                                </div>
+
                                 <table class="table table-hover align-middle my-3">
                                     <thead class="table-light"><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead>
                                     <tbody id="venta-carrito"></tbody>
