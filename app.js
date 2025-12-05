@@ -1087,8 +1087,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         snapshot.forEach(doc => {
             const product = { ...doc.data(), id: doc.id };
-            // Filtrar solo productos visibles
-            if (product.visible === true) {
+            // Cargar productos visibles (visible !== false, incluye undefined)
+            if (product.visible !== false) {
                 allProducts.push(product);
                 productsMap.set(doc.id, product);
             }
