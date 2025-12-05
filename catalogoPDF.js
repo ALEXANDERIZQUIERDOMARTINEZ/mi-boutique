@@ -199,32 +199,50 @@ async function generarCatalogoPDF() {
         let yPos = margin;
         let currentPage = 1;
 
-        // Header
+        // Header con diseño profesional
         progressText.textContent = 'Creando encabezado...';
         progressBar.style.width = '5%';
         progressBar.textContent = '5%';
 
-        pdf.setFontSize(32);
+        // Fondo del header
+        pdf.setFillColor(250, 245, 248);
+        pdf.rect(0, 0, pageWidth, 45, 'F');
+
+        // Borde inferior del header
+        pdf.setDrawColor(217, 136, 185);
+        pdf.setLineWidth(2);
+        pdf.line(0, 45, pageWidth, 45);
+
+        // Decoración lateral izquierda
+        pdf.setFillColor(217, 136, 185);
+        pdf.circle(5, 10, 2, 'F');
+        pdf.circle(5, 20, 1.5, 'F');
+        pdf.circle(5, 30, 2, 'F');
+
+        // Decoración lateral derecha
+        pdf.circle(pageWidth - 5, 10, 2, 'F');
+        pdf.circle(pageWidth - 5, 20, 1.5, 'F');
+        pdf.circle(pageWidth - 5, 30, 2, 'F');
+
+        // Título principal
+        pdf.setFontSize(36);
         pdf.setTextColor(217, 136, 185);
         pdf.setFont('helvetica', 'bold');
-        pdf.text('MISHELL', pageWidth / 2, yPos + 15, { align: 'center' });
+        pdf.text('M I S H E L L', pageWidth / 2, yPos + 18, { align: 'center' });
 
-        yPos += 20;
-        pdf.setFontSize(12);
-        pdf.setTextColor(100, 100, 100);
+        yPos += 22;
+        pdf.setFontSize(11);
+        pdf.setTextColor(80, 80, 80);
         pdf.setFont('helvetica', 'normal');
-        pdf.text('Catálogo de Productos', pageWidth / 2, yPos, { align: 'center' });
+        pdf.text('✦  C A T Á L O G O  D E  P R O D U C T O S  ✦', pageWidth / 2, yPos, { align: 'center' });
 
-        yPos += 5;
-        pdf.setFontSize(10);
+        yPos += 6;
+        pdf.setFontSize(9);
+        pdf.setTextColor(120, 120, 120);
         const fecha = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
-        pdf.text(`Generado el ${fecha}`, pageWidth / 2, yPos, { align: 'center' });
+        pdf.text(fecha, pageWidth / 2, yPos, { align: 'center' });
 
-        yPos += 10;
-        pdf.setDrawColor(217, 136, 185);
-        pdf.setLineWidth(1);
-        pdf.line(margin, yPos, pageWidth - margin, yPos);
-        yPos += 10;
+        yPos = 55;
 
         // Procesar productos - 2 columnas para más espacio vertical
         const colsPerRow = 2;
@@ -254,13 +272,25 @@ async function generarCatalogoPDF() {
             // Calcular posición
             xPos = margin + (col * (imgWidth + 5));
 
+            // Guardar posición inicial para el borde
+            const cardStartY = yPos;
+
+            // Fondo blanco con sombra simulada para la tarjeta
+            pdf.setFillColor(250, 250, 250);
+            pdf.rect(xPos - 1, yPos - 1, imgWidth + 2, imgHeight + 2, 'F');
+
             // Convertir imagen
             const imgUrl = producto.imagenUrl || producto.imagen;
             const base64Img = await convertirImagenABase64(imgUrl);
 
-            // Dibujar imagen
+            // Dibujar imagen con borde sutil
             try {
                 pdf.addImage(base64Img, 'JPEG', xPos, yPos, imgWidth, imgHeight, undefined, 'FAST');
+
+                // Borde alrededor de la imagen
+                pdf.setDrawColor(220, 220, 220);
+                pdf.setLineWidth(0.3);
+                pdf.rect(xPos, yPos, imgWidth, imgHeight);
             } catch (e) {
                 console.error('Error al agregar imagen:', e);
             }
@@ -319,80 +349,133 @@ async function generarCatalogoPDF() {
                 contentYPos += 4;
             }
 
-            // Variaciones
+            // Variaciones - TODAS sin límite, sin stock
             if (producto.variaciones && Array.isArray(producto.variaciones) && producto.variaciones.length > 0) {
-                contentYPos += 2;
-                pdf.setFontSize(6);
-                pdf.setTextColor(80, 80, 80);
-                pdf.setFont('helvetica', 'bold');
-                pdf.text('Disponible en:', xPos + (imgWidth / 2), contentYPos, { align: 'center' });
                 contentYPos += 3;
 
+                // Línea separadora antes de variaciones
+                pdf.setDrawColor(230, 230, 230);
+                pdf.setLineWidth(0.2);
+                pdf.line(xPos + 2, contentYPos, xPos + imgWidth - 2, contentYPos);
+                contentYPos += 3;
+
+                pdf.setFontSize(7);
+                pdf.setTextColor(217, 136, 185);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Disponible en:', xPos + (imgWidth / 2), contentYPos, { align: 'center' });
+                contentYPos += 4;
+
+                // Agrupar variaciones para mostrar de forma compacta
+                pdf.setFontSize(6);
+                pdf.setTextColor(60, 60, 60);
                 pdf.setFont('helvetica', 'normal');
-                for (const variacion of producto.variaciones.slice(0, 5)) { // Máximo 5 variaciones
-                    const color = variacion.color || 'N/A';
-                    const talla = variacion.talla || 'N/A';
-                    const stock = variacion.stock || 0;
 
-                    let varText = `${color}`;
-                    if (talla !== 'N/A') varText += ` - ${talla}`;
-                    varText += ` (Stock: ${stock})`;
+                for (const variacion of producto.variaciones) {
+                    const color = variacion.color || '';
+                    const talla = variacion.talla || '';
 
-                    const varLines = pdf.splitTextToSize(varText, imgWidth - 4);
-                    pdf.text(varLines, xPos + (imgWidth / 2), contentYPos, { align: 'center', maxWidth: imgWidth - 4 });
-                    contentYPos += varLines.length * 2.5;
-                }
+                    let varText = '';
+                    if (color && talla) {
+                        varText = `• ${color} - Talla ${talla}`;
+                    } else if (color) {
+                        varText = `• ${color}`;
+                    } else if (talla) {
+                        varText = `• Talla ${talla}`;
+                    }
 
-                if (producto.variaciones.length > 5) {
-                    pdf.setFontSize(5);
-                    pdf.setTextColor(150, 150, 150);
-                    pdf.text(`+${producto.variaciones.length - 5} más...`, xPos + (imgWidth / 2), contentYPos, { align: 'center' });
-                    contentYPos += 2;
+                    if (varText) {
+                        const varLines = pdf.splitTextToSize(varText, imgWidth - 6);
+                        pdf.text(varLines, xPos + (imgWidth / 2), contentYPos, { align: 'center', maxWidth: imgWidth - 6 });
+                        contentYPos += varLines.length * 2.8;
+                    }
                 }
             }
 
             // Calcular altura real usada
-            const actualCardHeight = contentYPos - yPos;
+            const actualCardHeight = contentYPos - cardStartY + 3;
             cardHeight = Math.max(actualCardHeight, imgHeight + 40);
+
+            // Borde completo alrededor de toda la tarjeta (producto completo)
+            pdf.setDrawColor(217, 136, 185);
+            pdf.setLineWidth(0.5);
+            pdf.roundedRect(xPos - 1.5, cardStartY - 1.5, imgWidth + 3, actualCardHeight + 3, 2, 2);
+
+            // Sombra simulada (líneas sutiles)
+            pdf.setDrawColor(200, 200, 200);
+            pdf.setLineWidth(0.1);
+            pdf.line(xPos + imgWidth + 3.5, cardStartY + 1, xPos + imgWidth + 3.5, cardStartY + actualCardHeight + 2);
+            pdf.line(xPos, cardStartY + actualCardHeight + 3.5, xPos + imgWidth + 2, cardStartY + actualCardHeight + 3.5);
 
             // Siguiente columna
             col++;
             if (col >= colsPerRow) {
                 col = 0;
-                yPos += cardHeight + 8;
+                yPos += cardHeight + 10;
             }
         }
 
-        // Footer
+        // Footer profesional
         if (col !== 0) {
             yPos += cardHeight + 10;
         }
 
-        if (yPos + 30 > pageHeight - margin) {
+        // Asegurar espacio para footer
+        if (yPos + 50 > pageHeight - margin) {
             pdf.addPage();
             yPos = margin;
         }
 
+        yPos += 10;
+
+        // Fondo del footer
+        pdf.setFillColor(250, 245, 248);
+        pdf.rect(margin - 5, yPos - 5, contentWidth + 10, 40, 'F');
+
+        // Borde superior del footer
         pdf.setDrawColor(217, 136, 185);
-        pdf.setLineWidth(0.5);
-        pdf.line(margin, yPos, pageWidth - margin, yPos);
+        pdf.setLineWidth(1.5);
+        pdf.line(margin, yPos - 5, pageWidth - margin, yPos - 5);
+
+        yPos += 5;
+
+        // Icono decorativo
+        pdf.setFillColor(217, 136, 185);
+        pdf.circle(pageWidth / 2, yPos, 3, 'F');
+
         yPos += 8;
 
-        pdf.setFontSize(11);
-        pdf.setTextColor(80, 80, 80);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Contacto:', pageWidth / 2, yPos, { align: 'center' });
-
-        yPos += 6;
-        pdf.setFontSize(10);
+        // Título de contacto
+        pdf.setFontSize(12);
         pdf.setTextColor(217, 136, 185);
-        pdf.text('📱 WhatsApp: +57 304 608 4971', pageWidth / 2, yPos, { align: 'center' });
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('¡ REALIZA TU PEDIDO !', pageWidth / 2, yPos, { align: 'center' });
 
-        yPos += 6;
+        yPos += 8;
+
+        // WhatsApp con diseño destacado
+        pdf.setFillColor(37, 211, 102);
+        pdf.roundedRect(pageWidth / 2 - 40, yPos - 4, 80, 10, 2, 2, 'F');
+
+        pdf.setFontSize(11);
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('📱  +57 304 608 4971', pageWidth / 2, yPos + 2, { align: 'center' });
+
+        yPos += 10;
+
+        // Texto adicional
         pdf.setFontSize(8);
-        pdf.setTextColor(150, 150, 150);
+        pdf.setTextColor(120, 120, 120);
         pdf.setFont('helvetica', 'italic');
-        pdf.text('¡Haz tu pedido por WhatsApp!', pageWidth / 2, yPos, { align: 'center' });
+        pdf.text('Disponible para atenderte en WhatsApp', pageWidth / 2, yPos, { align: 'center' });
+
+        yPos += 5;
+
+        // Copyright
+        pdf.setFontSize(7);
+        pdf.setTextColor(150, 150, 150);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`© ${new Date().getFullYear()} Mishell Boutique - Todos los derechos reservados`, pageWidth / 2, yPos, { align: 'center' });
 
         // Guardar
         progressText.textContent = 'Descargando PDF...';
