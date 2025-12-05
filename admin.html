@@ -1677,15 +1677,37 @@
                         </select>
                     </div>
 
-                    <!-- Repartidor (si aplica) -->
-                    <div class="mb-3" id="edit-sale-repartidor-container">
-                        <label for="edit-sale-repartidor" class="form-label">
-                            <i class="bi bi-bicycle me-2"></i>Repartidor
+                    <!-- Tipo de Entrega -->
+                    <div class="mb-3">
+                        <label for="edit-sale-entrega" class="form-label">
+                            <i class="bi bi-truck me-2"></i>Tipo de Entrega
                         </label>
-                        <select class="form-select" id="edit-sale-repartidor">
-                            <option value="">Ninguno</option>
-                            <!-- Los repartidores se cargarán dinámicamente -->
+                        <select class="form-select" id="edit-sale-entrega">
+                            <option value="tienda">Recoge en Tienda</option>
+                            <option value="domicilio">Domicilio</option>
                         </select>
+                    </div>
+
+                    <!-- Campos de Domicilio (solo si es domicilio) -->
+                    <div id="edit-domicilio-fields" style="display: none;">
+                        <!-- Repartidor -->
+                        <div class="mb-3">
+                            <label for="edit-sale-repartidor" class="form-label">
+                                <i class="bi bi-bicycle me-2"></i>Repartidor <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="edit-sale-repartidor">
+                                <option value="">Seleccione repartidor</option>
+                                <!-- Los repartidores se cargarán dinámicamente -->
+                            </select>
+                        </div>
+
+                        <!-- Costo de Ruta -->
+                        <div class="mb-3">
+                            <label for="edit-sale-costo-ruta" class="form-label">
+                                <i class="bi bi-cash me-2"></i>Costo de Ruta
+                            </label>
+                            <input type="text" inputmode="numeric" class="form-control" id="edit-sale-costo-ruta" value="0">
+                        </div>
                     </div>
 
                     <!-- Total Actualizado -->
