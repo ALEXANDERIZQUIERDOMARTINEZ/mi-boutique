@@ -91,18 +91,95 @@ async function generarCatalogoPDF() {
 
         console.log(`✅ ${productos.length} productos cargados`);
 
-        // Crear overlay
+        // Crear overlay con diseño mejorado
         const overlay = document.createElement('div');
         overlay.id = 'pdf-overlay';
-        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:999999;display:flex;align-items:center;justify-content:center;flex-direction:column;color:white;font-family:Arial;';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);z-index:999999;display:flex;align-items:center;justify-content:center;flex-direction:column;color:white;font-family:Arial;';
         overlay.innerHTML = `
-            <div style="text-align:center;max-width:400px;">
-                <div style="font-size:28px;margin-bottom:20px;">⏳ Generando PDF</div>
-                <div id="progress-text" style="font-size:16px;margin-bottom:20px;color:#ccc;">Iniciando...</div>
-                <div style="width:100%;height:30px;background:#333;border-radius:15px;overflow:hidden;box-shadow:0 4px 10px rgba(0,0,0,0.3);">
-                    <div id="progress-bar" style="width:0%;height:100%;background:linear-gradient(90deg, #D988B9, #E5A8CB);transition:width 0.3s;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;"></div>
+            <style>
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+                @keyframes shimmer {
+                    0% { background-position: -1000px 0; }
+                    100% { background-position: 1000px 0; }
+                }
+                .pdf-logo {
+                    font-size: 60px;
+                    margin-bottom: 20px;
+                    animation: pulse 2s ease-in-out infinite;
+                }
+                .progress-container {
+                    width: 450px;
+                    padding: 40px;
+                    background: rgba(255,255,255,0.05);
+                    border-radius: 20px;
+                    backdrop-filter: blur(10px);
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                    border: 1px solid rgba(255,255,255,0.1);
+                }
+                .progress-title {
+                    font-size: 32px;
+                    font-weight: bold;
+                    margin-bottom: 15px;
+                    background: linear-gradient(90deg, #D988B9, #E5A8CB, #F0B8D8);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                }
+                .progress-bar-outer {
+                    width: 100%;
+                    height: 40px;
+                    background: rgba(0,0,0,0.3);
+                    border-radius: 20px;
+                    overflow: hidden;
+                    box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+                    position: relative;
+                }
+                .progress-bar-inner {
+                    height: 100%;
+                    background: linear-gradient(90deg, #D988B9 0%, #E5A8CB 50%, #D988B9 100%);
+                    background-size: 200% 100%;
+                    animation: shimmer 2s infinite;
+                    transition: width 0.5s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: white;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                }
+                .progress-info {
+                    margin-top: 20px;
+                    font-size: 15px;
+                    color: #E5A8CB;
+                    text-align: center;
+                    line-height: 1.6;
+                }
+                .progress-warning {
+                    margin-top: 15px;
+                    font-size: 13px;
+                    color: #ffd700;
+                    text-align: center;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                }
+            </style>
+            <div class="progress-container">
+                <div class="pdf-logo">📄</div>
+                <div class="progress-title">Generando Catálogo</div>
+                <div id="progress-text" class="progress-info">Iniciando proceso...</div>
+                <div class="progress-bar-outer">
+                    <div id="progress-bar" class="progress-bar-inner" style="width:0%;">0%</div>
                 </div>
-                <div style="margin-top:15px;font-size:13px;color:#999;">No cierres esta ventana</div>
+                <div class="progress-warning">
+                    <span>⚠️</span>
+                    <span>No cierres esta ventana - Puede tomar varios minutos</span>
+                </div>
             </div>
         `;
         document.body.appendChild(overlay);
@@ -149,11 +226,11 @@ async function generarCatalogoPDF() {
         pdf.line(margin, yPos, pageWidth - margin, yPos);
         yPos += 10;
 
-        // Procesar productos
-        const colsPerRow = 3;
+        // Procesar productos - 2 columnas para más espacio vertical
+        const colsPerRow = 2;
         const imgWidth = (contentWidth - 10) / colsPerRow;
-        const imgHeight = imgWidth * 1.3;
-        const cardHeight = imgHeight + 30;
+        const imgHeight = imgWidth * 1.2;
+        let cardHeight = imgHeight + 60; // Más espacio para descripción y variaciones
 
         let col = 0;
         let xPos = margin;
@@ -203,12 +280,27 @@ async function generarCatalogoPDF() {
                 pdf.text('AGOTADO', xPos + (imgWidth / 2), yPos + (imgHeight / 2) + 2, { align: 'center' });
             }
 
+            // Calcular altura dinámica según contenido
+            let contentYPos = yPos + imgHeight + 5;
+
             // Nombre
             pdf.setFontSize(9);
             pdf.setTextColor(0, 0, 0);
             pdf.setFont('helvetica', 'bold');
-            const nombreCorto = producto.nombre.length > 20 ? producto.nombre.substring(0, 20) + '...' : producto.nombre;
-            pdf.text(nombreCorto, xPos + (imgWidth / 2), yPos + imgHeight + 5, { align: 'center', maxWidth: imgWidth - 2 });
+            const nombreCorto = producto.nombre.length > 30 ? producto.nombre.substring(0, 30) + '...' : producto.nombre;
+            pdf.text(nombreCorto, xPos + (imgWidth / 2), contentYPos, { align: 'center', maxWidth: imgWidth - 4 });
+            contentYPos += 5;
+
+            // Descripción
+            if (producto.descripcion && producto.descripcion.trim()) {
+                pdf.setFontSize(6);
+                pdf.setTextColor(100, 100, 100);
+                pdf.setFont('helvetica', 'normal');
+                const descripcionCorta = producto.descripcion.length > 80 ? producto.descripcion.substring(0, 80) + '...' : producto.descripcion;
+                const descLines = pdf.splitTextToSize(descripcionCorta, imgWidth - 4);
+                pdf.text(descLines, xPos + (imgWidth / 2), contentYPos, { align: 'center', maxWidth: imgWidth - 4 });
+                contentYPos += descLines.length * 2.5;
+            }
 
             // Precios
             const precioDetal = parseFloat(producto.precioDetal) || 0;
@@ -217,19 +309,57 @@ async function generarCatalogoPDF() {
             pdf.setFontSize(8);
             pdf.setTextColor(217, 136, 185);
             pdf.setFont('helvetica', 'bold');
-            pdf.text(`$${precioDetal.toLocaleString('es-CO')}`, xPos + (imgWidth / 2), yPos + imgHeight + 10, { align: 'center' });
+            pdf.text(`Detal: $${precioDetal.toLocaleString('es-CO')}`, xPos + (imgWidth / 2), contentYPos, { align: 'center' });
+            contentYPos += 4;
 
             if (precioMayor > 0) {
                 pdf.setTextColor(39, 174, 96);
                 pdf.setFontSize(7);
-                pdf.text(`Mayor: $${precioMayor.toLocaleString('es-CO')}`, xPos + (imgWidth / 2), yPos + imgHeight + 14, { align: 'center' });
+                pdf.text(`Mayor: $${precioMayor.toLocaleString('es-CO')}`, xPos + (imgWidth / 2), contentYPos, { align: 'center' });
+                contentYPos += 4;
             }
+
+            // Variaciones
+            if (producto.variaciones && Array.isArray(producto.variaciones) && producto.variaciones.length > 0) {
+                contentYPos += 2;
+                pdf.setFontSize(6);
+                pdf.setTextColor(80, 80, 80);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text('Disponible en:', xPos + (imgWidth / 2), contentYPos, { align: 'center' });
+                contentYPos += 3;
+
+                pdf.setFont('helvetica', 'normal');
+                for (const variacion of producto.variaciones.slice(0, 5)) { // Máximo 5 variaciones
+                    const color = variacion.color || 'N/A';
+                    const talla = variacion.talla || 'N/A';
+                    const stock = variacion.stock || 0;
+
+                    let varText = `${color}`;
+                    if (talla !== 'N/A') varText += ` - ${talla}`;
+                    varText += ` (Stock: ${stock})`;
+
+                    const varLines = pdf.splitTextToSize(varText, imgWidth - 4);
+                    pdf.text(varLines, xPos + (imgWidth / 2), contentYPos, { align: 'center', maxWidth: imgWidth - 4 });
+                    contentYPos += varLines.length * 2.5;
+                }
+
+                if (producto.variaciones.length > 5) {
+                    pdf.setFontSize(5);
+                    pdf.setTextColor(150, 150, 150);
+                    pdf.text(`+${producto.variaciones.length - 5} más...`, xPos + (imgWidth / 2), contentYPos, { align: 'center' });
+                    contentYPos += 2;
+                }
+            }
+
+            // Calcular altura real usada
+            const actualCardHeight = contentYPos - yPos;
+            cardHeight = Math.max(actualCardHeight, imgHeight + 40);
 
             // Siguiente columna
             col++;
             if (col >= colsPerRow) {
                 col = 0;
-                yPos += cardHeight + 5;
+                yPos += cardHeight + 8;
             }
         }
 
