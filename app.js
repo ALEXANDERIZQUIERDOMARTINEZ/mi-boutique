@@ -187,7 +187,31 @@ const SPECIAL_COLORS = {
     'blanco con beige': 'repeating-linear-gradient(45deg, #FFFFFF 0px, #FFFFFF 8px, #D7CCC8 8px, #D7CCC8 16px)',
 };
 
-// ✅ FUNCIÓN: Convertir nombre de color a código hex o gradiente
+// ✅ FUNCIÓN MEJORADA: Detectar si es una combinación de colores
+function esCombiacionDeColores(colorName) {
+    const normalized = colorName.toLowerCase();
+    return normalized.includes('/') ||
+           normalized.includes(' y ') ||
+           normalized.includes(',') ||
+           normalized.includes(' con ');
+}
+
+// ✅ FUNCIÓN MEJORADA: Dividir combinación en colores individuales
+function dividirColores(colorName) {
+    let separadores = ['/'];
+    let colores = [colorName];
+
+    for (const sep of separadores) {
+        if (colorName.includes(sep)) {
+            colores = colorName.split(sep).map(c => c.trim());
+            break;
+        }
+    }
+
+    return colores;
+}
+
+// ✅ FUNCIÓN MEJORADA: Convertir nombre de color a código hex (más inteligente)
 function getColorHex(colorName) {
     if (!colorName) return '#9E9E9E';
     const normalized = colorName.toLowerCase().trim();
@@ -197,8 +221,35 @@ function getColorHex(colorName) {
         return SPECIAL_COLORS[normalized];
     }
 
-    // Si no, buscar en el mapa normal
-    return COLOR_MAP[normalized] || '#9E9E9E';
+    // Buscar en el mapa normal
+    if (COLOR_MAP[normalized]) {
+        return COLOR_MAP[normalized];
+    }
+
+    // Si no está en el mapa, intentar inferir del nombre
+    // Colores básicos que no estén en el mapa
+    const basicColors = {
+        'blanco': '#FFFFFF',
+        'negro': '#000000',
+        'rojo': '#FF0000',
+        'azul': '#0000FF',
+        'verde': '#008000',
+        'amarillo': '#FFFF00',
+        'naranja': '#FFA500',
+        'morado': '#800080',
+        'rosa': '#FFC0CB',
+        'gris': '#808080'
+    };
+
+    // Buscar si el nombre contiene algún color básico
+    for (const [colorBase, hex] of Object.entries(basicColors)) {
+        if (normalized.includes(colorBase)) {
+            return hex;
+        }
+    }
+
+    // Si no se encuentra nada, retornar gris
+    return '#9E9E9E';
 }
 
 // --- FUNCIONES DE RENDERIZADO ---
@@ -544,21 +595,38 @@ function renderProducts(products) {
              <div class="variation-chips">${tallas.map(t => `<span class="variation-chip">${t}</span>`).join('')}</div>` 
             : '';
 
-        // ✅ HTML para COLORES con círculos de color
+        // ✅ HTML para COLORES con círculos de color (soporta combinaciones)
         let coloresHTML = '';
         if (colores.length > 0) {
             const colorChips = colores.map(c => {
-                const colorValue = getColorHex(c);
                 const normalized = c.toLowerCase().trim();
 
-                // Si es un color especial (gradiente), usar background-image
-                const styleAttr = SPECIAL_COLORS[normalized]
-                    ? `background-image: ${colorValue};`
-                    : `background-color: ${colorValue};`;
+                // Si es una combinación de colores, mostrar múltiples círculos
+                if (esCombiacionDeColores(c)) {
+                    const coloresIndividuales = dividirColores(c);
+                    const circulos = coloresIndividuales.map(colorIndividual => {
+                        const hex = getColorHex(colorIndividual);
+                        return `<span class="variation-chip color-chip"
+                                     style="background-color: ${hex};"
+                                     data-color-name="${colorIndividual}"
+                                     title="${colorIndividual}"></span>`;
+                    }).join('');
 
-                return `<span class="variation-chip color-chip"
-                             style="${styleAttr}"
-                             data-color-name="${c}"></span>`;
+                    return `<div class="color-combination" style="display: inline-flex; gap: 2px;" title="${c}">${circulos}</div>`;
+                } else {
+                    // Color único
+                    const colorValue = getColorHex(c);
+
+                    // Si es un color especial (gradiente), usar background-image
+                    const styleAttr = SPECIAL_COLORS[normalized]
+                        ? `background-image: ${colorValue};`
+                        : `background-color: ${colorValue};`;
+
+                    return `<span class="variation-chip color-chip"
+                                 style="${styleAttr}"
+                                 data-color-name="${c}"
+                                 title="${c}"></span>`;
+                }
             }).join('');
 
             coloresHTML = `<div class="variations-title mt-1">Colores</div>
@@ -804,7 +872,7 @@ function loadAvailableColors() {
     renderColorFilters();
 }
 
-// ✅ FUNCIÓN: Renderizar filtros de colores
+// ✅ FUNCIÓN MEJORADA: Renderizar filtros de colores (soporta combinaciones)
 function renderColorFilters() {
     const colorContainer = document.getElementById('color-filter-container');
     if (!colorContainer) return;
@@ -819,27 +887,68 @@ function renderColorFilters() {
     }
 
     uniqueColors.forEach(colorName => {
-        const hexColor = getColorHex(colorName);
-        const chip = document.createElement('div');
-        chip.className = 'color-filter-chip';
-        chip.style.backgroundColor = hexColor;
-        chip.dataset.colorName = colorName;
-        chip.dataset.color = colorName;
-        chip.title = colorName; // ✅ Tooltip con nombre del color
+        // Si es una combinación, crear contenedor con múltiples círculos
+        if (esCombiacionDeColores(colorName)) {
+            const coloresIndividuales = dividirColores(colorName);
+            const wrapper = document.createElement('div');
+            wrapper.className = 'color-filter-combination';
+            wrapper.style.display = 'inline-flex';
+            wrapper.style.gap = '2px';
+            wrapper.style.cursor = 'pointer';
+            wrapper.title = colorName;
+            wrapper.dataset.colorName = colorName;
 
-        chip.addEventListener('click', () => {
-            chip.classList.toggle('active');
+            coloresIndividuales.forEach(colorIndividual => {
+                const hex = getColorHex(colorIndividual);
+                const miniChip = document.createElement('div');
+                miniChip.className = 'color-filter-chip-mini';
+                miniChip.style.backgroundColor = hex;
+                miniChip.style.width = '18px';
+                miniChip.style.height = '18px';
+                miniChip.style.borderRadius = '50%';
+                miniChip.style.border = '2px solid #ddd';
+                wrapper.appendChild(miniChip);
+            });
 
-            if (chip.classList.contains('active')) {
-                advancedFilters.selectedColors.add(colorName);
-            } else {
-                advancedFilters.selectedColors.delete(colorName);
-            }
+            wrapper.addEventListener('click', () => {
+                wrapper.classList.toggle('active');
 
-            applyFiltersAndRender();
-        });
+                if (wrapper.classList.contains('active')) {
+                    wrapper.style.boxShadow = '0 0 0 2px var(--color-primario)';
+                    advancedFilters.selectedColors.add(colorName);
+                } else {
+                    wrapper.style.boxShadow = 'none';
+                    advancedFilters.selectedColors.delete(colorName);
+                }
 
-        colorContainer.appendChild(chip);
+                applyFiltersAndRender();
+            });
+
+            colorContainer.appendChild(wrapper);
+        } else {
+            // Color único
+            const hexColor = getColorHex(colorName);
+            const chip = document.createElement('div');
+            chip.className = 'color-filter-chip';
+            chip.style.backgroundColor = hexColor;
+            chip.dataset.colorName = colorName;
+            chip.dataset.color = colorName;
+            chip.title = colorName;
+
+            chip.addEventListener('click', () => {
+                chip.classList.toggle('active');
+
+                if (chip.classList.contains('active')) {
+                    advancedFilters.selectedColors.add(colorName);
+                } else {
+                    advancedFilters.selectedColors.delete(colorName);
+                }
+
+                applyFiltersAndRender();
+            });
+
+            colorContainer.appendChild(chip);
+        }
     });
 }
 
