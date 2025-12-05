@@ -594,7 +594,40 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .badge-agotado {
-    background-color: #777 !important;
+    background-color: #dc3545 !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    padding: 8px 16px !important;
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+    border: 2px solid white;
+    animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Imagen en blanco y negro para productos agotados */
+.product-card[data-stock="0"] .product-image-wrapper img {
+    filter: grayscale(100%);
+    opacity: 0.7;
+}
+
+/* Overlay semi-transparente para productos agotados */
+.product-card[data-stock="0"] .product-image-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.15);
+    pointer-events: none;
 }
 
 .badge-solo-detal {
