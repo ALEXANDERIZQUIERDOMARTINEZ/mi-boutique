@@ -2329,6 +2329,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Validar que si es domicilio, debe haber repartidor seleccionado
+            if (tipoEntregaSelect.value === 'domicilio' && !ventaRepartidorSelect.value) {
+                showToast("Debes seleccionar un repartidor para ventas a domicilio.", 'warning');
+                return;
+            }
+
             // Obtener referencias a los elementos del formulario
             const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
             const ventaCelularInput = document.getElementById('venta-cliente-celular');
@@ -2475,13 +2481,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(mensaje, 'success');
                 }
 
-                salesForm.reset(); 
-                window.ventaItems = []; 
-                renderCarrito(); 
-                window.fillClientInfoSales(); 
-                tipoVentaSelect.value='detal'; 
-                tipoEntregaSelect.value='tienda'; 
-                toggleDeliveryFields(); 
+                salesForm.reset();
+                window.ventaItems = [];
+                renderCarrito();
+                ventaClienteInput.value = 'General';
+                window.fillClientInfoSales();
+                tipoVentaSelect.value='detal';
+                tipoEntregaSelect.value='tienda';
+                toggleDeliveryFields();
                 window.calcularTotalVentaGeneral(); 
             } catch (err) { 
                 console.error("Error saving sale:", err); 
@@ -3212,6 +3219,12 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleDeliveryFields();
         toggleApartadoFields();
         window.calcularTotalVentaGeneral();
+
+        // Establecer cliente "General" por defecto al cargar
+        if (ventaClienteInput) {
+            ventaClienteInput.value = 'General';
+            window.fillClientInfoSales();
+        }
 
     })();
 
