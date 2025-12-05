@@ -6011,7 +6011,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         console.log("🏆 Calculando meta vs real...");
 
         try {
-            const META_DIARIA = 500000; // Meta de $500,000 por día (ajustable)
+            const META_DIARIA = 2000000; // Meta de $2,000,000 por día (ajustable)
 
             const hoy = new Date();
             hoy.setHours(0, 0, 0, 0);
@@ -6229,37 +6229,113 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             const data = labels.map(label => ventasPorDia[label] || 0);
 
+            // Calcular promedio para línea de referencia
+            const total = data.reduce((sum, val) => sum + val, 0);
+            const promedio = total / data.length;
+            const promedioArray = new Array(data.length).fill(promedio);
+
             // Crear el gráfico
             const ctx = ventasChartCanvas.getContext('2d');
+
+            // Gradiente para las barras
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(16, 185, 129, 0.9)');
+            gradient.addColorStop(1, 'rgba(16, 185, 129, 0.3)');
+
             ventasChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Ventas ($)',
-                        data: data,
-                        backgroundColor: 'rgba(99, 102, 241, 0.8)',
-                        borderColor: 'rgba(99, 102, 241, 1)',
-                        borderWidth: 1,
-                        borderRadius: 6,
-                        borderSkipped: false,
-                    }]
+                    datasets: [
+                        {
+                            label: 'Ventas',
+                            data: data,
+                            backgroundColor: gradient,
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            order: 2
+                        },
+                        {
+                            label: 'Promedio',
+                            data: promedioArray,
+                            type: 'line',
+                            borderColor: 'rgba(251, 146, 60, 1)',
+                            backgroundColor: 'rgba(251, 146, 60, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [8, 4],
+                            pointRadius: 0,
+                            fill: false,
+                            order: 1
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    },
                     plugins: {
                         legend: {
-                            display: false
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                }
+                            }
                         },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: 12,
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            padding: 16,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            borderColor: 'rgba(16, 185, 129, 0.5)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
                             callbacks: {
+                                title: function(tooltipItems) {
+                                    return '📅 ' + tooltipItems[0].label;
+                                },
                                 label: function(context) {
-                                    return 'Ventas: ' + formatoMoneda.format(context.parsed.y);
+                                    const value = context.parsed.y;
+                                    if (context.datasetIndex === 0) {
+                                        // Formato mejorado para Colombia
+                                        let formatted;
+                                        if (value >= 1000000) {
+                                            formatted = '$' + (value / 1000000).toFixed(2) + 'M';
+                                        } else if (value >= 1000) {
+                                            formatted = '$' + (value / 1000).toFixed(0) + 'K';
+                                        } else {
+                                            formatted = formatoMoneda.format(value);
+                                        }
+                                        return '💰 Ventas: ' + formatted;
+                                    } else {
+                                        return '📊 Promedio: ' + formatoMoneda.format(value);
+                                    }
+                                },
+                                afterLabel: function(context) {
+                                    if (context.datasetIndex === 0) {
+                                        const diff = context.parsed.y - promedio;
+                                        const percent = ((diff / promedio) * 100).toFixed(1);
+                                        if (diff > 0) {
+                                            return '📈 +' + percent + '% vs promedio';
+                                        } else if (diff < 0) {
+                                            return '📉 ' + percent + '% vs promedio';
+                                        }
+                                    }
+                                    return '';
                                 }
                             }
                         }
@@ -6269,16 +6345,32 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                    if (value >= 1000000) {
+                                        return '$' + (value / 1000000).toFixed(1) + 'M';
+                                    } else if (value >= 1000) {
+                                        return '$' + (value / 1000).toFixed(0) + 'K';
+                                    }
+                                    return '$' + value;
+                                },
+                                font: {
+                                    size: 11,
+                                    weight: '500'
                                 }
                             },
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: false
                             }
                         },
                         x: {
                             grid: {
                                 display: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    weight: '500'
+                                }
                             }
                         }
                     }
@@ -6345,8 +6437,36 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 topProductos.push(['Sin datos', 0]);
             }
 
-            const labels = topProductos.map(p => p[0].length > 20 ? p[0].substring(0, 20) + '...' : p[0]);
+            const labels = topProductos.map(p => p[0].length > 25 ? p[0].substring(0, 25) + '...' : p[0]);
             const data = topProductos.map(p => p[1]);
+
+            // Calcular total de unidades vendidas
+            const totalUnidades = data.reduce((sum, val) => sum + val, 0);
+
+            // Colores modernos con gradiente
+            const coloresModernos = [
+                ['#f59e0b', '#fbbf24'], // Ámbar
+                ['#3b82f6', '#60a5fa'], // Azul
+                ['#10b981', '#34d399'], // Verde
+                ['#ef4444', '#f87171'], // Rojo
+                ['#8b5cf6', '#a78bfa'], // Violeta
+                ['#ec4899', '#f472b6'], // Rosa
+                ['#22c55e', '#4ade80'], // Verde lima
+                ['#fb923c', '#fdba74'], // Naranja
+                ['#a855f7', '#c084fc'], // Púrpura
+                ['#0ea5e9', '#38bdf8']  // Cyan
+            ];
+
+            // Crear gradientes para cada barra
+            const backgroundColors = data.map((_, index) => {
+                const [color1, color2] = coloresModernos[index % coloresModernos.length];
+                const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+                gradient.addColorStop(0, color1 + 'E6'); // 90% opacidad
+                gradient.addColorStop(1, color2 + 'B3'); // 70% opacidad
+                return gradient;
+            });
+
+            const borderColors = coloresModernos.map(c => c[0]);
 
             // Crear el gráfico
             const ctx = topProductosChartCanvas.getContext('2d');
@@ -6355,34 +6475,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Unidades',
+                        label: 'Unidades Vendidas',
                         data: data,
-                        backgroundColor: [
-                            'rgba(245, 158, 11, 0.8)',
-                            'rgba(59, 130, 246, 0.8)',
-                            'rgba(16, 185, 129, 0.8)',
-                            'rgba(239, 68, 68, 0.8)',
-                            'rgba(139, 92, 246, 0.8)',
-                            'rgba(236, 72, 153, 0.8)',
-                            'rgba(34, 197, 94, 0.8)',
-                            'rgba(251, 146, 60, 0.8)',
-                            'rgba(168, 85, 247, 0.8)',
-                            'rgba(14, 165, 233, 0.8)'
-                        ],
-                        borderColor: [
-                            'rgba(245, 158, 11, 1)',
-                            'rgba(59, 130, 246, 1)',
-                            'rgba(16, 185, 129, 1)',
-                            'rgba(239, 68, 68, 1)',
-                            'rgba(139, 92, 246, 1)',
-                            'rgba(236, 72, 153, 1)',
-                            'rgba(34, 197, 94, 1)',
-                            'rgba(251, 146, 60, 1)',
-                            'rgba(168, 85, 247, 1)',
-                            'rgba(14, 165, 233, 1)'
-                        ],
-                        borderWidth: 1,
-                        borderRadius: 6,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 2,
+                        borderRadius: 10,
                         borderSkipped: false
                     }]
                 },
@@ -6390,15 +6488,42 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: true,
+                    animation: {
+                        duration: 1200,
+                        easing: 'easeOutQuart'
+                    },
                     plugins: {
                         legend: {
                             display: false
                         },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: 12,
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 }
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            padding: 16,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            borderColor: 'rgba(59, 130, 246, 0.5)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    const fullName = topProductos[tooltipItems[0].dataIndex][0];
+                                    return '🏆 ' + fullName;
+                                },
+                                label: function(context) {
+                                    const unidades = context.parsed.x;
+                                    const porcentaje = ((unidades / totalUnidades) * 100).toFixed(1);
+                                    return '📦 Unidades: ' + unidades + ' (' + porcentaje + '%)';
+                                },
+                                afterLabel: function(context) {
+                                    const ranking = context.dataIndex + 1;
+                                    let medalla = '';
+                                    if (ranking === 1) medalla = '🥇';
+                                    else if (ranking === 2) medalla = '🥈';
+                                    else if (ranking === 3) medalla = '🥉';
+                                    return medalla + ' Posición #' + ranking + ' en ventas';
+                                }
+                            }
                         }
                     },
                     scales: {
