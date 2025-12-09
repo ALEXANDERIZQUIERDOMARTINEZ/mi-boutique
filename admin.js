@@ -5814,264 +5814,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     };
 
     // ================================================================
-    // 💰 MARGEN DE GANANCIA REAL DEL DÍA
-    // ================================================================
-    function calcularMargenReal() {
-        console.log("💰 Calculando margen de ganancia real...");
-
-        try {
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            const manana = new Date(hoy);
-            manana.setDate(manana.getDate() + 1);
-
-            const q = query(
-                salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(hoy)),
-                where('timestamp', '<', Timestamp.fromDate(manana))
-            );
-
-            onSnapshot(q, async (snapshot) => {
-                let totalVendido = 0;
-                let totalCosto = 0;
-
-                // Obtener todos los productos para calcular costos
-                const productosSnap = await getDocs(productsCollection);
-                const productosMap = new Map();
-                productosSnap.forEach(doc => {
-                    productosMap.set(doc.id, doc.data());
-                });
-
-                snapshot.forEach(doc => {
-                    const venta = doc.data();
-                    const estado = venta.estado || '';
-
-                    if (estado !== 'Anulada' && estado !== 'Cancelada') {
-                        // Para ventas de catálogo, solo contar el total (es pura ganancia)
-                        if (venta.esCatalogoExterno) {
-                            totalVendido += (venta.totalVenta || 0);
-                            // No agregamos costo porque no es de nuestro inventario
-                        } else {
-                            // Para ventas normales, calcular costo real
-                            const items = venta.items || [];
-                            items.forEach(item => {
-                                const cantidad = item.cantidad || 0;
-                                const precioVenta = item.precio || 0;
-                                const producto = productosMap.get(item.productoId);
-                                const costoCompra = producto?.costoCompra || 0;
-
-                                totalVendido += (precioVenta * cantidad);
-                                totalCosto += (costoCompra * cantidad);
-                            });
-                        }
-                    }
-                });
-
-                const margenReal = totalVendido - totalCosto;
-                const porcentajeMargen = totalVendido > 0 ? ((margenReal / totalVendido) * 100) : 0;
-
-                // Actualizar UI
-                const dbMargenRealEl = document.getElementById('db-margen-real');
-                if (dbMargenRealEl) {
-                    dbMargenRealEl.textContent = formatoMoneda.format(margenReal);
-                }
-
-                const dbMargenPorcentajeEl = document.getElementById('db-margen-porcentaje');
-                if (dbMargenPorcentajeEl) {
-                    dbMargenPorcentajeEl.innerHTML = `
-                        <i class="bi bi-percent"></i> ${porcentajeMargen.toFixed(1)}% de ganancia
-                    `;
-                }
-
-                console.log(`✅ Margen real: ${formatoMoneda.format(margenReal)} (${porcentajeMargen.toFixed(1)}%)`);
-            });
-        } catch (error) {
-            console.error("❌ Error al calcular margen real:", error);
-        }
-    }
-
-    // ================================================================
-    // 🎫 TICKET PROMEDIO DE VENTAS
-    // ================================================================
-    function calcularTicketPromedio() {
-        console.log("🎫 Calculando ticket promedio...");
-
-        try {
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            const manana = new Date(hoy);
-            manana.setDate(manana.getDate() + 1);
-
-            const q = query(
-                salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(hoy)),
-                where('timestamp', '<', Timestamp.fromDate(manana))
-            );
-
-            onSnapshot(q, (snapshot) => {
-                let totalVentas = 0;
-                let cantidadVentas = 0;
-
-                snapshot.forEach(doc => {
-                    const venta = doc.data();
-                    const estado = venta.estado || '';
-
-                    if (estado !== 'Anulada' && estado !== 'Cancelada') {
-                        totalVentas += (venta.totalVenta || 0);
-                        cantidadVentas++;
-                    }
-                });
-
-                const ticketPromedio = cantidadVentas > 0 ? (totalVentas / cantidadVentas) : 0;
-
-                // Actualizar UI
-                const dbTicketPromedioEl = document.getElementById('db-ticket-promedio');
-                if (dbTicketPromedioEl) {
-                    dbTicketPromedioEl.textContent = formatoMoneda.format(ticketPromedio);
-                }
-
-                const dbTotalVentasCountEl = document.getElementById('db-total-ventas-count');
-                if (dbTotalVentasCountEl) {
-                    dbTotalVentasCountEl.textContent = `${cantidadVentas} ventas hoy`;
-                }
-
-                console.log(`✅ Ticket promedio: ${formatoMoneda.format(ticketPromedio)} (${cantidadVentas} ventas)`);
-            });
-        } catch (error) {
-            console.error("❌ Error al calcular ticket promedio:", error);
-        }
-    }
-
-    // ================================================================
-    // 🏆 META DEL DÍA VS REAL
-    // ================================================================
-    function calcularMetaVsReal() {
-        console.log("🏆 Calculando meta vs real...");
-
-        try {
-            const META_DIARIA = 500000; // Meta de $500,000 por día (ajustable)
-
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            const manana = new Date(hoy);
-            manana.setDate(manana.getDate() + 1);
-
-            const q = query(
-                salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(hoy)),
-                where('timestamp', '<', Timestamp.fromDate(manana))
-            );
-
-            onSnapshot(q, (snapshot) => {
-                let totalVentas = 0;
-
-                snapshot.forEach(doc => {
-                    const venta = doc.data();
-                    const estado = venta.estado || '';
-
-                    if (estado !== 'Anulada' && estado !== 'Cancelada') {
-                        const efectivo = venta.pagoEfectivo || 0;
-                        const transferencia = venta.pagoTransferencia || 0;
-                        totalVentas += efectivo + transferencia;
-                    }
-                });
-
-                const progreso = META_DIARIA > 0 ? ((totalVentas / META_DIARIA) * 100) : 0;
-                const progresoLimitado = Math.min(progreso, 100);
-
-                // Actualizar UI
-                const dbProgresoMetaEl = document.getElementById('db-progreso-meta');
-                if (dbProgresoMetaEl) {
-                    dbProgresoMetaEl.textContent = `${progresoLimitado.toFixed(0)}%`;
-                }
-
-                const dbMetaTextoEl = document.getElementById('db-meta-texto');
-                if (dbMetaTextoEl) {
-                    dbMetaTextoEl.textContent = `${formatoMoneda.format(totalVentas)} / ${formatoMoneda.format(META_DIARIA)}`;
-                }
-
-                const dbMetaBarraEl = document.getElementById('db-meta-barra');
-                if (dbMetaBarraEl) {
-                    dbMetaBarraEl.style.width = `${progresoLimitado}%`;
-                }
-
-                console.log(`✅ Meta: ${progresoLimitado.toFixed(0)}% (${formatoMoneda.format(totalVentas)} / ${formatoMoneda.format(META_DIARIA)})`);
-            });
-        } catch (error) {
-            console.error("❌ Error al calcular meta vs real:", error);
-        }
-    }
-
-    // ================================================================
-    // 📊 RATIO CATÁLOGO VS INVENTARIO
-    // ================================================================
-    function calcularRatioCatalogo() {
-        console.log("📊 Calculando ratio catálogo vs tienda...");
-
-        try {
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            const manana = new Date(hoy);
-            manana.setDate(manana.getDate() + 1);
-
-            const q = query(
-                salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(hoy)),
-                where('timestamp', '<', Timestamp.fromDate(manana))
-            );
-
-            onSnapshot(q, (snapshot) => {
-                let totalCatalogo = 0;
-                let totalTienda = 0;
-
-                snapshot.forEach(doc => {
-                    const venta = doc.data();
-                    const estado = venta.estado || '';
-
-                    if (estado !== 'Anulada' && estado !== 'Cancelada') {
-                        const totalVenta = venta.totalVenta || 0;
-
-                        if (venta.esCatalogoExterno) {
-                            totalCatalogo += totalVenta;
-                        } else {
-                            totalTienda += totalVenta;
-                        }
-                    }
-                });
-
-                const total = totalCatalogo + totalTienda;
-                const porcentajeCatalogo = total > 0 ? ((totalCatalogo / total) * 100) : 0;
-                const porcentajeTienda = total > 0 ? ((totalTienda / total) * 100) : 0;
-
-                // Actualizar UI
-                const dbCatalogoPorcentajeEl = document.getElementById('db-catalogo-porcentaje');
-                if (dbCatalogoPorcentajeEl) {
-                    dbCatalogoPorcentajeEl.textContent = `${porcentajeCatalogo.toFixed(0)}%`;
-                }
-
-                const dbTiendaPorcentajeEl = document.getElementById('db-tienda-porcentaje');
-                if (dbTiendaPorcentajeEl) {
-                    dbTiendaPorcentajeEl.textContent = `${porcentajeTienda.toFixed(0)}%`;
-                }
-
-                console.log(`✅ Ratio - Catálogo: ${porcentajeCatalogo.toFixed(0)}% | Tienda: ${porcentajeTienda.toFixed(0)}%`);
-            });
-        } catch (error) {
-            console.error("❌ Error al calcular ratio catálogo:", error);
-        }
-    }
-
-    // ================================================================
     // 🚀 INICIALIZAR TODAS LAS FUNCIONES
     // ================================================================
     calcularVentasHoy();
     calcularBajoStock();
     calcularApartadosVencer();
     calcularProductosTotales();
-    calcularMargenReal(); // Margen de ganancia REAL
-    calcularTicketPromedio(); // Ticket promedio
-    calcularMetaVsReal(); // Meta del día vs real
-    calcularRatioCatalogo(); // Ratio catálogo vs tienda
+    calcularPedidosWeb();
+    calcularTotalClientes();
+    calcularPromocionesActivas();
+    calcularTotalRepartidores();
+    calcularMetricasFinancierasMes(); // Nueva función
     calcularInversionInventario(); // Inversión y utilidad
 
     // Mostrar fecha actual en el dashboard
@@ -6274,10 +6027,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 }
             });
 
-            // Ordenar y obtener top 10
+            // Ordenar y obtener top 5
             const topProductos = Object.entries(productosVendidos)
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 10);
+                .slice(0, 5);
 
             if (topProductos.length === 0) {
                 topProductos.push(['Sin datos', 0]);
@@ -6300,24 +6053,14 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             'rgba(59, 130, 246, 0.8)',
                             'rgba(16, 185, 129, 0.8)',
                             'rgba(239, 68, 68, 0.8)',
-                            'rgba(139, 92, 246, 0.8)',
-                            'rgba(236, 72, 153, 0.8)',
-                            'rgba(34, 197, 94, 0.8)',
-                            'rgba(251, 146, 60, 0.8)',
-                            'rgba(168, 85, 247, 0.8)',
-                            'rgba(14, 165, 233, 0.8)'
+                            'rgba(139, 92, 246, 0.8)'
                         ],
                         borderColor: [
                             'rgba(245, 158, 11, 1)',
                             'rgba(59, 130, 246, 1)',
                             'rgba(16, 185, 129, 1)',
                             'rgba(239, 68, 68, 1)',
-                            'rgba(139, 92, 246, 1)',
-                            'rgba(236, 72, 153, 1)',
-                            'rgba(34, 197, 94, 1)',
-                            'rgba(251, 146, 60, 1)',
-                            'rgba(168, 85, 247, 1)',
-                            'rgba(14, 165, 233, 1)'
+                            'rgba(139, 92, 246, 1)'
                         ],
                         borderWidth: 1,
                         borderRadius: 6,
