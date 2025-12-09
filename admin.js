@@ -2867,25 +2867,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('edit-sale-cliente').value = ventaData.clienteNombre || 'General';
                 document.getElementById('edit-sale-tipo').value = ventaData.tipoVenta || 'detal';
                 document.getElementById('edit-sale-pago').value = ventaData.metodoPago || 'efectivo';
-                document.getElementById('edit-sale-entrega').value = ventaData.tipoEntrega || 'tienda';
 
                 // Cargar repartidores
                 await cargarRepartidoresEdit();
-
-                // Si hay repartidor en la venta, establecerlo
-                if (ventaData.repartidorNombre) {
-                    document.getElementById('edit-sale-repartidor').value = ventaData.repartidorNombre;
-                }
-
-                // Establecer costo de ruta
-                const costoRutaInput = document.getElementById('edit-sale-costo-ruta');
-                if (costoRutaInput) {
-                    costoRutaInput.value = ventaData.costoRuta || 0;
-                    aplicarFormatoDinero.call(costoRutaInput);
-                }
-
-                // Mostrar/ocultar campos de domicilio
-                toggleDomicilioFieldsEdit();
+                document.getElementById('edit-sale-repartidor').value = ventaData.repartidor || '';
 
                 // Mostrar productos
                 mostrarProductosEdit(ventaData.items || []);
@@ -2907,7 +2892,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const select = document.getElementById('edit-sale-repartidor');
             try {
                 const repartidoresSnap = await getDocs(collection(db, 'repartidores'));
-                select.innerHTML = '<option value="">Seleccione repartidor</option>';
+                select.innerHTML = '<option value="">Ninguno</option>';
                 repartidoresSnap.forEach((doc) => {
                     const r = doc.data();
                     select.innerHTML += `<option value="${r.nombre}">${r.nombre}</option>`;
@@ -2915,38 +2900,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Error al cargar repartidores:', error);
             }
-        }
-
-        // Mostrar/ocultar campos de domicilio en modal de edición
-        function toggleDomicilioFieldsEdit() {
-            const tipoEntrega = document.getElementById('edit-sale-entrega');
-            const domicilioFields = document.getElementById('edit-domicilio-fields');
-            const costoRutaInput = document.getElementById('edit-sale-costo-ruta');
-
-            if (tipoEntrega && domicilioFields) {
-                if (tipoEntrega.value === 'domicilio') {
-                    domicilioFields.style.display = 'block';
-                } else {
-                    domicilioFields.style.display = 'none';
-                    // Limpiar campos si cambia a tienda
-                    document.getElementById('edit-sale-repartidor').value = '';
-                    if (costoRutaInput) costoRutaInput.value = '0';
-                }
-            }
-        }
-
-        // Listener para cambio de tipo de entrega
-        const editEntregaSelect = document.getElementById('edit-sale-entrega');
-        if (editEntregaSelect) {
-            editEntregaSelect.addEventListener('change', toggleDomicilioFieldsEdit);
-        }
-
-        // Aplicar formato de dinero al costo de ruta
-        const editCostoRutaInput = document.getElementById('edit-sale-costo-ruta');
-        if (editCostoRutaInput) {
-            editCostoRutaInput.addEventListener('input', function() {
-                aplicarFormatoDinero.call(this);
-            });
         }
 
         // Mostrar productos en el modal de edición
@@ -3043,14 +2996,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nuevoCliente = document.getElementById('edit-sale-cliente').value;
                 const nuevoTipo = document.getElementById('edit-sale-tipo').value;
                 const nuevoRepartidor = document.getElementById('edit-sale-repartidor').value;
-                const nuevoTipoEntrega = document.getElementById('edit-sale-entrega').value;
-                const nuevoCostoRuta = parseFloat(eliminarFormatoNumero(document.getElementById('edit-sale-costo-ruta').value)) || 0;
-
-                // Validar que si es domicilio tenga repartidor
-                if (nuevoTipoEntrega === 'domicilio' && !nuevoRepartidor) {
-                    showToast('Debes seleccionar un repartidor para ventas a domicilio', 'warning');
-                    return;
-                }
 
                 // Obtener venta actual
                 const ventaRef = doc(db, 'ventas', ventaId);
@@ -3099,14 +3044,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const updateData = {
                     clienteNombre: nuevoCliente,
                     tipoVenta: nuevoTipo,
-                    tipoEntrega: nuevoTipoEntrega,
                     items: itemsActualizados,
                     totalVenta: nuevoTotal,
                     ultimaModificacion: serverTimestamp()
                 };
 
-                // Actualizar campos de domicilio
-                if (nuevoTipoEntrega === 'domicilio' && nuevoRepartidor) {
+                // Solo actualizar repartidor si hay uno seleccionado
+                if (nuevoRepartidor) {
                     // Buscar el ID del repartidor por nombre
                     const repartidoresSnap = await getDocs(collection(db, 'repartidores'));
                     let repartidorId = '';
@@ -3118,12 +3062,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     updateData.repartidorId = repartidorId;
                     updateData.repartidorNombre = nuevoRepartidor;
-                    updateData.costoRuta = nuevoCostoRuta;
-                } else {
-                    // Si no es domicilio, limpiar campos de domicilio
-                    updateData.repartidorId = null;
-                    updateData.repartidorNombre = null;
-                    updateData.costoRuta = 0;
                 }
 
                 // Actualizar venta
