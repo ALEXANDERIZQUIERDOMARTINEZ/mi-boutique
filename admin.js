@@ -2393,31 +2393,39 @@ document.addEventListener('DOMContentLoaded', () => {
                     ventaId = window.editingVentaId;
                     const ventaRef = doc(db, 'ventas', ventaId);
 
+                    console.log("📝 [EDICIÓN FORMULARIO] Modo edición activado para venta:", ventaId);
+
                     // Obtener datos de la venta anterior para reponer stock
                     const ventaAnteriorSnap = await getDoc(ventaRef);
                     if (ventaAnteriorSnap.exists()) {
                         const ventaAnterior = ventaAnteriorSnap.data();
+                        console.log("📦 [EDICIÓN FORMULARIO] Datos anteriores:", ventaAnterior);
+
                         // Reponer stock de la venta anterior (solo si no era catálogo externo)
                         if (!ventaAnterior.esCatalogoExterno) {
                             await actualizarStock(ventaAnterior.items, 'sumar');
-                            console.log("✅ Stock anterior repuesto");
+                            console.log("✅ [EDICIÓN FORMULARIO] Stock anterior repuesto");
                         }
+                    } else {
+                        console.error("❌ [EDICIÓN FORMULARIO] No se encontró la venta anterior");
                     }
 
                     // Actualizar la venta
+                    console.log("💾 [EDICIÓN FORMULARIO] Actualizando venta con datos:", ventaData);
                     await updateDoc(ventaRef, ventaData);
-                    console.log("✅ Venta actualizada con ID:", ventaId);
+                    console.log("✅ [EDICIÓN FORMULARIO] Venta actualizada exitosamente con ID:", ventaId);
 
                     // Descontar nuevo stock (solo si no es catálogo externo)
                     if (!esCatalogo) {
                         await actualizarStock(ventaData.items, 'restar');
-                        console.log("✅ Nuevo stock actualizado");
+                        console.log("✅ [EDICIÓN FORMULARIO] Nuevo stock actualizado");
                     } else {
-                        console.log("ℹ️ Venta por catálogo - Stock NO afectado");
+                        console.log("ℹ️ [EDICIÓN FORMULARIO] Venta por catálogo - Stock NO afectado");
                     }
 
                     // Limpiar flag de edición
                     delete window.editingVentaId;
+                    console.log("🔓 [EDICIÓN FORMULARIO] Flag de edición limpiado");
 
                 } else {
                     // MODO CREACIÓN: Registrar nueva venta
@@ -2502,11 +2510,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipoVentaSelect.value='detal';
                 tipoEntregaSelect.value='tienda';
                 toggleDeliveryFields();
-                window.calcularTotalVentaGeneral(); 
-            } catch (err) { 
-                console.error("Error saving sale:", err); 
-                showToast(`Error: ${err.message}`, 'error'); 
-            } 
+                window.calcularTotalVentaGeneral();
+            } catch (err) {
+                console.error("❌ [VENTA] Error crítico al guardar/actualizar venta:", err);
+                console.error("❌ [VENTA] Tipo de error:", err.name);
+                console.error("❌ [VENTA] Mensaje:", err.message);
+                console.error("❌ [VENTA] Stack:", err.stack);
+                showToast(`Error al guardar venta: ${err.message}`, 'error');
+            }
         });
 
         // NOTA: actualizarStock ahora es una función global (definida al inicio del archivo)
@@ -2990,23 +3001,34 @@ document.addEventListener('DOMContentLoaded', () => {
         // Guardar cambios de edición
         document.getElementById('btn-save-edit-sale').addEventListener('click', async function() {
             const ventaId = document.getElementById('edit-sale-id').value;
-            if (!ventaId) return;
+
+            console.log('📝 [EDICIÓN] Iniciando edición de venta:', ventaId);
+
+            if (!ventaId) {
+                console.error('❌ [EDICIÓN] No se encontró ID de venta');
+                showToast('Error: No se encontró ID de venta', 'error');
+                return;
+            }
 
             try {
                 const nuevoCliente = document.getElementById('edit-sale-cliente').value;
                 const nuevoTipo = document.getElementById('edit-sale-tipo').value;
                 const nuevoRepartidor = document.getElementById('edit-sale-repartidor').value;
 
+                console.log('📋 [EDICIÓN] Datos a actualizar:', { nuevoCliente, nuevoTipo, nuevoRepartidor });
+
                 // Obtener venta actual
                 const ventaRef = doc(db, 'ventas', ventaId);
                 const ventaSnap = await getDoc(ventaRef);
 
                 if (!ventaSnap.exists()) {
+                    console.error('❌ [EDICIÓN] Venta no encontrada en Firestore');
                     showToast('Venta no encontrada', 'error');
                     return;
                 }
 
                 const ventaData = ventaSnap.data();
+                console.log('📦 [EDICIÓN] Datos actuales de la venta:', ventaData);
 
                 // Recalcular items si cambió el tipo
                 let itemsActualizados = ventaData.items;
@@ -3064,33 +3086,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateData.repartidorNombre = nuevoRepartidor;
                 }
 
-                // Actualizar venta
+                // Actualizar venta en Firestore
+                console.log('💾 [EDICIÓN] Actualizando venta en Firestore...');
+                console.log('📋 [EDICIÓN] Objeto updateData:', updateData);
+
                 await updateDoc(ventaRef, updateData);
 
+                console.log('✅ [EDICIÓN] Venta actualizada exitosamente en Firestore');
                 showToast('Venta actualizada exitosamente', 'success');
 
                 // Cerrar modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editSaleModal'));
                 if (modal) {
                     modal.hide();
+                    console.log('🔒 [EDICIÓN] Modal cerrado');
                 }
 
                 // Forzar actualización inmediata del historial
-                // Obtener la fecha actual del filtro para recargar
+                console.log('🔄 [EDICIÓN] Refrescando lista de ventas...');
                 const filtroFechaInput = document.getElementById('filtro-fecha-ventas');
                 if (filtroFechaInput && filtroFechaInput.value) {
                     // Si hay un filtro de fecha, recargar con esa fecha
+                    console.log('📅 [EDICIÓN] Recargando con filtro de fecha:', filtroFechaInput.value);
                     cargarVentas(filtroFechaInput.value);
                 } else {
                     // Si no hay filtro, recargar con la fecha de hoy
+                    console.log('📅 [EDICIÓN] Recargando ventas de hoy');
                     cargarVentas();
                 }
 
-                console.log('✅ Venta actualizada y vista recargada');
+                console.log('✅ [EDICIÓN] Proceso de edición completado exitosamente');
 
             } catch (error) {
-                console.error('Error al guardar cambios:', error);
-                showToast(`Error: ${error.message}`, 'error');
+                console.error('❌ [EDICIÓN] Error crítico al guardar cambios:', error);
+                console.error('❌ [EDICIÓN] Tipo de error:', error.name);
+                console.error('❌ [EDICIÓN] Mensaje:', error.message);
+                console.error('❌ [EDICIÓN] Stack:', error.stack);
+                showToast(`Error al actualizar venta: ${error.message}`, 'error');
             }
         });
 
@@ -4099,7 +4131,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         return;
                     }
 
-                     totalVentas += venta.totalVenta || 0;
+                     // ✅ CORRECCIÓN: Para apartados, sumar solo lo recibido (efectivo + transferencia)
+                     // no el total de la venta, ya que el resto está pendiente de pago
+                     const montoRecibido = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                     totalVentas += montoRecibido;
                      ventasEfectivo += venta.pagoEfectivo || 0;
                      ventasTransferencia += venta.pagoTransferencia || 0;
 
@@ -5912,7 +5947,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     if (fecha) {
                         const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
                         if (ventasPorDia.hasOwnProperty(key)) {
-                            ventasPorDia[key] += (venta.totalVenta || 0);
+                            // ✅ CORRECCIÓN: Sumar solo lo recibido en efectivo/transferencia
+                            // para reflejar correctamente el dinero en caja (apartados incluidos)
+                            const montoRecibido = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                            ventasPorDia[key] += montoRecibido;
                         }
                     }
                 }
@@ -6374,7 +6412,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             ventas.push({ ...venta, id: doc.id });
 
             if (venta.estado !== 'Anulada') {
-                totalVentas += venta.totalVenta || 0;
+                // ✅ CORRECCIÓN: Sumar solo el monto recibido (efectivo + transferencia)
+                // en lugar del total de la venta, para reflejar correctamente el dinero en caja
+                const montoRecibido = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                totalVentas += montoRecibido;
                 totalEfectivo += venta.pagoEfectivo || 0;
                 totalTransferencia += venta.pagoTransferencia || 0;
                 ventasValidas++;
