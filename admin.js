@@ -2923,7 +2923,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let html = '<div class="list-group">';
             items.forEach((item) => {
-                const precioUnit = parseFloat(item.precioUnitario) || 0;
+                // ✅ CORRECCIÓN: Usar item.precio (no precioUnitario) que es el campo correcto
+                const precioUnit = parseFloat(item.precio || item.precioUnitario) || 0;
                 const cantidad = parseFloat(item.cantidad) || 1;
                 const total = precioUnit * cantidad;
 
@@ -6517,7 +6518,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const venta = doc.data();
             if (venta.estado !== 'Anulada' && venta.items) {
                 venta.items.forEach(item => {
-                    const precioVenta = item.precioUnitario * item.cantidad;
+                    // ✅ CORRECCIÓN: Usar item.precio (no precioUnitario) que es el campo correcto
+                    const precioVenta = (item.precio || item.precioUnitario || 0) * item.cantidad;
                     const precioCosto = (item.precioCosto || 0) * item.cantidad;
                     totalVentas += precioVenta;
                     totalCosto += precioCosto;
