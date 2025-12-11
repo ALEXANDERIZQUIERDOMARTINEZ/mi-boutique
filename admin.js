@@ -1687,14 +1687,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const tallas = [...new Set(product.variaciones.map(v => v.talla || ''))];
             const colores = [...new Set(product.variaciones.map(v => v.color || ''))];
 
-            let optionsHtml = `
-                <div class="mb-3">
-                    <label for="select-talla" class="form-label">Talla:</label>
-                    <select class="form-select" id="select-talla">
-                        <option value="" selected>Selecciona una talla...</option>
-                        ${tallas.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
-                    </select>
-                </div>
+            // Verificar si solo hay una talla y es "única" o vacía
+            const esTallaUnica = tallas.length === 1 && (tallas[0] === '' || tallas[0].toLowerCase() === 'unica' || tallas[0].toLowerCase() === 'única');
+
+            let optionsHtml = '';
+
+            if (!esTallaUnica) {
+                optionsHtml += `
+                    <div class="mb-3">
+                        <label for="select-talla" class="form-label">Talla:</label>
+                        <select class="form-select" id="select-talla">
+                            <option value="" selected>Selecciona una talla...</option>
+                            ${tallas.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
+                        </select>
+                    </div>`;
+            } else {
+                // Si es talla única, crear un campo oculto
+                optionsHtml += `<input type="hidden" id="select-talla" value="${tallas[0]}">`;
+            }
+
+            optionsHtml += `
                 <div class="mb-3">
                     <label for="select-color" class="form-label">Color:</label>
                     <select class="form-select" id="select-color">
@@ -1712,10 +1724,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const talla = selectTalla.value;
                 const color = selectColor.value;
 
-                if (talla && color) { 
+                if (talla && color) {
                     const variacion = product.variaciones.find(v => v.talla === talla && v.color === color);
                     const stock = variacion ? (parseInt(variacion.stock, 10) || 0) : 0;
-                    
+
                     stockDisplay.style.display = 'block';
                     stockDisplay.querySelector('span').textContent = stock;
 
@@ -1734,10 +1746,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            selectTalla.addEventListener('change', checkStock);
+            if (!esTallaUnica) {
+                selectTalla.addEventListener('change', checkStock);
+            }
             selectColor.addEventListener('change', checkStock);
 
             selectVariationModalInstance.show();
+
+            // Si es talla única, enfocar directamente en el selector de color
+            if (esTallaUnica) {
+                setTimeout(() => selectColor.focus(), 300);
+            }
         }
 
         const addVariationBtn = document.getElementById('add-variation-to-cart-btn');
@@ -2064,18 +2083,42 @@ document.addEventListener('DOMContentLoaded', () => {
          if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('change', (e) => { if (e.target.classList.contains('item-qty-input')) { const index = parseInt(e.target.dataset.index, 10); const newQty = parseInt(e.target.value, 10); if (newQty > 0 && window.ventaItems[index]) { window.ventaItems[index].cantidad = newQty; window.ventaItems[index].total = newQty * window.ventaItems[index].precio; renderCarrito(); window.calcularTotalVentaGeneral(); } } });
          if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('click', (e) => { e.preventDefault(); if (e.target.closest('.btn-quitar-item')) { quitarItemDelCarrito(parseInt(e.target.closest('.btn-quitar-item').dataset.index, 10)); } });
          
-         window.calcularTotalVentaGeneral = function() { 
-             let subtotalItems = window.ventaItems.reduce((sum, item) => sum + item.total, 0); 
-             let costoRuta = 0; 
-             if (tipoEntregaSelect.value === 'domicilio') { costoRuta = parseFloat(eliminarFormatoNumero(costoRutaInput.value)) || 0; } 
-             let descuento = parseFloat(eliminarFormatoNumero(ventaDescuentoInput.value)) || 0; 
-             if (ventaDescuentoTipo.value === 'porcentaje') { descuento = subtotalItems * (descuento / 100); } 
-             const totalFinal = subtotalItems - descuento + costoRuta; 
-             if(ventaTotalSpan) ventaTotalSpan.textContent = formatoMoneda.format(totalFinal); 
-             return totalFinal; 
+         window.calcularTotalVentaGeneral = function() {
+             let subtotalItems = window.ventaItems.reduce((sum, item) => sum + item.total, 0);
+             let costoRuta = 0;
+             if (tipoEntregaSelect.value === 'domicilio') { costoRuta = parseFloat(eliminarFormatoNumero(costoRutaInput.value)) || 0; }
+             let descuento = parseFloat(eliminarFormatoNumero(ventaDescuentoInput.value)) || 0;
+             if (ventaDescuentoTipo.value === 'porcentaje') { descuento = subtotalItems * (descuento / 100); }
+             const totalFinal = subtotalItems - descuento + costoRuta;
+             if(ventaTotalSpan) ventaTotalSpan.textContent = formatoMoneda.format(totalFinal);
+             calcularVuelto(); // Calcular vuelto cada vez que cambie el total
+             return totalFinal;
+         }
+
+         function calcularVuelto() {
+             const vueltoDisplay = document.getElementById('vuelto-display');
+             const vueltoMonto = document.getElementById('vuelto-monto');
+
+             const totalVenta = window.calcularTotalVentaGeneral();
+             const pagoEfectivo = parseFloat(eliminarFormatoNumero(pagoEfectivoInput.value)) || 0;
+             const pagoTransferencia = parseFloat(eliminarFormatoNumero(pagoTransferenciaInput.value)) || 0;
+             const totalPagado = pagoEfectivo + pagoTransferencia;
+
+             const vuelto = totalPagado - totalVenta;
+
+             if (vuelto > 0) {
+                 vueltoDisplay.style.display = 'block';
+                 vueltoMonto.textContent = formatoMoneda.format(vuelto);
+             } else {
+                 vueltoDisplay.style.display = 'none';
+             }
          }
 
          if(costoRutaInput) costoRutaInput.addEventListener('input', window.calcularTotalVentaGeneral); if(ventaDescuentoInput) ventaDescuentoInput.addEventListener('input', window.calcularTotalVentaGeneral); if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', window.calcularTotalVentaGeneral); if(ventaDescuentoTipo) ventaDescuentoTipo.addEventListener('change', window.calcularTotalVentaGeneral);
+
+         // Listeners para calcular vuelto cuando cambian los pagos
+         if(pagoEfectivoInput) pagoEfectivoInput.addEventListener('input', calcularVuelto);
+         if(pagoTransferenciaInput) pagoTransferenciaInput.addEventListener('input', calcularVuelto);
 
          // --- R (Read) ---
          let allSalesData = []; // Almacenar todas las ventas sin filtrar

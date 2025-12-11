@@ -740,22 +740,40 @@ function openProductModal(productId) {
     document.getElementById('product-observation').value = '';
     const variaciones = product.variaciones || [];
     const tallas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))];
+
+    // Determinar si es talla única
+    const esTallaUnica = (tallas.length === 0 || (tallas.length === 1 && (tallas[0] === '' || tallas[0].toLowerCase() === 'unica' || tallas[0].toLowerCase() === 'única')));
+    const tallaContainer = selectTalla.closest('.mb-3');
+
     if (tallas.length === 0 && variaciones.length > 0) {
         selectTalla.innerHTML = '<option value="unica">Única</option>';
         selectTalla.value = "unica";
+        tallaContainer.style.display = 'none'; // Ocultar selector de talla
+    } else if (esTallaUnica) {
+        selectTalla.innerHTML = `<option value="${tallas[0]}">${tallas[0] || 'Única'}</option>`;
+        selectTalla.value = tallas[0];
+        tallaContainer.style.display = 'none'; // Ocultar selector de talla
     } else {
+        tallaContainer.style.display = 'block'; // Mostrar selector de talla
         tallas.forEach(t => {
             selectTalla.innerHTML += `<option value="${t}">${t}</option>`;
         });
     }
+
     const colores = [...new Set(variaciones.map(v => v.color).filter(Boolean))];
     if (colores.length === 0 && variaciones.length > 0) {
         selectColor.innerHTML = '<option value="unico">Único</option>';
         selectColor.value = "unico";
         selectColor.disabled = false;
         selectColor.dispatchEvent(new Event('change'));
-    } else if (tallas.length === 0) {
-        selectTalla.dispatchEvent(new Event('change'));
+    } else if (tallas.length === 0 || esTallaUnica) {
+        // Si es talla única, activar selector de color directamente
+        selectColor.disabled = false;
+        colores.forEach(c => {
+            selectColor.innerHTML += `<option value="${c}">${c}</option>`;
+        });
+        // Enfocar en el selector de color
+        setTimeout(() => selectColor.focus(), 300);
     }
 
     // 📊 Tracking: Vista de producto
