@@ -967,19 +967,33 @@ document.addEventListener('DOMContentLoaded', () => {
                          entregas: 0,
                          efectivoRecibido: 0,
                          rutasTotal: 0,
-                         rutasCash: 0  // Rutas pagadas en efectivo
+                         saldoALiquidar: 0  // Saldo total a liquidar
                      });
                  }
 
                  const stats = estadisticas.get(repartidorId);
-                 stats.entregas++;
-                 stats.efectivoRecibido += venta.pagoEfectivo || 0;
-                 stats.rutasTotal += venta.costoRuta || 0;
+                 const pagoEfectivo = venta.pagoEfectivo || 0;
+                 const costoRuta = venta.costoRuta || 0;
 
-                 // Si el cliente pagó en efectivo, el repartidor se queda con el costo de ruta
-                 if (venta.pagoEfectivo > 0) {
-                     stats.rutasCash += venta.costoRuta || 0;
-                 }
+                 stats.entregas++;
+                 stats.efectivoRecibido += pagoEfectivo;
+                 stats.rutasTotal += costoRuta;
+
+                 // 💡 LÓGICA DE LIQUIDACIÓN (4 CASOS):
+                 // Caso A: Todo por transferencia (pagoEfectivo = 0)
+                 //         → Yo le debo el Costo_Envio (saldo negativo)
+                 // Caso B: Todo en efectivo (pagoEfectivo = totalVenta)
+                 //         → Él me debe el Precio_Prenda (pagoEfectivo - costoRuta)
+                 // Caso C: Envío transferido, prenda en efectivo
+                 //         → Él me debe el Precio_Prenda completo
+                 // Caso D: Prenda transferida, envío en efectivo
+                 //         → Estamos a mano (saldo = 0)
+                 //
+                 // FÓRMULA: Saldo = pagoEfectivo - costoRuta
+                 // - Si saldo > 0: El repartidor me debe
+                 // - Si saldo < 0: Yo le debo al repartidor
+                 // - Si saldo = 0: Estamos a mano
+                 stats.saldoALiquidar += pagoEfectivo - costoRuta;
              });
 
              return estadisticas;
@@ -1028,20 +1042,21 @@ document.addEventListener('DOMContentLoaded', () => {
                          entregas: 0,
                          efectivoRecibido: 0,
                          rutasTotal: 0,
-                         rutasCash: 0
+                         saldoALiquidar: 0
                      };
 
-                     // Lógica de cálculo:
-                     // - Efectivo recibido: Todo el efectivo que el repartidor cobró
-                     // - Rutas Total: Suma de todos los costos de ruta
-                     // - Rutas Transfer: Rutas de pedidos pagados por transferencia
-                     // - Efectivo a entregar: Efectivo recibido - Rutas en efectivo (lo que el repartidor se queda)
+                     // 💰 NUEVA LÓGICA DE LIQUIDACIÓN:
+                     // - Efectivo recibido: Todo el efectivo que el repartidor cobró del cliente
+                     // - Rutas Total: Suma de todos los costos de ruta (lo que el repartidor tiene derecho a ganar)
+                     // - Saldo a liquidar: pagoEfectivo - costoRuta (puede ser positivo, negativo o cero)
+                     //   * Positivo: El repartidor me debe dinero
+                     //   * Negativo: Yo le debo dinero al repartidor
+                     //   * Cero: Estamos a mano
                      const efectivoRecibido = stats.efectivoRecibido;
                      const rutasTotal = stats.rutasTotal;
-                     const rutasTransf = rutasTotal - stats.rutasCash;  // Rutas de pedidos pagados por transferencia
-                     const efectivoAEntregar = efectivoRecibido - stats.rutasCash;  // El repartidor se queda con las rutas en cash
-                     const efectivoYaEntregado = liquidacionesMap.get(id) || 0;  // Verificar si ya liquidó hoy
-                     const saldoPendiente = efectivoAEntregar - efectivoYaEntregado;  // Restar lo ya liquidado
+                     const saldoALiquidar = stats.saldoALiquidar;
+                     const efectivoYaEntregado = liquidacionesMap.get(id) || 0;
+                     const saldoPendiente = saldoALiquidar - efectivoYaEntregado;
 
                      const yaLiquidado = efectivoYaEntregado > 0;
                      const tr = document.createElement('tr');
@@ -1050,10 +1065,10 @@ document.addEventListener('DOMContentLoaded', () => {
                          <td>${stats.entregas}</td>
                          <td>${formatoMoneda.format(efectivoRecibido)}</td>
                          <td>${formatoMoneda.format(rutasTotal)}</td>
-                         <td>${formatoMoneda.format(rutasTransf)}</td>
-                         <td class="fw-bold">${formatoMoneda.format(efectivoAEntregar)}</td>
+                         <td>${formatoMoneda.format(rutasTotal)}</td>
+                         <td class="fw-bold ${saldoALiquidar >= 0 ? 'text-danger' : 'text-success'}">${saldoALiquidar >= 0 ? '+' : ''}${formatoMoneda.format(saldoALiquidar)}</td>
                          <td><input type="number" class="form-control form-control-sm w-75 d-inline-block input-efectivo-entregado"
-                                    value="${efectivoYaEntregado.toFixed(2)}" step="0.01" data-expected="${efectivoAEntregar}" ${yaLiquidado ? 'disabled' : ''}></td>
+                                    value="${efectivoYaEntregado.toFixed(2)}" step="0.01" data-expected="${saldoALiquidar}" ${yaLiquidado ? 'disabled' : ''}></td>
                          <td class="saldo-pendiente ${saldoPendiente <= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatoMoneda.format(saldoPendiente)}</td>
                          <td class="action-buttons">
                              <button class="btn btn-action btn-action-success btn-liquidar-repartidor" ${yaLiquidado ? 'disabled' : ''}>
@@ -3882,22 +3897,29 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const apartadoData = apartadoSnap.data();
                 console.log('📦 Datos del apartado:', apartadoData);
 
+                // 🔧 FIX: Verificar si el apartado ya está cancelado
+                if (apartadoData.estado === 'Cancelado') {
+                    console.log('⚠️ Apartado ya estaba cancelado, no se devuelve stock');
+                    showToast('Este apartado ya estaba cancelado', 'warning');
+                    return;
+                }
+
+                // ✅ DEVOLVER STOCK: Usar los items del apartado directamente
+                if (apartadoData.items && apartadoData.items.length > 0) {
+                    console.log('📦 Devolviendo stock de', apartadoData.items.length, 'productos...');
+                    await actualizarStock(apartadoData.items, 'sumar');
+                    console.log('✅ Stock devuelto correctamente');
+                } else {
+                    console.warn('⚠️ No hay items en el apartado para devolver stock');
+                }
+
+                // Si hay venta asociada, marcarla como cancelada
                 if (apartadoData.ventaId) {
-                    console.log('🔗 Procesando venta asociada:', apartadoData.ventaId);
+                    console.log('🔗 Marcando venta asociada como cancelada:', apartadoData.ventaId);
                     const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
                     const ventaSnap = await getDoc(ventaRef);
 
                     if (ventaSnap.exists()) {
-                        const ventaData = ventaSnap.data();
-
-                        // Solo devolver stock si la venta no estaba ya cancelada
-                        if (ventaData.estado !== 'Cancelada' && ventaData.estado !== 'Anulada') {
-                            console.log('📦 Devolviendo stock...');
-                            await actualizarStock(ventaData.items, 'sumar');
-                        } else {
-                            console.log('⚠️ Venta ya estaba cancelada, no se devuelve stock');
-                        }
-
                         await updateDoc(ventaRef, {
                             estado: 'Cancelada'
                         });
@@ -3905,13 +3927,14 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     }
                 }
 
+                // Marcar el apartado como cancelado
                 await updateDoc(apartadoRef, {
                     estado: 'Cancelado',
                     fechaCancelacion: serverTimestamp()
                 });
                 console.log('✅ Apartado marcado como cancelado');
 
-                showToast('Apartado cancelado y stock devuelto', 'info');
+                showToast('Apartado cancelado y stock devuelto', 'success');
 
             } catch (error) {
                 console.error('❌ Error al cancelar apartado:', error);
