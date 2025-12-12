@@ -1669,8 +1669,10 @@ document.addEventListener('DOMContentLoaded', () => {
             stockDisplay.style.display = 'none';
             addBtn.disabled = true;
 
-            const tallas = [...new Set(product.variaciones.map(v => v.talla || ''))];
-            const colores = [...new Set(product.variaciones.map(v => v.color || ''))];
+            // ✅ FILTRAR: Solo mostrar tallas y colores que tengan stock disponible
+            const variacionesConStock = product.variaciones.filter(v => (parseInt(v.stock, 10) || 0) > 0);
+            const tallas = [...new Set(variacionesConStock.map(v => v.talla || ''))];
+            const colores = [...new Set(variacionesConStock.map(v => v.color || ''))];
 
             // ✅ Detectar si es talla única
             const esTallaUnica = (tallas.length === 0 || tallas.length === 1);
@@ -1709,14 +1711,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            // ✅ Actualizar colores disponibles cuando se selecciona una talla
+            function updateColoresDisponibles() {
+                const tallaSeleccionada = selectTalla.value;
+
+                if (tallaSeleccionada) {
+                    // Filtrar colores que tengan stock para esta talla específica
+                    const coloresDisponibles = [...new Set(
+                        variacionesConStock
+                            .filter(v => v.talla === tallaSeleccionada)
+                            .map(v => v.color || '')
+                    )];
+
+                    // Actualizar opciones de color
+                    selectColor.innerHTML = '<option value="" selected>Selecciona un color...</option>';
+                    coloresDisponibles.forEach(c => {
+                        selectColor.innerHTML += `<option value="${c}">${c || 'Único'}</option>`;
+                    });
+
+                    // Si solo hay un color, seleccionarlo automáticamente
+                    if (coloresDisponibles.length === 1) {
+                        selectColor.value = coloresDisponibles[0];
+                        checkStock();
+                    }
+                }
+            }
+
             function checkStock() {
                 const talla = selectTalla.value;
                 const color = selectColor.value;
 
-                if (talla && color) { 
+                if (talla && color) {
                     const variacion = product.variaciones.find(v => v.talla === talla && v.color === color);
                     const stock = variacion ? (parseInt(variacion.stock, 10) || 0) : 0;
-                    
+
                     stockDisplay.style.display = 'block';
                     stockDisplay.querySelector('span').textContent = stock;
 
@@ -1735,7 +1763,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            selectTalla.addEventListener('change', checkStock);
+            selectTalla.addEventListener('change', () => {
+                updateColoresDisponibles();
+                checkStock();
+            });
             selectColor.addEventListener('change', checkStock);
 
             // ✅ Si es talla única, disparar checkStock para mostrar stock automáticamente
