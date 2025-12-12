@@ -639,16 +639,16 @@
                                     </div>
                                 </div> 
                                 <div class="row delivery-fields">
-                                    <div class="col-md-6 mb-3"> <label for="venta-repartidor" class="form-label">Repartidor:</label> <select id="venta-repartidor" class="form-select"></select> </div>
-                                    <div class="col-md-6 mb-3"> <label for="costo-ruta" class="form-label">Costo Ruta ($):</label> <input type="text" inputmode="numeric" id="costo-ruta" class="form-control" value="0"> </div>
-                                </div> 
-                                <div class="producto-tienda-field">
-                                    <label for="venta-producto" class="form-label">Buscar Producto:</label>
-                                    <input type="text" id="venta-producto" class="form-control" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;">
+                                    <div class="col-md-6 mb-2"> <label for="venta-repartidor" class="form-label small mb-1">Repartidor:</label> <select id="venta-repartidor" class="form-select form-select-sm"></select> </div>
+                                    <div class="col-md-6 mb-2"> <label for="costo-ruta" class="form-label small mb-1">Costo Ruta ($):</label> <input type="text" inputmode="numeric" id="costo-ruta" class="form-control form-control-sm" value="0"> </div>
+                                </div>
+                                <div class="producto-tienda-field mb-2">
+                                    <label for="venta-producto" class="form-label small mb-1">Buscar Producto:</label>
+                                    <input type="text" id="venta-producto" class="form-control form-control-sm" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;">
                                 </div>
 
                                 <div class="producto-catalogo-field" style="display: none;">
-                                    <label class="form-label">Agregar Item de Catálogo:</label>
+                                    <label class="form-label small mb-1">Agregar Item de Catálogo:</label>
                                     <div class="row g-2 mb-2">
                                         <div class="col-md-5">
                                             <input type="text" id="catalogo-descripcion" class="form-control form-control-sm" placeholder="Descripción del producto">
@@ -661,116 +661,101 @@
                                         </div>
                                         <div class="col-md-2">
                                             <button type="button" class="btn btn-primary btn-sm w-100" id="btn-agregar-item-catalogo">
-                                                <i class="bi bi-plus-lg"></i> Agregar
+                                                <i class="bi bi-plus-lg"></i>
                                             </button>
                                         </div>
                                     </div>
-                                    <small class="text-muted">
-                                        <i class="bi bi-info-circle"></i> Los productos de catálogo NO afectan el inventario de la tienda
-                                    </small>
                                 </div>
 
-                                <table class="table table-hover align-middle my-3">
+                                <table class="table table-sm table-hover align-middle my-2">
                                     <thead class="table-light"><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead>
                                     <tbody id="venta-carrito"></tbody>
-                                </table> 
-                                <hr> 
-                                <div class="row">
+                                </table>
+                                <div class="row g-2">
                                     <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <div class="form-check form-switch d-flex align-items-center justify-content-between">
-                                                <label class="form-check-label" for="venta-whatsapp">Pedido WhatsApp</label>
-                                                <input class="form-check-input ms-2" type="checkbox" id="venta-whatsapp" disabled>
-                                            </div>
-                                            <small class="d-block text-muted">Se activa automáticamente desde pedidos web</small>
-                                        </div>
-                                        <div class="mb-3 delivery-fields">
-                                            <div class="form-check form-switch d-flex align-items-center justify-content-between">
-                                                <label class="form-check-label" for="ruta-pagada-transferencia">Ruta pagada por Transferencia</label>
-                                                <input class="form-check-input ms-2" type="checkbox" id="ruta-pagada-transferencia">
+                                        <div class="mb-2">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="venta-whatsapp" disabled>
+                                                <label class="form-check-label small" for="venta-whatsapp">Pedido WhatsApp</label>
                                             </div>
                                         </div>
-                                        <label for="venta-observaciones" class="form-label">Observaciones:</label>
-                                        <textarea id="venta-observaciones" class="form-control" rows="2"></textarea>
-                                    </div> 
-                                    <div class="col-md-6"> 
-                                        <div class="row"> 
-                                            <div class="col-7"> 
-                                                <label for="venta-descuento" class="form-label">Descuento:</label>
-                                                <input type="text" inputmode="numeric" id="venta-descuento" class="form-control" value="0"> 
-                                            </div> 
-                                            <div class="col-5"> 
-                                                <label class="form-label">&nbsp;</label> 
-                                                <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> 
-                                            </div> 
-                                        </div> 
-                                        <!-- 💰 TOTAL A PAGAR -->
-                                        <h4 class="text-end mb-3 mt-3">Total a Pagar: <span id="venta-total" class="text-primary fw-bold fs-3">$0</span></h4>
-
-                                        <!-- 💰 SECCIÓN DE PAGO SIMPLIFICADA -->
-                                        <label class="form-label fw-bold">¿Cómo paga?</label>
-                                        <div class="payment-method-selector mb-3">
-                                            <div class="btn-group w-100" role="group">
-                                                <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-efectivo" value="efectivo" checked>
-                                                <label class="btn btn-outline-success" for="metodo-efectivo">
-                                                    <i class="bi bi-cash-coin"></i> Efectivo
-                                                </label>
-
-                                                <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-transferencia" value="transferencia">
-                                                <label class="btn btn-outline-primary" for="metodo-transferencia">
-                                                    <i class="bi bi-bank"></i> Transferencia
-                                                </label>
-
-                                                <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-mixto" value="mixto">
-                                                <label class="btn btn-outline-warning" for="metodo-mixto">
-                                                    <i class="bi bi-wallet2"></i> Mixto
-                                                </label>
+                                        <div class="mb-2 delivery-fields">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia">
+                                                <label class="form-check-label small" for="ruta-pagada-transferencia">Ruta pagada por Transferencia</label>
                                             </div>
+                                        </div>
+                                        <label for="venta-observaciones" class="form-label small mb-1">Observaciones:</label>
+                                        <textarea id="venta-observaciones" class="form-control form-control-sm" rows="2"></textarea>
+                                        <div class="row mt-2">
+                                            <div class="col-7">
+                                                <label for="venta-descuento" class="form-label small mb-1">Descuento:</label>
+                                                <input type="text" inputmode="numeric" id="venta-descuento" class="form-control form-control-sm" value="0">
+                                            </div>
+                                            <div class="col-5">
+                                                <label class="form-label small mb-1">&nbsp;</label>
+                                                <select class="form-select form-select-sm" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <!-- TOTAL -->
+                                        <h5 class="text-end mb-2">Total: <span id="venta-total" class="text-primary fw-bold">$0</span></h5>
+
+                                        <!-- MÉTODO DE PAGO -->
+                                        <label class="form-label small mb-1 fw-bold">¿Cómo paga?</label>
+                                        <div class="btn-group w-100 mb-2" role="group">
+                                            <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-efectivo" value="efectivo" checked>
+                                            <label class="btn btn-outline-success btn-sm" for="metodo-efectivo"><i class="bi bi-cash-coin"></i> Efvo</label>
+                                            <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-transferencia" value="transferencia">
+                                            <label class="btn btn-outline-primary btn-sm" for="metodo-transferencia"><i class="bi bi-bank"></i> Transf</label>
+                                            <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-mixto" value="mixto">
+                                            <label class="btn btn-outline-warning btn-sm" for="metodo-mixto"><i class="bi bi-wallet2"></i> Mixto</label>
                                         </div>
 
                                         <!-- EFECTIVO -->
                                         <div id="efectivo-fields" class="payment-fields">
-                                            <label class="form-label small mb-2">💵 Cliente paga con:</label>
-                                            <input type="text" inputmode="numeric" id="efectivo-recibido" class="form-control form-control-lg mb-2" value="0" placeholder="Ej: $100,000">
-                                            <div id="resumen-efectivo" class="alert alert-success" style="display: none;">
-                                                <div class="d-flex justify-content-between"><span>Recibido:</span><strong id="efectivo-recibido-display">$0</strong></div>
-                                                <div class="d-flex justify-content-between"><span>Total venta:</span><span id="efectivo-total-display">$0</span></div>
-                                                <hr><div class="d-flex justify-content-between"><strong>💸 Vuelto:</strong><strong class="fs-5 text-success" id="vuelto-amount">$0</strong></div>
+                                            <label class="form-label small mb-1">💵 Cliente paga con:</label>
+                                            <input type="text" inputmode="numeric" id="efectivo-recibido" class="form-control form-control-sm mb-1" value="0">
+                                            <div id="resumen-efectivo" class="alert alert-success py-1 px-2 mb-0 small" style="display: none;">
+                                                <div class="d-flex justify-content-between"><span>Recibe:</span><strong id="efectivo-recibido-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between"><span>Total:</span><span id="efectivo-total-display">$0</span></div>
+                                                <hr class="my-1"><div class="d-flex justify-content-between"><strong>💸 Vuelto:</strong><strong id="vuelto-amount">$0</strong></div>
                                             </div>
                                         </div>
 
                                         <!-- TRANSFERENCIA -->
                                         <div id="transferencia-fields" class="payment-fields" style="display: none;">
-                                            <label class="form-label small mb-2">💳 Monto transferido:</label>
-                                            <input type="text" inputmode="numeric" id="transferencia-recibida" class="form-control form-control-lg mb-2" value="0" placeholder="Ej: $50,000">
-                                            <div id="resumen-transferencia" class="alert alert-primary" style="display: none;">
-                                                <div class="d-flex justify-content-between"><span>Transferido:</span><strong class="text-primary" id="transferencia-recibida-display">$0</strong></div>
-                                                <div class="d-flex justify-content-between"><span>Total venta:</span><span id="transferencia-total-display">$0</span></div>
+                                            <label class="form-label small mb-1">💳 Monto transferido:</label>
+                                            <input type="text" inputmode="numeric" id="transferencia-recibida" class="form-control form-control-sm mb-1" value="0">
+                                            <div id="resumen-transferencia" class="alert alert-primary py-1 px-2 mb-0 small" style="display: none;">
+                                                <div class="d-flex justify-content-between"><span>Transferido:</span><strong id="transferencia-recibida-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between"><span>Total:</span><span id="transferencia-total-display">$0</span></div>
                                             </div>
                                         </div>
 
                                         <!-- MIXTO -->
                                         <div id="mixto-fields" class="payment-fields" style="display: none;">
-                                            <div class="row g-2 mb-2">
+                                            <div class="row g-1 mb-1">
                                                 <div class="col-6">
-                                                    <label class="form-label small mb-1">💵 Efectivo:</label>
-                                                    <input type="text" inputmode="numeric" id="efectivo-mixto-recibido" class="form-control" value="0" placeholder="$30,000">
+                                                    <label class="form-label small mb-1">💵 Efvo:</label>
+                                                    <input type="text" inputmode="numeric" id="efectivo-mixto-recibido" class="form-control form-control-sm" value="0">
                                                 </div>
                                                 <div class="col-6">
-                                                    <label class="form-label small mb-1">💳 Transferencia:</label>
-                                                    <input type="text" inputmode="numeric" id="transferencia-mixto-recibida" class="form-control" value="0" placeholder="$20,000">
+                                                    <label class="form-label small mb-1">💳 Transf:</label>
+                                                    <input type="text" inputmode="numeric" id="transferencia-mixto-recibida" class="form-control form-control-sm" value="0">
                                                 </div>
                                             </div>
-                                            <div id="resumen-mixto" class="alert alert-warning" style="display: none;">
-                                                <div class="d-flex justify-content-between small"><span>💵 Efectivo:</span><strong id="mixto-efectivo-display">$0</strong></div>
-                                                <div class="d-flex justify-content-between small"><span>💳 Transferencia:</span><strong id="mixto-transferencia-display">$0</strong></div>
-                                                <div class="d-flex justify-content-between small"><span>Total recibido:</span><strong id="mixto-total-recibido">$0</strong></div>
-                                                <hr class="my-1"><div class="d-flex justify-content-between small"><span>Total venta:</span><span id="mixto-total-display">$0</span></div>
-                                                <div class="d-flex justify-content-between" id="mixto-vuelto-container" style="display: none;"><strong>💸 Vuelto:</strong><strong class="text-warning" id="vuelto-amount-mixto">$0</strong></div>
+                                            <div id="resumen-mixto" class="alert alert-warning py-1 px-2 mb-0 small" style="display: none;">
+                                                <div class="d-flex justify-content-between"><span>Efvo:</span><strong id="mixto-efectivo-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between"><span>Transf:</span><strong id="mixto-transferencia-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between"><span>Total recibido:</span><strong id="mixto-total-recibido">$0</strong></div>
+                                                <hr class="my-1"><div class="d-flex justify-content-between"><span>Total:</span><span id="mixto-total-display">$0</span></div>
+                                                <div class="d-flex justify-content-between" id="mixto-vuelto-container" style="display: none;"><strong>💸 Vuelto:</strong><strong id="vuelto-amount-mixto">$0</strong></div>
                                             </div>
-                                        </div> 
-                                        <button type="submit" class="btn btn-primary w-100 mt-2">Registrar Venta</button> 
-                                    </div> 
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm w-100 mt-2">Registrar Venta</button>
+                                    </div>
                                 </div> 
                             </form> 
                         </div> 
