@@ -704,8 +704,11 @@
                                                 <select class="form-select" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select> 
                                             </div> 
                                         </div> 
-                                        <!-- 💰 SECCIÓN DE PAGO MODERNA -->
-                                        <label class="form-label mt-3 fw-bold">Método de Pago:</label>
+                                        <!-- 💰 TOTAL A PAGAR -->
+                                        <h4 class="text-end mb-3 mt-3">Total a Pagar: <span id="venta-total" class="text-primary fw-bold fs-3">$0</span></h4>
+
+                                        <!-- 💰 SECCIÓN DE PAGO SIMPLIFICADA -->
+                                        <label class="form-label fw-bold">¿Cómo paga?</label>
                                         <div class="payment-method-selector mb-3">
                                             <div class="btn-group w-100" role="group">
                                                 <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-efectivo" value="efectivo" checked>
@@ -725,72 +728,47 @@
                                             </div>
                                         </div>
 
-                                        <!-- CAMPOS DE EFECTIVO -->
+                                        <!-- EFECTIVO -->
                                         <div id="efectivo-fields" class="payment-fields">
-                                            <div class="card border-success mb-3">
-                                                <div class="card-body p-3">
-                                                    <div class="row g-2">
-                                                        <div class="col-6">
-                                                            <label class="form-label small mb-1">💵 Monto Efectivo</label>
-                                                            <input type="text" inputmode="numeric" id="pago-efectivo" class="form-control" value="0" placeholder="$0">
-                                                        </div>
-                                                        <div class="col-6">
-                                                            <label class="form-label small mb-1">👛 Cliente Paga Con</label>
-                                                            <input type="text" inputmode="numeric" id="efectivo-recibido" class="form-control" value="0" placeholder="$0">
-                                                        </div>
-                                                    </div>
-                                                    <!-- Vuelto Display -->
-                                                    <div id="vuelto-display" class="mt-2 p-2 rounded" style="display: none; background: #e7f3ff; border: 1px solid #0d6efd;">
-                                                        <div class="d-flex justify-content-between align-items-center">
-                                                            <span class="small"><strong>💸 Vuelto:</strong></span>
-                                                            <span class="fs-6 fw-bold text-primary" id="vuelto-amount">$0</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                            <label class="form-label small mb-2">💵 Cliente paga con:</label>
+                                            <input type="text" inputmode="numeric" id="efectivo-recibido" class="form-control form-control-lg mb-2" value="0" placeholder="Ej: $100,000">
+                                            <div id="resumen-efectivo" class="alert alert-success" style="display: none;">
+                                                <div class="d-flex justify-content-between"><span>Recibido:</span><strong id="efectivo-recibido-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between"><span>Total venta:</span><span id="efectivo-total-display">$0</span></div>
+                                                <hr><div class="d-flex justify-content-between"><strong>💸 Vuelto:</strong><strong class="fs-5 text-success" id="vuelto-amount">$0</strong></div>
                                             </div>
                                         </div>
 
-                                        <!-- CAMPOS DE TRANSFERENCIA -->
+                                        <!-- TRANSFERENCIA -->
                                         <div id="transferencia-fields" class="payment-fields" style="display: none;">
-                                            <div class="card border-primary mb-3">
-                                                <div class="card-body p-3">
-                                                    <label class="form-label small mb-1">💳 Monto Transferencia</label>
-                                                    <input type="text" inputmode="numeric" id="pago-transferencia" class="form-control" value="0" placeholder="$0">
-                                                </div>
+                                            <label class="form-label small mb-2">💳 Monto transferido:</label>
+                                            <input type="text" inputmode="numeric" id="transferencia-recibida" class="form-control form-control-lg mb-2" value="0" placeholder="Ej: $50,000">
+                                            <div id="resumen-transferencia" class="alert alert-primary" style="display: none;">
+                                                <div class="d-flex justify-content-between"><span>Transferido:</span><strong class="text-primary" id="transferencia-recibida-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between"><span>Total venta:</span><span id="transferencia-total-display">$0</span></div>
                                             </div>
                                         </div>
 
-                                        <!-- CAMPOS MIXTOS -->
+                                        <!-- MIXTO -->
                                         <div id="mixto-fields" class="payment-fields" style="display: none;">
-                                            <div class="card border-warning mb-3">
-                                                <div class="card-body p-3">
-                                                    <div class="row g-2 mb-2">
-                                                        <div class="col-6">
-                                                            <label class="form-label small mb-1">💵 Efectivo</label>
-                                                            <input type="text" inputmode="numeric" id="pago-efectivo-mixto" class="form-control" value="0" placeholder="$0">
-                                                        </div>
-                                                        <div class="col-6">
-                                                            <label class="form-label small mb-1">💳 Transferencia</label>
-                                                            <input type="text" inputmode="numeric" id="pago-transferencia-mixto" class="form-control" value="0" placeholder="$0">
-                                                        </div>
-                                                    </div>
-                                                    <div class="row g-2">
-                                                        <div class="col-12">
-                                                            <label class="form-label small mb-1">👛 Cliente Paga (Efectivo) Con</label>
-                                                            <input type="text" inputmode="numeric" id="efectivo-recibido-mixto" class="form-control" value="0" placeholder="$0">
-                                                        </div>
-                                                    </div>
-                                                    <!-- Vuelto Display Mixto -->
-                                                    <div id="vuelto-display-mixto" class="mt-2 p-2 rounded" style="display: none; background: #fff3cd; border: 1px solid #ffc107;">
-                                                        <div class="d-flex justify-content-between align-items-center">
-                                                            <span class="small"><strong>💸 Vuelto:</strong></span>
-                                                            <span class="fs-6 fw-bold text-warning" id="vuelto-amount-mixto">$0</span>
-                                                        </div>
-                                                    </div>
+                                            <div class="row g-2 mb-2">
+                                                <div class="col-6">
+                                                    <label class="form-label small mb-1">💵 Efectivo:</label>
+                                                    <input type="text" inputmode="numeric" id="efectivo-mixto-recibido" class="form-control" value="0" placeholder="$30,000">
                                                 </div>
+                                                <div class="col-6">
+                                                    <label class="form-label small mb-1">💳 Transferencia:</label>
+                                                    <input type="text" inputmode="numeric" id="transferencia-mixto-recibida" class="form-control" value="0" placeholder="$20,000">
+                                                </div>
+                                            </div>
+                                            <div id="resumen-mixto" class="alert alert-warning" style="display: none;">
+                                                <div class="d-flex justify-content-between small"><span>💵 Efectivo:</span><strong id="mixto-efectivo-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between small"><span>💳 Transferencia:</span><strong id="mixto-transferencia-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between small"><span>Total recibido:</span><strong id="mixto-total-recibido">$0</strong></div>
+                                                <hr class="my-1"><div class="d-flex justify-content-between small"><span>Total venta:</span><span id="mixto-total-display">$0</span></div>
+                                                <div class="d-flex justify-content-between" id="mixto-vuelto-container" style="display: none;"><strong>💸 Vuelto:</strong><strong class="text-warning" id="vuelto-amount-mixto">$0</strong></div>
                                             </div>
                                         </div> 
-                                        <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> 
                                         <button type="submit" class="btn btn-primary w-100 mt-2">Registrar Venta</button> 
                                     </div> 
                                 </div> 

@@ -2083,104 +2083,90 @@ document.addEventListener('DOMContentLoaded', () => {
 
          if(costoRutaInput) costoRutaInput.addEventListener('input', window.calcularTotalVentaGeneral); if(ventaDescuentoInput) ventaDescuentoInput.addEventListener('input', window.calcularTotalVentaGeneral); if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', window.calcularTotalVentaGeneral); if(ventaDescuentoTipo) ventaDescuentoTipo.addEventListener('change', window.calcularTotalVentaGeneral);
 
-         // ✅ NUEVA INTERFAZ DE PAGOS MODERNA
+         // ✅ INTERFAZ DE PAGOS SIMPLIFICADA - Solo digitas lo que recibes
          const metodoPagoRadios = document.querySelectorAll('input[name="metodo-pago-radio"]');
          const efectivoFields = document.getElementById('efectivo-fields');
          const transferenciaFields = document.getElementById('transferencia-fields');
          const mixtoFields = document.getElementById('mixto-fields');
 
          const efectivoRecibidoInput = document.getElementById('efectivo-recibido');
-         const vueltoDisplay = document.getElementById('vuelto-display');
-         const vueltoAmount = document.getElementById('vuelto-amount');
+         const transferenciaRecibidaInput = document.getElementById('transferencia-recibida');
+         const efectivoMixtoRecibidoInput = document.getElementById('efectivo-mixto-recibido');
+         const transferenciaMixtoRecibidaInput = document.getElementById('transferencia-mixto-recibida');
 
-         const pagoEfectivoMixtoInput = document.getElementById('pago-efectivo-mixto');
-         const pagoTransferenciaMixtoInput = document.getElementById('pago-transferencia-mixto');
-         const efectivoRecibidoMixtoInput = document.getElementById('efectivo-recibido-mixto');
-         const vueltoDisplayMixto = document.getElementById('vuelto-display-mixto');
-         const vueltoAmountMixto = document.getElementById('vuelto-amount-mixto');
-
-         // Mostrar/Ocultar campos según método de pago
+         // Mostrar/Ocultar campos según método
          metodoPagoRadios.forEach(radio => {
              radio.addEventListener('change', (e) => {
                  const metodo = e.target.value;
-
-                 // Ocultar todos los campos
-                 efectivoFields.style.display = 'none';
-                 transferenciaFields.style.display = 'none';
-                 mixtoFields.style.display = 'none';
-
-                 // Resetear valores de los campos ocultos
-                 if (metodo === 'efectivo') {
-                     efectivoFields.style.display = 'block';
-                     pagoTransferenciaInput.value = '0';
-                     pagoEfectivoMixtoInput.value = '0';
-                     pagoTransferenciaMixtoInput.value = '0';
-                 } else if (metodo === 'transferencia') {
-                     transferenciaFields.style.display = 'block';
-                     pagoEfectivoInput.value = '0';
-                     efectivoRecibidoInput.value = '0';
-                     pagoEfectivoMixtoInput.value = '0';
-                     pagoTransferenciaMixtoInput.value = '0';
-                     vueltoDisplay.style.display = 'none';
-                 } else if (metodo === 'mixto') {
-                     mixtoFields.style.display = 'block';
-                     pagoEfectivoInput.value = '0';
-                     efectivoRecibidoInput.value = '0';
-                     pagoTransferenciaInput.value = '0';
-                     vueltoDisplay.style.display = 'none';
-                 }
+                 efectivoFields.style.display = metodo === 'efectivo' ? 'block' : 'none';
+                 transferenciaFields.style.display = metodo === 'transferencia' ? 'block' : 'none';
+                 mixtoFields.style.display = metodo === 'mixto' ? 'block' : 'none';
              });
          });
 
-         // ✅ Calculadora automática de vueltos (EFECTIVO)
-         function calcularVuelto() {
-             const pagoEfectivo = parseFloat(eliminarFormatoNumero(pagoEfectivoInput.value)) || 0;
-             const efectivoRecibido = parseFloat(eliminarFormatoNumero(efectivoRecibidoInput.value)) || 0;
+         // ✅ Calcular resumen EFECTIVO (auto-resta del total)
+         function calcularResumenEfectivo() {
+             const recibido = parseFloat(eliminarFormatoNumero(efectivoRecibidoInput.value)) || 0;
+             const total = window.calcularTotalVentaGeneral();
 
-             if (pagoEfectivo > 0 && efectivoRecibido > 0) {
-                 const vuelto = efectivoRecibido - pagoEfectivo;
-
-                 if (vuelto >= 0) {
-                     vueltoAmount.textContent = formatoMoneda.format(vuelto);
-                     vueltoAmount.style.color = '#0d6efd';
-                     vueltoDisplay.style.display = 'block';
-                 } else {
-                     vueltoAmount.textContent = formatoMoneda.format(Math.abs(vuelto)) + ' (Falta)';
-                     vueltoAmount.style.color = '#dc3545';
-                     vueltoDisplay.style.display = 'block';
-                 }
+             if (recibido > 0) {
+                 const vuelto = recibido - total;
+                 document.getElementById('efectivo-recibido-display').textContent = formatoMoneda.format(recibido);
+                 document.getElementById('efectivo-total-display').textContent = formatoMoneda.format(total);
+                 document.getElementById('vuelto-amount').textContent = vuelto >= 0 ? formatoMoneda.format(vuelto) : formatoMoneda.format(Math.abs(vuelto)) + ' (Falta)';
+                 document.getElementById('resumen-efectivo').style.display = 'block';
              } else {
-                 vueltoDisplay.style.display = 'none';
+                 document.getElementById('resumen-efectivo').style.display = 'none';
              }
          }
 
-         // ✅ Calculadora automática de vueltos (MIXTO)
-         function calcularVueltoMixto() {
-             const pagoEfectivoMixto = parseFloat(eliminarFormatoNumero(pagoEfectivoMixtoInput.value)) || 0;
-             const efectivoRecibidoMixto = parseFloat(eliminarFormatoNumero(efectivoRecibidoMixtoInput.value)) || 0;
+         // ✅ Calcular resumen TRANSFERENCIA
+         function calcularResumenTransferencia() {
+             const recibido = parseFloat(eliminarFormatoNumero(transferenciaRecibidaInput.value)) || 0;
+             const total = window.calcularTotalVentaGeneral();
 
-             if (pagoEfectivoMixto > 0 && efectivoRecibidoMixto > 0) {
-                 const vuelto = efectivoRecibidoMixto - pagoEfectivoMixto;
-
-                 if (vuelto >= 0) {
-                     vueltoAmountMixto.textContent = formatoMoneda.format(vuelto);
-                     vueltoAmountMixto.style.color = '#ffc107';
-                     vueltoDisplayMixto.style.display = 'block';
-                 } else {
-                     vueltoAmountMixto.textContent = formatoMoneda.format(Math.abs(vuelto)) + ' (Falta)';
-                     vueltoAmountMixto.style.color = '#dc3545';
-                     vueltoDisplayMixto.style.display = 'block';
-                 }
+             if (recibido > 0) {
+                 document.getElementById('transferencia-recibida-display').textContent = formatoMoneda.format(recibido);
+                 document.getElementById('transferencia-total-display').textContent = formatoMoneda.format(total);
+                 document.getElementById('resumen-transferencia').style.display = 'block';
              } else {
-                 vueltoDisplayMixto.style.display = 'none';
+                 document.getElementById('resumen-transferencia').style.display = 'none';
              }
          }
 
-         // Event Listeners para cálculo de vueltos
-         if (efectivoRecibidoInput) efectivoRecibidoInput.addEventListener('input', calcularVuelto);
-         if (pagoEfectivoInput) pagoEfectivoInput.addEventListener('input', calcularVuelto);
-         if (efectivoRecibidoMixtoInput) efectivoRecibidoMixtoInput.addEventListener('input', calcularVueltoMixto);
-         if (pagoEfectivoMixtoInput) pagoEfectivoMixtoInput.addEventListener('input', calcularVueltoMixto);
+         // ✅ Calcular resumen MIXTO
+         function calcularResumenMixto() {
+             const efectivo = parseFloat(eliminarFormatoNumero(efectivoMixtoRecibidoInput.value)) || 0;
+             const transferencia = parseFloat(eliminarFormatoNumero(transferenciaMixtoRecibidaInput.value)) || 0;
+             const totalRecibido = efectivo + transferencia;
+             const total = window.calcularTotalVentaGeneral();
+
+             if (totalRecibido > 0) {
+                 document.getElementById('mixto-efectivo-display').textContent = formatoMoneda.format(efectivo);
+                 document.getElementById('mixto-transferencia-display').textContent = formatoMoneda.format(transferencia);
+                 document.getElementById('mixto-total-recibido').textContent = formatoMoneda.format(totalRecibido);
+                 document.getElementById('mixto-total-display').textContent = formatoMoneda.format(total);
+
+                 const vueltoContainer = document.getElementById('mixto-vuelto-container');
+                 if (totalRecibido > total) {
+                     const vuelto = totalRecibido - total;
+                     document.getElementById('vuelto-amount-mixto').textContent = formatoMoneda.format(vuelto);
+                     vueltoContainer.style.display = 'flex';
+                 } else {
+                     vueltoContainer.style.display = 'none';
+                 }
+
+                 document.getElementById('resumen-mixto').style.display = 'block';
+             } else {
+                 document.getElementById('resumen-mixto').style.display = 'none';
+             }
+         }
+
+         // Event Listeners
+         if (efectivoRecibidoInput) efectivoRecibidoInput.addEventListener('input', calcularResumenEfectivo);
+         if (transferenciaRecibidaInput) transferenciaRecibidaInput.addEventListener('input', calcularResumenTransferencia);
+         if (efectivoMixtoRecibidoInput) efectivoMixtoRecibidoInput.addEventListener('input', calcularResumenMixto);
+         if (transferenciaMixtoRecibidaInput) transferenciaMixtoRecibidaInput.addEventListener('input', calcularResumenMixto);
 
          // --- R (Read) ---
          let allSalesData = []; // Almacenar todas las ventas sin filtrar
@@ -2462,18 +2448,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalCalculado = window.calcularTotalVentaGeneral();
             const esCatalogo = tipoVentaSelect.value === 'catalogo';
 
-            // ✅ Obtener valores de pago según método seleccionado
+            // ✅ Obtener valores de pago según método seleccionado (SIMPLIFICADO)
             const metodoPagoSeleccionado = document.querySelector('input[name="metodo-pago-radio"]:checked').value;
             let montoEfectivo = 0;
             let montoTransferencia = 0;
 
             if (metodoPagoSeleccionado === 'efectivo') {
-                montoEfectivo = parseFloat(eliminarFormatoNumero(pagoEfectivoInput.value)) || 0;
+                // En efectivo: guardar el total completo (paga todo en efectivo)
+                montoEfectivo = totalCalculado;
             } else if (metodoPagoSeleccionado === 'transferencia') {
-                montoTransferencia = parseFloat(eliminarFormatoNumero(pagoTransferenciaInput.value)) || 0;
+                // En transferencia: guardar lo que recibió
+                montoTransferencia = parseFloat(eliminarFormatoNumero(transferenciaRecibidaInput.value)) || 0;
             } else if (metodoPagoSeleccionado === 'mixto') {
-                montoEfectivo = parseFloat(eliminarFormatoNumero(pagoEfectivoMixtoInput.value)) || 0;
-                montoTransferencia = parseFloat(eliminarFormatoNumero(pagoTransferenciaMixtoInput.value)) || 0;
+                // En mixto: guardar efectivo y transferencia recibidos
+                montoEfectivo = parseFloat(eliminarFormatoNumero(efectivoMixtoRecibidoInput.value)) || 0;
+                montoTransferencia = parseFloat(eliminarFormatoNumero(transferenciaMixtoRecibidaInput.value)) || 0;
             }
 
             const ventaData = {
