@@ -769,9 +769,20 @@ function openProductModal(productId) {
     } else if (tallas.length === 0 || esTallaUnica) {
         // Si es talla única, activar selector de color directamente
         selectColor.disabled = false;
+
+        // Actualizar mensaje de stock
+        stockText.textContent = 'Seleccione un color';
+
         colores.forEach(c => {
             selectColor.innerHTML += `<option value="${c}">${c}</option>`;
         });
+
+        // Si solo hay un color, seleccionarlo automáticamente
+        if (colores.length === 1) {
+            selectColor.value = colores[0];
+            selectColor.dispatchEvent(new Event('change'));
+        }
+
         // Enfocar en el selector de color
         setTimeout(() => selectColor.focus(), 300);
     }
@@ -1462,6 +1473,46 @@ document.addEventListener('DOMContentLoaded', () => {
             efectivoOption.textContent = 'Efectivo (Pago contra entrega)';
             paymentInfo.textContent = '';
             paymentInfo.classList.remove('text-warning', 'text-success');
+        }
+    });
+
+    // Mostrar/ocultar campo de monto en efectivo
+    document.getElementById('checkout-payment').addEventListener('change', function() {
+        const cashSection = document.getElementById('cash-payment-section');
+        const cashAmountInput = document.getElementById('checkout-cash-amount');
+        const changeDisplay = document.getElementById('change-display');
+
+        if (this.value === 'Efectivo') {
+            cashSection.style.display = 'block';
+        } else {
+            cashSection.style.display = 'none';
+            cashAmountInput.value = '';
+            changeDisplay.style.display = 'none';
+        }
+    });
+
+    // Calcular vuelto automáticamente
+    document.getElementById('checkout-cash-amount').addEventListener('input', function() {
+        const cashAmount = parseFloat(this.value) || 0;
+        const total = cart.reduce((sum, item) => sum + item.total, 0);
+        const changeDisplay = document.getElementById('change-display');
+        const changeTotalEl = document.getElementById('change-total');
+        const changeAmountEl = document.getElementById('change-amount');
+
+        if (cashAmount > 0) {
+            changeDisplay.style.display = 'block';
+            changeTotalEl.textContent = formatoMoneda.format(total);
+
+            const change = cashAmount - total;
+            if (change >= 0) {
+                changeAmountEl.textContent = formatoMoneda.format(change);
+                changeAmountEl.style.color = '#0d6efd';
+            } else {
+                changeAmountEl.textContent = formatoMoneda.format(Math.abs(change)) + ' (Falta)';
+                changeAmountEl.style.color = '#dc3545';
+            }
+        } else {
+            changeDisplay.style.display = 'none';
         }
     });
 
