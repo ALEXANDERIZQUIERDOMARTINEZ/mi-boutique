@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migración de Códigos de Barras - Mi Boutique</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .log-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-warning { color: #ffc107; }
+        .log-info { color: #17a2b8; }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">
+            <i class="bi bi-upc-scan"></i> Migración de Códigos de Barras
+        </h1>
+
+        <div class="alert alert-info">
+            <strong>ℹ️ Información:</strong> Esta herramienta asignará códigos de barras EAN-13 únicos a todos los productos que no tengan uno asignado.
+        </div>
+
+        <div class="stats-card" id="stats-card" style="display: none;">
+            <div class="row">
+                <div class="col-4 stat-item">
+                    <div class="stat-number" id="stat-total">0</div>
+                    <div class="stat-label">Total Productos</div>
+                </div>
+                <div class="col-4 stat-item">
+                    <div class="stat-number" id="stat-without">0</div>
+                    <div class="stat-label">Sin Código</div>
+                </div>
+                <div class="col-4 stat-item">
+                    <div class="stat-number" id="stat-updated">0</div>
+                    <div class="stat-label">Actualizados</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2">
+            <button id="btn-analyze" class="btn btn-primary btn-lg">
+                📊 Analizar Productos
+            </button>
+            <button id="btn-migrate" class="btn btn-success btn-lg" style="display: none;">
+                🚀 Ejecutar Migración
+            </button>
+        </div>
+
+        <div class="log-container" id="log-container"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, updateDoc, doc, query, where } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
+            authDomain: "mishell-boutique-admin.firebaseapp.com",
+            projectId: "mishell-boutique-admin",
+            storageBucket: "mishell-boutique-admin.firebasestorage.app",
+            messagingSenderId: "399662956877",
+            appId: "1:399662956877:web:084236f5bb3cf6f0a8f704"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // ========================================================================
+        // GENERACIÓN DE CÓDIGOS EAN-13
+        // ========================================================================
+
+        function calcularDigitoVerificadorEAN13(code12) {
+            let sum = 0;
+            for (let i = 0; i < 12; i++) {
+                const digit = parseInt(code12[i]);
+                sum += (i % 2 === 0) ? digit : digit * 3;
+            }
+            const checkDigit = (10 - (sum % 10)) % 10;
+            return checkDigit.toString();
+        }
+
+        function generarCodigoEAN13() {
+            // Prefijo GS1 para México: 750
+            const prefix = '750';
+
+            // Generar 9 dígitos aleatorios
+            let randomDigits = '';
+            for (let i = 0; i < 9; i++) {
+                randomDigits += Math.floor(Math.random() * 10);
+            }
+
+            // Los primeros 12 dígitos
+            const code12 = prefix + randomDigits;
+
+            // Calcular dígito verificador
+            const checkDigit = calcularDigitoVerificadorEAN13(code12);
+
+            return code12 + checkDigit;
+        }
+
+        async function verificarCodigoUnico(codigo, codigosExistentes) {
+            return !codigosExistentes.has(codigo);
+        }
+
+        async function generarCodigoUnico(codigosExistentes) {
+            let codigo;
+            let intentos = 0;
+            const maxIntentos = 100;
+
+            do {
+                codigo = generarCodigoEAN13();
+                intentos++;
+                if (intentos > maxIntentos) {
+                    throw new Error('No se pudo generar un código único después de ' + maxIntentos + ' intentos');
+                }
+            } while (!await verificarCodigoUnico(codigo, codigosExistentes));
+
+            return codigo;
+        }
+
+        // ========================================================================
+        // FUNCIONES DE LOGGING
+        // ========================================================================
+
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+
+            const timestamp = new Date().toLocaleTimeString('es-MX');
+            logEntry.textContent = `[${timestamp}] ${message}`;
+
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateStats(total, without, updated) {
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-without').textContent = without;
+            document.getElementById('stat-updated').textContent = updated;
+            document.getElementById('stats-card').style.display = 'block';
+        }
+
+        // ========================================================================
+        // ANÁLISIS DE PRODUCTOS
+        // ========================================================================
+
+        let productsSinCodigo = [];
+        let codigosExistentes = new Set();
+
+        async function analizarProductos() {
+            try {
+                addLog('🔍 Iniciando análisis de productos...', 'info');
+
+                const btnAnalyze = document.getElementById('btn-analyze');
+                btnAnalyze.disabled = true;
+                btnAnalyze.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analizando...';
+
+                // Obtener todos los productos
+                const querySnapshot = await getDocs(collection(db, 'productos'));
+                const totalProductos = querySnapshot.size;
+
+                addLog(`📦 Total de productos encontrados: ${totalProductos}`, 'info');
+
+                let productosConCodigo = 0;
+                productsSinCodigo = [];
+                codigosExistentes = new Set();
+
+                querySnapshot.forEach((docSnapshot) => {
+                    const producto = { id: docSnapshot.id, ...docSnapshot.data() };
+
+                    if (producto.codigoBarras && producto.codigoBarras.trim() !== '') {
+                        productosConCodigo++;
+                        codigosExistentes.add(producto.codigoBarras);
+                    } else {
+                        productsSinCodigo.push(producto);
+                    }
+                });
+
+                addLog(`✅ Productos con código de barras: ${productosConCodigo}`, 'success');
+                addLog(`⚠️  Productos sin código de barras: ${productsSinCodigo.length}`, 'warning');
+
+                updateStats(totalProductos, productsSinCodigo.length, 0);
+
+                if (productsSinCodigo.length > 0) {
+                    addLog(`\n📋 Productos que necesitan código de barras:`, 'info');
+                    productsSinCodigo.forEach((p, index) => {
+                        addLog(`   ${index + 1}. ${p.nombre} (ID: ${p.id})`, 'info');
+                    });
+
+                    document.getElementById('btn-migrate').style.display = 'block';
+                    addLog('\n✨ Presiona "Ejecutar Migración" para asignar códigos de barras', 'success');
+                } else {
+                    addLog('\n🎉 ¡Todos los productos ya tienen código de barras!', 'success');
+                }
+
+                btnAnalyze.disabled = false;
+                btnAnalyze.innerHTML = '🔄 Re-analizar Productos';
+
+            } catch (error) {
+                console.error('Error en análisis:', error);
+                addLog(`❌ Error: ${error.message}`, 'error');
+                btnAnalyze.disabled = false;
+                btnAnalyze.innerHTML = '📊 Analizar Productos';
+            }
+        }
+
+        // ========================================================================
+        // MIGRACIÓN DE CÓDIGOS DE BARRAS
+        // ========================================================================
+
+        async function ejecutarMigracion() {
+            if (productsSinCodigo.length === 0) {
+                addLog('⚠️  No hay productos para migrar', 'warning');
+                return;
+            }
+
+            const confirmacion = confirm(
+                `¿Estás seguro de que deseas asignar códigos de barras a ${productsSinCodigo.length} productos?\n\n` +
+                'Esta acción no se puede deshacer fácilmente.'
+            );
+
+            if (!confirmacion) {
+                addLog('❌ Migración cancelada por el usuario', 'warning');
+                return;
+            }
+
+            try {
+                const btnMigrate = document.getElementById('btn-migrate');
+                btnMigrate.disabled = true;
+                btnMigrate.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Migrando...';
+
+                addLog('\n🚀 Iniciando migración...', 'info');
+
+                let actualizados = 0;
+                let errores = 0;
+
+                for (let i = 0; i < productsSinCodigo.length; i++) {
+                    const producto = productsSinCodigo[i];
+
+                    try {
+                        // Generar código único
+                        const nuevoCodigo = await generarCodigoUnico(codigosExistentes);
+
+                        // Actualizar en Firebase
+                        const productoRef = doc(db, 'productos', producto.id);
+                        await updateDoc(productoRef, {
+                            codigoBarras: nuevoCodigo
+                        });
+
+                        // Agregar a la lista de códigos existentes
+                        codigosExistentes.add(nuevoCodigo);
+
+                        actualizados++;
+                        updateStats(
+                            document.getElementById('stat-total').textContent,
+                            productsSinCodigo.length - actualizados,
+                            actualizados
+                        );
+
+                        addLog(
+                            `✅ [${actualizados}/${productsSinCodigo.length}] ${producto.nombre}: ${nuevoCodigo}`,
+                            'success'
+                        );
+
+                    } catch (error) {
+                        errores++;
+                        addLog(
+                            `❌ Error en "${producto.nombre}": ${error.message}`,
+                            'error'
+                        );
+                    }
+                }
+
+                addLog(`\n🎉 Migración completada!`, 'success');
+                addLog(`   ✅ Actualizados: ${actualizados}`, 'success');
+                if (errores > 0) {
+                    addLog(`   ❌ Errores: ${errores}`, 'error');
+                }
+
+                btnMigrate.style.display = 'none';
+                productsSinCodigo = [];
+
+            } catch (error) {
+                console.error('Error en migración:', error);
+                addLog(`❌ Error crítico: ${error.message}`, 'error');
+
+                const btnMigrate = document.getElementById('btn-migrate');
+                btnMigrate.disabled = false;
+                btnMigrate.innerHTML = '🚀 Ejecutar Migración';
+            }
+        }
+
+        // ========================================================================
+        // EVENT LISTENERS
+        // ========================================================================
+
+        document.getElementById('btn-analyze').addEventListener('click', analizarProductos);
+        document.getElementById('btn-migrate').addEventListener('click', ejecutarMigracion);
+
+        addLog('✨ Sistema de migración de códigos de barras cargado', 'success');
+        addLog('👉 Presiona "Analizar Productos" para comenzar', 'info');
+    </script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</body>
+</html>
