@@ -967,33 +967,19 @@ document.addEventListener('DOMContentLoaded', () => {
                          entregas: 0,
                          efectivoRecibido: 0,
                          rutasTotal: 0,
-                         saldoALiquidar: 0  // Saldo total a liquidar
+                         rutasCash: 0  // Rutas pagadas en efectivo
                      });
                  }
 
                  const stats = estadisticas.get(repartidorId);
-                 const pagoEfectivo = venta.pagoEfectivo || 0;
-                 const costoRuta = venta.costoRuta || 0;
-
                  stats.entregas++;
-                 stats.efectivoRecibido += pagoEfectivo;
-                 stats.rutasTotal += costoRuta;
+                 stats.efectivoRecibido += venta.pagoEfectivo || 0;
+                 stats.rutasTotal += venta.costoRuta || 0;
 
-                 // 💡 LÓGICA DE LIQUIDACIÓN (4 CASOS):
-                 // Caso A: Todo por transferencia (pagoEfectivo = 0)
-                 //         → Yo le debo el Costo_Envio (saldo negativo)
-                 // Caso B: Todo en efectivo (pagoEfectivo = totalVenta)
-                 //         → Él me debe el Precio_Prenda (pagoEfectivo - costoRuta)
-                 // Caso C: Envío transferido, prenda en efectivo
-                 //         → Él me debe el Precio_Prenda completo
-                 // Caso D: Prenda transferida, envío en efectivo
-                 //         → Estamos a mano (saldo = 0)
-                 //
-                 // FÓRMULA: Saldo = pagoEfectivo - costoRuta
-                 // - Si saldo > 0: El repartidor me debe
-                 // - Si saldo < 0: Yo le debo al repartidor
-                 // - Si saldo = 0: Estamos a mano
-                 stats.saldoALiquidar += pagoEfectivo - costoRuta;
+                 // Si el cliente pagó en efectivo, el repartidor se queda con el costo de ruta
+                 if (venta.pagoEfectivo > 0) {
+                     stats.rutasCash += venta.costoRuta || 0;
+                 }
              });
 
              return estadisticas;
@@ -1042,21 +1028,20 @@ document.addEventListener('DOMContentLoaded', () => {
                          entregas: 0,
                          efectivoRecibido: 0,
                          rutasTotal: 0,
-                         saldoALiquidar: 0
+                         rutasCash: 0
                      };
 
-                     // 💰 NUEVA LÓGICA DE LIQUIDACIÓN:
-                     // - Efectivo recibido: Todo el efectivo que el repartidor cobró del cliente
-                     // - Rutas Total: Suma de todos los costos de ruta (lo que el repartidor tiene derecho a ganar)
-                     // - Saldo a liquidar: pagoEfectivo - costoRuta (puede ser positivo, negativo o cero)
-                     //   * Positivo: El repartidor me debe dinero
-                     //   * Negativo: Yo le debo dinero al repartidor
-                     //   * Cero: Estamos a mano
+                     // Lógica de cálculo:
+                     // - Efectivo recibido: Todo el efectivo que el repartidor cobró
+                     // - Rutas Total: Suma de todos los costos de ruta
+                     // - Rutas Transfer: Rutas de pedidos pagados por transferencia
+                     // - Efectivo a entregar: Efectivo recibido - Rutas en efectivo (lo que el repartidor se queda)
                      const efectivoRecibido = stats.efectivoRecibido;
                      const rutasTotal = stats.rutasTotal;
-                     const saldoALiquidar = stats.saldoALiquidar;
-                     const efectivoYaEntregado = liquidacionesMap.get(id) || 0;
-                     const saldoPendiente = saldoALiquidar - efectivoYaEntregado;
+                     const rutasTransf = rutasTotal - stats.rutasCash;  // Rutas de pedidos pagados por transferencia
+                     const efectivoAEntregar = efectivoRecibido - stats.rutasCash;  // El repartidor se queda con las rutas en cash
+                     const efectivoYaEntregado = liquidacionesMap.get(id) || 0;  // Verificar si ya liquidó hoy
+                     const saldoPendiente = efectivoAEntregar - efectivoYaEntregado;  // Restar lo ya liquidado
 
                      const yaLiquidado = efectivoYaEntregado > 0;
                      const tr = document.createElement('tr');
@@ -1065,10 +1050,10 @@ document.addEventListener('DOMContentLoaded', () => {
                          <td>${stats.entregas}</td>
                          <td>${formatoMoneda.format(efectivoRecibido)}</td>
                          <td>${formatoMoneda.format(rutasTotal)}</td>
-                         <td>${formatoMoneda.format(rutasTotal)}</td>
-                         <td class="fw-bold ${saldoALiquidar >= 0 ? 'text-danger' : 'text-success'}">${saldoALiquidar >= 0 ? '+' : ''}${formatoMoneda.format(saldoALiquidar)}</td>
+                         <td>${formatoMoneda.format(rutasTransf)}</td>
+                         <td class="fw-bold">${formatoMoneda.format(efectivoAEntregar)}</td>
                          <td><input type="number" class="form-control form-control-sm w-75 d-inline-block input-efectivo-entregado"
-                                    value="${efectivoYaEntregado.toFixed(2)}" step="0.01" data-expected="${saldoALiquidar}" ${yaLiquidado ? 'disabled' : ''}></td>
+                                    value="${efectivoYaEntregado.toFixed(2)}" step="0.01" data-expected="${efectivoAEntregar}" ${yaLiquidado ? 'disabled' : ''}></td>
                          <td class="saldo-pendiente ${saldoPendiente <= 0 ? 'text-success' : 'text-danger'} fw-bold">${formatoMoneda.format(saldoPendiente)}</td>
                          <td class="action-buttons">
                              <button class="btn btn-action btn-action-success btn-liquidar-repartidor" ${yaLiquidado ? 'disabled' : ''}>
@@ -1687,26 +1672,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const tallas = [...new Set(product.variaciones.map(v => v.talla || ''))];
             const colores = [...new Set(product.variaciones.map(v => v.color || ''))];
 
-            // Verificar si solo hay una talla y es "única" o vacía
-            const esTallaUnica = tallas.length === 1 && (tallas[0] === '' || tallas[0].toLowerCase() === 'unica' || tallas[0].toLowerCase() === 'única');
-
-            let optionsHtml = '';
-
-            if (!esTallaUnica) {
-                optionsHtml += `
-                    <div class="mb-3">
-                        <label for="select-talla" class="form-label">Talla:</label>
-                        <select class="form-select" id="select-talla">
-                            <option value="" selected>Selecciona una talla...</option>
-                            ${tallas.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
-                        </select>
-                    </div>`;
-            } else {
-                // Si es talla única, crear un campo oculto
-                optionsHtml += `<input type="hidden" id="select-talla" value="${tallas[0]}">`;
-            }
-
-            optionsHtml += `
+            let optionsHtml = `
+                <div class="mb-3">
+                    <label for="select-talla" class="form-label">Talla:</label>
+                    <select class="form-select" id="select-talla">
+                        <option value="" selected>Selecciona una talla...</option>
+                        ${tallas.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
+                    </select>
+                </div>
                 <div class="mb-3">
                     <label for="select-color" class="form-label">Color:</label>
                     <select class="form-select" id="select-color">
@@ -1724,10 +1697,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const talla = selectTalla.value;
                 const color = selectColor.value;
 
-                if (talla && color) {
+                if (talla && color) { 
                     const variacion = product.variaciones.find(v => v.talla === talla && v.color === color);
                     const stock = variacion ? (parseInt(variacion.stock, 10) || 0) : 0;
-
+                    
                     stockDisplay.style.display = 'block';
                     stockDisplay.querySelector('span').textContent = stock;
 
@@ -1746,17 +1719,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            if (!esTallaUnica) {
-                selectTalla.addEventListener('change', checkStock);
-            }
+            selectTalla.addEventListener('change', checkStock);
             selectColor.addEventListener('change', checkStock);
 
             selectVariationModalInstance.show();
-
-            // Si es talla única, enfocar directamente en el selector de color
-            if (esTallaUnica) {
-                setTimeout(() => selectColor.focus(), 300);
-            }
         }
 
         const addVariationBtn = document.getElementById('add-variation-to-cart-btn');
@@ -2083,42 +2049,18 @@ document.addEventListener('DOMContentLoaded', () => {
          if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('change', (e) => { if (e.target.classList.contains('item-qty-input')) { const index = parseInt(e.target.dataset.index, 10); const newQty = parseInt(e.target.value, 10); if (newQty > 0 && window.ventaItems[index]) { window.ventaItems[index].cantidad = newQty; window.ventaItems[index].total = newQty * window.ventaItems[index].precio; renderCarrito(); window.calcularTotalVentaGeneral(); } } });
          if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('click', (e) => { e.preventDefault(); if (e.target.closest('.btn-quitar-item')) { quitarItemDelCarrito(parseInt(e.target.closest('.btn-quitar-item').dataset.index, 10)); } });
          
-         window.calcularTotalVentaGeneral = function() {
-             let subtotalItems = window.ventaItems.reduce((sum, item) => sum + item.total, 0);
-             let costoRuta = 0;
-             if (tipoEntregaSelect.value === 'domicilio') { costoRuta = parseFloat(eliminarFormatoNumero(costoRutaInput.value)) || 0; }
-             let descuento = parseFloat(eliminarFormatoNumero(ventaDescuentoInput.value)) || 0;
-             if (ventaDescuentoTipo.value === 'porcentaje') { descuento = subtotalItems * (descuento / 100); }
-             const totalFinal = subtotalItems - descuento + costoRuta;
-             if(ventaTotalSpan) ventaTotalSpan.textContent = formatoMoneda.format(totalFinal);
-             calcularVuelto(); // Calcular vuelto cada vez que cambie el total
-             return totalFinal;
-         }
-
-         function calcularVuelto() {
-             const vueltoDisplay = document.getElementById('vuelto-display');
-             const vueltoMonto = document.getElementById('vuelto-monto');
-
-             const totalVenta = window.calcularTotalVentaGeneral();
-             const pagoEfectivo = parseFloat(eliminarFormatoNumero(pagoEfectivoInput.value)) || 0;
-             const pagoTransferencia = parseFloat(eliminarFormatoNumero(pagoTransferenciaInput.value)) || 0;
-             const totalPagado = pagoEfectivo + pagoTransferencia;
-
-             const vuelto = totalPagado - totalVenta;
-
-             if (vuelto > 0) {
-                 vueltoDisplay.style.display = 'block';
-                 vueltoMonto.textContent = formatoMoneda.format(vuelto);
-             } else {
-                 vueltoDisplay.style.display = 'none';
-             }
+         window.calcularTotalVentaGeneral = function() { 
+             let subtotalItems = window.ventaItems.reduce((sum, item) => sum + item.total, 0); 
+             let costoRuta = 0; 
+             if (tipoEntregaSelect.value === 'domicilio') { costoRuta = parseFloat(eliminarFormatoNumero(costoRutaInput.value)) || 0; } 
+             let descuento = parseFloat(eliminarFormatoNumero(ventaDescuentoInput.value)) || 0; 
+             if (ventaDescuentoTipo.value === 'porcentaje') { descuento = subtotalItems * (descuento / 100); } 
+             const totalFinal = subtotalItems - descuento + costoRuta; 
+             if(ventaTotalSpan) ventaTotalSpan.textContent = formatoMoneda.format(totalFinal); 
+             return totalFinal; 
          }
 
          if(costoRutaInput) costoRutaInput.addEventListener('input', window.calcularTotalVentaGeneral); if(ventaDescuentoInput) ventaDescuentoInput.addEventListener('input', window.calcularTotalVentaGeneral); if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', window.calcularTotalVentaGeneral); if(ventaDescuentoTipo) ventaDescuentoTipo.addEventListener('change', window.calcularTotalVentaGeneral);
-
-         // Listeners para calcular vuelto cuando cambian los pagos
-         if(pagoEfectivoInput) pagoEfectivoInput.addEventListener('input', calcularVuelto);
-         if(pagoTransferenciaInput) pagoTransferenciaInput.addEventListener('input', calcularVuelto);
 
          // --- R (Read) ---
          let allSalesData = []; // Almacenar todas las ventas sin filtrar
@@ -3941,29 +3883,22 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const apartadoData = apartadoSnap.data();
                 console.log('📦 Datos del apartado:', apartadoData);
 
-                // 🔧 FIX: Verificar si el apartado ya está cancelado
-                if (apartadoData.estado === 'Cancelado') {
-                    console.log('⚠️ Apartado ya estaba cancelado, no se devuelve stock');
-                    showToast('Este apartado ya estaba cancelado', 'warning');
-                    return;
-                }
-
-                // ✅ DEVOLVER STOCK: Usar los items del apartado directamente
-                if (apartadoData.items && apartadoData.items.length > 0) {
-                    console.log('📦 Devolviendo stock de', apartadoData.items.length, 'productos...');
-                    await actualizarStock(apartadoData.items, 'sumar');
-                    console.log('✅ Stock devuelto correctamente');
-                } else {
-                    console.warn('⚠️ No hay items en el apartado para devolver stock');
-                }
-
-                // Si hay venta asociada, marcarla como cancelada
                 if (apartadoData.ventaId) {
-                    console.log('🔗 Marcando venta asociada como cancelada:', apartadoData.ventaId);
+                    console.log('🔗 Procesando venta asociada:', apartadoData.ventaId);
                     const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
                     const ventaSnap = await getDoc(ventaRef);
 
                     if (ventaSnap.exists()) {
+                        const ventaData = ventaSnap.data();
+
+                        // Solo devolver stock si la venta no estaba ya cancelada
+                        if (ventaData.estado !== 'Cancelada' && ventaData.estado !== 'Anulada') {
+                            console.log('📦 Devolviendo stock...');
+                            await actualizarStock(ventaData.items, 'sumar');
+                        } else {
+                            console.log('⚠️ Venta ya estaba cancelada, no se devuelve stock');
+                        }
+
                         await updateDoc(ventaRef, {
                             estado: 'Cancelada'
                         });
@@ -3971,14 +3906,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     }
                 }
 
-                // Marcar el apartado como cancelado
                 await updateDoc(apartadoRef, {
                     estado: 'Cancelado',
                     fechaCancelacion: serverTimestamp()
                 });
                 console.log('✅ Apartado marcado como cancelado');
 
-                showToast('Apartado cancelado y stock devuelto', 'success');
+                showToast('Apartado cancelado y stock devuelto', 'info');
 
             } catch (error) {
                 console.error('❌ Error al cancelar apartado:', error);
