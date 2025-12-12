@@ -1672,22 +1672,43 @@ document.addEventListener('DOMContentLoaded', () => {
             const tallas = [...new Set(product.variaciones.map(v => v.talla || ''))];
             const colores = [...new Set(product.variaciones.map(v => v.color || ''))];
 
-            let optionsHtml = `
-                <div class="mb-3">
-                    <label for="select-talla" class="form-label">Talla:</label>
-                    <select class="form-select" id="select-talla">
-                        <option value="" selected>Selecciona una talla...</option>
-                        ${tallas.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="select-color" class="form-label">Color:</label>
-                    <select class="form-select" id="select-color">
-                        <option value="" selected>Selecciona un color...</option>
-                        ${colores.map(c => `<option value="${c}">${c || 'Único'}</option>`).join('')}
-                    </select>
-                </div>
-            `;
+            // Detectar si es talla única
+            const esTallaUnica = (tallas.length === 1 && (tallas[0].toUpperCase() === 'UNICA' || tallas[0].toUpperCase() === 'ÚNICA' || tallas[0] === ''));
+
+            let optionsHtml = '';
+
+            if (esTallaUnica) {
+                // Si es talla única, ocultar selector de talla y mostrar solo color
+                optionsHtml = `
+                    <input type="hidden" id="select-talla" value="${tallas[0]}">
+                    <div class="mb-3">
+                        <label for="select-color" class="form-label">Color:</label>
+                        <select class="form-select" id="select-color">
+                            <option value="" selected>Selecciona un color...</option>
+                            ${colores.map(c => `<option value="${c}">${c || 'Único'}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            } else {
+                // Mostrar ambos selectores
+                optionsHtml = `
+                    <div class="mb-3">
+                        <label for="select-talla" class="form-label">Talla:</label>
+                        <select class="form-select" id="select-talla">
+                            <option value="" selected>Selecciona una talla...</option>
+                            ${tallas.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="select-color" class="form-label">Color:</label>
+                        <select class="form-select" id="select-color">
+                            <option value="" selected>Selecciona un color...</option>
+                            ${colores.map(c => `<option value="${c}">${c || 'Único'}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
+
             optionsContainer.innerHTML = optionsHtml;
 
             const selectTalla = document.getElementById('select-talla');
@@ -2061,6 +2082,27 @@ document.addEventListener('DOMContentLoaded', () => {
          }
 
          if(costoRutaInput) costoRutaInput.addEventListener('input', window.calcularTotalVentaGeneral); if(ventaDescuentoInput) ventaDescuentoInput.addEventListener('input', window.calcularTotalVentaGeneral); if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', window.calcularTotalVentaGeneral); if(ventaDescuentoTipo) ventaDescuentoTipo.addEventListener('change', window.calcularTotalVentaGeneral);
+
+         // --- Calcular vuelto automáticamente ---
+         if(pagoEfectivoInput) {
+             pagoEfectivoInput.addEventListener('input', function() {
+                 const vueltoDisplay = document.getElementById('vuelto-display');
+                 const vueltoAmount = document.getElementById('vuelto-amount');
+
+                 if (!vueltoDisplay || !vueltoAmount) return;
+
+                 const pagoEfectivo = parseFloat(eliminarFormatoNumero(this.value)) || 0;
+                 const total = window.calcularTotalVentaGeneral();
+
+                 if (pagoEfectivo > 0 && pagoEfectivo > total) {
+                     const vuelto = pagoEfectivo - total;
+                     vueltoAmount.textContent = formatoMoneda.format(vuelto);
+                     vueltoDisplay.style.display = 'block';
+                 } else {
+                     vueltoDisplay.style.display = 'none';
+                 }
+             });
+         }
 
          // --- R (Read) ---
          let allSalesData = []; // Almacenar todas las ventas sin filtrar
