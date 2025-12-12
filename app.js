@@ -563,7 +563,7 @@ function renderProducts(products) {
     products.forEach(product => {
         const stockTotal = (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
         const isAgotado = stockTotal <= 0;
-        const imgUrl = product.imagenUrl || 'https://via.placeholder.com/300x400/f5f5f5/ccc?text=Mishell';
+        const imgUrl = product.imagenUrl || 'https://placehold.co/300x400/f5f5f5/ccc?text=Mishell';
         const { precioFinal, tienePromo, precioOriginal } = calculatePromotionPrice(product);
 
         const variaciones = product.variaciones || [];
@@ -700,7 +700,7 @@ function openProductModal(productId) {
     const { precioFinal, tienePromo, precioOriginal } = calculatePromotionPrice(product);
 
     document.getElementById('modal-product-name').textContent = product.nombre;
-    document.getElementById('modal-product-image').src = product.imagenUrl || 'https://via.placeholder.com/500';
+    document.getElementById('modal-product-image').src = product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
     document.getElementById('modal-product-desc').textContent = product.descripcion || 'No hay descripción disponible.';
     
     if (tienePromo) {
@@ -828,7 +828,7 @@ function renderCart() {
         const observacionHtml = item.observacion ? `<small class="text-muted d-block mt-1"><i class="bi bi-chat-left-text"></i> ${item.observacion}</small>` : '';
         div.innerHTML = `
             <div class="d-flex gap-3">
-                <img src="${item.imagenUrl || 'https://via.placeholder.com/70x90'}" class="cart-item-image" alt="${item.nombre}">
+                <img src="${item.imagenUrl || 'https://placehold.co/70x90/f5f5f5/ccc?text=Foto'}" class="cart-item-image" alt="${item.nombre}">
                 <div class="flex-grow-1">
                     <h6 class="mb-1" style="font-weight: 600; font-size: 0.9rem;">${item.nombre}</h6>
                     <small class="text-muted">${item.talla} / ${item.color}</small>
