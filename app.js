@@ -748,12 +748,15 @@ function openProductModal(productId) {
     if (tallas.length === 0 && variaciones.length > 0) {
         selectTalla.innerHTML = '<option value="unica">Única</option>';
         selectTalla.value = "unica";
-        tallaContainer.style.display = 'none'; // Ocultar selector de talla
+        selectTalla.disabled = true; // Deshabilitar selector pero mostrarlo
+        tallaContainer.style.display = 'block'; // Mostrar selector de talla
     } else if (esTallaUnica) {
         selectTalla.innerHTML = `<option value="${tallas[0]}">${tallas[0] || 'Única'}</option>`;
         selectTalla.value = tallas[0];
-        tallaContainer.style.display = 'none'; // Ocultar selector de talla
+        selectTalla.disabled = true; // Deshabilitar selector pero mostrarlo
+        tallaContainer.style.display = 'block'; // Mostrar selector de talla
     } else {
+        selectTalla.disabled = false; // Habilitar selector para múltiples tallas
         tallaContainer.style.display = 'block'; // Mostrar selector de talla
         tallas.forEach(t => {
             selectTalla.innerHTML += `<option value="${t}">${t}</option>`;

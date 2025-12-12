@@ -706,6 +706,13 @@
                                         </div> 
                                         <label class="form-label mt-3">Pago:</label>
                                         <div class="input-group mb-2"> <span class="input-group-text">Efectivo $</span> <input type="text" inputmode="numeric" id="pago-efectivo" class="form-control" value="0"> </div>
+                                        <div class="input-group mb-2"> <span class="input-group-text">Recibe $</span> <input type="text" inputmode="numeric" id="efectivo-recibido" class="form-control" value="0" placeholder="Monto que recibe el cliente"> </div>
+                                        <div id="vuelto-display" class="alert alert-info mb-2" style="display: none;">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span><strong>Vuelto a entregar:</strong></span>
+                                                <span class="fs-5 fw-bold" id="vuelto-amount">$0</span>
+                                            </div>
+                                        </div>
                                         <div class="input-group mb-3"> <span class="input-group-text">Transf. $</span> <input type="text" inputmode="numeric" id="pago-transferencia" class="form-control" value="0"> </div> 
                                         <h4 class="text-end">Total (+ Ruta): <span id="venta-total" class="text-primary">$0.00</span></h4> 
                                         <button type="submit" class="btn btn-primary w-100 mt-2">Registrar Venta</button> 

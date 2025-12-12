@@ -1672,12 +1672,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const tallas = [...new Set(product.variaciones.map(v => v.talla || ''))];
             const colores = [...new Set(product.variaciones.map(v => v.color || ''))];
 
+            // ✅ Detectar si es talla única
+            const esTallaUnica = (tallas.length === 0 || tallas.length === 1);
+            const tallaUnicaValue = esTallaUnica ? (tallas[0] || '') : '';
+
             let optionsHtml = `
                 <div class="mb-3">
                     <label for="select-talla" class="form-label">Talla:</label>
-                    <select class="form-select" id="select-talla">
-                        <option value="" selected>Selecciona una talla...</option>
-                        ${tallas.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}
+                    <select class="form-select" id="select-talla" ${esTallaUnica ? 'disabled' : ''}>
+                        ${esTallaUnica
+                            ? `<option value="${tallaUnicaValue}" selected>${tallaUnicaValue || 'Única'}</option>`
+                            : `<option value="" selected>Selecciona una talla...</option>
+                               ${tallas.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}`
+                        }
                     </select>
                 </div>
                 <div class="mb-3">
@@ -1692,6 +1699,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const selectTalla = document.getElementById('select-talla');
             const selectColor = document.getElementById('select-color');
+
+            // ✅ Si es talla única, pre-seleccionar y disparar checkStock
+            if (esTallaUnica) {
+                selectTalla.value = tallaUnicaValue;
+                // Si solo hay un color también, seleccionarlo automáticamente
+                if (colores.length === 1) {
+                    selectColor.value = colores[0];
+                }
+            }
 
             function checkStock() {
                 const talla = selectTalla.value;
@@ -1721,6 +1737,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             selectTalla.addEventListener('change', checkStock);
             selectColor.addEventListener('change', checkStock);
+
+            // ✅ Si es talla única, disparar checkStock para mostrar stock automáticamente
+            if (esTallaUnica) {
+                checkStock();
+            }
 
             selectVariationModalInstance.show();
         }
@@ -2061,6 +2082,39 @@ document.addEventListener('DOMContentLoaded', () => {
          }
 
          if(costoRutaInput) costoRutaInput.addEventListener('input', window.calcularTotalVentaGeneral); if(ventaDescuentoInput) ventaDescuentoInput.addEventListener('input', window.calcularTotalVentaGeneral); if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', window.calcularTotalVentaGeneral); if(ventaDescuentoTipo) ventaDescuentoTipo.addEventListener('change', window.calcularTotalVentaGeneral);
+
+         // ✅ Calculadora automática de vueltos
+         const efectivoRecibidoInput = document.getElementById('efectivo-recibido');
+         const vueltoDisplay = document.getElementById('vuelto-display');
+         const vueltoAmount = document.getElementById('vuelto-amount');
+
+         function calcularVuelto() {
+             const pagoEfectivo = parseFloat(eliminarFormatoNumero(pagoEfectivoInput.value)) || 0;
+             const efectivoRecibido = parseFloat(eliminarFormatoNumero(efectivoRecibidoInput.value)) || 0;
+
+             if (pagoEfectivo > 0 && efectivoRecibido > 0) {
+                 const vuelto = efectivoRecibido - pagoEfectivo;
+
+                 if (vuelto >= 0) {
+                     vueltoAmount.textContent = formatoMoneda.format(vuelto);
+                     vueltoAmount.style.color = '#0d6efd';
+                     vueltoDisplay.style.display = 'block';
+                 } else {
+                     vueltoAmount.textContent = formatoMoneda.format(Math.abs(vuelto)) + ' (Falta)';
+                     vueltoAmount.style.color = '#dc3545';
+                     vueltoDisplay.style.display = 'block';
+                 }
+             } else {
+                 vueltoDisplay.style.display = 'none';
+             }
+         }
+
+         if (efectivoRecibidoInput) {
+             efectivoRecibidoInput.addEventListener('input', calcularVuelto);
+         }
+         if (pagoEfectivoInput) {
+             pagoEfectivoInput.addEventListener('input', calcularVuelto);
+         }
 
          // --- R (Read) ---
          let allSalesData = []; // Almacenar todas las ventas sin filtrar
