@@ -504,16 +504,27 @@
                         <div class="card-body"> 
                             <form id="form-producto"> 
                                 <input type="hidden" id="producto-id"> 
-                                <div class="row"> 
-                                    <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div> 
-                                    <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div> 
-                                    <div class="col-md-3 mb-3"> <label for="proveedor-producto" class="form-label">Proveedor:</label> 
-                                        <div class="input-group"> 
-                                            <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal" style="cursor: pointer;"> 
-                                            <input type="hidden" id="proveedor-producto-id"> 
-                                            <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button> 
-                                        </div> 
-                                    </div> 
+                                <div class="row">
+                                    <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div>
+                                    <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="codigo-barras" class="form-label">Código de Barras:</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="codigo-barras" placeholder="Ej: 7501234567890" maxlength="13">
+                                            <button class="btn btn-outline-primary" type="button" id="btn-generar-barcode" title="Generar código automático"><i class="bi bi-upc-scan"></i></button>
+                                        </div>
+                                        <small class="form-text text-muted">EAN-13 o UPC</small>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="proveedor-producto" class="form-label">Proveedor:</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal" style="cursor: pointer;">
+                                            <input type="hidden" id="proveedor-producto-id">
+                                            <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button>
+                                        </div>
+                                    </div>
                                 </div> 
                                 <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div> 
                                 <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div> 
@@ -642,8 +653,14 @@
                                     <div class="col-md-6 mb-2"> <label for="venta-repartidor" class="form-label small mb-1">Repartidor:</label> <select id="venta-repartidor" class="form-select form-select-sm"></select> </div>
                                     <div class="col-md-6 mb-2"> <label for="costo-ruta" class="form-label small mb-1">Costo Ruta ($):</label> <input type="text" inputmode="numeric" id="costo-ruta" class="form-control form-control-sm" value="0"> </div>
                                 </div>
+                                <!-- 🔍 BÚSQUEDA RÁPIDA POR CÓDIGO DE BARRAS -->
                                 <div class="producto-tienda-field mb-2">
-                                    <label for="venta-producto" class="form-label small mb-1">Buscar Producto:</label>
+                                    <label for="barcode-scanner-input" class="form-label small mb-1"><i class="bi bi-upc-scan"></i> Escanear Código de Barras:</label>
+                                    <input type="text" id="barcode-scanner-input" class="form-control form-control-sm" placeholder="Escanea o escribe código..." autocomplete="off" autofocus>
+                                    <small class="text-muted small">Escanea con lector USB o escribe el código</small>
+                                </div>
+                                <div class="producto-tienda-field mb-2">
+                                    <label for="venta-producto" class="form-label small mb-1">O Buscar Producto:</label>
                                     <input type="text" id="venta-producto" class="form-control form-control-sm" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;">
                                 </div>
 
@@ -2624,6 +2641,39 @@
             </div>
         </div>
     </div>
+
+    <!-- 📦 MODAL PARA GENERAR Y VER CÓDIGO DE BARRAS -->
+    <div class="modal fade" id="barcodeModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-upc-scan"></i> Código de Barras</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div id="barcode-info" class="mb-3">
+                        <h6 id="barcode-product-name" class="fw-bold"></h6>
+                        <p id="barcode-product-code" class="text-muted small mb-1"></p>
+                        <p id="barcode-product-price" class="fw-bold text-primary mb-3"></p>
+                    </div>
+                    <div id="barcode-display" class="p-4 bg-white border rounded">
+                        <svg id="barcode-svg"></svg>
+                        <p id="barcode-number" class="mt-2 fw-bold"></p>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Imprimir Etiqueta</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="window.downloadBarcode()"><i class="bi bi-download"></i> Descargar PNG</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📚 LIBRERÍA JSBARCODE PARA GENERAR CÓDIGOS DE BARRAS -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+    <!-- 🔍 SISTEMA DE CÓDIGOS DE BARRAS -->
+    <script src="barcode-system.js"></script>
 
 </body>
 </html>
