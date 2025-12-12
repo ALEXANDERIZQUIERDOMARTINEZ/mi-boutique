@@ -396,6 +396,16 @@ Finalizar Pedido
 </select>
 <small class="text-muted" id="payment-info"></small>
 </div>
+<div class="mb-3" id="cash-payment-section" style="display: none;">
+<label class="selector-label">Monto con el que paga</label>
+<input type="number" class="form-control" id="checkout-cash-amount" placeholder="Ej: 50000" min="0">
+<div class="mt-2" id="change-display" style="display: none;">
+<div class="alert alert-info mb-0">
+<strong>Total del pedido:</strong> <span id="change-total">$0</span><br>
+<strong>Vuelto a entregar:</strong> <span id="change-amount" style="font-size: 1.2em; color: #0d6efd;">$0</span>
+</div>
+</div>
+</div>
 <button type="submit" class="btn btn-primary btn-lg w-100">
 Confirmar Pedido
 </button>
