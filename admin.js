@@ -2083,11 +2083,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
          if(costoRutaInput) costoRutaInput.addEventListener('input', window.calcularTotalVentaGeneral); if(ventaDescuentoInput) ventaDescuentoInput.addEventListener('input', window.calcularTotalVentaGeneral); if(tipoEntregaSelect) tipoEntregaSelect.addEventListener('change', window.calcularTotalVentaGeneral); if(ventaDescuentoTipo) ventaDescuentoTipo.addEventListener('change', window.calcularTotalVentaGeneral);
 
-         // ✅ Calculadora automática de vueltos
+         // ✅ NUEVA INTERFAZ DE PAGOS MODERNA
+         const metodoPagoRadios = document.querySelectorAll('input[name="metodo-pago-radio"]');
+         const efectivoFields = document.getElementById('efectivo-fields');
+         const transferenciaFields = document.getElementById('transferencia-fields');
+         const mixtoFields = document.getElementById('mixto-fields');
+
          const efectivoRecibidoInput = document.getElementById('efectivo-recibido');
          const vueltoDisplay = document.getElementById('vuelto-display');
          const vueltoAmount = document.getElementById('vuelto-amount');
 
+         const pagoEfectivoMixtoInput = document.getElementById('pago-efectivo-mixto');
+         const pagoTransferenciaMixtoInput = document.getElementById('pago-transferencia-mixto');
+         const efectivoRecibidoMixtoInput = document.getElementById('efectivo-recibido-mixto');
+         const vueltoDisplayMixto = document.getElementById('vuelto-display-mixto');
+         const vueltoAmountMixto = document.getElementById('vuelto-amount-mixto');
+
+         // Mostrar/Ocultar campos según método de pago
+         metodoPagoRadios.forEach(radio => {
+             radio.addEventListener('change', (e) => {
+                 const metodo = e.target.value;
+
+                 // Ocultar todos los campos
+                 efectivoFields.style.display = 'none';
+                 transferenciaFields.style.display = 'none';
+                 mixtoFields.style.display = 'none';
+
+                 // Resetear valores de los campos ocultos
+                 if (metodo === 'efectivo') {
+                     efectivoFields.style.display = 'block';
+                     pagoTransferenciaInput.value = '0';
+                     pagoEfectivoMixtoInput.value = '0';
+                     pagoTransferenciaMixtoInput.value = '0';
+                 } else if (metodo === 'transferencia') {
+                     transferenciaFields.style.display = 'block';
+                     pagoEfectivoInput.value = '0';
+                     efectivoRecibidoInput.value = '0';
+                     pagoEfectivoMixtoInput.value = '0';
+                     pagoTransferenciaMixtoInput.value = '0';
+                     vueltoDisplay.style.display = 'none';
+                 } else if (metodo === 'mixto') {
+                     mixtoFields.style.display = 'block';
+                     pagoEfectivoInput.value = '0';
+                     efectivoRecibidoInput.value = '0';
+                     pagoTransferenciaInput.value = '0';
+                     vueltoDisplay.style.display = 'none';
+                 }
+             });
+         });
+
+         // ✅ Calculadora automática de vueltos (EFECTIVO)
          function calcularVuelto() {
              const pagoEfectivo = parseFloat(eliminarFormatoNumero(pagoEfectivoInput.value)) || 0;
              const efectivoRecibido = parseFloat(eliminarFormatoNumero(efectivoRecibidoInput.value)) || 0;
@@ -2109,12 +2154,33 @@ document.addEventListener('DOMContentLoaded', () => {
              }
          }
 
-         if (efectivoRecibidoInput) {
-             efectivoRecibidoInput.addEventListener('input', calcularVuelto);
+         // ✅ Calculadora automática de vueltos (MIXTO)
+         function calcularVueltoMixto() {
+             const pagoEfectivoMixto = parseFloat(eliminarFormatoNumero(pagoEfectivoMixtoInput.value)) || 0;
+             const efectivoRecibidoMixto = parseFloat(eliminarFormatoNumero(efectivoRecibidoMixtoInput.value)) || 0;
+
+             if (pagoEfectivoMixto > 0 && efectivoRecibidoMixto > 0) {
+                 const vuelto = efectivoRecibidoMixto - pagoEfectivoMixto;
+
+                 if (vuelto >= 0) {
+                     vueltoAmountMixto.textContent = formatoMoneda.format(vuelto);
+                     vueltoAmountMixto.style.color = '#ffc107';
+                     vueltoDisplayMixto.style.display = 'block';
+                 } else {
+                     vueltoAmountMixto.textContent = formatoMoneda.format(Math.abs(vuelto)) + ' (Falta)';
+                     vueltoAmountMixto.style.color = '#dc3545';
+                     vueltoDisplayMixto.style.display = 'block';
+                 }
+             } else {
+                 vueltoDisplayMixto.style.display = 'none';
+             }
          }
-         if (pagoEfectivoInput) {
-             pagoEfectivoInput.addEventListener('input', calcularVuelto);
-         }
+
+         // Event Listeners para cálculo de vueltos
+         if (efectivoRecibidoInput) efectivoRecibidoInput.addEventListener('input', calcularVuelto);
+         if (pagoEfectivoInput) pagoEfectivoInput.addEventListener('input', calcularVuelto);
+         if (efectivoRecibidoMixtoInput) efectivoRecibidoMixtoInput.addEventListener('input', calcularVueltoMixto);
+         if (pagoEfectivoMixtoInput) pagoEfectivoMixtoInput.addEventListener('input', calcularVueltoMixto);
 
          // --- R (Read) ---
          let allSalesData = []; // Almacenar todas las ventas sin filtrar
@@ -2396,6 +2462,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const totalCalculado = window.calcularTotalVentaGeneral();
             const esCatalogo = tipoVentaSelect.value === 'catalogo';
 
+            // ✅ Obtener valores de pago según método seleccionado
+            const metodoPagoSeleccionado = document.querySelector('input[name="metodo-pago-radio"]:checked').value;
+            let montoEfectivo = 0;
+            let montoTransferencia = 0;
+
+            if (metodoPagoSeleccionado === 'efectivo') {
+                montoEfectivo = parseFloat(eliminarFormatoNumero(pagoEfectivoInput.value)) || 0;
+            } else if (metodoPagoSeleccionado === 'transferencia') {
+                montoTransferencia = parseFloat(eliminarFormatoNumero(pagoTransferenciaInput.value)) || 0;
+            } else if (metodoPagoSeleccionado === 'mixto') {
+                montoEfectivo = parseFloat(eliminarFormatoNumero(pagoEfectivoMixtoInput.value)) || 0;
+                montoTransferencia = parseFloat(eliminarFormatoNumero(pagoTransferenciaMixtoInput.value)) || 0;
+            }
+
             const ventaData = {
                 clienteNombre: ventaClienteInput.value || "Cliente General",
                 clienteDireccion: ventaDireccionInput?.value || "",
@@ -2411,8 +2491,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 observaciones: ventaObservaciones.value.trim(),
                 descuento: parseFloat(eliminarFormatoNumero(ventaDescuentoInput.value)) || 0,
                 descuentoTipo: ventaDescuentoTipo.value,
-                pagoEfectivo: parseFloat(eliminarFormatoNumero(pagoEfectivoInput.value)) || 0,
-                pagoTransferencia: parseFloat(eliminarFormatoNumero(pagoTransferenciaInput.value)) || 0,
+                pagoEfectivo: montoEfectivo,
+                pagoTransferencia: montoTransferencia,
                 totalVenta: totalCalculado,
                 estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada',
                 esCatalogoExterno: esCatalogo, // Flag para identificar ventas por catálogo
