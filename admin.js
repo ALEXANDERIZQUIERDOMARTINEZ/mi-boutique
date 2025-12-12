@@ -1231,7 +1231,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localProductsMap.set(id, d);
 
                 const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
-                const defaultImgTabla = 'https://via.placeholder.com/60x80/f0f0f0/cccccc?text=Foto';
+                const defaultImgTabla = 'https://placehold.co/60x80/f0f0f0/cccccc?text=Foto';
                 const imagenUrl = d.imagenUrl || defaultImgTabla; 
 
                 let variacionesHtml = (d.variaciones || [])
@@ -1284,7 +1284,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.dataset.visible = d.visible ? 'true' : 'false';
                 li.dataset.precioOriginal = d.precioDetal || 0;
 
-                const defaultImgModal = 'https://via.placeholder.com/70x90.png?text=Sin+Foto';
+                const defaultImgModal = 'https://placehold.co/70x90.png?text=Sin+Foto';
                 const imagenUrlModal = d.imagenUrl || defaultImgModal; 
 
                 let categoryNameModal = 'Sin Categoría';
@@ -2146,7 +2146,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const product = localProductsMap.get(item.productoId);
                         if (!product) return '';
 
-                        const imagenUrl = product.imagenUrl || product.imageUrl || 'https://via.placeholder.com/40x40/f0f0f0/cccccc?text=?';
+                        const imagenUrl = product.imagenUrl || product.imageUrl || 'https://placehold.co/40x40/f0f0f0/cccccc?text=?';
                         const nombre = product.nombre || item.nombre || 'Producto';
 
                         // Resolver categoría desde categoriesMap
@@ -3422,7 +3422,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const product = localProductsMap.get(item.productoId);
                         if (!product) return '';
 
-                        const imagenUrl = product.imagenUrl || product.imageUrl || 'https://via.placeholder.com/40x40/f0f0f0/cccccc?text=?';
+                        const imagenUrl = product.imagenUrl || product.imageUrl || 'https://placehold.co/40x40/f0f0f0/cccccc?text=?';
                         const nombre = product.nombre || item.nombre || 'Producto';
 
                         // Resolver categoría desde categoriesMap
