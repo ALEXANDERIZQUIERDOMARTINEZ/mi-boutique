@@ -1261,7 +1261,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="barcode-cell">
                             <svg id="barcode-mini-${id}" class="barcode-mini"></svg>
                             <small class="d-block text-muted mt-1">${d.codigoBarras}</small>
-                            <button class="btn btn-sm btn-outline-primary mt-1" onclick="window.mostrarBarcodeModal(${JSON.stringify(d).replace(/"/g, '&quot;')})">
+                            <button class="btn btn-sm btn-outline-primary mt-1 btn-ver-barcode" data-product-id="${id}">
                                 <i class="bi bi-eye"></i> Ver
                             </button>
                         </div>
@@ -1468,11 +1468,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        if (productListTableBody) productListTableBody.addEventListener('click', async (e) => { 
-            const target = e.target.closest('button'); if (!target) return; e.preventDefault(); 
+        if (productListTableBody) productListTableBody.addEventListener('click', async (e) => {
+            const target = e.target.closest('button'); if (!target) return; e.preventDefault();
             const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.product-name'); if (!id || !nameTd) return;
-             
-             if (target.classList.contains('btn-delete-product')) {
+
+             if (target.classList.contains('btn-ver-barcode')) {
+                 const producto = localProductsMap.get(id);
+                 if (producto && window.mostrarBarcodeModal) {
+                     window.mostrarBarcodeModal(producto);
+                 }
+             } else if (target.classList.contains('btn-delete-product')) {
                  const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'productos'; deleteItemNameEl.textContent = `Producto: ${nameTd.firstChild.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
              } else if (target.classList.contains('btn-edit-product')) {
                  showToast("Cargando datos...", 'info');
