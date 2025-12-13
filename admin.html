@@ -564,7 +564,16 @@
                 </div> 
                 
                 <!-- ✅ INVENTARIO MEJORADO CON FILTROS -->
-                <div id="inventory-view"> 
+                <div id="inventory-view">
+                    <!-- BOTÓN DESCARGAR TODOS LOS CÓDIGOS DE BARRAS -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <button type="button" id="btn-download-all-barcodes" class="btn btn-primary">
+                                <i class="bi bi-download me-1"></i>Descargar Todos los Códigos de Barras
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- FILTROS MEJORADOS -->
                     <div class="row mb-3 g-2">
                         <div class="col-md-6">
@@ -599,6 +608,7 @@
                                             <th>P. Detal</th>
                                             <th>P. Mayor</th>
                                             <th>Stock</th>
+                                            <th>Código de Barras</th>
                                             <th>Promoción</th>
                                             <th>Estado</th>
                                             <th>Acciones</th>
@@ -606,7 +616,7 @@
                                     </thead>
                                     <tbody id="lista-inventario-productos">
                                         <tr id="empty-inventory-row">
-                                            <td colspan="10" class="text-center text-muted p-4">Cargando...</td>
+                                            <td colspan="11" class="text-center text-muted p-4">Cargando...</td>
                                         </tr>
                                     </tbody>
                                 </table>
