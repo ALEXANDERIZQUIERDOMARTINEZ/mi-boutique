@@ -8633,7 +8633,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             console.log(`✅ Productos existentes cargados: ${productosExistentes.length}`);
             console.log('📋 Lista de productos existentes:');
             productosExistentes.forEach(p => {
-                console.log(`  - "${p.nombreOriginal}" | Cat: "${p.categoriaOriginal}" | Prov: "${p.proveedorOriginal}"`);
+                console.log(`  - "${p.nombreOriginal}" | Código: "${p.codigo || 'SIN-CÓDIGO'}" | Cat: "${p.categoriaOriginal}" | Prov: "${p.proveedorOriginal}" | ID: ${p.id}`);
             });
 
             // Marcar duplicados
@@ -8651,16 +8651,34 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                                   existente.proveedor === proveedorNorm;
 
                     if (match) {
-                        console.log(`   ✅ MATCH encontrado con: "${existente.nombreOriginal}" (ID: ${existente.id})`);
+                        console.log(`   ✅ MATCH encontrado con: "${existente.nombreOriginal}"`);
+                        console.log(`      └─ Código: ${existente.codigo || 'SIN-CÓDIGO'}`);
+                        console.log(`      └─ ID: ${existente.id}`);
+                        console.log(`      └─ Stock: ${existente.stock || 0}`);
+                        if (existente.variaciones && existente.variaciones.length > 0) {
+                            console.log(`      └─ Variaciones: ${existente.variaciones.map(v => `${v.talla}/${v.color} (${v.stock})`).join(', ')}`);
+                        }
                     }
 
                     return match;
                 });
 
                 if (duplicado) {
-                    console.log(`🔍 ✅ Duplicado detectado: ${producto.nombre} (${producto.categoria} - ${producto.proveedor})`);
+                    console.log(`   🔍 ✅ Duplicado detectado: ${producto.nombre}`);
+                    console.log(`      └─ Se agregará stock a: ${duplicado.codigo || 'SIN-CÓDIGO'}`);
                 } else {
                     console.log(`   ❌ No es duplicado, se creará como nuevo producto`);
+
+                    // ⚠️ ADVERTENCIA: Verificar si existe un producto con el mismo nombre pero diferente categoría/proveedor
+                    const productosMismoNombre = productosExistentes.filter(existente => existente.nombre === nombreNorm);
+                    if (productosMismoNombre.length > 0) {
+                        console.warn(`   ⚠️  ADVERTENCIA: Ya existe(n) ${productosMismoNombre.length} producto(s) con el nombre "${producto.nombre}" pero con diferente categoría o proveedor:`);
+                        productosMismoNombre.forEach(p => {
+                            console.warn(`      - Código: ${p.codigo || 'SIN-CÓDIGO'} | Cat: "${p.categoriaOriginal}" | Prov: "${p.proveedorOriginal}"`);
+                        });
+                        console.warn(`   ⚠️  El producto del Excel tiene: Cat: "${producto.categoria}" | Prov: "${producto.proveedor}"`);
+                        console.warn(`   ⚠️  Se creará como un producto NUEVO. Si esto es un error, verifica categoría/proveedor en Excel.`);
+                    }
                 }
 
                 producto.esDuplicado = !!duplicado;
@@ -9017,6 +9035,27 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 document.getElementById('seccion-duplicados').style.display = 'none';
             }
 
+            // Mostrar advertencias de productos con nombres similares
+            const nuevosProductos = productosAgrupados.filter(p => !p.esDuplicado);
+            const advertencias = [];
+            nuevosProductos.forEach(producto => {
+                const nombreNorm = producto.nombre.toLowerCase().trim();
+                const productosMismoNombre = productosExistentes.filter(existente => existente.nombre === nombreNorm);
+                if (productosMismoNombre.length > 0) {
+                    advertencias.push({
+                        producto: producto,
+                        existentes: productosMismoNombre
+                    });
+                }
+            });
+
+            if (advertencias.length > 0) {
+                renderizarAdvertencias(advertencias);
+                document.getElementById('seccion-advertencias').style.display = 'block';
+            } else {
+                document.getElementById('seccion-advertencias').style.display = 'none';
+            }
+
             ocultarLoader();
             mostrarPaso(pasoConfirmacion);
 
@@ -9026,6 +9065,39 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             console.error(error);
         }
     });
+
+    // Renderizar advertencias de nombres similares
+    function renderizarAdvertencias(advertencias) {
+        const contenedor = document.getElementById('lista-advertencias');
+        contenedor.innerHTML = '';
+
+        advertencias.forEach(({ producto, existentes }) => {
+            const div = document.createElement('div');
+            div.className = 'alert alert-warning mb-2';
+            div.innerHTML = `
+                <div class="d-flex align-items-start">
+                    <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0" style="font-size: 1.2rem;"></i>
+                    <div class="flex-grow-1">
+                        <strong>Producto del Excel: "${producto.nombre}"</strong>
+                        <small class="d-block">Categoría: ${producto.categoria} | Proveedor: ${producto.proveedor}</small>
+                        <hr class="my-2">
+                        <small class="d-block mb-1"><strong>Ya existe(n) ${existentes.length} producto(s) con este nombre:</strong></small>
+                        ${existentes.map(p => `
+                            <small class="d-block ms-3">
+                                • Código: <strong>${p.codigo || 'SIN-CÓDIGO'}</strong> |
+                                Cat: "${p.categoriaOriginal}" |
+                                Prov: "${p.proveedorOriginal}"
+                            </small>
+                        `).join('')}
+                        <small class="d-block mt-2 text-danger">
+                            ⚠️ Se creará como producto NUEVO. Si esto es un error, verifica que categoría y proveedor coincidan exactamente.
+                        </small>
+                    </div>
+                </div>
+            `;
+            contenedor.appendChild(div);
+        });
+    }
 
     // Renderizar lista de duplicados
     function renderizarDuplicados(duplicados) {
@@ -9046,6 +9118,30 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             // Calcular unidades a agregar
             const unidadesNuevas = producto.variaciones.reduce((sum, v) => sum + v.cantidad, 0);
 
+            // Obtener variaciones existentes
+            let variacionesExistentesHTML = '';
+            if (productoExistente.variaciones && productoExistente.variaciones.length > 0) {
+                const variacionesTexto = productoExistente.variaciones.map(v => `${v.talla}/${v.color} (${v.stock})`).join(', ');
+                variacionesExistentesHTML = `
+                    <div class="col-12 mt-2">
+                        <small class="text-muted d-block">Variaciones actuales:</small>
+                        <small><strong>${variacionesTexto}</strong></small>
+                    </div>
+                `;
+            }
+
+            // Obtener variaciones nuevas del Excel
+            let variacionesNuevasHTML = '';
+            if (producto.variaciones && producto.variaciones.length > 0) {
+                const variacionesTexto = producto.variaciones.map(v => `${v.talla}/${v.color} (${v.cantidad})`).join(', ');
+                variacionesNuevasHTML = `
+                    <div class="col-12 mt-2">
+                        <small class="text-muted d-block">Variaciones del Excel:</small>
+                        <small class="text-success"><strong>${variacionesTexto}</strong></small>
+                    </div>
+                `;
+            }
+
             const div = document.createElement('div');
             div.className = 'card mb-2 border-warning';
             div.innerHTML = `
@@ -9054,6 +9150,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         <div>
                             <h6 class="mb-1">${producto.nombre}</h6>
                             <small class="text-muted d-block">Categoría: ${producto.categoria} | Proveedor: ${producto.proveedor}</small>
+                            <small class="d-block mt-1">
+                                <span class="badge bg-secondary">${productoExistente.codigo || 'SIN-CÓDIGO'}</span>
+                                <span class="text-muted ms-2">ID: ${productoExistente.id}</span>
+                            </small>
                         </div>
                         <span class="badge bg-warning text-dark">Duplicado</span>
                     </div>
@@ -9067,6 +9167,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             <small class="text-muted d-block">A cargar:</small>
                             <strong class="text-success">+${unidadesNuevas} unidades</strong>
                         </div>
+                        ${variacionesExistentesHTML}
+                        ${variacionesNuevasHTML}
                     </div>
 
                     <div class="mt-2">
