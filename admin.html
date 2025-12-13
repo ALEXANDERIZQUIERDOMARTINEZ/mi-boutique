@@ -1269,10 +1269,19 @@
                                     nombre | categoria | proveedor | precio_detal | precio_mayor | talla | color | cantidad
                                 </code>
                                 <p class="mb-2 mt-2"><strong>Columnas opcionales:</strong></p>
-                                <code class="d-block bg-white p-2 rounded">
-                                    descripcion | costo
+                                <code class="d-block bg-white p-2 rounded mb-3">
+                                    codigo | descripcion | costo
                                 </code>
-                                <small class="text-muted d-block mt-2">
+                                <div class="alert alert-success mb-2">
+                                    <strong>✨ NUEVO: Campo CÓDIGO (Recomendado)</strong>
+                                    <small class="d-block mt-1">
+                                        • Incluye el <strong>código</strong> del producto existente para actualizar sus variaciones<br>
+                                        • Si incluyes código, NO se crearán duplicados<br>
+                                        • Puedes encontrar el código en la lista de productos<br>
+                                        • Si no incluyes código, el sistema lo generará automáticamente
+                                    </small>
+                                </div>
+                                <small class="text-muted d-block">
                                     • Si no incluyes <strong>costo</strong>, se calculará automáticamente como el 50% del precio_detal<br>
                                     • Si no incluyes <strong>descripcion</strong>, quedará vacía<br>
                                     • Cada fila representa una variación del producto<br>
