@@ -21,6 +21,14 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 console.log("Firebase Initialized!");
 
+// Exponer funciones de Firebase globalmente para barcode-system.js
+window.db = db;
+window.collection = collection;
+window.getDocs = getDocs;
+window.query = query;
+window.where = where;
+window.orderBy = orderBy;
+
 // --- Collections References ---
 const categoriesCollection = collection(db, 'categorias');
 const suppliersCollection = collection(db, 'proveedores');
