@@ -1254,6 +1254,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         <i class="bi bi-tag"></i><span class="btn-action-text">+ Promo</span>
                        </button>`;
 
+                // Generar columna de código de barras
+                let barcodeHtml = '';
+                if (d.codigoBarras) {
+                    barcodeHtml = `
+                        <div class="barcode-cell">
+                            <svg id="barcode-mini-${id}" class="barcode-mini"></svg>
+                            <small class="d-block text-muted mt-1">${d.codigoBarras}</small>
+                            <button class="btn btn-sm btn-outline-primary mt-1" onclick="window.mostrarBarcodeModal(${JSON.stringify(d).replace(/"/g, '&quot;')})">
+                                <i class="bi bi-eye"></i> Ver
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    barcodeHtml = '<small class="text-muted">Sin código</small>';
+                }
+
                 const tr = document.createElement('tr');
                 tr.dataset.id = id;
                 tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img" onerror="this.src='${defaultImgTabla}'"></td>
@@ -1262,6 +1278,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <td>${formatoMoneda.format(d.precioDetal || 0)}</td>
                                 <td>${formatoMoneda.format(d.precioMayor || 0)}</td>
                                 <td>${stockTotal}</td>
+                                <td>${barcodeHtml}</td>
                                 <td>${promoHtml}</td>
                                 <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
                                 <td class="action-buttons">
@@ -1272,7 +1289,22 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span>
                                     </button>
                                 </td>`;
-                if(productListTableBody) productListTableBody.appendChild(tr); 
+                if(productListTableBody) productListTableBody.appendChild(tr);
+
+                // Generar código de barras visual en miniatura
+                if (d.codigoBarras) {
+                    try {
+                        JsBarcode(`#barcode-mini-${id}`, d.codigoBarras, {
+                            format: "EAN13",
+                            width: 1,
+                            height: 30,
+                            displayValue: false,
+                            margin: 2
+                        });
+                    } catch (e) {
+                        console.error('Error generando código de barras:', e);
+                    }
+                }
 
                 const li = document.createElement('li');
                 li.className = 'list-group-item list-group-item-action product-search-item';

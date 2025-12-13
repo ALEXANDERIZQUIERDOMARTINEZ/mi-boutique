@@ -286,6 +286,147 @@
             });
         }
 
+        // ========================================================================
+        // DESCARGA MASIVA DE CÓDIGOS DE BARRAS
+        // ========================================================================
+
+        const downloadAllBarcodesBtn = document.getElementById('btn-download-all-barcodes');
+        if (downloadAllBarcodesBtn) {
+            downloadAllBarcodesBtn.addEventListener('click', async function() {
+                try {
+                    const btn = this;
+                    const originalHTML = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando PDF...';
+
+                    // Obtener todos los productos con código de barras
+                    const productosSnapshot = await getDocs(query(collection(db, 'productos')));
+                    const productosConBarcode = [];
+
+                    productosSnapshot.forEach(doc => {
+                        const producto = doc.data();
+                        if (producto.codigoBarras) {
+                            productosConBarcode.push({
+                                id: doc.id,
+                                ...producto
+                            });
+                        }
+                    });
+
+                    if (productosConBarcode.length === 0) {
+                        showToast('No hay productos con código de barras', 'warning');
+                        btn.disabled = false;
+                        btn.innerHTML = originalHTML;
+                        return;
+                    }
+
+                    // Crear PDF usando jsPDF
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({
+                        orientation: 'portrait',
+                        unit: 'mm',
+                        format: 'a4'
+                    });
+
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    const pageHeight = doc.internal.pageSize.getHeight();
+                    const margin = 10;
+                    const labelWidth = 90;
+                    const labelHeight = 40;
+                    const cols = 2;
+                    const rows = Math.floor((pageHeight - 2 * margin) / labelHeight);
+
+                    let currentPage = 1;
+                    let currentRow = 0;
+                    let currentCol = 0;
+
+                    for (let i = 0; i < productosConBarcode.length; i++) {
+                        const producto = productosConBarcode[i];
+
+                        // Calcular posición
+                        const x = margin + (currentCol * labelWidth);
+                        const y = margin + (currentRow * labelHeight);
+
+                        // Crear SVG temporal para el código de barras
+                        const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        try {
+                            JsBarcode(tempSvg, producto.codigoBarras, {
+                                format: "EAN13",
+                                width: 2,
+                                height: 60,
+                                displayValue: true,
+                                fontSize: 14,
+                                margin: 5
+                            });
+
+                            // Convertir SVG a imagen
+                            const svgData = new XMLSerializer().serializeToString(tempSvg);
+                            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                            const svgUrl = URL.createObjectURL(svgBlob);
+
+                            const img = new Image();
+                            await new Promise((resolve, reject) => {
+                                img.onload = () => {
+                                    // Agregar nombre del producto
+                                    doc.setFontSize(9);
+                                    doc.setFont(undefined, 'bold');
+                                    const nombreCorto = producto.nombre.length > 35 ? producto.nombre.substring(0, 35) + '...' : producto.nombre;
+                                    doc.text(nombreCorto, x + labelWidth / 2, y + 5, { align: 'center' });
+
+                                    // Agregar precio
+                                    doc.setFontSize(10);
+                                    const precio = producto.precioDetal || 0;
+                                    doc.text(`$${precio.toLocaleString('es-CO')}`, x + labelWidth / 2, y + 12, { align: 'center' });
+
+                                    // Agregar código de barras como imagen
+                                    doc.addImage(img, 'PNG', x + 5, y + 15, labelWidth - 10, 20);
+
+                                    URL.revokeObjectURL(svgUrl);
+                                    resolve();
+                                };
+                                img.onerror = reject;
+                                img.src = svgUrl;
+                            });
+
+                        } catch (error) {
+                            console.error(`Error generando código de barras para ${producto.nombre}:`, error);
+                        }
+
+                        // Actualizar posición
+                        currentCol++;
+                        if (currentCol >= cols) {
+                            currentCol = 0;
+                            currentRow++;
+                        }
+
+                        // Crear nueva página si es necesario
+                        if (currentRow >= rows && i < productosConBarcode.length - 1) {
+                            doc.addPage();
+                            currentPage++;
+                            currentRow = 0;
+                            currentCol = 0;
+                        }
+                    }
+
+                    // Descargar PDF
+                    doc.save(`codigos-barras-${new Date().toISOString().split('T')[0]}.pdf`);
+                    showToast(`PDF generado con ${productosConBarcode.length} códigos de barras`, 'success');
+
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+
+                } catch (error) {
+                    console.error('Error generando PDF:', error);
+                    showToast('Error al generar PDF: ' + error.message, 'error');
+                    const btn = document.getElementById('btn-download-all-barcodes');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-download me-1"></i>Descargar Todos los Códigos de Barras';
+                    }
+                }
+            });
+        }
+
         console.log('✅ Sistema de códigos de barras inicializado');
     });
 
