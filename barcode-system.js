@@ -157,6 +157,9 @@
             return;
         }
 
+        // Formatter para moneda
+        const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
+
         // Actualizar información del producto
         document.getElementById('barcode-product-name').textContent = producto.nombre;
         document.getElementById('barcode-product-code').textContent = `Código: ${producto.codigo || 'N/A'}`;
@@ -340,6 +343,7 @@
                     let currentRow = 0;
                     let currentCol = 0;
 
+                    // Procesar productos secuencialmente
                     for (let i = 0; i < productosConBarcode.length; i++) {
                         const producto = productosConBarcode[i];
 
@@ -347,10 +351,10 @@
                         const x = margin + (currentCol * labelWidth);
                         const y = margin + (currentRow * labelHeight);
 
-                        // Crear SVG temporal para el código de barras
-                        const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        // Crear canvas para el código de barras
+                        const canvas = document.createElement('canvas');
                         try {
-                            JsBarcode(tempSvg, producto.codigoBarras, {
+                            JsBarcode(canvas, producto.codigoBarras, {
                                 format: "EAN13",
                                 width: 2,
                                 height: 60,
@@ -359,34 +363,20 @@
                                 margin: 5
                             });
 
-                            // Convertir SVG a imagen
-                            const svgData = new XMLSerializer().serializeToString(tempSvg);
-                            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-                            const svgUrl = URL.createObjectURL(svgBlob);
+                            // Agregar nombre del producto
+                            doc.setFontSize(9);
+                            doc.setFont(undefined, 'bold');
+                            const nombreCorto = producto.nombre.length > 35 ? producto.nombre.substring(0, 35) + '...' : producto.nombre;
+                            doc.text(nombreCorto, x + labelWidth / 2, y + 5, { align: 'center' });
 
-                            const img = new Image();
-                            await new Promise((resolve, reject) => {
-                                img.onload = () => {
-                                    // Agregar nombre del producto
-                                    doc.setFontSize(9);
-                                    doc.setFont(undefined, 'bold');
-                                    const nombreCorto = producto.nombre.length > 35 ? producto.nombre.substring(0, 35) + '...' : producto.nombre;
-                                    doc.text(nombreCorto, x + labelWidth / 2, y + 5, { align: 'center' });
+                            // Agregar precio
+                            doc.setFontSize(10);
+                            const precio = producto.precioDetal || 0;
+                            doc.text(`$${precio.toLocaleString('es-CO')}`, x + labelWidth / 2, y + 12, { align: 'center' });
 
-                                    // Agregar precio
-                                    doc.setFontSize(10);
-                                    const precio = producto.precioDetal || 0;
-                                    doc.text(`$${precio.toLocaleString('es-CO')}`, x + labelWidth / 2, y + 12, { align: 'center' });
-
-                                    // Agregar código de barras como imagen
-                                    doc.addImage(img, 'PNG', x + 5, y + 15, labelWidth - 10, 20);
-
-                                    URL.revokeObjectURL(svgUrl);
-                                    resolve();
-                                };
-                                img.onerror = reject;
-                                img.src = svgUrl;
-                            });
+                            // Agregar código de barras como imagen desde canvas
+                            const imgData = canvas.toDataURL('image/png');
+                            doc.addImage(imgData, 'PNG', x + 5, y + 15, labelWidth - 10, 20);
 
                         } catch (error) {
                             console.error(`Error generando código de barras para ${producto.nombre}:`, error);
