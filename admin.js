@@ -2187,35 +2187,46 @@ document.addEventListener('DOMContentLoaded', () => {
              });
          });
 
-         // ✅ Calcular resumen EFECTIVO (auto-resta del total) - Siempre visible
+         // ✅ Calcular resumen EFECTIVO - Compacto, solo muestra vuelto si es necesario
          function calcularResumenEfectivo() {
              const recibido = parseFloat(eliminarFormatoNumero(efectivoRecibidoInput.value)) || 0;
              const total = window.calcularTotalVentaGeneral();
              const vuelto = recibido - total;
 
-             document.getElementById('efectivo-recibido-display').textContent = formatoMoneda.format(recibido);
-             document.getElementById('efectivo-total-display').textContent = formatoMoneda.format(total);
-
+             const vueltoInfo = document.getElementById('vuelto-efectivo-info');
              const vueltoEl = document.getElementById('vuelto-amount');
-             if (vuelto >= 0) {
+
+             if (recibido > 0 && vuelto > 0) {
                  vueltoEl.textContent = formatoMoneda.format(vuelto);
-                 vueltoEl.className = 'text-success';
+                 vueltoInfo.style.display = 'block';
+                 vueltoInfo.className = 'alert alert-success py-1 px-2 mb-0 small';
+             } else if (recibido > 0 && vuelto < 0) {
+                 vueltoEl.textContent = 'Falta ' + formatoMoneda.format(Math.abs(vuelto));
+                 vueltoInfo.style.display = 'block';
+                 vueltoInfo.className = 'alert alert-danger py-1 px-2 mb-0 small';
              } else {
-                 vueltoEl.textContent = formatoMoneda.format(Math.abs(vuelto)) + ' (Falta)';
-                 vueltoEl.className = 'text-danger';
+                 vueltoInfo.style.display = 'none';
              }
          }
 
-         // ✅ Calcular resumen TRANSFERENCIA - Siempre visible
+         // ✅ Calcular resumen TRANSFERENCIA - Compacto
          function calcularResumenTransferencia() {
              const recibido = parseFloat(eliminarFormatoNumero(transferenciaRecibidaInput.value)) || 0;
              const total = window.calcularTotalVentaGeneral();
+             const falta = total - recibido;
 
-             document.getElementById('transferencia-recibida-display').textContent = formatoMoneda.format(recibido);
-             document.getElementById('transferencia-total-display').textContent = formatoMoneda.format(total);
+             const transferenciaInfo = document.getElementById('transferencia-info');
+             const faltaEl = document.getElementById('transferencia-falta');
+
+             if (recibido > 0 && falta > 0) {
+                 faltaEl.textContent = formatoMoneda.format(falta);
+                 transferenciaInfo.style.display = 'block';
+             } else {
+                 transferenciaInfo.style.display = 'none';
+             }
          }
 
-         // ✅ Calcular resumen MIXTO - Siempre visible
+         // ✅ Calcular resumen MIXTO - Compacto
          function calcularResumenMixto() {
              const efectivo = parseFloat(eliminarFormatoNumero(efectivoMixtoRecibidoInput.value)) || 0;
              const transferencia = parseFloat(eliminarFormatoNumero(transferenciaMixtoRecibidaInput.value)) || 0;
@@ -2223,18 +2234,21 @@ document.addEventListener('DOMContentLoaded', () => {
              const total = window.calcularTotalVentaGeneral();
              const vuelto = totalRecibido - total;
 
-             document.getElementById('mixto-efectivo-display').textContent = formatoMoneda.format(efectivo);
-             document.getElementById('mixto-transferencia-display').textContent = formatoMoneda.format(transferencia);
              document.getElementById('mixto-total-recibido').textContent = formatoMoneda.format(totalRecibido);
-             document.getElementById('mixto-total-display').textContent = formatoMoneda.format(total);
 
+             const vueltoInfo = document.getElementById('vuelto-mixto-info');
              const vueltoEl = document.getElementById('vuelto-amount-mixto');
-             if (vuelto >= 0) {
+
+             if (totalRecibido > 0 && vuelto > 0) {
                  vueltoEl.textContent = formatoMoneda.format(vuelto);
-                 vueltoEl.className = 'text-success';
+                 vueltoInfo.style.display = 'block';
+                 vueltoEl.className = 'text-success fw-bold';
+             } else if (totalRecibido > 0 && vuelto < 0) {
+                 vueltoEl.textContent = 'Falta ' + formatoMoneda.format(Math.abs(vuelto));
+                 vueltoInfo.style.display = 'block';
+                 vueltoEl.className = 'text-danger fw-bold';
              } else {
-                 vueltoEl.textContent = formatoMoneda.format(Math.abs(vuelto)) + ' (Falta)';
-                 vueltoEl.className = 'text-danger';
+                 vueltoInfo.style.display = 'none';
              }
          }
 
@@ -2717,15 +2731,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 efectivoMixtoRecibidoInput.value = '';
                 transferenciaMixtoRecibidaInput.value = '';
 
+                // ✅ Ocultar todos los mensajes de info de pago
+                const vueltoEfectivoInfo = document.getElementById('vuelto-efectivo-info');
+                const transferenciaInfo = document.getElementById('transferencia-info');
+                const vueltoMixtoInfo = document.getElementById('vuelto-mixto-info');
+                if (vueltoEfectivoInfo) vueltoEfectivoInfo.style.display = 'none';
+                if (transferenciaInfo) transferenciaInfo.style.display = 'none';
+                if (vueltoMixtoInfo) vueltoMixtoInfo.style.display = 'none';
+
                 // ✅ Resetear método de pago a efectivo (primer radio button)
                 const radioEfectivo = document.querySelector('input[name="metodo-pago-radio"][value="efectivo"]');
                 if (radioEfectivo) {
                     radioEfectivo.checked = true;
                     radioEfectivo.dispatchEvent(new Event('change'));
                 }
-
-                // ✅ Recalcular resúmenes para mostrar valores en $0
-                calcularResumenEfectivo();
             } catch (err) {
                 console.error("❌ [VENTA] Error crítico al guardar/actualizar venta:", err);
                 console.error("❌ [VENTA] Tipo de error:", err.name);
