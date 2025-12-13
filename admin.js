@@ -9237,10 +9237,56 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     console.log(`✅ Actualizado: ${producto.nombre} (${producto.accionDuplicado})`);
 
                 } else {
-                    // Crear nuevo producto
-                    const productoId = await guardarProductoFirestore(producto);
-                    await guardarVariacionesFirestore(productoId, producto.variaciones);
-                    console.log(`✅ Creado: ${producto.nombre}`);
+                    // ⚠️ VERIFICACIÓN FINAL: Revisar si el nombre ya existe antes de crear
+                    const nombreNorm = producto.nombre.toLowerCase().trim();
+                    const productoConMismoNombre = productosExistentes.find(p => p.nombre === nombreNorm);
+
+                    if (productoConMismoNombre) {
+                        console.error(`🚨🚨🚨 BLOQUEADO: Intento de crear producto duplicado "${producto.nombre}"`);
+                        console.error(`      Ya existe: Código ${productoConMismoNombre.codigo || 'SIN-CÓDIGO'} | ID: ${productoConMismoNombre.id}`);
+                        console.error(`      AGREGANDO VARIACIONES AL EXISTENTE EN VEZ DE CREAR NUEVO`);
+
+                        // FORZAR actualización del producto existente
+                        const productoRef = doc(db, 'productos', productoConMismoNombre.id);
+                        const tieneVariaciones = productoConMismoNombre.variaciones && productoConMismoNombre.variaciones.length > 0;
+
+                        if (tieneVariaciones) {
+                            const variacionesActuales = [...productoConMismoNombre.variaciones];
+
+                            producto.variaciones.forEach(nuevaVar => {
+                                const tallaVar = nuevaVar.talla || 'Única';
+                                const colorVar = nuevaVar.color || 'Único';
+
+                                const indexExistente = variacionesActuales.findIndex(v =>
+                                    v.talla === tallaVar && v.color === colorVar
+                                );
+
+                                if (indexExistente >= 0) {
+                                    variacionesActuales[indexExistente].stock += nuevaVar.cantidad;
+                                } else {
+                                    variacionesActuales.push({
+                                        talla: tallaVar,
+                                        color: colorVar,
+                                        stock: nuevaVar.cantidad,
+                                        sku: `${productoConMismoNombre.id.substring(0, 6).toUpperCase()}-${tallaVar}-${colorVar}`
+                                    });
+                                }
+                            });
+
+                            await updateDoc(productoRef, { variaciones: variacionesActuales });
+                        } else {
+                            const stockActual = productoConMismoNombre.stock || 0;
+                            const nuevoStock = stockActual + producto.variaciones.reduce((sum, v) => sum + v.cantidad, 0);
+                            await updateDoc(productoRef, { stock: nuevoStock });
+                        }
+
+                        console.log(`✅ BLOQUEADO Y REDIRIGIDO: Variaciones agregadas a ${productoConMismoNombre.codigo || 'SIN-CÓDIGO'}`);
+                    } else {
+                        // Crear nuevo producto solo si NO existe nombre duplicado
+                        const productoId = await guardarProductoFirestore(producto);
+                        await guardarVariacionesFirestore(productoId, producto.variaciones);
+                        console.log(`✅ Creado: ${producto.nombre}`);
+                    }
                 }
 
                 contador++;
