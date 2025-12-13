@@ -2712,6 +2712,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipoEntregaSelect.value='tienda';
                 toggleDeliveryFields();
                 window.calcularTotalVentaGeneral();
+
+                // ✅ Resetear campos de pago
+                efectivoRecibidoInput.value = '';
+                transferenciaRecibidaInput.value = '';
+                efectivoMixtoRecibidoInput.value = '';
+                transferenciaMixtoRecibidaInput.value = '';
+
+                // ✅ Resetear método de pago a efectivo (primer radio button)
+                const radioEfectivo = document.querySelector('input[name="metodo-pago-radio"][value="efectivo"]');
+                if (radioEfectivo) {
+                    radioEfectivo.checked = true;
+                }
+
+                // ✅ Ocultar todas las secciones de pago
+                efectivoFields.style.display = 'none';
+                transferenciaFields.style.display = 'none';
+                mixtoFields.style.display = 'none';
+
+                // ✅ Ocultar secciones de resumen de pago
+                const resumenEfectivo = document.getElementById('resumen-efectivo');
+                const resumenTransferencia = document.getElementById('resumen-transferencia');
+                const resumenMixto = document.getElementById('resumen-mixto');
+                if (resumenEfectivo) resumenEfectivo.style.display = 'none';
+                if (resumenTransferencia) resumenTransferencia.style.display = 'none';
+                if (resumenMixto) resumenMixto.style.display = 'none';
             } catch (err) {
                 console.error("❌ [VENTA] Error crítico al guardar/actualizar venta:", err);
                 console.error("❌ [VENTA] Tipo de error:", err.name);
