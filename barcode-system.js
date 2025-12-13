@@ -290,7 +290,7 @@
         }
 
         // ========================================================================
-        // DESCARGA MASIVA DE CÓDIGOS DE BARRAS
+        // DESCARGA MASIVA DE CÓDIGOS DE BARRAS EN EXCEL
         // ========================================================================
 
         const downloadAllBarcodesBtn = document.getElementById('btn-download-all-barcodes');
@@ -300,7 +300,7 @@
                     const btn = this;
                     const originalHTML = btn.innerHTML;
                     btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando PDF...';
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando Excel...';
 
                     // Obtener todos los productos con código de barras
                     const productosSnapshot = await getDocs(query(collection(db, 'productos')));
@@ -323,91 +323,53 @@
                         return;
                     }
 
-                    // Crear PDF usando jsPDF
-                    const { jsPDF } = window.jspdf;
-                    const doc = new jsPDF({
-                        orientation: 'portrait',
-                        unit: 'mm',
-                        format: 'a4'
+                    // Preparar datos para Excel
+                    const datos = productosConBarcode.map(producto => {
+                        const stockTotal = producto.variaciones ?
+                            producto.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
+
+                        return {
+                            'Nombre': producto.nombre || '',
+                            'Código Producto': producto.codigo || '',
+                            'Categoría': producto.categoriaId || '',
+                            'Código de Barras': producto.codigoBarras || '',
+                            'Precio Detal': producto.precioDetal || 0,
+                            'Precio Mayor': producto.precioMayor || 0,
+                            'Stock Total': stockTotal
+                        };
                     });
 
-                    const pageWidth = doc.internal.pageSize.getWidth();
-                    const pageHeight = doc.internal.pageSize.getHeight();
-                    const margin = 10;
-                    const labelWidth = 90;
-                    const labelHeight = 40;
-                    const cols = 2;
-                    const rows = Math.floor((pageHeight - 2 * margin) / labelHeight);
+                    // Crear libro de Excel
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.json_to_sheet(datos);
 
-                    let currentPage = 1;
-                    let currentRow = 0;
-                    let currentCol = 0;
+                    // Ajustar ancho de columnas
+                    const wscols = [
+                        { wch: 40 },  // Nombre
+                        { wch: 15 },  // Código Producto
+                        { wch: 20 },  // Categoría
+                        { wch: 15 },  // Código de Barras
+                        { wch: 12 },  // Precio Detal
+                        { wch: 12 },  // Precio Mayor
+                        { wch: 10 }   // Stock Total
+                    ];
+                    ws['!cols'] = wscols;
 
-                    // Procesar productos secuencialmente
-                    for (let i = 0; i < productosConBarcode.length; i++) {
-                        const producto = productosConBarcode[i];
+                    // Agregar hoja al libro
+                    XLSX.utils.book_append_sheet(wb, ws, 'Códigos de Barras');
 
-                        // Calcular posición
-                        const x = margin + (currentCol * labelWidth);
-                        const y = margin + (currentRow * labelHeight);
+                    // Descargar archivo
+                    const fecha = new Date().toISOString().split('T')[0];
+                    XLSX.writeFile(wb, `codigos-barras-${fecha}.xlsx`);
 
-                        // Crear canvas para el código de barras
-                        const canvas = document.createElement('canvas');
-                        try {
-                            JsBarcode(canvas, producto.codigoBarras, {
-                                format: "EAN13",
-                                width: 2,
-                                height: 60,
-                                displayValue: true,
-                                fontSize: 14,
-                                margin: 5
-                            });
-
-                            // Agregar nombre del producto
-                            doc.setFontSize(9);
-                            doc.setFont(undefined, 'bold');
-                            const nombreCorto = producto.nombre.length > 35 ? producto.nombre.substring(0, 35) + '...' : producto.nombre;
-                            doc.text(nombreCorto, x + labelWidth / 2, y + 5, { align: 'center' });
-
-                            // Agregar precio
-                            doc.setFontSize(10);
-                            const precio = producto.precioDetal || 0;
-                            doc.text(`$${precio.toLocaleString('es-CO')}`, x + labelWidth / 2, y + 12, { align: 'center' });
-
-                            // Agregar código de barras como imagen desde canvas
-                            const imgData = canvas.toDataURL('image/png');
-                            doc.addImage(imgData, 'PNG', x + 5, y + 15, labelWidth - 10, 20);
-
-                        } catch (error) {
-                            console.error(`Error generando código de barras para ${producto.nombre}:`, error);
-                        }
-
-                        // Actualizar posición
-                        currentCol++;
-                        if (currentCol >= cols) {
-                            currentCol = 0;
-                            currentRow++;
-                        }
-
-                        // Crear nueva página si es necesario
-                        if (currentRow >= rows && i < productosConBarcode.length - 1) {
-                            doc.addPage();
-                            currentPage++;
-                            currentRow = 0;
-                            currentCol = 0;
-                        }
-                    }
-
-                    // Descargar PDF
-                    doc.save(`codigos-barras-${new Date().toISOString().split('T')[0]}.pdf`);
-                    showToast(`PDF generado con ${productosConBarcode.length} códigos de barras`, 'success');
+                    showToast(`Excel generado con ${productosConBarcode.length} productos`, 'success');
 
                     btn.disabled = false;
                     btn.innerHTML = originalHTML;
 
                 } catch (error) {
-                    console.error('Error generando PDF:', error);
-                    showToast('Error al generar PDF: ' + error.message, 'error');
+                    console.error('Error generando Excel:', error);
+                    showToast('Error al generar Excel: ' + error.message, 'error');
                     const btn = document.getElementById('btn-download-all-barcodes');
                     if (btn) {
                         btn.disabled = false;
