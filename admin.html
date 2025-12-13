@@ -742,43 +742,44 @@
 
                                         <!-- EFECTIVO -->
                                         <div id="efectivo-fields" class="payment-fields">
-                                            <label class="form-label small mb-1">💵 Cliente paga con:</label>
-                                            <input type="text" inputmode="numeric" id="efectivo-recibido" class="form-control form-control-sm mb-1" value="0">
-                                            <div id="resumen-efectivo" class="alert alert-success py-1 px-2 mb-0 small" style="display: none;">
-                                                <div class="d-flex justify-content-between"><span>Recibe:</span><strong id="efectivo-recibido-display">$0</strong></div>
-                                                <div class="d-flex justify-content-between"><span>Total:</span><span id="efectivo-total-display">$0</span></div>
-                                                <hr class="my-1"><div class="d-flex justify-content-between"><strong>💸 Vuelto:</strong><strong id="vuelto-amount">$0</strong></div>
+                                            <label class="form-label small mb-1">💵 ¿Con cuánto paga el cliente?</label>
+                                            <input type="text" inputmode="numeric" id="efectivo-recibido" class="form-control form-control-sm mb-2" placeholder="Ej: 50000">
+                                            <div id="resumen-efectivo" class="alert alert-success py-2 px-2 mb-0 small">
+                                                <div class="d-flex justify-content-between mb-1"><span>Cliente paga:</span><strong id="efectivo-recibido-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between mb-1"><span>Total venta:</span><strong id="efectivo-total-display">$0</strong></div>
+                                                <hr class="my-1"><div class="d-flex justify-content-between"><strong>💸 Vuelto:</strong><strong class="text-success" id="vuelto-amount">$0</strong></div>
                                             </div>
                                         </div>
 
                                         <!-- TRANSFERENCIA -->
                                         <div id="transferencia-fields" class="payment-fields" style="display: none;">
-                                            <label class="form-label small mb-1">💳 Monto transferido:</label>
-                                            <input type="text" inputmode="numeric" id="transferencia-recibida" class="form-control form-control-sm mb-1" value="0">
-                                            <div id="resumen-transferencia" class="alert alert-primary py-1 px-2 mb-0 small" style="display: none;">
-                                                <div class="d-flex justify-content-between"><span>Transferido:</span><strong id="transferencia-recibida-display">$0</strong></div>
-                                                <div class="d-flex justify-content-between"><span>Total:</span><span id="transferencia-total-display">$0</span></div>
+                                            <label class="form-label small mb-1">💳 ¿Cuánto transfirió el cliente?</label>
+                                            <input type="text" inputmode="numeric" id="transferencia-recibida" class="form-control form-control-sm mb-2" placeholder="Ej: 100000">
+                                            <div id="resumen-transferencia" class="alert alert-primary py-2 px-2 mb-0 small">
+                                                <div class="d-flex justify-content-between mb-1"><span>Cliente transfirió:</span><strong id="transferencia-recibida-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between"><span>Total venta:</span><strong id="transferencia-total-display">$0</strong></div>
                                             </div>
                                         </div>
 
                                         <!-- MIXTO -->
                                         <div id="mixto-fields" class="payment-fields" style="display: none;">
-                                            <div class="row g-1 mb-1">
+                                            <div class="row g-2 mb-2">
                                                 <div class="col-6">
-                                                    <label class="form-label small mb-1">💵 Efvo:</label>
-                                                    <input type="text" inputmode="numeric" id="efectivo-mixto-recibido" class="form-control form-control-sm" value="0">
+                                                    <label class="form-label small mb-1">💵 En efectivo:</label>
+                                                    <input type="text" inputmode="numeric" id="efectivo-mixto-recibido" class="form-control form-control-sm" placeholder="Ej: 30000">
                                                 </div>
                                                 <div class="col-6">
-                                                    <label class="form-label small mb-1">💳 Transf:</label>
-                                                    <input type="text" inputmode="numeric" id="transferencia-mixto-recibida" class="form-control form-control-sm" value="0">
+                                                    <label class="form-label small mb-1">💳 Transferencia:</label>
+                                                    <input type="text" inputmode="numeric" id="transferencia-mixto-recibida" class="form-control form-control-sm" placeholder="Ej: 70000">
                                                 </div>
                                             </div>
-                                            <div id="resumen-mixto" class="alert alert-warning py-1 px-2 mb-0 small" style="display: none;">
-                                                <div class="d-flex justify-content-between"><span>Efvo:</span><strong id="mixto-efectivo-display">$0</strong></div>
-                                                <div class="d-flex justify-content-between"><span>Transf:</span><strong id="mixto-transferencia-display">$0</strong></div>
-                                                <div class="d-flex justify-content-between"><span>Total recibido:</span><strong id="mixto-total-recibido">$0</strong></div>
-                                                <hr class="my-1"><div class="d-flex justify-content-between"><span>Total:</span><span id="mixto-total-display">$0</span></div>
-                                                <div class="d-flex justify-content-between" id="mixto-vuelto-container" style="display: none;"><strong>💸 Vuelto:</strong><strong id="vuelto-amount-mixto">$0</strong></div>
+                                            <div id="resumen-mixto" class="alert alert-warning py-2 px-2 mb-0 small">
+                                                <div class="d-flex justify-content-between mb-1"><span>💵 Efectivo:</span><strong id="mixto-efectivo-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between mb-1"><span>💳 Transferencia:</span><strong id="mixto-transferencia-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between mb-1"><span><strong>Total recibido:</strong></span><strong id="mixto-total-recibido">$0</strong></div>
+                                                <hr class="my-1">
+                                                <div class="d-flex justify-content-between mb-1"><span>Total venta:</span><strong id="mixto-total-display">$0</strong></div>
+                                                <div class="d-flex justify-content-between" id="mixto-vuelto-container"><strong>💸 Vuelto:</strong><strong class="text-success" id="vuelto-amount-mixto">$0</strong></div>
                                             </div>
                                         </div>
                                         <button type="submit" class="btn btn-primary btn-sm w-100 mt-2">Registrar Venta</button>
