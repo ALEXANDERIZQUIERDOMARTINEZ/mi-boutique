@@ -2172,71 +2172,69 @@ document.addEventListener('DOMContentLoaded', () => {
          const efectivoMixtoRecibidoInput = document.getElementById('efectivo-mixto-recibido');
          const transferenciaMixtoRecibidaInput = document.getElementById('transferencia-mixto-recibida');
 
-         // Mostrar/Ocultar campos según método
+         // Mostrar/Ocultar campos según método y recalcular resumen
          metodoPagoRadios.forEach(radio => {
              radio.addEventListener('change', (e) => {
                  const metodo = e.target.value;
                  efectivoFields.style.display = metodo === 'efectivo' ? 'block' : 'none';
                  transferenciaFields.style.display = metodo === 'transferencia' ? 'block' : 'none';
                  mixtoFields.style.display = metodo === 'mixto' ? 'block' : 'none';
+
+                 // Recalcular el resumen del método seleccionado
+                 if (metodo === 'efectivo') calcularResumenEfectivo();
+                 else if (metodo === 'transferencia') calcularResumenTransferencia();
+                 else if (metodo === 'mixto') calcularResumenMixto();
              });
          });
 
-         // ✅ Calcular resumen EFECTIVO (auto-resta del total)
+         // ✅ Calcular resumen EFECTIVO (auto-resta del total) - Siempre visible
          function calcularResumenEfectivo() {
              const recibido = parseFloat(eliminarFormatoNumero(efectivoRecibidoInput.value)) || 0;
              const total = window.calcularTotalVentaGeneral();
+             const vuelto = recibido - total;
 
-             if (recibido > 0) {
-                 const vuelto = recibido - total;
-                 document.getElementById('efectivo-recibido-display').textContent = formatoMoneda.format(recibido);
-                 document.getElementById('efectivo-total-display').textContent = formatoMoneda.format(total);
-                 document.getElementById('vuelto-amount').textContent = vuelto >= 0 ? formatoMoneda.format(vuelto) : formatoMoneda.format(Math.abs(vuelto)) + ' (Falta)';
-                 document.getElementById('resumen-efectivo').style.display = 'block';
+             document.getElementById('efectivo-recibido-display').textContent = formatoMoneda.format(recibido);
+             document.getElementById('efectivo-total-display').textContent = formatoMoneda.format(total);
+
+             const vueltoEl = document.getElementById('vuelto-amount');
+             if (vuelto >= 0) {
+                 vueltoEl.textContent = formatoMoneda.format(vuelto);
+                 vueltoEl.className = 'text-success';
              } else {
-                 document.getElementById('resumen-efectivo').style.display = 'none';
+                 vueltoEl.textContent = formatoMoneda.format(Math.abs(vuelto)) + ' (Falta)';
+                 vueltoEl.className = 'text-danger';
              }
          }
 
-         // ✅ Calcular resumen TRANSFERENCIA
+         // ✅ Calcular resumen TRANSFERENCIA - Siempre visible
          function calcularResumenTransferencia() {
              const recibido = parseFloat(eliminarFormatoNumero(transferenciaRecibidaInput.value)) || 0;
              const total = window.calcularTotalVentaGeneral();
 
-             if (recibido > 0) {
-                 document.getElementById('transferencia-recibida-display').textContent = formatoMoneda.format(recibido);
-                 document.getElementById('transferencia-total-display').textContent = formatoMoneda.format(total);
-                 document.getElementById('resumen-transferencia').style.display = 'block';
-             } else {
-                 document.getElementById('resumen-transferencia').style.display = 'none';
-             }
+             document.getElementById('transferencia-recibida-display').textContent = formatoMoneda.format(recibido);
+             document.getElementById('transferencia-total-display').textContent = formatoMoneda.format(total);
          }
 
-         // ✅ Calcular resumen MIXTO
+         // ✅ Calcular resumen MIXTO - Siempre visible
          function calcularResumenMixto() {
              const efectivo = parseFloat(eliminarFormatoNumero(efectivoMixtoRecibidoInput.value)) || 0;
              const transferencia = parseFloat(eliminarFormatoNumero(transferenciaMixtoRecibidaInput.value)) || 0;
              const totalRecibido = efectivo + transferencia;
              const total = window.calcularTotalVentaGeneral();
+             const vuelto = totalRecibido - total;
 
-             if (totalRecibido > 0) {
-                 document.getElementById('mixto-efectivo-display').textContent = formatoMoneda.format(efectivo);
-                 document.getElementById('mixto-transferencia-display').textContent = formatoMoneda.format(transferencia);
-                 document.getElementById('mixto-total-recibido').textContent = formatoMoneda.format(totalRecibido);
-                 document.getElementById('mixto-total-display').textContent = formatoMoneda.format(total);
+             document.getElementById('mixto-efectivo-display').textContent = formatoMoneda.format(efectivo);
+             document.getElementById('mixto-transferencia-display').textContent = formatoMoneda.format(transferencia);
+             document.getElementById('mixto-total-recibido').textContent = formatoMoneda.format(totalRecibido);
+             document.getElementById('mixto-total-display').textContent = formatoMoneda.format(total);
 
-                 const vueltoContainer = document.getElementById('mixto-vuelto-container');
-                 if (totalRecibido > total) {
-                     const vuelto = totalRecibido - total;
-                     document.getElementById('vuelto-amount-mixto').textContent = formatoMoneda.format(vuelto);
-                     vueltoContainer.style.display = 'flex';
-                 } else {
-                     vueltoContainer.style.display = 'none';
-                 }
-
-                 document.getElementById('resumen-mixto').style.display = 'block';
+             const vueltoEl = document.getElementById('vuelto-amount-mixto');
+             if (vuelto >= 0) {
+                 vueltoEl.textContent = formatoMoneda.format(vuelto);
+                 vueltoEl.className = 'text-success';
              } else {
-                 document.getElementById('resumen-mixto').style.display = 'none';
+                 vueltoEl.textContent = formatoMoneda.format(Math.abs(vuelto)) + ' (Falta)';
+                 vueltoEl.className = 'text-danger';
              }
          }
 
@@ -2723,20 +2721,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const radioEfectivo = document.querySelector('input[name="metodo-pago-radio"][value="efectivo"]');
                 if (radioEfectivo) {
                     radioEfectivo.checked = true;
+                    radioEfectivo.dispatchEvent(new Event('change'));
                 }
 
-                // ✅ Ocultar todas las secciones de pago
-                efectivoFields.style.display = 'none';
-                transferenciaFields.style.display = 'none';
-                mixtoFields.style.display = 'none';
-
-                // ✅ Ocultar secciones de resumen de pago
-                const resumenEfectivo = document.getElementById('resumen-efectivo');
-                const resumenTransferencia = document.getElementById('resumen-transferencia');
-                const resumenMixto = document.getElementById('resumen-mixto');
-                if (resumenEfectivo) resumenEfectivo.style.display = 'none';
-                if (resumenTransferencia) resumenTransferencia.style.display = 'none';
-                if (resumenMixto) resumenMixto.style.display = 'none';
+                // ✅ Recalcular resúmenes para mostrar valores en $0
+                calcularResumenEfectivo();
             } catch (err) {
                 console.error("❌ [VENTA] Error crítico al guardar/actualizar venta:", err);
                 console.error("❌ [VENTA] Tipo de error:", err.name);
