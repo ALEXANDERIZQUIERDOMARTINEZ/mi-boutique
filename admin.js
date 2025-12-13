@@ -8599,7 +8599,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 console.log(`  - "${p.nombreOriginal}" | Código: "${p.codigo || 'SIN-CÓDIGO'}" | Cat: "${p.categoriaOriginal}" | Prov: "${p.proveedorOriginal}" | ID: ${p.id}`);
             });
 
-            // Marcar duplicados
+            // Marcar duplicados - NUEVA LÓGICA: Solo por nombre
             productos.forEach(producto => {
                 const nombreNorm = producto.nombre.toLowerCase().trim();
                 const categoriaNorm = producto.categoria.toLowerCase().trim();
@@ -8608,46 +8608,60 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 console.log(`\n🔍 Verificando producto del Excel: "${producto.nombre}"`);
                 console.log(`   Normalizado: nombre="${nombreNorm}" | cat="${categoriaNorm}" | prov="${proveedorNorm}"`);
 
-                const duplicado = productosExistentes.find(existente => {
-                    const match = existente.nombre === nombreNorm &&
-                                  existente.categoria === categoriaNorm &&
-                                  existente.proveedor === proveedorNorm;
+                // BUSCAR PRIMERO POR NOMBRE SOLAMENTE
+                const productosMismoNombre = productosExistentes.filter(existente => existente.nombre === nombreNorm);
 
-                    if (match) {
-                        console.log(`   ✅ MATCH encontrado con: "${existente.nombreOriginal}"`);
-                        console.log(`      └─ Código: ${existente.codigo || 'SIN-CÓDIGO'}`);
-                        console.log(`      └─ ID: ${existente.id}`);
-                        console.log(`      └─ Stock: ${existente.stock || 0}`);
-                        if (existente.variaciones && existente.variaciones.length > 0) {
-                            console.log(`      └─ Variaciones: ${existente.variaciones.map(v => `${v.talla}/${v.color} (${v.stock})`).join(', ')}`);
+                if (productosMismoNombre.length > 0) {
+                    console.log(`   📌 Encontrado(s) ${productosMismoNombre.length} producto(s) con el mismo nombre:`);
+                    productosMismoNombre.forEach(p => {
+                        console.log(`      - Código: ${p.codigo || 'SIN-CÓDIGO'} | Cat: "${p.categoriaOriginal}" | Prov: "${p.proveedorOriginal}"`);
+                    });
+
+                    // Buscar match exacto (nombre + categoría + proveedor)
+                    const matchExacto = productosMismoNombre.find(existente =>
+                        existente.categoria === categoriaNorm &&
+                        existente.proveedor === proveedorNorm
+                    );
+
+                    if (matchExacto) {
+                        console.log(`   ✅ MATCH EXACTO encontrado con: "${matchExacto.nombreOriginal}"`);
+                        console.log(`      └─ Código: ${matchExacto.codigo || 'SIN-CÓDIGO'}`);
+                        console.log(`      └─ ID: ${matchExacto.id}`);
+                        console.log(`      └─ Stock: ${matchExacto.stock || 0}`);
+                        if (matchExacto.variaciones && matchExacto.variaciones.length > 0) {
+                            console.log(`      └─ Variaciones: ${matchExacto.variaciones.map(v => `${v.talla}/${v.color} (${v.stock})`).join(', ')}`);
                         }
-                    }
 
-                    return match;
-                });
+                        // Usar el primer producto encontrado como duplicado
+                        producto.esDuplicado = true;
+                        producto.productoExistenteId = matchExacto.id;
+                        producto.productoExistente = matchExacto;
+                        producto.accionDuplicado = 'sumar';
 
-                if (duplicado) {
-                    console.log(`   🔍 ✅ Duplicado detectado: ${producto.nombre}`);
-                    console.log(`      └─ Se agregará stock a: ${duplicado.codigo || 'SIN-CÓDIGO'}`);
-                } else {
-                    console.log(`   ❌ No es duplicado, se creará como nuevo producto`);
-
-                    // ⚠️ ADVERTENCIA: Verificar si existe un producto con el mismo nombre pero diferente categoría/proveedor
-                    const productosMismoNombre = productosExistentes.filter(existente => existente.nombre === nombreNorm);
-                    if (productosMismoNombre.length > 0) {
-                        console.warn(`   ⚠️  ADVERTENCIA: Ya existe(n) ${productosMismoNombre.length} producto(s) con el nombre "${producto.nombre}" pero con diferente categoría o proveedor:`);
+                    } else {
+                        // Nombre igual pero categoría/proveedor diferente
+                        console.error(`   🚨 ERROR CRÍTICO: Ya existe un producto con el nombre "${producto.nombre}"`);
+                        console.error(`      Excel tiene: Cat="${producto.categoria}" | Prov="${producto.proveedor}"`);
                         productosMismoNombre.forEach(p => {
-                            console.warn(`      - Código: ${p.codigo || 'SIN-CÓDIGO'} | Cat: "${p.categoriaOriginal}" | Prov: "${p.proveedorOriginal}"`);
+                            console.error(`      Existente: Cat="${p.categoriaOriginal}" | Prov="${p.proveedorOriginal}" | Código: ${p.codigo || 'SIN-CÓDIGO'}`);
                         });
-                        console.warn(`   ⚠️  El producto del Excel tiene: Cat: "${producto.categoria}" | Prov: "${producto.proveedor}"`);
-                        console.warn(`   ⚠️  Se creará como un producto NUEVO. Si esto es un error, verifica categoría/proveedor en Excel.`);
-                    }
-                }
+                        console.error(`   🚨 Se tratará como duplicado del PRIMERO encontrado para evitar crear producto duplicado`);
 
-                producto.esDuplicado = !!duplicado;
-                producto.productoExistenteId = duplicado?.id;
-                producto.productoExistente = duplicado;
-                producto.accionDuplicado = 'sumar'; // Por defecto: sumar stock
+                        // FORZAR como duplicado usando el primer producto encontrado
+                        const primerProducto = productosMismoNombre[0];
+                        producto.esDuplicado = true;
+                        producto.productoExistenteId = primerProducto.id;
+                        producto.productoExistente = primerProducto;
+                        producto.accionDuplicado = 'sumar';
+                        producto.advertenciaCategoriaProveedor = true; // Marcar para mostrar advertencia
+                    }
+                } else {
+                    console.log(`   ✅ No existe producto con este nombre, se creará como NUEVO`);
+                    producto.esDuplicado = false;
+                    producto.productoExistenteId = null;
+                    producto.productoExistente = null;
+                    producto.accionDuplicado = null;
+                }
             });
 
             actualizarProgreso(90);
@@ -8989,34 +9003,28 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             document.getElementById('resumen-total-variaciones').textContent = totalVariaciones;
             document.getElementById('resumen-total-unidades').textContent = totalUnidades;
 
-            // Mostrar duplicados si existen
-            const duplicados = productosAgrupados.filter(p => p.esDuplicado);
-            if (duplicados.length > 0) {
-                document.getElementById('seccion-duplicados').style.display = 'block';
-                renderizarDuplicados(duplicados);
-            } else {
-                document.getElementById('seccion-duplicados').style.display = 'none';
-            }
+            // Separar duplicados normales vs duplicados con conflicto de categoría/proveedor
+            const duplicadosConflicto = productosAgrupados.filter(p => p.esDuplicado && p.advertenciaCategoriaProveedor);
+            const duplicadosNormales = productosAgrupados.filter(p => p.esDuplicado && !p.advertenciaCategoriaProveedor);
 
-            // Mostrar advertencias de productos con nombres similares
-            const nuevosProductos = productosAgrupados.filter(p => !p.esDuplicado);
-            const advertencias = [];
-            nuevosProductos.forEach(producto => {
-                const nombreNorm = producto.nombre.toLowerCase().trim();
-                const productosMismoNombre = productosExistentes.filter(existente => existente.nombre === nombreNorm);
-                if (productosMismoNombre.length > 0) {
-                    advertencias.push({
-                        producto: producto,
-                        existentes: productosMismoNombre
-                    });
-                }
-            });
-
-            if (advertencias.length > 0) {
+            // Mostrar advertencias de conflicto PRIMERO (más grave)
+            if (duplicadosConflicto.length > 0) {
+                const advertencias = duplicadosConflicto.map(producto => ({
+                    producto: producto,
+                    existentes: [producto.productoExistente]
+                }));
                 renderizarAdvertencias(advertencias);
                 document.getElementById('seccion-advertencias').style.display = 'block';
             } else {
                 document.getElementById('seccion-advertencias').style.display = 'none';
+            }
+
+            // Mostrar duplicados normales
+            if (duplicadosNormales.length > 0) {
+                document.getElementById('seccion-duplicados').style.display = 'block';
+                renderizarDuplicados(duplicadosNormales);
+            } else {
+                document.getElementById('seccion-duplicados').style.display = 'none';
             }
 
             ocultarLoader();
@@ -9036,25 +9044,29 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         advertencias.forEach(({ producto, existentes }) => {
             const div = document.createElement('div');
-            div.className = 'alert alert-warning mb-2';
+            div.className = 'alert alert-danger mb-2 border-3';
             div.innerHTML = `
                 <div class="d-flex align-items-start">
-                    <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0" style="font-size: 1.2rem;"></i>
+                    <i class="bi bi-x-octagon-fill me-2 flex-shrink-0 text-danger" style="font-size: 1.5rem;"></i>
                     <div class="flex-grow-1">
-                        <strong>Producto del Excel: "${producto.nombre}"</strong>
-                        <small class="d-block">Categoría: ${producto.categoria} | Proveedor: ${producto.proveedor}</small>
+                        <h6 class="alert-heading mb-2">🚨 CONFLICTO DETECTADO: "${producto.nombre}"</h6>
+                        <small class="d-block mb-2">Excel: Categoría: <strong>${producto.categoria}</strong> | Proveedor: <strong>${producto.proveedor}</strong></small>
                         <hr class="my-2">
-                        <small class="d-block mb-1"><strong>Ya existe(n) ${existentes.length} producto(s) con este nombre:</strong></small>
+                        <small class="d-block mb-1"><strong>⚠️ Ya existe(n) ${existentes.length} producto(s) con este nombre:</strong></small>
                         ${existentes.map(p => `
-                            <small class="d-block ms-3">
-                                • Código: <strong>${p.codigo || 'SIN-CÓDIGO'}</strong> |
-                                Cat: "${p.categoriaOriginal}" |
-                                Prov: "${p.proveedorOriginal}"
-                            </small>
+                            <div class="ms-3 mb-1 p-2 bg-white rounded">
+                                <small class="d-block">
+                                    <strong>Código: ${p.codigo || 'SIN-CÓDIGO'}</strong><br>
+                                    Categoría: "${p.categoriaOriginal}" | Proveedor: "${p.proveedorOriginal}"
+                                </small>
+                            </div>
                         `).join('')}
-                        <small class="d-block mt-2 text-danger">
-                            ⚠️ Se creará como producto NUEVO. Si esto es un error, verifica que categoría y proveedor coincidan exactamente.
-                        </small>
+                        <div class="alert alert-light mt-2 mb-0">
+                            <small class="d-block fw-bold text-danger">
+                                ⚠️ Las variaciones se agregarán al PRIMER producto existente para evitar duplicados.<br>
+                                Si esto es incorrecto, CANCELA el cargue y corrige categoría/proveedor en el Excel.
+                            </small>
+                        </div>
                     </div>
                 </div>
             `;
