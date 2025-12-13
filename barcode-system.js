@@ -302,8 +302,13 @@
                     btn.disabled = true;
                     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando Excel...';
 
+                    // Verificar que Firebase esté disponible
+                    if (!window.db || !window.getDocs || !window.collection || !window.query) {
+                        throw new Error('Firebase no está disponible');
+                    }
+
                     // Obtener todos los productos con código de barras
-                    const productosSnapshot = await getDocs(query(collection(db, 'productos')));
+                    const productosSnapshot = await window.getDocs(window.query(window.collection(window.db, 'productos')));
                     const productosConBarcode = [];
 
                     productosSnapshot.forEach(doc => {
@@ -373,7 +378,7 @@
                     const btn = document.getElementById('btn-download-all-barcodes');
                     if (btn) {
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="bi bi-download me-1"></i>Descargar Todos los Códigos de Barras';
+                        btn.innerHTML = '<i class="bi bi-file-earmark-excel me-1"></i>Descargar Todos los Códigos de Barras (Excel)';
                     }
                 }
             });
