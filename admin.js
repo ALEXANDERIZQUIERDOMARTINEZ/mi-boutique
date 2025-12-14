@@ -1855,6 +1855,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- LÓGICA DE FILTROS DE INVENTARIO ---
         const searchInputInventory = document.getElementById('search-inventory');
         const categorySelectInventory = document.getElementById('filter-category-inventory');
+        const supplierSelectInventory = document.getElementById('filter-supplier-inventory');
+        const lowStockCheckbox = document.getElementById('filter-low-stock-inventory');
         const clearFiltersBtn = document.getElementById('clear-filters-inventory');
         const inventoryBody = document.getElementById('lista-inventario-productos');
 
@@ -1867,11 +1869,36 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        function loadSuppliersForFilter() {
+            onSnapshot(query(suppliersCollection, orderBy("nombre")), (snapshot) => {
+                if (!supplierSelectInventory) return;
+
+                // Mantener la opción "Todos los Proveedores"
+                const currentValue = supplierSelectInventory.value;
+                supplierSelectInventory.innerHTML = '<option value="">Todos los Proveedores</option>';
+
+                snapshot.forEach(doc => {
+                    const supplier = doc.data();
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.textContent = supplier.nombre || 'Sin nombre';
+                    supplierSelectInventory.appendChild(option);
+                });
+
+                // Restaurar valor seleccionado si existe
+                if (currentValue) {
+                    supplierSelectInventory.value = currentValue;
+                }
+            });
+        }
+
         function applyInventoryFilters() {
             if (!inventoryBody) return;
-            
+
             const searchVal = searchInputInventory ? searchInputInventory.value.toLowerCase() : '';
             const categoryVal = categorySelectInventory ? categorySelectInventory.value : '';
+            const supplierVal = supplierSelectInventory ? supplierSelectInventory.value : '';
+            const showLowStockOnly = lowStockCheckbox ? lowStockCheckbox.checked : false;
 
             const allRows = inventoryBody.querySelectorAll('tr[data-id]');
             let hasVisibleRows = false;
@@ -1887,12 +1914,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const productName = (product.nombre || '').toLowerCase();
                 const productCode = (product.codigo || '').toLowerCase();
                 const categoryId = product.categoriaId || '';
+                const supplierId = product.proveedorId || '';
+
+                // Calcular stock total del producto
+                const stockTotal = product.variaciones
+                    ? product.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0)
+                    : 0;
 
                 const matchesSearch = productName.includes(searchVal) || productCode.includes(searchVal);
                 const matchesCategory = (categoryVal === '' || categoryId === categoryVal);
+                const matchesSupplier = (supplierVal === '' || supplierId === supplierVal);
+                const matchesLowStock = !showLowStockOnly || stockTotal <= 2;
 
-                if (matchesSearch && matchesCategory) {
-                    row.style.display = ''; 
+                if (matchesSearch && matchesCategory && matchesSupplier && matchesLowStock) {
+                    row.style.display = '';
                     hasVisibleRows = true;
                 } else {
                     row.style.display = 'none';
@@ -1907,15 +1942,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (searchInputInventory) searchInputInventory.addEventListener('input', applyInventoryFilters);
         if (categorySelectInventory) categorySelectInventory.addEventListener('change', applyInventoryFilters);
+        if (supplierSelectInventory) supplierSelectInventory.addEventListener('change', applyInventoryFilters);
+        if (lowStockCheckbox) lowStockCheckbox.addEventListener('change', applyInventoryFilters);
         if (clearFiltersBtn) {
             clearFiltersBtn.addEventListener('click', () => {
                 if (searchInputInventory) searchInputInventory.value = '';
                 if (categorySelectInventory) categorySelectInventory.value = '';
+                if (supplierSelectInventory) supplierSelectInventory.value = '';
+                if (lowStockCheckbox) lowStockCheckbox.checked = false;
                 applyInventoryFilters();
             });
         }
 
         loadCategoriesForFilter();
+        loadSuppliersForFilter();
 
         // ========================================================================
         // GESTIÓN DE PROMOCIONES DESDE INVENTARIO
