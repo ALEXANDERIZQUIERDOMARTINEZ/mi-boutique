@@ -1924,10 +1924,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const matchesSearch = productName.includes(searchVal) || productCode.includes(searchVal);
                 const matchesCategory = (categoryVal === '' || categoryId === categoryVal);
                 const matchesSupplier = (supplierVal === '' || supplierName === supplierVal);
-                // Filtro de pocas unidades (LÓGICA INVERTIDA):
-                // Switch APAGADO (!showLowStockOnly = true): muestra TODOS los productos
+                // Filtro de pocas unidades (LÓGICA CORRECTA):
                 // Switch PRENDIDO (showLowStockOnly = true): muestra SOLO productos con stock <= 2
-                const matchesLowStock = !showLowStockOnly ? true : (stockTotal <= 2);
+                // Switch APAGADO (showLowStockOnly = false): muestra TODOS los productos
+                const matchesLowStock = showLowStockOnly ? (stockTotal <= 2) : true;
 
                 if (matchesSearch && matchesCategory && matchesSupplier && matchesLowStock) {
                     row.style.display = '';
