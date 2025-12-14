@@ -173,13 +173,9 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: 0.5px;
 }
 
-.navbar-toggler {
-    border: none;
-    padding: 0;
-}
-
-.navbar-toggler:focus {
-    box-shadow: none;
+/* Navbar siempre visible (sin menú hamburguesa) */
+.navbar-collapse {
+    display: block !important;
 }
 
 /* Icono del Carrito */
@@ -333,6 +329,7 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (max-width: 991.98px) {
     .navbar-collapse {
+        display: block !important;
         margin-top: 1rem;
         padding-bottom: 1rem;
     }
