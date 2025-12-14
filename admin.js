@@ -2603,8 +2603,12 @@ document.addEventListener('DOMContentLoaded', () => {
             let montoTransferencia = 0;
 
             if (metodoPagoSeleccionado === 'efectivo') {
-                // En efectivo: guardar el total completo (paga todo en efectivo)
-                montoEfectivo = totalCalculado;
+                // En efectivo: para apartados usar el monto ingresado, para ventas normales el total
+                if (tipoVentaSelect.value === 'apartado') {
+                    montoEfectivo = parseFloat(eliminarFormatoNumero(efectivoRecibidoInput.value)) || 0;
+                } else {
+                    montoEfectivo = totalCalculado;
+                }
             } else if (metodoPagoSeleccionado === 'transferencia') {
                 // En transferencia: guardar lo que recibió
                 montoTransferencia = parseFloat(eliminarFormatoNumero(transferenciaRecibidaInput.value)) || 0;
