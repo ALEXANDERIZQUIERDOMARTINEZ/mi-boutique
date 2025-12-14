@@ -2428,10 +2428,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const porcentajeAbonado = d.totalVenta > 0 ? Math.round((montoAbonado / d.totalVenta) * 100) : 0;
                     totalDisplay = `
                         <div>
-                            <div class="fw-bold">${formatoMoneda.format(d.totalVenta||0)}</div>
-                            <small class="text-warning">
-                                <i class="bi bi-calendar-check"></i> ${porcentajeAbonado}% apartado
-                                <br>(${formatoMoneda.format(montoAbonado)})
+                            <div class="fw-bold text-warning" style="font-size: 1.1em;">
+                                <i class="bi bi-calendar-check"></i> ${formatoMoneda.format(montoAbonado)}
+                            </div>
+                            <small class="text-muted">
+                                ${porcentajeAbonado}% apartado
+                                <br>Total: ${formatoMoneda.format(d.totalVenta||0)}
                             </small>
                         </div>
                     `;
