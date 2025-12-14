@@ -1880,7 +1880,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 snapshot.forEach(doc => {
                     const supplier = doc.data();
                     const option = document.createElement('option');
-                    option.value = doc.id;
+                    option.value = supplier.nombre; // Usar nombre en vez de ID
                     option.textContent = supplier.nombre || 'Sin nombre';
                     supplierSelectInventory.appendChild(option);
                 });
@@ -1914,7 +1914,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const productName = (product.nombre || '').toLowerCase();
                 const productCode = (product.codigo || '').toLowerCase();
                 const categoryId = product.categoriaId || '';
-                const supplierId = product.proveedorId || '';
+                const supplierName = (product.proveedor || '').trim(); // Usar proveedor en vez de proveedorId
 
                 // Calcular stock total del producto
                 const stockTotal = product.variaciones
@@ -1923,8 +1923,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const matchesSearch = productName.includes(searchVal) || productCode.includes(searchVal);
                 const matchesCategory = (categoryVal === '' || categoryId === categoryVal);
-                const matchesSupplier = (supplierVal === '' || supplierId === supplierVal);
-                const matchesLowStock = !showLowStockOnly || stockTotal <= 2;
+                const matchesSupplier = (supplierVal === '' || supplierName === supplierVal);
+                // Filtro de pocas unidades:
+                // Si el checkbox NO está marcado: muestra todos los productos (true)
+                // Si el checkbox SÍ está marcado: solo muestra productos con stock <= 2
+                const matchesLowStock = showLowStockOnly ? (stockTotal <= 2) : true;
 
                 if (matchesSearch && matchesCategory && matchesSupplier && matchesLowStock) {
                     row.style.display = '';
