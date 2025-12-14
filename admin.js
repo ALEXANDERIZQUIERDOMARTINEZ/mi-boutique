@@ -2421,11 +2421,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     productosHtml = '<small class="text-muted">Sin productos</small>';
                 }
 
+                // Calcular información de apartado si aplica
+                let totalDisplay = formatoMoneda.format(d.totalVenta||0);
+                if (d.tipoVenta === 'apartado') {
+                    const montoAbonado = (d.pagoEfectivo || 0) + (d.pagoTransferencia || 0);
+                    const porcentajeAbonado = d.totalVenta > 0 ? Math.round((montoAbonado / d.totalVenta) * 100) : 0;
+                    totalDisplay = `
+                        <div>
+                            <div class="fw-bold">${formatoMoneda.format(d.totalVenta||0)}</div>
+                            <small class="text-warning">
+                                <i class="bi bi-calendar-check"></i> ${porcentajeAbonado}% apartado
+                                <br>(${formatoMoneda.format(montoAbonado)})
+                            </small>
+                        </div>
+                    `;
+                }
+
                 tr.innerHTML = `<td>${fecha}</td>
                                 <td>${d.clienteNombre || 'General'}</td>
                                 <td>${productosHtml}</td>
                                 <td>${d.tipoVenta}</td>
-                                <td>${formatoMoneda.format(d.totalVenta||0)}</td>
+                                <td>${totalDisplay}</td>
                                 <td>${pago||'-'}</td>
                                 <td>${repartidor}</td>
                                 <td><span class="badge ${estadoBadgeClass}">${estado}</span></td>
@@ -2920,6 +2936,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <li><strong>Transferencia:</strong> ${formatoMoneda.format(d.pagoTransferencia || 0)}</li>
                                 <li><strong>Descuento:</strong> ${formatoMoneda.format(d.descuento || 0)}</li>
                                 <li class="fs-5 fw-bold mt-2"><strong>Total Venta:</strong> ${formatoMoneda.format(d.totalVenta || 0)}</li>
+                                ${d.tipoVenta === 'apartado' ? `
+                                    <li class="text-warning mt-2">
+                                        <i class="bi bi-calendar-check"></i> <strong>Apartado:</strong>
+                                        ${Math.round(((d.pagoEfectivo + d.pagoTransferencia) / d.totalVenta) * 100)}%
+                                        (${formatoMoneda.format(d.pagoEfectivo + d.pagoTransferencia)})
+                                    </li>
+                                    <li class="text-muted">
+                                        <strong>Saldo pendiente:</strong>
+                                        ${formatoMoneda.format(d.totalVenta - (d.pagoEfectivo + d.pagoTransferencia))}
+                                    </li>
+                                ` : ''}
                             </ul>
                         </div>
                     </div>
@@ -4284,6 +4311,23 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     ultimaModificacion: serverTimestamp()
                 });
                 console.log("✅ Apartado actualizado correctamente");
+
+                // ✅ PASO 4.5: Registrar abono en la colección 'abonos' para contabilizar en ventas del día
+                try {
+                    await addDoc(collection(db, 'abonos'), {
+                        apartadoId: apartadoId,
+                        ventaId: apartadoData.ventaId,
+                        clienteNombre: apartadoData.clienteNombre,
+                        monto: monto,
+                        metodoPago: metodoPago,
+                        observaciones: observaciones || 'Sin observaciones',
+                        timestamp: serverTimestamp()
+                    });
+                    console.log("✅ Abono registrado en colección 'abonos' para contabilidad del día");
+                } catch (abonoErr) {
+                    console.error("❌ Error al registrar abono en colección:", abonoErr);
+                    // No detenemos el proceso, el abono ya se guardó en el apartado
+                }
 
                 // ✅ PASO 5: Actualizar venta asociada (solo el estado, NO los montos)
                 if (apartadoData.ventaId) {
