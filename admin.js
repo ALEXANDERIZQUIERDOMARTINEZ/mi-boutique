@@ -6236,8 +6236,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             const data = labels.map(label => ventasPorDia[label] || 0);
 
-            // Crear el gráfico
+            // Crear gradiente moderno para el gráfico
             const ctx = ventasChartCanvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.9)');
+            gradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.8)');
+            gradient.addColorStop(1, 'rgba(168, 85, 247, 0.7)');
+
             ventasChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -6245,25 +6250,41 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     datasets: [{
                         label: 'Ventas ($)',
                         data: data,
-                        backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                        backgroundColor: gradient,
                         borderColor: 'rgba(99, 102, 241, 1)',
-                        borderWidth: 1,
-                        borderRadius: 6,
+                        borderWidth: 2,
+                        borderRadius: 10,
                         borderSkipped: false,
+                        hoverBackgroundColor: 'rgba(99, 102, 241, 1)',
+                        hoverBorderWidth: 3,
+                        hoverBorderColor: 'rgba(79, 70, 229, 1)',
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart'
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
                     plugins: {
                         legend: {
                             display: false
                         },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: 12,
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            padding: 16,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            borderColor: 'rgba(99, 102, 241, 0.5)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            boxPadding: 6,
                             callbacks: {
                                 label: function(context) {
                                     return 'Ventas: ' + formatoMoneda.format(context.parsed.y);
@@ -6277,13 +6298,26 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             ticks: {
                                 callback: function(value) {
                                     return '$' + (value / 1000).toFixed(0) + 'k';
-                                }
+                                },
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                },
+                                color: '#6B7280'
                             },
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
+                                color: 'rgba(0, 0, 0, 0.04)',
+                                drawBorder: false
                             }
                         },
                         x: {
+                            ticks: {
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                },
+                                color: '#6B7280'
+                            },
                             grid: {
                                 display: false
                             }
@@ -6343,10 +6377,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 }
             });
 
-            // Ordenar y obtener top 5
+            // Ordenar y obtener top 15
             const topProductos = Object.entries(productosVendidos)
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 5);
+                .slice(0, 15);
 
             if (topProductos.length === 0) {
                 topProductos.push(['Sin datos', 0]);
@@ -6354,6 +6388,43 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             const labels = topProductos.map(p => p[0].length > 20 ? p[0].substring(0, 20) + '...' : p[0]);
             const data = topProductos.map(p => p[1]);
+
+            // Generar 15 colores modernos y vibrantes
+            const modernColors = [
+                'rgba(59, 130, 246, 0.85)',   // Azul moderno
+                'rgba(16, 185, 129, 0.85)',   // Verde esmeralda
+                'rgba(245, 158, 11, 0.85)',   // Naranja ámbar
+                'rgba(239, 68, 68, 0.85)',    // Rojo
+                'rgba(139, 92, 246, 0.85)',   // Púrpura
+                'rgba(236, 72, 153, 0.85)',   // Rosa
+                'rgba(20, 184, 166, 0.85)',   // Turquesa
+                'rgba(251, 146, 60, 0.85)',   // Naranja
+                'rgba(99, 102, 241, 0.85)',   // Índigo
+                'rgba(244, 63, 94, 0.85)',    // Rosa fuerte
+                'rgba(34, 197, 94, 0.85)',    // Verde lima
+                'rgba(168, 85, 247, 0.85)',   // Violeta
+                'rgba(59, 189, 248, 0.85)',   // Cian
+                'rgba(234, 179, 8, 0.85)',    // Amarillo
+                'rgba(249, 115, 22, 0.85)'    // Naranja oscuro
+            ];
+
+            const modernBorderColors = [
+                'rgba(59, 130, 246, 1)',
+                'rgba(16, 185, 129, 1)',
+                'rgba(245, 158, 11, 1)',
+                'rgba(239, 68, 68, 1)',
+                'rgba(139, 92, 246, 1)',
+                'rgba(236, 72, 153, 1)',
+                'rgba(20, 184, 166, 1)',
+                'rgba(251, 146, 60, 1)',
+                'rgba(99, 102, 241, 1)',
+                'rgba(244, 63, 94, 1)',
+                'rgba(34, 197, 94, 1)',
+                'rgba(168, 85, 247, 1)',
+                'rgba(59, 189, 248, 1)',
+                'rgba(234, 179, 8, 1)',
+                'rgba(249, 115, 22, 1)'
+            ];
 
             // Crear el gráfico
             const ctx = topProductosChartCanvas.getContext('2d');
@@ -6364,22 +6435,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     datasets: [{
                         label: 'Unidades',
                         data: data,
-                        backgroundColor: [
-                            'rgba(245, 158, 11, 0.8)',
-                            'rgba(59, 130, 246, 0.8)',
-                            'rgba(16, 185, 129, 0.8)',
-                            'rgba(239, 68, 68, 0.8)',
-                            'rgba(139, 92, 246, 0.8)'
-                        ],
-                        borderColor: [
-                            'rgba(245, 158, 11, 1)',
-                            'rgba(59, 130, 246, 1)',
-                            'rgba(16, 185, 129, 1)',
-                            'rgba(239, 68, 68, 1)',
-                            'rgba(139, 92, 246, 1)'
-                        ],
-                        borderWidth: 1,
-                        borderRadius: 6,
+                        backgroundColor: modernColors,
+                        borderColor: modernBorderColors,
+                        borderWidth: 2,
+                        borderRadius: 8,
                         borderSkipped: false
                     }]
                 },
@@ -6421,6 +6480,584 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         } catch (error) {
             console.error("❌ Error al crear gráfico de top productos:", error);
+        }
+    }
+
+    // ================================================================
+    // GRÁFICO 3: CATEGORÍAS MÁS VENDIDAS (DONUT)
+    // ================================================================
+    let categoriasChart = null;
+    async function crearGraficoCategoriasVendidas() {
+        const canvas = document.getElementById('categoriasChart');
+        if (!canvas) return;
+
+        try {
+            if (categoriasChart) {
+                categoriasChart.destroy();
+            }
+
+            // Obtener ventas del último mes
+            const fechaInicio = new Date();
+            fechaInicio.setDate(fechaInicio.getDate() - 30);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(fechaInicio))
+            );
+
+            const snapshot = await getDocs(q);
+            const categorias = {};
+
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const items = venta.items || [];
+                    items.forEach(item => {
+                        const categoria = item.categoria || 'Sin categoría';
+                        if (!categorias[categoria]) {
+                            categorias[categoria] = 0;
+                        }
+                        categorias[categoria] += (item.cantidad || 0);
+                    });
+                }
+            });
+
+            const topCategorias = Object.entries(categorias)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8);
+
+            if (topCategorias.length === 0) {
+                topCategorias.push(['Sin datos', 0]);
+            }
+
+            const labels = topCategorias.map(c => c[0]);
+            const data = topCategorias.map(c => c[1]);
+
+            const ctx = canvas.getContext('2d');
+            categoriasChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.85)',
+                            'rgba(16, 185, 129, 0.85)',
+                            'rgba(245, 158, 11, 0.85)',
+                            'rgba(239, 68, 68, 0.85)',
+                            'rgba(139, 92, 246, 0.85)',
+                            'rgba(236, 72, 153, 0.85)',
+                            'rgba(20, 184, 166, 0.85)',
+                            'rgba(251, 146, 60, 0.85)'
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 3,
+                        hoverBorderWidth: 4,
+                        hoverBorderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                padding: 15,
+                                font: { size: 12, weight: '500' },
+                                color: '#374151',
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            padding: 16,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            borderColor: 'rgba(99, 102, 241, 0.5)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed + ' unidades';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            console.log("✅ Gráfico de categorías creado");
+        } catch (error) {
+            console.error("❌ Error al crear gráfico de categorías:", error);
+        }
+    }
+
+    // ================================================================
+    // GRÁFICO 4: MÉTODOS DE PAGO (PIE)
+    // ================================================================
+    let metodosPagoChart = null;
+    async function crearGraficoMetodosPago() {
+        const canvas = document.getElementById('metodosPagoChart');
+        if (!canvas) return;
+
+        try {
+            if (metodosPagoChart) {
+                metodosPagoChart.destroy();
+            }
+
+            // Obtener ventas del último mes
+            const fechaInicio = new Date();
+            fechaInicio.setDate(fechaInicio.getDate() - 30);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(fechaInicio))
+            );
+
+            const snapshot = await getDocs(q);
+            let efectivo = 0;
+            let transferencia = 0;
+
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    efectivo += (venta.pagoEfectivo || 0);
+                    transferencia += (venta.pagoTransferencia || 0);
+                }
+            });
+
+            const ctx = canvas.getContext('2d');
+            metodosPagoChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Efectivo', 'Transferencia'],
+                    datasets: [{
+                        data: [efectivo, transferencia],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.85)',
+                            'rgba(59, 130, 246, 0.85)'
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 3,
+                        hoverBorderWidth: 4,
+                        hoverBorderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: { size: 13, weight: '600' },
+                                color: '#374151',
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            padding: 16,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            borderColor: 'rgba(99, 102, 241, 0.5)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    const total = efectivo + transferencia;
+                                    const porcentaje = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                    return context.label + ': ' + formatoMoneda.format(context.parsed) + ' (' + porcentaje + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            console.log("✅ Gráfico de métodos de pago creado");
+        } catch (error) {
+            console.error("❌ Error al crear gráfico de métodos de pago:", error);
+        }
+    }
+
+    // ================================================================
+    // GRÁFICO 5: INGRESOS VS COSTOS (LINE)
+    // ================================================================
+    let ingresosVsCostosChart = null;
+    async function crearGraficoIngresosVsCostos(dias = 7) {
+        const canvas = document.getElementById('ingresosVsCostosChart');
+        if (!canvas) return;
+
+        try {
+            if (ingresosVsCostosChart) {
+                ingresosVsCostosChart.destroy();
+            }
+
+            const hoy = new Date();
+            const fechaInicio = new Date(hoy);
+            fechaInicio.setDate(fechaInicio.getDate() - dias + 1);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(fechaInicio)),
+                orderBy('timestamp', 'asc')
+            );
+
+            const snapshot = await getDocs(q);
+
+            const ingresosPorDia = {};
+            const costosPorDia = {};
+            const labels = [];
+
+            // Inicializar todos los días
+            for (let i = 0; i < dias; i++) {
+                const fecha = new Date(fechaInicio);
+                fecha.setDate(fecha.getDate() + i);
+                const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                ingresosPorDia[key] = 0;
+                costosPorDia[key] = 0;
+                labels.push(key);
+            }
+
+            // Calcular ingresos y costos por día
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const fecha = venta.timestamp?.toDate();
+                    if (fecha) {
+                        const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                        if (ingresosPorDia.hasOwnProperty(key)) {
+                            const montoRecibido = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                            ingresosPorDia[key] += montoRecibido;
+
+                            // Calcular costos de los productos vendidos
+                            const items = venta.items || [];
+                            items.forEach(item => {
+                                const costo = (item.costo || 0) * (item.cantidad || 0);
+                                costosPorDia[key] += costo;
+                            });
+                        }
+                    }
+                }
+            });
+
+            const dataIngresos = labels.map(label => ingresosPorDia[label] || 0);
+            const dataCostos = labels.map(label => costosPorDia[label] || 0);
+
+            const ctx = canvas.getContext('2d');
+            const gradientIngresos = ctx.createLinearGradient(0, 0, 0, 400);
+            gradientIngresos.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+            gradientIngresos.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
+            const gradientCostos = ctx.createLinearGradient(0, 0, 0, 400);
+            gradientCostos.addColorStop(0, 'rgba(239, 68, 68, 0.3)');
+            gradientCostos.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+            ingresosVsCostosChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Ingresos',
+                            data: dataIngresos,
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            backgroundColor: gradientIngresos,
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverBorderWidth: 3
+                        },
+                        {
+                            label: 'Costos',
+                            data: dataCostos,
+                            borderColor: 'rgba(239, 68, 68, 1)',
+                            backgroundColor: gradientCostos,
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverBorderWidth: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                padding: 15,
+                                font: { size: 13, weight: '600' },
+                                color: '#374151',
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            padding: 16,
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 13 },
+                            borderColor: 'rgba(99, 102, 241, 0.5)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            boxPadding: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + formatoMoneda.format(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                },
+                                font: { size: 12, weight: '500' },
+                                color: '#6B7280'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.04)',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: { size: 12, weight: '500' },
+                                color: '#6B7280'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            console.log("✅ Gráfico de ingresos vs costos creado");
+        } catch (error) {
+            console.error("❌ Error al crear gráfico de ingresos vs costos:", error);
+        }
+    }
+
+    // ================================================================
+    // GRÁFICO 6: PRODUCTOS CON MEJOR MARGEN
+    // ================================================================
+    let mejorMargenChart = null;
+    async function crearGraficoMejorMargen() {
+        const canvas = document.getElementById('mejorMargenChart');
+        if (!canvas) return;
+
+        try {
+            if (mejorMargenChart) {
+                mejorMargenChart.destroy();
+            }
+
+            // Obtener todos los productos
+            const snapshot = await getDocs(productsCollection);
+            const productosConMargen = [];
+
+            snapshot.forEach(doc => {
+                const producto = doc.data();
+                const costo = producto.costoCompra || 0;
+                const precio = producto.precioDetal || 0;
+
+                if (costo > 0 && precio > 0) {
+                    const margen = ((precio - costo) / precio) * 100;
+                    productosConMargen.push({
+                        nombre: producto.nombre || 'Sin nombre',
+                        margen: margen
+                    });
+                }
+            });
+
+            // Obtener top 10 con mejor margen
+            const topMargen = productosConMargen
+                .sort((a, b) => b.margen - a.margen)
+                .slice(0, 10);
+
+            if (topMargen.length === 0) {
+                topMargen.push({ nombre: 'Sin datos', margen: 0 });
+            }
+
+            const labels = topMargen.map(p => p.nombre.length > 15 ? p.nombre.substring(0, 15) + '...' : p.nombre);
+            const data = topMargen.map(p => p.margen);
+
+            const ctx = canvas.getContext('2d');
+            mejorMargenChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Margen %',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(234, 179, 8, 0.85)',
+                            'rgba(245, 158, 11, 0.85)',
+                            'rgba(251, 146, 60, 0.85)',
+                            'rgba(249, 115, 22, 0.85)',
+                            'rgba(239, 68, 68, 0.85)',
+                            'rgba(244, 63, 94, 0.85)',
+                            'rgba(236, 72, 153, 0.85)',
+                            'rgba(168, 85, 247, 0.85)',
+                            'rgba(139, 92, 246, 0.85)',
+                            'rgba(99, 102, 241, 0.85)'
+                        ],
+                        borderColor: [
+                            'rgba(234, 179, 8, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(251, 146, 60, 1)',
+                            'rgba(249, 115, 22, 1)',
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(244, 63, 94, 1)',
+                            'rgba(236, 72, 153, 1)',
+                            'rgba(168, 85, 247, 1)',
+                            'rgba(139, 92, 246, 1)',
+                            'rgba(99, 102, 241, 1)'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Margen: ' + context.parsed.x.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(0) + '%';
+                                },
+                                precision: 0
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+
+            console.log("✅ Gráfico de mejor margen creado");
+        } catch (error) {
+            console.error("❌ Error al crear gráfico de mejor margen:", error);
+        }
+    }
+
+    // ================================================================
+    // ACTUALIZAR KPIs ADICIONALES
+    // ================================================================
+    async function actualizarKPIsAdicionales() {
+        try {
+            // Obtener ventas del mes actual
+            const inicioMes = new Date();
+            inicioMes.setDate(1);
+            inicioMes.setHours(0, 0, 0, 0);
+
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(inicioMes))
+            );
+
+            const snapshot = await getDocs(q);
+
+            let totalVentas = 0;
+            let numeroVentas = 0;
+            let productosVendidos = 0;
+            let totalMargen = 0;
+            let contadorMargen = 0;
+
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const montoRecibido = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                    totalVentas += montoRecibido;
+                    numeroVentas++;
+
+                    const items = venta.items || [];
+                    items.forEach(item => {
+                        productosVendidos += (item.cantidad || 0);
+
+                        const precio = item.precioUnitario || 0;
+                        const costo = item.costo || 0;
+                        if (precio > 0) {
+                            const margen = ((precio - costo) / precio) * 100;
+                            totalMargen += margen;
+                            contadorMargen++;
+                        }
+                    });
+                }
+            });
+
+            // Actualizar elementos
+            const ticketPromedio = numeroVentas > 0 ? totalVentas / numeroVentas : 0;
+            const margenPromedio = contadorMargen > 0 ? totalMargen / contadorMargen : 0;
+
+            const elemTicket = document.getElementById('db-ticket-promedio');
+            const elemProductosVendidos = document.getElementById('db-productos-vendidos');
+            const elemMargenPromedio = document.getElementById('db-margen-promedio');
+            const elemVentasMes = document.getElementById('db-ventas-mes');
+
+            if (elemTicket) elemTicket.textContent = formatoMoneda.format(ticketPromedio);
+            if (elemProductosVendidos) elemProductosVendidos.textContent = productosVendidos;
+            if (elemMargenPromedio) elemMargenPromedio.textContent = margenPromedio.toFixed(1) + '%';
+            if (elemVentasMes) elemVentasMes.textContent = formatoMoneda.format(totalVentas);
+
+            console.log("✅ KPIs adicionales actualizados");
+        } catch (error) {
+            console.error("❌ Error al actualizar KPIs adicionales:", error);
         }
     }
 
@@ -6542,11 +7179,25 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         });
     });
 
+    // Cambiar período del gráfico financiero (ingresos vs costos)
+    const financialPeriodBtns = document.querySelectorAll('input[name="financial-period"]');
+    financialPeriodBtns.forEach(btn => {
+        btn.addEventListener('change', (e) => {
+            const dias = e.target.id === 'financial-7days' ? 7 : 30;
+            crearGraficoIngresosVsCostos(dias);
+        });
+    });
+
     // ================================================================
     // INICIALIZAR
     // ================================================================
     crearGraficoVentas(7);
     crearGraficoTopProductos();
+    crearGraficoCategoriasVendidas();
+    crearGraficoMetodosPago();
+    crearGraficoIngresosVsCostos(7);
+    crearGraficoMejorMargen();
+    actualizarKPIsAdicionales();
     actualizarTablaStockCritico();
     actualizarActividadReciente();
 
