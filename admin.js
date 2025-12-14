@@ -1924,10 +1924,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const matchesSearch = productName.includes(searchVal) || productCode.includes(searchVal);
                 const matchesCategory = (categoryVal === '' || categoryId === categoryVal);
                 const matchesSupplier = (supplierVal === '' || supplierName === supplierVal);
-                // Filtro de pocas unidades:
-                // Si el checkbox NO está marcado: muestra todos los productos (true)
-                // Si el checkbox SÍ está marcado: solo muestra productos con stock <= 2
-                const matchesLowStock = showLowStockOnly ? (stockTotal <= 2) : true;
+                // Filtro de pocas unidades (LÓGICA INVERTIDA):
+                // Switch APAGADO (!showLowStockOnly = true): muestra TODOS los productos
+                // Switch PRENDIDO (showLowStockOnly = true): muestra SOLO productos con stock <= 2
+                const matchesLowStock = !showLowStockOnly ? true : (stockTotal <= 2);
 
                 if (matchesSearch && matchesCategory && matchesSupplier && matchesLowStock) {
                     row.style.display = '';
