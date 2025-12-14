@@ -173,10 +173,7 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: 0.5px;
 }
 
-/* Navbar siempre visible (sin menú hamburguesa) */
-.navbar-collapse {
-    display: block !important;
-}
+/* Navbar siempre visible (sin menú hamburguesa) - REMOVIDO */
 
 /* Icono del Carrito */
 .cart-icon {
@@ -240,12 +237,7 @@ h1, h2, h3, h4, h5, h6 {
     pointer-events: none;
 }
 
-/* Filtros del Catálogo */
-.catalog-filters {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-}
+/* Filtros del Catálogo - REMOVIDO (ya no se usa) */
 
 .filter-group {
     border: none;
@@ -328,31 +320,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 991.98px) {
-    .navbar-collapse {
-        display: flex !important;
-        justify-content: flex-end;
-    }
-
-    /* Mantener filtros horizontales en móvil */
-    .catalog-filters {
-        flex-direction: row;
-        width: auto;
-        gap: 0.5rem;
-    }
-
+    /* Reducir tamaño del botón de categorías en móvil */
     .filter-group {
-        width: auto;
-        justify-content: center;
         font-size: 0.85rem;
-        padding: 8px 12px;
+        padding: 6px 10px;
     }
 
-    .dropdown {
-        width: auto;
-    }
-
-    #category-dropdown-button {
-        width: auto;
+    /* Reducir tamaño del texto del logo */
+    .navbar-brand {
+        font-size: 1.3rem;
     }
 
     /* Dropdown de categorías con scroll en móvil */
@@ -380,14 +356,6 @@ h1, h2, h3, h4, h5, h6 {
 
     .dropdown-menu-enhanced::-webkit-scrollbar-thumb:hover {
         background: var(--color-primario-oscuro);
-    }
-}
-
-@media (min-width: 992px) {
-    .navbar-collapse .catalog-filters {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
     }
 }
 
