@@ -173,7 +173,10 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: 0.5px;
 }
 
-/* Navbar siempre visible (sin menú hamburguesa) - REMOVIDO */
+/* Navbar collapse - siempre visible */
+.navbar-collapse {
+    display: flex !important;
+}
 
 /* Icono del Carrito */
 .cart-icon {
@@ -237,7 +240,12 @@ h1, h2, h3, h4, h5, h6 {
     pointer-events: none;
 }
 
-/* Filtros del Catálogo - REMOVIDO (ya no se usa) */
+/* Filtros del Catálogo */
+.catalog-filters {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
 
 .filter-group {
     border: none;
@@ -320,6 +328,27 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 991.98px) {
+    /* Container del header en línea */
+    .navbar > .container {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* Navbar collapse en línea con el logo */
+    .navbar-collapse {
+        display: flex !important;
+        flex-grow: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Categorías alineadas a la derecha */
+    .catalog-filters {
+        margin: 0 !important;
+        justify-content: flex-end;
+    }
+
     /* Reducir tamaño del botón de categorías en móvil */
     .filter-group {
         font-size: 0.85rem;
