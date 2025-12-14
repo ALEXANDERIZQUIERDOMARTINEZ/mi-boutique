@@ -491,20 +491,35 @@
 
                     <!-- FILTROS MEJORADOS -->
                     <div class="row mb-3 g-2">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                                 <input type="search" id="search-inventory" class="form-control" placeholder="Buscar por nombre o código...">
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <select id="filter-category-inventory" class="form-select">
                                 <option value="">Todas las Categorías</option>
                             </select>
                         </div>
+                        <div class="col-md-3">
+                            <select id="filter-supplier-inventory" class="form-select">
+                                <option value="">Todos los Proveedores</option>
+                            </select>
+                        </div>
                         <div class="col-md-2">
-                            <button type="button" id="clear-filters-inventory" class="btn btn-outline-secondary w-100">
-                                <i class="bi bi-x-circle me-1"></i>Limpiar
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" id="filter-low-stock-inventory" style="cursor: pointer;">
+                                <label class="form-check-label" for="filter-low-stock-inventory" style="cursor: pointer; font-size: 0.9rem;">
+                                    <i class="bi bi-exclamation-triangle text-warning"></i> Pocas unidades
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <button type="button" id="clear-filters-inventory" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-x-circle me-1"></i>Limpiar Filtros
                             </button>
                         </div>
                     </div>
