@@ -362,6 +362,120 @@
                                 <canvas id="ventasChart" height="80"></canvas>
                             </div>
                         </div>
+
+                        <!-- ⚡ NUEVA TABLA INTELIGENTE DE TENDENCIAS ⚡ -->
+                        <div class="card shadow-sm mt-4">
+                            <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-lightning-charge-fill me-2"></i>Análisis Inteligente de Tendencias
+                                </h5>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check" name="trends-period" id="trends-7days" autocomplete="off" checked>
+                                    <label class="btn btn-outline-light btn-sm" for="trends-7days">7 días</label>
+
+                                    <input type="radio" class="btn-check" name="trends-period" id="trends-14days" autocomplete="off">
+                                    <label class="btn btn-outline-light btn-sm" for="trends-14days">14 días</label>
+
+                                    <input type="radio" class="btn-check" name="trends-period" id="trends-30days" autocomplete="off">
+                                    <label class="btn btn-outline-light btn-sm" for="trends-30days">30 días</label>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-trends mb-0" id="tablaTendencias">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th class="text-center" style="width: 60px;">
+                                                    <i class="bi bi-hash"></i>
+                                                </th>
+                                                <th>
+                                                    <i class="bi bi-calendar3 me-1"></i>Fecha
+                                                </th>
+                                                <th class="text-end">
+                                                    <i class="bi bi-cash-stack me-1"></i>Ingresos
+                                                </th>
+                                                <th class="text-center">
+                                                    <i class="bi bi-graph-up-arrow me-1"></i>vs. Período Anterior
+                                                </th>
+                                                <th class="text-center">
+                                                    <i class="bi bi-cart-check me-1"></i>Ventas
+                                                </th>
+                                                <th class="text-end">
+                                                    <i class="bi bi-receipt me-1"></i>Ticket Prom.
+                                                </th>
+                                                <th class="text-center">
+                                                    <i class="bi bi-speedometer2 me-1"></i>Rendimiento
+                                                </th>
+                                                <th class="text-center">
+                                                    <i class="bi bi-trophy me-1"></i>Rating
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaTendenciasBody">
+                                            <!-- Datos cargados dinámicamente por JavaScript -->
+                                            <tr>
+                                                <td colspan="8" class="text-center py-5">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="visually-hidden">Cargando...</span>
+                                                    </div>
+                                                    <p class="text-muted mt-2 mb-0">Analizando tendencias de ventas...</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Resumen de Insights -->
+                                <div class="border-top p-3 bg-light" id="trendsInsights">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-success bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-trophy-fill text-success"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Mejor Día</small>
+                                                    <strong id="bestDay">--</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-graph-up text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Crecimiento Prom.</small>
+                                                    <strong id="avgGrowth">--</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-info bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-receipt text-info"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Ticket Prom. Global</small>
+                                                    <strong id="globalAvgTicket">--</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Alertas</small>
+                                                    <strong id="alertsCount">0</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="col-lg-4">
