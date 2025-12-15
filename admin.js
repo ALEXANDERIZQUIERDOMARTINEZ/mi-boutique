@@ -4882,41 +4882,34 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     }
                 });
 
-                // 💰 SUMAR ABONOS DEL DÍA desde apartados
-                console.log('💰 Buscando abonos del día en apartados...');
-                const apartadosSnap = await getDocs(apartadosCollection);
+                // 💰 SUMAR ABONOS DEL DÍA desde la colección 'abonos'
+                console.log('💰 Buscando abonos del día en colección abonos...');
 
                 let abonosEfectivo = 0;
                 let abonosTransferencia = 0;
 
-                apartadosSnap.forEach(doc => {
-                    const apartado = doc.data();
-                    const abonos = apartado.abonos || [];
+                const qAbonos = query(
+                    collection(db, 'abonos'),
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<=', Timestamp.fromDate(fin))
+                );
+                const abonosSnap = await getDocs(qAbonos);
 
-                    // Revisar cada abono del apartado
-                    abonos.forEach((abono, index) => {
-                        // Saltar el abono inicial (índice 0) porque ya está en la venta original
-                        if (index === 0) return;
+                abonosSnap.forEach(doc => {
+                    const abono = doc.data();
+                    const montoAbono = abono.monto || 0;
+                    const metodoPago = abono.metodoPago || 'Efectivo';
 
-                        const fechaAbono = abono.fecha?.toDate ? abono.fecha.toDate() : new Date(abono.fecha);
+                    if (metodoPago === 'Efectivo') {
+                        abonosEfectivo += montoAbono;
+                    } else if (metodoPago === 'Transferencia') {
+                        abonosTransferencia += montoAbono;
+                    }
 
-                        // Verificar si el abono fue hecho HOY
-                        if (fechaAbono >= inicio && fechaAbono <= fin) {
-                            const montoAbono = abono.monto || 0;
-                            const metodoPago = abono.metodoPago || 'Efectivo';
-
-                            if (metodoPago === 'Efectivo') {
-                                abonosEfectivo += montoAbono;
-                            } else if (metodoPago === 'Transferencia') {
-                                abonosTransferencia += montoAbono;
-                            }
-
-                            console.log(`  💵 Abono #${index} del apartado ${doc.id}: ${metodoPago} $${montoAbono}`);
-                        }
-                    });
+                    console.log(`  💵 Abono ${doc.id}: ${metodoPago} $${montoAbono}`);
                 });
 
-                console.log(`✅ Abonos del día: Efectivo=$${abonosEfectivo}, Transferencia=$${abonosTransferencia}`);
+                console.log(`✅ Abonos del día desde colección: Efectivo=$${abonosEfectivo}, Transferencia=$${abonosTransferencia}`);
 
                 ventasDelDia = {
                     efectivo: ventasEfectivo + abonosEfectivo,
@@ -5358,25 +5351,21 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         }
                     });
 
-                    // 💰 SUMAR ABONOS DEL DÍA desde apartados
+                    // 💰 SUMAR ABONOS DEL DÍA desde la colección 'abonos'
                     try {
-                        const apartadosSnap = await getDocs(apartadosCollection);
-                        apartadosSnap.forEach(doc => {
-                            const apartado = doc.data();
-                            const abonos = apartado.abonos || [];
+                        const qAbonos = query(
+                            collection(db, 'abonos'),
+                            where('timestamp', '>=', Timestamp.fromDate(hoy)),
+                            where('timestamp', '<', Timestamp.fromDate(manana))
+                        );
+                        const abonosSnap = await getDocs(qAbonos);
 
-                            abonos.forEach((abono, index) => {
-                                // Saltar el abono inicial (índice 0) porque ya está en la venta original
-                                if (index === 0) return;
-
-                                const fechaAbono = abono.fecha?.toDate ? abono.fecha.toDate() : new Date(abono.fecha);
-
-                                // Verificar si el abono fue hecho HOY
-                                if (fechaAbono >= hoy && fechaAbono < manana) {
-                                    totalDineroRecibido += (abono.monto || 0);
-                                }
-                            });
+                        abonosSnap.forEach(doc => {
+                            const abono = doc.data();
+                            totalDineroRecibido += (abono.monto || 0);
                         });
+
+                        console.log(`✅ Abonos del día sumados: ${abonosSnap.size} abonos`);
                     } catch (err) {
                         console.error('Error sumando abonos del día:', err);
                     }
