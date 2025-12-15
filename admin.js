@@ -6384,6 +6384,293 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ================================================================
+    // ⚡ TABLA INTELIGENTE DE TENDENCIAS - ANÁLISIS AVANZADO
+    // ================================================================
+    async function crearTablaTendencias(dias = 7) {
+        const tbody = document.getElementById('tablaTendenciasBody');
+        if (!tbody) {
+            console.warn("Tabla de tendencias no encontrada");
+            return;
+        }
+
+        try {
+            // Calcular rango de fechas actual
+            const hoy = new Date();
+            hoy.setHours(23, 59, 59, 999);
+            const fechaInicio = new Date(hoy);
+            fechaInicio.setDate(fechaInicio.getDate() - dias + 1);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            // Calcular rango de fechas del período anterior (para comparación)
+            const fechaInicioAnterior = new Date(fechaInicio);
+            fechaInicioAnterior.setDate(fechaInicioAnterior.getDate() - dias);
+
+            // Obtener ventas del período actual
+            const qActual = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(fechaInicio)),
+                where('timestamp', '<=', Timestamp.fromDate(hoy)),
+                orderBy('timestamp', 'desc')
+            );
+
+            // Obtener ventas del período anterior
+            const qAnterior = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(fechaInicioAnterior)),
+                where('timestamp', '<', Timestamp.fromDate(fechaInicio)),
+                orderBy('timestamp', 'desc')
+            );
+
+            const [snapshotActual, snapshotAnterior] = await Promise.all([
+                getDocs(qActual),
+                getDocs(qAnterior)
+            ]);
+
+            // Procesar datos del período actual
+            const datosPorDia = {};
+            for (let i = 0; i < dias; i++) {
+                const fecha = new Date(fechaInicio);
+                fecha.setDate(fecha.getDate() + i);
+                const key = fecha.toISOString().split('T')[0];
+                datosPorDia[key] = {
+                    fecha: fecha,
+                    ingresos: 0,
+                    numVentas: 0,
+                    ventas: []
+                };
+            }
+
+            snapshotActual.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const fecha = venta.timestamp?.toDate();
+                    if (fecha) {
+                        const key = fecha.toISOString().split('T')[0];
+                        if (datosPorDia[key]) {
+                            const montoRecibido = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                            datosPorDia[key].ingresos += montoRecibido;
+                            datosPorDia[key].numVentas++;
+                            datosPorDia[key].ventas.push(montoRecibido);
+                        }
+                    }
+                }
+            });
+
+            // Procesar datos del período anterior
+            const datosAnteriores = {};
+            for (let i = 0; i < dias; i++) {
+                const fecha = new Date(fechaInicioAnterior);
+                fecha.setDate(fecha.getDate() + i);
+                const key = fecha.toISOString().split('T')[0];
+                datosAnteriores[key] = {
+                    ingresos: 0,
+                    numVentas: 0
+                };
+            }
+
+            snapshotAnterior.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const fecha = venta.timestamp?.toDate();
+                    if (fecha) {
+                        const key = fecha.toISOString().split('T')[0];
+                        if (datosAnteriores[key]) {
+                            const montoRecibido = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                            datosAnteriores[key].ingresos += montoRecibido;
+                            datosAnteriores[key].numVentas++;
+                        }
+                    }
+                }
+            });
+
+            // Convertir a array y ordenar por fecha (más reciente primero)
+            const arrayDatos = Object.keys(datosPorDia)
+                .map(key => datosPorDia[key])
+                .sort((a, b) => b.fecha - a.fecha);
+
+            // Calcular promedios del período anterior
+            const totalIngresosAnteriores = Object.values(datosAnteriores).reduce((sum, d) => sum + d.ingresos, 0);
+            const promedioIngresoAnterior = totalIngresosAnteriores / dias;
+
+            // Generar filas de la tabla
+            let html = '';
+            let mejorDia = { fecha: null, ingresos: 0 };
+            let totalCrecimiento = 0;
+            let diasConCrecimiento = 0;
+            let totalTickets = 0;
+            let totalVentas = 0;
+            let alertas = 0;
+
+            arrayDatos.forEach((dia, index) => {
+                // Calcular métricas del día
+                const ticketPromedio = dia.numVentas > 0 ? dia.ingresos / dia.numVentas : 0;
+
+                // Comparar con el día equivalente del período anterior
+                const fechaAnterior = new Date(dia.fecha);
+                fechaAnterior.setDate(fechaAnterior.getDate() - dias);
+                const keyAnterior = fechaAnterior.toISOString().split('T')[0];
+                const diaAnterior = datosAnteriores[keyAnterior] || { ingresos: 0, numVentas: 0 };
+
+                const crecimiento = diaAnterior.ingresos > 0
+                    ? ((dia.ingresos - diaAnterior.ingresos) / diaAnterior.ingresos) * 100
+                    : (dia.ingresos > 0 ? 100 : 0);
+
+                // Calcular score de rendimiento (0-100)
+                const maxIngresos = Math.max(...arrayDatos.map(d => d.ingresos));
+                const scoreRendimiento = maxIngresos > 0 ? (dia.ingresos / maxIngresos) * 100 : 0;
+
+                // Calcular rating (1-5 estrellas)
+                let rating = 1;
+                if (scoreRendimiento >= 80) rating = 5;
+                else if (scoreRendimiento >= 60) rating = 4;
+                else if (scoreRendimiento >= 40) rating = 3;
+                else if (scoreRendimiento >= 20) rating = 2;
+
+                // Detectar alertas (caída > 30% o sin ventas)
+                const esAlerta = crecimiento < -30 || (dia.numVentas === 0 && diaAnterior.numVentas > 0);
+                if (esAlerta) alertas++;
+
+                // Tracking del mejor día
+                if (dia.ingresos > mejorDia.ingresos) {
+                    mejorDia = { fecha: dia.fecha, ingresos: dia.ingresos };
+                }
+
+                // Acumular para promedios
+                if (crecimiento !== 0) {
+                    totalCrecimiento += crecimiento;
+                    diasConCrecimiento++;
+                }
+                totalTickets += ticketPromedio;
+                totalVentas += dia.numVentas;
+
+                // Determinar clase de color para rendimiento
+                let colorClass = 'bg-danger';
+                if (scoreRendimiento >= 80) colorClass = 'bg-success';
+                else if (scoreRendimiento >= 60) colorClass = 'bg-primary';
+                else if (scoreRendimiento >= 40) colorClass = 'bg-warning';
+                else if (scoreRendimiento >= 20) colorClass = 'bg-info';
+
+                // Icono de tendencia
+                let trendIcon = '→';
+                let trendColor = 'text-secondary';
+                if (crecimiento > 10) {
+                    trendIcon = '↑';
+                    trendColor = 'text-success';
+                } else if (crecimiento > 0) {
+                    trendIcon = '↗';
+                    trendColor = 'text-success';
+                } else if (crecimiento < -10) {
+                    trendIcon = '↓';
+                    trendColor = 'text-danger';
+                } else if (crecimiento < 0) {
+                    trendIcon = '↘';
+                    trendColor = 'text-danger';
+                }
+
+                // Generar estrellas de rating
+                let estrellas = '';
+                for (let i = 1; i <= 5; i++) {
+                    estrellas += i <= rating
+                        ? '<i class="bi bi-star-fill text-warning"></i>'
+                        : '<i class="bi bi-star text-muted"></i>';
+                }
+
+                // Formato de fecha
+                const fechaFormato = dia.fecha.toLocaleDateString('es-CO', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric'
+                });
+
+                // Badge para mejor día
+                const esMejorDia = dia.ingresos === mejorDia.ingresos && dia.ingresos > 0;
+                const badgeMejor = esMejorDia ? '<span class="badge bg-success ms-2">🏆 Mejor</span>' : '';
+
+                html += `
+                    <tr class="trend-row ${esAlerta ? 'table-warning' : ''}" style="animation: fadeInRow 0.3s ease ${index * 0.05}s both;">
+                        <td class="text-center fw-bold text-muted">${index + 1}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div>
+                                    <div class="fw-semibold">${fechaFormato}</div>
+                                    <small class="text-muted">${dia.fecha.toLocaleDateString('es-CO')}</small>
+                                </div>
+                                ${badgeMejor}
+                            </div>
+                        </td>
+                        <td class="text-end">
+                            <div class="fw-bold text-primary">${formatoMoneda.format(dia.ingresos)}</div>
+                            <small class="text-muted">${dia.numVentas} venta${dia.numVentas !== 1 ? 's' : ''}</small>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex flex-column align-items-center">
+                                <span class="fs-4 ${trendColor} mb-1">${trendIcon}</span>
+                                <span class="badge ${crecimiento >= 0 ? 'bg-success' : 'bg-danger'} bg-opacity-10 ${trendColor}">
+                                    ${crecimiento >= 0 ? '+' : ''}${crecimiento.toFixed(1)}%
+                                </span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-primary bg-opacity-10 text-primary fs-6 px-3 py-2">
+                                ${dia.numVentas}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="fw-semibold">${formatoMoneda.format(ticketPromedio)}</div>
+                            ${dia.numVentas > 0 ? `<small class="text-muted">por venta</small>` : '<small class="text-muted">--</small>'}
+                        </td>
+                        <td class="text-center">
+                            <div class="progress" style="height: 25px; min-width: 100px;">
+                                <div class="progress-bar ${colorClass} progress-bar-striped progress-bar-animated"
+                                     role="progressbar"
+                                     style="width: ${scoreRendimiento}%;"
+                                     aria-valuenow="${scoreRendimiento}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                    ${scoreRendimiento.toFixed(0)}%
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            ${estrellas}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+
+            // Actualizar insights
+            const crecimientoPromedio = diasConCrecimiento > 0 ? totalCrecimiento / diasConCrecimiento : 0;
+            const ticketPromedioGlobal = totalVentas > 0 ? totalTickets / arrayDatos.length : 0;
+
+            document.getElementById('bestDay').textContent = mejorDia.fecha
+                ? mejorDia.fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' })
+                : '--';
+
+            document.getElementById('avgGrowth').textContent =
+                `${crecimientoPromedio >= 0 ? '+' : ''}${crecimientoPromedio.toFixed(1)}%`;
+            document.getElementById('avgGrowth').className = crecimientoPromedio >= 0 ? 'text-success' : 'text-danger';
+
+            document.getElementById('globalAvgTicket').textContent = formatoMoneda.format(ticketPromedioGlobal);
+            document.getElementById('alertsCount').textContent = alertas;
+
+            console.log(`✅ Tabla de tendencias creada (${dias} días)`);
+
+        } catch (error) {
+            console.error("❌ Error al crear tabla de tendencias:", error);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Error al cargar datos: ${error.message}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // ================================================================
     // GRÁFICO 2: TOP PRODUCTOS (HORIZONTAL)
     // ================================================================
     async function crearGraficoTopProductos() {
@@ -7238,10 +7525,22 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         });
     });
 
+    // ⚡ Cambiar período de la tabla inteligente de tendencias
+    const trendsPeriodBtns = document.querySelectorAll('input[name="trends-period"]');
+    trendsPeriodBtns.forEach(btn => {
+        btn.addEventListener('change', (e) => {
+            const dias = e.target.id === 'trends-7days' ? 7 :
+                        e.target.id === 'trends-14days' ? 14 :
+                        30; // 30 días
+            crearTablaTendencias(dias);
+        });
+    });
+
     // ================================================================
     // INICIALIZAR
     // ================================================================
     crearGraficoVentas(7);
+    crearTablaTendencias(7); // ⚡ Nueva tabla inteligente de tendencias
     crearGraficoTopProductos();
     crearGraficoCategoriasVendidas();
     crearGraficoMetodosPago();
