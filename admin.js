@@ -2424,8 +2424,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Calcular información de apartado si aplica
                 let totalDisplay = formatoMoneda.format(d.totalVenta||0);
                 if (d.tipoVenta === 'apartado') {
-                    const montoAbonado = (d.pagoEfectivo || 0) + (d.pagoTransferencia || 0);
-                    const porcentajeAbonado = d.totalVenta > 0 ? Math.round((montoAbonado / d.totalVenta) * 100) : 0;
+                    // Para apartados: totalVenta = lo recibido, montoTotalProducto = el 100%
+                    const montoAbonado = d.totalVenta || 0; // Ya es el monto abonado
+                    const totalProducto = d.montoTotalProducto || d.totalVenta || 0;
+                    const porcentajeAbonado = totalProducto > 0 ? Math.round((montoAbonado / totalProducto) * 100) : 0;
                     totalDisplay = `
                         <div>
                             <div class="fw-bold text-warning" style="font-size: 1.1em;">
@@ -2433,7 +2435,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <small class="text-muted">
                                 ${porcentajeAbonado}% apartado
-                                <br>Total: ${formatoMoneda.format(d.totalVenta||0)}
+                                <br>Total: ${formatoMoneda.format(totalProducto)}
                             </small>
                         </div>
                     `;
@@ -2637,7 +2639,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 descuentoTipo: ventaDescuentoTipo.value,
                 pagoEfectivo: montoEfectivo,
                 pagoTransferencia: montoTransferencia,
-                totalVenta: totalCalculado,
+                // ✅ CAMBIO CRÍTICO: Para apartados, totalVenta = solo lo recibido, NO el 100%
+                totalVenta: tipoVentaSelect.value === 'apartado' ? (montoEfectivo + montoTransferencia) : totalCalculado,
+                // ✅ Para apartados, guardar el total completo del producto en otro campo
+                montoTotalProducto: tipoVentaSelect.value === 'apartado' ? totalCalculado : null,
                 estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada',
                 esCatalogoExterno: esCatalogo, // Flag para identificar ventas por catálogo
                 timestamp: serverTimestamp()
@@ -2722,8 +2727,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // ✅ PASO 3: Si es apartado, crear documento apartado
                 if (ventaData.tipoVenta === 'apartado') {
-                    const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia;
-                    const saldoPendiente = ventaData.totalVenta - abonoInicial;
+                    const abonoInicial = ventaData.totalVenta; // Ahora totalVenta = abono inicial
+                    const totalProducto = ventaData.montoTotalProducto; // Total completo del producto
+                    const saldoPendiente = totalProducto - abonoInicial;
 
                     // Calcular fecha de vencimiento
                     const apartadoFechaInput = document.getElementById('apartado-fecha-max');
@@ -2751,7 +2757,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ventaId: ventaId,
                         clienteNombre: ventaData.clienteNombre,
                         clienteCelular: ventaData.clienteCelular, // ✅ Guardar celular para WhatsApp
-                        total: ventaData.totalVenta,
+                        total: totalProducto, // Total completo del producto
                         abonado: abonoInicial,
                         saldo: saldoPendiente,
                         fechaCreacion: serverTimestamp(),
@@ -2941,18 +2947,24 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <li><strong>Efectivo:</strong> ${formatoMoneda.format(d.pagoEfectivo || 0)}</li>
                                 <li><strong>Transferencia:</strong> ${formatoMoneda.format(d.pagoTransferencia || 0)}</li>
                                 <li><strong>Descuento:</strong> ${formatoMoneda.format(d.descuento || 0)}</li>
-                                <li class="fs-5 fw-bold mt-2"><strong>Total Venta:</strong> ${formatoMoneda.format(d.totalVenta || 0)}</li>
                                 ${d.tipoVenta === 'apartado' ? `
-                                    <li class="text-warning mt-2">
-                                        <i class="bi bi-calendar-check"></i> <strong>Apartado:</strong>
-                                        ${Math.round(((d.pagoEfectivo + d.pagoTransferencia) / d.totalVenta) * 100)}%
-                                        (${formatoMoneda.format(d.pagoEfectivo + d.pagoTransferencia)})
+                                    <li class="fs-5 fw-bold mt-2 text-warning">
+                                        <strong>Abonado:</strong> ${formatoMoneda.format(d.totalVenta || 0)}
+                                    </li>
+                                    <li class="text-warning">
+                                        <i class="bi bi-calendar-check"></i>
+                                        ${Math.round((d.totalVenta / (d.montoTotalProducto || d.totalVenta)) * 100)}% del total
+                                    </li>
+                                    <li class="text-muted">
+                                        <strong>Total producto:</strong> ${formatoMoneda.format(d.montoTotalProducto || d.totalVenta || 0)}
                                     </li>
                                     <li class="text-muted">
                                         <strong>Saldo pendiente:</strong>
-                                        ${formatoMoneda.format(d.totalVenta - (d.pagoEfectivo + d.pagoTransferencia))}
+                                        ${formatoMoneda.format((d.montoTotalProducto || d.totalVenta) - d.totalVenta)}
                                     </li>
-                                ` : ''}
+                                ` : `
+                                    <li class="fs-5 fw-bold mt-2"><strong>Total Venta:</strong> ${formatoMoneda.format(d.totalVenta || 0)}</li>
+                                `}
                             </ul>
                         </div>
                     </div>
@@ -4870,41 +4882,34 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     }
                 });
 
-                // 💰 SUMAR ABONOS DEL DÍA desde apartados
-                console.log('💰 Buscando abonos del día en apartados...');
-                const apartadosSnap = await getDocs(apartadosCollection);
+                // 💰 SUMAR ABONOS DEL DÍA desde la colección 'abonos'
+                console.log('💰 Buscando abonos del día en colección abonos...');
 
                 let abonosEfectivo = 0;
                 let abonosTransferencia = 0;
 
-                apartadosSnap.forEach(doc => {
-                    const apartado = doc.data();
-                    const abonos = apartado.abonos || [];
+                const qAbonos = query(
+                    collection(db, 'abonos'),
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<=', Timestamp.fromDate(fin))
+                );
+                const abonosSnap = await getDocs(qAbonos);
 
-                    // Revisar cada abono del apartado
-                    abonos.forEach((abono, index) => {
-                        // Saltar el abono inicial (índice 0) porque ya está en la venta original
-                        if (index === 0) return;
+                abonosSnap.forEach(doc => {
+                    const abono = doc.data();
+                    const montoAbono = abono.monto || 0;
+                    const metodoPago = abono.metodoPago || 'Efectivo';
 
-                        const fechaAbono = abono.fecha?.toDate ? abono.fecha.toDate() : new Date(abono.fecha);
+                    if (metodoPago === 'Efectivo') {
+                        abonosEfectivo += montoAbono;
+                    } else if (metodoPago === 'Transferencia') {
+                        abonosTransferencia += montoAbono;
+                    }
 
-                        // Verificar si el abono fue hecho HOY
-                        if (fechaAbono >= inicio && fechaAbono <= fin) {
-                            const montoAbono = abono.monto || 0;
-                            const metodoPago = abono.metodoPago || 'Efectivo';
-
-                            if (metodoPago === 'Efectivo') {
-                                abonosEfectivo += montoAbono;
-                            } else if (metodoPago === 'Transferencia') {
-                                abonosTransferencia += montoAbono;
-                            }
-
-                            console.log(`  💵 Abono #${index} del apartado ${doc.id}: ${metodoPago} $${montoAbono}`);
-                        }
-                    });
+                    console.log(`  💵 Abono ${doc.id}: ${metodoPago} $${montoAbono}`);
                 });
 
-                console.log(`✅ Abonos del día: Efectivo=$${abonosEfectivo}, Transferencia=$${abonosTransferencia}`);
+                console.log(`✅ Abonos del día desde colección: Efectivo=$${abonosEfectivo}, Transferencia=$${abonosTransferencia}`);
 
                 ventasDelDia = {
                     efectivo: ventasEfectivo + abonosEfectivo,
@@ -5346,25 +5351,21 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         }
                     });
 
-                    // 💰 SUMAR ABONOS DEL DÍA desde apartados
+                    // 💰 SUMAR ABONOS DEL DÍA desde la colección 'abonos'
                     try {
-                        const apartadosSnap = await getDocs(apartadosCollection);
-                        apartadosSnap.forEach(doc => {
-                            const apartado = doc.data();
-                            const abonos = apartado.abonos || [];
+                        const qAbonos = query(
+                            collection(db, 'abonos'),
+                            where('timestamp', '>=', Timestamp.fromDate(hoy)),
+                            where('timestamp', '<', Timestamp.fromDate(manana))
+                        );
+                        const abonosSnap = await getDocs(qAbonos);
 
-                            abonos.forEach((abono, index) => {
-                                // Saltar el abono inicial (índice 0) porque ya está en la venta original
-                                if (index === 0) return;
-
-                                const fechaAbono = abono.fecha?.toDate ? abono.fecha.toDate() : new Date(abono.fecha);
-
-                                // Verificar si el abono fue hecho HOY
-                                if (fechaAbono >= hoy && fechaAbono < manana) {
-                                    totalDineroRecibido += (abono.monto || 0);
-                                }
-                            });
+                        abonosSnap.forEach(doc => {
+                            const abono = doc.data();
+                            totalDineroRecibido += (abono.monto || 0);
                         });
+
+                        console.log(`✅ Abonos del día sumados: ${abonosSnap.size} abonos`);
                     } catch (err) {
                         console.error('Error sumando abonos del día:', err);
                     }
