@@ -2249,3 +2249,248 @@ body.admin-page {
 .hover-card:hover .btn {
     transform: scale(1.05);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ⚡ TABLA INTELIGENTE DE TENDENCIAS - ANÁLISIS AVANZADO
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Gradiente moderno para el header */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Estilos de la tabla */
+.table-trends {
+    font-size: 0.9rem;
+}
+
+.table-trends thead {
+    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table-trends thead th {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #495057;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table-trends tbody tr {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.table-trends tbody tr:hover {
+    background: linear-gradient(to right, #f8f9fa, #ffffff);
+    border-left-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+    transform: translateX(2px);
+}
+
+/* Animación de entrada de filas */
+@keyframes fadeInRow {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.trend-row {
+    animation: fadeInRow 0.3s ease both;
+}
+
+/* Mejora de badges */
+.table-trends .badge {
+    font-weight: 600;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 20px;
+}
+
+/* Barras de progreso modernas */
+.table-trends .progress {
+    border-radius: 50px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    background: #e9ecef;
+}
+
+.table-trends .progress-bar {
+    font-weight: 600;
+    font-size: 0.75rem;
+    transition: width 0.6s ease;
+}
+
+/* Estrellas de rating */
+.table-trends .bi-star-fill {
+    font-size: 0.9rem;
+    margin: 0 1px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.table-trends .bi-star {
+    font-size: 0.9rem;
+    margin: 0 1px;
+    opacity: 0.3;
+}
+
+/* Alertas visuales */
+.table-trends tr.table-warning {
+    background: rgba(255, 193, 7, 0.05);
+    border-left: 3px solid #ffc107;
+}
+
+.table-trends tr.table-warning:hover {
+    background: rgba(255, 193, 7, 0.1);
+}
+
+/* Panel de insights */
+#trendsInsights {
+    background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+    border-top: 3px solid #e9ecef;
+}
+
+#trendsInsights .rounded-circle {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#trendsInsights .bi {
+    font-size: 1.2rem;
+}
+
+#trendsInsights strong {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+#trendsInsights small {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+}
+
+/* Mejoras de botones de período */
+.btn-outline-light.btn-sm {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35rem 0.9rem;
+    border-width: 2px;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-light.btn-sm:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.btn-check:checked + .btn-outline-light {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive para la tabla */
+@media (max-width: 1200px) {
+    .table-trends {
+        font-size: 0.8rem;
+    }
+
+    .table-trends thead th {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.7rem;
+    }
+
+    .table-trends tbody td {
+        padding: 0.75rem 0.5rem;
+    }
+
+    .table-trends .progress {
+        min-width: 80px;
+        height: 20px;
+    }
+
+    .table-trends .bi-star-fill,
+    .table-trends .bi-star {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .table-trends thead th:nth-child(4),
+    .table-trends tbody td:nth-child(4),
+    .table-trends thead th:nth-child(6),
+    .table-trends tbody td:nth-child(6) {
+        display: none;
+    }
+
+    #trendsInsights .col-md-3 {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Scroll suave para tablas largas */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* Animación de loading mejorada */
+.table-trends .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3em;
+}
+
+/* Efectos de hover en columnas numéricas */
+.table-trends td.text-end:hover .fw-bold,
+.table-trends td.text-end:hover .fw-semibold {
+    color: #667eea !important;
+    transition: color 0.2s ease;
+}
+
+/* Badge del mejor día con animación */
+.badge.bg-success {
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+    }
+}
