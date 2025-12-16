@@ -4330,24 +4330,60 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 });
                 console.log("✅ Apartado actualizado correctamente");
 
-                // ✅ PASO 4.5: Registrar abono en la colección 'abonos' para contabilizar en ventas del día
+                // ✅ PASO 4.5: Crear NUEVA VENTA con el abono (como si fuera otra venta)
                 try {
-                    await addDoc(collection(db, 'abonos'), {
-                        apartadoId: apartadoId,
-                        ventaId: apartadoData.ventaId,
-                        clienteNombre: apartadoData.clienteNombre,
-                        monto: monto,
-                        metodoPago: metodoPago,
-                        observaciones: observaciones || 'Sin observaciones',
+                    // Obtener datos de la venta original para copiar información del cliente
+                    let clienteNombre = apartadoData.clienteNombre || 'Cliente General';
+                    let clienteDireccion = '';
+                    let clienteCelular = apartadoData.clienteCelular || '';
+
+                    if (apartadoData.ventaId) {
+                        const ventaOriginalSnap = await getDoc(doc(db, 'ventas', apartadoData.ventaId));
+                        if (ventaOriginalSnap.exists()) {
+                            const ventaOriginal = ventaOriginalSnap.data();
+                            clienteNombre = ventaOriginal.clienteNombre || clienteNombre;
+                            clienteDireccion = ventaOriginal.clienteDireccion || '';
+                            clienteCelular = ventaOriginal.clienteCelular || clienteCelular;
+                        }
+                    }
+
+                    // Crear la nueva venta con el monto del abono
+                    const nuevaVentaData = {
+                        clienteNombre: clienteNombre,
+                        clienteDireccion: clienteDireccion,
+                        clienteCelular: clienteCelular,
+                        tipoVenta: 'detal', // Es una venta normal, ya no es apartado
+                        tipoEntrega: 'tienda',
+                        pedidoWhatsapp: false,
+                        repartidorId: null,
+                        repartidorNombre: null,
+                        costoRuta: 0,
+                        rutaPagadaTransferencia: false,
+                        items: apartadoData.items || [], // Los mismos items del apartado
+                        observaciones: `Abono de apartado. ${observaciones || 'Pago restante del apartado.'}`,
+                        descuento: 0,
+                        descuentoTipo: 'monto',
+                        pagoEfectivo: metodoPago === 'Efectivo' ? monto : 0,
+                        pagoTransferencia: metodoPago === 'Transferencia' ? monto : 0,
+                        totalVenta: monto, // El total es el monto del abono
+                        montoTotalProducto: null, // No es apartado, no necesita este campo
+                        estado: 'Completada',
+                        esCatalogoExterno: false,
+                        esAbonoApartado: true, // Flag para identificar que es un abono
+                        apartadoIdRelacionado: apartadoId, // Referencia al apartado
                         timestamp: serverTimestamp()
-                    });
-                    console.log("✅ Abono registrado en colección 'abonos' para contabilidad del día");
-                } catch (abonoErr) {
-                    console.error("❌ Error al registrar abono en colección:", abonoErr);
-                    // No detenemos el proceso, el abono ya se guardó en el apartado
+                    };
+
+                    const nuevaVentaRef = await addDoc(collection(db, 'ventas'), nuevaVentaData);
+                    console.log("✅ Nueva venta creada con el abono. ID:", nuevaVentaRef.id);
+                    console.log("💰 Monto de la venta:", formatoMoneda.format(monto));
+
+                } catch (ventaErr) {
+                    console.error("❌ Error al crear venta con el abono:", ventaErr);
+                    showToast("Error al registrar la venta del abono. El apartado se actualizó correctamente.", 'warning');
                 }
 
-                // ✅ PASO 5: Actualizar venta asociada (solo el estado, NO los montos)
+                // ✅ PASO 5: Actualizar venta original asociada (solo el estado, NO los montos)
                 if (apartadoData.ventaId) {
                     const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
                     const ventaSnap = await getDoc(ventaRef);
