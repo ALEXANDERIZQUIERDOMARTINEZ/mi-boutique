@@ -592,15 +592,42 @@ function renderProducts(products) {
              <div class="variation-chips">${tallas.map(t => `<span class="variation-chip">${t}</span>`).join('')}</div>` 
             : '';
 
-        // ✅ HTML para COLORES con texto simple
+        // ✅ HTML para COLORES con círculos de color (soporta combinaciones)
         let coloresHTML = '';
         if (colores.length > 0) {
             const colorChips = colores.map(c => {
-                return `<span class="variation-chip color-text-chip">${c}</span>`;
+                const normalized = c.toLowerCase().trim();
+
+                // Si es una combinación de colores, mostrar múltiples círculos
+                if (esCombiacionDeColores(c)) {
+                    const coloresIndividuales = dividirColores(c);
+                    const circulos = coloresIndividuales.map(colorIndividual => {
+                        const hex = getColorHex(colorIndividual);
+                        return `<span class="variation-chip color-chip"
+                                     style="background-color: ${hex};"
+                                     data-color-name="${colorIndividual}"
+                                     title="${colorIndividual}"></span>`;
+                    }).join('');
+
+                    return `<div class="color-combination" style="display: inline-flex; gap: 2px;" title="${c}">${circulos}</div>`;
+                } else {
+                    // Color único
+                    const colorValue = getColorHex(c);
+
+                    // Si es un color especial (gradiente), usar background-image
+                    const styleAttr = SPECIAL_COLORS[normalized]
+                        ? `background-image: ${colorValue};`
+                        : `background-color: ${colorValue};`;
+
+                    return `<span class="variation-chip color-chip"
+                                 style="${styleAttr}"
+                                 data-color-name="${c}"
+                                 title="${c}"></span>`;
+                }
             }).join('');
 
             coloresHTML = `<div class="variations-title mt-1">Colores</div>
-                          <div class="variation-chips">${colorChips}</div>`;
+                          <div class="variation-chips colors">${colorChips}</div>`;
         }
 
         const col = document.createElement('div');
@@ -634,18 +661,12 @@ function renderProducts(products) {
     });
 
     document.querySelectorAll('.product-card').forEach(card => {
-        console.log('Agregando listener a tarjeta:', card.dataset.productId);
         card.addEventListener('click', (e) => {
-            console.log('CLIC EN TARJETA:', card.dataset.productId);
-            console.log('Evento:', e.target);
-
             if (e.target.tagName === 'BUTTON' && !e.target.disabled) e.stopPropagation();
-
+            
             const stock = parseInt(e.currentTarget.dataset.stock);
             const productId = e.currentTarget.dataset.productId;
             const product = productsMap.get(productId);
-
-            console.log('Stock:', stock, 'ProductID:', productId);
 
             const precioMayorNum = parseFloat(product.precioMayor) || 0;
             const isSoloDetal = isWholesaleActive && precioMayorNum === 0;
@@ -658,7 +679,6 @@ function renderProducts(products) {
                 showToast('Este producto se encuentra agotado', 'warning');
                 return;
             }
-            console.log('Abriendo modal para:', productId);
             openProductModal(productId);
         });
     });
