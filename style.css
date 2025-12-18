@@ -482,6 +482,7 @@ h1, h2, h3, h4, h5, h6 {
 .product-variations {
     margin-bottom: 0.5rem;
     min-height: 50px;
+    pointer-events: none;
 }
 
 .variations-title {
@@ -490,12 +491,14 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--color-texto);
     text-transform: uppercase;
     margin-bottom: 4px;
+    pointer-events: none;
 }
 
 .variation-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+    pointer-events: none;
 }
 
 .variation-chips.colors {
