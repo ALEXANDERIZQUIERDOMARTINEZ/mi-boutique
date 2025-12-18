@@ -482,20 +482,29 @@ h1, h2, h3, h4, h5, h6 {
 .product-variations {
     margin-bottom: 1rem;
     min-height: 60px;
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
 }
 
 .variations-title {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--color-texto-secundario);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-texto);
     text-transform: uppercase;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
 }
 
 .variation-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
+}
+
+.variation-chips.colors {
+    gap: 10px;
 }
 
 .variation-chip {
@@ -509,14 +518,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .variation-chips.colors .color-chip {
-    width: 26px;
-    height: 26px;
+    width: 36px;
+    height: 36px;
     padding: 0;
     border-radius: 50%;
-    border: 1px solid #333;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    border: 2px solid #333;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
     position: relative;
     transition: transform 0.2s;
+    cursor: pointer;
 }
 
 .variation-chips.colors .color-chip:hover {
@@ -862,12 +872,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .modal-body {
-    padding: 1.5rem;
+    padding: 1rem;
 }
 
 .modal-product-image {
     width: 100%;
-    height: 400px;
+    height: 300px;
     object-fit: contain;
     border-radius: var(--radio-md);
     border: 1px solid var(--color-borde);
@@ -876,7 +886,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .selector-label {
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     font-size: 0.9rem;
 }
 
