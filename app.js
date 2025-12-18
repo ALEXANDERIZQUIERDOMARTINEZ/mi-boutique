@@ -634,12 +634,18 @@ function renderProducts(products) {
     });
 
     document.querySelectorAll('.product-card').forEach(card => {
+        console.log('Agregando listener a tarjeta:', card.dataset.productId);
         card.addEventListener('click', (e) => {
+            console.log('CLIC EN TARJETA:', card.dataset.productId);
+            console.log('Evento:', e.target);
+
             if (e.target.tagName === 'BUTTON' && !e.target.disabled) e.stopPropagation();
-            
+
             const stock = parseInt(e.currentTarget.dataset.stock);
             const productId = e.currentTarget.dataset.productId;
             const product = productsMap.get(productId);
+
+            console.log('Stock:', stock, 'ProductID:', productId);
 
             const precioMayorNum = parseFloat(product.precioMayor) || 0;
             const isSoloDetal = isWholesaleActive && precioMayorNum === 0;
@@ -652,6 +658,7 @@ function renderProducts(products) {
                 showToast('Este producto se encuentra agotado', 'warning');
                 return;
             }
+            console.log('Abriendo modal para:', productId);
             openProductModal(productId);
         });
     });
