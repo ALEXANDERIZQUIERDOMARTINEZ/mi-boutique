@@ -480,31 +480,26 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Variaciones */
 .product-variations {
-    margin-bottom: 1rem;
-    min-height: 60px;
-    background-color: #f8f9fa;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
+    margin-bottom: 0.5rem;
+    min-height: 50px;
 }
 
 .variations-title {
-    font-size: 0.75rem;
-    font-weight: 700;
+    font-size: 0.7rem;
+    font-weight: 600;
     color: var(--color-texto);
     text-transform: uppercase;
-    margin-bottom: 8px;
-    letter-spacing: 0.5px;
+    margin-bottom: 4px;
 }
 
 .variation-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
 }
 
 .variation-chips.colors {
-    gap: 10px;
+    gap: 6px;
 }
 
 .variation-chip {
@@ -518,15 +513,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .variation-chips.colors .color-chip {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
     padding: 0;
     border-radius: 50%;
     border: 2px solid #333;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     position: relative;
     transition: transform 0.2s;
-    cursor: pointer;
 }
 
 .variation-chips.colors .color-chip:hover {
