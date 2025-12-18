@@ -480,25 +480,21 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Variaciones */
 .product-variations {
-    margin-bottom: 0.5rem;
-    min-height: 50px;
+    margin-bottom: 1rem;
+    min-height: 60px;
 }
 
 .variations-title {
     font-size: 0.7rem;
     font-weight: 600;
-    color: var(--color-texto);
+    color: var(--color-texto-secundario);
     text-transform: uppercase;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 
 .variation-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-}
-
-.variation-chips.colors {
     gap: 6px;
 }
 
@@ -510,6 +506,43 @@ h1, h2, h3, h4, h5, h6 {
     padding: 4px 10px;
     border-radius: 5px;
     border: 1px solid #ddd;
+}
+
+.variation-chips.colors .color-chip {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid #333;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.variation-chips.colors .color-chip:hover {
+    transform: scale(1.15);
+}
+
+.variation-chips.colors .color-chip::after {
+    content: attr(data-color-name);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+
+.variation-chips.colors .color-chip:hover::after {
+    opacity: 1;
 }
 
 /* Badges */
@@ -829,12 +862,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .modal-body {
-    padding: 1rem;
+    padding: 1.5rem;
 }
 
 .modal-product-image {
     width: 100%;
-    height: 300px;
+    height: 400px;
     object-fit: contain;
     border-radius: var(--radio-md);
     border: 1px solid var(--color-borde);
@@ -843,7 +876,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .selector-label {
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
     font-size: 0.9rem;
 }
 
