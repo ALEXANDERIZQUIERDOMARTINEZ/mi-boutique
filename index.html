@@ -254,21 +254,21 @@ Aplicar Filtros
 </div>
 
 <div class="modal fade" id="productModal" tabindex="-1">
-<div class="modal-dialog modal-dialog-centered">
+<div class="modal-dialog modal-lg modal-dialog-centered">
 <div class="modal-content">
 <div class="modal-header">
 <h5 class="modal-title" id="modal-product-name">Producto</h5>
 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 </div>
 <div class="modal-body">
-<div class="row g-2">
-<div class="col-md-5">
+<div class="row g-4">
+<div class="col-md-6">
 <img src="" id="modal-product-image" class="modal-product-image" alt="Producto">
 </div>
-<div class="col-md-7 d-flex flex-column">
-<p id="modal-product-desc" class="mb-2 modal-description"></p>
+<div class="col-md-6 d-flex flex-column">
+<p id="modal-product-desc" class="mb-3 modal-description"></p>
 
-<div class="mb-2 price-container-modal">
+<div class="mb-4 price-container-modal">
 <div class="price-detal-modal">
 <span class="price-detal-old" id="modal-price-old" style="display: none;"></span>
 <span class="price-detal" id="modal-price-detal">$0</span>
@@ -281,15 +281,15 @@ Aplicar Filtros
 </div>
 
 <input type="hidden" id="modal-product-id">
-<div class="mb-2">
+<div class="mb-3">
 <label class="selector-label">Talla</label>
 <select class="form-select" id="select-talla"></select>
 </div>
-<div class="mb-2">
+<div class="mb-3">
 <label class="selector-label">Color</label>
 <select class="form-select" id="select-color" disabled></select>
 </div>
-<div class="mb-2">
+<div class="mb-3">
 <label class="selector-label">Cantidad</label>
 <div class="quantity-selector">
 <button class="quantity-btn" id="quantity-minus" type="button">-</button>
@@ -297,11 +297,11 @@ Aplicar Filtros
 <button class="quantity-btn" id="quantity-plus" type="button">+</button>
 </div>
 </div>
-<div class="mb-2">
+<div class="mb-3">
 <label class="selector-label">Observación (Opcional)</label>
 <textarea class="form-control" id="product-observation" rows="2" placeholder="Ej: Sin etiqueta, empaque especial..."></textarea>
 </div>
-<div class="stock-display mb-2" id="stock-display">
+<div class="stock-display mb-4" id="stock-display">
 <span id="stock-text">Seleccione talla y color</span>
 </div>
 <button class="btn btn-primary btn-lg w-100 mt-auto" id="btn-add-cart" disabled>
