@@ -592,42 +592,15 @@ function renderProducts(products) {
              <div class="variation-chips">${tallas.map(t => `<span class="variation-chip">${t}</span>`).join('')}</div>` 
             : '';
 
-        // ✅ HTML para COLORES con círculos de color (soporta combinaciones)
+        // ✅ HTML para COLORES con texto simple
         let coloresHTML = '';
         if (colores.length > 0) {
             const colorChips = colores.map(c => {
-                const normalized = c.toLowerCase().trim();
-
-                // Si es una combinación de colores, mostrar múltiples círculos
-                if (esCombiacionDeColores(c)) {
-                    const coloresIndividuales = dividirColores(c);
-                    const circulos = coloresIndividuales.map(colorIndividual => {
-                        const hex = getColorHex(colorIndividual);
-                        return `<span class="variation-chip color-chip"
-                                     style="background-color: ${hex};"
-                                     data-color-name="${colorIndividual}"
-                                     title="${colorIndividual}"></span>`;
-                    }).join('');
-
-                    return `<div class="color-combination" style="display: inline-flex; gap: 2px;" title="${c}">${circulos}</div>`;
-                } else {
-                    // Color único
-                    const colorValue = getColorHex(c);
-
-                    // Si es un color especial (gradiente), usar background-image
-                    const styleAttr = SPECIAL_COLORS[normalized]
-                        ? `background-image: ${colorValue};`
-                        : `background-color: ${colorValue};`;
-
-                    return `<span class="variation-chip color-chip"
-                                 style="${styleAttr}"
-                                 data-color-name="${c}"
-                                 title="${c}"></span>`;
-                }
+                return `<span class="variation-chip color-text-chip">${c}</span>`;
             }).join('');
 
             coloresHTML = `<div class="variations-title mt-1">Colores</div>
-                          <div class="variation-chips colors">${colorChips}</div>`;
+                          <div class="variation-chips">${colorChips}</div>`;
         }
 
         const col = document.createElement('div');

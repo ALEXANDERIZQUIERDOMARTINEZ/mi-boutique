@@ -510,43 +510,7 @@ h1, h2, h3, h4, h5, h6 {
     padding: 4px 10px;
     border-radius: 5px;
     border: 1px solid #ddd;
-}
-
-.variation-chips.colors .color-chip {
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    border-radius: 50%;
-    border: 2px solid #333;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    position: relative;
-    transition: transform 0.2s;
-}
-
-.variation-chips.colors .color-chip:hover {
-    transform: scale(1.15);
-}
-
-.variation-chips.colors .color-chip::after {
-    content: attr(data-color-name);
-    position: absolute;
-    bottom: 120%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.85);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 0.7rem;
-    white-space: nowrap;
-    opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s;
-    z-index: 10;
-}
-
-.variation-chips.colors .color-chip:hover::after {
-    opacity: 1;
 }
 
 /* Badges */
