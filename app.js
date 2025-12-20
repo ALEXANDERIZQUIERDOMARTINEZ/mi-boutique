@@ -442,9 +442,21 @@ function applyFiltersAndRender() {
     } else {
         // Filtrar por categoría específica
         filtered = filtered.filter(p => {
-            const categoryId = p.categoriaId || p.categoria;
-            const categoryName = categoriesMap.get(categoryId) || '';
-            return categoryName === activeFilter;
+            const categoryValue = p.categoriaId || p.categoria;
+            if (!categoryValue) return false;
+
+            // Intentar obtener el nombre desde el ID
+            const nameFromId = categoriesMap.get(categoryValue);
+            if (nameFromId === activeFilter) return true;
+
+            // Si el valor es directamente el nombre de la categoría
+            if (categoryValue === activeFilter) return true;
+
+            // Si el activeFilter es un nombre, obtener su ID y comparar
+            const idFromName = categoriesMap.get(activeFilter);
+            if (categoryValue === idFromName) return true;
+
+            return false;
         });
     }
 
