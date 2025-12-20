@@ -673,7 +673,7 @@ function renderProducts(products) {
         col.innerHTML = `
             <div class="product-card" data-product-id="${product.id}" data-stock="${stockTotal}">
                 <div class="product-image-wrapper">
-                    <img src="${imgUrl}" alt="${product.nombre}">
+                    <img src="${imgUrl}" alt="${product.nombre}" loading="lazy">
                     <div class="product-badges">
                         ${tienePromo ? '<span class="badge-promo">PROMO</span>' : ''}
                         ${isAgotado ? '<span class="badge-stock badge-agotado">AGOTADO</span>' : ''}
