@@ -430,7 +430,13 @@ function applyFiltersAndRender() {
     let filtered = allProducts;
 
     // 1. Filtrar por Categoría (filtros principales del header)
-    if (activeFilter === 'disponible' || activeFilter === 'all') {
+    if (activeFilter === 'disponible') {
+        // Mostrar solo productos disponibles (con stock > 0)
+        filtered = allProducts.filter(p => {
+            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+            return stock > 0;
+        });
+    } else if (activeFilter === 'all') {
         // Mostrar todos los productos (disponibles y agotados)
         filtered = allProducts;
     } else if (activeFilter === 'promocion') {
@@ -520,27 +526,46 @@ function applyFiltersAndRender() {
 function sortProducts(products, sortBy) {
     const sorted = [...products];
 
+    // Función helper para obtener el stock de un producto
+    const getStock = (product) => {
+        return (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+    };
+
+    // Primero ordenar según el criterio seleccionado
+    let ordered;
     switch (sortBy) {
         case 'price-asc':
-            return sorted.sort((a, b) => {
+            ordered = sorted.sort((a, b) => {
                 const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : calculatePromotionPrice(a).precioFinal;
                 const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : calculatePromotionPrice(b).precioFinal;
                 return priceA - priceB;
             });
+            break;
         case 'price-desc':
-            return sorted.sort((a, b) => {
+            ordered = sorted.sort((a, b) => {
                 const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : calculatePromotionPrice(a).precioFinal;
                 const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : calculatePromotionPrice(b).precioFinal;
                 return priceB - priceA;
             });
+            break;
         case 'name-asc':
-            return sorted.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            ordered = sorted.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            break;
         case 'name-desc':
-            return sorted.sort((a, b) => b.nombre.localeCompare(a.nombre));
+            ordered = sorted.sort((a, b) => b.nombre.localeCompare(a.nombre));
+            break;
         case 'newest':
         default:
-            return sorted; // Ya vienen ordenados por timestamp desc
+            ordered = sorted; // Ya vienen ordenados por timestamp desc
+            break;
     }
+
+    // Luego separar productos disponibles y agotados, manteniendo el orden dentro de cada grupo
+    const disponibles = ordered.filter(p => getStock(p) > 0);
+    const agotados = ordered.filter(p => getStock(p) <= 0);
+
+    // Devolver disponibles primero, luego agotados
+    return [...disponibles, ...agotados];
 }
 
 // ✅ RENDERIZAR PRODUCTOS CON COLORES REALES
