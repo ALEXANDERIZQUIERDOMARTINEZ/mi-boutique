@@ -45,6 +45,43 @@ const metasCollection = collection(db, 'metas');
 const recepcionesCollection = collection(db, 'ordenesRecepcion');
 const promocionesGlobalesCollection = collection(db, 'promocionesGlobales');
 
+// --- Global map for product sales count ---
+if (!window.productSalesCount) {
+    window.productSalesCount = new Map();
+}
+
+// Function to calculate total sales per product
+async function calculateProductSales() {
+    try {
+        const salesSnapshot = await getDocs(salesCollection);
+        const salesMap = new Map();
+
+        salesSnapshot.forEach(saleDoc => {
+            const saleData = saleDoc.data();
+            // Skip cancelled sales
+            if (saleData.estado === 'Anulada') return;
+
+            const items = saleData.items || [];
+            items.forEach(item => {
+                const productId = item.productoId;
+                if (productId) {
+                    const currentCount = salesMap.get(productId) || 0;
+                    const quantity = parseInt(item.cantidad) || 0;
+                    salesMap.set(productId, currentCount + quantity);
+                }
+            });
+        });
+
+        window.productSalesCount = salesMap;
+        console.log('✅ Ventas por producto calculadas:', salesMap.size, 'productos');
+    } catch (error) {
+        console.error('Error calculando ventas por producto:', error);
+    }
+}
+
+// Calculate sales on page load
+calculateProductSales();
+
 // --- Helper: Format Currency ---
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
 
@@ -1323,6 +1360,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.dataset.stock = stockTotal;
                 li.dataset.visible = d.visible ? 'true' : 'false';
                 li.dataset.precioOriginal = d.precioDetal || 0;
+                li.dataset.totalSales = window.productSalesCount.get(id) || 0;
 
                 const defaultImgModal = 'https://placehold.co/70x90.png?text=Sin+Foto';
                 const imagenUrlModal = d.imagenUrl || defaultImgModal; 
@@ -1589,9 +1627,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const bPrice = parseFloat(b.dataset.precioOriginal || 0);
                 const aStock = parseInt(a.dataset.stock || 0);
                 const bStock = parseInt(b.dataset.stock || 0);
+                const aSales = parseInt(a.dataset.totalSales || 0);
+                const bSales = parseInt(b.dataset.totalSales || 0);
 
                 switch(sortBy) {
                     case 'name-asc':
+                        // Primero productos con stock, luego sin stock
+                        const aHasStock = aStock > 0 ? 1 : 0;
+                        const bHasStock = bStock > 0 ? 1 : 0;
+                        if (aHasStock !== bHasStock) {
+                            return bHasStock - aHasStock; // Con stock primero
+                        }
+                        // Dentro del mismo grupo (con/sin stock), ordenar por ventas
+                        if (bSales !== aSales) {
+                            return bSales - aSales; // Más vendidos primero
+                        }
+                        // Si tienen las mismas ventas, ordenar por nombre
                         return aName.localeCompare(bName);
                     case 'name-desc':
                         return bName.localeCompare(aName);
