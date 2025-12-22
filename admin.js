@@ -1630,19 +1630,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const aSales = parseInt(a.dataset.totalSales || 0);
                 const bSales = parseInt(b.dataset.totalSales || 0);
 
+                // PRIORIDAD 1: Productos con stock SIEMPRE primero
+                const aHasStock = aStock > 0 ? 1 : 0;
+                const bHasStock = bStock > 0 ? 1 : 0;
+                if (aHasStock !== bHasStock) {
+                    return bHasStock - aHasStock; // Con stock primero
+                }
+
+                // PRIORIDAD 2: Dentro del mismo grupo (con/sin stock), más vendidos primero
+                if (bSales !== aSales) {
+                    return bSales - aSales; // Más vendidos primero
+                }
+
+                // PRIORIDAD 3: Aplicar ordenamiento seleccionado
                 switch(sortBy) {
                     case 'name-asc':
-                        // Primero productos con stock, luego sin stock
-                        const aHasStock = aStock > 0 ? 1 : 0;
-                        const bHasStock = bStock > 0 ? 1 : 0;
-                        if (aHasStock !== bHasStock) {
-                            return bHasStock - aHasStock; // Con stock primero
-                        }
-                        // Dentro del mismo grupo (con/sin stock), ordenar por ventas
-                        if (bSales !== aSales) {
-                            return bSales - aSales; // Más vendidos primero
-                        }
-                        // Si tienen las mismas ventas, ordenar por nombre
                         return aName.localeCompare(bName);
                     case 'name-desc':
                         return bName.localeCompare(aName);
@@ -1653,7 +1655,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'stock-desc':
                         return bStock - aStock;
                     default:
-                        return 0;
+                        return aName.localeCompare(bName);
                 }
             });
 
