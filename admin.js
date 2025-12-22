@@ -1393,10 +1393,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     li.style.opacity = '0.5';
                     li.style.cursor = 'not-allowed';
                 }
-                if(productSearchModalList) productSearchModalList.appendChild(li); 
+                if(productSearchModalList) productSearchModalList.appendChild(li);
             });
-            
+
             applyInventoryFilters();
+
+            // Aplicar ordenamiento al modal de búsqueda
+            if (typeof applyProductModalFilters === 'function') {
+                applyProductModalFilters();
+            }
         };
         onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
         
