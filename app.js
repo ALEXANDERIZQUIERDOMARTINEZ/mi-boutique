@@ -721,6 +721,166 @@ function renderProducts(products) {
     });
 }
 
+// --- FUNCIONES AUXILIARES PARA BOTONES DE TALLA Y COLOR ---
+function renderSizeButtons(tallas, esTallaUnica, product) {
+    const tallasButtons = document.getElementById('tallas-buttons');
+    const tallasContainer = document.getElementById('tallas-container');
+    tallasButtons.innerHTML = '';
+
+    if (tallas.length === 0 || esTallaUnica) {
+        const tallaValue = tallas.length > 0 ? tallas[0] : 'unica';
+        const tallaText = tallas.length > 0 ? tallas[0] : 'Única';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'size-color-btn unica-talla selected';
+        btn.textContent = tallaText;
+        btn.dataset.value = tallaValue;
+        tallasButtons.appendChild(btn);
+        document.getElementById('selected-talla').value = tallaValue;
+        tallasContainer.style.display = 'block';
+
+        // Auto-cargar colores si es talla única
+        renderColorButtons(tallaValue, product);
+    } else {
+        tallasContainer.style.display = 'block';
+        tallas.forEach(talla => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'size-color-btn';
+            btn.textContent = talla;
+            btn.dataset.value = talla;
+            btn.onclick = () => selectTalla(talla, product);
+            tallasButtons.appendChild(btn);
+        });
+    }
+}
+
+function renderColorButtons(selectedTalla, product) {
+    const coloresButtons = document.getElementById('colores-buttons');
+    const coloresContainer = document.getElementById('colores-container');
+    coloresButtons.innerHTML = '';
+
+    if (!selectedTalla) {
+        coloresContainer.style.display = 'none';
+        return;
+    }
+
+    const variaciones = product.variaciones || [];
+    const colores = [...new Set(variaciones
+        .filter(v => (v.talla || 'unica') === selectedTalla)
+        .map(v => v.color)
+        .filter(Boolean)
+    )];
+
+    coloresContainer.style.display = 'block';
+
+    if (colores.length === 0) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'size-color-btn unico-color selected';
+        btn.textContent = 'Único';
+        btn.dataset.value = 'unico';
+        coloresButtons.appendChild(btn);
+        document.getElementById('selected-color').value = 'unico';
+        updateStockDisplay(product);
+    } else {
+        colores.forEach(color => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'size-color-btn';
+            btn.textContent = color;
+            btn.dataset.value = color;
+            btn.onclick = () => selectColor(color, product);
+            coloresButtons.appendChild(btn);
+        });
+
+        // Si solo hay un color, seleccionarlo automáticamente
+        if (colores.length === 1) {
+            selectColor(colores[0], product);
+        } else {
+            // Limpiar selección anterior y mostrar mensaje
+            document.getElementById('selected-color').value = '';
+            const stockText = document.getElementById('stock-text');
+            stockText.textContent = 'Seleccione un color';
+            document.getElementById('btn-add-cart').disabled = true;
+        }
+    }
+}
+
+function selectTalla(talla, product) {
+    // Remover selección anterior
+    document.querySelectorAll('#tallas-buttons .size-color-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+
+    // Seleccionar nueva talla
+    event.target.classList.add('selected');
+    document.getElementById('selected-talla').value = talla;
+
+    // Limpiar selección de color
+    document.getElementById('selected-color').value = '';
+
+    // Renderizar botones de color
+    renderColorButtons(talla, product);
+}
+
+function selectColor(color, product) {
+    // Remover selección anterior
+    document.querySelectorAll('#colores-buttons .size-color-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+
+    // Seleccionar nuevo color
+    const buttons = document.querySelectorAll('#colores-buttons .size-color-btn');
+    buttons.forEach(btn => {
+        if (btn.dataset.value === color) {
+            btn.classList.add('selected');
+        }
+    });
+
+    document.getElementById('selected-color').value = color;
+
+    // Actualizar stock
+    updateStockDisplay(product);
+}
+
+function updateStockDisplay(product) {
+    const selectedTalla = document.getElementById('selected-talla').value;
+    const selectedColor = document.getElementById('selected-color').value;
+    const stockDisplay = document.getElementById('stock-display');
+    const stockText = document.getElementById('stock-text');
+    const btnAdd = document.getElementById('btn-add-cart');
+    const cantidadInput = document.getElementById('select-cantidad');
+
+    if (!product || !selectedTalla || !selectedColor) {
+        btnAdd.disabled = true;
+        return;
+    }
+
+    const variacion = (product.variaciones || []).find(v =>
+        (v.talla || 'unica') === selectedTalla &&
+        (v.color || 'unico') === selectedColor
+    );
+
+    if (variacion && variacion.stock > 0) {
+        stockText.textContent = `${variacion.stock} unidades disponibles`;
+        stockDisplay.style.color = 'var(--color-primario)';
+        stockDisplay.style.background = 'var(--color-primario-claro)';
+        stockDisplay.style.borderColor = 'var(--color-primario-hover)';
+        cantidadInput.setAttribute('max', variacion.stock);
+        cantidadInput.value = 1;
+        btnAdd.disabled = false;
+    } else {
+        stockText.textContent = 'Agotado';
+        stockDisplay.style.color = '#c62828';
+        stockDisplay.style.background = '#ffebee';
+        stockDisplay.style.borderColor = '#ef9a9a';
+        cantidadInput.setAttribute('max', 0);
+        cantidadInput.value = 0;
+        btnAdd.disabled = true;
+    }
+}
+
 // --- ABRIR MODAL DE PRODUCTO ---
 function openProductModal(productId) {
     const product = productsMap.get(productId);
@@ -760,11 +920,11 @@ function openProductModal(productId) {
     
     document.getElementById('modal-product-id').value = productId;
 
-    const selectTalla = document.getElementById('select-talla');
-    const selectColor = document.getElementById('select-color');
-    selectTalla.innerHTML = '<option value="">Seleccione Talla</option>';
-    selectColor.innerHTML = '<option value="">Seleccione Color</option>';
-    selectColor.disabled = true;
+    // Resetear campos ocultos de talla y color
+    document.getElementById('selected-talla').value = '';
+    document.getElementById('selected-color').value = '';
+
+    // Resetear estado del stock display
     const stockDisplay = document.getElementById('stock-display');
     const stockText = document.getElementById('stock-text');
     stockText.textContent = 'Seleccione talla y color';
@@ -775,57 +935,16 @@ function openProductModal(productId) {
     document.getElementById('select-cantidad').value = 1;
     document.getElementById('select-cantidad').setAttribute('max', 1);
     document.getElementById('product-observation').value = '';
+
+    // Obtener variaciones y tallas
     const variaciones = product.variaciones || [];
     const tallas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))];
 
     // Determinar si es talla única
     const esTallaUnica = (tallas.length === 0 || (tallas.length === 1 && (tallas[0] === '' || tallas[0].toLowerCase() === 'unica' || tallas[0].toLowerCase() === 'única')));
-    const tallaContainer = selectTalla.closest('.mb-3');
 
-    if (tallas.length === 0 && variaciones.length > 0) {
-        selectTalla.innerHTML = '<option value="unica">Única</option>';
-        selectTalla.value = "unica";
-        selectTalla.disabled = true; // Deshabilitar selector pero mostrarlo
-        tallaContainer.style.display = 'block'; // Mostrar selector de talla
-    } else if (esTallaUnica) {
-        selectTalla.innerHTML = `<option value="${tallas[0]}">${tallas[0] || 'Única'}</option>`;
-        selectTalla.value = tallas[0];
-        selectTalla.disabled = true; // Deshabilitar selector pero mostrarlo
-        tallaContainer.style.display = 'block'; // Mostrar selector de talla
-    } else {
-        selectTalla.disabled = false; // Habilitar selector para múltiples tallas
-        tallaContainer.style.display = 'block'; // Mostrar selector de talla
-        tallas.forEach(t => {
-            selectTalla.innerHTML += `<option value="${t}">${t}</option>`;
-        });
-    }
-
-    const colores = [...new Set(variaciones.map(v => v.color).filter(Boolean))];
-    if (colores.length === 0 && variaciones.length > 0) {
-        selectColor.innerHTML = '<option value="unico">Único</option>';
-        selectColor.value = "unico";
-        selectColor.disabled = false;
-        selectColor.dispatchEvent(new Event('change'));
-    } else if (tallas.length === 0 || esTallaUnica) {
-        // Si es talla única, activar selector de color directamente
-        selectColor.disabled = false;
-
-        // Actualizar mensaje de stock
-        stockText.textContent = 'Seleccione un color';
-
-        colores.forEach(c => {
-            selectColor.innerHTML += `<option value="${c}">${c}</option>`;
-        });
-
-        // Si solo hay un color, seleccionarlo automáticamente
-        if (colores.length === 1) {
-            selectColor.value = colores[0];
-            selectColor.dispatchEvent(new Event('change'));
-        }
-
-        // Enfocar en el selector de color
-        setTimeout(() => selectColor.focus(), 300);
-    }
+    // Renderizar botones de talla
+    renderSizeButtons(tallas, esTallaUnica, product);
 
     // 📊 Tracking: Vista de producto
     analytics.trackProductView(product);
@@ -1298,71 +1417,8 @@ document.addEventListener('DOMContentLoaded', () => {
         searchTimeout = setTimeout(applyFiltersAndRender, 200); // 200ms para búsqueda más rápida
     }
     
-    // Listeners del MODAL DE PRODUCTO
-    document.getElementById('select-talla').addEventListener('change', (e) => {
-        const productId = document.getElementById('modal-product-id').value;
-        const product = productsMap.get(productId);
-        const selectedTalla = e.target.value;
-        const selectColor = document.getElementById('select-color');
-        if (!product || !selectedTalla) {
-            selectColor.innerHTML = '<option value="">Seleccione Color</option>';
-            selectColor.disabled = true;
-            return;
-        }
-        selectColor.innerHTML = '<option value="">Seleccione Color</option>';
-        selectColor.disabled = false;
-        const variaciones = product.variaciones || [];
-        const colores = [...new Set(variaciones
-            .filter(v => (v.talla || 'unica') === selectedTalla)
-            .map(v => v.color)
-            .filter(Boolean)
-        )];
-        if (colores.length === 0) {
-            selectColor.innerHTML = '<option value="unico">Único</option>';
-            selectColor.value = "unico";
-        } else {
-            colores.forEach(c => {
-                selectColor.innerHTML += `<option value="${c}">${c}</option>`;
-            });
-        }
-        selectColor.dispatchEvent(new Event('change'));
-    });
-
-    document.getElementById('select-color').addEventListener('change', () => {
-        const productId = document.getElementById('modal-product-id').value;
-        const product = productsMap.get(productId);
-        const selectedTalla = document.getElementById('select-talla').value;
-        const selectedColor = document.getElementById('select-color').value;
-        const stockDisplay = document.getElementById('stock-display');
-        const stockText = document.getElementById('stock-text');
-        const btnAdd = document.getElementById('btn-add-cart');
-        const cantidadInput = document.getElementById('select-cantidad');
-        if (!product || !selectedTalla || !selectedColor) {
-            btnAdd.disabled = true;
-            return;
-        }
-        const variacion = (product.variaciones || []).find(v =>
-            (v.talla || 'unica') === selectedTalla &&
-            (v.color || 'unico') === selectedColor
-        );
-        if (variacion && variacion.stock > 0) {
-            stockText.textContent = `${variacion.stock} unidades disponibles`;
-            stockDisplay.style.color = 'var(--color-primario)';
-            stockDisplay.style.background = 'var(--color-primario-claro)';
-            stockDisplay.style.borderColor = 'var(--color-primario-hover)';
-            cantidadInput.setAttribute('max', variacion.stock);
-            cantidadInput.value = 1;
-            btnAdd.disabled = false;
-        } else {
-            stockText.textContent = 'Agotado';
-            stockDisplay.style.color = '#c62828';
-            stockDisplay.style.background = '#ffebee';
-            stockDisplay.style.borderColor = '#ef9a9a';
-            cantidadInput.setAttribute('max', 0);
-            cantidadInput.value = 0;
-            btnAdd.disabled = true;
-        }
-    });
+    // Listeners del MODAL DE PRODUCTO ya no son necesarios
+    // La lógica ahora se maneja con las funciones selectTalla() y selectColor()
 
     document.getElementById('quantity-plus').addEventListener('click', () => {
         const cantidadInput = document.getElementById('select-cantidad');
@@ -1383,8 +1439,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-add-cart').addEventListener('click', () => {
         const productId = document.getElementById('modal-product-id').value;
         const product = productsMap.get(productId);
-        const talla = document.getElementById('select-talla').value;
-        const color = document.getElementById('select-color').value;
+        const talla = document.getElementById('selected-talla').value;
+        const color = document.getElementById('selected-color').value;
         const cantidad = parseInt(document.getElementById('select-cantidad').value);
         const observacion = document.getElementById('product-observation').value.trim();
 

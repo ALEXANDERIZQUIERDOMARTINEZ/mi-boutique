@@ -275,13 +275,15 @@ Aplicar Filtros
 </div>
 
 <input type="hidden" id="modal-product-id">
-<div class="mb-3">
+<input type="hidden" id="selected-talla">
+<input type="hidden" id="selected-color">
+<div class="mb-3" id="tallas-container">
 <label class="selector-label">Talla</label>
-<select class="form-select" id="select-talla"></select>
+<div id="tallas-buttons" class="size-color-buttons"></div>
 </div>
-<div class="mb-3">
+<div class="mb-3" id="colores-container">
 <label class="selector-label">Color</label>
-<select class="form-select" id="select-color" disabled></select>
+<div id="colores-buttons" class="size-color-buttons"></div>
 </div>
 <div class="mb-3">
 <label class="selector-label">Cantidad</label>
