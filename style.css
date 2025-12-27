@@ -1911,104 +1911,187 @@ body.blackfriday-theme .btn-primary::before {
     }
 }
 
-/* ===== MODERN CHECKOUT FORM ===== */
+/* ===== UNIQUE CHECKOUT FORM DESIGN ===== */
+
+/* Modal Base */
+#checkoutModal .modal-dialog {
+    max-width: 520px;
+}
+
 #checkoutModal .modal-content {
     border: none;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border-radius: 20px;
+    box-shadow: 0 15px 60px rgba(217, 136, 185, 0.25), 0 5px 15px rgba(0, 0, 0, 0.1);
+    overflow: visible;
+}
+
+/* Header con efecto especial */
+#checkoutModal .modal-header {
+    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-oscuro) 100%);
+    color: white;
+    padding: 35px 30px 30px;
+    border-bottom: none;
+    position: relative;
     overflow: hidden;
 }
 
-#checkoutModal .modal-header {
-    background: var(--color-primario);
-    color: white;
-    padding: 20px 25px;
-    border-bottom: none;
+#checkoutModal .modal-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+#checkoutModal .modal-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
 }
 
 #checkoutModal .modal-title {
-    font-size: 1.3rem;
-    font-weight: 600;
+    font-size: 1.7rem;
+    font-weight: 700;
+    text-align: center;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 #checkoutModal .btn-close {
     filter: brightness(0) invert(1);
-    opacity: 0.8;
+    opacity: 0.85;
+    width: 32px;
+    height: 32px;
+    background-size: 60%;
+    transition: all 0.3s ease;
 }
 
 #checkoutModal .btn-close:hover {
     opacity: 1;
+    transform: rotate(90deg) scale(1.1);
 }
 
+/* Body */
 #checkoutModal .modal-body {
-    padding: 25px;
-    background: #fafafa;
+    padding: 0;
+    background: linear-gradient(to bottom, #fafafa 0%, white 100%);
 }
 
+#checkout-form {
+    padding: 32px 28px;
+}
+
+/* Labels con estilo único */
 #checkout-form .selector-label {
-    font-weight: 600;
-    color: #495057;
+    font-weight: 700;
+    color: var(--color-primario-oscuro);
     margin-bottom: 8px;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
+#checkout-form .selector-label::before {
+    content: '';
+    width: 3px;
+    height: 14px;
+    background: var(--color-primario);
+    border-radius: 2px;
+}
+
+/* Input Fields con efecto de elevación */
 #checkout-form .form-control,
 #checkout-form .form-select {
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
-    padding: 12px 16px;
+    border-radius: 14px;
+    border: 2px solid #f0f0f0;
+    padding: 15px 20px;
     font-size: 0.95rem;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background: white;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+#checkout-form .form-control:hover,
+#checkout-form .form-select:hover {
+    border-color: #e5e5e5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    transform: translateY(-1px);
 }
 
 #checkout-form .form-control:focus,
 #checkout-form .form-select:focus {
     border-color: var(--color-primario);
-    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.15);
+    box-shadow: 0 0 0 5px rgba(217, 136, 185, 0.15), 0 4px 12px rgba(217, 136, 185, 0.2);
     background: white;
+    transform: translateY(-2px);
 }
 
 #checkout-form textarea.form-control {
     resize: none;
+    min-height: 90px;
 }
 
 #checkout-form .mb-3 {
-    margin-bottom: 16px;
+    margin-bottom: 22px;
 }
 
 #checkout-form small.text-muted {
-    font-size: 0.8rem;
-    color: #6c757d;
-    margin-top: 4px;
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 6px;
     display: block;
+    font-weight: 400;
+    padding-left: 4px;
 }
 
+/* Payment Info con diseño mejorado */
 #payment-info {
     display: block;
-    margin-top: 8px;
-    font-weight: 500;
-    padding: 8px 12px;
-    border-radius: 8px;
-    background: rgba(255, 193, 7, 0.1);
+    margin-top: 10px;
+    font-weight: 600;
+    padding: 12px 16px;
+    border-radius: 12px;
+    background: rgba(255, 193, 7, 0.12);
+    border-left: 4px solid #ffc107;
+    font-size: 0.85rem;
 }
 
 #payment-info.text-success {
-    background: rgba(25, 135, 84, 0.1);
+    background: rgba(25, 135, 84, 0.12);
+    border-left-color: #198754;
 }
 
 #payment-info.text-warning {
-    background: rgba(255, 193, 7, 0.1);
+    background: rgba(255, 193, 7, 0.12);
+    border-left-color: #ffc107;
 }
 
+/* Cash Payment Section */
 #cash-payment-section {
-    animation: slideDown 0.3s ease;
+    animation: slideDown 0.4s ease;
+    background: var(--color-primario-claro);
+    padding: 18px;
+    border-radius: 14px;
+    margin-top: 12px;
 }
 
 @keyframes slideDown {
     from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translateY(-15px);
     }
     to {
         opacity: 1;
@@ -2017,66 +2100,99 @@ body.blackfriday-theme .btn-primary::before {
 }
 
 #change-display .alert-info {
-    background: var(--color-primario-claro);
-    border: 1px solid var(--color-primario);
-    border-radius: 10px;
-    padding: 16px;
+    background: white;
+    border: 2px solid var(--color-primario);
+    border-radius: 14px;
+    padding: 18px;
+    margin-top: 12px;
 }
 
+#change-display .alert-info strong {
+    color: var(--color-primario-oscuro);
+}
+
+/* Submit Button con animación especial */
 #checkout-form button[type="submit"] {
-    background: var(--color-primario);
+    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-oscuro) 100%);
     border: none;
-    border-radius: 8px;
-    padding: 13px;
-    font-weight: 600;
-    font-size: 1rem;
-    margin-top: 10px;
-    transition: all 0.2s ease;
+    border-radius: 14px;
+    padding: 16px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-top: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 6px 20px rgba(217, 136, 185, 0.35);
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#checkout-form button[type="submit"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.6s;
+}
+
+#checkout-form button[type="submit"]:hover::before {
+    left: 100%;
 }
 
 #checkout-form button[type="submit"]:hover {
-    background: var(--color-primario-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(217, 136, 185, 0.25);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(217, 136, 185, 0.45);
 }
 
 #checkout-form button[type="submit"]:active {
-    transform: translateY(0);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(217, 136, 185, 0.35);
 }
 
+/* Neighborhood Section */
 #neighborhood-section {
-    animation: slideDown 0.3s ease;
+    animation: slideDown 0.4s ease;
 }
 
-/* Indicador de ciudad fuera de Montería */
+/* Delivery Info con diseño especial */
 .delivery-info {
-    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
-    border-left: 4px solid #ffc107;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    animation: slideDown 0.3s ease;
+    background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+    border: 2px solid #ffc107;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 22px;
+    animation: slideDown 0.4s ease;
+    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.15);
 }
 
 .delivery-info .info-title {
-    font-weight: 600;
-    color: #856404;
-    margin-bottom: 8px;
+    font-weight: 700;
+    color: #f57f17;
+    margin-bottom: 10px;
     display: flex;
     align-items: center;
     gap: 8px;
+    font-size: 1rem;
 }
 
 .delivery-info .info-content {
-    color: #856404;
-    font-size: 0.9rem;
+    color: #f57f17;
+    font-size: 0.85rem;
+    margin-bottom: 10px;
+    font-weight: 500;
 }
 
 .delivery-info .cedula-display {
     background: white;
-    padding: 10px 15px;
-    border-radius: 8px;
-    margin-top: 10px;
-    font-weight: 600;
-    color: #495057;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-top: 12px;
+    font-weight: 700;
+    color: var(--color-primario-oscuro);
+    border: 2px solid rgba(255, 193, 7, 0.3);
+    font-size: 1.05rem;
 }
