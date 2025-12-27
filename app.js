@@ -25,6 +25,7 @@ const promocionesGlobalesCollection = collection(db, 'promocionesGlobales');
 const categoriesCollection = collection(db, 'categorias');
 const clientsCollection = collection(db, 'clientes');
 const chatConversationsCollection = collection(db, 'chatConversations');
+const neighborhoodsCollection = collection(db, 'barrios');
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
 
 // --- Helper: Open WhatsApp (PWA Compatible) ---
@@ -1719,7 +1720,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Validar método de pago según ciudad y mostrar barrios
-    document.getElementById('checkout-city').addEventListener('change', function() {
+    document.getElementById('checkout-city').addEventListener('change', async function() {
         const ciudad = this.value;
         const efectivoOption = document.getElementById('payment-efectivo');
         const paymentInfo = document.getElementById('payment-info');
@@ -1736,8 +1737,29 @@ document.addEventListener('DOMContentLoaded', () => {
             // Limpiar opciones actuales del datalist
             neighborhoodDatalist.innerHTML = '';
 
-            // Agregar barrios de la ciudad seleccionada al datalist
-            neighborhoodsByCity[ciudad].forEach(barrio => {
+            // Combinar barrios predefinidos con personalizados
+            const allNeighborhoods = [...neighborhoodsByCity[ciudad]];
+
+            // Cargar barrios personalizados de Firestore
+            try {
+                const q = query(neighborhoodsCollection, where('ciudad', '==', ciudad));
+                const snapshot = await getDocs(q);
+                snapshot.forEach(doc => {
+                    const customNeighborhood = doc.data().nombre;
+                    // Solo agregar si no está ya en la lista
+                    if (!allNeighborhoods.includes(customNeighborhood)) {
+                        allNeighborhoods.push(customNeighborhood);
+                    }
+                });
+
+                // Ordenar alfabéticamente
+                allNeighborhoods.sort();
+            } catch (err) {
+                console.error('Error cargando barrios personalizados:', err);
+            }
+
+            // Agregar todos los barrios al datalist
+            allNeighborhoods.forEach(barrio => {
                 const option = document.createElement('option');
                 option.value = barrio;
                 neighborhoodDatalist.appendChild(option);
@@ -1748,12 +1770,20 @@ document.addEventListener('DOMContentLoaded', () => {
             neighborhoodInput.value = '';
         }
 
-        // Validación de método de pago
+        // Validación de método de pago y mostrar info de envío
+        const deliveryInfo = document.getElementById('delivery-info');
+        const cedulaDisplay = document.getElementById('cedula-display');
+        const cedulaInput = document.getElementById('checkout-cedula');
+
         if (ciudad && ciudad !== 'Montería') {
             efectivoOption.disabled = true;
             efectivoOption.textContent = 'Efectivo (No disponible fuera de Montería)';
             paymentInfo.textContent = '⚠️ Solo transferencia disponible para envíos fuera de Montería';
             paymentInfo.classList.add('text-warning');
+
+            // Mostrar info de envío fuera de Montería
+            deliveryInfo.style.display = 'block';
+            cedulaDisplay.textContent = cedulaInput.value || '-';
 
             // Si tenía efectivo seleccionado, resetear
             if (paymentSelect.value === 'Efectivo') {
@@ -1765,11 +1795,25 @@ document.addEventListener('DOMContentLoaded', () => {
             paymentInfo.textContent = '✅ Efectivo y transferencia disponibles';
             paymentInfo.classList.remove('text-warning');
             paymentInfo.classList.add('text-success');
+
+            // Ocultar info de envío
+            deliveryInfo.style.display = 'none';
         } else {
             efectivoOption.disabled = false;
             efectivoOption.textContent = 'Efectivo (Pago contra entrega)';
             paymentInfo.textContent = '';
             paymentInfo.classList.remove('text-warning', 'text-success');
+
+            // Ocultar info de envío
+            deliveryInfo.style.display = 'none';
+        }
+    });
+
+    // Actualizar cédula en info de envío cuando cambie
+    document.getElementById('checkout-cedula').addEventListener('input', function() {
+        const ciudad = document.getElementById('checkout-city').value;
+        if (ciudad && ciudad !== 'Montería') {
+            document.getElementById('cedula-display').textContent = this.value || '-';
         }
     });
 
@@ -1902,7 +1946,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // 1. Verificar si el cliente ya existe
+            // 1. Guardar barrio personalizado si es nuevo
+            if (barrio && ciudad && neighborhoodsByCity[ciudad]) {
+                const isPredefined = neighborhoodsByCity[ciudad].includes(barrio);
+                if (!isPredefined) {
+                    // Verificar si ya existe en la base de datos
+                    const neighborhoodQuery = query(
+                        neighborhoodsCollection,
+                        where('ciudad', '==', ciudad),
+                        where('nombre', '==', barrio)
+                    );
+                    const neighborhoodSnapshot = await getDocs(neighborhoodQuery);
+
+                    if (neighborhoodSnapshot.empty) {
+                        // Guardar nuevo barrio
+                        await addDoc(neighborhoodsCollection, {
+                            ciudad: ciudad,
+                            nombre: barrio,
+                            fechaCreacion: serverTimestamp()
+                        });
+                    }
+                }
+            }
+
+            // 2. Verificar si el cliente ya existe
             const clientQuery = query(clientsCollection, where('cedula', '==', cedula));
             const clientSnapshot = await getDocs(clientQuery);
 
@@ -1933,7 +2000,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 clientId = newClientRef.id;
             }
 
-            // 2. Crear pedido
+            // 3. Crear pedido
             const pedidoData = {
                 clienteId: clientId,
                 clienteCedula: cedula,

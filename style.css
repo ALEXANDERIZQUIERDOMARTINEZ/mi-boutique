@@ -1910,3 +1910,183 @@ body.blackfriday-theme .btn-primary::before {
         padding: 10px 0;
     }
 }
+
+/* ===== MODERN CHECKOUT FORM ===== */
+#checkoutModal .modal-content {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+#checkoutModal .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 25px 30px;
+    border-bottom: none;
+}
+
+#checkoutModal .modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+#checkoutModal .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+}
+
+#checkoutModal .btn-close:hover {
+    opacity: 1;
+}
+
+#checkoutModal .modal-body {
+    padding: 30px;
+    background: #f8f9fa;
+}
+
+#checkout-form .selector-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#checkout-form .selector-label::before {
+    content: '●';
+    color: #667eea;
+    font-size: 0.6rem;
+}
+
+#checkout-form .form-control,
+#checkout-form .form-select {
+    border-radius: 12px;
+    border: 2px solid #e9ecef;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+#checkout-form .form-control:focus,
+#checkout-form .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    background: white;
+}
+
+#checkout-form textarea.form-control {
+    resize: none;
+}
+
+#checkout-form .mb-3 {
+    margin-bottom: 20px;
+}
+
+#checkout-form small.text-muted {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 4px;
+    display: block;
+}
+
+#payment-info {
+    display: block;
+    margin-top: 8px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(255, 193, 7, 0.1);
+}
+
+#payment-info.text-success {
+    background: rgba(25, 135, 84, 0.1);
+}
+
+#payment-info.text-warning {
+    background: rgba(255, 193, 7, 0.1);
+}
+
+#cash-payment-section {
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#change-display .alert-info {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+#checkout-form button[type="submit"] {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+#checkout-form button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+#checkout-form button[type="submit"]:active {
+    transform: translateY(0);
+}
+
+#neighborhood-section {
+    animation: slideDown 0.3s ease;
+}
+
+/* Indicador de ciudad fuera de Montería */
+.delivery-info {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+    border-left: 4px solid #ffc107;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    animation: slideDown 0.3s ease;
+}
+
+.delivery-info .info-title {
+    font-weight: 600;
+    color: #856404;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.delivery-info .info-content {
+    color: #856404;
+    font-size: 0.9rem;
+}
+
+.delivery-info .cedula-display {
+    background: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+    font-weight: 600;
+    color: #495057;
+}
