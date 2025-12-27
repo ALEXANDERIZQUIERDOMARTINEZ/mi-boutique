@@ -335,40 +335,67 @@ Finalizar Pedido
 </div>
 
 <div class="modal fade" id="checkoutModal" tabindex="-1">
-<div class="modal-dialog modal-dialog-centered">
-<div class="modal-content">
-<div class="modal-header">
-<h5 class="modal-title">Finalizar Pedido</h5>
-<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+<div class="modal-content checkout-premium">
+<div class="modal-header checkout-header">
+<div class="header-content">
+<div class="pulse-dot"></div>
+<h5 class="modal-title">✨ Finalizar Tu Pedido</h5>
+<p class="header-subtitle">Completa la información para recibir tu orden</p>
+</div>
+<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
 </div>
 <div class="modal-body">
 <form id="checkout-form">
-<div class="mb-3">
-<label class="selector-label">Cédula</label>
-<input type="text" class="form-control" id="checkout-cedula" placeholder="Ej: 1234567890" required>
-<small class="text-muted">Si ya eres cliente, tus datos se llenarán automáticamente</small>
+
+<!-- Card de Información Personal -->
+<div class="form-card" data-card="1">
+<div class="card-header-mini">
+<span class="card-icon">👤</span>
+<span class="card-title">Información Personal</span>
+</div>
+<div class="form-group-modern">
+<label class="selector-label">
+<span class="label-icon">🆔</span>
+Cédula
+</label>
+<input type="text" class="form-control form-control-modern" id="checkout-cedula" placeholder="1234567890" required>
+<small class="text-muted">Cliente registrado? Tus datos se cargan automáticamente</small>
 </div>
 <div class="delivery-info" id="delivery-info" style="display: none;">
 <div class="info-title">📦 Información de Envío</div>
-<div class="info-content">
-Su pedido será enviado fuera de Montería
+<div class="info-content">Pedido fuera de Montería</div>
+<div class="cedula-display">Cédula: <span id="cedula-display">-</span></div>
 </div>
-<div class="cedula-display">
-Cédula: <span id="cedula-display">-</span>
+<div class="form-group-modern">
+<label class="selector-label">
+<span class="label-icon">✏️</span>
+Nombre Completo
+</label>
+<input type="text" class="form-control form-control-modern" id="checkout-name" placeholder="Ej: María García" required>
+</div>
+<div class="form-group-modern">
+<label class="selector-label">
+<span class="label-icon">📱</span>
+WhatsApp
+</label>
+<input type="tel" class="form-control form-control-modern" id="checkout-phone" placeholder="300 123 4567" required>
 </div>
 </div>
-<div class="mb-3">
-<label class="selector-label">Nombre Completo</label>
-<input type="text" class="form-control" id="checkout-name" required>
+
+<!-- Card de Dirección de Envío -->
+<div class="form-card" data-card="2">
+<div class="card-header-mini">
+<span class="card-icon">📍</span>
+<span class="card-title">Dirección de Envío</span>
 </div>
-<div class="mb-3">
-<label class="selector-label">WhatsApp</label>
-<input type="tel" class="form-control" id="checkout-phone" placeholder="3001234567" required>
-</div>
-<div class="mb-3">
-<label class="selector-label">Ciudad</label>
-<select class="form-select" id="checkout-city" required>
-<option value="">Seleccione su ciudad</option>
+<div class="form-group-modern">
+<label class="selector-label">
+<span class="label-icon">🏙️</span>
+Ciudad
+</label>
+<select class="form-select form-control-modern" id="checkout-city" required>
+<option value="">Selecciona tu ciudad</option>
 <option value="Montería">Montería</option>
 <option value="Cereté">Cereté</option>
 <option value="Lorica">Lorica</option>
@@ -380,42 +407,74 @@ Cédula: <span id="cedula-display">-</span>
 <option value="Otra">Otra ciudad</option>
 </select>
 </div>
-<div class="mb-3" id="neighborhood-section" style="display: none;">
-<label class="selector-label">Barrio</label>
-<input type="text" class="form-control" id="checkout-neighborhood" list="neighborhood-list" placeholder="Seleccione o escriba su barrio">
-<datalist id="neighborhood-list">
-</datalist>
+<div class="form-group-modern" id="neighborhood-section" style="display: none;">
+<label class="selector-label">
+<span class="label-icon">🏘️</span>
+Barrio
+</label>
+<input type="text" class="form-control form-control-modern" id="checkout-neighborhood" list="neighborhood-list" placeholder="Escribe o selecciona">
+<datalist id="neighborhood-list"></datalist>
 </div>
-<div class="mb-3">
-<label class="selector-label">Dirección</label>
-<input type="text" class="form-control" id="checkout-address" required>
+<div class="form-group-modern">
+<label class="selector-label">
+<span class="label-icon">🏠</span>
+Dirección Completa
+</label>
+<input type="text" class="form-control form-control-modern" id="checkout-address" placeholder="Calle 123 #45-67" required>
 </div>
-<div class="mb-3">
-<label class="selector-label">Observaciones</label>
-<textarea class="form-control" id="checkout-notes" rows="2"></textarea>
+<div class="form-group-modern">
+<label class="selector-label">
+<span class="label-icon">📝</span>
+Observaciones
+</label>
+<textarea class="form-control form-control-modern" id="checkout-notes" rows="2" placeholder="Instrucciones especiales, referencias..."></textarea>
 </div>
-<div class="mb-3">
-<label class="selector-label">Método de Pago</label>
-<select class="form-select" id="checkout-payment" required>
-<option value="">Seleccione</option>
-<option value="Efectivo" id="payment-efectivo">Efectivo (Pago contra entrega)</option>
-<option value="Transferencia">Transferencia</option>
+</div>
+
+<!-- Card de Método de Pago -->
+<div class="form-card" data-card="3">
+<div class="card-header-mini">
+<span class="card-icon">💳</span>
+<span class="card-title">Método de Pago</span>
+</div>
+<div class="form-group-modern">
+<label class="selector-label">
+<span class="label-icon">💰</span>
+Forma de Pago
+</label>
+<select class="form-select form-control-modern" id="checkout-payment" required>
+<option value="">Selecciona una opción</option>
+<option value="Efectivo" id="payment-efectivo">💵 Efectivo (Pago contra entrega)</option>
+<option value="Transferencia">🏦 Transferencia Bancaria</option>
 </select>
 <small class="text-muted" id="payment-info"></small>
 </div>
-<div class="mb-3" id="cash-payment-section" style="display: none;">
-<label class="selector-label">Monto con el que paga</label>
-<input type="number" class="form-control" id="checkout-cash-amount" placeholder="Ej: 50000" min="0">
+<div class="form-group-modern" id="cash-payment-section" style="display: none;">
+<label class="selector-label">
+<span class="label-icon">💸</span>
+Monto con el que pagas
+</label>
+<input type="number" class="form-control form-control-modern" id="checkout-cash-amount" placeholder="50000" min="0">
 <div class="mt-2" id="change-display" style="display: none;">
-<div class="alert alert-info mb-0">
-<strong>Total del pedido:</strong> <span id="change-total">$0</span><br>
-<strong>Vuelto a entregar:</strong> <span id="change-amount" style="font-size: 1.2em; color: #0d6efd;">$0</span>
+<div class="change-card">
+<div class="change-item">
+<span class="change-label">Total del pedido:</span>
+<span class="change-value" id="change-total">$0</span>
+</div>
+<div class="change-item highlight">
+<span class="change-label">Vuelto a entregar:</span>
+<span class="change-value" id="change-amount">$0</span>
 </div>
 </div>
 </div>
-<button type="submit" class="btn btn-primary btn-lg w-100">
-Confirmar Pedido
+</div>
+</div>
+
+<button type="submit" class="btn-submit-premium">
+<span class="btn-text">Confirmar Pedido</span>
+<span class="btn-icon">→</span>
 </button>
+
 </form>
 </div>
 </div>
