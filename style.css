@@ -923,6 +923,7 @@ h1, h2, h3, h4, h5, h6 {
     cursor: default;
     border-color: var(--color-primario);
     background-color: rgba(217, 136, 185, 0.1);
+    color: var(--color-primario);
     font-weight: 600;
 }
 
