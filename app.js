@@ -1031,6 +1031,43 @@ function renderCart() {
     }
     if (empty) empty.style.display = 'none';
     if (footer) footer.style.display = 'block';
+
+    // 🔍 Validar stock de productos en el carrito
+    const productosConProblemas = [];
+    cart.forEach(item => {
+        const product = productsMap.get(item.id);
+        if (product) {
+            const variacion = (product.variaciones || []).find(v =>
+                (v.talla || 'unica') === item.talla &&
+                (v.color || 'unico') === item.color
+            );
+            if (!variacion || variacion.stock <= 0) {
+                productosConProblemas.push({ ...item, tipo: 'agotado' });
+            } else if (variacion.stock < item.cantidad) {
+                productosConProblemas.push({ ...item, tipo: 'insuficiente', stockDisponible: variacion.stock });
+            }
+        }
+    });
+
+    // Mostrar advertencia si hay productos con problemas de stock
+    if (productosConProblemas.length > 0) {
+        const advertenciaDiv = document.createElement('div');
+        advertenciaDiv.className = 'alert alert-warning mx-3 mb-3';
+        advertenciaDiv.style.fontSize = '0.85rem';
+        advertenciaDiv.innerHTML = `
+            <strong>⚠️ Atención:</strong><br>
+            ${productosConProblemas.map(p => {
+                if (p.tipo === 'agotado') {
+                    return `• <strong>${p.nombre}</strong> (${p.talla}/${p.color}) - <span class="text-danger">SIN STOCK</span>`;
+                } else {
+                    return `• <strong>${p.nombre}</strong> (${p.talla}/${p.color}) - Solo quedan ${p.stockDisponible} unidades`;
+                }
+            }).join('<br>')}
+            <br><small class="d-block mt-2">Por favor, elimina o ajusta estos productos antes de finalizar tu compra.</small>
+        `;
+        container.appendChild(advertenciaDiv);
+    }
+
     let total = 0;
     let itemCount = 0;
     cart.forEach(item => {
@@ -1690,6 +1727,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 📊 Tracking: Inicio de checkout
         analytics.trackBeginCheckout(cart, total);
+
+        // 🔍 VALIDACIÓN DE STOCK ANTES DE PROCESAR LA VENTA
+        const productosAgotados = [];
+        const productosSinStockSuficiente = [];
+
+        for (const item of cart) {
+            const product = productsMap.get(item.id);
+            if (!product) {
+                productosAgotados.push(item);
+                continue;
+            }
+
+            // Buscar la variación específica (talla + color)
+            const variacion = (product.variaciones || []).find(v =>
+                (v.talla || 'unica') === item.talla &&
+                (v.color || 'unico') === item.color
+            );
+
+            if (!variacion || variacion.stock <= 0) {
+                productosAgotados.push(item);
+            } else if (variacion.stock < item.cantidad) {
+                productosSinStockSuficiente.push({
+                    ...item,
+                    stockDisponible: variacion.stock
+                });
+            }
+        }
+
+        // Si hay productos sin stock, mostrar mensaje y cancelar compra
+        if (productosAgotados.length > 0 || productosSinStockSuficiente.length > 0) {
+            let mensaje = '⚠️ Algunos productos en tu carrito ya no están disponibles:\n\n';
+
+            if (productosAgotados.length > 0) {
+                mensaje += '❌ SIN STOCK:\n';
+                productosAgotados.forEach(p => {
+                    mensaje += `• ${p.nombre} (${p.talla}/${p.color})\n`;
+                });
+            }
+
+            if (productosSinStockSuficiente.length > 0) {
+                mensaje += '\n⚠️ STOCK INSUFICIENTE:\n';
+                productosSinStockSuficiente.forEach(p => {
+                    mensaje += `• ${p.nombre} (${p.talla}/${p.color})\n`;
+                    mensaje += `  Solicitaste: ${p.cantidad} | Disponible: ${p.stockDisponible}\n`;
+                });
+            }
+
+            mensaje += '\n🔄 Por favor, actualiza tu carrito antes de continuar.';
+
+            showToast(mensaje, 'error', 8000);
+
+            // Cerrar modal de checkout para que el usuario vea el carrito
+            const checkoutModalEl = document.getElementById('checkoutModal');
+            const checkoutModalInstance = bootstrap.Modal.getInstance(checkoutModalEl);
+            if (checkoutModalInstance) {
+                checkoutModalInstance.hide();
+            }
+
+            return; // Cancelar la compra
+        }
 
         try {
             // 1. Verificar si el cliente ya existe
