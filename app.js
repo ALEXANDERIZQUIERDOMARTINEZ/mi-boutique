@@ -2044,12 +2044,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 mensajeWhatsApp += "TIPO: MAYORISTA\n\n";
             }
             mensajeWhatsApp += `Cliente: ${nombre}\n`;
+            mensajeWhatsApp += `Cedula: ${cedula}\n`;
             mensajeWhatsApp += `WhatsApp: ${whatsapp}\n`;
             mensajeWhatsApp += `Ciudad: ${ciudad}\n`;
+            if (barrio) mensajeWhatsApp += `Barrio: ${barrio}\n`;
             mensajeWhatsApp += `Direccion: ${direccion}\n`;
             if(observaciones) mensajeWhatsApp += `Observaciones: ${observaciones}\n`;
-            mensajeWhatsApp += `Pago: ${pago}\n\n`;
-            mensajeWhatsApp += "PRODUCTOS:\n\n";
+            mensajeWhatsApp += `\nPago: ${pago}\n`;
+
+            // Si es pago en efectivo, agregar monto y vuelto
+            if (pago === 'Efectivo') {
+                const cashAmount = parseFloat(document.getElementById('checkout-cash-amount').value) || 0;
+                if (cashAmount > 0) {
+                    const change = cashAmount - total;
+                    mensajeWhatsApp += `Paga con: ${formatoMoneda.format(cashAmount)}\n`;
+                    mensajeWhatsApp += `Vuelto: ${formatoMoneda.format(change)}\n`;
+                }
+            }
+
+            mensajeWhatsApp += "\nPRODUCTOS:\n\n";
             cart.forEach((item, i) => {
                 mensajeWhatsApp += `${i + 1}. ${item.nombre}\n`;
                 mensajeWhatsApp += `   Talla: ${item.talla} | Color: ${item.color}\n`;
