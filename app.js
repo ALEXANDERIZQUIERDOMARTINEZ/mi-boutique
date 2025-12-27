@@ -1835,15 +1835,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Calcular vuelto automáticamente
     document.getElementById('checkout-cash-amount').addEventListener('input', function() {
         const cashAmount = parseFloat(this.value) || 0;
-        const total = cart.reduce((sum, item) => sum + item.total, 0);
         const changeDisplay = document.getElementById('change-display');
-        const changeTotalEl = document.getElementById('change-total');
-        const changeAmountEl = document.getElementById('change-amount');
 
         if (cashAmount > 0) {
             changeDisplay.style.display = 'block';
-            changeTotalEl.textContent = formatoMoneda.format(total);
+            updateOrderTotals(); // Actualiza todos los cálculos
+        } else {
+            changeDisplay.style.display = 'none';
+        }
+    });
 
+    // Calcular y mostrar totales del pedido
+    function updateOrderTotals() {
+        const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
+        const deliveryCost = parseFloat(document.getElementById('checkout-delivery-cost').value) || 0;
+        const total = subtotal + deliveryCost;
+
+        document.getElementById('order-subtotal').textContent = formatoMoneda.format(subtotal);
+        document.getElementById('order-total').textContent = formatoMoneda.format(total);
+
+        // Actualizar el total en el display de vuelto si está visible
+        const changeTotalEl = document.getElementById('change-total');
+        if (changeTotalEl) {
+            changeTotalEl.textContent = formatoMoneda.format(total);
+        }
+
+        // Recalcular vuelto si hay monto ingresado
+        const cashAmount = parseFloat(document.getElementById('checkout-cash-amount').value) || 0;
+        if (cashAmount > 0) {
+            const changeAmountEl = document.getElementById('change-amount');
             const change = cashAmount - total;
             if (change >= 0) {
                 changeAmountEl.textContent = formatoMoneda.format(change);
@@ -1852,9 +1872,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 changeAmountEl.textContent = formatoMoneda.format(Math.abs(change)) + ' (Falta)';
                 changeAmountEl.style.color = '#dc3545';
             }
-        } else {
-            changeDisplay.style.display = 'none';
         }
+    }
+
+    // Actualizar totales cuando se abre el modal
+    const checkoutModalEl = document.getElementById('checkoutModal');
+    checkoutModalEl.addEventListener('show.bs.modal', function() {
+        updateOrderTotals();
+    });
+
+    // Actualizar totales cuando cambia el costo de domicilio
+    document.getElementById('checkout-delivery-cost').addEventListener('input', function() {
+        updateOrderTotals();
     });
 
     document.getElementById('checkout-form').addEventListener('submit', async (e) => {
@@ -1880,7 +1909,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const total = cart.reduce((sum, item) => sum + item.total, 0);
+        const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
+        const costoEnvio = parseFloat(document.getElementById('checkout-delivery-cost').value) || 0;
+        const total = subtotal + costoEnvio;
 
         // 📊 Tracking: Inicio de checkout
         analytics.trackBeginCheckout(cart, total);
@@ -2021,6 +2052,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     precio: item.precio || 0,
                     total: item.total || 0
                 })),
+                subtotalProductos: subtotal,
+                costoEnvio: costoEnvio,
                 totalPedido: total,
                 estado: "pendiente",
                 timestamp: serverTimestamp(),
@@ -2069,7 +2102,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 mensajeWhatsApp += `   ${item.cantidad} unid. x ${formatoMoneda.format(item.precio)}\n`;
                 mensajeWhatsApp += `   Subtotal: ${formatoMoneda.format(item.total)}\n\n`;
             });
-            mensajeWhatsApp += `TOTAL: ${formatoMoneda.format(total)}`;
+
+            mensajeWhatsApp += `\nSUBTOTAL PRODUCTOS: ${formatoMoneda.format(subtotal)}\n`;
+            if (costoEnvio > 0) {
+                mensajeWhatsApp += `COSTO DE ENVIO: ${formatoMoneda.format(costoEnvio)}\n`;
+            }
+            mensajeWhatsApp += `\nTOTAL A PAGAR: ${formatoMoneda.format(total)}`;
 
             // Limpiar y cerrar modales
             const checkoutModalEl = document.getElementById('checkoutModal');
