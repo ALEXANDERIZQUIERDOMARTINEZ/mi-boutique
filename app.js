@@ -601,7 +601,11 @@ function renderProducts(products) {
         const { precioFinal, tienePromo, precioOriginal } = calculatePromotionPrice(product);
 
         const variaciones = product.variaciones || [];
-        const tallas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))];
+        // ✅ Solo mostrar tallas que tengan stock disponible
+        const tallas = [...new Set(variaciones
+            .filter(v => (parseInt(v.stock, 10) || 0) > 0)  // Filtrar solo variaciones con stock > 0
+            .map(v => v.talla)
+            .filter(Boolean))];
         // ✅ Solo mostrar colores que tengan stock disponible
         const colores = [...new Set(variaciones
             .filter(v => (parseInt(v.stock, 10) || 0) > 0)  // Filtrar solo variaciones con stock > 0
