@@ -730,28 +730,58 @@ function renderSizeButtons(tallas, esTallaUnica, product) {
     if (tallas.length === 0 || esTallaUnica) {
         const tallaValue = tallas.length > 0 ? tallas[0] : 'unica';
         const tallaText = tallas.length > 0 ? tallas[0] : 'Única';
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'size-color-btn unica-talla selected';
-        btn.textContent = tallaText;
-        btn.dataset.value = tallaValue;
-        tallasButtons.appendChild(btn);
-        document.getElementById('selected-talla').value = tallaValue;
-        tallasContainer.style.display = 'block';
 
-        // Auto-cargar colores si es talla única
-        renderColorButtons(tallaValue, product);
-    } else {
-        tallasContainer.style.display = 'block';
-        tallas.forEach(talla => {
+        // Verificar si la talla única tiene stock
+        const variaciones = product.variaciones || [];
+        const tieneStock = variaciones.some(v =>
+            (v.talla || 'unica') === tallaValue && v.stock > 0
+        );
+
+        if (tieneStock) {
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'size-color-btn';
-            btn.textContent = talla;
-            btn.dataset.value = talla;
-            btn.onclick = () => selectTalla(talla, product);
+            btn.className = 'size-color-btn unica-talla selected';
+            btn.textContent = tallaText;
+            btn.dataset.value = tallaValue;
             tallasButtons.appendChild(btn);
-        });
+            document.getElementById('selected-talla').value = tallaValue;
+            tallasContainer.style.display = 'block';
+
+            // Auto-cargar colores si es talla única
+            renderColorButtons(tallaValue, product);
+        } else {
+            // Si no hay stock, mostrar mensaje
+            tallasContainer.style.display = 'block';
+            const noStockMsg = document.createElement('div');
+            noStockMsg.className = 'text-muted';
+            noStockMsg.textContent = 'Sin stock disponible';
+            tallasButtons.appendChild(noStockMsg);
+        }
+    } else {
+        tallasContainer.style.display = 'block';
+
+        // Filtrar solo tallas con stock disponible
+        const variaciones = product.variaciones || [];
+        const tallasConStock = tallas.filter(talla =>
+            variaciones.some(v => (v.talla || 'unica') === talla && v.stock > 0)
+        );
+
+        if (tallasConStock.length === 0) {
+            const noStockMsg = document.createElement('div');
+            noStockMsg.className = 'text-muted';
+            noStockMsg.textContent = 'Sin stock disponible';
+            tallasButtons.appendChild(noStockMsg);
+        } else {
+            tallasConStock.forEach(talla => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'size-color-btn';
+                btn.textContent = talla;
+                btn.dataset.value = talla;
+                btn.onclick = () => selectTalla(talla, product);
+                tallasButtons.appendChild(btn);
+            });
+        }
     }
 }
 
@@ -766,8 +796,10 @@ function renderColorButtons(selectedTalla, product) {
     }
 
     const variaciones = product.variaciones || [];
+
+    // Filtrar solo colores con stock disponible para la talla seleccionada
     const colores = [...new Set(variaciones
-        .filter(v => (v.talla || 'unica') === selectedTalla)
+        .filter(v => (v.talla || 'unica') === selectedTalla && v.stock > 0)
         .map(v => v.color)
         .filter(Boolean)
     )];
@@ -775,14 +807,33 @@ function renderColorButtons(selectedTalla, product) {
     coloresContainer.style.display = 'block';
 
     if (colores.length === 0) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'size-color-btn unico-color selected';
-        btn.textContent = 'Único';
-        btn.dataset.value = 'unico';
-        coloresButtons.appendChild(btn);
-        document.getElementById('selected-color').value = 'unico';
-        updateStockDisplay(product);
+        // Verificar si existe un color "único" con stock
+        const colorUnico = variaciones.find(v =>
+            (v.talla || 'unica') === selectedTalla &&
+            (v.color === 'unico' || v.color === '' || !v.color) &&
+            v.stock > 0
+        );
+
+        if (colorUnico) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'size-color-btn unico-color selected';
+            btn.textContent = 'Único';
+            btn.dataset.value = 'unico';
+            coloresButtons.appendChild(btn);
+            document.getElementById('selected-color').value = 'unico';
+            updateStockDisplay(product);
+        } else {
+            // No hay colores con stock para esta talla
+            const noStockMsg = document.createElement('div');
+            noStockMsg.className = 'text-muted';
+            noStockMsg.textContent = 'Sin colores disponibles';
+            coloresButtons.appendChild(noStockMsg);
+
+            const stockText = document.getElementById('stock-text');
+            stockText.textContent = 'Sin stock disponible';
+            document.getElementById('btn-add-cart').disabled = true;
+        }
     } else {
         colores.forEach(color => {
             const btn = document.createElement('button');
