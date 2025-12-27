@@ -734,9 +734,19 @@ function renderSizeButtons(tallas, esTallaUnica, product) {
 
         // Verificar si la talla única tiene stock
         const variaciones = product.variaciones || [];
-        const tieneStock = variaciones.some(v =>
-            (v.talla || 'unica') === tallaValue && v.stock > 0
-        );
+        const tieneStock = variaciones.some(v => {
+            const vTalla = v.talla || 'unica';
+            const vTallaNormalized = vTalla.toLowerCase().trim();
+            const tallaValueNormalized = tallaValue.toLowerCase().trim();
+
+            // Comparar considerando que '', 'unica', 'única' son equivalentes
+            const sonEquivalentes =
+                vTallaNormalized === tallaValueNormalized ||
+                (vTallaNormalized === '' && (tallaValueNormalized === 'unica' || tallaValueNormalized === 'única')) ||
+                ((vTallaNormalized === 'unica' || vTallaNormalized === 'única') && tallaValueNormalized === '');
+
+            return sonEquivalentes && v.stock > 0;
+        });
 
         if (tieneStock) {
             const btn = document.createElement('button');
@@ -798,9 +808,23 @@ function renderColorButtons(selectedTalla, product) {
 
     const variaciones = product.variaciones || [];
 
+    // Normalizar la talla seleccionada para comparación
+    const selectedTallaNormalized = selectedTalla.toLowerCase().trim();
+
     // Filtrar solo colores con stock disponible para la talla seleccionada
     const colores = [...new Set(variaciones
-        .filter(v => (v.talla || 'unica') === selectedTalla && v.stock > 0)
+        .filter(v => {
+            const vTalla = v.talla || 'unica';
+            const vTallaNormalized = vTalla.toLowerCase().trim();
+
+            // Comparar considerando equivalencias
+            const tallaCoincide =
+                vTallaNormalized === selectedTallaNormalized ||
+                (vTallaNormalized === '' && (selectedTallaNormalized === 'unica' || selectedTallaNormalized === 'única')) ||
+                ((vTallaNormalized === 'unica' || vTallaNormalized === 'única') && selectedTallaNormalized === '');
+
+            return tallaCoincide && v.stock > 0;
+        })
         .map(v => v.color)
         .filter(Boolean)
     )];
@@ -809,11 +833,19 @@ function renderColorButtons(selectedTalla, product) {
 
     if (colores.length === 0) {
         // Verificar si existe un color "único" con stock
-        const colorUnico = variaciones.find(v =>
-            (v.talla || 'unica') === selectedTalla &&
-            (v.color === 'unico' || v.color === '' || !v.color) &&
-            v.stock > 0
-        );
+        const colorUnico = variaciones.find(v => {
+            const vTalla = v.talla || 'unica';
+            const vTallaNormalized = vTalla.toLowerCase().trim();
+
+            const tallaCoincide =
+                vTallaNormalized === selectedTallaNormalized ||
+                (vTallaNormalized === '' && (selectedTallaNormalized === 'unica' || selectedTallaNormalized === 'única')) ||
+                ((vTallaNormalized === 'unica' || vTallaNormalized === 'única') && selectedTallaNormalized === '');
+
+            return tallaCoincide &&
+                (v.color === 'unico' || v.color === '' || !v.color) &&
+                v.stock > 0;
+        });
 
         if (colorUnico) {
             const btn = document.createElement('button');
@@ -909,10 +941,30 @@ function updateStockDisplay(product) {
         return;
     }
 
-    const variacion = (product.variaciones || []).find(v =>
-        (v.talla || 'unica') === selectedTalla &&
-        (v.color || 'unico') === selectedColor
-    );
+    // Normalizar para comparación
+    const selectedTallaNormalized = selectedTalla.toLowerCase().trim();
+    const selectedColorNormalized = selectedColor.toLowerCase().trim();
+
+    const variacion = (product.variaciones || []).find(v => {
+        const vTalla = v.talla || 'unica';
+        const vColor = v.color || 'unico';
+        const vTallaNormalized = vTalla.toLowerCase().trim();
+        const vColorNormalized = vColor.toLowerCase().trim();
+
+        // Comparar tallas considerando equivalencias
+        const tallaCoincide =
+            vTallaNormalized === selectedTallaNormalized ||
+            (vTallaNormalized === '' && (selectedTallaNormalized === 'unica' || selectedTallaNormalized === 'única')) ||
+            ((vTallaNormalized === 'unica' || vTallaNormalized === 'única') && selectedTallaNormalized === '');
+
+        // Comparar colores considerando equivalencias
+        const colorCoincide =
+            vColorNormalized === selectedColorNormalized ||
+            (vColorNormalized === '' && (selectedColorNormalized === 'unico' || selectedColorNormalized === 'único')) ||
+            ((vColorNormalized === 'unico' || vColorNormalized === 'único') && selectedColorNormalized === '');
+
+        return tallaCoincide && colorCoincide;
+    });
 
     if (variacion && variacion.stock > 0) {
         stockText.textContent = `${variacion.stock} unidades disponibles`;
