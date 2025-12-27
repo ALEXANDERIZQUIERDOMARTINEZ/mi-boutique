@@ -429,16 +429,18 @@ function applyFiltersAndRender() {
 
     let filtered = allProducts;
 
+    // 🎯 FILTRO GLOBAL: Siempre ocultar productos sin stock
+    // Solo mostrar productos que tengan al menos una variación con stock > 0
+    filtered = filtered.filter(p => {
+        const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+        return stock > 0;
+    });
+
     // 1. Filtrar por Categoría (filtros principales del header)
     if (activeFilter === 'disponible') {
-        // Mostrar solo productos disponibles (con stock > 0)
-        filtered = allProducts.filter(p => {
-            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-            return stock > 0;
-        });
+        // Ya se filtró arriba, no hacer nada adicional
     } else if (activeFilter === 'all') {
-        // Mostrar todos los productos (disponibles y agotados)
-        filtered = allProducts;
+        // Mostrar todos los productos (que tengan stock)
     } else if (activeFilter === 'promocion') {
         filtered = filtered.filter(p => {
             const tienePromoIndividual = p.promocion?.activa && !isWholesaleActive;
@@ -492,13 +494,8 @@ function applyFiltersAndRender() {
         });
     }
 
-    // 3.3 Filtro de Disponibilidad (solo en stock)
-    if (advancedFilters.inStockOnly) {
-        filtered = filtered.filter(p => {
-            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-            return stock > 0;
-        });
-    }
+    // 3.3 Filtro de Disponibilidad - YA NO ES NECESARIO
+    // Ahora SIEMPRE se filtran productos sin stock al inicio de la función
 
     // 3.4 Filtro solo promociones (del sidebar)
     if (advancedFilters.promoOnly) {
