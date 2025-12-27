@@ -2334,3 +2334,64 @@ textarea.form-control-modern {
     border: 2px solid rgba(255, 193, 7, 0.3);
     font-size: 1rem;
 }
+
+/* Order Summary Styles */
+.order-summary {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+}
+
+.summary-label {
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 0.95rem;
+}
+
+.summary-value {
+    font-weight: 700;
+    color: #2d3748;
+    font-size: 1.05rem;
+}
+
+.summary-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-primario), transparent);
+    margin: 16px 0;
+}
+
+.summary-row.total-row {
+    background: linear-gradient(135deg, var(--color-primario-claro) 0%, rgba(255, 255, 255, 0.5) 100%);
+    margin: 0 -16px -16px;
+    padding: 18px 16px;
+    border-radius: 0 0 12px 12px;
+}
+
+.summary-label-total {
+    font-weight: 700;
+    color: var(--color-primario-oscuro);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-value-total {
+    font-weight: 800;
+    color: var(--color-primario);
+    font-size: 1.5rem;
+}
+
+.form-card[data-card="4"] {
+    animation-delay: 0.4s;
+    border: 2px solid var(--color-primario);
+    box-shadow: 
+        0 4px 20px rgba(217, 136, 185, 0.15),
+        0 0 0 1px rgba(217, 136, 185, 0.1);
+}
