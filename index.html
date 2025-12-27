@@ -373,9 +373,9 @@ Finalizar Pedido
 </div>
 <div class="mb-3" id="neighborhood-section" style="display: none;">
 <label class="selector-label">Barrio</label>
-<select class="form-select" id="checkout-neighborhood">
-<option value="">Seleccione su barrio</option>
-</select>
+<input type="text" class="form-control" id="checkout-neighborhood" list="neighborhood-list" placeholder="Seleccione o escriba su barrio">
+<datalist id="neighborhood-list">
+</datalist>
 </div>
 <div class="mb-3">
 <label class="selector-label">Dirección</label>
