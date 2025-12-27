@@ -1847,11 +1847,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Calcular y mostrar totales del pedido
     function updateOrderTotals() {
-        const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-        const deliveryCost = parseFloat(document.getElementById('checkout-delivery-cost').value) || 0;
-        const total = subtotal + deliveryCost;
+        const total = cart.reduce((sum, item) => sum + item.total, 0);
 
-        document.getElementById('order-subtotal').textContent = formatoMoneda.format(subtotal);
         document.getElementById('order-total').textContent = formatoMoneda.format(total);
 
         // Actualizar el total en el display de vuelto si está visible
@@ -1881,11 +1878,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateOrderTotals();
     });
 
-    // Actualizar totales cuando cambia el costo de domicilio
-    document.getElementById('checkout-delivery-cost').addEventListener('input', function() {
-        updateOrderTotals();
-    });
-
     document.getElementById('checkout-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -1910,8 +1902,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-        const costoEnvio = parseFloat(document.getElementById('checkout-delivery-cost').value) || 0;
-        const total = subtotal + costoEnvio;
+        const costoEnvio = 0; // El costo de envío se agrega desde admin.html
+        const total = subtotal;
 
         // 📊 Tracking: Inicio de checkout
         analytics.trackBeginCheckout(cart, total);
@@ -2103,11 +2095,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 mensajeWhatsApp += `   Subtotal: ${formatoMoneda.format(item.total)}\n\n`;
             });
 
-            mensajeWhatsApp += `\nSUBTOTAL PRODUCTOS: ${formatoMoneda.format(subtotal)}\n`;
-            if (costoEnvio > 0) {
-                mensajeWhatsApp += `COSTO DE ENVIO: ${formatoMoneda.format(costoEnvio)}\n`;
-            }
-            mensajeWhatsApp += `\nTOTAL A PAGAR: ${formatoMoneda.format(total)}`;
+            mensajeWhatsApp += `\nTOTAL: ${formatoMoneda.format(total)}`;
 
             // Limpiar y cerrar modales
             const checkoutModalEl = document.getElementById('checkoutModal');
