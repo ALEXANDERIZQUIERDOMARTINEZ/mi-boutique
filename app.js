@@ -1672,8 +1672,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('checkout-address').value = clientData.direccion || '';
                 if (clientData.ciudad) {
                     document.getElementById('checkout-city').value = clientData.ciudad;
-                    // Trigger change event para validar método de pago
+                    // Trigger change event para validar método de pago y cargar barrios
                     document.getElementById('checkout-city').dispatchEvent(new Event('change'));
+
+                    // Cargar barrio si existe
+                    if (clientData.barrio) {
+                        // Esperar a que se carguen los barrios
+                        setTimeout(() => {
+                            document.getElementById('checkout-neighborhood').value = clientData.barrio;
+                        }, 100);
+                    }
                 }
                 showToast('¡Datos cargados! Bienvenido de nuevo', 'success');
             }
@@ -1682,13 +1690,66 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Validar método de pago según ciudad
+    // Definir barrios por ciudad
+    const neighborhoodsByCity = {
+        'Montería': [
+            'Cantaclaro',
+            'Centro',
+            'El Dorado',
+            'El Poblado',
+            'La Granja',
+            'La Ribera',
+            'Los Colores',
+            'Mogambo',
+            'Mocarí',
+            'P5',
+            'Pastrana',
+            'Policarpa',
+            'Villa Cielo',
+            'Villa Margarita',
+            'Villa Melissa',
+            'Otro'
+        ],
+        'Cereté': ['Centro', 'Norte', 'Sur', 'Otro'],
+        'Lorica': ['Centro', 'Norte', 'Sur', 'Otro'],
+        'Sahagún': ['Centro', 'Norte', 'Sur', 'Otro'],
+        'Planeta Rica': ['Centro', 'Norte', 'Sur', 'Otro'],
+        'Montelíbano': ['Centro', 'Norte', 'Sur', 'Otro'],
+        'Tierralta': ['Centro', 'Norte', 'Sur', 'Otro'],
+        'Ayapel': ['Centro', 'Norte', 'Sur', 'Otro']
+    };
+
+    // Validar método de pago según ciudad y mostrar barrios
     document.getElementById('checkout-city').addEventListener('change', function() {
         const ciudad = this.value;
         const efectivoOption = document.getElementById('payment-efectivo');
         const paymentInfo = document.getElementById('payment-info');
         const paymentSelect = document.getElementById('checkout-payment');
+        const neighborhoodSection = document.getElementById('neighborhood-section');
+        const neighborhoodSelect = document.getElementById('checkout-neighborhood');
 
+        // Manejar barrios
+        if (ciudad && neighborhoodsByCity[ciudad]) {
+            // Mostrar sección de barrio
+            neighborhoodSection.style.display = 'block';
+
+            // Limpiar opciones actuales
+            neighborhoodSelect.innerHTML = '<option value="">Seleccione su barrio</option>';
+
+            // Agregar barrios de la ciudad seleccionada
+            neighborhoodsByCity[ciudad].forEach(barrio => {
+                const option = document.createElement('option');
+                option.value = barrio;
+                option.textContent = barrio;
+                neighborhoodSelect.appendChild(option);
+            });
+        } else {
+            // Ocultar sección de barrio si la ciudad no tiene barrios definidos o no se seleccionó ciudad
+            neighborhoodSection.style.display = 'none';
+            neighborhoodSelect.value = '';
+        }
+
+        // Validación de método de pago
         if (ciudad && ciudad !== 'Montería') {
             efectivoOption.disabled = true;
             efectivoOption.textContent = 'Efectivo (No disponible fuera de Montería)';
@@ -1760,6 +1821,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nombre = document.getElementById('checkout-name').value.trim();
         const whatsapp = document.getElementById('checkout-phone').value.trim();
         const ciudad = document.getElementById('checkout-city').value.trim();
+        const barrio = document.getElementById('checkout-neighborhood').value.trim();
         const direccion = document.getElementById('checkout-address').value.trim();
         const observaciones = document.getElementById('checkout-notes').value.trim();
         const pago = document.getElementById('checkout-payment').value;
@@ -1854,6 +1916,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     nombre: nombre,
                     celular: whatsapp,
                     ciudad: ciudad,
+                    barrio: barrio || '',
                     direccion: direccion,
                     ultimaCompra: serverTimestamp()
                 });
@@ -1864,6 +1927,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     nombre: nombre,
                     celular: whatsapp,
                     ciudad: ciudad,
+                    barrio: barrio || '',
                     direccion: direccion,
                     ultimaCompra: serverTimestamp()
                 });
@@ -1877,6 +1941,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 clienteNombre: nombre,
                 clienteCelular: whatsapp,
                 clienteCiudad: ciudad,
+                clienteBarrio: barrio || '',
                 clienteDireccion: direccion,
                 observaciones: observaciones || '',
                 metodoPagoSolicitado: pago,
