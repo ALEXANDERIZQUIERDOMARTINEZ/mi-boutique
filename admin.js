@@ -735,7 +735,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 mensaje += `\\n¡Gracias por tu compra! 🎉`;
 
                 // Abrir WhatsApp con el mensaje
-                const telefono = orderData.clienteCelular.replace(/\D/g, '');
+                let telefono = orderData.clienteCelular.replace(/\D/g, '');
+
+                // Si el número ya comienza con 57 (código de Colombia), quitarlo para evitar duplicación
+                if (telefono.startsWith('57')) {
+                    telefono = telefono.substring(2);
+                }
+
                 const whatsappUrl = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
 
                 openWhatsApp(whatsappUrl);
