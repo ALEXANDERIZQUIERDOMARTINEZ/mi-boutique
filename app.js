@@ -1707,16 +1707,15 @@ document.addEventListener('DOMContentLoaded', () => {
             'Policarpa',
             'Villa Cielo',
             'Villa Margarita',
-            'Villa Melissa',
-            'Otro'
+            'Villa Melissa'
         ],
-        'Cereté': ['Centro', 'Norte', 'Sur', 'Otro'],
-        'Lorica': ['Centro', 'Norte', 'Sur', 'Otro'],
-        'Sahagún': ['Centro', 'Norte', 'Sur', 'Otro'],
-        'Planeta Rica': ['Centro', 'Norte', 'Sur', 'Otro'],
-        'Montelíbano': ['Centro', 'Norte', 'Sur', 'Otro'],
-        'Tierralta': ['Centro', 'Norte', 'Sur', 'Otro'],
-        'Ayapel': ['Centro', 'Norte', 'Sur', 'Otro']
+        'Cereté': ['Centro', 'Norte', 'Sur'],
+        'Lorica': ['Centro', 'Norte', 'Sur'],
+        'Sahagún': ['Centro', 'Norte', 'Sur'],
+        'Planeta Rica': ['Centro', 'Norte', 'Sur'],
+        'Montelíbano': ['Centro', 'Norte', 'Sur'],
+        'Tierralta': ['Centro', 'Norte', 'Sur'],
+        'Ayapel': ['Centro', 'Norte', 'Sur']
     };
 
     // Validar método de pago según ciudad y mostrar barrios
@@ -1726,27 +1725,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const paymentInfo = document.getElementById('payment-info');
         const paymentSelect = document.getElementById('checkout-payment');
         const neighborhoodSection = document.getElementById('neighborhood-section');
-        const neighborhoodSelect = document.getElementById('checkout-neighborhood');
+        const neighborhoodInput = document.getElementById('checkout-neighborhood');
+        const neighborhoodDatalist = document.getElementById('neighborhood-list');
 
         // Manejar barrios
         if (ciudad && neighborhoodsByCity[ciudad]) {
             // Mostrar sección de barrio
             neighborhoodSection.style.display = 'block';
 
-            // Limpiar opciones actuales
-            neighborhoodSelect.innerHTML = '<option value="">Seleccione su barrio</option>';
+            // Limpiar opciones actuales del datalist
+            neighborhoodDatalist.innerHTML = '';
 
-            // Agregar barrios de la ciudad seleccionada
+            // Agregar barrios de la ciudad seleccionada al datalist
             neighborhoodsByCity[ciudad].forEach(barrio => {
                 const option = document.createElement('option');
                 option.value = barrio;
-                option.textContent = barrio;
-                neighborhoodSelect.appendChild(option);
+                neighborhoodDatalist.appendChild(option);
             });
         } else {
             // Ocultar sección de barrio si la ciudad no tiene barrios definidos o no se seleccionó ciudad
             neighborhoodSection.style.display = 'none';
-            neighborhoodSelect.value = '';
+            neighborhoodInput.value = '';
         }
 
         // Validación de método de pago
