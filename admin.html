@@ -2688,6 +2688,45 @@
         </div>
     </div>
 
+    <!-- Modal para agregar costo de domicilio antes de enviar WhatsApp -->
+    <div class="modal fade" id="deliveryCostModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); color: white;">
+                    <h5 class="modal-title">
+                        <i class="bi bi-whatsapp me-2"></i>Confirmar Pedido por WhatsApp
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Ingresa el costo de domicilio antes de enviar la confirmación al cliente
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-truck me-1"></i>Costo de Domicilio
+                        </label>
+                        <input type="number" class="form-control form-control-lg" id="delivery-cost-input"
+                               placeholder="Ej: 3000" min="0" value="0">
+                        <small class="text-muted">Deja en 0 si no aplica costo de envío</small>
+                    </div>
+                    <div id="order-summary-preview" class="border rounded p-3 bg-light">
+                        <!-- Se llenará dinámicamente con JS -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" id="confirm-whatsapp-btn" style="background: #25D366; border-color: #25D366;">
+                        <i class="bi bi-whatsapp me-1"></i>Enviar WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- SheetJS para exportación a Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
@@ -2736,7 +2775,7 @@
         });
     </script>
 
-    <script type="module" src="admin.js?v=2.4.4"></script>
+    <script type="module" src="admin.js?v=2.5.0"></script>
 
     <!-- Script para generar catálogo en PDF -->
     <script type="module" src="catalogoPDF.js?v=1.0.0"></script>

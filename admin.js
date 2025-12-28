@@ -703,50 +703,117 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const orderData = orderSnap.data();
+                const subtotalProductos = orderData.subtotalProductos || orderData.totalPedido || 0;
 
-                // Construir mensaje de WhatsApp con detalles del pedido
-                let mensaje = `*🛍️ CONFIRMACIÓN DE PEDIDO*\\n\\n`;
-                mensaje += `Hola *${orderData.clienteNombre}*,\\n\\n`;
-                mensaje += `Hemos recibido tu pedido. A continuación los detalles:\\n\\n`;
-                mensaje += `*📦 PRODUCTOS:*\\n`;
+                // Mostrar modal para ingresar costo de domicilio
+                const modal = new bootstrap.Modal(document.getElementById('deliveryCostModal'));
+                const deliveryCostInput = document.getElementById('delivery-cost-input');
+                const orderSummaryPreview = document.getElementById('order-summary-preview');
+                const confirmBtn = document.getElementById('confirm-whatsapp-btn');
 
-                if (orderData.items && orderData.items.length > 0) {
-                    orderData.items.forEach((item, index) => {
-                        const product = localProductsMap.get(item.productoId);
-                        const categoria = product && product.categoria ? `[${product.categoria}]` : '';
-                        const imageUrl = product && product.imageUrl ? `\\n🔗 ${product.imageUrl}` : '';
+                // Resetear input
+                deliveryCostInput.value = orderData.costoEnvio || 0;
 
-                        mensaje += `\\n${index + 1}. *${item.nombre}* ${categoria}`;
-                        mensaje += `\\n   Talla: ${item.talla || 'N/A'} | Color: ${item.color || 'N/A'}`;
-                        mensaje += `\\n   Cantidad: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}`;
-                        if (imageUrl) mensaje += imageUrl;
-                        mensaje += `\\n`;
-                    });
+                // Función para actualizar el preview
+                function updatePreview() {
+                    const deliveryCost = parseFloat(deliveryCostInput.value) || 0;
+                    const total = subtotalProductos + deliveryCost;
+
+                    orderSummaryPreview.innerHTML = `
+                        <h6 class="mb-3"><i class="bi bi-receipt me-2"></i>Resumen del Pedido</h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal Productos:</span>
+                            <strong>${formatoMoneda.format(subtotalProductos)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Costo de Domicilio:</span>
+                            <strong class="text-success">${formatoMoneda.format(deliveryCost)}</strong>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-bold">Total a Pagar:</span>
+                            <strong class="text-primary fs-5">${formatoMoneda.format(total)}</strong>
+                        </div>
+                    `;
                 }
 
-                mensaje += `\\n*💰 TOTAL: ${formatoMoneda.format(orderData.totalPedido)}*\\n`;
-                mensaje += `\\n*📍 Dirección de entrega:*\\n${orderData.clienteDireccion}\\n`;
+                // Actualizar preview al cambiar el costo
+                deliveryCostInput.addEventListener('input', updatePreview);
+                updatePreview();
 
-                if (orderData.observaciones) {
-                    mensaje += `\\n*📝 Observaciones:*\\n${orderData.observaciones}\\n`;
-                }
+                // Mostrar modal
+                modal.show();
 
-                mensaje += `\\n*💳 Método de pago:* ${orderData.metodoPagoSolicitado}\\n`;
-                mensaje += `\\n¡Gracias por tu compra! 🎉`;
+                // Manejar confirmación
+                confirmBtn.onclick = async function() {
+                    try {
+                        const deliveryCost = parseFloat(deliveryCostInput.value) || 0;
+                        const total = subtotalProductos + deliveryCost;
 
-                // Abrir WhatsApp con el mensaje
-                let telefono = orderData.clienteCelular.replace(/\D/g, '');
+                        // Actualizar pedido en la base de datos con el costo de domicilio
+                        await updateDoc(orderRef, {
+                            costoEnvio: deliveryCost,
+                            totalPedido: total
+                        });
 
-                // Si el número ya comienza con 57 (código de Colombia), quitarlo para evitar duplicación
-                if (telefono.startsWith('57')) {
-                    telefono = telefono.substring(2);
-                }
+                        // Construir mensaje de WhatsApp
+                        let mensaje = `*🛍️ CONFIRMACIÓN DE PEDIDO*\\n\\n`;
+                        mensaje += `Hola *${orderData.clienteNombre}*,\\n\\n`;
+                        mensaje += `Hemos recibido tu pedido. A continuación los detalles:\\n\\n`;
+                        mensaje += `*📦 PRODUCTOS:*\\n`;
 
-                const whatsappUrl = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
+                        if (orderData.items && orderData.items.length > 0) {
+                            orderData.items.forEach((item, index) => {
+                                const product = localProductsMap.get(item.productoId);
+                                const categoria = product && product.categoria ? `[${product.categoria}]` : '';
+                                const imageUrl = product && product.imageUrl ? `\\n🔗 ${product.imageUrl}` : '';
 
-                openWhatsApp(whatsappUrl);
+                                mensaje += `\\n${index + 1}. *${item.nombre}* ${categoria}`;
+                                mensaje += `\\n   Talla: ${item.talla || 'N/A'} | Color: ${item.color || 'N/A'}`;
+                                mensaje += `\\n   Cantidad: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}`;
+                                if (imageUrl) mensaje += imageUrl;
+                                mensaje += `\\n`;
+                            });
+                        }
 
-                showToast('Abriendo WhatsApp con el mensaje de confirmación', 'success');
+                        mensaje += `\\n*📍 Dirección de entrega:*\\n${orderData.clienteDireccion}\\n`;
+
+                        if (orderData.observaciones) {
+                            mensaje += `\\n*📝 Observaciones:*\\n${orderData.observaciones}\\n`;
+                        }
+
+                        mensaje += `\\n*💳 Método de pago:* ${orderData.metodoPagoSolicitado}\\n`;
+                        mensaje += `\\n*💰 RESUMEN:*\\n`;
+                        mensaje += `Subtotal Productos: ${formatoMoneda.format(subtotalProductos)}\\n`;
+                        if (deliveryCost > 0) {
+                            mensaje += `Costo de Envío: ${formatoMoneda.format(deliveryCost)}\\n`;
+                        }
+                        mensaje += `\\n*TOTAL: ${formatoMoneda.format(total)}*\\n`;
+                        mensaje += `\\n¡Gracias por tu compra! 🎉`;
+
+                        // Preparar número de WhatsApp
+                        let telefono = orderData.clienteCelular.replace(/\D/g, '');
+
+                        // Si el número ya comienza con 57 (código de Colombia), quitarlo para evitar duplicación
+                        if (telefono.startsWith('57')) {
+                            telefono = telefono.substring(2);
+                        }
+
+                        const whatsappUrl = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
+
+                        // Cerrar modal
+                        modal.hide();
+
+                        // Abrir WhatsApp
+                        openWhatsApp(whatsappUrl);
+
+                        showToast('Pedido actualizado y abriendo WhatsApp...', 'success');
+
+                    } catch (error) {
+                        console.error('Error al confirmar:', error);
+                        showToast('Error al procesar el pedido', 'error');
+                    }
+                };
 
             } catch (error) {
                 console.error('Error al generar mensaje de WhatsApp:', error);
