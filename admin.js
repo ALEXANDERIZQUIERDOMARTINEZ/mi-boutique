@@ -624,17 +624,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const orderData = orderSnap.data();
                 const subtotalProductos = orderData.subtotalProductos || orderData.totalPedido || 0;
 
-                // Mostrar modal para ingresar costo de domicilio
+                // Mostrar modal para ingresar costo de domicilio y repartidor
                 const modal = new bootstrap.Modal(document.getElementById('deliveryCostModal'));
                 const deliveryCostInput = document.getElementById('delivery-cost-input');
+                const deliveryPersonSelect = document.getElementById('delivery-person-select');
                 const orderSummaryPreview = document.getElementById('order-summary-preview');
                 const confirmBtn = document.getElementById('confirm-whatsapp-btn');
 
                 // Cambiar texto del botón para aceptar pedido
                 confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Aceptar Pedido';
 
-                // Resetear input
+                // Resetear inputs
                 deliveryCostInput.value = orderData.costoEnvio || 0;
+                deliveryPersonSelect.value = orderData.repartidor || 'Papi';
 
                 // Función para actualizar el preview
                 function updatePreview() {
@@ -671,21 +673,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 confirmBtn.onclick = async function() {
                     try {
                         const deliveryCost = parseFloat(deliveryCostInput.value) || 0;
+                        const deliveryPerson = deliveryPersonSelect.value;
                         const total = subtotalProductos + deliveryCost;
 
-                        // Actualizar pedido con costo de domicilio
+                        // Actualizar pedido con costo de domicilio y repartidor
                         await updateDoc(orderRef, {
                             estado: 'aceptado',
                             fechaAceptacion: serverTimestamp(),
                             costoEnvio: deliveryCost,
+                            repartidor: deliveryPerson,
                             totalPedido: total
                         });
 
                         // Cerrar modal
                         modal.hide();
 
-                        // Pre-llenar formulario de venta con el costo de domicilio
-                        await preFillSalesForm(orderData, orderId, deliveryCost, total);
+                        // Pre-llenar formulario de venta con el costo de domicilio y repartidor
+                        await preFillSalesForm(orderData, orderId, deliveryCost, total, deliveryPerson);
 
                         showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
 
@@ -713,7 +717,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        async function preFillSalesForm(orderData, orderId, deliveryCost = 0, total = 0) {
+        async function preFillSalesForm(orderData, orderId, deliveryCost = 0, total = 0, deliveryPerson = 'Papi') {
             window.ventaItems = [];
 
             const ventaClienteInput = document.getElementById('venta-cliente');
@@ -746,7 +750,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const ventaObservaciones = document.getElementById('venta-observaciones');
             if (ventaObservaciones) {
                 let obs = `Pedido Web #${orderId.substring(0, 8).toUpperCase()}\n`;
-                obs += `Repartidor: Papi\n`;
+                obs += `Repartidor: ${deliveryPerson}\n`;
                 if (orderData.observaciones) obs += `${orderData.observaciones}\n`;
                 if (deliveryCost > 0) obs += `Costo Domicilio: ${formatoMoneda.format(deliveryCost)}`;
                 ventaObservaciones.value = obs;
@@ -782,14 +786,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 const orderData = orderSnap.data();
                 const subtotalProductos = orderData.subtotalProductos || orderData.totalPedido || 0;
 
-                // Mostrar modal para ingresar costo de domicilio
+                // Mostrar modal para ingresar costo de domicilio y repartidor
                 const modal = new bootstrap.Modal(document.getElementById('deliveryCostModal'));
                 const deliveryCostInput = document.getElementById('delivery-cost-input');
+                const deliveryPersonSelect = document.getElementById('delivery-person-select');
                 const orderSummaryPreview = document.getElementById('order-summary-preview');
                 const confirmBtn = document.getElementById('confirm-whatsapp-btn');
 
-                // Resetear input
+                // Resetear inputs
                 deliveryCostInput.value = orderData.costoEnvio || 0;
+                deliveryPersonSelect.value = orderData.repartidor || 'Papi';
 
                 // Función para actualizar el preview
                 function updatePreview() {
@@ -825,11 +831,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 confirmBtn.onclick = async function() {
                     try {
                         const deliveryCost = parseFloat(deliveryCostInput.value) || 0;
+                        const deliveryPerson = deliveryPersonSelect.value;
                         const total = subtotalProductos + deliveryCost;
 
-                        // Actualizar pedido en la base de datos con el costo de domicilio
+                        // Actualizar pedido en la base de datos con el costo de domicilio y repartidor
                         await updateDoc(orderRef, {
                             costoEnvio: deliveryCost,
+                            repartidor: deliveryPerson,
                             totalPedido: total
                         });
 
@@ -859,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             mensaje += `\n*Observaciones:*\n${orderData.observaciones}\n`;
                         }
 
-                        mensaje += `\n*Repartidor:* Papi\n`;
+                        mensaje += `\n*Repartidor:* ${deliveryPerson}\n`;
                         mensaje += `\n*Metodo de pago:* ${orderData.metodoPagoSolicitado}\n`;
                         mensaje += `\n*RESUMEN:*\n`;
                         mensaje += `Subtotal Productos: ${formatoMoneda.format(subtotalProductos)}\n`;
