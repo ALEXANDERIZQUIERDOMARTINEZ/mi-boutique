@@ -869,6 +869,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         mensaje += `\\n*TOTAL A PAGAR: ${formatoMoneda.format(total)}*\\n`;
                         mensaje += `\\nGracias por tu compra!`;
 
+                        // ⚠️ DEBUG: Mostrar mensaje en consola
+                        console.log('=== MENSAJE GENERADO ===');
+                        console.log(mensaje);
+                        console.log('========================');
+
                         // Preparar número de WhatsApp
                         let telefono = orderData.clienteCelular.replace(/\D/g, '');
 
