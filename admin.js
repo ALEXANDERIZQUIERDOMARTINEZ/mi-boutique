@@ -834,10 +834,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
 
                         // Construir mensaje de WhatsApp (sin emojis para mejor compatibilidad)
-                        let mensaje = `*CONFIRMACION DE PEDIDO*\\n\\n`;
+                        let mensaje = `*CONFIRMACION DE PEDIDO [v2.7]*\\n\\n`;
                         mensaje += `Hola *${orderData.clienteNombre}*,\\n\\n`;
                         mensaje += `Hemos recibido tu pedido. A continuacion los detalles:\\n\\n`;
-                        mensaje += `*PRODUCTOS:*\\n`;
+                        mensaje += `*PRODUCTOS:*\\n\\n`;
 
                         if (orderData.items && orderData.items.length > 0) {
                             orderData.items.forEach((item, index) => {
