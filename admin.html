@@ -2716,11 +2716,9 @@
                             <i class="bi bi-person-badge me-1"></i>Repartidor
                         </label>
                         <select class="form-select form-select-lg" id="delivery-person-select">
-                            <option value="Papi">Papi</option>
-                            <option value="Gabriel">Gabriel</option>
-                            <option value="Carlos">Carlos</option>
-                            <option value="Otro">Otro</option>
+                            <option value="">Cargando...</option>
                         </select>
+                        <small class="text-muted">Los repartidores se cargan desde la base de datos</small>
                     </div>
                     <div id="order-summary-preview" class="border rounded p-3 bg-light">
                         <!-- Se llenará dinámicamente con JS -->
@@ -2786,7 +2784,7 @@
         });
     </script>
 
-    <script type="module" src="admin.js?v=3.1.0"></script>
+    <script type="module" src="admin.js?v=3.2.0"></script>
 
     <!-- Script para generar catálogo en PDF -->
     <script type="module" src="catalogoPDF.js?v=1.0.0"></script>
