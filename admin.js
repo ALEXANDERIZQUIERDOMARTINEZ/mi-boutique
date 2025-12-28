@@ -756,17 +756,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             totalPedido: total
                         });
 
-                        // Construir mensaje de WhatsApp
-                        let mensaje = `*🛍️ CONFIRMACIÓN DE PEDIDO*\\n\\n`;
+                        // Construir mensaje de WhatsApp (sin emojis para mejor compatibilidad)
+                        let mensaje = `*CONFIRMACION DE PEDIDO*\\n\\n`;
                         mensaje += `Hola *${orderData.clienteNombre}*,\\n\\n`;
-                        mensaje += `Hemos recibido tu pedido. A continuación los detalles:\\n\\n`;
-                        mensaje += `*📦 PRODUCTOS:*\\n`;
+                        mensaje += `Hemos recibido tu pedido. A continuacion los detalles:\\n\\n`;
+                        mensaje += `*PRODUCTOS:*\\n`;
 
                         if (orderData.items && orderData.items.length > 0) {
                             orderData.items.forEach((item, index) => {
                                 const product = localProductsMap.get(item.productoId);
                                 const categoria = product && product.categoria ? `[${product.categoria}]` : '';
-                                const imageUrl = product && product.imageUrl ? `\\n🔗 ${product.imageUrl}` : '';
+                                const imageUrl = product && product.imageUrl ? `\\n   Link: ${product.imageUrl}` : '';
 
                                 mensaje += `\\n${index + 1}. *${item.nombre}* ${categoria}`;
                                 mensaje += `\\n   Talla: ${item.talla || 'N/A'} | Color: ${item.color || 'N/A'}`;
@@ -776,20 +776,20 @@ document.addEventListener('DOMContentLoaded', () => {
                             });
                         }
 
-                        mensaje += `\\n*📍 Dirección de entrega:*\\n${orderData.clienteDireccion}\\n`;
+                        mensaje += `\\n*Direccion de entrega:*\\n${orderData.clienteDireccion}\\n`;
 
                         if (orderData.observaciones) {
-                            mensaje += `\\n*📝 Observaciones:*\\n${orderData.observaciones}\\n`;
+                            mensaje += `\\n*Observaciones:*\\n${orderData.observaciones}\\n`;
                         }
 
-                        mensaje += `\\n*💳 Método de pago:* ${orderData.metodoPagoSolicitado}\\n`;
-                        mensaje += `\\n*💰 RESUMEN:*\\n`;
+                        mensaje += `\\n*Metodo de pago:* ${orderData.metodoPagoSolicitado}\\n`;
+                        mensaje += `\\n*RESUMEN:*\\n`;
                         mensaje += `Subtotal Productos: ${formatoMoneda.format(subtotalProductos)}\\n`;
                         if (deliveryCost > 0) {
-                            mensaje += `Costo de Envío: ${formatoMoneda.format(deliveryCost)}\\n`;
+                            mensaje += `Costo de Envio: ${formatoMoneda.format(deliveryCost)}\\n`;
                         }
                         mensaje += `\\n*TOTAL: ${formatoMoneda.format(total)}*\\n`;
-                        mensaje += `\\n¡Gracias por tu compra! 🎉`;
+                        mensaje += `\\nGracias por tu compra!`;
 
                         // Preparar número de WhatsApp
                         let telefono = orderData.clienteCelular.replace(/\D/g, '');
