@@ -834,40 +834,40 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
 
                         // Construir mensaje de WhatsApp (sin emojis para mejor compatibilidad)
-                        let mensaje = `*CONFIRMACION DE PEDIDO [v2.7]*\\n\\n`;
-                        mensaje += `Hola *${orderData.clienteNombre}*,\\n\\n`;
-                        mensaje += `Hemos recibido tu pedido. A continuacion los detalles:\\n\\n`;
-                        mensaje += `*PRODUCTOS:*\\n\\n`;
+                        let mensaje = `*CONFIRMACION DE PEDIDO*\n\n`;
+                        mensaje += `Hola *${orderData.clienteNombre}*,\n\n`;
+                        mensaje += `Hemos recibido tu pedido. A continuacion los detalles:\n\n`;
+                        mensaje += `*PRODUCTOS:*\n\n`;
 
                         if (orderData.items && orderData.items.length > 0) {
                             orderData.items.forEach((item, index) => {
                                 const product = localProductsMap.get(item.productoId);
                                 const categoria = product && product.categoria ? `[${product.categoria}]` : '';
-                                const imageUrl = product && product.imageUrl ? `\\n   Link: ${product.imageUrl}` : '';
+                                const imageUrl = product && product.imageUrl ? `\n   Link: ${product.imageUrl}` : '';
 
-                                mensaje += `\\n${index + 1}. *${item.nombre}* ${categoria}`;
-                                mensaje += `\\n   Talla: ${item.talla || 'N/A'} | Color: ${item.color || 'N/A'}`;
-                                mensaje += `\\n   Cantidad: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}`;
+                                mensaje += `\n${index + 1}. *${item.nombre}* ${categoria}`;
+                                mensaje += `\n   Talla: ${item.talla || 'N/A'} | Color: ${item.color || 'N/A'}`;
+                                mensaje += `\n   Cantidad: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}`;
                                 if (imageUrl) mensaje += imageUrl;
-                                mensaje += `\\n`;
+                                mensaje += `\n`;
                             });
                         }
 
-                        mensaje += `\\n*Direccion de entrega:*\\n${orderData.clienteDireccion}\\n`;
+                        mensaje += `\n*Direccion de entrega:*\n${orderData.clienteDireccion}\n`;
 
                         if (orderData.observaciones) {
-                            mensaje += `\\n*Observaciones:*\\n${orderData.observaciones}\\n`;
+                            mensaje += `\n*Observaciones:*\n${orderData.observaciones}\n`;
                         }
 
-                        mensaje += `\\n*Repartidor:* Papi\\n`;
-                        mensaje += `\\n*Metodo de pago:* ${orderData.metodoPagoSolicitado}\\n`;
-                        mensaje += `\\n*RESUMEN:*\\n`;
-                        mensaje += `Subtotal Productos: ${formatoMoneda.format(subtotalProductos)}\\n`;
+                        mensaje += `\n*Repartidor:* Papi\n`;
+                        mensaje += `\n*Metodo de pago:* ${orderData.metodoPagoSolicitado}\n`;
+                        mensaje += `\n*RESUMEN:*\n`;
+                        mensaje += `Subtotal Productos: ${formatoMoneda.format(subtotalProductos)}\n`;
                         if (deliveryCost > 0) {
-                            mensaje += `Costo de Envio: ${formatoMoneda.format(deliveryCost)}\\n`;
+                            mensaje += `Costo de Envio: ${formatoMoneda.format(deliveryCost)}\n`;
                         }
-                        mensaje += `\\n*TOTAL A PAGAR: ${formatoMoneda.format(total)}*\\n`;
-                        mensaje += `\\nGracias por tu compra!`;
+                        mensaje += `\n*TOTAL A PAGAR: ${formatoMoneda.format(total)}*\n`;
+                        mensaje += `\nGracias por tu compra!`;
 
                         // ⚠️ DEBUG: Mostrar mensaje en consola
                         console.log('=== MENSAJE GENERADO ===');
