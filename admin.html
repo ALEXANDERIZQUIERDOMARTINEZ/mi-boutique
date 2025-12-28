@@ -2711,6 +2711,17 @@
                                placeholder="Ej: 3000" min="0" value="0">
                         <small class="text-muted">Deja en 0 si no aplica costo de envío</small>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-person-badge me-1"></i>Repartidor
+                        </label>
+                        <select class="form-select form-select-lg" id="delivery-person-select">
+                            <option value="Papi">Papi</option>
+                            <option value="Gabriel">Gabriel</option>
+                            <option value="Carlos">Carlos</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
                     <div id="order-summary-preview" class="border rounded p-3 bg-light">
                         <!-- Se llenará dinámicamente con JS -->
                     </div>
@@ -2775,7 +2786,7 @@
         });
     </script>
 
-    <script type="module" src="admin.js?v=3.0.0"></script>
+    <script type="module" src="admin.js?v=3.1.0"></script>
 
     <!-- Script para generar catálogo en PDF -->
     <script type="module" src="catalogoPDF.js?v=1.0.0"></script>
