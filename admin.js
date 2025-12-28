@@ -624,10 +624,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 const orderData = orderSnap.data();
                 const subtotalProductos = orderData.subtotalProductos || orderData.totalPedido || 0;
 
+                // Cargar repartidores desde la base de datos
+                const deliveryPersonSelect = document.getElementById('delivery-person-select');
+                deliveryPersonSelect.innerHTML = ''; // Limpiar opciones
+
+                try {
+                    const repartidoresSnap = await getDocs(query(repartidoresCollection, orderBy('nombre')));
+                    if (repartidoresSnap.empty) {
+                        // Si no hay repartidores, agregar uno por defecto
+                        deliveryPersonSelect.innerHTML = '<option value="Papi">Papi</option>';
+                    } else {
+                        repartidoresSnap.forEach(doc => {
+                            const repartidor = doc.data();
+                            const option = document.createElement('option');
+                            option.value = repartidor.nombre;
+                            option.textContent = repartidor.nombre;
+                            deliveryPersonSelect.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error al cargar repartidores:', error);
+                    deliveryPersonSelect.innerHTML = '<option value="Papi">Papi</option>';
+                }
+
                 // Mostrar modal para ingresar costo de domicilio y repartidor
                 const modal = new bootstrap.Modal(document.getElementById('deliveryCostModal'));
                 const deliveryCostInput = document.getElementById('delivery-cost-input');
-                const deliveryPersonSelect = document.getElementById('delivery-person-select');
                 const orderSummaryPreview = document.getElementById('order-summary-preview');
                 const confirmBtn = document.getElementById('confirm-whatsapp-btn');
 
@@ -786,10 +808,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 const orderData = orderSnap.data();
                 const subtotalProductos = orderData.subtotalProductos || orderData.totalPedido || 0;
 
+                // Cargar repartidores desde la base de datos
+                const deliveryPersonSelect = document.getElementById('delivery-person-select');
+                deliveryPersonSelect.innerHTML = ''; // Limpiar opciones
+
+                try {
+                    const repartidoresSnap = await getDocs(query(repartidoresCollection, orderBy('nombre')));
+                    if (repartidoresSnap.empty) {
+                        // Si no hay repartidores, agregar uno por defecto
+                        deliveryPersonSelect.innerHTML = '<option value="Papi">Papi</option>';
+                    } else {
+                        repartidoresSnap.forEach(doc => {
+                            const repartidor = doc.data();
+                            const option = document.createElement('option');
+                            option.value = repartidor.nombre;
+                            option.textContent = repartidor.nombre;
+                            deliveryPersonSelect.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error al cargar repartidores:', error);
+                    deliveryPersonSelect.innerHTML = '<option value="Papi">Papi</option>';
+                }
+
                 // Mostrar modal para ingresar costo de domicilio y repartidor
                 const modal = new bootstrap.Modal(document.getElementById('deliveryCostModal'));
                 const deliveryCostInput = document.getElementById('delivery-cost-input');
-                const deliveryPersonSelect = document.getElementById('delivery-person-select');
                 const orderSummaryPreview = document.getElementById('order-summary-preview');
                 const confirmBtn = document.getElementById('confirm-whatsapp-btn');
 
