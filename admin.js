@@ -615,31 +615,97 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const orderRef = doc(db, 'pedidosWeb', orderId);
                 const orderSnap = await getDoc(orderRef);
-                
+
                 if (!orderSnap.exists()) {
                     showToast('Pedido no encontrado', 'error');
                     return;
                 }
 
                 const orderData = orderSnap.data();
+                const subtotalProductos = orderData.subtotalProductos || orderData.totalPedido || 0;
 
-                await updateDoc(orderRef, {
-                    estado: 'aceptado',
-                    fechaAceptacion: serverTimestamp()
-                });
+                // Mostrar modal para ingresar costo de domicilio
+                const modal = new bootstrap.Modal(document.getElementById('deliveryCostModal'));
+                const deliveryCostInput = document.getElementById('delivery-cost-input');
+                const orderSummaryPreview = document.getElementById('order-summary-preview');
+                const confirmBtn = document.getElementById('confirm-whatsapp-btn');
 
-                await preFillSalesForm(orderData, orderId);
+                // Cambiar texto del botón para aceptar pedido
+                confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Aceptar Pedido';
 
-                showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
+                // Resetear input
+                deliveryCostInput.value = orderData.costoEnvio || 0;
 
-                const ventasTab = document.querySelector('a[href="#ventas"]');
-                if (ventasTab) {
-                    const tab = bootstrap.Tab.getOrCreateInstance(ventasTab);
-                    tab.show();
+                // Función para actualizar el preview
+                function updatePreview() {
+                    const deliveryCost = parseFloat(deliveryCostInput.value) || 0;
+                    const total = subtotalProductos + deliveryCost;
+
+                    orderSummaryPreview.innerHTML = `
+                        <h6 class="mb-3"><i class="bi bi-receipt me-2"></i>Resumen del Pedido</h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal Productos:</span>
+                            <strong>${formatoMoneda.format(subtotalProductos)}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Costo de Domicilio:</span>
+                            <strong class="text-success">${formatoMoneda.format(deliveryCost)}</strong>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-bold">Total a Pagar:</span>
+                            <strong class="text-primary fs-5">${formatoMoneda.format(total)}</strong>
+                        </div>
+                    `;
                 }
 
-                const salesFormViewBtn = document.getElementById('toggle-sales-form-view-btn');
-                if (salesFormViewBtn) salesFormViewBtn.click();
+                // Actualizar preview al cambiar el costo
+                deliveryCostInput.removeEventListener('input', updatePreview);
+                deliveryCostInput.addEventListener('input', updatePreview);
+                updatePreview();
+
+                // Mostrar modal
+                modal.show();
+
+                // Manejar confirmación
+                confirmBtn.onclick = async function() {
+                    try {
+                        const deliveryCost = parseFloat(deliveryCostInput.value) || 0;
+                        const total = subtotalProductos + deliveryCost;
+
+                        // Actualizar pedido con costo de domicilio
+                        await updateDoc(orderRef, {
+                            estado: 'aceptado',
+                            fechaAceptacion: serverTimestamp(),
+                            costoEnvio: deliveryCost,
+                            totalPedido: total
+                        });
+
+                        // Cerrar modal
+                        modal.hide();
+
+                        // Pre-llenar formulario de venta con el costo de domicilio
+                        await preFillSalesForm(orderData, orderId, deliveryCost, total);
+
+                        showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
+
+                        const ventasTab = document.querySelector('a[href="#ventas"]');
+                        if (ventasTab) {
+                            const tab = bootstrap.Tab.getOrCreateInstance(ventasTab);
+                            tab.show();
+                        }
+
+                        const salesFormViewBtn = document.getElementById('toggle-sales-form-view-btn');
+                        if (salesFormViewBtn) salesFormViewBtn.click();
+
+                        // Restaurar texto del botón
+                        confirmBtn.innerHTML = '<i class="bi bi-whatsapp me-1"></i>Enviar WhatsApp';
+
+                    } catch (error) {
+                        console.error('Error al aceptar pedido:', error);
+                        showToast('Error al procesar el pedido', 'error');
+                    }
+                };
 
             } catch (error) {
                 console.error('Error al aceptar pedido:', error);
@@ -647,13 +713,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        async function preFillSalesForm(orderData, orderId) {
-            window.ventaItems = []; 
+        async function preFillSalesForm(orderData, orderId, deliveryCost = 0, total = 0) {
+            window.ventaItems = [];
 
             const ventaClienteInput = document.getElementById('venta-cliente');
             const ventaCelularInput = document.getElementById('venta-cliente-celular');
             const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
-            
+
             if (ventaClienteInput) ventaClienteInput.value = orderData.clienteNombre;
             if (ventaCelularInput) ventaCelularInput.value = orderData.clienteCelular;
             if (ventaDireccionInput) ventaDireccionInput.value = orderData.clienteDireccion;
@@ -667,24 +733,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipoEntregaSelect.dispatchEvent(new Event('change'));
             }
 
+            // Agregar costo de domicilio si existe el campo
+            const costoDomicilioInput = document.getElementById('costo-domicilio');
+            if (costoDomicilioInput && deliveryCost > 0) {
+                costoDomicilioInput.value = deliveryCost;
+                costoDomicilioInput.dispatchEvent(new Event('input'));
+            }
+
             const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp');
             if (ventaWhatsappCheckbox) ventaWhatsappCheckbox.checked = false; // Invertido para corregir lógica
 
             const ventaObservaciones = document.getElementById('venta-observaciones');
             if (ventaObservaciones) {
-                ventaObservaciones.value = `Pedido Web #${orderId.substring(0, 8).toUpperCase()}\n${orderData.observaciones || ''}`;
+                let obs = `Pedido Web #${orderId.substring(0, 8).toUpperCase()}\n`;
+                obs += `Repartidor: Papi\n`;
+                if (orderData.observaciones) obs += `${orderData.observaciones}\n`;
+                if (deliveryCost > 0) obs += `Costo Domicilio: ${formatoMoneda.format(deliveryCost)}`;
+                ventaObservaciones.value = obs;
             }
 
             if (orderData.items && orderData.items.length > 0) {
                 orderData.items.forEach(item => {
-                    window.agregarItemAlCarrito( 
+                    window.agregarItemAlCarrito(
                         item.productoId,
-                        item.nombre, 
+                        item.nombre,
                         item.cantidad,
                         item.precio,
                         item.talla,
                         item.color,
-                        `${item.nombre} (${item.talla}/${item.color})` 
+                        `${item.nombre} (${item.talla}/${item.color})`
                     );
                 });
             }
@@ -782,13 +859,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             mensaje += `\\n*Observaciones:*\\n${orderData.observaciones}\\n`;
                         }
 
+                        mensaje += `\\n*Repartidor:* Papi\\n`;
                         mensaje += `\\n*Metodo de pago:* ${orderData.metodoPagoSolicitado}\\n`;
                         mensaje += `\\n*RESUMEN:*\\n`;
                         mensaje += `Subtotal Productos: ${formatoMoneda.format(subtotalProductos)}\\n`;
                         if (deliveryCost > 0) {
                             mensaje += `Costo de Envio: ${formatoMoneda.format(deliveryCost)}\\n`;
                         }
-                        mensaje += `\\n*TOTAL: ${formatoMoneda.format(total)}*\\n`;
+                        mensaje += `\\n*TOTAL A PAGAR: ${formatoMoneda.format(total)}*\\n`;
                         mensaje += `\\nGracias por tu compra!`;
 
                         // Preparar número de WhatsApp
