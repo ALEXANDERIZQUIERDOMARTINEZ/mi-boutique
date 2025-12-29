@@ -329,12 +329,23 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Lógica para limpiar modales de búsqueda al cerrar ---
         if (searchProductModalEl) {
             searchProductModalEl.addEventListener('hide.bs.modal', () => {
-                const input = document.getElementById('product-modal-search');
-                if (input) input.value = ''; 
+                // Resetear todos los filtros cuando se cierra el modal
+                const searchInput = document.getElementById('product-modal-search');
+                const categorySelect = document.getElementById('product-modal-category');
+                const stockOnlyCheckbox = document.getElementById('product-modal-stock-only');
+                const visibleOnlyCheckbox = document.getElementById('product-modal-visible-only');
+                const sortSelect = document.getElementById('product-modal-sort');
+
+                if (searchInput) searchInput.value = '';
+                if (categorySelect) categorySelect.value = '';
+                if (stockOnlyCheckbox) stockOnlyCheckbox.checked = false;
+                if (visibleOnlyCheckbox) visibleOnlyCheckbox.checked = false;
+                if (sortSelect) sortSelect.value = 'name-asc';
+
                 const list = document.getElementById('product-modal-list');
                 if (list) {
                     list.querySelectorAll('.product-search-item').forEach(item => {
-                        item.style.display = ''; 
+                        item.style.display = '';
                     });
                 }
             });
