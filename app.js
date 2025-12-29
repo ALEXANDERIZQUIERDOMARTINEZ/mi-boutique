@@ -800,12 +800,19 @@ function renderSizeButtons(tallas, esTallaUnica, product) {
 function renderColorButtons(selectedTalla, product) {
     const coloresButtons = document.getElementById('colores-buttons');
     const coloresContainer = document.getElementById('colores-container');
+    const colorHelpMessage = document.getElementById('color-help-message');
     coloresButtons.innerHTML = '';
 
     if (!selectedTalla) {
-        coloresContainer.style.display = 'none';
+        coloresContainer.style.display = 'block';
+        coloresButtons.style.display = 'none';
+        if (colorHelpMessage) colorHelpMessage.style.display = 'block';
         return;
     }
+
+    // Si hay talla seleccionada, ocultar el mensaje de ayuda
+    if (colorHelpMessage) colorHelpMessage.style.display = 'none';
+    coloresButtons.style.display = 'flex';
 
     const variaciones = product.variaciones || [];
 
