@@ -727,6 +727,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Restaurar texto del botón
                         confirmBtn.innerHTML = '<i class="bi bi-whatsapp me-1"></i>Enviar WhatsApp';
 
+                        // Notificar al repartidor
+                        await notificarRepartidor(deliveryPerson, orderData, deliveryCost, total);
+
                     } catch (error) {
                         console.error('Error al aceptar pedido:', error);
                         showToast('Error al procesar el pedido', 'error');
@@ -956,7 +959,88 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-    })(); 
+        // Función para notificar al repartidor por WhatsApp
+        async function notificarRepartidor(nombreRepartidor, orderData, deliveryCost, total) {
+            try {
+                // Buscar el repartidor en la base de datos
+                const repartidorQuery = query(repartidoresCollection, where('nombre', '==', nombreRepartidor));
+                const repartidorSnap = await getDocs(repartidorQuery);
+
+                if (repartidorSnap.empty) {
+                    console.log('Repartidor no encontrado en la base de datos');
+                    return;
+                }
+
+                const repartidorData = repartidorSnap.docs[0].data();
+
+                if (!repartidorData.celular) {
+                    console.log('El repartidor no tiene número de celular registrado');
+                    showToast('El repartidor no tiene número de celular', 'warning');
+                    return;
+                }
+
+                // Construir mensaje para el repartidor
+                let mensaje = `*NUEVO PEDIDO ASIGNADO*\n\n`;
+                mensaje += `Hola ${nombreRepartidor},\n\n`;
+                mensaje += `Te han asignado un nuevo pedido:\n\n`;
+
+                mensaje += `*CLIENTE:*\n`;
+                mensaje += `Nombre: ${orderData.clienteNombre}\n`;
+                mensaje += `Telefono: ${orderData.clienteCelular}\n\n`;
+
+                mensaje += `*DIRECCION DE ENTREGA:*\n`;
+                mensaje += `${orderData.clienteDireccion}\n`;
+                mensaje += `Ciudad: ${orderData.clienteCiudad}\n`;
+                if (orderData.clienteBarrio) {
+                    mensaje += `Barrio: ${orderData.clienteBarrio}\n`;
+                }
+
+                if (orderData.observaciones) {
+                    mensaje += `\n*OBSERVACIONES:*\n${orderData.observaciones}\n`;
+                }
+
+                mensaje += `\n*PRODUCTOS:*\n`;
+                if (orderData.items && orderData.items.length > 0) {
+                    orderData.items.forEach((item, index) => {
+                        mensaje += `\n${index + 1}. ${item.nombre}`;
+                        mensaje += `\n   Talla: ${item.talla} | Color: ${item.color}`;
+                        mensaje += `\n   Cantidad: ${item.cantidad}\n`;
+                    });
+                }
+
+                mensaje += `\n*PAGO:*\n`;
+                mensaje += `Metodo: ${orderData.metodoPagoSolicitado}\n`;
+                mensaje += `Total a cobrar: ${formatoMoneda.format(total)}\n`;
+
+                if (orderData.metodoPagoSolicitado === 'Efectivo') {
+                    mensaje += `\n*IMPORTANTE:* Cobrar en efectivo\n`;
+                }
+
+                mensaje += `\nDomicilio: ${formatoMoneda.format(deliveryCost)}`;
+
+                // Limpiar número de WhatsApp
+                let telefono = repartidorData.celular.replace(/\D/g, '');
+
+                // Si el número ya comienza con 57, quitarlo para evitar duplicación
+                if (telefono.startsWith('57')) {
+                    telefono = telefono.substring(2);
+                }
+
+                const whatsappUrl = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
+
+                // Abrir WhatsApp
+                setTimeout(() => {
+                    openWhatsApp(whatsappUrl);
+                    showToast(`Notificando a ${nombreRepartidor}...`, 'info');
+                }, 1000); // Pequeño delay para que no interfiera con el flujo
+
+            } catch (error) {
+                console.error('Error al notificar al repartidor:', error);
+                showToast('Error al notificar al repartidor', 'error');
+            }
+        }
+
+    })();
 
     // ========================================================================
     // --- LÓGICA CATEGORÍAS (Funcional CRUD with Modals) ---
