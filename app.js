@@ -793,6 +793,9 @@ function renderSizeButtons(tallas, esTallaUnica, product) {
                 btn.onclick = () => selectTalla(talla, product);
                 tallasButtons.appendChild(btn);
             });
+
+            // Inicializar área de colores para mostrar mensaje de ayuda
+            renderColorButtons(null, product);
         }
     }
 }
