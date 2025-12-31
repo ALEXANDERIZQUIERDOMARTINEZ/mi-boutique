@@ -1687,7 +1687,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('checkout-form').reset();
 
             // Crear URL de WhatsApp con número correcto
-            const numeroWhatsApp = '573046084971'; // Número de la empresa
+            const numeroWhatsApp = '573017850041'; // Número de la empresa
             const mensajeWhatsAppURL = encodeURIComponent(mensajeWhatsApp);
             const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${mensajeWhatsAppURL}`;
 
