@@ -5090,7 +5090,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 }
 
                 // Abrir WhatsApp
-                const whatsappUrl = `https://wa.me/573046084971?text=${encodeURIComponent(mensaje)}`;
+                const whatsappUrl = `https://wa.me/573017850041?text=${encodeURIComponent(mensaje)}`;
                 openWhatsApp(whatsappUrl);
 
                 showToast("✅ Cierre guardado! Enviando por WhatsApp...", 'success');
