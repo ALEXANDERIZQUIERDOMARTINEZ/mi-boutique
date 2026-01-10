@@ -10,7 +10,6 @@
 
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin-styles.css?v=2.4.2">
-    <link rel="stylesheet" href="sidebar-modern.css?v=1.0.0">
 
     <!-- Logo/Icon -->
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -31,9 +30,6 @@
     <aside class="admin-sidebar" id="adminSidebar">
         <!-- Brand / Logo -->
         <div class="sidebar-brand">
-            <div class="sidebar-brand-icon">
-                <i class="bi bi-shop"></i>
-            </div>
             <span>Mishell</span>
         </div>
 
@@ -133,11 +129,10 @@
             </ul>
 
             <!-- User Info & Logout -->
-            <div class="sidebar-footer mt-auto">
-                <div id="currentUserInfo"></div>
-                <button id="logoutBtn">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span>Cerrar Sesión</span>
+            <div class="sidebar-footer mt-auto p-3 border-top">
+                <div id="currentUserInfo" class="mb-2 text-white-50 small"></div>
+                <button id="logoutBtn" class="btn btn-outline-light btn-sm w-100">
+                    <i class="bi bi-box-arrow-right me-2"></i>Cerrar Sesión
                 </button>
             </div>
         </nav>
@@ -3290,9 +3285,6 @@
 
     <!-- 🔍 SISTEMA DE CÓDIGOS DE BARRAS -->
     <script src="barcode-system.js"></script>
-
-    <!-- 🎨 CONTROL DEL SIDEBAR MODERNO -->
-    <script src="sidebar-control.js"></script>
 
     <!-- 🔐 SISTEMA DE AUTENTICACIÓN Y PERMISOS -->
     <script type="module">
