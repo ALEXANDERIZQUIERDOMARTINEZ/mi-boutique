@@ -2494,3 +2494,58 @@ body.admin-page {
         box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SIDEBAR FOOTER - USER INFO & LOGOUT
+   ═══════════════════════════════════════════════════════════════════ */
+.sidebar-footer {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-footer #currentUserInfo {
+    font-size: 0.85rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   AVATAR CIRCLES - USER AVATARS
+   ═══════════════════════════════════════════════════════════════════ */
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   USUARIOS TABLE - ENHANCED STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+#usuarios-table-body .badge {
+    font-weight: 500;
+    padding: 0.35rem 0.65rem;
+}
+
+#usuarios-table-body .btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Permisos Modal - Better Spacing */
+#permisos-personalizados .card {
+    border: 1px solid #e5e5e5;
+}
+
+#permisos-personalizados .card-header {
+    background: #f8f9fa;
+}
+
+#permisos-personalizados .form-check {
+    margin-bottom: 0.5rem;
+}
+
+#permisos-personalizados .alert-warning {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+}

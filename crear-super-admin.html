@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Super Admin - Mishell Boutique</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <meta name="theme-color" content="#D988B9">
+
+    <style>
+        :root {
+            --primary-color: #D988B9;
+            --primary-dark: #c76fa5;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .setup-container {
+            max-width: 600px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .setup-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-section h1 {
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .form-label {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <div class="setup-card">
+            <div class="logo-section">
+                <i class="bi bi-shield-lock fs-1 text-primary"></i>
+                <h1>Crear Super Administrador</h1>
+                <p class="text-muted">Configuración inicial del sistema</p>
+            </div>
+
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>Importante:</strong> Este script solo debe ejecutarse una vez para crear el primer usuario Super Admin.
+                Después de crear el usuario, elimina este archivo por seguridad.
+            </div>
+
+            <div id="status-area"></div>
+
+            <form id="setup-form">
+                <div class="mb-3">
+                    <label for="admin-nombre" class="form-label">Nombre Completo</label>
+                    <input type="text" class="form-control" id="admin-nombre" required placeholder="Ej: Juan Pérez">
+                </div>
+
+                <div class="mb-3">
+                    <label for="admin-email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="admin-email" required placeholder="admin@mishell.com">
+                    <small class="text-muted">Este será tu usuario para iniciar sesión</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="admin-password" class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" id="admin-password" required minlength="6" placeholder="Mínimo 6 caracteres">
+                </div>
+
+                <div class="mb-3">
+                    <label for="admin-password-confirm" class="form-label">Confirmar Contraseña</label>
+                    <input type="password" class="form-control" id="admin-password-confirm" required minlength="6" placeholder="Repite la contraseña">
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary" id="btn-create">
+                        <i class="bi bi-shield-check me-2"></i>Crear Super Admin
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-4 text-center">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i>
+                    El Super Admin tendrá acceso completo a todas las funciones del sistema
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { PERMISOS } from './auth.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
+            authDomain: "mishell-boutique-admin.firebaseapp.com",
+            projectId: "mishell-boutique-admin",
+            storageBucket: "mishell-boutique-admin.firebasestorage.app",
+            messagingSenderId: "399662956877",
+            appId: "1:399662956877:web:084236f5bb3cf6f0a8f704",
+            measurementId: "G-TZ3WQ8LSXH"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const form = document.getElementById('setup-form');
+        const statusArea = document.getElementById('status-area');
+        const btnCreate = document.getElementById('btn-create');
+
+        function showStatus(message, type = 'info') {
+            const alertClass = {
+                'info': 'alert-info',
+                'success': 'alert-success',
+                'danger': 'alert-danger',
+                'warning': 'alert-warning'
+            };
+
+            statusArea.innerHTML = `
+                <div class="alert ${alertClass[type]} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const nombre = document.getElementById('admin-nombre').value.trim();
+            const email = document.getElementById('admin-email').value.trim();
+            const password = document.getElementById('admin-password').value;
+            const passwordConfirm = document.getElementById('admin-password-confirm').value;
+
+            // Validar contraseñas
+            if (password !== passwordConfirm) {
+                showStatus('Las contraseñas no coinciden', 'danger');
+                return;
+            }
+
+            // Deshabilitar botón
+            btnCreate.disabled = true;
+            btnCreate.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando...';
+
+            try {
+                showStatus('Creando usuario en Firebase Authentication...', 'info');
+
+                // Crear usuario en Firebase Auth
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                showStatus('Usuario creado. Configurando permisos...', 'info');
+
+                // Crear documento en Firestore con todos los permisos
+                const allPermisos = Object.values(PERMISOS);
+
+                await setDoc(doc(db, 'usuarios', user.uid), {
+                    nombre: nombre,
+                    email: email,
+                    rol: 'SUPER_ADMIN',
+                    permisos: allPermisos,
+                    activo: true,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                });
+
+                showStatus(`
+                    <strong>✅ ¡Super Admin creado exitosamente!</strong><br><br>
+                    <strong>Email:</strong> ${email}<br>
+                    <strong>Nombre:</strong> ${nombre}<br>
+                    <strong>Permisos:</strong> ${allPermisos.length} permisos (Acceso total)<br><br>
+                    <strong>Siguiente paso:</strong><br>
+                    1. Elimina este archivo (crear-super-admin.html) por seguridad<br>
+                    2. Ve a <a href="login.html" class="alert-link">login.html</a> para iniciar sesión<br>
+                    3. Desde el admin puedes crear más usuarios con diferentes roles
+                `, 'success');
+
+                // Deshabilitar formulario
+                form.reset();
+                Array.from(form.elements).forEach(element => {
+                    element.disabled = true;
+                });
+
+                // Cerrar sesión automáticamente
+                setTimeout(() => {
+                    auth.signOut();
+                }, 1000);
+
+            } catch (error) {
+                console.error('Error:', error);
+
+                let errorMsg = 'Error al crear usuario';
+
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMsg = 'El email ya está registrado. Si ya creaste el Super Admin, ve a <a href="login.html" class="alert-link">login.html</a>';
+                        break;
+                    case 'auth/invalid-email':
+                        errorMsg = 'Email inválido';
+                        break;
+                    case 'auth/weak-password':
+                        errorMsg = 'La contraseña es muy débil (mínimo 6 caracteres)';
+                        break;
+                    default:
+                        errorMsg = `Error: ${error.message}`;
+                }
+
+                showStatus(errorMsg, 'danger');
+
+                // Rehabilitar botón
+                btnCreate.disabled = false;
+                btnCreate.innerHTML = '<i class="bi bi-shield-check me-2"></i>Crear Super Admin';
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
