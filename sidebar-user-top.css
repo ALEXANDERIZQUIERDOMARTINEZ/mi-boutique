@@ -1,0 +1,151 @@
+/* ═══════════════════════════════════════════════════════════════════
+   INFORMACIÓN DEL USUARIO - ARRIBA DE LA NAVEGACIÓN
+   ═══════════════════════════════════════════════════════════════════ */
+
+.sidebar-user-info {
+    padding: 0.875rem 0.75rem;
+    border-bottom: 1px solid var(--elegant-border);
+    background: var(--elegant-surface);
+}
+
+/* Información del usuario - diseño compacto y elegante */
+.sidebar-user-info #currentUserInfo {
+    padding: 0.625rem 0.75rem;
+    background: var(--elegant-hover);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    transition: all 0.35s var(--elegant-transition);
+    overflow: hidden;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.sidebar-user-info #currentUserInfo:hover {
+    background: rgba(217, 136, 185, 0.06);
+}
+
+.admin-sidebar:not(.expanded) .sidebar-user-info #currentUserInfo {
+    justify-content: center;
+    padding: 0.5rem;
+}
+
+/* Avatar circular elegante - más pequeño */
+.sidebar-user-info #currentUserInfo i {
+    font-size: 1.5rem;
+    color: var(--elegant-primary);
+    flex-shrink: 0;
+    transition: all 0.35s var(--elegant-transition);
+}
+
+.admin-sidebar.expanded .sidebar-user-info #currentUserInfo i {
+    font-size: 1.5rem;
+}
+
+/* Detalles del usuario - más compactos */
+.sidebar-user-info #currentUserInfo .user-details {
+    flex: 1;
+    min-width: 0;
+    opacity: 0;
+    transform: translateX(-10px);
+    max-width: 0;
+    overflow: hidden;
+    transition: all 0.35s var(--elegant-transition);
+    margin-left: 0;
+}
+
+.admin-sidebar.expanded .sidebar-user-info #currentUserInfo .user-details {
+    opacity: 1;
+    transform: translateX(0);
+    max-width: 160px;
+    margin-left: 0.625rem;
+}
+
+.sidebar-user-info #currentUserInfo .fw-bold {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--elegant-text);
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+}
+
+.sidebar-user-info #currentUserInfo small {
+    font-size: 0.6875rem;
+    color: var(--elegant-text-light);
+    font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   AJUSTE DEL SIDEBAR-NAV - Menos padding superior
+   ═══════════════════════════════════════════════════════════════════ */
+
+.sidebar-nav {
+    flex: 1;
+    padding: 1rem 0 1.5rem 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FOOTER SIMPLIFICADO - Solo botón de logout
+   ═══════════════════════════════════════════════════════════════════ */
+
+.sidebar-footer {
+    flex-shrink: 0;
+    padding: 0.875rem 0.75rem 1.125rem 0.75rem;
+    border-top: 1px solid var(--elegant-border);
+    background: var(--elegant-surface);
+}
+
+/* Botón de logout - mantiene el diseño elegante */
+.sidebar-footer #logoutBtn {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--elegant-border);
+    background: var(--elegant-surface);
+    color: var(--elegant-text-light);
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    transition: all 0.25s var(--elegant-transition);
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.sidebar-footer #logoutBtn:hover {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fee2e2;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.08);
+}
+
+.sidebar-footer #logoutBtn i {
+    font-size: 1.125rem;
+    flex-shrink: 0;
+}
+
+.sidebar-footer #logoutBtn span {
+    opacity: 0;
+    transform: translateX(-10px);
+    max-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: all 0.35s var(--elegant-transition);
+    margin-left: 0;
+}
+
+.admin-sidebar.expanded .sidebar-footer #logoutBtn span {
+    opacity: 1;
+    transform: translateX(0);
+    max-width: 120px;
+    margin-left: 0.625rem;
+}
