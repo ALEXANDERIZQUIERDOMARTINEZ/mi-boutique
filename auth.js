@@ -326,13 +326,13 @@ export class AuthManager {
         const userInfoElement = document.getElementById('currentUserInfo');
         if (userInfoElement && this.currentUser) {
             const roleName = ROLES[this.currentUser.rol]?.nombre || this.currentUser.rol;
-            const initials = this.currentUser.nombre.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase();
-
             userInfoElement.innerHTML = `
-                <i class="bi bi-person-circle"></i>
-                <div class="user-details">
-                    <div class="fw-bold">${this.currentUser.nombre}</div>
-                    <small class="text-muted">${roleName}</small>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-circle fs-5"></i>
+                    <div>
+                        <div class="fw-bold">${this.currentUser.nombre}</div>
+                        <small class="text-muted">${roleName}</small>
+                    </div>
                 </div>
             `;
         }
