@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.4.2">
     <link rel="stylesheet" href="sidebar-modern.css?v=1.0.0">
     <link rel="stylesheet" href="sidebar-elegant.css?v=1.0.0">
+    <link rel="stylesheet" href="sidebar-user-top.css?v=1.0.0">
 
     <!-- Logo/Icon -->
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -32,10 +33,12 @@
     <aside class="admin-sidebar" id="adminSidebar">
         <!-- Brand / Logo -->
         <div class="sidebar-brand">
-            <div class="sidebar-brand-icon">
-                <i class="bi bi-shop"></i>
-            </div>
             <span>Mishell</span>
+        </div>
+
+        <!-- User Info - Arriba de la navegación -->
+        <div class="sidebar-user-info">
+            <div id="currentUserInfo"></div>
         </div>
 
         <!-- Navegación Vertical -->
@@ -3277,9 +3280,6 @@
 
     <!-- 🔍 SISTEMA DE CÓDIGOS DE BARRAS -->
     <script src="barcode-system.js"></script>
-
-    <!-- 🎨 CONTROL DEL SIDEBAR MODERNO -->
-    <script src="sidebar-control.js"></script>
 
     <!-- 🔐 SISTEMA DE AUTENTICACIÓN Y PERMISOS -->
     <script type="module">
