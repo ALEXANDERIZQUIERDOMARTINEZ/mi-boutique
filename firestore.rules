@@ -2,98 +2,241 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ⚠️ REGLAS DE DESARROLLO - ACCESO ABIERTO
-    // ADVERTENCIA: Estas reglas permiten acceso completo a la base de datos
-    // Para producción, implementa autenticación y reglas más restrictivas
+    // ═══════════════════════════════════════════════════════════════════
+    // FUNCIONES AUXILIARES
+    // ═══════════════════════════════════════════════════════════════════
 
-    // Reglas para Categorías
+    // Verifica si el usuario está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Verifica si el usuario existe en la colección usuarios
+    function isRegisteredUser() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    // Obtiene los datos del usuario actual
+    function getUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    // Verifica si el usuario está activo
+    function isActiveUser() {
+      return isRegisteredUser() && getUserData().activo == true;
+    }
+
+    // Verifica si el usuario tiene un permiso específico
+    function hasPermission(permission) {
+      return isActiveUser() && permission in getUserData().permisos;
+    }
+
+    // Verifica si el usuario es Super Admin
+    function isSuperAdmin() {
+      return isActiveUser() && getUserData().rol == 'SUPER_ADMIN';
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE USUARIOS
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /usuarios/{userId} {
+      // Cualquier usuario autenticado puede leer su propio documento
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+
+      // Solo usuarios con permiso usuarios_ver pueden listar todos los usuarios
+      allow read: if hasPermission('usuarios_ver');
+
+      // Solo usuarios con permiso usuarios_gestionar pueden crear/actualizar/eliminar
+      allow create, update: if hasPermission('usuarios_gestionar');
+
+      // Solo Super Admins pueden eliminar usuarios
+      allow delete: if isSuperAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE CATEGORÍAS
+    // ═══════════════════════════════════════════════════════════════════
+
     match /categorias/{categoryId} {
-      allow read, write: if true;
+      allow read: if hasPermission('categorias_ver') || hasPermission('productos_ver');
+      allow create, update, delete: if hasPermission('categorias_gestionar');
     }
 
-    // Reglas para Proveedores
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE PROVEEDORES
+    // ═══════════════════════════════════════════════════════════════════
+
     match /proveedores/{supplierId} {
-      allow read, write: if true;
+      allow read: if hasPermission('finanzas_ver');
+      allow create, update, delete: if hasPermission('finanzas_gestionar');
     }
 
-    // Reglas para Clientes
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE CLIENTES
+    // ═══════════════════════════════════════════════════════════════════
+
     match /clientes/{clientId} {
-      allow read, write: if true;
+      allow read: if hasPermission('clientes_ver');
+      allow create, update, delete: if hasPermission('clientes_gestionar');
     }
 
-    // Reglas para Repartidores
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE REPARTIDORES
+    // ═══════════════════════════════════════════════════════════════════
+
     match /repartidores/{repartidorId} {
-      allow read, write: if true;
+      allow read: if hasPermission('repartidores_ver');
+      allow create, update, delete: if hasPermission('repartidores_gestionar');
     }
 
-    // Reglas para Productos
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE PRODUCTOS
+    // ═══════════════════════════════════════════════════════════════════
+
     match /productos/{productId} {
-      allow read, write: if true;
+      // Lectura pública para el catálogo web (index.html)
+      allow read: if true;
+
+      // Operaciones administrativas requieren permisos
+      allow create: if hasPermission('productos_crear');
+      allow update: if hasPermission('productos_editar');
+      allow delete: if hasPermission('productos_eliminar');
     }
 
-    // Reglas para Ventas
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE VENTAS
+    // ═══════════════════════════════════════════════════════════════════
+
     match /ventas/{saleId} {
-      allow read, write: if true;
+      allow read: if hasPermission('ventas_ver') || hasPermission('dashboard_ver');
+      allow create: if hasPermission('ventas_registrar');
+      allow update: if hasPermission('ventas_editar');
+      allow delete: if hasPermission('ventas_eliminar');
     }
 
-    // Reglas para Apartados
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE APARTADOS
+    // ═══════════════════════════════════════════════════════════════════
+
     match /apartados/{apartadoId} {
-      allow read, write: if true;
+      allow read: if hasPermission('apartados_ver');
+      allow create, update, delete: if hasPermission('apartados_gestionar');
     }
 
-    // Reglas para Movimientos Financieros
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE MOVIMIENTOS FINANCIEROS
+    // ═══════════════════════════════════════════════════════════════════
+
     match /movimientosFinancieros/{movimientoId} {
-      allow read, write: if true;
+      allow read: if hasPermission('finanzas_ver');
+      allow create, update, delete: if hasPermission('finanzas_gestionar');
     }
 
-    // Reglas para Finanzas (colección alternativa)
-    match /finanzas/{finanzaId} {
-      allow read, write: if true;
-    }
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE CIERRES DE CAJA
+    // ═══════════════════════════════════════════════════════════════════
 
-    // Reglas para Cierres de Caja
     match /cierresCaja/{cierreId} {
-      allow read, write: if true;
+      allow read: if hasPermission('cierres_caja_ver') || hasPermission('finanzas_ver');
+      allow create, update, delete: if hasPermission('cierres_caja_gestionar');
     }
 
-    // Reglas para Pedidos Web
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE PEDIDOS WEB
+    // ═══════════════════════════════════════════════════════════════════
+
     match /pedidosWeb/{pedidoId} {
-      allow read, write: if true;
+      // Creación pública desde el catálogo web
+      allow create: if true;
+
+      // Lectura y gestión requieren permisos
+      allow read: if hasPermission('pedidos_web_ver');
+      allow update, delete: if hasPermission('pedidos_web_gestionar');
     }
 
-    // Reglas para Conversaciones de Chat
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE CONVERSACIONES DE CHAT
+    // ═══════════════════════════════════════════════════════════════════
+
     match /chatConversations/{conversationId} {
+      // Lectura y escritura pública para el chat del catálogo web
       allow read, write: if true;
     }
 
-    // Reglas para Metas
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE METAS
+    // ═══════════════════════════════════════════════════════════════════
+
     match /metas/{metaId} {
-      allow read, write: if true;
+      allow read: if hasPermission('dashboard_ver') || hasPermission('finanzas_ver');
+      allow create, update, delete: if hasPermission('finanzas_gestionar');
     }
 
-    // Reglas para Órdenes de Recepción
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE ÓRDENES DE RECEPCIÓN
+    // ═══════════════════════════════════════════════════════════════════
+
     match /ordenesRecepcion/{ordenId} {
-      allow read, write: if true;
+      allow read: if hasPermission('productos_ver');
+      allow create, update, delete: if hasPermission('productos_editar');
     }
 
-    // Reglas para Liquidaciones
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE LIQUIDACIONES
+    // ═══════════════════════════════════════════════════════════════════
+
     match /liquidaciones/{liquidacionId} {
-      allow read, write: if true;
+      allow read: if hasPermission('repartidores_ver') || hasPermission('finanzas_ver');
+      allow create, update, delete: if hasPermission('repartidores_gestionar');
     }
 
-    // Reglas para Abonos
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE ABONOS
+    // ═══════════════════════════════════════════════════════════════════
+
     match /abonos/{abonoId} {
-      allow read, write: if true;
+      allow read: if hasPermission('apartados_ver');
+      allow create, update, delete: if hasPermission('apartados_gestionar');
     }
 
-    // Reglas para Pedidos
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE PEDIDOS
+    // ═══════════════════════════════════════════════════════════════════
+
     match /pedidos/{pedidoId} {
-      allow read, write: if true;
+      allow read: if hasPermission('pedidos_web_ver') || hasPermission('ventas_ver');
+      allow create, update, delete: if hasPermission('pedidos_web_gestionar');
     }
 
-    // Permitir acceso a cualquier otra colección
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS PARA PROMOCIONES GLOBALES
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /promocionesGlobales/{promoId} {
+      // Lectura pública para mostrar en el catálogo web
+      allow read: if true;
+
+      // Gestión requiere permisos
+      allow create, update, delete: if hasPermission('promociones_gestionar');
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS PARA HISTORIAL DE CARGUES
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /historial_cargues/{cargueId} {
+      allow read: if hasPermission('productos_ver');
+      allow create: if hasPermission('productos_cargue_masivo');
+      allow update, delete: if isSuperAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // DENEGAR ACCESO A CUALQUIER OTRA COLECCIÓN NO ESPECIFICADA
+    // ═══════════════════════════════════════════════════════════════════
+
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

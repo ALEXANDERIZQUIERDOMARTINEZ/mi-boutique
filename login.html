@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Mishell Boutique Admin</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <meta name="theme-color" content="#D988B9">
+
+    <style>
+        :root {
+            --primary-color: #D988B9;
+            --primary-dark: #c76fa5;
+            --bg-gradient-start: #f8f9fa;
+            --bg-gradient-end: #e9ecef;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .login-container {
+            max-width: 450px;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-section h1 {
+            color: var(--primary-color);
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin: 0;
+        }
+
+        .logo-section p {
+            color: #6c757d;
+            font-size: 0.95rem;
+            margin-top: 5px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(217, 136, 185, 0.25);
+        }
+
+        .input-group-text {
+            background: transparent;
+            border: 2px solid #e9ecef;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+        }
+
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .btn-login {
+            background: var(--primary-color);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(217, 136, 185, 0.3);
+        }
+
+        .btn-login:disabled {
+            background: #c8c8c8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .alert {
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.15em;
+        }
+
+        .password-toggle {
+            cursor: pointer;
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            z-index: 10;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary-color);
+        }
+
+        .form-floating-custom {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-section">
+                <h1><i class="bi bi-shop"></i> Mishell</h1>
+                <p>Panel de Administración</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Correo Electrónico</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-envelope"></i>
+                        </span>
+                        <input
+                            type="email"
+                            class="form-control"
+                            id="email"
+                            placeholder="correo@ejemplo.com"
+                            required
+                            autocomplete="email"
+                        >
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <div class="form-floating-custom">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input
+                                type="password"
+                                class="form-control"
+                                id="password"
+                                placeholder="••••••••"
+                                required
+                                autocomplete="current-password"
+                            >
+                        </div>
+                        <i class="bi bi-eye password-toggle" id="togglePassword"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-login" id="loginBtn">
+                    <span id="loginBtnText">Iniciar Sesión</span>
+                    <span id="loginSpinner" style="display: none;">
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        Iniciando...
+                    </span>
+                </button>
+
+                <div class="alert alert-danger" id="errorAlert" role="alert">
+                    <i class="bi bi-exclamation-circle me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
+            authDomain: "mishell-boutique-admin.firebaseapp.com",
+            projectId: "mishell-boutique-admin",
+            storageBucket: "mishell-boutique-admin.firebasestorage.app",
+            messagingSenderId: "399662956877",
+            appId: "1:399662956877:web:084236f5bb3cf6f0a8f704",
+            measurementId: "G-TZ3WQ8LSXH"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Elements
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginBtnText = document.getElementById('loginBtnText');
+        const loginSpinner = document.getElementById('loginSpinner');
+        const errorAlert = document.getElementById('errorAlert');
+        const errorMessage = document.getElementById('errorMessage');
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+
+        // Toggle password visibility
+        togglePassword.addEventListener('click', () => {
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
+            togglePassword.classList.toggle('bi-eye');
+            togglePassword.classList.toggle('bi-eye-slash');
+        });
+
+        // Show error
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorAlert.style.display = 'block';
+            setTimeout(() => {
+                errorAlert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Hide error
+        function hideError() {
+            errorAlert.style.display = 'none';
+        }
+
+        // Handle form submission
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            // Validate fields
+            if (!email || !password) {
+                showError('Por favor, completa todos los campos');
+                return;
+            }
+
+            // Disable button and show spinner
+            loginBtn.disabled = true;
+            loginBtnText.style.display = 'none';
+            loginSpinner.style.display = 'inline';
+
+            try {
+                // Sign in with Firebase Auth
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Check if user exists in 'usuarios' collection
+                const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+
+                if (!userDoc.exists()) {
+                    // User not found in database
+                    await auth.signOut();
+                    showError('Usuario no autorizado para acceder al panel de administración');
+                    loginBtn.disabled = false;
+                    loginBtnText.style.display = 'inline';
+                    loginSpinner.style.display = 'none';
+                    return;
+                }
+
+                const userData = userDoc.data();
+
+                // Check if user is active
+                if (!userData.activo) {
+                    await auth.signOut();
+                    showError('Tu cuenta está desactivada. Contacta al administrador');
+                    loginBtn.disabled = false;
+                    loginBtnText.style.display = 'inline';
+                    loginSpinner.style.display = 'none';
+                    return;
+                }
+
+                // Store user data in sessionStorage
+                sessionStorage.setItem('adminUser', JSON.stringify({
+                    uid: user.uid,
+                    email: user.email,
+                    nombre: userData.nombre,
+                    rol: userData.rol,
+                    permisos: userData.permisos
+                }));
+
+                // Redirect to admin panel
+                window.location.href = 'admin.html';
+
+            } catch (error) {
+                console.error('Login error:', error);
+
+                let errorMsg = 'Error al iniciar sesión';
+
+                switch (error.code) {
+                    case 'auth/invalid-email':
+                        errorMsg = 'Correo electrónico inválido';
+                        break;
+                    case 'auth/user-disabled':
+                        errorMsg = 'Usuario deshabilitado';
+                        break;
+                    case 'auth/user-not-found':
+                        errorMsg = 'Usuario no encontrado';
+                        break;
+                    case 'auth/wrong-password':
+                        errorMsg = 'Contraseña incorrecta';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMsg = 'Demasiados intentos fallidos. Intenta más tarde';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMsg = 'Error de conexión. Verifica tu internet';
+                        break;
+                    case 'auth/invalid-credential':
+                        errorMsg = 'Credenciales inválidas';
+                        break;
+                    default:
+                        errorMsg = `Error: ${error.message}`;
+                }
+
+                showError(errorMsg);
+
+                // Re-enable button
+                loginBtn.disabled = false;
+                loginBtnText.style.display = 'inline';
+                loginSpinner.style.display = 'none';
+            }
+        });
+
+        // Check if already logged in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Check if user data exists in sessionStorage
+                const adminUser = sessionStorage.getItem('adminUser');
+                if (adminUser) {
+                    window.location.href = 'admin.html';
+                }
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
