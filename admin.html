@@ -3249,6 +3249,45 @@
                 console.error('Error de autenticación:', error);
                 // User will be redirected to login by AuthManager
             });
+
+        // ✅ FIX: Manejar activación de tabs dentro de dropdowns
+        // Bootstrap a veces no activa correctamente pills que están dentro de dropdown-menus
+        document.addEventListener('DOMContentLoaded', function() {
+            // Buscar todos los enlaces de tabs/pills dentro de dropdowns
+            const dropdownPills = document.querySelectorAll('.dropdown-menu a[data-bs-toggle="pill"]');
+
+            dropdownPills.forEach(pillLink => {
+                pillLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    // Obtener el tab target
+                    const targetId = this.getAttribute('href');
+                    const targetTab = document.querySelector(targetId);
+
+                    if (targetTab) {
+                        // Desactivar todos los tabs
+                        document.querySelectorAll('.tab-pane').forEach(pane => {
+                            pane.classList.remove('show', 'active');
+                        });
+
+                        // Activar el tab seleccionado
+                        targetTab.classList.add('show', 'active');
+
+                        // Cerrar el dropdown
+                        const dropdown = this.closest('.dropdown');
+                        if (dropdown) {
+                            const dropdownToggle = dropdown.querySelector('.dropdown-toggle');
+                            const bsDropdown = bootstrap.Dropdown.getInstance(dropdownToggle);
+                            if (bsDropdown) {
+                                bsDropdown.hide();
+                            }
+                        }
+
+                        console.log('✅ Tab activado:', targetId);
+                    }
+                });
+            });
+        });
     </script>
 
     <!-- Estilos para el dropdown de usuario -->
