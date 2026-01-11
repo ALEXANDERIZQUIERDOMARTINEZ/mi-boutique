@@ -702,7 +702,12 @@
             </div>
 
             <div class="tab-pane fade" id="pedidos-web">
-                <h1 class="h2 mb-4"><i class="bi bi-globe me-2"></i>Pedidos desde la Web</h1>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h2 mb-0"><i class="bi bi-globe me-2"></i>Pedidos desde la Web</h1>
+                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAllWebOrdersModal">
+                        <i class="bi bi-trash3 me-2"></i>Eliminar Todos los Pedidos
+                    </button>
+                </div>
                 <div class="card">
                     <div class="card-header bg-white border-0 pt-3">
                         <h3 class="h5 mb-0">Pedidos Pendientes</h3>
@@ -3366,6 +3371,45 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-danger" id="confirm-delete-usuario">
                         <i class="bi bi-trash me-2"></i>Eliminar Usuario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar Eliminación de Todos los Pedidos Web -->
+    <div class="modal fade" id="deleteAllWebOrdersModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>¡ADVERTENCIA! Eliminar Todos los Pedidos Web
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading"><i class="bi bi-exclamation-octagon me-2"></i>Esta acción es IRREVERSIBLE</h6>
+                        <p class="mb-0">Estás a punto de eliminar TODOS los pedidos web del sistema. Esta acción NO se puede deshacer.</p>
+                    </div>
+                    <p class="fw-bold mb-2">Se eliminarán:</p>
+                    <ul class="mb-3">
+                        <li>Todos los pedidos pendientes</li>
+                        <li>Todos los pedidos procesados</li>
+                        <li>Todo el historial de pedidos web</li>
+                    </ul>
+                    <p class="text-danger fw-bold">¿Estás completamente seguro de que deseas continuar?</p>
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" id="confirmDeleteAllWebOrders">
+                        <label class="form-check-label fw-bold" for="confirmDeleteAllWebOrders">
+                            Sí, entiendo que esta acción es irreversible y quiero eliminar todos los pedidos web
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-all-web-orders" disabled>
+                        <i class="bi bi-trash3-fill me-2"></i>Eliminar Todos los Pedidos
                     </button>
                 </div>
             </div>
