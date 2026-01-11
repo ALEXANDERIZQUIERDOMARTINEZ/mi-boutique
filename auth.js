@@ -324,90 +324,15 @@ export class AuthManager {
 
     /**
      * Aplica restricciones en el dashboard según permisos
+     * NOTA: El dashboard se muestra COMPLETO para todos los usuarios con permiso dashboard_ver
+     * Solo se ocultan los accesos rápidos a módulos para los que no tienen permiso
      */
     applyDashboardRestrictions() {
-        console.log('🔒 Aplicando restricciones de dashboard...');
+        console.log('🔒 Aplicando restricciones de accesos rápidos del dashboard...');
         console.log('📋 Permisos del usuario:', this.userPermissions);
 
-        // Ocultar tarjeta de "Ventas Hoy" si no tiene permiso de ventas
-        if (!this.hasPermission(PERMISOS.VENTAS_VER)) {
-            console.log('❌ Sin permiso de ventas - ocultando tarjeta de ventas');
-            const ventasCard = document.querySelector('.dashboard-card.card-ventas');
-            if (ventasCard) {
-                ventasCard.closest('.col-md-3, .col-sm-6')?.remove();
-            }
-        }
-
-        // Ocultar tarjeta de "Apartados" si no tiene permiso de apartados
-        if (!this.hasPermission(PERMISOS.APARTADOS_VER)) {
-            console.log('❌ Sin permiso de apartados - ocultando tarjeta de apartados');
-            const apartadosCard = document.querySelector('.dashboard-card.card-apartados');
-            if (apartadosCard) {
-                apartadosCard.closest('.col-md-3, .col-sm-6')?.remove();
-            }
-        }
-
-        // Ocultar tarjeta de "Productos" si no tiene permiso de productos
-        if (!this.hasPermission(PERMISOS.PRODUCTOS_VER)) {
-            console.log('❌ Sin permiso de productos - ocultando tarjeta de productos');
-            const productosCard = document.querySelector('.dashboard-card.card-productos');
-            if (productosCard) {
-                productosCard.closest('.col-md-3, .col-sm-6')?.remove();
-            }
-        }
-
-        // Ocultar sección completa de "Inversión e Inventario" si no tiene permiso de finanzas
-        if (!this.hasPermission(PERMISOS.FINANZAS_VER)) {
-            console.log('❌ Sin permiso de finanzas - ocultando sección Inversión e Inventario');
-            // Buscar el título de la sección
-            const sectionTitles = document.querySelectorAll('h5.text-muted');
-            console.log('🔍 Títulos encontrados:', sectionTitles.length);
-            sectionTitles.forEach(title => {
-                console.log('📝 Título encontrado:', title.textContent.trim());
-                if (title.textContent.includes('Inversión e Inventario')) {
-                    console.log('✅ Encontrado título "Inversión e Inventario" - ocultando...');
-                    // Guardar referencias antes de eliminar
-                    const parent = title.parentElement;
-                    const nextRow = parent?.nextElementSibling;
-
-                    // Ocultar el título
-                    if (parent) {
-                        parent.style.display = 'none';
-                        console.log('✓ Título ocultado');
-                    }
-
-                    // Ocultar la siguiente fila (las tarjetas)
-                    if (nextRow && nextRow.classList.contains('row')) {
-                        nextRow.style.display = 'none';
-                        console.log('✓ Tarjetas ocultadas');
-                    }
-                }
-            });
-        }
-
-        // Ocultar sección de "Análisis de Datos" (gráfica de ventas) si no tiene permiso de ventas
-        if (!this.hasPermission(PERMISOS.VENTAS_VER)) {
-            const sectionTitles = document.querySelectorAll('h5.text-muted');
-            sectionTitles.forEach(title => {
-                if (title.textContent.includes('Análisis de Datos')) {
-                    // Guardar referencias antes de ocultar
-                    const parent = title.parentElement;
-                    const nextRow = parent?.nextElementSibling;
-
-                    // Ocultar el título
-                    if (parent) {
-                        parent.style.display = 'none';
-                    }
-
-                    // Ocultar la siguiente fila (las tarjetas)
-                    if (nextRow && nextRow.classList.contains('row')) {
-                        nextRow.style.display = 'none';
-                    }
-                }
-            });
-        }
-
-        // Ocultar tarjetas de "Accesos Rápidos" según permisos
+        // El dashboard muestra todas sus tarjetas y secciones informativas
+        // Solo ocultamos los botones de acceso rápido a módulos sin permiso
         this.applyQuickAccessRestrictions();
     }
 
