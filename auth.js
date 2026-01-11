@@ -324,18 +324,18 @@ export class AuthManager {
      */
     updateUserInfo() {
         const userInfoElement = document.getElementById('currentUserInfo');
+        const userRoleElement = document.getElementById('currentUserRole');
+
         if (userInfoElement && this.currentUser) {
             const roleName = ROLES[this.currentUser.rol]?.nombre || this.currentUser.rol;
 
-            userInfoElement.innerHTML = `
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-person-circle fs-5 text-primary"></i>
-                    <div class="text-end">
-                        <div class="fw-semibold" style="font-size: 0.875rem; line-height: 1.2;">${this.currentUser.nombre}</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">${roleName}</div>
-                    </div>
-                </div>
-            `;
+            // Actualizar nombre del usuario
+            userInfoElement.textContent = this.currentUser.nombre;
+
+            // Actualizar rol del usuario si existe el elemento
+            if (userRoleElement) {
+                userRoleElement.textContent = roleName;
+            }
         }
     }
 
