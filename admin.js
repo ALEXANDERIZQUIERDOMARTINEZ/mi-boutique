@@ -364,6 +364,16 @@ async function actualizarStock(itemsVendido, accion = 'restar') {
 // --- SCRIPT EJECUTADO AL CARGAR EL DOM ---
 // ========================================================================
 document.addEventListener('DOMContentLoaded', () => {
+     // --- Scroll to top al cargar la página ---
+     window.scrollTo({ top: 0, behavior: 'instant' });
+
+     // --- Scroll to top al cambiar de tab ---
+     document.querySelectorAll('a[data-bs-toggle="pill"]').forEach(tab => {
+         tab.addEventListener('shown.bs.tab', () => {
+             window.scrollTo({ top: 0, behavior: 'smooth' });
+         });
+     });
+
      // --- Inicializar Modales ---
      try {
         const addClientModalEl = document.getElementById('addClientModal'); if(addClientModalEl) addClientModalInstance = new bootstrap.Modal(addClientModalEl);
