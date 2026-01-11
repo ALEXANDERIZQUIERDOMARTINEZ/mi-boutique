@@ -315,8 +315,119 @@ export class AuthManager {
             }
         });
 
+        // ✅ Ocultar elementos del dashboard según permisos
+        this.applyDashboardRestrictions();
+
         // Mostrar nombre del usuario en la UI
         this.updateUserInfo();
+    }
+
+    /**
+     * Aplica restricciones en el dashboard según permisos
+     */
+    applyDashboardRestrictions() {
+        // Ocultar tarjeta de "Ventas Hoy" si no tiene permiso de ventas
+        if (!this.hasPermission(PERMISOS.VENTAS_VER)) {
+            const ventasCard = document.querySelector('.dashboard-card.card-ventas');
+            if (ventasCard) {
+                ventasCard.closest('.col-md-3, .col-sm-6')?.remove();
+            }
+        }
+
+        // Ocultar tarjeta de "Apartados" si no tiene permiso de apartados
+        if (!this.hasPermission(PERMISOS.APARTADOS_VER)) {
+            const apartadosCard = document.querySelector('.dashboard-card.card-apartados');
+            if (apartadosCard) {
+                apartadosCard.closest('.col-md-3, .col-sm-6')?.remove();
+            }
+        }
+
+        // Ocultar tarjeta de "Productos" si no tiene permiso de productos
+        if (!this.hasPermission(PERMISOS.PRODUCTOS_VER)) {
+            const productosCard = document.querySelector('.dashboard-card.card-productos');
+            if (productosCard) {
+                productosCard.closest('.col-md-3, .col-sm-6')?.remove();
+            }
+        }
+
+        // Ocultar sección completa de "Inversión e Inventario" si no tiene permiso de finanzas
+        if (!this.hasPermission(PERMISOS.FINANZAS_VER)) {
+            // Buscar el título de la sección
+            const sectionTitles = document.querySelectorAll('h5.text-muted');
+            sectionTitles.forEach(title => {
+                if (title.textContent.includes('Inversión e Inventario')) {
+                    // Ocultar el título
+                    title.parentElement?.remove();
+                    // Ocultar la siguiente fila (las tarjetas)
+                    const nextRow = title.parentElement?.nextElementSibling;
+                    if (nextRow && nextRow.classList.contains('row')) {
+                        nextRow.remove();
+                    }
+                }
+            });
+        }
+
+        // Ocultar sección de "Análisis de Datos" (gráfica de ventas) si no tiene permiso de ventas
+        if (!this.hasPermission(PERMISOS.VENTAS_VER)) {
+            const sectionTitles = document.querySelectorAll('h5.text-muted');
+            sectionTitles.forEach(title => {
+                if (title.textContent.includes('Análisis de Datos')) {
+                    title.parentElement?.remove();
+                    const nextRow = title.parentElement?.nextElementSibling;
+                    if (nextRow && nextRow.classList.contains('row')) {
+                        nextRow.remove();
+                    }
+                }
+            });
+        }
+
+        // Ocultar tarjetas de "Accesos Rápidos" según permisos
+        this.applyQuickAccessRestrictions();
+    }
+
+    /**
+     * Aplica restricciones en la sección de Accesos Rápidos
+     */
+    applyQuickAccessRestrictions() {
+        // Pedidos Web
+        if (!this.hasPermission(PERMISOS.PEDIDOS_WEB_VER)) {
+            const cards = document.querySelectorAll('.hover-card');
+            cards.forEach(card => {
+                if (card.innerHTML.includes('Pedidos Web')) {
+                    card.closest('.col-sm-6, .col-lg-3')?.remove();
+                }
+            });
+        }
+
+        // Clientes
+        if (!this.hasPermission(PERMISOS.CLIENTES_VER)) {
+            const cards = document.querySelectorAll('.hover-card');
+            cards.forEach(card => {
+                if (card.innerHTML.includes('Gestionar clientes')) {
+                    card.closest('.col-sm-6, .col-lg-3')?.remove();
+                }
+            });
+        }
+
+        // Promociones
+        if (!this.hasPermission(PERMISOS.PROMOCIONES_VER)) {
+            const cards = document.querySelectorAll('.hover-card');
+            cards.forEach(card => {
+                if (card.innerHTML.includes('Promociones')) {
+                    card.closest('.col-sm-6, .col-lg-3')?.remove();
+                }
+            });
+        }
+
+        // Repartidores
+        if (!this.hasPermission(PERMISOS.REPARTIDORES_VER)) {
+            const cards = document.querySelectorAll('.hover-card');
+            cards.forEach(card => {
+                if (card.innerHTML.includes('Repartidores')) {
+                    card.closest('.col-sm-6, .col-lg-3')?.remove();
+                }
+            });
+        }
     }
 
     /**
