@@ -2549,3 +2549,100 @@ body.admin-page {
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.5rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PRODUCTOS TABLE - COMPACT VIEW
+   ═══════════════════════════════════════════════════════════════════ */
+/* Reducir padding de celdas en tabla de productos */
+#lista-inventario-productos td {
+    padding: 0.5rem 0.6rem !important;
+    font-size: 0.85rem !important;
+}
+
+/* Reducir padding de headers en tabla de productos */
+#lista-inventario-productos thead th {
+    padding: 0.6rem 0.6rem !important;
+    font-size: 0.75rem !important;
+}
+
+/* Imagen de producto más pequeña */
+#lista-inventario-productos .table-product-img {
+    max-width: 50px;
+    max-height: 65px;
+}
+
+/* Reducir tamaño de código de barras */
+#lista-inventario-productos .barcode-mini {
+    max-width: 90px;
+}
+
+/* Código de barras text más pequeño */
+#lista-inventario-productos .barcode-cell {
+    padding: 0.3rem !important;
+    font-size: 0.7rem !important;
+}
+
+/* Nombre de producto más compacto */
+#lista-inventario-productos .product-name {
+    font-size: 0.85rem;
+    line-height: 1.3;
+}
+
+#lista-inventario-productos .product-name small {
+    font-size: 0.7rem;
+}
+
+/* Anchos específicos para columnas que no necesitan ser anchas */
+#lista-inventario-productos th:nth-child(1), /* Foto */
+#lista-inventario-productos td:nth-child(1) {
+    width: 60px;
+    min-width: 60px;
+}
+
+#lista-inventario-productos th:nth-child(5), /* P. Detal */
+#lista-inventario-productos td:nth-child(5),
+#lista-inventario-productos th:nth-child(6), /* P. Mayor */
+#lista-inventario-productos td:nth-child(6) {
+    width: 80px;
+    min-width: 80px;
+    white-space: nowrap;
+}
+
+#lista-inventario-productos th:nth-child(7), /* Stock */
+#lista-inventario-productos td:nth-child(7) {
+    width: 60px;
+    min-width: 60px;
+    text-align: center;
+}
+
+#lista-inventario-productos th:nth-child(9), /* Promoción */
+#lista-inventario-productos td:nth-child(9),
+#lista-inventario-productos th:nth-child(10), /* Estado */
+#lista-inventario-productos td:nth-child(10) {
+    width: 90px;
+    min-width: 90px;
+}
+
+#lista-inventario-productos th:nth-child(11), /* Acciones */
+#lista-inventario-productos td:nth-child(11) {
+    width: 100px;
+    min-width: 100px;
+}
+
+/* Botones de acción más pequeños en productos */
+#lista-inventario-productos .btn-action {
+    padding: 0.25rem 0.4rem !important;
+    font-size: 0.75rem !important;
+}
+
+/* Badges más pequeños en productos */
+#lista-inventario-productos .badge {
+    font-size: 0.7rem !important;
+    padding: 0.25rem 0.4rem !important;
+}
+
+/* Variaciones más compactas */
+#lista-inventario-productos td:nth-child(4) {
+    font-size: 0.75rem !important;
+    line-height: 1.3;
+}
