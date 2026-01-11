@@ -149,85 +149,113 @@
                     <h1 class="h2 mb-0">
                         <i class="bi bi-speedometer2 me-2"></i>Dashboard
                     </h1>
-                    <div class="d-flex flex-column align-items-end gap-2">
-                        <!-- Fecha arriba -->
-                        <div class="text-muted" style="font-size: 0.75rem; font-weight: 500;">
+                    <div class="d-flex align-items-center gap-3">
+                        <!-- Fecha -->
+                        <div class="text-muted" style="font-size: 0.813rem; font-weight: 500;">
                             <i class="bi bi-calendar-event-fill me-1"></i>Hoy: <span id="dashboard-date"></span>
                         </div>
 
-                        <!-- Card de usuario con diseño WOW -->
-                        <div style="
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                            border-radius: 1rem;
-                            padding: 1rem 1.25rem;
-                            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
-                            min-width: 280px;
-                            position: relative;
-                            overflow: hidden;
-                        ">
-                            <!-- Efecto de brillo decorativo -->
-                            <div style="
-                                position: absolute;
-                                top: -50%;
-                                right: -20%;
-                                width: 150px;
-                                height: 150px;
-                                background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+                        <!-- User Profile Dropdown -->
+                        <div class="position-relative">
+                            <button id="userProfileBtn" style="
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                border: none;
                                 border-radius: 50%;
-                            "></div>
-
-                            <div class="d-flex align-items-center gap-3 position-relative">
-                                <!-- Avatar con gradiente -->
-                                <div style="
-                                    width: 48px;
-                                    height: 48px;
-                                    background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+                                width: 44px;
+                                height: 44px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                cursor: pointer;
+                                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+                                transition: all 0.3s ease;
+                                position: relative;
+                            " onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 16px rgba(102, 126, 234, 0.45)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.35)';">
+                                <i class="bi bi-person-fill" style="font-size: 1.25rem; color: white;"></i>
+                                <!-- Indicador de badge online -->
+                                <span style="
+                                    position: absolute;
+                                    bottom: 2px;
+                                    right: 2px;
+                                    width: 12px;
+                                    height: 12px;
+                                    background: #10b981;
+                                    border: 2px solid white;
                                     border-radius: 50%;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-                                    flex-shrink: 0;
-                                ">
-                                    <i class="bi bi-person-fill" style="font-size: 1.5rem; color: #667eea;"></i>
-                                </div>
+                                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                                "></span>
+                            </button>
 
-                                <div class="flex-grow-1">
-                                    <!-- Nombre del usuario -->
-                                    <div id="currentUserInfo" style="color: white; font-weight: 600; font-size: 0.95rem; line-height: 1.3; margin-bottom: 0.25rem;"></div>
+                            <!-- Dropdown Menu -->
+                            <div id="userDropdown" style="
+                                display: none;
+                                position: absolute;
+                                top: calc(100% + 10px);
+                                right: 0;
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                border-radius: 0.875rem;
+                                padding: 1rem;
+                                box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
+                                min-width: 240px;
+                                z-index: 1000;
+                                animation: slideDown 0.3s ease;
+                            ">
+                                <!-- Flecha arriba -->
+                                <div style="
+                                    position: absolute;
+                                    top: -6px;
+                                    right: 18px;
+                                    width: 12px;
+                                    height: 12px;
+                                    background: #667eea;
+                                    transform: rotate(45deg);
+                                "></div>
 
-                                    <!-- Badge del rol -->
-                                    <div id="currentUserRole" style="
-                                        display: inline-block;
-                                        background: rgba(255,255,255,0.25);
+                                <!-- Contenido del dropdown -->
+                                <div style="position: relative;">
+                                    <!-- Avatar y nombre -->
+                                    <div class="d-flex align-items-center gap-2 mb-3 pb-3" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
+                                        <div style="
+                                            width: 42px;
+                                            height: 42px;
+                                            background: rgba(255,255,255,0.2);
+                                            backdrop-filter: blur(10px);
+                                            border-radius: 50%;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            flex-shrink: 0;
+                                        ">
+                                            <i class="bi bi-person-fill" style="font-size: 1.25rem; color: white;"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div id="currentUserInfo" style="color: white; font-weight: 600; font-size: 0.875rem; line-height: 1.3; margin-bottom: 0.15rem;"></div>
+                                            <div id="currentUserRole" style="
+                                                color: rgba(255,255,255,0.85);
+                                                font-size: 0.688rem;
+                                                font-weight: 500;
+                                            "></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Botón de logout -->
+                                    <button id="logoutBtnHeader" style="
+                                        width: 100%;
+                                        background: rgba(255,255,255,0.2);
                                         backdrop-filter: blur(10px);
-                                        color: white;
-                                        font-size: 0.7rem;
-                                        font-weight: 500;
-                                        padding: 0.15rem 0.5rem;
-                                        border-radius: 0.35rem;
                                         border: 1px solid rgba(255,255,255,0.3);
-                                    "></div>
+                                        color: white;
+                                        font-size: 0.813rem;
+                                        font-weight: 600;
+                                        padding: 0.625rem;
+                                        border-radius: 0.5rem;
+                                        transition: all 0.3s ease;
+                                        cursor: pointer;
+                                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';" onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
+                                    </button>
                                 </div>
                             </div>
-
-                            <!-- Botón de logout integrado -->
-                            <button id="logoutBtnHeader" style="
-                                width: 100%;
-                                margin-top: 0.75rem;
-                                background: rgba(255,255,255,0.2);
-                                backdrop-filter: blur(10px);
-                                border: 1px solid rgba(255,255,255,0.3);
-                                color: white;
-                                font-size: 0.813rem;
-                                font-weight: 600;
-                                padding: 0.5rem;
-                                border-radius: 0.5rem;
-                                transition: all 0.3s ease;
-                                cursor: pointer;
-                            " onmouseover="this.style.background='rgba(255,255,255,0.3)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';" onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                                <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -3396,6 +3424,49 @@
                 console.error('Error de autenticación:', error);
                 // User will be redirected to login by AuthManager
             });
+    </script>
+
+    <!-- Estilos para el dropdown de usuario -->
+    <style>
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+
+    <!-- Script para controlar el dropdown de usuario -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userProfileBtn = document.getElementById('userProfileBtn');
+            const userDropdown = document.getElementById('userDropdown');
+
+            if (userProfileBtn && userDropdown) {
+                // Toggle dropdown al hacer clic en el botón
+                userProfileBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const isVisible = userDropdown.style.display === 'block';
+                    userDropdown.style.display = isVisible ? 'none' : 'block';
+                });
+
+                // Cerrar dropdown al hacer clic fuera
+                document.addEventListener('click', function(e) {
+                    if (!userProfileBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                        userDropdown.style.display = 'none';
+                    }
+                });
+
+                // Prevenir que el dropdown se cierre al hacer clic dentro
+                userDropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+        });
     </script>
 
     <footer style="background-color: #f8f9fa; padding: 1rem 0; margin-top: 2rem; border-top: 1px solid #dee2e6;">
