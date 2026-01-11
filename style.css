@@ -802,6 +802,9 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0.5rem;
     border: 2px solid transparent;
     transition: all var(--transicion);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
 }
 
 .form-check:hover {
@@ -813,8 +816,8 @@ h1, h2, h3, h4, h5, h6 {
     width: 1.25rem;
     height: 1.25rem;
     cursor: pointer;
-    margin-right: 0.5rem;
-    float: left;
+    margin-left: 0.75rem;
+    flex-shrink: 0;
 }
 
 .form-check-input:checked {
@@ -822,21 +825,17 @@ h1, h2, h3, h4, h5, h6 {
     border-color: var(--color-primario);
 }
 
-/* Corregir posición de los toggles - checkbox a la izquierda */
+/* Corregir posición de los toggles - texto primero, checkbox después */
 .form-switch {
     padding-left: 0;
-    display: flex;
-    align-items: flex-start;
 }
 
 .form-switch .form-check-input {
-    margin-left: 0;
-    margin-right: 0.75rem;
-    float: none;
+    margin-left: 0.75rem;
 }
 
 .form-switch .form-check-label {
-    order: 2;
+    flex: 1;
 }
 
 .products-header {
