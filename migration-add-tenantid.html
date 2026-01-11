@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Migración: Agregar tenantId</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    .log {
+      background-color: #212529;
+      color: #00ff00;
+      padding: 20px;
+      border-radius: 8px;
+      height: 500px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+    }
+    .log div {
+      margin-bottom: 5px;
+    }
+    .log .success { color: #00ff00; }
+    .log .error { color: #ff0000; }
+    .log .warning { color: #ffaa00; }
+    .log .info { color: #00aaff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <h1 class="mb-4">🔄 Script de Migración: Agregar tenantId</h1>
+
+        <div class="alert alert-warning">
+          <h5>⚠️ ADVERTENCIA</h5>
+          <p>Este script modificará TODOS los documentos de la base de datos para agregar el campo <code>tenantId</code>.</p>
+          <p><strong>Asegúrate de tener un backup antes de continuar.</strong></p>
+        </div>
+
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5>Configuración</h5>
+
+            <div class="mb-3">
+              <label class="form-label">Tenant ID (ID del primer tenant - Mishell)</label>
+              <input type="text" id="tenantId" class="form-control" placeholder="Ej: tenant_mishell_001">
+              <small class="text-muted">Este ID se usará para todos los documentos existentes</small>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Nombre del Tenant</label>
+              <input type="text" id="tenantNombre" class="form-control" value="Mishell Boutique">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Slug del Tenant</label>
+              <input type="text" id="tenantSlug" class="form-control" value="mishell">
+              <small class="text-muted">Se usará para subdominios: mishell.miboutique.com</small>
+            </div>
+
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="createTenant">
+              <label class="form-check-label" for="createTenant">
+                Crear documento del tenant en la colección <code>tenants</code>
+              </label>
+            </div>
+
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="dryRun">
+              <label class="form-check-label" for="dryRun">
+                Dry Run (simular sin hacer cambios reales)
+              </label>
+            </div>
+
+            <button class="btn btn-primary btn-lg" onclick="iniciarMigracion()" id="btnMigrar">
+              🚀 Iniciar Migración
+            </button>
+
+            <button class="btn btn-danger btn-lg ms-2" onclick="detenerMigracion()" id="btnDetener" disabled>
+              ⏸️ Detener
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h5>Log de Migración</h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="log" id="log"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Inicializar Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
+      authDomain: "mishell-boutique-admin.firebaseapp.com",
+      projectId: "mishell-boutique-admin",
+      storageBucket: "mishell-boutique-admin.firebasestorage.app",
+      messagingSenderId: "399662956877",
+      appId: "1:399662956877:web:084236f6f0a8f704"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Variables globales
+    let migracionActiva = false;
+    let stats = {
+      total: 0,
+      procesados: 0,
+      exitosos: 0,
+      fallidos: 0
+    };
+
+    // Colecciones a migrar
+    const COLECCIONES = [
+      'productos',
+      'ventas',
+      'clientes',
+      'pedidosWeb',
+      'apartados',
+      'categorias',
+      'promociones',
+      'promocionesGlobales',
+      'chatConversations',
+      'movimientosFinancieros',
+      'cierresCaja',
+      'repartidores',
+      'proveedores',
+      'metas',
+      'ordenesRecepcion',
+      'liquidaciones',
+      'abonos'
+    ];
+
+    /**
+     * Escribe en el log
+     */
+    function log(mensaje, tipo = 'info') {
+      const logDiv = document.getElementById('log');
+      const timestamp = new Date().toLocaleTimeString();
+      logDiv.innerHTML += `<div class="${tipo}">[${timestamp}] ${mensaje}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    /**
+     * Inicia la migración
+     */
+    async function iniciarMigracion() {
+      const tenantId = document.getElementById('tenantId').value.trim();
+      const tenantNombre = document.getElementById('tenantNombre').value.trim();
+      const tenantSlug = document.getElementById('tenantSlug').value.trim();
+      const createTenant = document.getElementById('createTenant').checked;
+      const dryRun = document.getElementById('dryRun').checked;
+
+      if (!tenantId) {
+        alert('Por favor ingresa un Tenant ID');
+        return;
+      }
+
+      if (!confirm('¿Estás seguro de iniciar la migración? Esta acción modificará muchos documentos.')) {
+        return;
+      }
+
+      // Deshabilitar botón
+      document.getElementById('btnMigrar').disabled = true;
+      document.getElementById('btnDetener').disabled = false;
+      migracionActiva = true;
+
+      // Limpiar log
+      document.getElementById('log').innerHTML = '';
+      stats = { total: 0, procesados: 0, exitosos: 0, fallidos: 0 };
+
+      log('🚀 INICIANDO MIGRACIÓN', 'info');
+      log(`Tenant ID: ${tenantId}`, 'info');
+      log(`Dry Run: ${dryRun ? 'SÍ' : 'NO'}`, 'warning');
+      log('', 'info');
+
+      try {
+        // 1. Crear tenant si está marcado
+        if (createTenant && !dryRun) {
+          await crearTenant(tenantId, tenantNombre, tenantSlug);
+        } else if (createTenant && dryRun) {
+          log(`[DRY RUN] Se crearía tenant: ${tenantNombre} (${tenantSlug})`, 'warning');
+        }
+
+        // 2. Migrar cada colección
+        for (const coleccion of COLECCIONES) {
+          if (!migracionActiva) {
+            log('⏸️ Migración detenida por el usuario', 'warning');
+            break;
+          }
+
+          await migrarColeccion(coleccion, tenantId, dryRun);
+        }
+
+        // 3. Resumen
+        log('', 'info');
+        log('✅ MIGRACIÓN COMPLETADA', 'success');
+        log(`Total documentos: ${stats.total}`, 'info');
+        log(`Procesados: ${stats.procesados}`, 'info');
+        log(`Exitosos: ${stats.exitosos}`, 'success');
+        log(`Fallidos: ${stats.fallidos}`, 'error');
+
+      } catch (error) {
+        log(`❌ ERROR: ${error.message}`, 'error');
+      } finally {
+        document.getElementById('btnMigrar').disabled = false;
+        document.getElementById('btnDetener').disabled = true;
+        migracionActiva = false;
+      }
+    }
+
+    /**
+     * Detiene la migración
+     */
+    function detenerMigracion() {
+      migracionActiva = false;
+      log('⏸️ Deteniendo migración...', 'warning');
+    }
+
+    /**
+     * Crea el documento del tenant
+     */
+    async function crearTenant(tenantId, nombre, slug) {
+      log(`Creando tenant: ${nombre}...`, 'info');
+
+      try {
+        await db.collection('tenants').doc(tenantId).set({
+          nombre,
+          slug,
+          estado: 'activo',
+          planId: 'premium',
+          dominioCustom: null,
+
+          limites: {
+            maxProductos: 5000,
+            maxUsuarios: 20,
+            maxStorage: 5368709120, // 5 GB
+            features: ['branding_custom', 'subdominios', 'analytics']
+          },
+
+          branding: {
+            logo: null,
+            faviconUrl: null,
+            colorPrimario: '#D988B9',
+            colorSecundario: '#333333',
+            colorAccento: '#FFD700',
+            fuentePrincipal: 'Poppins, sans-serif',
+            textos: {
+              nombreTienda: nombre,
+              tagline: 'Tu estilo, nuestra pasión',
+              footerTexto: `© ${new Date().getFullYear()} ${nombre}. Todos los derechos reservados.`,
+              descripcionSEO: `Tienda en línea de ${nombre}`
+            }
+          },
+
+          contacto: {
+            email: '',
+            telefono: '',
+            direccion: '',
+            ciudad: '',
+            pais: 'Colombia'
+          },
+
+          suscripcion: {
+            fechaInicio: firebase.firestore.FieldValue.serverTimestamp(),
+            fechaRenovacion: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 año
+            metodoPago: null,
+            estadoPago: 'activo'
+          },
+
+          estadisticas: {
+            totalProductos: 0,
+            totalUsuarios: 0,
+            totalVentas: 0,
+            storageUsado: 0
+          },
+
+          propietarioId: null,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        log(`✅ Tenant creado: ${tenantId}`, 'success');
+
+      } catch (error) {
+        log(`❌ Error al crear tenant: ${error.message}`, 'error');
+        throw error;
+      }
+    }
+
+    /**
+     * Migra una colección completa
+     */
+    async function migrarColeccion(coleccion, tenantId, dryRun) {
+      log(`Procesando colección: ${coleccion}...`, 'info');
+
+      try {
+        const snapshot = await db.collection(coleccion).get();
+        const total = snapshot.docs.length;
+        stats.total += total;
+
+        log(`  ${total} documentos encontrados`, 'info');
+
+        let procesados = 0;
+        const batch = db.batch();
+        let batchCount = 0;
+
+        for (const doc of snapshot.docs) {
+          if (!migracionActiva) break;
+
+          const data = doc.data();
+
+          // Si ya tiene tenantId, saltar
+          if (data.tenantId) {
+            log(`  ⏭️ ${doc.id} ya tiene tenantId, saltando`, 'warning');
+            continue;
+          }
+
+          if (!dryRun) {
+            // Agregar tenantId
+            batch.update(doc.ref, { tenantId });
+            batchCount++;
+
+            // Commit batch cada 500 documentos (límite de Firestore)
+            if (batchCount >= 500) {
+              await batch.commit();
+              batchCount = 0;
+            }
+          } else {
+            log(`  [DRY RUN] ${doc.id} → agregar tenantId: ${tenantId}`, 'warning');
+          }
+
+          procesados++;
+          stats.procesados++;
+
+          // Log cada 100 documentos
+          if (procesados % 100 === 0) {
+            log(`  Progreso: ${procesados}/${total}`, 'info');
+          }
+        }
+
+        // Commit final
+        if (!dryRun && batchCount > 0) {
+          await batch.commit();
+        }
+
+        stats.exitosos += procesados;
+        log(`✅ Colección ${coleccion} migrada: ${procesados} documentos`, 'success');
+
+      } catch (error) {
+        stats.fallidos += 1;
+        log(`❌ Error en colección ${coleccion}: ${error.message}`, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
