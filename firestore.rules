@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // ═══════════════════════════════════════════════════════════════════
-    // FUNCIONES AUXILIARES
+    // FUNCIONES AUXILIARES - AUTENTICACIÓN
     // ═══════════════════════════════════════════════════════════════════
 
     // Verifica si el usuario está autenticado
@@ -28,207 +28,406 @@ service cloud.firestore {
 
     // Verifica si el usuario tiene un permiso específico
     function hasPermission(permission) {
-      return isActiveUser() && permission in getUserData().permisos;
+      return isActiveUser() && getUserData().permisos[permission] == true;
     }
 
-    // Verifica si el usuario es Super Admin
+    // ═══════════════════════════════════════════════════════════════════
+    // FUNCIONES MULTI-TENANT - CRÍTICAS
+    // ═══════════════════════════════════════════════════════════════════
+
+    // Verifica si el usuario es Super Admin (sin tenantId)
     function isSuperAdmin() {
       return isActiveUser() && getUserData().rol == 'SUPER_ADMIN';
     }
 
+    // Verifica si el usuario pertenece a un tenant específico
+    function belongsToTenant(tenantId) {
+      return isActiveUser() &&
+             (getUserData().tenantId == tenantId || isSuperAdmin());
+    }
+
+    // Verifica si el documento que se está creando tiene el tenantId correcto
+    function isCreatingWithCorrectTenant() {
+      return request.resource.data.tenantId == getUserData().tenantId;
+    }
+
+    // Verifica que no se intente cambiar el tenantId en una actualización
+    function isNotChangingTenant() {
+      return !('tenantId' in request.resource.data) ||
+             request.resource.data.tenantId == resource.data.tenantId;
+    }
+
+    // Verifica que el documento que se está creando tenga tenantId
+    function hasRequiredTenantId() {
+      return 'tenantId' in request.resource.data;
+    }
+
     // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE USUARIOS
+    // REGLAS DE TENANTS - SOLO SUPER ADMINS
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /tenants/{tenantId} {
+      // Solo Super Admins pueden gestionar tenants
+      allow read, create, update: if isSuperAdmin();
+
+      // NUNCA eliminar tenants (usar estado "cancelado")
+      allow delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE PLANES - SOLO SUPER ADMINS
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /planes/{planId} {
+      // Lectura pública (para mostrar en onboarding)
+      allow read: if true;
+
+      // Solo Super Admins pueden gestionar planes
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE USUARIOS - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
 
     match /usuarios/{userId} {
-      // Cualquier usuario autenticado puede leer su propio documento
+      // Leer propio documento
       allow read: if isAuthenticated() && request.auth.uid == userId;
 
-      // Solo usuarios con permiso usuarios_ver pueden listar todos los usuarios
-      allow read: if hasPermission('usuarios_ver');
+      // Super Admin puede leer todos los usuarios
+      allow read: if isSuperAdmin();
 
-      // Solo usuarios con permiso usuarios_gestionar pueden crear/actualizar/eliminar
-      allow create, update: if hasPermission('usuarios_gestionar');
+      // Admin Tenant puede leer usuarios de su tenant
+      allow read: if isActiveUser() &&
+                    hasPermission('usuarios_ver') &&
+                    belongsToTenant(resource.data.tenantId);
 
-      // Solo Super Admins pueden eliminar usuarios
+      // Crear: Super Admin o Admin Tenant (con tenantId correcto)
+      allow create: if isSuperAdmin() ||
+                      (hasPermission('usuarios_crear') &&
+                       hasRequiredTenantId() &&
+                       isCreatingWithCorrectTenant());
+
+      // Actualizar: Solo del mismo tenant, sin cambiar tenantId
+      allow update: if isSuperAdmin() ||
+                      (hasPermission('usuarios_editar') &&
+                       belongsToTenant(resource.data.tenantId) &&
+                       isNotChangingTenant());
+
+      // Eliminar: Solo Super Admin
       allow delete: if isSuperAdmin();
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE CATEGORÍAS
-    // ═══════════════════════════════════════════════════════════════════
-
-    match /categorias/{categoryId} {
-      allow read: if hasPermission('categorias_ver') || hasPermission('productos_ver');
-      allow create, update, delete: if hasPermission('categorias_gestionar');
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE PROVEEDORES
-    // ═══════════════════════════════════════════════════════════════════
-
-    match /proveedores/{supplierId} {
-      allow read: if hasPermission('finanzas_ver');
-      allow create, update, delete: if hasPermission('finanzas_gestionar');
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE CLIENTES
-    // ═══════════════════════════════════════════════════════════════════
-
-    match /clientes/{clientId} {
-      allow read: if hasPermission('clientes_ver');
-      allow create, update, delete: if hasPermission('clientes_gestionar');
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE REPARTIDORES
-    // ═══════════════════════════════════════════════════════════════════
-
-    match /repartidores/{repartidorId} {
-      allow read: if hasPermission('repartidores_ver');
-      allow create, update, delete: if hasPermission('repartidores_gestionar');
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE PRODUCTOS
+    // REGLAS DE PRODUCTOS - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
 
     match /productos/{productId} {
-      // Lectura pública para el catálogo web (index.html)
+      // Lectura pública para el catálogo web (todos los tenants)
       allow read: if true;
 
-      // Operaciones administrativas requieren permisos
-      allow create: if hasPermission('productos_crear');
-      allow update: if hasPermission('productos_editar');
-      allow delete: if hasPermission('productos_eliminar');
+      // Crear: Con tenantId correcto
+      allow create: if hasPermission('productos_crear') &&
+                      hasRequiredTenantId() &&
+                      isCreatingWithCorrectTenant();
+
+      // Actualizar: Solo del mismo tenant, sin cambiar tenantId
+      allow update: if hasPermission('productos_editar') &&
+                      belongsToTenant(resource.data.tenantId) &&
+                      isNotChangingTenant();
+
+      // Eliminar: Solo del mismo tenant
+      allow delete: if hasPermission('productos_eliminar') &&
+                      belongsToTenant(resource.data.tenantId);
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE VENTAS
+    // REGLAS DE VENTAS - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
 
     match /ventas/{saleId} {
-      allow read: if hasPermission('ventas_ver') || hasPermission('dashboard_ver');
-      allow create: if hasPermission('ventas_registrar');
-      allow update: if hasPermission('ventas_editar');
-      allow delete: if hasPermission('ventas_eliminar');
+      // Leer: Solo del mismo tenant
+      allow read: if (hasPermission('ventas_ver') || hasPermission('dashboard_ver')) &&
+                    belongsToTenant(resource.data.tenantId);
+
+      // Crear: Con tenantId correcto
+      allow create: if hasPermission('ventas_crear') &&
+                      hasRequiredTenantId() &&
+                      isCreatingWithCorrectTenant();
+
+      // Actualizar: Solo del mismo tenant, sin cambiar tenantId
+      allow update: if hasPermission('ventas_editar') &&
+                      belongsToTenant(resource.data.tenantId) &&
+                      isNotChangingTenant();
+
+      // No eliminar ventas (usar anulación)
+      allow delete: if false;
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE APARTADOS
+    // REGLAS DE CLIENTES - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
 
-    match /apartados/{apartadoId} {
-      allow read: if hasPermission('apartados_ver');
-      allow create, update, delete: if hasPermission('apartados_gestionar');
+    match /clientes/{clientId} {
+      // Leer: Solo del mismo tenant
+      allow read: if hasPermission('clientes_ver') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      // Crear: Con tenantId correcto
+      allow create: if hasPermission('clientes_crear') &&
+                      hasRequiredTenantId() &&
+                      isCreatingWithCorrectTenant();
+
+      // Actualizar: Solo del mismo tenant, sin cambiar tenantId
+      allow update: if hasPermission('clientes_editar') &&
+                      belongsToTenant(resource.data.tenantId) &&
+                      isNotChangingTenant();
+
+      // Eliminar: Solo del mismo tenant
+      allow delete: if hasPermission('clientes_eliminar') &&
+                      belongsToTenant(resource.data.tenantId);
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE MOVIMIENTOS FINANCIEROS
-    // ═══════════════════════════════════════════════════════════════════
-
-    match /movimientosFinancieros/{movimientoId} {
-      allow read: if hasPermission('finanzas_ver');
-      allow create, update, delete: if hasPermission('finanzas_gestionar');
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE CIERRES DE CAJA
-    // ═══════════════════════════════════════════════════════════════════
-
-    match /cierresCaja/{cierreId} {
-      allow read: if hasPermission('cierres_caja_ver') || hasPermission('finanzas_ver');
-      allow create, update, delete: if hasPermission('cierres_caja_gestionar');
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE PEDIDOS WEB
+    // REGLAS DE PEDIDOS WEB - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
 
     match /pedidosWeb/{pedidoId} {
-      // Creación pública desde el catálogo web
-      allow create: if true;
+      // Creación pública desde el catálogo (DEBE incluir tenantId)
+      allow create: if hasRequiredTenantId();
 
-      // Lectura y gestión requieren permisos
-      allow read: if hasPermission('pedidos_web_ver');
-      allow update, delete: if hasPermission('pedidos_web_gestionar');
+      // Leer: Solo del mismo tenant
+      allow read: if hasPermission('pedidos_web_ver') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      // Actualizar: Solo del mismo tenant, sin cambiar tenantId
+      allow update: if hasPermission('pedidos_web_gestionar') &&
+                      belongsToTenant(resource.data.tenantId) &&
+                      isNotChangingTenant();
+
+      // No eliminar pedidos
+      allow delete: if false;
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE CONVERSACIONES DE CHAT
+    // REGLAS DE APARTADOS - CON VALIDACIÓN DE TENANT
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /apartados/{apartadoId} {
+      // Leer: Solo del mismo tenant
+      allow read: if hasPermission('apartados_ver') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      // Crear: Con tenantId correcto
+      allow create: if hasPermission('apartados_crear') &&
+                      hasRequiredTenantId() &&
+                      isCreatingWithCorrectTenant();
+
+      // Actualizar: Solo del mismo tenant, sin cambiar tenantId
+      allow update: if hasPermission('apartados_editar') &&
+                      belongsToTenant(resource.data.tenantId) &&
+                      isNotChangingTenant();
+
+      // Eliminar: Solo del mismo tenant
+      allow delete: if hasPermission('apartados_eliminar') &&
+                      belongsToTenant(resource.data.tenantId);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE CATEGORÍAS - CON VALIDACIÓN DE TENANT
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /categorias/{categoryId} {
+      // Leer: Solo del mismo tenant
+      allow read: if (hasPermission('categorias_gestionar') || hasPermission('productos_ver')) &&
+                    belongsToTenant(resource.data.tenantId);
+
+      // Crear: Con tenantId correcto
+      allow create: if hasPermission('categorias_gestionar') &&
+                      hasRequiredTenantId() &&
+                      isCreatingWithCorrectTenant();
+
+      // Actualizar y eliminar: Solo del mismo tenant
+      allow update, delete: if hasPermission('categorias_gestionar') &&
+                              belongsToTenant(resource.data.tenantId) &&
+                              isNotChangingTenant();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE PROVEEDORES - CON VALIDACIÓN DE TENANT
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /proveedores/{supplierId} {
+      // Leer: Solo del mismo tenant
+      allow read: if hasPermission('proveedores_gestionar') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      // Gestionar: Solo del mismo tenant
+      allow create, update, delete: if hasPermission('proveedores_gestionar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE REPARTIDORES - CON VALIDACIÓN DE TENANT
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /repartidores/{repartidorId} {
+      // Leer: Solo del mismo tenant
+      allow read: if hasPermission('repartidores_gestionar') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      // Gestionar: Solo del mismo tenant
+      allow create, update, delete: if hasPermission('repartidores_gestionar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE MOVIMIENTOS FINANCIEROS - CON VALIDACIÓN DE TENANT
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /movimientosFinancieros/{movimientoId} {
+      allow read: if hasPermission('finanzas_ver') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      allow create, update, delete: if hasPermission('finanzas_gestionar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE CIERRES DE CAJA - CON VALIDACIÓN DE TENANT
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /cierresCaja/{cierreId} {
+      allow read: if (hasPermission('cierres_caja') || hasPermission('finanzas_ver')) &&
+                    belongsToTenant(resource.data.tenantId);
+
+      allow create, update, delete: if hasPermission('cierres_caja') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE CHAT - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
 
     match /chatConversations/{conversationId} {
-      // Lectura y escritura pública para el chat del catálogo web
-      allow read, write: if true;
+      // Crear: Público pero con tenantId requerido
+      allow create: if hasRequiredTenantId();
+
+      // Leer: Público (para clientes) o con permiso (para staff)
+      allow read: if true;
+
+      // Responder: Solo staff del tenant
+      allow update: if hasPermission('chat_responder') &&
+                      belongsToTenant(resource.data.tenantId) &&
+                      isNotChangingTenant();
+
+      allow delete: if false;
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE METAS
+    // REGLAS DE METAS - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
 
     match /metas/{metaId} {
-      allow read: if hasPermission('dashboard_ver') || hasPermission('finanzas_ver');
-      allow create, update, delete: if hasPermission('finanzas_gestionar');
+      allow read: if (hasPermission('dashboard_ver') || hasPermission('finanzas_ver')) &&
+                    belongsToTenant(resource.data.tenantId);
+
+      allow create, update, delete: if hasPermission('finanzas_gestionar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE ÓRDENES DE RECEPCIÓN
+    // REGLAS DE PROMOCIONES - CON VALIDACIÓN DE TENANT
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /promociones/{promoId} {
+      // Lectura pública (para catálogo)
+      allow read: if true;
+
+      allow create, update, delete: if hasPermission('promociones_gestionar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
+    }
+
+    match /promocionesGlobales/{promoId} {
+      // Lectura pública (para catálogo)
+      allow read: if true;
+
+      allow create, update, delete: if hasPermission('promociones_gestionar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE OTRAS COLECCIONES - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
 
     match /ordenesRecepcion/{ordenId} {
-      allow read: if hasPermission('productos_ver');
-      allow create, update, delete: if hasPermission('productos_editar');
-    }
+      allow read: if hasPermission('productos_ver') &&
+                    belongsToTenant(resource.data.tenantId);
 
-    // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE LIQUIDACIONES
-    // ═══════════════════════════════════════════════════════════════════
+      allow create, update, delete: if hasPermission('productos_editar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
+    }
 
     match /liquidaciones/{liquidacionId} {
-      allow read: if hasPermission('repartidores_ver') || hasPermission('finanzas_ver');
-      allow create, update, delete: if hasPermission('repartidores_gestionar');
-    }
+      allow read: if (hasPermission('repartidores_gestionar') || hasPermission('finanzas_ver')) &&
+                    belongsToTenant(resource.data.tenantId);
 
-    // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE ABONOS
-    // ═══════════════════════════════════════════════════════════════════
+      allow create, update, delete: if hasPermission('repartidores_gestionar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
+    }
 
     match /abonos/{abonoId} {
-      allow read: if hasPermission('apartados_ver');
-      allow create, update, delete: if hasPermission('apartados_gestionar');
+      allow read: if hasPermission('apartados_ver') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      allow create, update, delete: if hasPermission('apartados_gestionar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
     }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // REGLAS DE PEDIDOS
-    // ═══════════════════════════════════════════════════════════════════
-
-    match /pedidos/{pedidoId} {
-      allow read: if hasPermission('pedidos_web_ver') || hasPermission('ventas_ver');
-      allow create, update, delete: if hasPermission('pedidos_web_gestionar');
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // REGLAS PARA PROMOCIONES GLOBALES
-    // ═══════════════════════════════════════════════════════════════════
-
-    match /promocionesGlobales/{promoId} {
-      // Lectura pública para mostrar en el catálogo web
-      allow read: if true;
-
-      // Gestión requiere permisos
-      allow create, update, delete: if hasPermission('promociones_gestionar');
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // REGLAS PARA HISTORIAL DE CARGUES
-    // ═══════════════════════════════════════════════════════════════════
 
     match /historial_cargues/{cargueId} {
-      allow read: if hasPermission('productos_ver');
-      allow create: if hasPermission('productos_cargue_masivo');
+      allow read: if hasPermission('productos_ver') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      allow create: if hasPermission('productos_importar') &&
+                      hasRequiredTenantId() &&
+                      isCreatingWithCorrectTenant();
+
       allow update, delete: if isSuperAdmin();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // AUDIT LOGS - SOLO SUPER ADMINS
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /auditLogs/{logId} {
+      // Solo Super Admins pueden leer audit logs
+      allow read: if isSuperAdmin();
+
+      // Escritura por sistema (Cloud Functions)
+      allow create: if true;
+
+      // Nunca eliminar logs
+      allow update, delete: if false;
     }
 
     // ═══════════════════════════════════════════════════════════════════
