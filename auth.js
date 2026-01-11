@@ -278,11 +278,14 @@ export class AuthManager {
             'a[href="#repartidores"]': [PERMISOS.REPARTIDORES_VER],
             'a[href="#promociones"]': [PERMISOS.PROMOCIONES_VER],
 
-            // Finanzas
+            // Finanzas (dropdown)
             'a[href="#finanzas"]': [PERMISOS.FINANZAS_VER],
+            'a[href="#reportes"]': [PERMISOS.FINANZAS_VER], // Los reportes requieren finanzas
+            'a[href="#proveedores"]': [PERMISOS.PRODUCTOS_VER], // Los proveedores están relacionados con productos
 
-            // Configuración
+            // Configuración (dropdown)
             'a[href="#configuracion"]': [PERMISOS.CONFIG_VER],
+            'a[href="#backup"]': [PERMISOS.CONFIG_BACKUP],
 
             // Usuarios
             'a[href="#usuarios"]': [PERMISOS.USUARIOS_VER]
@@ -307,10 +310,28 @@ export class AuthManager {
 
         // Ocultar dropdowns vacíos
         document.querySelectorAll('.nav-item.dropdown').forEach(dropdown => {
-            const visibleItems = Array.from(dropdown.querySelectorAll('.dropdown-menu li'))
-                .filter(li => li.style.display !== 'none');
+            // Contar items visibles (excluyendo separadores <hr>)
+            const dropdownItems = Array.from(dropdown.querySelectorAll('.dropdown-menu li'));
+            const visibleItems = dropdownItems.filter(li => {
+                // Verificar si el li contiene un link visible o es un separador
+                const link = li.querySelector('a.dropdown-item');
+                const separator = li.querySelector('hr');
+
+                // Si es separador, ignorar
+                if (separator) return false;
+
+                // Si tiene un link, verificar si está visible
+                if (link) {
+                    return li.style.display !== 'none';
+                }
+
+                return false;
+            });
+
+            console.log('🔍 Dropdown:', dropdown.querySelector('.nav-link')?.textContent.trim(), 'Items visibles:', visibleItems.length);
 
             if (visibleItems.length === 0) {
+                console.log('❌ Ocultando dropdown vacío:', dropdown.querySelector('.nav-link')?.textContent.trim());
                 dropdown.style.display = 'none';
             }
         });
