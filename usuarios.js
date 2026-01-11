@@ -62,8 +62,7 @@ function setupEventListeners() {
     // Confirmar eliminación
     document.getElementById('confirm-delete-usuario')?.addEventListener('click', handleDeleteUsuario);
 
-    // Botón logout
-    document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
+    // Botón logout en header
     document.getElementById('logoutBtnHeader')?.addEventListener('click', handleLogout);
 }
 
