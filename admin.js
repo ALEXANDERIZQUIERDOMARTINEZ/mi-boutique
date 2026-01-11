@@ -11164,6 +11164,94 @@ console.log("✅ Módulo de Promociones Globales inicializado");
 })();
 
 // ========================================================================
+// --- ELIMINAR TODOS LOS PEDIDOS WEB ---
+// ========================================================================
+(() => {
+    const confirmCheckbox = document.getElementById('confirmDeleteAllWebOrders');
+    const confirmButton = document.getElementById('confirm-delete-all-web-orders');
+    const deleteModal = document.getElementById('deleteAllWebOrdersModal');
+
+    if (!confirmCheckbox || !confirmButton || !deleteModal) {
+        console.warn("Elementos de eliminación de pedidos web no encontrados");
+        return;
+    }
+
+    // Habilitar/deshabilitar botón basado en checkbox
+    confirmCheckbox.addEventListener('change', () => {
+        confirmButton.disabled = !confirmCheckbox.checked;
+    });
+
+    // Resetear checkbox cuando se cierra el modal
+    deleteModal.addEventListener('hidden.bs.modal', () => {
+        confirmCheckbox.checked = false;
+        confirmButton.disabled = true;
+    });
+
+    // Función para eliminar todos los pedidos web
+    confirmButton.addEventListener('click', async () => {
+        if (!confirmCheckbox.checked) {
+            showToast('Debes confirmar la acción marcando la casilla', 'error');
+            return;
+        }
+
+        try {
+            // Deshabilitar botón y mostrar loading
+            confirmButton.disabled = true;
+            confirmButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Eliminando...';
+
+            console.log("🗑️ Iniciando eliminación de todos los pedidos web...");
+
+            // Obtener todos los pedidos web
+            const webOrdersQuery = query(collection(db, 'pedidosWeb'));
+            const snapshot = await getDocs(webOrdersQuery);
+
+            if (snapshot.empty) {
+                showToast('No hay pedidos web para eliminar', 'info');
+                bootstrap.Modal.getInstance(deleteModal).hide();
+                confirmButton.innerHTML = '<i class="bi bi-trash3-fill me-2"></i>Eliminar Todos los Pedidos';
+                return;
+            }
+
+            const totalOrders = snapshot.size;
+            console.log(`📊 Total de pedidos a eliminar: ${totalOrders}`);
+
+            // Crear batch para eliminación masiva
+            const batch = writeBatch(db);
+            let deletedCount = 0;
+
+            snapshot.forEach((docSnap) => {
+                batch.delete(docSnap.ref);
+                deletedCount++;
+            });
+
+            // Ejecutar eliminación
+            await batch.commit();
+
+            console.log(`✅ ${deletedCount} pedidos web eliminados exitosamente`);
+            showToast(`✅ ${deletedCount} pedidos web eliminados correctamente`, 'success');
+
+            // Cerrar modal
+            bootstrap.Modal.getInstance(deleteModal).hide();
+
+            // Resetear botón
+            confirmButton.innerHTML = '<i class="bi bi-trash3-fill me-2"></i>Eliminar Todos los Pedidos';
+            confirmButton.disabled = true;
+            confirmCheckbox.checked = false;
+
+        } catch (error) {
+            console.error("❌ Error al eliminar pedidos web:", error);
+            showToast('Error al eliminar pedidos web: ' + error.message, 'error');
+
+            // Resetear botón
+            confirmButton.innerHTML = '<i class="bi bi-trash3-fill me-2"></i>Eliminar Todos los Pedidos';
+            confirmButton.disabled = false;
+        }
+    });
+
+    console.log("✅ Sistema de eliminación de pedidos web inicializado");
+})();
+
+// ========================================================================
 // --- SIDEBAR TOGGLE PARA MÓVIL ---
 // ========================================================================
 // NOTA: El manejo del sidebar toggle se hace en admin.html mediante script inline
