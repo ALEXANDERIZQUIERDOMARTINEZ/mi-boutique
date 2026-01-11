@@ -64,6 +64,7 @@ function setupEventListeners() {
 
     // Botón logout
     document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
+    document.getElementById('logoutBtnHeader')?.addEventListener('click', handleLogout);
 }
 
 /**
