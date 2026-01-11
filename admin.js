@@ -102,6 +102,75 @@ function eliminarFormatoNumero(valor) {
     return valor.toString().replace(/[^\d]/g, '');
 }
 
+// --- Sistema de Permisos ---
+/**
+ * Verifica si el usuario actual tiene un permiso específico
+ * @param {string} permission - El permiso a verificar (ej: 'productos_crear')
+ * @returns {boolean} - true si tiene el permiso, false si no
+ */
+function hasPermission(permission) {
+    if (!window.authManager) {
+        console.warn('AuthManager no está disponible');
+        return false;
+    }
+    return window.authManager.hasPermission(permission);
+}
+
+/**
+ * Verifica si el usuario tiene el permiso, si no muestra un mensaje de error
+ * @param {string} permission - El permiso requerido
+ * @param {string} accion - Descripción de la acción (para el mensaje de error)
+ * @returns {boolean} - true si tiene el permiso, false si no
+ */
+function checkPermission(permission, accion = 'realizar esta acción') {
+    if (!hasPermission(permission)) {
+        showToast(`No tienes permiso para ${accion}`, 'error');
+        console.warn(`Permiso denegado: ${permission} para ${accion}`);
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Verifica si el usuario es super admin
+ * @returns {boolean}
+ */
+function isSuperAdmin() {
+    if (!window.authManager) return false;
+    return window.authManager.isSuperAdmin();
+}
+
+/**
+ * Obtiene el usuario actual del authManager
+ * @returns {object|null}
+ */
+function getCurrentUser() {
+    if (!window.authManager) return null;
+    return window.authManager.currentUser;
+}
+
+/**
+ * Oculta o deshabilita un elemento si no tiene el permiso
+ * @param {string} elementId - ID del elemento
+ * @param {string} permission - Permiso requerido
+ * @param {boolean} hide - Si true oculta, si false solo deshabilita
+ */
+function protectElement(elementId, permission, hide = false) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    if (!hasPermission(permission)) {
+        if (hide) {
+            element.style.display = 'none';
+        } else {
+            element.disabled = true;
+            element.style.opacity = '0.5';
+            element.style.cursor = 'not-allowed';
+            element.title = 'No tienes permiso para esta acción';
+        }
+    }
+}
+
 // --- Aplicar formato automático a inputs de dinero ---
 function aplicarFormatoDinero() {
     // IDs de inputs que requieren formato de dinero (solo enteros, sin decimales)
@@ -378,6 +447,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
      // --- Aplicar formato de dinero a todos los inputs ---
      aplicarFormatoDinero();
+
+     // --- Proteger botones según permisos del usuario ---
+     // Esta función se ejecuta después de que authManager esté disponible
+     setTimeout(() => {
+         if (!window.authManager) {
+             console.warn('AuthManager no disponible aún, reintentando...');
+             return;
+         }
+
+         // Proteger botones de agregar
+         protectElement('btn-add-category', 'categorias_gestionar', false);
+         protectElement('btn-add-supplier', 'productos_ver', false); // Los proveedores están relacionados con productos
+         protectElement('btn-add-client', 'clientes_gestionar', false);
+         protectElement('btn-add-repartidor', 'repartidores_gestionar', false);
+
+         // Ocultar botones de "Agregar Producto" si no tiene permiso
+         const addProductBtn = document.getElementById('toggle-form-view-btn');
+         if (addProductBtn && !hasPermission('productos_crear')) {
+             addProductBtn.style.display = 'none';
+         }
+
+         // Los botones individuales de editar/eliminar ya están protegidos en sus event listeners
+         console.log('✅ Protección de botones aplicada según permisos del usuario');
+     }, 500);
 
      // --- Lógica Modal de Confirmación de Borrado ---
      const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
@@ -1063,12 +1156,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const updateDropdown = (snapshot) => { if (!categoryDropdown) return; const sel = categoryDropdown.value; categoryDropdown.innerHTML = '<option value="">Selecciona...</option>'; snapshot.forEach(doc => { const d = doc.data(); const opt = document.createElement('option'); opt.value = doc.id; opt.textContent = d.nombre; categoryDropdown.appendChild(opt); }); categoryDropdown.value = sel; }
         const checkDuplicate = async (name, currentId = null) => { const lowerCaseName = name.toLowerCase(); const q = query(categoriesCollection, where("nombreLower", "==", lowerCaseName)); const querySnapshot = await getDocs(q); let isDuplicate = false; querySnapshot.forEach((doc) => { if (doc.id !== currentId) { isDuplicate = true; } }); return isDuplicate; };
         onSnapshot(query(categoriesCollection, orderBy("nombre")), (s) => { render(s); updateDropdown(s); }, (e) => { console.error("Error categories: ", e); if(categoryList) categoryList.innerHTML = '<li class="list-group-item text-danger">Error.</li>'; });
-        if (categoryForm) categoryForm.addEventListener('submit', async (e) => { e.preventDefault(); const name = categoryNameInput.value.trim(); if (!name) return; if (await checkDuplicate(name)) { showToast('Ya existe una categoría con ese nombre.', 'warning'); return; } try { await addDoc(categoriesCollection, { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría guardada!"); categoryNameInput.value = ''; } catch (err) { console.error("Error add cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
-        if (editForm && editCategoryModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const name = editNameInput.value.trim(); if (!id || !name) return; if (await checkDuplicate(name, id)) { showToast('Ya existe otra categoría con ese nombre.', 'warning'); return; } try { await updateDoc(doc(db, "categorias", id), { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría actualizada!"); editCategoryModalInstance.hide(); } catch (err) { console.error("Error update cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
+        if (categoryForm) categoryForm.addEventListener('submit', async (e) => { e.preventDefault();
+            // ✅ VALIDACIÓN DE PERMISOS
+            if (!checkPermission('categorias_gestionar', 'crear categorías')) {
+                return;
+            }
+            const name = categoryNameInput.value.trim(); if (!name) return; if (await checkDuplicate(name)) { showToast('Ya existe una categoría con ese nombre.', 'warning'); return; } try { await addDoc(categoriesCollection, { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría guardada!"); categoryNameInput.value = ''; } catch (err) { console.error("Error add cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
+        if (editForm && editCategoryModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault();
+            // ✅ VALIDACIÓN DE PERMISOS
+            if (!checkPermission('categorias_gestionar', 'editar categorías')) {
+                return;
+            }
+            const id = editIdInput.value; const name = editNameInput.value.trim(); if (!id || !name) return; if (await checkDuplicate(name, id)) { showToast('Ya existe otra categoría con ese nombre.', 'warning'); return; } try { await updateDoc(doc(db, "categorias", id), { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría actualizada!"); editCategoryModalInstance.hide(); } catch (err) { console.error("Error update cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
         if (categoryList) categoryList.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const li = target.closest('li'); const id = li.dataset.id; const nameSpan = li.querySelector('.category-name'); if (!id || !nameSpan) return;
             if (target.classList.contains('btn-delete-category')) {
+                 // ✅ VALIDACIÓN DE PERMISOS
+                 if (!checkPermission('categorias_gestionar', 'eliminar categorías')) {
+                     return;
+                 }
                  const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'categorias'; deleteItemNameEl.textContent = `Categoría: ${nameSpan.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
-            } else if (target.classList.contains('btn-edit-category')) { if(editIdInput && editNameInput && editCategoryModalInstance) { editIdInput.value = id; editNameInput.value = nameSpan.textContent; editCategoryModalInstance.show(); } else { console.error("Edit modal elements missing."); showToast('Error al abrir editor.', 'error'); } }
+            } else if (target.classList.contains('btn-edit-category')) {
+                 // ✅ VALIDACIÓN DE PERMISOS
+                 if (!checkPermission('categorias_gestionar', 'editar categorías')) {
+                     return;
+                 }
+                 if(editIdInput && editNameInput && editCategoryModalInstance) { editIdInput.value = id; editNameInput.value = nameSpan.textContent; editCategoryModalInstance.show(); } else { console.error("Edit modal elements missing."); showToast('Error al abrir editor.', 'error'); } }
         });
     })();
 
@@ -1141,14 +1253,32 @@ document.addEventListener('DOMContentLoaded', () => {
         
         onSnapshot(query(clientsCollection, orderBy('nombre')), renderClients, (e) => { console.error("Error clients:", e); if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';});
         if (ventaClienteInput) ventaClienteInput.addEventListener('input', window.fillClientInfoSales);
-        if (addForm && addClientModalInstance) addForm.addEventListener('submit', async (e) => { e.preventDefault(); const ced = addCedulaInput.value.trim(); const nom = addNombreInput.value.trim(); const cel = addCelularInput.value.trim(); const dir = addDireccionInput.value.trim(); if (nom && cel) { try { await addDoc(clientsCollection, { nombre: nom, cedula: ced, celular: cel, direccion: dir, ultimaCompra: null }); showToast("Cliente guardado!"); addClientModalInstance.hide(); addForm.reset(); } catch (err) { console.error("Err add client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
-        if (editForm && editClientModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const ced = editCedulaInput.value.trim(); const nom = editNombreInput.value.trim(); const cel = editCelularInput.value.trim(); const dir = editDireccionInput.value.trim(); if (id && nom && cel) { try { await updateDoc(doc(db, "clientes", id), { nombre: nom, cedula: ced, celular: cel, direccion: dir }); showToast("Cliente actualizado!"); editClientModalInstance.hide(); } catch (err) { console.error("Err update client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); }});
+        if (addForm && addClientModalInstance) addForm.addEventListener('submit', async (e) => { e.preventDefault();
+            // ✅ VALIDACIÓN DE PERMISOS
+            if (!checkPermission('clientes_gestionar', 'crear clientes')) {
+                return;
+            }
+            const ced = addCedulaInput.value.trim(); const nom = addNombreInput.value.trim(); const cel = addCelularInput.value.trim(); const dir = addDireccionInput.value.trim(); if (nom && cel) { try { await addDoc(clientsCollection, { nombre: nom, cedula: ced, celular: cel, direccion: dir, ultimaCompra: null }); showToast("Cliente guardado!"); addClientModalInstance.hide(); addForm.reset(); } catch (err) { console.error("Err add client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
+        if (editForm && editClientModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault();
+            // ✅ VALIDACIÓN DE PERMISOS
+            if (!checkPermission('clientes_gestionar', 'editar clientes')) {
+                return;
+            }
+            const id = editIdInput.value; const ced = editCedulaInput.value.trim(); const nom = editNombreInput.value.trim(); const cel = editCelularInput.value.trim(); const dir = editDireccionInput.value.trim(); if (id && nom && cel) { try { await updateDoc(doc(db, "clientes", id), { nombre: nom, cedula: ced, celular: cel, direccion: dir }); showToast("Cliente actualizado!"); editClientModalInstance.hide(); } catch (err) { console.error("Err update client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); }});
         if (clientListTable) clientListTable.addEventListener('click', async (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.client-name'); if (!id || !nameTd) return;
             if (target.classList.contains('btn-client-history')) {
                 await mostrarHistorialCliente(target.dataset.clientName, target.dataset.clientCelular);
             } else if (target.classList.contains('btn-delete-client')) {
+                // ✅ VALIDACIÓN DE PERMISOS
+                if (!checkPermission('clientes_gestionar', 'eliminar clientes')) {
+                    return;
+                }
                 const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'clientes'; deleteItemNameEl.textContent = `Cliente: ${nameTd.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
             } else if (target.classList.contains('btn-edit-client')) {
+                // ✅ VALIDACIÓN DE PERMISOS
+                if (!checkPermission('clientes_gestionar', 'editar clientes')) {
+                    return;
+                }
                  const clientData = localClientsMap.get(id); if (clientData && editClientModalInstance && editIdInput && editCedulaInput && editNombreInput && editCelularInput && editDireccionInput) { editIdInput.value = id; editCedulaInput.value = clientData.cedula || ''; editNombreInput.value = clientData.nombre || ''; editCelularInput.value = clientData.celular || ''; editDireccionInput.value = clientData.direccion || ''; editClientModalInstance.show(); } else { console.error("Edit client modal or data missing"); showToast("Error al abrir editor.", 'error'); }
             }
         });
@@ -1729,9 +1859,23 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (productForm) productForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if(saveProductBtn) { saveProductBtn.disabled = true; if(saveProductBtnText) saveProductBtnText.textContent = "Guardando..."; if(saveProductBtnSpinner) saveProductBtnSpinner.style.display = 'inline-block'; }
 
             const productId = productIdInput.value;
+
+            // ✅ VALIDACIÓN DE PERMISOS
+            if (productId) {
+                // Editar producto existente
+                if (!checkPermission('productos_editar', 'editar productos')) {
+                    return;
+                }
+            } else {
+                // Crear producto nuevo
+                if (!checkPermission('productos_crear', 'crear productos')) {
+                    return;
+                }
+            }
+
+            if(saveProductBtn) { saveProductBtn.disabled = true; if(saveProductBtnText) saveProductBtnText.textContent = "Guardando..."; if(saveProductBtnSpinner) saveProductBtnSpinner.style.display = 'inline-block'; }
             const nombreProducto = nombreInput.value.trim();
 
             // ✅ VALIDACIÓN: No permitir más de 2 productos con el mismo nombre
@@ -1835,8 +1979,16 @@ document.addEventListener('DOMContentLoaded', () => {
                      window.mostrarBarcodeModal(producto);
                  }
              } else if (target.classList.contains('btn-delete-product')) {
+                 // ✅ VALIDACIÓN DE PERMISOS
+                 if (!checkPermission('productos_eliminar', 'eliminar productos')) {
+                     return;
+                 }
                  const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'productos'; deleteItemNameEl.textContent = `Producto: ${nameTd.firstChild.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
              } else if (target.classList.contains('btn-edit-product')) {
+                 // ✅ VALIDACIÓN DE PERMISOS
+                 if (!checkPermission('productos_editar', 'editar productos')) {
+                     return;
+                 }
                  showToast("Cargando datos...", 'info');
                  try {
                     const product = localProductsMap.get(id);
@@ -1889,6 +2041,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else { showToast("Producto no encontrado.", 'error'); }
                  } catch (err) { console.error("Error fetching product for edit:", err); showToast(`Error al cargar: ${err.message}`, 'error'); }
              } else if (target.classList.contains('btn-zero-stock')) {
+                 // ✅ VALIDACIÓN DE PERMISOS
+                 if (!checkPermission('productos_editar', 'modificar el stock de productos')) {
+                     return;
+                 }
                  // Poner stock en 0
                  showToast("Poniendo stock en 0...", 'info');
                  try {
@@ -2972,6 +3128,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // ========================================================================
          if (salesForm) salesForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            // ✅ VALIDACIÓN DE PERMISOS
+            if (window.editingVentaId) {
+                // Editar venta existente
+                if (!checkPermission('ventas_editar', 'editar ventas')) {
+                    return;
+                }
+            } else {
+                // Registrar nueva venta
+                if (!checkPermission('ventas_registrar', 'registrar ventas')) {
+                    return;
+                }
+            }
+
             if (window.ventaItems.length === 0) {
                 showToast("Agrega productos.", 'warning');
                 return;
@@ -3219,6 +3389,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Función para Anular Venta (D) ---
         async function anularVenta(ventaId) {
             if (!ventaId) return;
+
+            // ✅ VALIDACIÓN DE PERMISOS
+            if (!checkPermission('ventas_eliminar', 'anular ventas')) {
+                return;
+            }
+
             if (!confirm('¿Estás seguro de que quieres ANULAR esta venta?\nEsta acción repondrá el stock y marcará la venta como "Anulada".')) {
                 return;
             }
