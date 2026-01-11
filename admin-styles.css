@@ -88,7 +88,7 @@ body.admin-page {
 
 /* Sidebar Brand / Logo - REDISEÑADO */
 .sidebar-brand {
-    padding: 2rem 1rem;
+    padding: 1.25rem 1rem;
     font-weight: 600;
     font-size: 0;
     letter-spacing: 1px;
@@ -103,7 +103,7 @@ body.admin-page {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 80px;
+    min-height: 60px;
     flex-shrink: 0;
 }
 
@@ -115,7 +115,7 @@ body.admin-page {
 /* Inicial elegante cuando colapsado */
 .admin-sidebar .sidebar-brand::before {
     content: 'M';
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     background: linear-gradient(135deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 100%);
     -webkit-background-clip: text;
@@ -127,21 +127,21 @@ body.admin-page {
 
 /* Texto completo cuando expandido */
 .admin-sidebar:hover .sidebar-brand {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
 }
 
 .admin-sidebar:hover .sidebar-brand::before {
     content: 'Mishell';
-    font-size: 1.5rem;
+    font-size: 1.2rem;
 }
 
 /* Badge decorativo opcional */
 .sidebar-brand::after {
     content: 'BOUTIQUE';
     position: absolute;
-    bottom: 8px;
-    font-size: 0.5rem;
-    letter-spacing: 2px;
+    bottom: 6px;
+    font-size: 0.4rem;
+    letter-spacing: 1.5px;
     color: var(--admin-texto-claro);
     font-weight: 600;
     opacity: 0;
@@ -154,7 +154,7 @@ body.admin-page {
 
 /* Navegación vertical - Centrada como Instagram */
 .sidebar-nav {
-    padding: 2rem 0;
+    padding: 1.25rem 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -169,35 +169,35 @@ body.admin-page {
 /* Sidebar nav-links - ALINEACIÓN MEJORADA */
 .sidebar-nav .nav-link {
     color: var(--admin-texto-sec);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     font-weight: 500;
-    padding: 0.8rem 0.75rem;
-    margin: 0.25rem 0;
+    padding: 0.6rem 0.65rem;
+    margin: 0.15rem 0;
     border-radius: 10px;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.8rem;
     white-space: nowrap;
     overflow: visible;
     justify-content: flex-start;
-    line-height: 1.4;
+    line-height: 1.3;
     position: relative;
 }
 
 /* Cuando el sidebar está colapsado, eliminar el gap para que solo se vea el icono */
 .admin-sidebar:not(:hover) .sidebar-nav .nav-link {
     justify-content: flex-start;
-    padding: 0.8rem 0.75rem;
-    margin: 0.25rem 0;
+    padding: 0.6rem 0.65rem;
+    margin: 0.15rem 0;
     gap: 0 !important;
 }
 
 .sidebar-nav .nav-link i {
-    font-size: 1.4rem;
-    min-width: 26px;
-    width: 26px;
-    height: 26px;
+    font-size: 1.1rem;
+    min-width: 22px;
+    width: 22px;
+    height: 22px;
     display: inline-flex;
     align-items: center;
     justify-content: flex-start;
