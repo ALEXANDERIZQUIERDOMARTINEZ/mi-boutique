@@ -1633,6 +1633,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button class="btn btn-action btn-action-edit btn-edit-product">
                                         <i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span>
                                     </button>
+                                    <button class="btn btn-action btn-action-warning btn-zero-stock" title="Poner stock en 0">
+                                        <i class="bi bi-dash-circle"></i><span class="btn-action-text">Stock a 0</span>
+                                    </button>
                                     <button class="btn btn-action btn-action-delete btn-delete-product">
                                         <i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span>
                                     </button>
@@ -1885,6 +1888,31 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                     } else { showToast("Producto no encontrado.", 'error'); }
                  } catch (err) { console.error("Error fetching product for edit:", err); showToast(`Error al cargar: ${err.message}`, 'error'); }
+             } else if (target.classList.contains('btn-zero-stock')) {
+                 // Poner stock en 0
+                 showToast("Poniendo stock en 0...", 'info');
+                 try {
+                    const product = localProductsMap.get(id);
+                    if (product) {
+                        // Crear variaciones con stock en 0
+                        const variacionesConStockCero = (product.variaciones || []).map(v => ({
+                            ...v,
+                            stock: 0
+                        }));
+
+                        // Actualizar en Firestore
+                        await updateDoc(doc(db, "productos", id), {
+                            variaciones: variacionesConStockCero
+                        });
+
+                        showToast(`Stock del producto "${nameTd.firstChild.textContent}" puesto en 0`, 'success');
+                    } else {
+                        showToast("Producto no encontrado.", 'error');
+                    }
+                 } catch (err) {
+                    console.error("Error al poner stock en 0:", err);
+                    showToast(`Error: ${err.message}`, 'error');
+                 }
              }
          });
 
