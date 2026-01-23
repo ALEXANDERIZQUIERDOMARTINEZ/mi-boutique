@@ -2082,6 +2082,91 @@ document.addEventListener('DOMContentLoaded', () => {
              }
          });
 
+        // ✅ RESETEAR TODO EL INVENTARIO A 0
+        const btnResetAllInventory = document.getElementById('btn-reset-all-inventory');
+        if (btnResetAllInventory) {
+            btnResetAllInventory.addEventListener('click', async () => {
+                // ✅ VALIDACIÓN DE PERMISOS
+                if (!checkPermission('productos_editar', 'modificar el inventario')) {
+                    return;
+                }
+
+                // Confirmación con advertencia
+                const confirmacion = confirm(
+                    '⚠️ ADVERTENCIA: Esta acción pondrá el stock de TODOS los productos en 0.\n\n' +
+                    '¿Estás seguro de que deseas continuar?\n\n' +
+                    'Esta acción NO se puede deshacer.'
+                );
+
+                if (!confirmacion) {
+                    return;
+                }
+
+                // Segunda confirmación para evitar errores
+                const segundaConfirmacion = confirm(
+                    '🔴 ÚLTIMA CONFIRMACIÓN:\n\n' +
+                    'Se resetearán TODOS los productos del inventario.\n' +
+                    '¿Continuar?'
+                );
+
+                if (!segundaConfirmacion) {
+                    return;
+                }
+
+                try {
+                    showToast("Reseteando inventario completo...", 'info');
+                    btnResetAllInventory.disabled = true;
+                    btnResetAllInventory.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Procesando...';
+
+                    // Obtener todos los productos
+                    const productos = Array.from(localProductsMap.values());
+
+                    if (productos.length === 0) {
+                        showToast("No hay productos en el inventario", 'warning');
+                        btnResetAllInventory.disabled = false;
+                        btnResetAllInventory.innerHTML = '<i class="bi bi-dash-circle-fill me-1"></i>Resetear Todo el Inventario a 0';
+                        return;
+                    }
+
+                    // Usar batch update para optimizar escrituras
+                    const batch = writeBatch(db);
+                    let contadorActualizados = 0;
+
+                    for (const [id, producto] of localProductsMap.entries()) {
+                        if (producto.variaciones && producto.variaciones.length > 0) {
+                            // Crear variaciones con stock en 0
+                            const variacionesConStockCero = producto.variaciones.map(v => ({
+                                ...v,
+                                stock: 0
+                            }));
+
+                            // Agregar al batch
+                            const productoRef = doc(db, "productos", id);
+                            batch.update(productoRef, {
+                                variaciones: variacionesConStockCero,
+                                updatedAt: new Date(),
+                                actualizadoPor: auth.currentUser?.uid || 'unknown'
+                            });
+
+                            contadorActualizados++;
+                        }
+                    }
+
+                    // Ejecutar batch update
+                    await batch.commit();
+
+                    showToast(`✅ Inventario reseteado: ${contadorActualizados} productos actualizados a stock 0`, 'success');
+
+                } catch (err) {
+                    console.error("Error al resetear inventario:", err);
+                    showToast(`Error al resetear inventario: ${err.message}`, 'error');
+                } finally {
+                    btnResetAllInventory.disabled = false;
+                    btnResetAllInventory.innerHTML = '<i class="bi bi-dash-circle-fill me-1"></i>Resetear Todo el Inventario a 0';
+                }
+            });
+        }
+
         // Función avanzada de filtrado de productos
         function applyProductModalFilters() {
             const searchTerm = (document.getElementById('product-modal-search')?.value || '').toLowerCase();
