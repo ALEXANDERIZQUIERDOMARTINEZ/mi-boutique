@@ -113,8 +113,6 @@
                         <span>Config</span>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#usuarios" data-bs-toggle="pill"><i class="bi bi-person-lock"></i>Usuarios</a></li>
-                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="#backup" data-bs-toggle="pill"><i class="bi bi-cloud-arrow-down"></i>Backup</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="index.html" target="_blank"><i class="bi bi-shop"></i>Ver Catálogo</a></li>
@@ -137,136 +135,15 @@
     </div>
 
     <main class="admin-main">
-        <!-- 👤 HEADER GLOBAL CON USUARIO Y FECHA (Siempre visible) -->
-        <div style="
-            position: sticky;
-            top: 0;
-            background: white;
-            z-index: 100;
-            padding: 0.625rem 1.5rem;
-            border-bottom: 1px solid #e5e7eb;
-            margin-bottom: 1rem;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 0.75rem;
-        ">
-            <!-- Fecha -->
-            <div class="text-muted" style="font-size: 0.813rem; font-weight: 500;">
-                <i class="bi bi-calendar-event-fill me-1"></i>Hoy: <span id="dashboard-date"></span>
-            </div>
-
-            <!-- User Profile Dropdown -->
-            <div class="position-relative">
-                            <button id="userProfileBtn" style="
-                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                                border: none;
-                                border-radius: 50%;
-                                width: 38px;
-                                height: 38px;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                cursor: pointer;
-                                box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
-                                transition: all 0.3s ease;
-                                position: relative;
-                            " onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 5px 14px rgba(102, 126, 234, 0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 3px 10px rgba(102, 126, 234, 0.3)';">
-                                <i class="bi bi-person-fill" style="font-size: 1.1rem; color: white;"></i>
-                                <!-- Indicador de badge online -->
-                                <span style="
-                                    position: absolute;
-                                    bottom: 1px;
-                                    right: 1px;
-                                    width: 10px;
-                                    height: 10px;
-                                    background: #10b981;
-                                    border: 2px solid white;
-                                    border-radius: 50%;
-                                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                                "></span>
-                            </button>
-
-                            <!-- Dropdown Menu -->
-                            <div id="userDropdown" style="
-                                display: none;
-                                position: absolute;
-                                top: calc(100% + 10px);
-                                right: 0;
-                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                                border-radius: 0.875rem;
-                                padding: 1rem;
-                                box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
-                                min-width: 240px;
-                                z-index: 1000;
-                                animation: slideDown 0.3s ease;
-                            ">
-                                <!-- Flecha arriba -->
-                                <div style="
-                                    position: absolute;
-                                    top: -6px;
-                                    right: 18px;
-                                    width: 12px;
-                                    height: 12px;
-                                    background: #667eea;
-                                    transform: rotate(45deg);
-                                "></div>
-
-                                <!-- Contenido del dropdown -->
-                                <div style="position: relative;">
-                                    <!-- Avatar y nombre -->
-                                    <div class="d-flex align-items-center gap-2 mb-3 pb-3" style="border-bottom: 1px solid rgba(255,255,255,0.2);">
-                                        <div style="
-                                            width: 42px;
-                                            height: 42px;
-                                            background: rgba(255,255,255,0.2);
-                                            backdrop-filter: blur(10px);
-                                            border-radius: 50%;
-                                            display: flex;
-                                            align-items: center;
-                                            justify-content: center;
-                                            flex-shrink: 0;
-                                        ">
-                                            <i class="bi bi-person-fill" style="font-size: 1.25rem; color: white;"></i>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <div id="currentUserInfo" style="color: white; font-weight: 600; font-size: 0.875rem; line-height: 1.3; margin-bottom: 0.15rem;"></div>
-                                            <div id="currentUserRole" style="
-                                                color: rgba(255,255,255,0.85);
-                                                font-size: 0.688rem;
-                                                font-weight: 500;
-                                            "></div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Botón de logout -->
-                                    <button id="logoutBtnHeader" style="
-                                        width: 100%;
-                                        background: rgba(255,255,255,0.2);
-                                        backdrop-filter: blur(10px);
-                                        border: 1px solid rgba(255,255,255,0.3);
-                                        color: white;
-                                        font-size: 0.813rem;
-                                        font-weight: 600;
-                                        padding: 0.625rem;
-                                        border-radius: 0.5rem;
-                                        transition: all 0.3s ease;
-                                        cursor: pointer;
-                                    " onmouseover="this.style.background='rgba(255,255,255,0.3)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';" onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                                        <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-        </div>
-        <!-- FIN HEADER GLOBAL -->
-
         <div class="tab-content">
             <div class="tab-pane fade show active" id="dashboard">
-                <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
                     <h1 class="h2 mb-0">
                         <i class="bi bi-speedometer2 me-2"></i>Dashboard
                     </h1>
+                    <div class="text-muted small">
+                        <i class="bi bi-calendar-event-fill"></i> Hoy: <span id="dashboard-date"></span>
+                    </div>
                 </div>
 
                 <!-- Tarjetas de Resumen Principal -->
@@ -466,7 +343,7 @@
                     <h5 class="text-muted fw-light"><i class="bi bi-bar-chart-line me-2"></i>Análisis de Datos</h5>
                 </div>
                 <div class="row g-4 mb-4">
-                    <div class="col-12">
+                    <div class="col-lg-8">
                         <div class="card shadow-sm">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Tendencia de Ventas</h5>
@@ -485,18 +362,239 @@
                                 <canvas id="ventasChart" height="80"></canvas>
                             </div>
                         </div>
+
+                        <!-- ⚡ NUEVA TABLA INTELIGENTE DE TENDENCIAS ⚡ -->
+                        <div class="card shadow-sm mt-4">
+                            <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-lightning-charge-fill me-2"></i>Análisis Inteligente de Tendencias
+                                </h5>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check" name="trends-period" id="trends-7days" autocomplete="off" checked>
+                                    <label class="btn btn-outline-light btn-sm" for="trends-7days">7 días</label>
+
+                                    <input type="radio" class="btn-check" name="trends-period" id="trends-14days" autocomplete="off">
+                                    <label class="btn btn-outline-light btn-sm" for="trends-14days">14 días</label>
+
+                                    <input type="radio" class="btn-check" name="trends-period" id="trends-30days" autocomplete="off">
+                                    <label class="btn btn-outline-light btn-sm" for="trends-30days">30 días</label>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-trends mb-0" id="tablaTendencias">
+                                        <thead class="table-light sticky-top">
+                                            <tr>
+                                                <th class="text-center" style="width: 60px;">
+                                                    <i class="bi bi-hash"></i>
+                                                </th>
+                                                <th>
+                                                    <i class="bi bi-calendar3 me-1"></i>Fecha
+                                                </th>
+                                                <th class="text-end">
+                                                    <i class="bi bi-cash-stack me-1"></i>Ingresos
+                                                </th>
+                                                <th class="text-center">
+                                                    <i class="bi bi-graph-up-arrow me-1"></i>vs. Período Anterior
+                                                </th>
+                                                <th class="text-center">
+                                                    <i class="bi bi-cart-check me-1"></i>Ventas
+                                                </th>
+                                                <th class="text-end">
+                                                    <i class="bi bi-receipt me-1"></i>Ticket Prom.
+                                                </th>
+                                                <th class="text-center">
+                                                    <i class="bi bi-speedometer2 me-1"></i>Rendimiento
+                                                </th>
+                                                <th class="text-center">
+                                                    <i class="bi bi-trophy me-1"></i>Rating
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaTendenciasBody">
+                                            <!-- Datos cargados dinámicamente por JavaScript -->
+                                            <tr>
+                                                <td colspan="8" class="text-center py-5">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="visually-hidden">Cargando...</span>
+                                                    </div>
+                                                    <p class="text-muted mt-2 mb-0">Analizando tendencias de ventas...</p>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Resumen de Insights -->
+                                <div class="border-top p-3 bg-light" id="trendsInsights">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-success bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-trophy-fill text-success"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Mejor Día</small>
+                                                    <strong id="bestDay">--</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-graph-up text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Crecimiento Prom.</small>
+                                                    <strong id="avgGrowth">--</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-info bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-receipt text-info"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Ticket Prom. Global</small>
+                                                    <strong id="globalAvgTicket">--</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-2">
+                                                    <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Alertas</small>
+                                                    <strong id="alertsCount">0</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Top 15 Productos</h5>
+                            </div>
+                            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                                <canvas id="topProductosChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nueva Fila: Análisis Avanzado de Ventas -->
+                <div class="row g-4 mb-4">
+                    <!-- Categorías más vendidas -->
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0"><i class="bi bi-tags-fill me-2"></i>Categorías Más Vendidas</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="categoriasChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Métodos de Pago -->
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Métodos de Pago</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="metodosPagoChart" height="250"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Análisis Financiero -->
+                <div class="row g-4 mb-4">
+                    <!-- Ingresos vs Costos -->
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Ingresos vs Costos</h5>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check" name="financial-period" id="financial-7days" autocomplete="off" checked>
+                                    <label class="btn btn-outline-success" for="financial-7days">7 días</label>
+
+                                    <input type="radio" class="btn-check" name="financial-period" id="financial-30days" autocomplete="off">
+                                    <label class="btn btn-outline-success" for="financial-30days">30 días</label>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="ingresosVsCostosChart" height="80"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Productos con Mejor Margen -->
+                    <div class="col-lg-4">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0"><i class="bi bi-star-fill me-2"></i>Mejor Margen</h5>
+                            </div>
+                            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                <canvas id="mejorMargenChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPIs Adicionales -->
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card shadow-sm border-0 h-100 bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div class="card-body text-white text-center">
+                                <i class="bi bi-graph-up-arrow" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                                <h6 class="mt-3 mb-2">Ticket Promedio</h6>
+                                <h3 class="mb-0 fw-bold" id="db-ticket-promedio">$0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-sm border-0 h-100 bg-gradient" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <div class="card-body text-white text-center">
+                                <i class="bi bi-cart-check" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                                <h6 class="mt-3 mb-2">Productos Vendidos</h6>
+                                <h3 class="mb-0 fw-bold" id="db-productos-vendidos">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-sm border-0 h-100 bg-gradient" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <div class="card-body text-white text-center">
+                                <i class="bi bi-cash-coin" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                                <h6 class="mt-3 mb-2">Margen Promedio</h6>
+                                <h3 class="mb-0 fw-bold" id="db-margen-promedio">0%</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-sm border-0 h-100 bg-gradient" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                            <div class="card-body text-white text-center">
+                                <i class="bi bi-clock-history" style="font-size: 2.5rem; opacity: 0.8;"></i>
+                                <h6 class="mt-3 mb-2">Ventas Este Mes</h6>
+                                <h3 class="mb-0 fw-bold" id="db-ventas-mes">$0</h3>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
             </div>
 
             <div class="tab-pane fade" id="pedidos-web">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="h2 mb-0"><i class="bi bi-globe me-2"></i>Pedidos desde la Web</h1>
-                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteAllWebOrdersModal">
-                        <i class="bi bi-trash3 me-2"></i>Eliminar Todos los Pedidos
-                    </button>
-                </div>
+                <h1 class="h2 mb-4"><i class="bi bi-globe me-2"></i>Pedidos desde la Web</h1>
                 <div class="card">
                     <div class="card-header bg-white border-0 pt-3">
                         <h3 class="h5 mb-0">Pedidos Pendientes</h3>
@@ -581,8 +679,8 @@
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label d-block">Visibilidad en Tienda:</label>
                                         <div class="form-check form-switch">
-                                            <label class="form-check-label" for="visibilidad" style="font-size: 1.1rem; font-weight: 500;">Visible</label>
                                             <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked style="width: 3em; height: 1.5em;">
+                                            <label class="form-check-label ms-2" for="visibilidad" style="font-size: 1.1rem; font-weight: 500;">Visible</label>
                                         </div>
                                         <small class="text-muted d-block mt-1">Activa para mostrar en catálogo público</small>
                                     </div>
@@ -1727,79 +1825,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- =====================================================
-                 8️⃣ SECCIÓN USUARIOS - GESTIÓN DE USUARIOS Y PERMISOS
-                 ===================================================== -->
-            <div class="tab-pane fade" id="usuarios">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="h2 mb-0">
-                        <i class="bi bi-person-lock me-2"></i>Gestión de Usuarios
-                    </h1>
-                    <button class="btn btn-primary" id="btn-add-usuario">
-                        <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
-                    </button>
-                </div>
-
-                <!-- Alerta informativa -->
-                <div class="alert alert-info d-flex align-items-start mb-4">
-                    <i class="bi bi-info-circle-fill fs-4 me-3"></i>
-                    <div>
-                        <h6 class="alert-heading mb-2">Sistema de Permisos</h6>
-                        <p class="mb-0 small">
-                            Controla el acceso al panel de administración creando usuarios con roles específicos.
-                            Cada usuario solo podrá ver y modificar las secciones para las que tiene permiso.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Listado de Usuarios -->
-                <div class="card shadow-sm">
-                    <div class="card-header bg-white py-3">
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <h5 class="mb-0">
-                                    <i class="bi bi-people-fill me-2"></i>Usuarios del Sistema
-                                </h5>
-                            </div>
-                            <div class="col-md-6">
-                                <input
-                                    type="search"
-                                    class="form-control"
-                                    id="search-usuarios"
-                                    placeholder="🔍 Buscar usuario..."
-                                >
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="px-4">Usuario</th>
-                                        <th>Email</th>
-                                        <th>Rol</th>
-                                        <th>Estado</th>
-                                        <th>Último Acceso</th>
-                                        <th class="text-center">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="usuarios-table-body">
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted py-5">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Cargando...</span>
-                                            </div>
-                                            <p class="mt-3 mb-0">Cargando usuarios...</p>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </main>
     </div><!-- /.admin-content-wrapper -->
@@ -2833,10 +2858,10 @@
                         </div>
 
                         <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="promo-activa" checked>
                             <label class="form-check-label" for="promo-activa">
                                 <strong>Activar promoción</strong>
                             </label>
-                            <input class="form-check-input" type="checkbox" id="promo-activa" checked>
                         </div>
 
                         <div class="alert alert-warning">
@@ -2882,467 +2907,11 @@
         </div>
     </div>
 
-    <!-- ============================================
-         MODALES DE GESTIÓN DE USUARIOS
-         ============================================ -->
-
-    <!-- Modal: Agregar/Editar Usuario -->
-    <div class="modal fade" id="usuarioModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="usuarioModalTitle">
-                        <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="form-usuario">
-                        <input type="hidden" id="usuario-id">
-                        <input type="hidden" id="usuario-mode" value="add">
-
-                        <!-- Información Básica -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <h6 class="border-bottom pb-2 mb-3">
-                                    <i class="bi bi-person-badge me-2"></i>Información Básica
-                                </h6>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="usuario-nombre" class="form-label">Nombre Completo <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="usuario-nombre" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="usuario-email" class="form-label">Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" id="usuario-email" required>
-                                <small class="text-muted">Se usará para iniciar sesión</small>
-                            </div>
-                            <div class="col-md-6 mb-3" id="password-group">
-                                <label for="usuario-password" class="form-label">Contraseña <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <input type="password" class="form-control" id="usuario-password" minlength="6">
-                                    <button class="btn btn-outline-secondary" type="button" id="toggle-password">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                </div>
-                                <small class="text-muted">Mínimo 6 caracteres</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="usuario-rol" class="form-label">Rol <span class="text-danger">*</span></label>
-                                <select class="form-select" id="usuario-rol" required>
-                                    <option value="">Seleccionar rol...</option>
-                                    <option value="SUPER_ADMIN">Super Administrador</option>
-                                    <option value="ADMIN">Administrador</option>
-                                    <option value="VENDEDOR">Vendedor</option>
-                                    <option value="INVENTARIO">Gestión de Inventario</option>
-                                    <option value="CONTADOR">Contador</option>
-                                    <option value="REPARTIDOR">Repartidor</option>
-                                    <option value="VISUALIZADOR">Visualizador</option>
-                                    <option value="PERSONALIZADO">Personalizado</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Descripción de Roles -->
-                        <div class="alert alert-info small mb-4" id="rol-description">
-                            <strong>Descripción del Rol:</strong>
-                            <ul class="mb-0 mt-2" id="rol-description-list">
-                                <li>Selecciona un rol para ver su descripción</li>
-                            </ul>
-                        </div>
-
-                        <!-- Permisos Personalizados -->
-                        <div id="permisos-personalizados" style="display: none;">
-                            <h6 class="border-bottom pb-2 mb-3">
-                                <i class="bi bi-shield-check me-2"></i>Permisos Personalizados
-                            </h6>
-
-                            <!-- Dashboard -->
-                            <div class="card mb-3">
-                                <div class="card-header bg-light py-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input permiso-grupo" type="checkbox" id="grupo-dashboard" data-grupo="dashboard">
-                                        <label class="form-check-label fw-bold" for="grupo-dashboard">
-                                            <i class="bi bi-speedometer2 me-2"></i>Dashboard
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="card-body py-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input permiso-item" type="checkbox" value="dashboard_ver" data-grupo="dashboard">
-                                        <label class="form-check-label small">Ver dashboard</label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Ventas -->
-                            <div class="card mb-3">
-                                <div class="card-header bg-light py-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input permiso-grupo" type="checkbox" id="grupo-ventas" data-grupo="ventas">
-                                        <label class="form-check-label fw-bold" for="grupo-ventas">
-                                            <i class="bi bi-cart3 me-2"></i>Ventas
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="card-body py-2">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="ventas_registrar" data-grupo="ventas"><label class="form-check-label small">Registrar venta</label></div>
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="ventas_ver" data-grupo="ventas"><label class="form-check-label small">Ver ventas</label></div>
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="ventas_editar" data-grupo="ventas"><label class="form-check-label small">Editar ventas</label></div>
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="ventas_eliminar" data-grupo="ventas"><label class="form-check-label small">Eliminar ventas</label></div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="pedidos_web_ver" data-grupo="ventas"><label class="form-check-label small">Ver pedidos web</label></div>
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="pedidos_web_gestionar" data-grupo="ventas"><label class="form-check-label small">Gestionar pedidos web</label></div>
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="apartados_ver" data-grupo="ventas"><label class="form-check-label small">Ver apartados</label></div>
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="apartados_gestionar" data-grupo="ventas"><label class="form-check-label small">Gestionar apartados</label></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Inventario -->
-                            <div class="card mb-3">
-                                <div class="card-header bg-light py-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input permiso-grupo" type="checkbox" id="grupo-inventario" data-grupo="inventario">
-                                        <label class="form-check-label fw-bold" for="grupo-inventario">
-                                            <i class="bi bi-box-seam me-2"></i>Inventario
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="card-body py-2">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="productos_ver" data-grupo="inventario"><label class="form-check-label small">Ver productos</label></div>
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="productos_crear" data-grupo="inventario"><label class="form-check-label small">Crear productos</label></div>
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="productos_editar" data-grupo="inventario"><label class="form-check-label small">Editar productos</label></div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="productos_eliminar" data-grupo="inventario"><label class="form-check-label small">Eliminar productos</label></div>
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="productos_cargue_masivo" data-grupo="inventario"><label class="form-check-label small">Cargue masivo</label></div>
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="categorias_ver" data-grupo="inventario"><label class="form-check-label small">Ver categorías</label></div>
-                                            <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="categorias_gestionar" data-grupo="inventario"><label class="form-check-label small">Gestionar categorías</label></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Clientes -->
-                            <div class="card mb-3">
-                                <div class="card-header bg-light py-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input permiso-grupo" type="checkbox" id="grupo-clientes" data-grupo="clientes">
-                                        <label class="form-check-label fw-bold" for="grupo-clientes">
-                                            <i class="bi bi-people me-2"></i>Clientes
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="card-body py-2">
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="clientes_ver" data-grupo="clientes"><label class="form-check-label small">Ver clientes</label></div>
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="clientes_gestionar" data-grupo="clientes"><label class="form-check-label small">Gestionar clientes</label></div>
-                                </div>
-                            </div>
-
-                            <!-- Logística -->
-                            <div class="card mb-3">
-                                <div class="card-header bg-light py-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input permiso-grupo" type="checkbox" id="grupo-logistica" data-grupo="logistica">
-                                        <label class="form-check-label fw-bold" for="grupo-logistica">
-                                            <i class="bi bi-truck me-2"></i>Logística
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="card-body py-2">
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="repartidores_ver" data-grupo="logistica"><label class="form-check-label small">Ver repartidores</label></div>
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="repartidores_gestionar" data-grupo="logistica"><label class="form-check-label small">Gestionar repartidores</label></div>
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="promociones_ver" data-grupo="logistica"><label class="form-check-label small">Ver promociones</label></div>
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="promociones_gestionar" data-grupo="logistica"><label class="form-check-label small">Gestionar promociones</label></div>
-                                </div>
-                            </div>
-
-                            <!-- Finanzas -->
-                            <div class="card mb-3">
-                                <div class="card-header bg-light py-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input permiso-grupo" type="checkbox" id="grupo-finanzas" data-grupo="finanzas">
-                                        <label class="form-check-label fw-bold" for="grupo-finanzas">
-                                            <i class="bi bi-wallet2 me-2"></i>Finanzas
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="card-body py-2">
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="finanzas_ver" data-grupo="finanzas"><label class="form-check-label small">Ver finanzas</label></div>
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="finanzas_gestionar" data-grupo="finanzas"><label class="form-check-label small">Gestionar finanzas</label></div>
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="cierres_caja_ver" data-grupo="finanzas"><label class="form-check-label small">Ver cierres de caja</label></div>
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="cierres_caja_gestionar" data-grupo="finanzas"><label class="form-check-label small">Gestionar cierres de caja</label></div>
-                                </div>
-                            </div>
-
-                            <!-- Configuración -->
-                            <div class="card mb-3">
-                                <div class="card-header bg-light py-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input permiso-grupo" type="checkbox" id="grupo-config" data-grupo="config">
-                                        <label class="form-check-label fw-bold" for="grupo-config">
-                                            <i class="bi bi-gear me-2"></i>Configuración
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="card-body py-2">
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="config_ver" data-grupo="config"><label class="form-check-label small">Ver configuración</label></div>
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="config_backup" data-grupo="config"><label class="form-check-label small">Realizar backups</label></div>
-                                </div>
-                            </div>
-
-                            <!-- Usuarios -->
-                            <div class="card mb-3">
-                                <div class="card-header bg-light py-2">
-                                    <div class="form-check">
-                                        <input class="form-check-input permiso-grupo" type="checkbox" id="grupo-usuarios" data-grupo="usuarios">
-                                        <label class="form-check-label fw-bold" for="grupo-usuarios">
-                                            <i class="bi bi-person-lock me-2"></i>Usuarios
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="card-body py-2">
-                                    <div class="alert alert-warning small mb-2">
-                                        <i class="bi bi-exclamation-triangle me-2"></i>Solo Super Administradores
-                                    </div>
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="usuarios_ver" data-grupo="usuarios"><label class="form-check-label small">Ver usuarios</label></div>
-                                    <div class="form-check"><input class="form-check-input permiso-item" type="checkbox" value="usuarios_gestionar" data-grupo="usuarios"><label class="form-check-label small">Gestionar usuarios</label></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Estado -->
-                        <div class="form-check form-switch mb-3">
-                            <label class="form-check-label" for="usuario-activo">
-                                <strong>Usuario Activo</strong>
-                                <br><small class="text-muted">Los usuarios inactivos no podrán iniciar sesión</small>
-                            </label>
-                            <input class="form-check-input" type="checkbox" id="usuario-activo" checked>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" form="form-usuario" class="btn btn-primary" id="btn-save-usuario">
-                        <i class="bi bi-save me-2"></i>Guardar Usuario
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Confirmar Eliminación de Usuario -->
-    <div class="modal fade" id="deleteUsuarioModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title text-danger">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Eliminación
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>¿Estás seguro de que deseas eliminar este usuario?</p>
-                    <p class="fw-bold" id="delete-usuario-name"></p>
-                    <div class="alert alert-danger small">
-                        <i class="bi bi-exclamation-circle me-2"></i>
-                        Esta acción no se puede deshacer. El usuario ya no podrá acceder al sistema.
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" id="confirm-delete-usuario">
-                        <i class="bi bi-trash me-2"></i>Eliminar Usuario
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Confirmar Eliminación de Todos los Pedidos Web -->
-    <div class="modal fade" id="deleteAllWebOrdersModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>¡ADVERTENCIA! Eliminar Todos los Pedidos Web
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-danger">
-                        <h6 class="alert-heading"><i class="bi bi-exclamation-octagon me-2"></i>Esta acción es IRREVERSIBLE</h6>
-                        <p class="mb-0">Estás a punto de eliminar TODOS los pedidos web del sistema. Esta acción NO se puede deshacer.</p>
-                    </div>
-                    <p class="fw-bold mb-2">Se eliminarán:</p>
-                    <ul class="mb-3">
-                        <li>Todos los pedidos pendientes</li>
-                        <li>Todos los pedidos procesados</li>
-                        <li>Todo el historial de pedidos web</li>
-                    </ul>
-                    <p class="text-danger fw-bold">¿Estás completamente seguro de que deseas continuar?</p>
-                    <div class="form-check mt-3">
-                        <input class="form-check-input" type="checkbox" id="confirmDeleteAllWebOrders">
-                        <label class="form-check-label fw-bold" for="confirmDeleteAllWebOrders">
-                            Sí, entiendo que esta acción es irreversible y quiero eliminar todos los pedidos web
-                        </label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" id="confirm-delete-all-web-orders" disabled>
-                        <i class="bi bi-trash3-fill me-2"></i>Eliminar Todos los Pedidos
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- 📚 LIBRERÍA JSBARCODE PARA GENERAR CÓDIGOS DE BARRAS -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
     <!-- 🔍 SISTEMA DE CÓDIGOS DE BARRAS -->
     <script src="barcode-system.js"></script>
-
-    <!-- 🔐 SISTEMA DE AUTENTICACIÓN Y PERMISOS -->
-    <script type="module">
-        import AuthManager from './auth.js';
-        import { initUsuariosManager } from './usuarios.js';
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-        // Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
-            authDomain: "mishell-boutique-admin.firebaseapp.com",
-            projectId: "mishell-boutique-admin",
-            storageBucket: "mishell-boutique-admin.firebasestorage.app",
-            messagingSenderId: "399662956877",
-            appId: "1:399662956877:web:084236f5bb3cf6f0a8f704",
-            measurementId: "G-TZ3WQ8LSXH"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // Initialize Authentication Manager
-        const authManager = new AuthManager(app);
-
-        // Initialize authentication and apply permissions
-        authManager.init()
-            .then((user) => {
-                console.log('Usuario autenticado:', user.nombre);
-
-                // Initialize Users Manager
-                initUsuariosManager(db, authManager);
-
-                // Expose authManager globally for other scripts to use
-                window.authManager = authManager;
-            })
-            .catch((error) => {
-                console.error('Error de autenticación:', error);
-                // User will be redirected to login by AuthManager
-            });
-
-        // ✅ FIX: Manejar activación de tabs dentro de dropdowns
-        // Bootstrap a veces no activa correctamente pills que están dentro de dropdown-menus
-        document.addEventListener('DOMContentLoaded', function() {
-            // Buscar todos los enlaces de tabs/pills dentro de dropdowns
-            const dropdownPills = document.querySelectorAll('.dropdown-menu a[data-bs-toggle="pill"]');
-
-            dropdownPills.forEach(pillLink => {
-                pillLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-
-                    // Obtener el tab target
-                    const targetId = this.getAttribute('href');
-                    const targetTab = document.querySelector(targetId);
-
-                    if (targetTab) {
-                        // Desactivar todos los tabs
-                        document.querySelectorAll('.tab-pane').forEach(pane => {
-                            pane.classList.remove('show', 'active');
-                        });
-
-                        // Activar el tab seleccionado
-                        targetTab.classList.add('show', 'active');
-
-                        // Cerrar el dropdown
-                        const dropdown = this.closest('.dropdown');
-                        if (dropdown) {
-                            const dropdownToggle = dropdown.querySelector('.dropdown-toggle');
-                            const bsDropdown = bootstrap.Dropdown.getInstance(dropdownToggle);
-                            if (bsDropdown) {
-                                bsDropdown.hide();
-                            }
-                        }
-
-                        console.log('✅ Tab activado:', targetId);
-                    }
-                });
-            });
-        });
-    </script>
-
-    <!-- Estilos para el dropdown de usuario -->
-    <style>
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-    </style>
-
-    <!-- Script para controlar el dropdown de usuario -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const userProfileBtn = document.getElementById('userProfileBtn');
-            const userDropdown = document.getElementById('userDropdown');
-
-            if (userProfileBtn && userDropdown) {
-                // Toggle dropdown al hacer clic en el botón
-                userProfileBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const isVisible = userDropdown.style.display === 'block';
-                    userDropdown.style.display = isVisible ? 'none' : 'block';
-                });
-
-                // Cerrar dropdown al hacer clic fuera
-                document.addEventListener('click', function(e) {
-                    if (!userProfileBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-                        userDropdown.style.display = 'none';
-                    }
-                });
-
-                // Prevenir que el dropdown se cierre al hacer clic dentro
-                userDropdown.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                });
-            }
-        });
-    </script>
-
-    <footer style="background-color: #f8f9fa; padding: 1rem 0; margin-top: 2rem; border-top: 1px solid #dee2e6;">
-        <div class="container">
-            <div class="text-center">
-                <p class="text-muted small m-0">© 2026 Todos los derechos reservados.</p>
-                <p class="text-muted small m-0 mt-1">Desarrollado por <a href="https://www.instagram.com/amei_group/" target="_blank" rel="noopener noreferrer" style="color: #0d6efd; text-decoration: none;">amei_group</a></p>
-            </div>
-        </div>
-    </footer>
 
 </body>
 </html>
