@@ -2648,39 +2648,25 @@ body.admin-page {
 }
 
 /* ========================================
-   CALCULADORA DE GANANCIA
+   GANANCIAS
    ======================================== */
 .ganancia-range-btn {
     border-radius: 20px !important;
     padding: 0.4rem 1.2rem;
     font-weight: 500;
-    transition: all 0.2s ease;
 }
 
 .ganancia-range-btn.active {
     background-color: var(--bs-primary) !important;
     color: #fff !important;
     border-color: var(--bs-primary) !important;
-    box-shadow: 0 2px 8px rgba(var(--bs-primary-rgb), 0.3);
 }
 
-.ganancia-card-highlight {
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+.ganancia-card-principal {
     border-width: 2px !important;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
 }
 
-.ganancia-card-highlight .card-body {
+.ganancia-card-principal .card-body {
     background: transparent;
-}
-
-#ganancia-resultados .card {
-    transition: transform 0.15s ease;
-}
-
-#ganancia-resultados .card:hover {
-    transform: translateY(-2px);
-}
-
-#ganancia-detalle-tabla tr:hover {
-    background-color: rgba(var(--bs-primary-rgb), 0.05);
 }
