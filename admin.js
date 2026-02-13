@@ -7672,6 +7672,249 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 })();
 
 // ========================================================================
+// ✅ SECCIÓN: CALCULADORA DE GANANCIA
+// ========================================================================
+(() => {
+    console.log("💰 Inicializando calculadora de ganancia...");
+
+    const rangeButtons = document.querySelectorAll('.ganancia-range-btn');
+    const customRangeDiv = document.getElementById('ganancia-custom-range');
+    const gananciaDesde = document.getElementById('ganancia-desde');
+    const gananciaHasta = document.getElementById('ganancia-hasta');
+    const btnCalcCustom = document.getElementById('btn-calcular-ganancia-custom');
+    const loadingDiv = document.getElementById('ganancia-loading');
+    const resultadosDiv = document.getElementById('ganancia-resultados');
+
+    if (!rangeButtons.length) {
+        console.warn("⚠️ Calculadora de ganancia no encontrada");
+        return;
+    }
+
+    function getDateRange(range) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        let desde, hasta, label;
+
+        switch(range) {
+            case 'hoy':
+                desde = today;
+                hasta = endOfToday;
+                label = 'Hoy';
+                break;
+            case 'ayer': {
+                const ayer = new Date(today);
+                ayer.setDate(ayer.getDate() - 1);
+                desde = ayer;
+                hasta = new Date(ayer);
+                hasta.setHours(23, 59, 59, 999);
+                label = 'Ayer';
+                break;
+            }
+            case '2dias': {
+                const d = new Date(today);
+                d.setDate(d.getDate() - 1);
+                desde = d;
+                hasta = endOfToday;
+                label = 'Ultimos 2 dias';
+                break;
+            }
+            case '3dias': {
+                const d = new Date(today);
+                d.setDate(d.getDate() - 2);
+                desde = d;
+                hasta = endOfToday;
+                label = 'Ultimos 3 dias';
+                break;
+            }
+            case 'semana': {
+                const d = new Date(today);
+                d.setDate(d.getDate() - 6);
+                desde = d;
+                hasta = endOfToday;
+                label = 'Ultima semana';
+                break;
+            }
+            case 'quincena': {
+                const d = new Date(today);
+                d.setDate(d.getDate() - 14);
+                desde = d;
+                hasta = endOfToday;
+                label = 'Ultimos 15 dias';
+                break;
+            }
+            case 'mes': {
+                const d = new Date(today);
+                d.setDate(d.getDate() - 29);
+                desde = d;
+                hasta = endOfToday;
+                label = 'Ultimo mes';
+                break;
+            }
+            default:
+                desde = today;
+                hasta = endOfToday;
+                label = 'Hoy';
+        }
+        return { desde, hasta, label };
+    }
+
+    async function calcularGanancia(desde, hasta, label) {
+        if (!loadingDiv || !resultadosDiv) return;
+
+        loadingDiv.style.display = 'block';
+        resultadosDiv.style.display = 'none';
+
+        try {
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(desde)),
+                where('timestamp', '<=', Timestamp.fromDate(hasta)),
+                orderBy('timestamp', 'desc')
+            );
+
+            const snapshot = await getDocs(q);
+            let totalVendido = 0;
+            let totalCosto = 0;
+            let numVentas = 0;
+            let totalProductosVendidos = 0;
+            const productosMap = {};
+
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.items) {
+                    numVentas++;
+                    venta.items.forEach(item => {
+                        const precioVenta = (item.precio || item.precioUnitario || 0);
+                        const precioCosto = (item.precioCosto || 0);
+                        const cantidad = item.cantidad || 1;
+
+                        const subtotalVenta = precioVenta * cantidad;
+                        const subtotalCosto = precioCosto * cantidad;
+
+                        totalVendido += subtotalVenta;
+                        totalCosto += subtotalCosto;
+                        totalProductosVendidos += cantidad;
+
+                        const nombre = item.nombre || item.productoNombre || 'Producto sin nombre';
+                        const key = nombre;
+                        if (!productosMap[key]) {
+                            productosMap[key] = {
+                                nombre: nombre,
+                                cantidad: 0,
+                                precioVenta: precioVenta,
+                                precioCosto: precioCosto,
+                                totalVendido: 0,
+                                totalCosto: 0
+                            };
+                        }
+                        productosMap[key].cantidad += cantidad;
+                        productosMap[key].totalVendido += subtotalVenta;
+                        productosMap[key].totalCosto += subtotalCosto;
+                    });
+                }
+            });
+
+            const ganancia = totalVendido - totalCosto;
+            const margen = totalVendido > 0 ? ((ganancia / totalVendido) * 100).toFixed(1) : 0;
+
+            // Actualizar tarjetas
+            document.getElementById('ganancia-total-vendido').textContent = formatoMoneda.format(totalVendido);
+            document.getElementById('ganancia-num-ventas').textContent = `${numVentas} ventas`;
+            document.getElementById('ganancia-total-costo').textContent = formatoMoneda.format(totalCosto);
+            document.getElementById('ganancia-num-productos').textContent = `${totalProductosVendidos} unidades`;
+
+            const gananciaNetaEl = document.getElementById('ganancia-neta');
+            gananciaNetaEl.textContent = formatoMoneda.format(ganancia);
+            gananciaNetaEl.className = ganancia >= 0 ? 'mb-0 fw-bold text-success' : 'mb-0 fw-bold text-danger';
+
+            document.getElementById('ganancia-margen').textContent = `${margen}%`;
+            document.getElementById('ganancia-periodo-label').textContent = label;
+
+            // Tabla de detalle por producto
+            const productosArray = Object.values(productosMap).sort((a, b) => (b.totalVendido - b.totalCosto) - (a.totalVendido - a.totalCosto));
+            const tablaBody = document.getElementById('ganancia-detalle-tabla');
+            document.getElementById('ganancia-detalle-count').textContent = `${productosArray.length} productos`;
+
+            if (productosArray.length === 0) {
+                tablaBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No hay ventas en este periodo</td></tr>';
+            } else {
+                tablaBody.innerHTML = productosArray.map(p => {
+                    const gananciaProducto = p.totalVendido - p.totalCosto;
+                    const colorGanancia = gananciaProducto >= 0 ? 'text-success' : 'text-danger';
+                    return `
+                        <tr>
+                            <td><strong>${p.nombre}</strong></td>
+                            <td class="text-center">${p.cantidad}</td>
+                            <td class="text-end">${formatoMoneda.format(p.precioVenta)}</td>
+                            <td class="text-end">${formatoMoneda.format(p.precioCosto)}</td>
+                            <td class="text-end">${formatoMoneda.format(p.totalVendido)}</td>
+                            <td class="text-end">${formatoMoneda.format(p.totalCosto)}</td>
+                            <td class="text-end fw-bold ${colorGanancia}">${formatoMoneda.format(gananciaProducto)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            loadingDiv.style.display = 'none';
+            resultadosDiv.style.display = 'block';
+
+        } catch (error) {
+            console.error("Error calculando ganancia:", error);
+            loadingDiv.style.display = 'none';
+            resultadosDiv.style.display = 'block';
+            document.getElementById('ganancia-detalle-tabla').innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">Error al calcular: ${error.message}</td></tr>`;
+        }
+    }
+
+    // Event listeners para botones de rango
+    rangeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            rangeButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const range = btn.dataset.range;
+            if (range === 'personalizado') {
+                if (customRangeDiv) customRangeDiv.style.display = 'flex';
+                return;
+            }
+
+            if (customRangeDiv) customRangeDiv.style.display = 'none';
+            const { desde, hasta, label } = getDateRange(range);
+            calcularGanancia(desde, hasta, label);
+        });
+    });
+
+    // Boton calcular personalizado
+    if (btnCalcCustom) {
+        btnCalcCustom.addEventListener('click', () => {
+            if (!gananciaDesde.value || !gananciaHasta.value) {
+                showToast('Selecciona ambas fechas', 'warning');
+                return;
+            }
+            const desde = new Date(gananciaDesde.value);
+            const hasta = new Date(gananciaHasta.value);
+            hasta.setHours(23, 59, 59, 999);
+            const label = `${desde.toLocaleDateString('es-CO')} - ${hasta.toLocaleDateString('es-CO')}`;
+            calcularGanancia(desde, hasta, label);
+        });
+    }
+
+    // Calcular automaticamente "Hoy" al mostrar la seccion
+    const calcGananciaTab = document.querySelector('a[href="#calculadora-ganancia"]');
+    if (calcGananciaTab) {
+        calcGananciaTab.addEventListener('click', () => {
+            if (!resultadosDiv || resultadosDiv.style.display === 'none') {
+                const { desde, hasta, label } = getDateRange('hoy');
+                calcularGanancia(desde, hasta, label);
+            }
+        });
+    }
+
+    console.log("✅ Calculadora de ganancia inicializada");
+})();
+
+// ========================================================================
 // ✅ SECCIÓN: HISTORIAL DE REPARTIDORES
 // ========================================================================
 (() => {

@@ -100,8 +100,7 @@
                         <span>Finanzas</span>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#finanzas" data-bs-toggle="pill"><i class="bi bi-cash-coin"></i>Gestión Financiera</a></li>
-                        <li><a class="dropdown-item" href="#reportes" data-bs-toggle="pill"><i class="bi bi-graph-up-arrow"></i>Reportes</a></li>
+                        <li><a class="dropdown-item" href="#calculadora-ganancia" data-bs-toggle="pill"><i class="bi bi-calculator"></i>Calculadora de Ganancia</a></li>
                         <li><a class="dropdown-item" href="#proveedores" data-bs-toggle="pill"><i class="bi bi-building"></i>Proveedores</a></li>
                     </ul>
                 </li>
@@ -923,66 +922,123 @@
                 </div> 
             </div>
             
-            <div class="tab-pane fade" id="reportes">
+            <!-- CALCULADORA DE GANANCIA -->
+            <div class="tab-pane fade" id="calculadora-ganancia">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="h2 mb-0"><i class="bi bi-file-earmark-bar-graph me-2"></i>Reportes</h1>
-                    <button type="button" id="btn-imprimir-reporte" class="btn btn-outline-secondary" style="display: none;">
-                        <i class="bi bi-printer"></i> Imprimir
-                    </button>
+                    <h1 class="h2 mb-0"><i class="bi bi-calculator me-2"></i>Calculadora de Ganancia</h1>
                 </div>
 
-                <div class="card">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">Generar Reporte</h5>
-                    </div>
+                <!-- Botones de rango rapido -->
+                <div class="card mb-4">
                     <div class="card-body">
-                        <form id="form-reporte">
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label for="reporte-tipo" class="form-label">Tipo de Reporte:</label>
-                                    <select id="reporte-tipo" class="form-select">
-                                        <option value="">Seleccionar...</option>
-                                        <option value="ventas">📊 Ventas</option>
-                                        <option value="utilidad">💰 Utilidad</option>
-                                        <option value="mas-vendidos">🏆 Más Vendidos</option>
-                                        <option value="repartidor">🚴 Por Repartidor</option>
-                                        <option value="apartados">📅 Apartados</option>
-                                        <option value="descuentos">🎁 Descuentos</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="reporte-desde" class="form-label">Desde:</label>
-                                    <input type="date" id="reporte-desde" class="form-control" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="reporte-hasta" class="form-label">Hasta:</label>
-                                    <input type="date" id="reporte-hasta" class="form-control" required>
-                                </div>
-                                <div class="col-md-2 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="bi bi-clipboard-data-fill"></i> Generar
-                                    </button>
-                                </div>
+                        <h6 class="text-muted mb-3">Selecciona un periodo:</h6>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <button type="button" class="btn btn-outline-primary ganancia-range-btn active" data-range="hoy">Hoy</button>
+                            <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="ayer">Ayer</button>
+                            <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="2dias">2 dias</button>
+                            <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="3dias">3 dias</button>
+                            <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="semana">1 Semana</button>
+                            <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="quincena">15 dias</button>
+                            <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="mes">1 Mes</button>
+                            <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="personalizado">Personalizado</button>
+                        </div>
+                        <div id="ganancia-custom-range" class="row g-3" style="display: none;">
+                            <div class="col-md-4">
+                                <label for="ganancia-desde" class="form-label">Desde:</label>
+                                <input type="date" id="ganancia-desde" class="form-control">
                             </div>
-
-                            <!-- Filtro adicional para repartidores -->
-                            <div id="reporte-repartidor-filter" class="row g-3 mt-2" style="display: none;">
-                                <div class="col-md-4">
-                                    <label for="reporte-repartidor-select" class="form-label">Seleccionar Repartidor:</label>
-                                    <select id="reporte-repartidor-select" class="form-select">
-                                        <option value="">Todos los repartidores</option>
-                                    </select>
-                                </div>
+                            <div class="col-md-4">
+                                <label for="ganancia-hasta" class="form-label">Hasta:</label>
+                                <input type="date" id="ganancia-hasta" class="form-control">
                             </div>
-                        </form>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="button" id="btn-calcular-ganancia-custom" class="btn btn-primary w-100">
+                                    <i class="bi bi-calculator me-1"></i> Calcular
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Área de resultados -->
-                <div id="area-reporte" class="mt-4">
-                    <div class="text-center text-muted py-5">
-                        <i class="bi bi-file-earmark-text" style="font-size: 3rem;"></i>
-                        <p class="mt-3">Selecciona un tipo de reporte y las fechas para generar</p>
+                <!-- Indicador de carga -->
+                <div id="ganancia-loading" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Calculando ganancia...</p>
+                </div>
+
+                <!-- Tarjetas de resultados -->
+                <div id="ganancia-resultados" style="display: none;">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card border-primary h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-cart-check text-primary" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Total Vendido</h6>
+                                    <h3 class="mb-0 text-primary" id="ganancia-total-vendido">$0</h3>
+                                    <small class="text-muted" id="ganancia-num-ventas">0 ventas</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-danger h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-box-seam text-danger" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Costo (Invertido)</h6>
+                                    <h3 class="mb-0 text-danger" id="ganancia-total-costo">$0</h3>
+                                    <small class="text-muted" id="ganancia-num-productos">0 productos</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-success h-100 ganancia-card-highlight">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-cash-stack text-success" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">GANANCIA NETA</h6>
+                                    <h3 class="mb-0 fw-bold" id="ganancia-neta">$0</h3>
+                                    <small class="text-muted">Fuera de lo invertido</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-warning h-100">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-percent text-warning" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Margen</h6>
+                                    <h3 class="mb-0 text-warning" id="ganancia-margen">0%</h3>
+                                    <small class="text-muted" id="ganancia-periodo-label">-</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detalle por producto -->
+                    <div class="card">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Detalle por Producto</h5>
+                            <span class="badge bg-secondary" id="ganancia-detalle-count">0 productos</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th class="text-center">Cant. Vendida</th>
+                                            <th class="text-end">Precio Venta</th>
+                                            <th class="text-end">Costo Unit.</th>
+                                            <th class="text-end">Total Vendido</th>
+                                            <th class="text-end">Total Costo</th>
+                                            <th class="text-end">Ganancia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ganancia-detalle-tabla">
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted py-4">Selecciona un periodo para ver el detalle</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1020,166 +1076,6 @@
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="finanzas">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h1 class="h2 mb-0">Finanzas</h1>
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-outline-warning" id="btn-diagnostico-ventas"> <i class="bi bi-bug-fill"></i> DIAGNOSTICAR</button>
-                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addIncomeModal"> <i class="bi bi-plus-circle"></i><span class="d-none d-md-inline"> Ingreso</span></button>
-                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#addExpenseModal"> <i class="bi bi-dash-circle"></i><span class="d-none d-md-inline"> Gasto</span></button>
-                        <button type="button" id="toggle-closing-today-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-box-arrow-in-down me-1"></i><span class="d-none d-md-inline"> Cierre Hoy</span></button>
-                        <button type="button" id="toggle-closing-history-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-calendar-week me-1"></i><span class="d-none d-md-inline"> Historial</span></button>
-                    </div>
-                </div>
-
-                <!-- Área de diagnóstico -->
-                <div id="diagnostico-area" class="alert alert-warning d-none mb-3" role="alert">
-                    <h5>🔍 Diagnóstico de Ventas</h5>
-                    <pre id="diagnostico-resultado" style="max-height: 300px; overflow-y: auto; background: #fff; padding: 10px; border-radius: 5px;"></pre>
-                </div>
-
-                <!-- Vista de Movimientos Financieros -->
-                <div id="finances-movements-view" class="mb-4">
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-3">
-                            <div class="card border-success">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-cash-coin text-success" style="font-size: 2rem;"></i>
-                                    <h6 class="mt-2 mb-1 text-muted">Efectivo</h6>
-                                    <h3 class="mb-0 text-success" id="total-efectivo">$0</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card border-info">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-credit-card-fill text-info" style="font-size: 2rem;"></i>
-                                    <h6 class="mt-2 mb-1 text-muted">Transferencias</h6>
-                                    <h3 class="mb-0 text-info" id="total-transferencias">$0</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card border-danger">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-arrow-down-circle-fill text-danger" style="font-size: 2rem;"></i>
-                                    <h6 class="mt-2 mb-1 text-muted">Gastos</h6>
-                                    <h3 class="mb-0 text-danger" id="total-gastos">$0</h3>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card border-primary">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-wallet-fill text-primary" style="font-size: 2rem;"></i>
-                                    <h6 class="mt-2 mb-1 text-muted">Balance</h6>
-                                    <h3 class="mb-0" id="balance-total">$0</h3>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
-                            <h3 class="h5 mb-0">Movimientos Financieros</h3>
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary active" id="filter-all-movements">Todos</button>
-                                <button class="btn btn-outline-success" id="filter-income">Ingresos</button>
-                                <button class="btn btn-outline-danger" id="filter-expenses">Gastos</button>
-                            </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Tipo</th>
-                                            <th>Descripción</th>
-                                            <th>Monto</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="lista-movimientos-financieros">
-                                        <tr>
-                                            <td colspan="5" class="text-center text-muted">Cargando...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="closing-today-view"> 
-                    <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Cierre Diario</h3></div><div class="card-body"><form id="form-cierre-caja"><div class="row"><div class="col-md-3"><label class="form-label">Ventas Efectivo:</label><input type="text" class="form-control" id="caja-efectivo" value="$0" readonly></div><div class="col-md-3"><label class="form-label">Abonos Efectivo:</label><input type="text" class="form-control" id="caja-abonos-efectivo" value="$0" readonly></div><div class="col-md-3"><label class="form-label">Recibido Repart.:</label><input type="text" class="form-control" id="caja-recibido-repartidores" value="$0" readonly></div><div class="col-md-3"><label for="caja-egresos" class="form-label">Gastos ($):</label><input type="number" class="form-control" id="caja-egresos" value="0" step="0.01"></div></div><div class="row mt-3"><div class="col-md-9"><label for="caja-observaciones" class="form-label">Observaciones:</label><input type="text" class="form-control" id="caja-observaciones"></div><div class="col-md-3"><label class="form-label">Total Caja:</label><input type="text" class="form-control fw-bold" id="caja-total" value="$0" readonly></div></div><hr><p class="text-muted small">Nota: Transferencias no afectan efectivo.</p><button type="submit" class="btn btn-primary mt-3">Realizar Cierre</button></form></div></div> 
-                </div> 
-                
-                <div id="closing-history-view" style="display: none;">
-                    <!-- Resumen de Cierres Recientes -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <div class="card border-primary">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-calendar-day text-primary" style="font-size: 2rem;"></i>
-                                    <h6 class="mt-2 mb-1 text-muted">Cierre de Hoy</h6>
-                                    <h3 class="mb-0 text-primary" id="cierre-hoy-total">$0</h3>
-                                    <small class="text-muted" id="cierre-hoy-fecha">-</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card border-secondary">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-calendar-minus text-secondary" style="font-size: 2rem;"></i>
-                                    <h6 class="mt-2 mb-1 text-muted">Cierre de Ayer</h6>
-                                    <h3 class="mb-0 text-secondary" id="cierre-ayer-total">$0</h3>
-                                    <small class="text-muted" id="cierre-ayer-fecha">-</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card border-success">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-calendar-week text-success" style="font-size: 2rem;"></i>
-                                    <h6 class="mt-2 mb-1 text-muted">Total Semana</h6>
-                                    <h3 class="mb-0 text-success" id="cierre-semana-total">$0</h3>
-                                    <small class="text-muted" id="cierre-semana-cantidad">0 cierres</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tabla de Historial -->
-                    <div class="card">
-                        <div class="card-header bg-white border-0 pt-3">
-                            <h3 class="h5 mb-0">Todos los Cierres</h3>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Fecha</th>
-                                            <th>Ventas Efec.</th>
-                                            <th>Abonos Efec.</th>
-                                            <th>Recibido Repart.</th>
-                                            <th>Gastos</th>
-                                            <th>Total Caja</th>
-                                            <th>Obs.</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="lista-historial-cierres">
-                                        <tr>
-                                            <td colspan="7" class="text-center text-muted">Cargando...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- ═══════════════════════════════════════════════════════════════════
                  SECCIÓN CARGUE MASIVO DE PRODUCTOS DESDE EXCEL
@@ -1616,8 +1512,6 @@
 
     <div class="modal fade" id="addClientModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-client"> <div class="mb-3"> <label for="new-client-cedula" class="form-label">Cédula:</label> <input type="text" class="form-control" id="new-client-cedula"> </div> <div class="mb-3"> <label for="new-client-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-client-nombre" required> </div> <div class="mb-3"> <label for="new-client-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-client-celular" required> </div> <div class="mb-3"> <label for="new-client-direccion" class="form-label">Dirección:</label> <input type="text" class="form-control" id="new-client-direccion"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-client" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addRepartidorModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Repartidor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-repartidor"> <div class="mb-3"> <label for="new-repartidor-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-repartidor-nombre" required> </div> <div class="mb-3"> <label for="new-repartidor-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-repartidor-celular" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-repartidor" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
-    <div class="modal fade" id="addIncomeModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Ingreso Extra</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-income"> <div class="mb-3"> <label for="income-amount" class="form-label">Monto ($):</label> <input type="text" inputmode="numeric" class="form-control" id="income-amount" required> </div> <div class="mb-3"> <label for="income-method" class="form-label">Método de Pago:</label> <select class="form-select" id="income-method" required> <option value="efectivo" selected>💵 Efectivo</option> <option value="transferencia">💳 Transferencia</option> </select> </div> <div class="mb-3"> <label for="income-description" class="form-label">Descripción:</label> <input type="text" class="form-control" id="income-description" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-income" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
-    <div class="modal fade" id="addExpenseModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Gasto</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-expense"> <div class="mb-3"> <label for="expense-amount" class="form-label">Monto ($):</label> <input type="text" inputmode="numeric" class="form-control" id="expense-amount" required> </div> <div class="mb-3"> <label for="expense-description" class="form-label">Descripción:</label> <input type="text" class="form-control" id="expense-description" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-expense" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addSupplierModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Proveedor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-supplier"> <div class="mb-3"> <label for="new-supplier-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-supplier-nombre" required> </div> <div class="mb-3"> <label for="new-supplier-contacto" class="form-label">Contacto:</label> <input type="text" class="form-control" id="new-supplier-contacto"> </div> <div class="mb-3"> <label for="new-supplier-telefono" class="form-label">Teléfono:</label> <input type="tel" class="form-control" id="new-supplier-telefono"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-supplier" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="editCategoryModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Editar Categoría</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-edit-category"> <input type="hidden" id="edit-category-id"> <div class="mb-3"> <label for="edit-category-nombre" class="form-label">Nuevo Nombre:</label> <input type="text" class="form-control" id="edit-category-nombre" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-edit-category" class="btn btn-primary">Guardar Cambios</button> </div> </div> </div> </div>
     <div class="modal fade" id="editSupplierModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Editar Proveedor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-edit-supplier"> <input type="hidden" id="edit-supplier-id"> <div class="mb-3"> <label for="edit-supplier-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="edit-supplier-nombre" required> </div> <div class="mb-3"> <label for="edit-supplier-contacto" class="form-label">Contacto:</label> <input type="text" class="form-control" id="edit-supplier-contacto"> </div> <div class="mb-3"> <label for="edit-supplier-telefono" class="form-label">Teléfono:</label> <input type="tel" class="form-control" id="edit-supplier-telefono"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-edit-supplier" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
