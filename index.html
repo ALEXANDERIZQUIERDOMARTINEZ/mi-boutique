@@ -75,40 +75,28 @@
 </header>
 
 
-<main class="container my-4" id="main-content">
+<main class="container-fluid px-0" id="main-content">
+
+<!-- Hero Banner -->
+<section class="hero-banner">
+    <div class="hero-content">
+        <span class="hero-badge">Nueva Colección</span>
+        <h1 class="hero-title">Mishell Boutique</h1>
+        <p class="hero-subtitle">Moda que define tu estilo</p>
+    </div>
+    <div class="hero-decoration"></div>
+</section>
 
 <div class="promotions-section mb-4" id="promotions-section" style="display: none;">
 <h2 class="promotions-title">Promociones Imperdibles</h2>
 <div id="promotions-container"></div>
 </div>
 
-<div class="row">
-
-<!-- Toolbar de productos -->
-<div class="col-12 mb-3">
-<div class="products-toolbar">
-    <div class="toolbar-left">
-        <span class="products-count-inline"><span id="products-count">0</span> productos</span>
-    </div>
-    <div class="toolbar-right">
-        <select class="form-select form-select-sm toolbar-sort" id="sort-products">
-            <option value="newest">Recientes</option>
-            <option value="price-asc">Precio: Menor a Mayor</option>
-            <option value="price-desc">Precio: Mayor a Menor</option>
-            <option value="name-asc">Nombre: A-Z</option>
-            <option value="name-desc">Nombre: Z-A</option>
-        </select>
-    </div>
-</div>
-</div>
-
-<!-- Productos -->
-<div class="col-12">
+<div class="container">
 <div class="row g-3 g-md-4" id="products-container">
 <div class="col-12 text-center py-5" id="loading-products">
 <div class="loading-spinner"></div>
 <p class="mt-3 text-muted">Cargando productos</p>
-</div>
 </div>
 </div>
 </div>
