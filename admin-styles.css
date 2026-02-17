@@ -2647,26 +2647,3 @@ body.admin-page {
     line-height: 1.3;
 }
 
-/* ========================================
-   GANANCIAS
-   ======================================== */
-.ganancia-range-btn {
-    border-radius: 20px !important;
-    padding: 0.4rem 1.2rem;
-    font-weight: 500;
-}
-
-.ganancia-range-btn.active {
-    background-color: var(--bs-primary) !important;
-    color: #fff !important;
-    border-color: var(--bs-primary) !important;
-}
-
-.ganancia-card-principal {
-    border-width: 2px !important;
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-}
-
-.ganancia-card-principal .card-body {
-    background: transparent;
-}
