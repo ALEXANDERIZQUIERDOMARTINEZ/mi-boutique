@@ -613,17 +613,8 @@ function renderProducts(products) {
             .map(v => v.color)
             .filter(Boolean))];
 
-        const precioMayorNum = parseFloat(product.precioMayor) || 0;
-        const isSoloDetal = isWholesaleActive && precioMayorNum === 0;
-        
-        let priceMayorHTML = '';
-        if (precioMayorNum > 0) {
-            priceMayorHTML = `<div class="price-mayor-card">${formatoMoneda.format(precioMayorNum)} (Mayor)</div>`;
-        }
-        
-        const isDisabled = isAgotado || isSoloDetal;
-        let btnText = isAgotado ? 'Agotado' : 'Ver Producto';
-        if (isSoloDetal) btnText = 'Solo Detal';
+        const isDisabled = isAgotado;
+        const btnText = isAgotado ? 'Agotado' : 'Ver Producto';
 
         // ✅ HTML para TALLAS
         const tallasHTML = tallas.length > 0 ? 
@@ -680,7 +671,6 @@ function renderProducts(products) {
                     <div class="product-badges">
                         ${tienePromo ? '<span class="badge-promo">PROMO</span>' : ''}
                         ${isAgotado ? '<span class="badge-stock badge-agotado">AGOTADO</span>' : ''}
-                        ${isSoloDetal ? '<span class="badge-stock badge-solo-detal">SOLO DETAL</span>' : ''}
                     </div>
                 </div>
                 <div class="product-card-body">
@@ -689,9 +679,8 @@ function renderProducts(products) {
                     ${product.observaciones ? `<p class="product-observations">${product.observaciones}</p>` : ''}
                     <div class="price-detal-card">
                         ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
-                        ${formatoMoneda.format(precioFinal)} (Detal)
+                        ${formatoMoneda.format(precioFinal)}
                     </div>
-                    ${priceMayorHTML}
                     <div class="product-variations">${tallasHTML}${coloresHTML}</div>
                     <button class="btn btn-primary btn-sm w-100 mt-auto" ${isDisabled ? 'disabled' : ''}>${btnText}</button>
                 </div>
@@ -706,15 +695,7 @@ function renderProducts(products) {
             
             const stock = parseInt(e.currentTarget.dataset.stock);
             const productId = e.currentTarget.dataset.productId;
-            const product = productsMap.get(productId);
 
-            const precioMayorNum = parseFloat(product.precioMayor) || 0;
-            const isSoloDetal = isWholesaleActive && precioMayorNum === 0;
-
-            if (isSoloDetal) {
-                showToast('Este producto solo está disponible para venta al detal', 'warning');
-                return;
-            }
             if (stock <= 0) {
                 showToast('Este producto se encuentra agotado', 'warning');
                 return;
