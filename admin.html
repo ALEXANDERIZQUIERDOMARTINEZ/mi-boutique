@@ -100,7 +100,6 @@
                         <span>Finanzas</span>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#ganancias" data-bs-toggle="pill"><i class="bi bi-cash-stack"></i>Ganancias</a></li>
                         <li><a class="dropdown-item" href="#proveedores" data-bs-toggle="pill"><i class="bi bi-building"></i>Proveedores</a></li>
                     </ul>
                 </li>
@@ -922,72 +921,6 @@
                 </div> 
             </div>
             
-            <!-- GANANCIAS -->
-            <div class="tab-pane fade" id="ganancias">
-                <h1 class="h2 mb-4"><i class="bi bi-cash-stack me-2"></i>Ganancias</h1>
-
-                <!-- Botones de periodo -->
-                <div class="d-flex flex-wrap gap-2 mb-4">
-                    <button type="button" class="btn btn-outline-primary ganancia-range-btn active" data-range="hoy">Hoy</button>
-                    <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="ayer">Ayer</button>
-                    <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="semana">7 dias</button>
-                    <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="quincena">15 dias</button>
-                    <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="mes">30 dias</button>
-                    <button type="button" class="btn btn-outline-primary ganancia-range-btn" data-range="personalizado"><i class="bi bi-calendar3"></i></button>
-                </div>
-
-                <!-- Rango personalizado -->
-                <div id="ganancia-custom-range" class="row g-2 mb-4" style="display: none;">
-                    <div class="col">
-                        <input type="date" id="ganancia-desde" class="form-control">
-                    </div>
-                    <div class="col">
-                        <input type="date" id="ganancia-hasta" class="form-control">
-                    </div>
-                    <div class="col-auto">
-                        <button type="button" id="btn-calcular-ganancia-custom" class="btn btn-primary">Calcular</button>
-                    </div>
-                </div>
-
-                <!-- Loading -->
-                <div id="ganancia-loading" class="text-center py-5" style="display: none;">
-                    <div class="spinner-border text-success"></div>
-                </div>
-
-                <!-- Resultado principal -->
-                <div id="ganancia-resultados" style="display: none;">
-                    <div class="card border-success mb-4 ganancia-card-principal">
-                        <div class="card-body text-center py-4">
-                            <small class="text-muted" id="ganancia-periodo-label">Hoy</small>
-                            <h1 class="display-4 fw-bold mb-1" id="ganancia-neta">$0</h1>
-                            <p class="mb-0 text-muted">ganancia neta <span class="badge bg-light text-dark" id="ganancia-num-ventas">0 ventas</span></p>
-                        </div>
-                    </div>
-
-                    <!-- Detalle por producto -->
-                    <div class="card">
-                        <div class="card-header bg-white">
-                            <h6 class="mb-0">Detalle por producto</h6>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Producto</th>
-                                            <th class="text-center">Cant.</th>
-                                            <th class="text-end">Ganancia</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="ganancia-detalle-tabla">
-                                        <tr><td colspan="3" class="text-center text-muted py-4">Selecciona un periodo</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- ═══════════════════════════════════════════════════════════════════
                  SECCIÓN: PROMOCIONES GLOBALES
