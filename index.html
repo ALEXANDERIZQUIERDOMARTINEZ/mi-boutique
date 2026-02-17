@@ -83,105 +83,27 @@
 </div>
 
 <div class="row">
-<!-- Overlay para filtros móvil -->
-<div class="filters-overlay" id="filters-overlay"></div>
 
-<!-- Botón toggle filtros móvil - OCULTO -->
-<div class="col-12 d-none mb-3">
-<button class="btn btn-outline-primary btn-toggle-filters w-100" id="btn-toggle-filters">
-<i class="bi bi-filter-circle-fill"></i> Mostrar Filtros
-</button>
-</div>
-
-<!-- Sidebar de Filtros -->
-<aside class="col-lg-3 mb-4 filters-sidebar-mobile" id="filters-sidebar">
-<div class="filters-container">
-<div class="filters-header">
-<h5 class="filters-title">Filtros</h5>
-<button class="btn-reset-filters" id="btn-reset-filters">Limpiar</button>
-</div>
-
-<!-- Contador de Productos -->
-<div class="products-count-filter">
-<span id="products-count">0</span> <span class="d-none d-md-inline">productos encontrados</span><span class="d-md-none">encontrados</span>
-</div>
-
-<!-- Filtro por Precio -->
-<div class="filter-section">
-<h6 class="filter-section-title">Precio</h6>
-<div class="price-filter-content">
-<div class="price-inputs">
-<div class="price-input-group">
-<label>Mínimo</label>
-<input type="number" id="price-min" class="form-control form-control-sm" placeholder="$0" min="0">
-</div>
-<div class="price-input-group">
-<label>Máximo</label>
-<input type="number" id="price-max" class="form-control form-control-sm" placeholder="$500.000" min="0">
+<!-- Toolbar de productos -->
+<div class="col-12 mb-3">
+<div class="products-toolbar">
+    <div class="toolbar-left">
+        <span class="products-count-inline"><span id="products-count">0</span> productos</span>
+    </div>
+    <div class="toolbar-right">
+        <select class="form-select form-select-sm toolbar-sort" id="sort-products">
+            <option value="newest">Recientes</option>
+            <option value="price-asc">Precio: Menor a Mayor</option>
+            <option value="price-desc">Precio: Mayor a Menor</option>
+            <option value="name-asc">Nombre: A-Z</option>
+            <option value="name-desc">Nombre: Z-A</option>
+        </select>
+    </div>
 </div>
 </div>
-<div class="price-range-slider">
-<input type="range" id="price-range-min" class="form-range" min="0" max="500000" step="5000" value="0">
-<input type="range" id="price-range-max" class="form-range" min="0" max="500000" step="5000" value="500000">
-</div>
-<div class="price-display">
-<span id="price-display-min">$0</span> - <span id="price-display-max">$500.000</span>
-</div>
-</div>
-</div>
-
-<!-- Filtro por Colores -->
-<div class="filter-section">
-<h6 class="filter-section-title">Colores</h6>
-<div class="color-filter-content" id="color-filter-container">
-<!-- Se llenará dinámicamente -->
-</div>
-</div>
-
-<!-- Filtro por Ordenamiento -->
-<div class="filter-section">
-<h6 class="filter-section-title">Ordenar por</h6>
-<div class="sort-filter-content">
-<select class="form-select form-select-sm" id="sort-products">
-<option value="newest">Recientes</option>
-<option value="price-asc">Precio: Menor a Mayor</option>
-<option value="price-desc">Precio: Mayor a Menor</option>
-<option value="name-asc">Nombre: A-Z</option>
-<option value="name-desc">Nombre: Z-A</option>
-</select>
-</div>
-</div>
-
-<!-- Filtro por Disponibilidad -->
-<div class="filter-section">
-<h6 class="filter-section-title">Disponibilidad</h6>
-<div class="availability-filter-content">
-<div class="form-check">
-<input class="form-check-input" type="checkbox" id="filter-in-stock">
-<label class="form-check-label" for="filter-in-stock">
-Solo productos disponibles
-</label>
-</div>
-<div class="form-check">
-<input class="form-check-input" type="checkbox" id="filter-promo-only">
-<label class="form-check-label" for="filter-promo-only">
-Solo en promoción
-</label>
-</div>
-</div>
-</div>
-
-<!-- Botón Aplicar Filtros -->
-<div class="filter-actions">
-<button class="btn btn-primary btn-apply-filters w-100" id="btn-apply-filters">
-Aplicar Filtros
-</button>
-</div>
-</div>
-</aside>
 
 <!-- Productos -->
-<div class="col-lg-9">
+<div class="col-12">
 <div class="row g-3 g-md-4" id="products-container">
 <div class="col-12 text-center py-5" id="loading-products">
 <div class="loading-spinner"></div>

@@ -595,7 +595,7 @@ function renderProducts(products) {
         return;
     }
 
-    products.forEach(product => {
+    products.forEach((product, index) => {
         const stockTotal = (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
         const isAgotado = stockTotal <= 0;
         const imgUrl = product.imagenUrl || 'https://placehold.co/300x400/f5f5f5/ccc?text=Mishell';
@@ -672,8 +672,9 @@ function renderProducts(products) {
         const col = document.createElement('div');
         col.className = 'col-6 col-md-4 col-lg-3'; 
         
+        const delay = Math.min(index * 0.04, 0.8);
         col.innerHTML = `
-            <div class="product-card" data-product-id="${product.id}" data-stock="${stockTotal}">
+            <div class="product-card" data-product-id="${product.id}" data-stock="${stockTotal}" style="animation-delay: ${delay}s">
                 <div class="product-image-wrapper">
                     <img src="${imgUrl}" alt="${product.nombre}" loading="lazy">
                     <div class="product-badges">
@@ -1305,25 +1306,34 @@ function resetAllFilters() {
         sortBy: 'newest'
     };
 
-    // Resetear inputs de precio
-    document.getElementById('price-min').value = '';
-    document.getElementById('price-max').value = '';
-    document.getElementById('price-range-min').value = 0;
-    document.getElementById('price-range-max').value = 500000;
-    document.getElementById('price-display-min').textContent = '$0';
-    document.getElementById('price-display-max').textContent = '$500.000';
+    // Resetear inputs de precio (si existen)
+    const priceMin = document.getElementById('price-min');
+    const priceMax = document.getElementById('price-max');
+    const rangeMin = document.getElementById('price-range-min');
+    const rangeMax = document.getElementById('price-range-max');
+    const dispMin  = document.getElementById('price-display-min');
+    const dispMax  = document.getElementById('price-display-max');
+    if (priceMin) priceMin.value = '';
+    if (priceMax) priceMax.value = '';
+    if (rangeMin) rangeMin.value = 0;
+    if (rangeMax) rangeMax.value = 500000;
+    if (dispMin)  dispMin.textContent = '$0';
+    if (dispMax)  dispMax.textContent = '$500.000';
 
     // Resetear colores
     document.querySelectorAll('.color-filter-chip.active').forEach(chip => {
         chip.classList.remove('active');
     });
 
-    // Resetear checkboxes
-    document.getElementById('filter-in-stock').checked = false;
-    document.getElementById('filter-promo-only').checked = false;
+    // Resetear checkboxes (si existen)
+    const inStockEl = document.getElementById('filter-in-stock');
+    const promoEl   = document.getElementById('filter-promo-only');
+    if (inStockEl) inStockEl.checked = false;
+    if (promoEl)   promoEl.checked = false;
 
     // Resetear ordenamiento
-    document.getElementById('sort-products').value = 'newest';
+    const sortEl = document.getElementById('sort-products');
+    if (sortEl) sortEl.value = 'newest';
 
     applyFiltersAndRender();
 }
@@ -1449,111 +1459,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ✅ EVENT LISTENERS PARA FILTROS AVANZADOS
+    // ✅ EVENT LISTENERS PARA FILTROS
 
-    // Filtro de precio - Inputs numéricos
-    const priceMinInput = document.getElementById('price-min');
-    const priceMaxInput = document.getElementById('price-max');
-    const priceRangeMin = document.getElementById('price-range-min');
-    const priceRangeMax = document.getElementById('price-range-max');
-    const priceDisplayMin = document.getElementById('price-display-min');
-    const priceDisplayMax = document.getElementById('price-display-max');
-
-    function updatePriceFilter() {
-        advancedFilters.priceMin = parseInt(priceMinInput.value) || 0;
-        advancedFilters.priceMax = parseInt(priceMaxInput.value) || 500000;
-
-        priceRangeMin.value = advancedFilters.priceMin;
-        priceRangeMax.value = advancedFilters.priceMax;
-
-        priceDisplayMin.textContent = formatCurrency(advancedFilters.priceMin);
-        priceDisplayMax.textContent = formatCurrency(advancedFilters.priceMax);
-
-        applyFiltersAndRender();
-    }
-
-    priceMinInput.addEventListener('input', updatePriceFilter);
-    priceMaxInput.addEventListener('input', updatePriceFilter);
-
-    // Filtro de precio - Sliders
-    priceRangeMin.addEventListener('input', (e) => {
-        const value = parseInt(e.target.value);
-        advancedFilters.priceMin = value;
-        priceMinInput.value = value;
-        priceDisplayMin.textContent = formatCurrency(value);
-        applyFiltersAndRender();
-    });
-
-    priceRangeMax.addEventListener('input', (e) => {
-        const value = parseInt(e.target.value);
-        advancedFilters.priceMax = value;
-        priceMaxInput.value = value;
-        priceDisplayMax.textContent = formatCurrency(value);
-        applyFiltersAndRender();
-    });
-
-    // Filtros de disponibilidad
-    document.getElementById('filter-in-stock').addEventListener('change', (e) => {
-        advancedFilters.inStockOnly = e.target.checked;
-        applyFiltersAndRender();
-    });
-
-    document.getElementById('filter-promo-only').addEventListener('change', (e) => {
-        advancedFilters.promoOnly = e.target.checked;
-        applyFiltersAndRender();
-    });
-
-    // Ordenamiento
-    document.getElementById('sort-products').addEventListener('change', (e) => {
-        advancedFilters.sortBy = e.target.value;
-        applyFiltersAndRender();
-    });
-
-    // Botón resetear filtros
-    document.getElementById('btn-reset-filters').addEventListener('click', resetAllFilters);
-
-    // ✅ Toggle filtros móvil con overlay
-    const btnToggleFilters = document.getElementById('btn-toggle-filters');
-    const filtersSidebar = document.getElementById('filters-sidebar');
-    const filtersOverlay = document.getElementById('filters-overlay');
-
-    function closeFiltersSidebar() {
-        if (filtersSidebar && filtersOverlay && btnToggleFilters) {
-            filtersSidebar.classList.remove('show');
-            filtersOverlay.classList.remove('show');
-            btnToggleFilters.innerHTML = '<i class="bi bi-funnel"></i> Mostrar Filtros';
-        }
-    }
-
-    function openFiltersSidebar() {
-        if (filtersSidebar && filtersOverlay && btnToggleFilters) {
-            filtersSidebar.classList.add('show');
-            filtersOverlay.classList.add('show');
-            btnToggleFilters.innerHTML = '<i class="bi bi-x"></i> Ocultar Filtros';
-        }
-    }
-
-    // ✅ Botón aplicar filtros (cierra sidebar en móvil)
-    document.getElementById('btn-apply-filters').addEventListener('click', () => {
-        applyFiltersAndRender();
-        showToast('Filtros aplicados correctamente', 'success');
-        closeFiltersSidebar(); // Cierra el sidebar automáticamente
-    });
-
-    if (btnToggleFilters && filtersSidebar) {
-        btnToggleFilters.addEventListener('click', () => {
-            const isShowing = filtersSidebar.classList.contains('show');
-            if (isShowing) {
-                closeFiltersSidebar();
-            } else {
-                openFiltersSidebar();
-            }
+    // Ordenamiento (toolbar)
+    const sortEl = document.getElementById('sort-products');
+    if (sortEl) {
+        sortEl.addEventListener('change', (e) => {
+            advancedFilters.sortBy = e.target.value;
+            applyFiltersAndRender();
         });
-    }
-
-    // Cerrar filtros al hacer click en overlay
-    if (filtersOverlay) {
-        filtersOverlay.addEventListener('click', closeFiltersSidebar);
     }
 
     // ✅ Búsqueda en tiempo real MEJORADA
