@@ -56,7 +56,7 @@
 
 body {
     font-family: var(--fuente-principal);
-    background: var(--color-fondo);
+    background: #f8f7f4;
     color: var(--color-texto);
     line-height: 1.6;
     min-height: 100vh;
@@ -484,13 +484,6 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: -0.3px;
 }
 
-.price-mayor-card {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-texto-secundario);
-    margin-bottom: 0.5rem;
-}
-
 .price-detal-old-card {
     font-size: 0.9rem;
     color: var(--color-texto-claro);
@@ -504,18 +497,6 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     padding: 8px 16px;
     letter-spacing: 0.3px;
-}
-
-.wholesale-active .price-detal-card {
-    color: var(--color-texto-claro);
-    text-decoration: line-through;
-    font-size: 0.9rem;
-}
-
-.wholesale-active .price-mayor-card {
-    color: var(--color-primario);
-    font-weight: 600;
-    font-size: 1.1rem;
 }
 
 /* Variaciones */
@@ -651,81 +632,32 @@ h1, h2, h3, h4, h5, h6 {
     pointer-events: none;
 }
 
-.badge-solo-detal {
-    background-color: #6c757d !important;
-}
-
 /* ────────────────────────────────────────────────────────────────────
-   7. HERO BANNER
+   7. HERO STRIP (Banner sutil)
    ──────────────────────────────────────────────────────────────────── */
-.hero-banner {
-    position: relative;
-    background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 30%, #f5e8ed 60%, #fefce8 100%);
-    padding: 3rem 2rem 2.5rem;
+.hero-strip {
+    background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-oscuro) 100%);
+    padding: 10px 1rem;
     text-align: center;
-    overflow: hidden;
-    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
-.hero-content {
-    position: relative;
-    z-index: 2;
-}
-
-.hero-badge {
-    display: inline-block;
-    background: white;
-    color: var(--color-primario-oscuro);
-    font-size: 0.75rem;
+.hero-strip-text {
+    color: white;
+    font-size: 0.78rem;
     font-weight: 600;
-    letter-spacing: 1.5px;
+    letter-spacing: 2px;
     text-transform: uppercase;
-    padding: 6px 20px;
-    border-radius: 50px;
-    box-shadow: var(--sombra-sm);
-    margin-bottom: 1rem;
 }
 
-.hero-title {
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: var(--color-texto);
-    letter-spacing: -0.5px;
-    margin-bottom: 0.5rem;
-}
-
-.hero-subtitle {
-    font-size: 1rem;
-    font-weight: 400;
-    color: var(--color-texto-secundario);
-    margin: 0;
-}
-
-.hero-decoration {
-    position: absolute;
-    top: -40%;
-    right: -10%;
-    width: 350px;
-    height: 350px;
-    background: radial-gradient(circle, rgba(217, 136, 185, 0.15) 0%, transparent 70%);
+.hero-strip-dot {
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
     border-radius: 50%;
-    pointer-events: none;
-}
-
-@media (max-width: 575.98px) {
-    .hero-banner {
-        padding: 2rem 1.25rem 1.75rem;
-    }
-    .hero-title {
-        font-size: 1.6rem;
-    }
-    .hero-subtitle {
-        font-size: 0.9rem;
-    }
-    .hero-decoration {
-        width: 200px;
-        height: 200px;
-    }
 }
 
 /* ────────────────────────────────────────────────────────────────────
@@ -815,23 +747,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .price-detal-modal .price-detal {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--color-primario);
-}
-
-.price-mayor-modal .price-mayor {
-    font-weight: 600;
-    font-size: 1.3rem;
-}
-
-.wholesale-active .price-detal-modal .price-detal {
-    text-decoration: line-through;
-    font-size: 1.3rem;
-    color: var(--color-texto-claro);
-}
-
-.wholesale-active .price-mayor-modal .price-mayor {
     font-size: 1.8rem;
     font-weight: 700;
     color: var(--color-primario);
@@ -932,10 +847,6 @@ h1, h2, h3, h4, h5, h6 {
     border-top: 1px solid var(--color-borde);
     text-align: center;
     margin-top: auto;
-}
-
-.wholesale-form {
-    max-width: 400px;
 }
 
 /* ────────────────────────────────────────────────────────────────────
