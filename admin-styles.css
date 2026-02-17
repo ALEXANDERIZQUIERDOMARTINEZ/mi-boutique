@@ -2647,3 +2647,42 @@ body.admin-page {
     line-height: 1.3;
 }
 
+/* ========================================
+   FINANZAS
+   ======================================== */
+.fin-range-btn {
+    border-radius: 20px !important;
+    padding: 0.4rem 1.2rem;
+    font-weight: 500;
+}
+
+.fin-range-btn.active {
+    background-color: var(--bs-primary) !important;
+    color: #fff !important;
+    border-color: var(--bs-primary) !important;
+}
+
+.fin-kpi-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: var(--sombra-md);
+    transition: transform 0.2s ease;
+}
+
+.fin-kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--sombra-lg);
+}
+
+.fin-kpi-ingresos {
+    border-top: 3px solid var(--admin-info);
+}
+
+.fin-kpi-utilidad {
+    border-top: 3px solid var(--admin-success);
+}
+
+.fin-kpi-repartir {
+    border-top: 3px solid var(--admin-primario);
+}
+
