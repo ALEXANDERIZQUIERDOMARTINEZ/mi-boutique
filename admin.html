@@ -100,6 +100,7 @@
                         <span>Finanzas</span>
                     </a>
                     <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#finanzas" data-bs-toggle="pill"><i class="bi bi-graph-up-arrow"></i>Finanzas</a></li>
                         <li><a class="dropdown-item" href="#proveedores" data-bs-toggle="pill"><i class="bi bi-building"></i>Proveedores</a></li>
                     </ul>
                 </li>
@@ -921,6 +922,169 @@
                 </div> 
             </div>
             
+
+            <!-- ═══════════════════════════════════════════════════════════════════
+                 SECCIÓN: FINANZAS
+                 ═══════════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="finanzas">
+                <h1 class="h2 mb-4"><i class="bi bi-graph-up-arrow me-2"></i>Finanzas</h1>
+
+                <!-- Configuración (colapsable) -->
+                <div class="card mb-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#finanzas-config" role="button" aria-expanded="false">
+                        <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Configuración de costos y socios</h6>
+                        <i class="bi bi-chevron-down"></i>
+                    </div>
+                    <div id="finanzas-config" class="collapse">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">% Socio A (Dueño)</label>
+                                    <input type="number" id="fin-pct-socio-a" class="form-control" value="60" min="0" max="100">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">% Socio B (Inversionista)</label>
+                                    <input type="number" id="fin-pct-socio-b" class="form-control" value="40" min="0" max="100">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">% Comisión Pasarela</label>
+                                    <input type="number" id="fin-pct-comision" class="form-control" value="2.5" step="0.1" min="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">% Margen por defecto</label>
+                                    <input type="number" id="fin-margen-defecto" class="form-control" value="30" min="0" max="100">
+                                    <small class="text-muted">Si el producto no tiene costo base</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selector de periodo -->
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <button type="button" class="btn btn-outline-primary fin-range-btn active" data-range="mes-actual">Mes actual</button>
+                    <button type="button" class="btn btn-outline-primary fin-range-btn" data-range="mes-anterior">Mes anterior</button>
+                    <button type="button" class="btn btn-outline-primary fin-range-btn" data-range="semana">7 días</button>
+                    <button type="button" class="btn btn-outline-primary fin-range-btn" data-range="personalizado"><i class="bi bi-calendar3 me-1"></i>Rango</button>
+                </div>
+
+                <!-- Rango personalizado -->
+                <div id="fin-custom-range" class="row g-2 mb-4" style="display: none;">
+                    <div class="col">
+                        <input type="date" id="fin-desde" class="form-control">
+                    </div>
+                    <div class="col">
+                        <input type="date" id="fin-hasta" class="form-control">
+                    </div>
+                    <div class="col-auto">
+                        <button type="button" id="btn-calcular-finanzas-custom" class="btn btn-primary">Calcular</button>
+                    </div>
+                </div>
+
+                <!-- Loading -->
+                <div id="fin-loading" class="text-center py-5" style="display: none;">
+                    <div class="spinner-border text-primary"></div>
+                </div>
+
+                <!-- Resultados -->
+                <div id="fin-resultados" style="display: none;">
+
+                    <!-- KPI Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card fin-kpi-card fin-kpi-ingresos">
+                                <div class="card-body text-center py-4">
+                                    <small class="text-muted d-block mb-1">Ingresos Brutos</small>
+                                    <h2 class="fw-bold mb-1" id="fin-ingresos-brutos">$0</h2>
+                                    <small class="text-muted" id="fin-total-ordenes">0 órdenes</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card fin-kpi-card fin-kpi-utilidad">
+                                <div class="card-body text-center py-4">
+                                    <small class="text-muted d-block mb-1">Utilidad Neta</small>
+                                    <h2 class="fw-bold mb-1" id="fin-utilidad-neta">$0</h2>
+                                    <small class="text-muted">Dinero real en mano</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card fin-kpi-card fin-kpi-repartir">
+                                <div class="card-body text-center py-4">
+                                    <small class="text-muted d-block mb-1">A Repartir</small>
+                                    <h2 class="fw-bold mb-1" id="fin-a-repartir">$0</h2>
+                                    <small class="text-muted" id="fin-label-socio-b">Socio B (40%)</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumen socios -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted" id="fin-label-socio-a-card">Socio A — Dueño (60%)</small>
+                                        <h4 class="fw-bold mb-0 text-primary" id="fin-ganancia-socio-a">$0</h4>
+                                    </div>
+                                    <i class="bi bi-person-circle fs-2 text-primary opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted" id="fin-label-socio-b-card">Socio B — Inversionista (40%)</small>
+                                        <h4 class="fw-bold mb-0 text-success" id="fin-ganancia-socio-b">$0</h4>
+                                    </div>
+                                    <i class="bi bi-person-circle fs-2 text-success opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla detallada -->
+                    <div class="card">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Detalle por orden</h6>
+                            <button class="btn btn-sm btn-outline-success" id="btn-exportar-finanzas">
+                                <i class="bi bi-download me-1"></i>Exportar CSV
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>ID Orden</th>
+                                            <th>Fecha</th>
+                                            <th class="text-end">Total Venta</th>
+                                            <th class="text-end">Costos Op.</th>
+                                            <th class="text-end">Mi Ganancia</th>
+                                            <th class="text-end">Ganancia Socio</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="fin-detalle-tabla">
+                                        <tr><td colspan="6" class="text-center text-muted py-4">Selecciona un periodo</td></tr>
+                                    </tbody>
+                                    <tfoot id="fin-detalle-footer" class="table-light fw-bold" style="display: none;">
+                                        <tr>
+                                            <td colspan="2">TOTALES</td>
+                                            <td class="text-end" id="fin-footer-total"></td>
+                                            <td class="text-end" id="fin-footer-costos"></td>
+                                            <td class="text-end" id="fin-footer-mi-ganancia"></td>
+                                            <td class="text-end" id="fin-footer-ganancia-socio"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- ═══════════════════════════════════════════════════════════════════
                  SECCIÓN: PROMOCIONES GLOBALES

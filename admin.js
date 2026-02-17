@@ -7671,6 +7671,282 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     console.log("✅ Sistema de reportes inicializado");
 })();
 
+// ========================================================================
+// ✅ SECCIÓN: FINANZAS — Utilidad Neta & División de Socios
+// ========================================================================
+(() => {
+    // ── Configuración por defecto (editable desde el panel) ──
+    const CONFIG = {
+        pctSocioA: 60,
+        pctSocioB: 40,
+        pctComisionPasarela: 2.5,
+        margenDefecto: 30
+    };
+
+    // ── DOM refs ──
+    const rangeButtons   = document.querySelectorAll('.fin-range-btn');
+    const customRangeDiv = document.getElementById('fin-custom-range');
+    const finDesde       = document.getElementById('fin-desde');
+    const finHasta       = document.getElementById('fin-hasta');
+    const btnCalcCustom  = document.getElementById('btn-calcular-finanzas-custom');
+    const loadingDiv     = document.getElementById('fin-loading');
+    const resultadosDiv  = document.getElementById('fin-resultados');
+    const inputPctA      = document.getElementById('fin-pct-socio-a');
+    const inputPctB      = document.getElementById('fin-pct-socio-b');
+    const inputComision  = document.getElementById('fin-pct-comision');
+    const inputMargen    = document.getElementById('fin-margen-defecto');
+
+    if (!rangeButtons.length) return;
+
+    // ── Sincronizar porcentajes: A + B = 100 ──
+    if (inputPctA) inputPctA.addEventListener('input', () => {
+        inputPctB.value = Math.max(0, 100 - (parseFloat(inputPctA.value) || 0));
+    });
+    if (inputPctB) inputPctB.addEventListener('input', () => {
+        inputPctA.value = Math.max(0, 100 - (parseFloat(inputPctB.value) || 0));
+    });
+
+    function syncConfig() {
+        CONFIG.pctSocioA            = parseFloat(inputPctA.value)   || 60;
+        CONFIG.pctSocioB            = parseFloat(inputPctB.value)   || 40;
+        CONFIG.pctComisionPasarela  = parseFloat(inputComision.value) || 2.5;
+        CONFIG.margenDefecto        = parseFloat(inputMargen.value) || 30;
+    }
+
+    // ── Rangos de fecha ──
+    function getDateRange(range) {
+        const now = new Date();
+        const hoyInicio = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const hoyFin    = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+        switch (range) {
+            case 'mes-anterior': {
+                const desde = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const hasta = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+                return { desde, hasta, label: 'Mes anterior' };
+            }
+            case 'semana': {
+                const desde = new Date(hoyInicio);
+                desde.setDate(desde.getDate() - 6);
+                return { desde, hasta: hoyFin, label: 'Últimos 7 días' };
+            }
+            default: {
+                const desde = new Date(now.getFullYear(), now.getMonth(), 1);
+                return { desde, hasta: hoyFin, label: 'Mes actual' };
+            }
+        }
+    }
+
+    // ── Cálculo de Utilidad por Orden ──
+    // Fórmula: Utilidad = (TotalVenta - Impuestos - CostoEnvío) - (CostoBaseProductos + ComisiónPasarela)
+    function calcularUtilidadOrden(venta) {
+        const totalVenta  = venta.totalVenta || 0;
+        const impuestos   = venta.impuestos  || 0;
+        const costoEnvio  = venta.costoEnvio || venta.costoRuta || 0;
+        const comisionPasarela = totalVenta * (CONFIG.pctComisionPasarela / 100);
+
+        let costoBaseProductos = 0;
+        if (venta.items && venta.items.length) {
+            venta.items.forEach(item => {
+                const cant   = item.cantidad || 1;
+                const precio = item.precio || item.precioUnitario || 0;
+                const costo  = item.precioCosto || 0;
+
+                if (costo > 0) {
+                    costoBaseProductos += costo * cant;
+                } else {
+                    // Sin costo base → margen por defecto (ej. 30% margen = costo es 70% del precio)
+                    costoBaseProductos += precio * (1 - CONFIG.margenDefecto / 100) * cant;
+                }
+            });
+        }
+
+        const costosOperativos = impuestos + costoEnvio + costoBaseProductos + comisionPasarela;
+        const utilidadNeta     = totalVenta - costosOperativos;
+
+        return { totalVenta, impuestos, costoEnvio, comisionPasarela, costoBaseProductos, costosOperativos, utilidadNeta };
+    }
+
+    // ── División de ganancias entre socios ──
+    function dividirGanancias(utilidadNeta) {
+        return {
+            socioA: utilidadNeta * (CONFIG.pctSocioA / 100),
+            socioB: utilidadNeta * (CONFIG.pctSocioB / 100)
+        };
+    }
+
+    // ── Consulta principal ──
+    async function calcularFinanzas(desde, hasta, label) {
+        syncConfig();
+        loadingDiv.style.display  = 'block';
+        resultadosDiv.style.display = 'none';
+
+        try {
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(desde)),
+                where('timestamp', '<=', Timestamp.fromDate(hasta)),
+                orderBy('timestamp', 'desc')
+            );
+
+            const snapshot = await getDocs(q);
+            let ingresosBrutos = 0;
+            let utilidadTotal  = 0;
+            const ordenes = [];
+
+            snapshot.forEach(docSnap => {
+                const venta = docSnap.data();
+                if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
+
+                const resultado = calcularUtilidadOrden(venta);
+                ingresosBrutos += resultado.totalVenta;
+                utilidadTotal  += resultado.utilidadNeta;
+
+                ordenes.push({
+                    id: docSnap.id,
+                    fecha: venta.timestamp ? venta.timestamp.toDate() : new Date(),
+                    ...resultado
+                });
+            });
+
+            const { socioA, socioB } = dividirGanancias(utilidadTotal);
+
+            // ── KPIs ──
+            document.getElementById('fin-ingresos-brutos').textContent = formatoMoneda.format(ingresosBrutos);
+
+            const utilidadEl = document.getElementById('fin-utilidad-neta');
+            utilidadEl.textContent = formatoMoneda.format(utilidadTotal);
+            utilidadEl.className = `fw-bold mb-1 ${utilidadTotal >= 0 ? 'text-success' : 'text-danger'}`;
+
+            document.getElementById('fin-a-repartir').textContent = formatoMoneda.format(socioB);
+            document.getElementById('fin-total-ordenes').textContent = `${ordenes.length} órdenes — ${label}`;
+            document.getElementById('fin-label-socio-b').textContent = `Socio B (${CONFIG.pctSocioB}%)`;
+
+            // ── Tarjetas socios ──
+            document.getElementById('fin-label-socio-a-card').textContent  = `Socio A — Dueño (${CONFIG.pctSocioA}%)`;
+            document.getElementById('fin-ganancia-socio-a').textContent    = formatoMoneda.format(socioA);
+            document.getElementById('fin-label-socio-b-card').textContent  = `Socio B — Inversionista (${CONFIG.pctSocioB}%)`;
+            document.getElementById('fin-ganancia-socio-b').textContent    = formatoMoneda.format(socioB);
+
+            // ── Tabla detallada ──
+            const tabla  = document.getElementById('fin-detalle-tabla');
+            const footer = document.getElementById('fin-detalle-footer');
+
+            if (ordenes.length === 0) {
+                tabla.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay órdenes completadas en este periodo</td></tr>';
+                footer.style.display = 'none';
+            } else {
+                let sumTotal = 0, sumCostos = 0, sumMiG = 0, sumSocioG = 0;
+
+                tabla.innerHTML = ordenes.map(o => {
+                    const miGanancia      = o.utilidadNeta * (CONFIG.pctSocioA / 100);
+                    const gananciaSocio   = o.utilidadNeta * (CONFIG.pctSocioB / 100);
+                    const color           = o.utilidadNeta >= 0 ? 'text-success' : 'text-danger';
+
+                    sumTotal  += o.totalVenta;
+                    sumCostos += o.costosOperativos;
+                    sumMiG    += miGanancia;
+                    sumSocioG += gananciaSocio;
+
+                    return `<tr>
+                        <td><code>${o.id.slice(-6).toUpperCase()}</code></td>
+                        <td>${o.fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                        <td class="text-end">${formatoMoneda.format(o.totalVenta)}</td>
+                        <td class="text-end text-muted">${formatoMoneda.format(o.costosOperativos)}</td>
+                        <td class="text-end fw-semibold ${color}">${formatoMoneda.format(miGanancia)}</td>
+                        <td class="text-end fw-semibold ${color}">${formatoMoneda.format(gananciaSocio)}</td>
+                    </tr>`;
+                }).join('');
+
+                // Footer totales
+                document.getElementById('fin-footer-total').textContent          = formatoMoneda.format(sumTotal);
+                document.getElementById('fin-footer-costos').textContent         = formatoMoneda.format(sumCostos);
+                document.getElementById('fin-footer-mi-ganancia').textContent    = formatoMoneda.format(sumMiG);
+                document.getElementById('fin-footer-ganancia-socio').textContent = formatoMoneda.format(sumSocioG);
+                footer.style.display = '';
+            }
+
+            loadingDiv.style.display    = 'none';
+            resultadosDiv.style.display = 'block';
+
+        } catch (error) {
+            console.error("Error calculando finanzas:", error);
+            loadingDiv.style.display    = 'none';
+            resultadosDiv.style.display = 'block';
+            document.getElementById('fin-detalle-tabla').innerHTML =
+                `<tr><td colspan="6" class="text-center text-danger py-4">Error: ${error.message}</td></tr>`;
+        }
+    }
+
+    // ── Event handlers: botones de periodo ──
+    rangeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            rangeButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const range = btn.dataset.range;
+
+            if (range === 'personalizado') {
+                if (customRangeDiv) customRangeDiv.style.display = 'flex';
+                return;
+            }
+            if (customRangeDiv) customRangeDiv.style.display = 'none';
+            const { desde, hasta, label } = getDateRange(range);
+            calcularFinanzas(desde, hasta, label);
+        });
+    });
+
+    // ── Rango personalizado ──
+    if (btnCalcCustom) {
+        btnCalcCustom.addEventListener('click', () => {
+            if (!finDesde.value || !finHasta.value) {
+                showToast('Selecciona ambas fechas', 'warning');
+                return;
+            }
+            const desde = new Date(finDesde.value);
+            const hasta = new Date(finHasta.value);
+            hasta.setHours(23, 59, 59, 999);
+            calcularFinanzas(desde, hasta, `${desde.toLocaleDateString('es-CO')} — ${hasta.toLocaleDateString('es-CO')}`);
+        });
+    }
+
+    // ── Auto-calcular al entrar a la sección ──
+    const tab = document.querySelector('a[href="#finanzas"]');
+    if (tab) {
+        tab.addEventListener('click', () => {
+            if (!resultadosDiv || resultadosDiv.style.display === 'none') {
+                const { desde, hasta, label } = getDateRange('mes-actual');
+                calcularFinanzas(desde, hasta, label);
+            }
+        });
+    }
+
+    // ── Exportar CSV ──
+    const btnExportar = document.getElementById('btn-exportar-finanzas');
+    if (btnExportar) {
+        btnExportar.addEventListener('click', () => {
+            const filas = document.getElementById('fin-detalle-tabla').querySelectorAll('tr');
+            if (!filas.length) return;
+
+            let csv = 'ID Orden,Fecha,Total Venta,Costos Operativos,Mi Ganancia,Ganancia Socio\n';
+            filas.forEach(row => {
+                const cols = row.querySelectorAll('td');
+                if (cols.length === 6) {
+                    csv += Array.from(cols).map(c => `"${c.textContent.trim()}"`).join(',') + '\n';
+                }
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `finanzas_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            showToast('CSV descargado', 'success');
+        });
+    }
+
+    console.log("✅ Módulo de Finanzas inicializado");
+})();
 
 // ========================================================================
 // ✅ SECCIÓN: HISTORIAL DE REPARTIDORES
