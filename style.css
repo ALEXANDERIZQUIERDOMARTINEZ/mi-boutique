@@ -448,6 +448,7 @@ h1, h2, h3, h4, h5, h6 {
    ──────────────────────────────────────────────────────────────────── */
 #products-container {
     border-top: 1px solid #eee;
+    row-gap: 1px;
 }
 
 #products-container > [class*="col"] {
@@ -520,7 +521,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Cuerpo de la tarjeta ─────────────────────────────────────────── */
 .product-card-body {
-    padding: 11px 11px 0;
+    padding: 11px 11px 14px;
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -655,6 +656,33 @@ h1, h2, h3, h4, h5, h6 {
 .product-card:hover .btn-add-card {
     background: var(--color-primario);
     color: white;
+}
+
+/* ── Botón agregar modal (minimalista) ───────────────────────────── */
+.btn-add-modal {
+    width: 100%;
+    background: transparent;
+    color: var(--color-primario);
+    border: 1px solid var(--color-primario);
+    font-family: var(--fuente-principal);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 11px 16px;
+    cursor: pointer;
+    transition: background 0.25s ease, color 0.25s ease;
+    display: block;
+}
+
+.btn-add-modal:hover:not(:disabled) {
+    background: var(--color-primario);
+    color: white;
+}
+
+.btn-add-modal:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
 }
 
 /* Badges */

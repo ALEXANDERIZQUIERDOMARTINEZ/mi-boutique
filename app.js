@@ -1326,14 +1326,9 @@ document.addEventListener('DOMContentLoaded', () => {
             item.addEventListener('click', handleFilterClick);
         });
 
-        // Populate mobile dropdown (con Disponibles y Sale al inicio)
+        // Populate mobile dropdown (solo categorías)
         if (categoryDropdownMenuMobile) {
-            const headerItemsHTML = `
-                <li><a class="dropdown-item filter-group active" href="#" data-filter="disponible">Disponibles</a></li>
-                <li><a class="dropdown-item filter-group" href="#" data-filter="promocion" style="color:#dc2626">Sale</a></li>
-                <li><hr class="dropdown-divider my-1"></li>
-            `;
-            categoryDropdownMenuMobile.innerHTML = headerItemsHTML + categoryDropdownMenu.innerHTML;
+            categoryDropdownMenuMobile.innerHTML = categoryDropdownMenu.innerHTML;
             categoryDropdownMenuMobile.querySelectorAll('.filter-group').forEach(item => {
                 item.addEventListener('click', handleFilterClick);
             });
@@ -1356,6 +1351,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const clickedFilter = e.currentTarget;
         const filterValue = clickedFilter.dataset.filter;
+        if (!filterValue) return;
         const isMainFilter = filterValue === 'disponible' || filterValue === 'promocion' || filterValue === 'all';
 
         document.querySelectorAll('.header-left .filter-group.active, .header-left-mobile .filter-group.active').forEach(b => b.classList.remove('active'));
