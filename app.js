@@ -622,21 +622,23 @@ function renderProducts(products) {
                     <img src="${imgUrl}" alt="${product.nombre}" loading="lazy">
                     ${isAgotado ? '<span class="badge-agotado">AGOTADO</span>' : ''}
                     ${tienePromo ? '<span class="badge-promo">SALE</span>' : ''}
+                    ${!isAgotado ? `
+                    <div class="product-card-overlay">
+                        ${coloresHtml || tallasHtml ? `
+                        <div class="overlay-meta">
+                            ${coloresHtml ? `<div class="card-colors">${coloresHtml}</div>` : ''}
+                            ${tallasHtml ? `<div class="card-sizes">${tallasHtml}</div>` : ''}
+                        </div>` : ''}
+                        <button class="btn-add-card" type="button">+ Agregar al carrito</button>
+                    </div>` : ''}
                 </div>
                 <div class="product-card-body">
                     <h3 class="product-title">${product.nombre}</h3>
                     ${desc ? `<p class="product-card-desc">${desc}</p>` : ''}
-                    ${coloresHtml || tallasHtml ? `
-                    <div class="card-meta-row">
-                        ${coloresHtml ? `<div class="card-colors">${coloresHtml}</div>` : ''}
-                        ${coloresHtml && tallasHtml ? `<span class="card-meta-sep"></span>` : ''}
-                        ${tallasHtml ? `<div class="card-sizes">${tallasHtml}</div>` : ''}
-                    </div>` : ''}
                     <div class="price-detal-card">
                         ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
                         ${formatoMoneda.format(precioFinal)}
                     </div>
-                    ${!isAgotado ? '<button class="btn-add-card" type="button">+ Agregar al carrito</button>' : ''}
                 </div>
             </div>
         `;
@@ -1326,7 +1328,7 @@ document.addEventListener('DOMContentLoaded', () => {
             item.addEventListener('click', handleFilterClick);
         });
 
-        // Populate mobile dropdown (solo categorías)
+        // Populate mobile dropdown
         if (categoryDropdownMenuMobile) {
             categoryDropdownMenuMobile.innerHTML = categoryDropdownMenu.innerHTML;
             categoryDropdownMenuMobile.querySelectorAll('.filter-group').forEach(item => {
@@ -1350,27 +1352,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleFilterClick(e) {
         e.preventDefault();
         const clickedFilter = e.currentTarget;
-        const filterValue = clickedFilter.dataset.filter;
-        if (!filterValue) return;
-        const isMainFilter = filterValue === 'disponible' || filterValue === 'promocion' || filterValue === 'all';
 
         document.querySelectorAll('.header-left .filter-group.active, .header-left-mobile .filter-group.active').forEach(b => b.classList.remove('active'));
 
-        if (clickedFilter.classList.contains('dropdown-item') && !isMainFilter) {
-            // Categoría seleccionada desde dropdown
+        if (clickedFilter.classList.contains('dropdown-item')) {
+            // Si es un item del dropdown (categoría), activar el botón del dropdown
             categoryDropdownButton.classList.add('active');
-            categoryDropdownButton.dataset.filter = filterValue;
-            const labelSpan = clickedFilter.querySelector('span');
-            const label = labelSpan ? labelSpan.textContent.trim() : filterValue;
-            categoryDropdownButton.innerHTML = `${label} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
+            categoryDropdownButton.dataset.filter = clickedFilter.dataset.filter;
+            categoryDropdownButton.innerHTML = `${clickedFilter.textContent} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
         } else {
-            // Disponibles / Sale — desde desktop o desde menú móvil
+            // Si es un botón normal (Todos, Disponibles, Promociones)
             clickedFilter.classList.add('active');
-            // Sincronizar contraparte desktop si se clicó desde menú móvil
-            if (clickedFilter.classList.contains('dropdown-item')) {
-                const desktopBtn = document.querySelector(`.header-left .filter-group[data-filter="${filterValue}"]`);
-                if (desktopBtn) desktopBtn.classList.add('active');
-            }
+            // Resetear el botón del dropdown
             categoryDropdownButton.classList.remove('active');
             categoryDropdownButton.removeAttribute('data-filter');
             categoryDropdownButton.innerHTML = `Categorías <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
