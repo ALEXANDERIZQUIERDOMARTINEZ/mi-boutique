@@ -448,7 +448,7 @@ h1, h2, h3, h4, h5, h6 {
    ──────────────────────────────────────────────────────────────────── */
 #products-container {
     border-top: 1px solid #eee;
-    row-gap: 1px;
+    row-gap: 4px;
 }
 
 #products-container > [class*="col"] {
@@ -623,7 +623,7 @@ h1, h2, h3, h4, h5, h6 {
 .price-detal-card {
     font-size: 0.9rem;
     font-weight: 700;
-    color: var(--color-primario);
+    color: #1a1a1a;
     letter-spacing: -0.3px;
     margin-top: 1px;
 }
@@ -638,18 +638,19 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Botón agregar ────────────────────────────────────────────────── */
 .btn-add-card {
-    width: 100%;
     background: transparent;
     color: var(--color-primario);
     border: 1px solid var(--color-primario);
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    padding: 10px 12px;
+    font-size: 0.95rem;
+    padding: 6px 9px;
     cursor: pointer;
-    transition: background 0.25s ease, color 0.25s ease;
-    margin-top: 8px;
+    transition: background 0.2s ease, color 0.2s ease;
+    margin-top: 6px;
+    align-self: flex-end;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-add-card:hover,
@@ -743,6 +744,24 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: var(--sombra-lg);
 }
 
+/* ── Product modal — estilo minimalista de tienda ─────────────────── */
+#productModal .modal-content {
+    border-radius: 0;
+}
+
+#productModal .modal-header {
+    padding: 0.9rem 1.25rem;
+    border-bottom: 1px solid #eee;
+}
+
+#productModal .modal-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #1a1a1a;
+}
+
 .modal-header {
     background: white;
     border-bottom: 1px solid var(--color-borde);
@@ -759,44 +778,48 @@ h1, h2, h3, h4, h5, h6 {
 
 .modal-product-image {
     width: 100%;
-    height: 400px;
-    object-fit: contain;
-    border-radius: var(--radio-md);
-    border: 1px solid var(--color-borde);
-    background-color: #f9f9f9;
+    height: 420px;
+    object-fit: cover;
+    border-radius: 0;
+    border: none;
+    background-color: #f9f4f7;
 }
 
 .selector-label {
-    font-weight: 600;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #888;
     margin-bottom: 8px;
-    font-size: 0.9rem;
+    display: block;
 }
 
 /* Botones de talla y color */
 .size-color-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 6px;
+    margin-top: 6px;
 }
 
 .size-color-btn {
-    padding: 8px 16px;
-    border: 2px solid var(--color-borde);
+    padding: 6px 14px;
+    border: 1px solid #ddd;
     background-color: white;
-    border-radius: var(--radio-md);
+    border-radius: 0;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: border-color 0.18s ease, background 0.18s ease;
     font-weight: 500;
-    font-size: 0.9rem;
-    min-width: 50px;
+    font-size: 0.8rem;
+    min-width: 44px;
     text-align: center;
+    letter-spacing: 0.3px;
 }
 
 .size-color-btn:hover:not(:disabled) {
     border-color: var(--color-primario);
-    background-color: rgba(217, 136, 185, 0.1);
-    transform: translateY(-1px);
+    background-color: var(--color-primario-claro);
 }
 
 .size-color-btn.selected {
@@ -806,69 +829,89 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .size-color-btn:disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: not-allowed;
-    background-color: #f5f5f5;
+    background-color: #fafafa;
 }
 
 .size-color-btn.unica-talla,
 .size-color-btn.unico-color {
     cursor: default;
     border-color: var(--color-primario);
-    background-color: rgba(217, 136, 185, 0.1);
-    color: var(--color-primario);
+    background-color: var(--color-primario-claro);
+    color: var(--color-primario-oscuro);
     font-weight: 600;
 }
 
 .price-detal-modal .price-detal {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    color: var(--color-primario);
+    color: #1a1a1a;
 }
 
 .stock-display {
-    background: var(--color-primario-claro);
-    border: 1px solid var(--color-primario-hover);
-    padding: 12px;
-    border-radius: var(--radio-md);
+    background: transparent;
+    border: 1px solid #eee;
+    padding: 8px 12px;
     text-align: center;
-    font-weight: 500;
-    color: var(--color-primario);
+    font-weight: 400;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #888;
+}
+
+/* ── Hint selección de color ──────────────────────────────────────── */
+.color-select-hint {
+    display: none;
+    font-size: 0.65rem;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--color-primario-oscuro);
+    font-weight: 600;
+    margin-top: 6px;
+    margin-bottom: 2px;
+    opacity: 0.85;
 }
 
 .quantity-selector {
     display: flex;
     align-items: center;
-    background: var(--color-primario);
-    border-radius: var(--radio-md);
-    padding: 5px;
+    border: 1px solid #ddd;
+    background: white;
+    padding: 0;
     width: fit-content;
 }
 
 .quantity-selector .quantity-btn {
     background: transparent;
     border: none;
-    color: white;
-    font-size: 1.5rem;
-    font-weight: 600;
-    width: 40px;
-    height: 40px;
+    color: #333;
+    font-size: 1.3rem;
+    font-weight: 400;
+    width: 36px;
+    height: 36px;
     box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .quantity-selector .quantity-btn:hover {
-    background: rgba(255,255,255,0.1);
+    background: #f8f7f4;
 }
 
 .quantity-selector input {
-    width: 50px;
+    width: 44px;
     border: none;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
     background: white;
     text-align: center;
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     padding: 5px;
-    border-radius: 6px;
+    border-radius: 0;
+    height: 36px;
 }
 
 .offcanvas-header {

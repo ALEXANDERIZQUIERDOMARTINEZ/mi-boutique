@@ -636,7 +636,7 @@ function renderProducts(products) {
                         ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
                         ${formatoMoneda.format(precioFinal)}
                     </div>
-                    ${!isAgotado ? '<button class="btn-add-card" type="button">+ Agregar al carrito</button>' : ''}
+                    ${!isAgotado ? '<button class="btn-add-card" type="button"><i class="bi bi-bag"></i></button>' : ''}
                 </div>
             </div>
         `;
@@ -825,13 +825,17 @@ function renderColorButtons(selectedTalla, product) {
 
         // Si solo hay un color, seleccionarlo automáticamente
         if (colores.length === 1) {
+            const colorHint = document.getElementById('color-select-hint');
+            if (colorHint) colorHint.style.display = 'none';
             selectColor(colores[0], product);
         } else {
-            // Limpiar selección anterior y mostrar mensaje
+            // Limpiar selección anterior y mostrar hint de color
             document.getElementById('selected-color').value = '';
             const stockText = document.getElementById('stock-text');
             stockText.textContent = 'Seleccione un color';
             document.getElementById('btn-add-cart').disabled = true;
+            const colorHint = document.getElementById('color-select-hint');
+            if (colorHint) colorHint.style.display = 'block';
         }
     }
 }
@@ -868,6 +872,10 @@ function selectColor(color, product) {
     });
 
     document.getElementById('selected-color').value = color;
+
+    // Ocultar hint de color al seleccionar
+    const colorHint = document.getElementById('color-select-hint');
+    if (colorHint) colorHint.style.display = 'none';
 
     // Actualizar stock
     updateStockDisplay(product);
