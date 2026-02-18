@@ -517,14 +517,14 @@ function applyFiltersAndRender() {
     renderProducts(filtered);
 }
 
+// Función helper para obtener el stock de un producto
+function getStock(product) {
+    return (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+}
+
 // ✅ FUNCIÓN DE ORDENAMIENTO
 function sortProducts(products, sortBy) {
     const sorted = [...products];
-
-    // Función helper para obtener el stock de un producto
-    const getStock = (product) => {
-        return (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-    };
 
     // Primero ordenar según el criterio seleccionado
     let ordered;
