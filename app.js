@@ -622,21 +622,22 @@ function renderProducts(products) {
                     <img src="${imgUrl}" alt="${product.nombre}" loading="lazy">
                     ${isAgotado ? '<span class="badge-agotado">AGOTADO</span>' : ''}
                     ${tienePromo ? '<span class="badge-promo">SALE</span>' : ''}
+                    ${!isAgotado ? `
+                    <div class="product-card-overlay">
+                        ${coloresHtml || tallasHtml ? `
+                        <div class="overlay-meta">
+                            ${coloresHtml ? `<div class="card-colors">${coloresHtml}</div>` : ''}
+                            ${tallasHtml ? `<div class="card-sizes">${tallasHtml}</div>` : ''}
+                        </div>` : ''}
+                        <button class="btn-add-card" type="button">+ Agregar al carrito</button>
+                    </div>` : ''}
                 </div>
                 <div class="product-card-body">
                     <h3 class="product-title">${product.nombre}</h3>
                     ${desc ? `<p class="product-card-desc">${desc}</p>` : ''}
-                    ${coloresHtml || tallasHtml ? `
-                    <div class="card-meta-row">
-                        ${coloresHtml ? `<div class="card-colors">${coloresHtml}</div>` : ''}
-                        ${tallasHtml ? `<div class="card-sizes">${tallasHtml}</div>` : ''}
-                    </div>` : ''}
-                    <div class="card-bottom">
-                        <div class="price-detal-card">
-                            ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
-                            ${formatoMoneda.format(precioFinal)}
-                        </div>
-                        ${!isAgotado ? '<button class="btn-add-card" type="button">Agregar</button>' : ''}
+                    <div class="price-detal-card">
+                        ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
+                        ${formatoMoneda.format(precioFinal)}
                     </div>
                 </div>
             </div>
