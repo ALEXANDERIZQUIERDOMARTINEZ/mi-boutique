@@ -661,17 +661,27 @@ function renderProducts(products) {
         }
 
         const col = document.createElement('div');
-        col.className = 'col-6 col-md-4 col-lg-3'; 
-        
+
+        // Every 7 items, make first 2 items featured (larger)
+        const posInGroup = index % 7;
+        const isFeatured = posInGroup < 2 && !isAgotado && products.length > 4;
+
+        if (isFeatured) {
+            col.className = 'col-6 col-md-6 col-lg-6';
+        } else {
+            col.className = 'col-6 col-md-4 col-lg-3';
+        }
+
         const delay = Math.min(index * 0.04, 0.8);
         col.innerHTML = `
-            <div class="product-card" data-product-id="${product.id}" data-stock="${stockTotal}" style="animation-delay: ${delay}s">
+            <div class="product-card ${isFeatured ? 'product-card-featured' : ''}" data-product-id="${product.id}" data-stock="${stockTotal}" style="animation-delay: ${delay}s">
                 <div class="product-image-wrapper">
                     <img src="${imgUrl}" alt="${product.nombre}" loading="lazy">
                     <div class="product-badges">
                         ${tienePromo ? '<span class="badge-promo">PROMO</span>' : ''}
                         ${isAgotado ? '<span class="badge-stock badge-agotado">AGOTADO</span>' : ''}
                     </div>
+                    ${isFeatured ? `<div class="featured-overlay"><span class="featured-label">${tienePromo ? 'Oferta Destacada' : 'Destacado'}</span></div>` : ''}
                 </div>
                 <div class="product-card-body">
                     <h3 class="product-title">${product.nombre}</h3>
