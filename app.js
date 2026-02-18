@@ -563,66 +563,6 @@ function sortProducts(products, sortBy) {
     return [...disponibles, ...agotados];
 }
 
-// ✅ HERO BANNER DINÁMICO CON PRODUCTOS REALES
-function renderHeroBanner(products) {
-    const banner = document.getElementById('hero-banner');
-    const grid = document.getElementById('hero-banner-grid');
-    if (!banner || !grid) return;
-
-    // Filtrar productos con imagen y stock
-    const withImages = products.filter(p => p.imagenUrl && getStock(p) > 0);
-    if (withImages.length < 3) {
-        banner.style.display = 'none';
-        return;
-    }
-
-    // Tomar los primeros 3 productos (los más recientes)
-    const featured = withImages.slice(0, 3);
-    const { precioFinal: price0, tienePromo: promo0 } = calculatePromotionPrice(featured[0]);
-    const { precioFinal: price1, tienePromo: promo1 } = calculatePromotionPrice(featured[1]);
-    const { precioFinal: price2, tienePromo: promo2 } = calculatePromotionPrice(featured[2]);
-
-    grid.innerHTML = `
-        <div class="hero-item hero-item-main" data-product-id="${featured[0].id}">
-            <img src="${featured[0].imagenUrl}" alt="${featured[0].nombre}" loading="eager">
-            <div class="hero-item-overlay">
-                ${promo0 ? '<span class="hero-badge">SALE</span>' : '<span class="hero-badge hero-badge-new">NUEVO</span>'}
-                <h2 class="hero-item-title">${featured[0].nombre}</h2>
-                <span class="hero-item-price">${formatoMoneda.format(price0)}</span>
-            </div>
-        </div>
-        <div class="hero-item-side">
-            <div class="hero-item hero-item-sm" data-product-id="${featured[1].id}">
-                <img src="${featured[1].imagenUrl}" alt="${featured[1].nombre}" loading="eager">
-                <div class="hero-item-overlay">
-                    ${promo1 ? '<span class="hero-badge">SALE</span>' : ''}
-                    <h3 class="hero-item-title">${featured[1].nombre}</h3>
-                    <span class="hero-item-price">${formatoMoneda.format(price1)}</span>
-                </div>
-            </div>
-            <div class="hero-item hero-item-sm" data-product-id="${featured[2].id}">
-                <img src="${featured[2].imagenUrl}" alt="${featured[2].nombre}" loading="eager">
-                <div class="hero-item-overlay">
-                    ${promo2 ? '<span class="hero-badge">SALE</span>' : ''}
-                    <h3 class="hero-item-title">${featured[2].nombre}</h3>
-                    <span class="hero-item-price">${formatoMoneda.format(price2)}</span>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Hacer clickeables
-    grid.querySelectorAll('.hero-item[data-product-id]').forEach(item => {
-        item.style.cursor = 'pointer';
-        item.addEventListener('click', () => {
-            const productId = item.dataset.productId;
-            openProductModal(productId);
-        });
-    });
-
-    banner.style.display = 'block';
-}
-
 // ✅ RENDERIZAR PRODUCTOS CON COLORES REALES
 function renderProducts(products) {
     const container = document.getElementById('products-container');
@@ -1434,7 +1374,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         console.log(`✅ ${allProducts.length} productos cargados correctamente`);
-        renderHeroBanner(allProducts);
         loadAvailableColors();
         applyFiltersAndRender();
     }, (error) => {
