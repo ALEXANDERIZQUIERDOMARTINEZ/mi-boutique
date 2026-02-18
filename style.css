@@ -605,8 +605,8 @@ h1, h2, h3, h4, h5, h6 {
 .product-card {
     background: white;
     border: none;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     overflow: hidden;
     height: 100%;
@@ -661,7 +661,7 @@ h1, h2, h3, h4, h5, h6 {
 .price-detal-card {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--color-texto);
+    color: var(--color-primario);
     letter-spacing: -0.3px;
 }
 
@@ -673,7 +673,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .product-card-body .btn {
-    border-radius: 8px;
+    border-radius: 50px;
     font-size: 0.78rem;
     font-weight: 600;
     padding: 8px 14px;
@@ -806,7 +806,7 @@ h1, h2, h3, h4, h5, h6 {
    ──────────────────────────────────────────────────────────────────── */
 /* ── Featured Product Cards ── */
 .product-card-featured {
-    border-radius: 12px;
+    border-radius: 20px;
 }
 
 .product-card-featured img {
