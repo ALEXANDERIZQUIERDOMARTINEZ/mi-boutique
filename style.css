@@ -480,7 +480,6 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-/* ── Tarjeta base ─────────────────────────────────────────────────── */
 .product-card {
     background: white;
     border: none;
@@ -491,18 +490,12 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     flex-direction: column;
     cursor: pointer;
-    transition: box-shadow 0.35s ease;
 }
 
-.product-card:hover {
-    box-shadow: 0 6px 28px rgba(217, 136, 185, 0.18);
-}
-
-/* ── Imagen ───────────────────────────────────────────────────────── */
 .product-image-wrapper {
     overflow: hidden;
     position: relative;
-    background: #f9f4f7;
+    background: #f8f5f6;
 }
 
 .product-card img {
@@ -510,151 +503,128 @@ h1, h2, h3, h4, h5, h6 {
     aspect-ratio: 2 / 3;
     object-fit: cover;
     display: block;
-    background: #f9f4f7;
-    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    background: #f8f5f6;
+    transition: opacity 0.3s ease, transform 0.4s ease;
 }
 
 .product-card:hover img {
-    transform: scale(1.07);
+    opacity: 0.9;
+    transform: scale(1.03);
 }
 
-/* ── Overlay que sube al hacer hover ─────────────────────────────── */
-.product-card-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 16px 12px 14px;
-    background: linear-gradient(
-        to top,
-        rgba(30, 10, 20, 0.72) 0%,
-        rgba(30, 10, 20, 0.28) 55%,
-        transparent 100%
-    );
-    transform: translateY(101%);
-    transition: transform 0.38s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-}
-
-.product-card:hover .product-card-overlay {
-    transform: translateY(0);
-}
-
-.overlay-meta {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.card-colors {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-}
-
-.card-color-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-    border: 1.5px solid rgba(255, 255, 255, 0.75);
-    flex-shrink: 0;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-}
-
-.card-sizes {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-}
-
-.card-size-chip {
-    font-size: 0.5rem;
-    color: rgba(255, 255, 255, 0.92);
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    padding: 1px 6px;
-    line-height: 1.7;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(6px);
-}
-
-.btn-add-card {
-    width: 100%;
-    background: var(--color-primario);
-    color: white;
-    border: none;
-    font-size: 0.58rem;
-    font-weight: 700;
-    letter-spacing: 1.6px;
-    text-transform: uppercase;
-    padding: 10px 12px;
-    cursor: pointer;
-    transition: background 0.22s ease;
-}
-
-.btn-add-card:hover {
-    background: var(--color-primario-oscuro);
-}
-
-/* ── Cuerpo de la tarjeta ─────────────────────────────────────────── */
 .product-card-body {
-    padding: 10px 10px 12px;
+    padding: 8px 8px 10px;
     display: flex;
     flex-direction: column;
     gap: 3px;
-    border-top: 2px solid transparent;
-    transition: border-color 0.35s ease;
-}
-
-.product-card:hover .product-card-body {
-    border-top-color: var(--color-primario);
+    flex: 1;
 }
 
 .product-card .product-title {
-    font-size: 0.73rem;
+    font-size: 0.72rem;
     font-weight: 500;
     margin-bottom: 0;
-    color: #1a1a1a;
+    color: #2a2a2a;
     line-height: 1.35;
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
+    letter-spacing: 0.5px;
 }
 
 .product-card-desc {
-    font-size: 0.62rem;
-    color: #bbb;
+    font-size: 0.65rem;
+    color: #aaa;
     margin: 0;
     line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    font-weight: 300;
+}
+
+.card-meta-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.card-colors {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.card-color-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+}
+
+.card-sizes {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+}
+
+.card-size-chip {
+    font-size: 0.55rem;
+    color: #999;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    border: 1px solid #e8e0e4;
+    padding: 1px 5px;
+    line-height: 1.6;
+    background: white;
+}
+
+.card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 6px;
 }
 
 .price-detal-card {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--color-primario);
-    letter-spacing: -0.3px;
-    margin-top: 3px;
+    color: #111;
+    letter-spacing: -0.2px;
 }
 
 .price-detal-old-card {
     font-size: 0.68rem;
-    color: #ccc;
+    color: #bbb;
     text-decoration: line-through;
     margin-right: 5px;
     font-weight: 400;
+}
+
+.btn-add-card {
+    background: var(--color-primario);
+    color: white;
+    border: none;
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 5px 9px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn-add-card:hover {
+    background: var(--color-primario-oscuro);
 }
 
 /* Badges */
