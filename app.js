@@ -658,98 +658,23 @@ function renderProducts(products) {
         const imgUrl = product.imagenUrl || 'https://placehold.co/300x400/f5f5f5/ccc?text=Mishell';
         const { precioFinal, tienePromo, precioOriginal } = calculatePromotionPrice(product);
 
-        const variaciones = product.variaciones || [];
-        // ✅ Solo mostrar tallas que tengan stock disponible
-        const tallas = [...new Set(variaciones
-            .filter(v => (parseInt(v.stock, 10) || 0) > 0)  // Filtrar solo variaciones con stock > 0
-            .map(v => v.talla)
-            .filter(Boolean))];
-        // ✅ Solo mostrar colores que tengan stock disponible
-        const colores = [...new Set(variaciones
-            .filter(v => (parseInt(v.stock, 10) || 0) > 0)  // Filtrar solo variaciones con stock > 0
-            .map(v => v.color)
-            .filter(Boolean))];
-
-        const isDisabled = isAgotado;
-        const btnText = isAgotado ? 'Agotado' : 'Ver Producto';
-
-        // ✅ HTML para TALLAS
-        const tallasHTML = tallas.length > 0 ? 
-            `<div class="variations-title">Tallas</div>
-             <div class="variation-chips">${tallas.map(t => `<span class="variation-chip">${t}</span>`).join('')}</div>` 
-            : '';
-
-        // ✅ HTML para COLORES con círculos de color (soporta combinaciones)
-        let coloresHTML = '';
-        if (colores.length > 0) {
-            const colorChips = colores.map(c => {
-                const normalized = c.toLowerCase().trim();
-
-                // Si es una combinación de colores, mostrar múltiples círculos
-                if (esCombiacionDeColores(c)) {
-                    const coloresIndividuales = dividirColores(c);
-                    const circulos = coloresIndividuales.map(colorIndividual => {
-                        const hex = getColorHex(colorIndividual);
-                        return `<span class="variation-chip color-chip"
-                                     style="background-color: ${hex};"
-                                     data-color-name="${colorIndividual}"
-                                     title="${colorIndividual}"></span>`;
-                    }).join('');
-
-                    return `<div class="color-combination" style="display: inline-flex; gap: 2px;" title="${c}">${circulos}</div>`;
-                } else {
-                    // Color único
-                    const colorValue = getColorHex(c);
-
-                    // Si es un color especial (gradiente), usar background-image
-                    const styleAttr = SPECIAL_COLORS[normalized]
-                        ? `background-image: ${colorValue};`
-                        : `background-color: ${colorValue};`;
-
-                    return `<span class="variation-chip color-chip"
-                                 style="${styleAttr}"
-                                 data-color-name="${c}"
-                                 title="${c}"></span>`;
-                }
-            }).join('');
-
-            coloresHTML = `<div class="variations-title mt-1">Colores</div>
-                          <div class="variation-chips colors">${colorChips}</div>`;
-        }
-
         const col = document.createElement('div');
-
-        // Every 7 items, make first 2 items featured (larger)
-        const posInGroup = index % 7;
-        const isFeatured = posInGroup < 2 && !isAgotado && products.length > 4;
-
-        if (isFeatured) {
-            col.className = 'col-6 col-md-6 col-lg-6';
-        } else {
-            col.className = 'col-6 col-md-4 col-lg-3';
-        }
+        col.className = 'col-6 col-md-4 col-lg-3';
 
         const delay = Math.min(index * 0.04, 0.8);
         col.innerHTML = `
-            <div class="product-card ${isFeatured ? 'product-card-featured' : ''}" data-product-id="${product.id}" data-stock="${stockTotal}" style="animation-delay: ${delay}s">
+            <div class="product-card" data-product-id="${product.id}" data-stock="${stockTotal}" style="animation-delay: ${delay}s">
                 <div class="product-image-wrapper">
                     <img src="${imgUrl}" alt="${product.nombre}" loading="lazy">
-                    <div class="product-badges">
-                        ${tienePromo ? '<span class="badge-promo">PROMO</span>' : ''}
-                        ${isAgotado ? '<span class="badge-stock badge-agotado">AGOTADO</span>' : ''}
-                    </div>
-                    ${isFeatured ? `<div class="featured-overlay"><span class="featured-label">${tienePromo ? 'Oferta Destacada' : 'Destacado'}</span></div>` : ''}
+                    ${isAgotado ? '<span class="badge-agotado">AGOTADO</span>' : ''}
+                    ${tienePromo ? '<span class="badge-promo">SALE</span>' : ''}
                 </div>
                 <div class="product-card-body">
                     <h3 class="product-title">${product.nombre}</h3>
-                    ${product.descripcion ? `<p class="product-description">${product.descripcion.length > 60 ? product.descripcion.substring(0, 60) + '...' : product.descripcion}</p>` : ''}
-                    ${product.observaciones ? `<p class="product-observations">${product.observaciones}</p>` : ''}
                     <div class="price-detal-card">
                         ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
                         ${formatoMoneda.format(precioFinal)}
                     </div>
-                    <div class="product-variations">${tallasHTML}${coloresHTML}</div>
-                    <button class="btn btn-primary btn-sm w-100 mt-auto" ${isDisabled ? 'disabled' : ''}>${btnText}</button>
                 </div>
             </div>
         `;
