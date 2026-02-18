@@ -333,7 +333,7 @@ function showGlobalPromoBanner() {
         </div>
     `;
 
-    const header = document.querySelector('header.navbar');
+    const header = document.querySelector('header.site-header') || document.querySelector('header');
     if (header) {
         header.parentNode.insertBefore(banner, header);
     }
@@ -1327,6 +1327,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // loadPromotions(); // ✅ Ya no necesario - las promociones se leen del campo producto.promocion
 
     const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
+    const categoryDropdownMenuMobile = document.getElementById('category-dropdown-menu-mobile');
     const categoryDropdownButton = document.getElementById('category-dropdown-button');
 
     // ✅ Cargar Categorías con Badges
@@ -1373,13 +1374,24 @@ document.addEventListener('DOMContentLoaded', () => {
             item.addEventListener('click', handleFilterClick);
         });
 
+        // Populate mobile dropdown
+        if (categoryDropdownMenuMobile) {
+            categoryDropdownMenuMobile.innerHTML = categoryDropdownMenu.innerHTML;
+            categoryDropdownMenuMobile.querySelectorAll('.filter-group').forEach(item => {
+                item.addEventListener('click', handleFilterClick);
+            });
+        }
+
         console.log(`✅ ${categories.length} categorías cargadas correctamente`);
     }, (error) => {
         console.error("❌ Error al cargar categorías:", error);
         categoryDropdownMenu.innerHTML = '<li><a class="dropdown-item text-danger" href="#">Error al cargar</a></li>';
+        if (categoryDropdownMenuMobile) {
+            categoryDropdownMenuMobile.innerHTML = '<li><a class="dropdown-item text-danger" href="#">Error al cargar</a></li>';
+        }
     });
 
-    document.querySelectorAll('.catalog-filters .filter-group').forEach(btn => {
+    document.querySelectorAll('.header-left .filter-group, .header-left-mobile .filter-group').forEach(btn => {
         btn.addEventListener('click', handleFilterClick);
     });
 
@@ -1387,7 +1399,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const clickedFilter = e.currentTarget;
 
-        document.querySelectorAll('.catalog-filters .filter-group.active').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.header-left .filter-group.active, .header-left-mobile .filter-group.active').forEach(b => b.classList.remove('active'));
 
         if (clickedFilter.classList.contains('dropdown-item')) {
             // Si es un item del dropdown (categoría), activar el botón del dropdown

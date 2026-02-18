@@ -28,60 +28,81 @@
 </head>
 <body>
 
-<header class="navbar navbar-expand-lg sticky-top">
+<header class="site-header sticky-top">
+<!-- Gradient strip -->
+<div class="header-gradient"></div>
+
+<!-- Main nav -->
+<nav class="header-nav">
 <div class="container">
+<div class="header-layout">
 
-<a class="navbar-brand" href="index.html">MISHELL</a>
+    <!-- Left: Nav links (desktop) -->
+    <div class="header-left d-none d-lg-flex">
+        <button class="nav-link-header filter-group active" data-filter="disponible">Disponibles</button>
+        <button class="nav-link-header filter-group filter-promo" data-filter="promocion">Sale</button>
+        <div class="dropdown">
+            <button class="nav-link-header filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="category-dropdown-button">
+                Categorías <i class="bi bi-chevron-down" style="font-size: 0.7em; margin-left: 2px;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-enhanced" id="category-dropdown-menu">
+                <li><a class="dropdown-item" href="#">Cargando...</a></li>
+            </ul>
+        </div>
+    </div>
 
-<div class="navbar-collapse" id="navCollapse">
+    <!-- Center: Brand -->
+    <a class="header-brand" href="index.html">MISHELL</a>
 
-<div class="catalog-filters mx-auto d-flex align-items-center">
-<!-- Todos los productos -->
-<button class="btn filter-group active d-none d-lg-inline-flex" data-filter="disponible">
-<i class="bi bi-grid-fill"></i> Disponibles
-</button>
+    <!-- Right: Icons -->
+    <div class="header-right">
+        <div class="search-box d-none d-lg-block">
+            <input type="text" class="form-control" id="search-input" placeholder="Buscar...">
+            <i class="bi bi-search search-icon"></i>
+        </div>
+        <a href="#" class="header-icon d-none d-lg-flex" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+            <i class="bi bi-bag"></i>
+            <span class="cart-counter" id="cart-badge-desktop">0</span>
+        </a>
+    </div>
 
-<!-- Promociones destacadas -->
-<button class="btn filter-group filter-promo d-none d-lg-inline-flex" data-filter="promocion">
-<i class="bi bi-tag-fill"></i> Promociones
-</button>
+    <!-- Mobile: Categorías -->
+    <div class="header-left-mobile d-lg-none">
+        <div class="dropdown">
+            <button class="nav-link-header filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-list"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-enhanced" id="category-dropdown-menu-mobile">
+                <li><a class="dropdown-item" href="#">Cargando...</a></li>
+            </ul>
+        </div>
+    </div>
 
-<div class="dropdown d-inline-block">
-<button class="btn filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="category-dropdown-button">
-<i class="bi bi-list-ul"></i> Categorías <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>
-</button>
-<ul class="dropdown-menu dropdown-menu-enhanced" id="category-dropdown-menu">
-<li><a class="dropdown-item" href="#">Cargando...</a></li>
-</ul>
 </div>
 </div>
-
-<div class="d-flex align-items-center ms-lg-auto">
-<div class="search-box d-none d-lg-block me-3">
-<input type="text" class="form-control" id="search-input" placeholder="Buscar...">
-<i class="bi bi-search search-icon"></i>
-</div>
-
-<div class="d-none d-lg-block">
-<a href="#" class="cart-icon" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
-<i class="bi bi-cart3"></i>
-<span class="cart-counter" id="cart-badge-desktop">0</span>
-</a>
-</div>
-</div>
-
-</div>
-</div>
+</nav>
 </header>
-
 
 <main class="container-fluid px-0" id="main-content">
 
-<!-- Hero Strip -->
-<section class="hero-strip">
-    <span class="hero-strip-dot"></span>
-    <span class="hero-strip-text">Nueva Colección Disponible</span>
-    <span class="hero-strip-dot"></span>
+<!-- Promotional Banners -->
+<section class="promo-banners" id="promo-banners">
+    <div class="promo-banner" onclick="document.querySelector('[data-filter=disponible]')?.click()">
+        <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&q=80" alt="Nueva Colección" loading="eager">
+        <div class="promo-banner-overlay">
+            <span class="promo-banner-tag">Nueva temporada</span>
+            <h2 class="promo-banner-title">Nueva Colección</h2>
+            <span class="promo-banner-cta">Ver ahora <i class="bi bi-arrow-right"></i></span>
+        </div>
+    </div>
+    <div class="promo-banner" onclick="document.querySelector('[data-filter=promocion]')?.click()">
+        <img src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80" alt="Promociones" loading="eager">
+        <div class="promo-banner-overlay">
+            <span class="promo-banner-tag">Ofertas especiales</span>
+            <h2 class="promo-banner-title">Sale</h2>
+            <span class="promo-banner-cta">Comprar ahora <i class="bi bi-arrow-right"></i></span>
+        </div>
+    </div>
 </section>
 
 <div class="promotions-section mb-4" id="promotions-section" style="display: none;">
