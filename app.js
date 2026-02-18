@@ -430,18 +430,15 @@ function applyFiltersAndRender() {
 
     let filtered = allProducts;
 
-    // 🎯 FILTRO GLOBAL: Siempre ocultar productos sin stock
-    // Solo mostrar productos que tengan al menos una variación con stock > 0
-    filtered = filtered.filter(p => {
-        const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-        return stock > 0;
-    });
-
     // 1. Filtrar por Categoría (filtros principales del header)
     if (activeFilter === 'disponible') {
-        // Ya se filtró arriba, no hacer nada adicional
+        // Solo productos con stock > 0
+        filtered = filtered.filter(p => {
+            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+            return stock > 0;
+        });
     } else if (activeFilter === 'all') {
-        // Mostrar todos los productos (que tengan stock)
+        // Mostrar todos los productos (incluye agotados)
     } else if (activeFilter === 'promocion') {
         filtered = filtered.filter(p => {
             const tienePromoIndividual = p.promocion?.activa && !isWholesaleActive;
