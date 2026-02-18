@@ -598,6 +598,20 @@ function renderProducts(products) {
         const imgUrl = product.imagenUrl || 'https://placehold.co/300x400/f5f5f5/ccc?text=Mishell';
         const { precioFinal, tienePromo, precioOriginal } = calculatePromotionPrice(product);
 
+        // Colores y tallas con stock
+        const variacionesConStock = (product.variaciones || []).filter(v => parseInt(v.stock, 10) > 0);
+        const coloresUnicos = [...new Set(variacionesConStock.map(v => v.color).filter(Boolean))];
+        const tallasUnicas = [...new Set(variacionesConStock.map(v => v.talla).filter(t => t && t.toLowerCase() !== 'unica' && t.toLowerCase() !== 'única'))];
+
+        const coloresHtml = coloresUnicos.slice(0, 6).map(color => {
+            const hex = COLOR_MAP[color.toLowerCase().trim()] || '#ccc';
+            return `<span class="card-color-dot" style="background:${hex}" title="${color}"></span>`;
+        }).join('');
+
+        const tallasHtml = tallasUnicas.slice(0, 5).map(t => `<span class="card-size-chip">${t}</span>`).join('');
+
+        const desc = product.descripcion ? product.descripcion.substring(0, 55) : '';
+
         const col = document.createElement('div');
         col.className = 'col-6 col-md-4 col-lg-3';
 
@@ -611,9 +625,18 @@ function renderProducts(products) {
                 </div>
                 <div class="product-card-body">
                     <h3 class="product-title">${product.nombre}</h3>
-                    <div class="price-detal-card">
-                        ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
-                        ${formatoMoneda.format(precioFinal)}
+                    ${desc ? `<p class="product-card-desc">${desc}</p>` : ''}
+                    ${coloresHtml || tallasHtml ? `
+                    <div class="card-meta-row">
+                        ${coloresHtml ? `<div class="card-colors">${coloresHtml}</div>` : ''}
+                        ${tallasHtml ? `<div class="card-sizes">${tallasHtml}</div>` : ''}
+                    </div>` : ''}
+                    <div class="card-bottom">
+                        <div class="price-detal-card">
+                            ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
+                            ${formatoMoneda.format(precioFinal)}
+                        </div>
+                        ${!isAgotado ? '<button class="btn-add-card" type="button">Agregar</button>' : ''}
                     </div>
                 </div>
             </div>
@@ -623,8 +646,6 @@ function renderProducts(products) {
 
     document.querySelectorAll('.product-card').forEach(card => {
         card.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON' && !e.target.disabled) e.stopPropagation();
-            
             const stock = parseInt(e.currentTarget.dataset.stock);
             const productId = e.currentTarget.dataset.productId;
 
