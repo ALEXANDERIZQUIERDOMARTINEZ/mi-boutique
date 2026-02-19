@@ -21,10 +21,17 @@
     </head>
 <body class="admin-page">
 
-    <!-- 🔘 MOBILE TOGGLE BUTTON -->
-    <button class="sidebar-toggle" id="sidebarToggle" type="button">
-        <i class="bi bi-list"></i>
-    </button>
+    <!-- 📱 TOP HEADER BAR — visible solo en móvil/tablet -->
+    <header class="admin-topbar" id="adminTopbar">
+        <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Abrir menú">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="topbar-brand">
+            <span class="topbar-brand-name">Mishell</span>
+            <span class="topbar-brand-sub">Boutique</span>
+        </div>
+        <div class="topbar-section-name" id="topbarSectionName">Dashboard</div>
+    </header>
 
     <!-- 🎯 SIDEBAR VERTICAL FIJO - Full Height -->
     <aside class="admin-sidebar" id="adminSidebar">
@@ -2467,38 +2474,81 @@
     <!-- jsPDF para generar PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <!-- Script para manejar el sidebar toggle en móvil (funciona independientemente) -->
+    <!-- Script para manejar el sidebar toggle en móvil -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const sidebarToggle = document.getElementById('sidebarToggle');
-            const sidebar = document.getElementById('adminSidebar');
-            
+            const sidebar       = document.getElementById('adminSidebar');
+            const topbarSection = document.getElementById('topbarSectionName');
+
+            // Mapeo de hash → nombre legible para el topbar
+            const SECTION_NAMES = {
+                dashboard:      'Dashboard',
+                ventas:         'Registrar Venta',
+                'pedidos-web':  'Pedidos Web',
+                apartados:      'Apartados',
+                productos:      'Productos',
+                'cargue-masivo':'Cargue Masivo',
+                categorias:     'Categorías',
+                clientes:       'Clientes',
+                repartidores:   'Repartidores',
+                promociones:    'Promociones',
+                finanzas:       'Finanzas',
+                proveedores:    'Proveedores',
+                backup:         'Backup'
+            };
+
+            // Actualiza el título del topbar según la sección activa
+            function updateTopbarSection() {
+                const hash = (window.location.hash || '#dashboard').replace('#', '');
+                if (topbarSection) {
+                    topbarSection.textContent = SECTION_NAMES[hash] || 'Admin';
+                }
+            }
+            updateTopbarSection();
+            window.addEventListener('hashchange', updateTopbarSection);
+
+            // ── Guarda/restaura scroll para evitar el salto de posición ──
+            let savedScrollY = 0;
+
+            function openSidebar() {
+                savedScrollY = window.scrollY;
+                document.body.style.top = `-${savedScrollY}px`;
+                sidebar.classList.add('show');
+                document.body.classList.add('sidebar-open');
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('show');
+                document.body.classList.remove('sidebar-open');
+                document.body.style.top = '';
+                window.scrollTo(0, savedScrollY);
+            }
+
             if (sidebarToggle && sidebar) {
-                // Toggle sidebar al hacer click en el botón
                 sidebarToggle.addEventListener('click', function(e) {
                     e.stopPropagation();
                     e.preventDefault();
-                    sidebar.classList.toggle('show');
-                    document.body.classList.toggle('sidebar-open');
+                    sidebar.classList.contains('show') ? closeSidebar() : openSidebar();
                 });
-                
-                // Cerrar sidebar al hacer click fuera (en el overlay)
+
+                // Cerrar al hacer click fuera (en el overlay)
                 document.addEventListener('click', function(e) {
                     if (sidebar.classList.contains('show') &&
                         !sidebar.contains(e.target) &&
                         !sidebarToggle.contains(e.target)) {
-                        sidebar.classList.remove('show');
-                        document.body.classList.remove('sidebar-open');
+                        closeSidebar();
                     }
                 });
-                
-                // Cerrar sidebar al hacer click en un link de navegación
+
+                // Cerrar al navegar a una sección
                 const navLinks = sidebar.querySelectorAll('.nav-link[data-bs-toggle="pill"], .dropdown-item[data-bs-toggle="pill"]');
                 navLinks.forEach(function(link) {
                     link.addEventListener('click', function() {
                         if (window.innerWidth < 992) {
-                            sidebar.classList.remove('show');
-                            document.body.classList.remove('sidebar-open');
+                            closeSidebar();
+                            // Actualizar título tras un tick para que el hash ya cambiara
+                            setTimeout(updateTopbarSection, 50);
                         }
                     });
                 });
@@ -2510,28 +2560,6 @@
 
     <!-- Script para generar catálogo en PDF -->
     <script type="module" src="catalogoPDF.js?v=1.0.0"></script>
-
-    <!-- Script para cerrar navegación móvil al hacer clic en un enlace -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Cerrar el menú móvil al hacer clic en cualquier enlace de navegación
-            const navLinks = document.querySelectorAll('.nav-pills .nav-link');
-            const navbarCollapse = document.getElementById('adminNavbarContent');
-
-            navLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    // Solo cerrar en móvil (cuando el navbar está colapsado)
-                    if (window.innerWidth < 992 && navbarCollapse.classList.contains('show')) {
-                        // Usar Bootstrap para cerrar el collapse
-                        const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
-                        if (bsCollapse) {
-                            bsCollapse.hide();
-                        }
-                    }
-                });
-            });
-        });
-    </script>
 
     <!-- ═══════════════════════════════════════════════════════════════════
          MODAL: AGREGAR/EDITAR PROMOCIÓN GLOBAL
