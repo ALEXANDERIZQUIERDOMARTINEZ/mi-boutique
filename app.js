@@ -425,8 +425,8 @@ function applyFiltersAndRender() {
     const activeFilter = activeFilterEl ? activeFilterEl.dataset.filter : 'disponible';
 
     const searchTerm = document.getElementById('search-input').value.toLowerCase();
-    const searchModalTerm = document.getElementById('search-modal-input').value.toLowerCase();
-    const finalSearchTerm = searchTerm || searchModalTerm;
+    const navSearchTerm = (document.getElementById('nav-search-input')?.value || '').toLowerCase();
+    const finalSearchTerm = searchTerm || navSearchTerm;
 
     let filtered = allProducts;
 
@@ -1432,17 +1432,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ✅ Búsqueda en tiempo real MEJORADA
+    // ✅ Búsqueda en tiempo real
     document.getElementById('search-input').addEventListener('input', applyFiltersAndRedraw);
-    document.getElementById('search-modal-input').addEventListener('input', (e) => {
-        document.getElementById('search-input').value = e.target.value;
-        applyFiltersAndRedraw();
-    });
-    
+
     let searchTimeout;
     function applyFiltersAndRedraw() {
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(applyFiltersAndRender, 200); // 200ms para búsqueda más rápida
+        searchTimeout = setTimeout(applyFiltersAndRender, 200);
     }
     
     // Listeners del MODAL DE PRODUCTO ya no son necesarios
@@ -2016,9 +2012,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ✅ NAVEGACIÓN MÓVIL MEJORADA
-    const searchModal = document.getElementById('searchModal');
+    // ✅ BÚSQUEDA INLINE EN BARRA DE NAVEGACIÓN
+    const mobileNav = document.querySelector('.mobile-bottom-nav');
     const mobileNavItems = document.querySelectorAll('.nav-item');
+    const navSearchInput = document.getElementById('nav-search-input');
+    const nisClearBtn = document.getElementById('nis-clear');
+    const navSearchSuggestions = document.getElementById('nav-search-suggestions');
 
     function setActiveNavItem(selectedItem) {
         mobileNavItems.forEach(item => item.classList.remove('active'));
@@ -2027,36 +2026,103 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function openSearch() {
-        searchModal.classList.add('sm-open');
-        document.body.classList.add('modal-search-open');
-        // Pequeño delay para que el focus ocurra tras la animación
-        setTimeout(() => document.getElementById('search-modal-input').focus(), 80);
+    function openInlineSearch() {
+        mobileNav.classList.add('search-active');
+        setTimeout(() => navSearchInput.focus(), 80);
         setActiveNavItem(document.getElementById('mobile-search-btn'));
     }
 
-    function closeSearch() {
-        searchModal.classList.remove('sm-open');
-        document.body.classList.remove('modal-search-open');
+    function closeInlineSearch() {
+        mobileNav.classList.remove('search-active');
+        navSearchInput.value = '';
+        document.getElementById('search-input').value = '';
+        nisClearBtn.style.display = 'none';
+        hideSearchSuggestions();
+        applyFiltersAndRender();
     }
 
-    document.getElementById('mobile-search-btn').addEventListener('click', openSearch);
+    function hideSearchSuggestions() {
+        navSearchSuggestions.classList.remove('visible');
+        navSearchSuggestions.innerHTML = '';
+    }
 
-    document.getElementById('close-search-modal').addEventListener('click', closeSearch);
+    function updateSearchSuggestions(term) {
+        if (!term) { hideSearchSuggestions(); return; }
+        const lowerTerm = term.toLowerCase();
 
-    document.getElementById('search-modal-input').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === 'Escape') {
+        // Obtener categorías cuyo nombre coincide con el término buscado
+        // En categoriesMap: catName->catId y catId->catName
+        // Una clave es nombre de categoría cuando su valor (id) también mapea de vuelta a esa clave
+        const matchingCategories = [];
+        categoriesMap.forEach((value, key) => {
+            if (
+                typeof key === 'string' &&
+                key.toLowerCase().includes(lowerTerm) &&
+                categoriesMap.get(value) === key
+            ) {
+                matchingCategories.push(key);
+            }
+        });
+
+        if (matchingCategories.length === 0) {
+            hideSearchSuggestions();
+            return;
+        }
+
+        let html = `<span class="nss-label">Categorías</span><div class="nss-categories">`;
+        matchingCategories.slice(0, 8).forEach(catName => {
+            html += `<button class="nss-cat-chip" data-cat="${catName}">${catName}</button>`;
+        });
+        html += `</div>`;
+
+        navSearchSuggestions.innerHTML = html;
+        navSearchSuggestions.classList.add('visible');
+
+        navSearchSuggestions.querySelectorAll('.nss-cat-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const catName = chip.dataset.cat;
+                // Activar el filtro de esa categoría usando la lógica existente
+                document.querySelectorAll(
+                    '.header-left .filter-group.active, .header-left-mobile .filter-group.active'
+                ).forEach(b => b.classList.remove('active'));
+                categoryDropdownButton.classList.add('active');
+                categoryDropdownButton.dataset.filter = catName;
+                categoryDropdownButton.innerHTML = `${catName} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
+                closeInlineSearch();
+                applyFiltersAndRender();
+            });
+        });
+    }
+
+    document.getElementById('mobile-search-btn').addEventListener('click', openInlineSearch);
+    document.getElementById('nis-back').addEventListener('click', closeInlineSearch);
+
+    navSearchInput.addEventListener('input', (e) => {
+        const term = e.target.value;
+        document.getElementById('search-input').value = term;
+        nisClearBtn.style.display = term ? 'flex' : 'none';
+        updateSearchSuggestions(term);
+        applyFiltersAndRedraw();
+    });
+
+    nisClearBtn.addEventListener('click', () => {
+        navSearchInput.value = '';
+        document.getElementById('search-input').value = '';
+        nisClearBtn.style.display = 'none';
+        hideSearchSuggestions();
+        applyFiltersAndRender();
+        navSearchInput.focus();
+    });
+
+    navSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
             e.preventDefault();
-            closeSearch();
+            closeInlineSearch();
         }
     });
 
-    // Cerrar al tocar el fondo (por debajo de la barra)
-    searchModal.addEventListener('click', (e) => {
-        if (e.target === searchModal) closeSearch();
-    });
-
     document.getElementById('mobile-home-btn').addEventListener('click', () => {
+        if (mobileNav.classList.contains('search-active')) closeInlineSearch();
         window.scrollTo({ top: 0, behavior: 'smooth' });
         const allFilterBtn = document.querySelector('.filter-group[data-filter="all"]');
         if (allFilterBtn) allFilterBtn.click();
