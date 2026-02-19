@@ -37,7 +37,7 @@
 
 body.admin-page {
     font-family: var(--admin-fuente);
-    background: var(--admin-fondo);
+    background: #f8f7f4; /* mismo fondo cálido que index.html */
     color: var(--admin-texto);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -86,70 +86,82 @@ body.admin-page {
     background: var(--admin-primario-hover);
 }
 
-/* Sidebar Brand / Logo - REDISEÑADO */
+/* ══════════════════════════════════════════════════════════════════
+   SIDEBAR BRAND — mismo lenguaje que .header-brand del index
+   ══════════════════════════════════════════════════════════════════ */
 .sidebar-brand {
-    padding: 1.25rem 1rem;
-    font-weight: 600;
-    font-size: 0;
-    letter-spacing: 1px;
-    border-bottom: 2px solid var(--admin-primario-claro);
-    color: var(--admin-primario);
-    text-align: center;
+    padding: 0 0.75rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     white-space: nowrap;
-    overflow: visible;
-    transition: all 0.3s ease;
-    background: linear-gradient(135deg, #FAFAFA 0%, #FFFFFF 100%);
+    overflow: hidden;
+    transition: padding 0.3s ease;
+    background: white;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 60px;
     flex-shrink: 0;
+    gap: 4px;
 }
 
-/* Ocultar el span del brand */
+/* Línea de color en la parte superior — igual que header-gradient del index */
+.sidebar-brand::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 50%, #a8638a 100%);
+    pointer-events: none;
+}
+
+/* Ocultar el span del brand (se usa ::after para el texto) */
 .sidebar-brand span {
     display: none;
 }
 
-/* Inicial elegante cuando colapsado */
-.admin-sidebar .sidebar-brand::before {
+/* Inicial M cuando sidebar colapsado */
+.admin-sidebar:not(:hover) .sidebar-brand::after {
     content: 'M';
-    font-size: 1.5rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-family: var(--admin-fuente);
+    font-weight: 800;
+    font-size: 1.35rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--admin-texto);
     display: block;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
 }
 
-/* Texto completo cuando expandido */
+/* MISHELL + BOUTIQUE cuando expandido — igual tipografía que header-brand del index */
 .admin-sidebar:hover .sidebar-brand {
-    font-size: 1.2rem;
-}
-
-.admin-sidebar:hover .sidebar-brand::before {
-    content: 'Mishell';
-    font-size: 1.2rem;
-}
-
-/* Badge decorativo opcional */
-.sidebar-brand::after {
-    content: 'BOUTIQUE';
-    position: absolute;
-    bottom: 6px;
-    font-size: 0.4rem;
-    letter-spacing: 1.5px;
-    color: var(--admin-texto-claro);
-    font-weight: 600;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    justify-content: flex-start;
+    padding: 0 1rem;
 }
 
 .admin-sidebar:hover .sidebar-brand::after {
-    opacity: 1;
+    content: 'MISHELL';
+    font-family: var(--admin-fuente);
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: 3.5px;
+    text-transform: uppercase;
+    color: var(--admin-texto);
+    display: block;
+}
+
+/* Sub-texto BOUTIQUE — debajo de MISHELL al expandir */
+.admin-sidebar:hover .sidebar-brand::before {
+    /* Mantener la línea de color, usando otro método para el sub-texto */
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 50%, #a8638a 100%);
 }
 
 /* Navegación vertical - Centrada como Instagram */
@@ -276,74 +288,96 @@ body.admin-page {
     transition: margin-left 0.3s ease;
 }
 
-/* Mobile toggle button */
 /* ── Botón hamburguesa — vive dentro del admin-topbar ── */
 .sidebar-toggle {
     background: transparent;
-    color: white;
+    color: var(--admin-texto);
     border: none;
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    transition: background 0.2s ease;
+    font-size: 1.4rem;
+    transition: background 0.2s ease, color 0.2s ease;
     cursor: pointer;
     flex-shrink: 0;
     -webkit-tap-highlight-color: transparent;
 }
 
-.sidebar-toggle:hover  { background: rgba(255, 255, 255, 0.15); }
-.sidebar-toggle:active { background: rgba(255, 255, 255, 0.25); transform: scale(0.93); }
+.sidebar-toggle:hover  { background: var(--admin-primario-claro); color: var(--admin-primario); }
+.sidebar-toggle:active { background: var(--admin-primario-claro); transform: scale(0.92); }
 
-/* ── Top Header Bar — visible solo en móvil/tablet ── */
+/* ══════════════════════════════════════════════════════════════════
+   TOP HEADER BAR — mismo lenguaje visual que el header del index
+   ══════════════════════════════════════════════════════════════════ */
 .admin-topbar {
-    display: none; /* oculta en desktop */
+    display: none;            /* oculta en desktop */
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 56px;
-    background: linear-gradient(135deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 100%);
+    background: white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     z-index: 1060;
     align-items: center;
-    padding: 0 0.75rem;
-    gap: 0.75rem;
-    box-shadow: 0 2px 12px rgba(217, 136, 185, 0.4);
+    padding: 3px 0.75rem 0;  /* 3px de sangría por la línea superior */
+    gap: 0.5rem;
+    min-height: 57px;         /* 3px línea + 54px contenido, igual que index */
 }
 
+/* Línea 3px en degradado rosa — copia exacta de .header-gradient del index */
+.admin-topbar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 50%, #a8638a 100%);
+    pointer-events: none;
+}
+
+/* ── Marca MISHELL — mismo estilo que .header-brand del index ── */
 .topbar-brand {
+    flex: 1;
     display: flex;
-    flex-direction: column;
-    line-height: 1.1;
+    align-items: baseline;
+    gap: 5px;
 }
 
 .topbar-brand-name {
-    font-weight: 700;
-    font-size: 1rem;
-    color: white;
-    letter-spacing: 0.5px;
+    font-family: var(--admin-fuente);
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 3.5px;
+    text-transform: uppercase;
+    color: var(--admin-texto);
+    white-space: nowrap;
 }
 
 .topbar-brand-sub {
-    font-size: 0.45rem;
-    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.48rem;
+    font-weight: 600;
     letter-spacing: 2px;
     text-transform: uppercase;
-    font-weight: 600;
+    color: var(--admin-texto-claro);
+    align-self: center;
 }
 
+/* ── Sección activa — esquina derecha, estilo nav link del index ── */
 .topbar-section-name {
-    flex: 1;
-    text-align: right;
-    font-size: 0.85rem;
+    font-family: var(--admin-fuente);
+    font-size: 0.68rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--admin-texto-sec);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 130px;
 }
 
 /* Desktop (≥ 992px) — sidebar siempre visible, topbar oculto */
@@ -1463,7 +1497,7 @@ body.admin-page {
     /* ── Content wrapper: desplazado por topbar ── */
     .admin-content-wrapper {
         margin-left: 0 !important;
-        padding-top: 56px; /* altura del topbar */
+        padding-top: 57px; /* 3px línea + 54px topbar, igual que index header */
     }
 
     /* ── Sidebar: off-canvas desde la izquierda ── */
