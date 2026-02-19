@@ -1,6 +1,6 @@
 // --- IMPORTACIONES DE FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
@@ -515,7 +515,11 @@ function applyFiltersAndRender() {
     }
 
     // 4. Ordenamiento
-    filtered = sortProducts(filtered, advancedFilters.sortBy);
+    // En la vista "disponible" con el orden por defecto, mostrar primero los más vendidos
+    const effectiveSortBy = (activeFilter === 'disponible' && advancedFilters.sortBy === 'newest')
+        ? 'bestseller'
+        : advancedFilters.sortBy;
+    filtered = sortProducts(filtered, effectiveSortBy);
 
     // 📊 Tracking: Búsqueda o vista de categoría
     if (finalSearchTerm) {
@@ -558,6 +562,9 @@ function sortProducts(products, sortBy) {
             break;
         case 'name-desc':
             ordered = sorted.sort((a, b) => b.nombre.localeCompare(a.nombre));
+            break;
+        case 'bestseller':
+            ordered = sorted.sort((a, b) => (b.ventas || 0) - (a.ventas || 0));
             break;
         case 'newest':
         default:
@@ -1947,6 +1954,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const docRef = await addDoc(webOrdersCollection, pedidoData);
 
+            // Actualizar contador de ventas en cada producto del pedido
+            await Promise.all(
+                cart
+                    .filter(item => item.id)
+                    .map(item =>
+                        updateDoc(doc(db, 'productos', item.id), {
+                            ventas: increment(item.cantidad || 1)
+                        }).catch(() => {}) // no interrumpir si falla un producto
+                    )
+            );
+
             // 📊 Tracking: Compra completada
             analytics.trackPurchase({
                 orderId: docRef.id,
@@ -2134,8 +2152,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('mobile-home-btn').addEventListener('click', () => {
         if (mobileNav.classList.contains('search-active')) closeInlineSearch();
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        const allFilterBtn = document.querySelector('.filter-group[data-filter="all"]');
-        if (allFilterBtn) allFilterBtn.click();
+        const disponibleBtn = document.querySelector('.filter-group[data-filter="disponible"]');
+        if (disponibleBtn) disponibleBtn.click();
         setActiveNavItem(document.getElementById('mobile-home-btn'));
     });
 
