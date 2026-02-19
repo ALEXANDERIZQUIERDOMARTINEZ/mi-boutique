@@ -920,18 +920,18 @@ function updateStockDisplay(product) {
     });
 
     if (variacion && variacion.stock > 0) {
-        stockText.textContent = `${variacion.stock} unidades disponibles`;
-        stockDisplay.style.color = 'var(--color-primario)';
-        stockDisplay.style.background = 'var(--color-primario-claro)';
-        stockDisplay.style.borderColor = 'var(--color-primario-hover)';
+        stockText.textContent = `${variacion.stock} disponibles`;
+        stockDisplay.style.color = '#28a06a';
+        stockDisplay.style.background = '';
+        stockDisplay.style.borderColor = '';
         cantidadInput.setAttribute('max', variacion.stock);
         cantidadInput.value = 1;
         btnAdd.disabled = false;
     } else {
         stockText.textContent = 'Agotado';
         stockDisplay.style.color = '#c62828';
-        stockDisplay.style.background = '#ffebee';
-        stockDisplay.style.borderColor = '#ef9a9a';
+        stockDisplay.style.background = '';
+        stockDisplay.style.borderColor = '';
         cantidadInput.setAttribute('max', 0);
         cantidadInput.value = 0;
         btnAdd.disabled = true;
@@ -988,10 +988,10 @@ function openProductModal(productId) {
     // Resetear estado del stock display
     const stockDisplay = document.getElementById('stock-display');
     const stockText = document.getElementById('stock-text');
-    stockText.textContent = 'Seleccione talla y color';
-    stockDisplay.style.color = 'var(--color-texto-claro)';
-    stockDisplay.style.background = '#f8f9fa';
-    stockDisplay.style.borderColor = '#dee2e6';
+    stockText.textContent = 'Selecciona talla y color';
+    stockDisplay.style.color = '';
+    stockDisplay.style.background = '';
+    stockDisplay.style.borderColor = '';
     document.getElementById('btn-add-cart').disabled = true;
     document.getElementById('select-cantidad').value = 1;
     document.getElementById('select-cantidad').setAttribute('max', 1);
