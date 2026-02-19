@@ -828,11 +828,14 @@ function renderColorButtons(selectedTalla, product) {
         if (colores.length === 1) {
             selectColor(colores[0], product);
         } else {
-            // Limpiar selección anterior y mostrar mensaje
+            // Limpiar selección anterior y mostrar aviso de selección
             document.getElementById('selected-color').value = '';
             const stockText = document.getElementById('stock-text');
             stockText.textContent = 'Seleccione un color';
             document.getElementById('btn-add-cart').disabled = true;
+            // Mostrar aviso minimalista de selección de color
+            const colorHint = document.getElementById('color-select-hint');
+            if (colorHint) colorHint.classList.add('visible');
         }
     }
 }
@@ -869,6 +872,10 @@ function selectColor(color, product) {
     });
 
     document.getElementById('selected-color').value = color;
+
+    // Ocultar aviso de selección de color
+    const colorHint = document.getElementById('color-select-hint');
+    if (colorHint) colorHint.classList.remove('visible');
 
     // Actualizar stock
     updateStockDisplay(product);
@@ -973,6 +980,10 @@ function openProductModal(productId) {
     // Resetear campos ocultos de talla y color
     document.getElementById('selected-talla').value = '';
     document.getElementById('selected-color').value = '';
+
+    // Ocultar aviso de selección de color al abrir modal
+    const colorHintEl = document.getElementById('color-select-hint');
+    if (colorHintEl) colorHintEl.classList.remove('visible');
 
     // Resetear estado del stock display
     const stockDisplay = document.getElementById('stock-display');
