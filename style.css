@@ -447,44 +447,14 @@ h1, h2, h3, h4, h5, h6 {
    6. TARJETAS DE PRODUCTO - Grid Minimalista
    ──────────────────────────────────────────────────────────────────── */
 #products-container {
-    border-top: 1px solid #eee;
-}
-
-#products-container > [class*="col"] {
-    border-bottom: 1px solid #eee;
-    border-right: 1px solid #eee;
-}
-
-/* En mobile 2 cols: quitar borde derecho de col par (2da) */
-#products-container > [class*="col"]:nth-child(2n) {
-    border-right: none;
-}
-
-/* En tablet 3 cols */
-@media (min-width: 768px) {
-    #products-container > [class*="col"]:nth-child(2n) {
-        border-right: 1px solid #eee;
-    }
-    #products-container > [class*="col"]:nth-child(3n) {
-        border-right: none;
-    }
-}
-
-/* En desktop 4 cols */
-@media (min-width: 992px) {
-    #products-container > [class*="col"]:nth-child(3n) {
-        border-right: 1px solid #eee;
-    }
-    #products-container > [class*="col"]:nth-child(4n) {
-        border-right: none;
-    }
+    /* gaps via row g-2/g-md-3 en HTML */
 }
 
 .product-card {
     background: white;
     border: none;
     border-radius: 0;
-    box-shadow: none;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
     overflow: hidden;
     height: 100%;
     display: flex;
@@ -1778,5 +1748,232 @@ textarea.form-control-modern {
 
     .form-card {
         padding: 14px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODAL DE PRODUCTO - ESTILO BOUTIQUE
+   ═══════════════════════════════════════════════════════════════════ */
+
+#productModal .modal-content {
+    border-radius: 16px;
+    overflow: hidden;
+    border: none;
+}
+
+#productModal .modal-header {
+    border-bottom: none;
+    padding: 20px 24px 4px;
+    background: white;
+}
+
+#productModal .modal-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--color-texto);
+}
+
+#productModal .modal-body {
+    padding: 8px 24px 28px;
+    background: white;
+}
+
+#productModal .modal-product-image {
+    height: 360px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: none;
+    background: #f8f5f6;
+    cursor: zoom-in;
+}
+
+#productModal .modal-description {
+    font-size: 0.8rem;
+    color: var(--color-texto-secundario);
+    line-height: 1.65;
+    margin-bottom: 0;
+}
+
+/* Precio en modal */
+#productModal .price-detal-modal .price-detal {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--color-texto);
+    letter-spacing: -0.5px;
+}
+
+#productModal .price-detal-modal .price-detal-old {
+    font-size: 0.95rem;
+    color: var(--color-texto-claro);
+    font-weight: 400;
+    text-decoration: line-through;
+    margin-right: 6px;
+}
+
+#productModal .price-mayor-modal .price-mayor {
+    font-size: 0.82rem;
+    color: var(--color-texto-secundario);
+    font-weight: 500;
+}
+
+/* Etiquetas de selector */
+#productModal .selector-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--color-texto-claro);
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* Botones de talla y color - minimalistas */
+#productModal .size-color-btn {
+    padding: 6px 14px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    border: 1.5px solid #ddd;
+    border-radius: 0;
+    background: white;
+    min-width: 42px;
+    transition: all 0.18s ease;
+}
+
+#productModal .size-color-btn:hover:not(:disabled) {
+    border-color: var(--color-primario);
+    background: var(--color-primario-claro);
+    transform: none;
+}
+
+#productModal .size-color-btn.selected {
+    background: var(--color-texto);
+    color: white;
+    border-color: var(--color-texto);
+}
+
+#productModal .size-color-btn.unica-talla,
+#productModal .size-color-btn.unico-color {
+    border-color: var(--color-primario);
+    background: var(--color-primario-claro);
+    color: var(--color-primario-oscuro);
+    cursor: default;
+}
+
+/* Stock display - minimal */
+#productModal .stock-display {
+    background: transparent;
+    border: none;
+    padding: 2px 0;
+    text-align: left;
+    font-size: 0.76rem;
+    font-weight: 500;
+    color: var(--color-texto-secundario);
+}
+
+/* Botón agregar al carrito */
+#productModal #btn-add-cart {
+    border-radius: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 14px 20px;
+    background: var(--color-texto);
+    border-color: var(--color-texto);
+    box-shadow: none;
+}
+
+#productModal #btn-add-cart:hover:not(:disabled) {
+    background: var(--color-primario-oscuro) !important;
+    border-color: var(--color-primario-oscuro) !important;
+    transform: none;
+}
+
+#productModal #btn-add-cart:disabled {
+    background: #ccc;
+    border-color: #ccc;
+}
+
+/* Color help message - más sutil */
+#productModal #color-help-message {
+    background: var(--color-primario-claro);
+    border: none;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    color: var(--color-primario-oscuro);
+}
+
+/* Selector de observación */
+#productModal #product-observation {
+    border-radius: 0;
+    border: 1.5px solid #ddd;
+    font-size: 0.8rem;
+    resize: none;
+}
+
+#productModal #product-observation:focus {
+    border-color: var(--color-primario);
+    box-shadow: none;
+}
+
+/* Hint de color selección - aviso minimalista */
+.color-select-hint {
+    display: none;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.67rem;
+    font-weight: 500;
+    color: var(--color-primario-oscuro);
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.color-select-hint.visible {
+    display: flex;
+}
+
+.color-select-hint::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-primario);
+    flex-shrink: 0;
+}
+
+/* Mobile: modal pantalla completa */
+@media (max-width: 575.98px) {
+    #productModal .modal-dialog {
+        margin: 0;
+        max-width: 100%;
+        min-height: 100vh;
+    }
+
+    #productModal .modal-content {
+        border-radius: 0;
+        min-height: 100vh;
+    }
+
+    #productModal .modal-product-image {
+        height: 260px;
+        border-radius: 8px;
+    }
+
+    #productModal .modal-body {
+        padding: 8px 16px 24px;
+    }
+
+    #productModal .modal-header {
+        padding: 16px 16px 4px;
+    }
+
+    #productModal .price-detal-modal .price-detal {
+        font-size: 1.5rem;
     }
 }
