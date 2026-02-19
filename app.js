@@ -555,12 +555,12 @@ function sortProducts(products, sortBy) {
             break;
     }
 
-    // Luego separar productos disponibles y agotados, manteniendo el orden dentro de cada grupo
-    const disponibles = ordered.filter(p => getStock(p) > 0);
+    // Separar: disponibles en promo → disponibles normales → agotados
+    const disponiblesPromo = ordered.filter(p => getStock(p) > 0 && calculatePromotionPrice(p).tienePromo);
+    const disponiblesNormal = ordered.filter(p => getStock(p) > 0 && !calculatePromotionPrice(p).tienePromo);
     const agotados = ordered.filter(p => getStock(p) <= 0);
 
-    // Devolver disponibles primero, luego agotados
-    return [...disponibles, ...agotados];
+    return [...disponiblesPromo, ...disponiblesNormal, ...agotados];
 }
 
 // ✅ RENDERIZAR PRODUCTOS CON COLORES REALES
@@ -2058,15 +2058,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const allFilterBtn = document.querySelector('.filter-group[data-filter="all"]');
         if (allFilterBtn) allFilterBtn.click();
         setActiveNavItem(document.getElementById('mobile-home-btn'));
-    });
-
-    document.getElementById('mobile-promo-btn').addEventListener('click', () => {
-        if (activePromotions.size > 0) {
-            document.getElementById('promotions-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-            showToast('No hay promociones activas en este momento', 'warning');
-        }
-        setActiveNavItem(document.getElementById('mobile-promo-btn'));
     });
 
     document.getElementById('wholesale-form').addEventListener('submit', (e) => {
