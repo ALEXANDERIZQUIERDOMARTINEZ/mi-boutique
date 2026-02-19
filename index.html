@@ -124,14 +124,18 @@
 </nav>
 
 <div id="searchModal" class="search-modal">
-<button class="btn-close-modal" id="close-search-modal"><i class="bi bi-x-lg"></i></button>
-<div class="search-modal-content">
-<p class="search-modal-title">¿Qué estás buscando?</p>
-<div class="search-box">
-<input type="text" class="form-control" id="search-modal-input" placeholder="Vestidos, blusas, tallas...">
-<i class="bi bi-search search-icon"></i>
-</div>
-</div>
+  <div class="sm-bar">
+    <button class="sm-back" id="close-search-modal" aria-label="Volver">
+      <i class="bi bi-arrow-left"></i>
+    </button>
+    <input type="text"
+           class="sm-input"
+           id="search-modal-input"
+           placeholder="Buscar productos..."
+           autocomplete="off"
+           autocorrect="off"
+           spellcheck="false">
+  </div>
 </div>
 
 <div class="toast-container">

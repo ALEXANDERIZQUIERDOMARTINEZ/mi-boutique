@@ -2027,30 +2027,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.getElementById('mobile-search-btn').addEventListener('click', () => {
-        searchModal.style.display = 'flex';
-        document.getElementById('search-modal-input').focus();
-        setActiveNavItem(document.getElementById('mobile-search-btn'));
+    function openSearch() {
+        searchModal.classList.add('sm-open');
         document.body.classList.add('modal-search-open');
+        // Pequeño delay para que el focus ocurra tras la animación
+        setTimeout(() => document.getElementById('search-modal-input').focus(), 80);
+        setActiveNavItem(document.getElementById('mobile-search-btn'));
+    }
+
+    function closeSearch() {
+        searchModal.classList.remove('sm-open');
+        document.body.classList.remove('modal-search-open');
+    }
+
+    document.getElementById('mobile-search-btn').addEventListener('click', openSearch);
+
+    document.getElementById('close-search-modal').addEventListener('click', closeSearch);
+
+    document.getElementById('search-modal-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === 'Escape') {
+            e.preventDefault();
+            closeSearch();
+        }
     });
 
-    const closeSearchButton = document.getElementById('close-search-modal');
-    closeSearchButton.addEventListener('click', () => {
-        searchModal.style.display = 'none';
-        document.body.classList.remove('modal-search-open');
-    });
-    
-    document.querySelector('#searchModal .search-icon').addEventListener('click', () => {
-        searchModal.style.display = 'none';
-        document.body.classList.remove('modal-search-open');
-    });
-    
-    document.getElementById('search-modal-input').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            searchModal.style.display = 'none';
-            document.body.classList.remove('modal-search-open');
-        }
+    // Cerrar al tocar el fondo (por debajo de la barra)
+    searchModal.addEventListener('click', (e) => {
+        if (e.target === searchModal) closeSearch();
     });
 
     document.getElementById('mobile-home-btn').addEventListener('click', () => {
