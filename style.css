@@ -918,14 +918,14 @@ h1, h2, h3, h4, h5, h6 {
     color: white;
 }
 
-/* Modal de Búsqueda Mejorado */
+/* Modal de Búsqueda — estilo boutique */
 .search-modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.45);
     z-index: 1050;
     display: none;
     align-items: flex-start;
@@ -938,43 +938,44 @@ h1, h2, h3, h4, h5, h6 {
     width: 100%;
     max-width: 100%;
     background: white;
-    padding: 1rem 1.25rem;
-    border-radius: 0 0 20px 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 20px 20px 20px;
+    border-radius: 0;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
 }
 
 .search-modal-title {
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
     text-align: left;
-    margin-bottom: 12px;
-    color: var(--color-texto);
+    margin-bottom: 14px;
+    color: var(--color-texto-claro);
 }
 
 .btn-close-modal {
     position: absolute;
     top: 12px;
     right: 12px;
-    font-size: 1.8rem;
-    color: var(--color-texto-secundario);
-    background: var(--color-fondo-secundario);
+    font-size: 1rem;
+    color: #555;
+    background: none;
     border: none;
     cursor: pointer;
     z-index: 1051;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
-    line-height: 1;
+    transition: color 0.18s, background 0.18s;
     padding: 0;
 }
 
 .btn-close-modal:hover {
-    background: var(--color-primario-claro);
-    color: var(--color-primario);
+    background: #f5f5f5;
+    color: #111;
 }
 
 .search-modal .search-box {
@@ -983,8 +984,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .search-modal .search-box input {
-    font-size: 0.95rem;
-    padding: 12px 15px 12px 44px;
+    font-size: 0.9rem;
+    padding: 11px 15px 11px 44px;
+    border-radius: 0;
+    border: 1.5px solid #e8e8e8;
+}
+
+.search-modal .search-box input:focus {
+    border-color: var(--color-primario);
+    box-shadow: none;
 }
 
 /* ────────────────────────────────────────────────────────────────────
@@ -1022,18 +1030,77 @@ h1, h2, h3, h4, h5, h6 {
     100% { transform: rotate(360deg); }
 }
 
+/* Toast boutique — blanco con franja de color lateral */
 .toast-container {
     z-index: 9999;
+    /* Centrado sobre la nav pill en móvil */
+    position: fixed !important;
+    bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0 !important;
+    pointer-events: none;
 }
 
-.toast {
-    border-radius: var(--radio-md);
+#liveToast.toast {
+    pointer-events: auto;
+    border-radius: 0;
+    font-size: 0.73rem;
     font-weight: 500;
+    letter-spacing: 0.4px;
+    min-width: 240px;
+    max-width: min(340px, calc(100vw - 32px));
+    padding: 0;
+    border: none;
+    color: #1a1a1a !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+    /* Animar desde abajo */
+    transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
-.text-bg-success {
-    background-color: var(--color-primario) !important;
-    border: none;
+#liveToast .toast-body {
+    padding: 13px 40px 13px 16px;
+    background: white;
+    color: #1a1a1a;
+    line-height: 1.45;
+}
+
+#liveToast .btn-close {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    opacity: 0.4;
+    filter: none;
+}
+
+/* Franjas de color según tipo */
+#liveToast.text-bg-success {
+    background: white !important;
+    color: #1a1a1a !important;
+    border-left: 3px solid #28a06a !important;
+}
+
+#liveToast.text-bg-danger {
+    background: white !important;
+    color: #1a1a1a !important;
+    border-left: 3px solid #c62828 !important;
+}
+
+#liveToast.text-bg-warning {
+    background: white !important;
+    color: #1a1a1a !important;
+    border-left: 3px solid #d4870a !important;
+}
+
+/* Desktop: esquina inferior derecha */
+@media (min-width: 992px) {
+    .toast-container {
+        bottom: 1.5rem;
+        left: auto;
+        right: 1.5rem;
+        transform: none;
+    }
 }
 
 .product-observations {
@@ -1110,11 +1177,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .zoomed-image {
     max-width: 90%;
-    max-height: 90vh;
+    max-height: 90dvh;
     object-fit: contain;
-    border-radius: var(--radio-md);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    transform: scale(0.9);
+    border-radius: 0;
+    box-shadow: none;
+    transform: scale(0.94);
     transition: transform 0.3s ease;
 }
 
@@ -1122,30 +1189,32 @@ h1, h2, h3, h4, h5, h6 {
     transform: scale(1);
 }
 
+/* Botón cerrar — igual que mp-close */
 .zoom-close-btn {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: 16px;
+    right: 16px;
     background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: none;
-    width: 50px;
-    height: 50px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    font-size: 32px;
-    color: var(--color-texto);
+    font-size: 1rem;
+    color: #333;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--transicion);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: background 0.18s, transform 0.18s;
     z-index: 10000;
+    line-height: 1;
 }
 
 .zoom-close-btn:hover {
     background: white;
     transform: rotate(90deg);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 /* Cursor de zoom en imagen del modal - estilos en bloque #productModal */
@@ -1202,9 +1271,9 @@ img {
     .zoom-close-btn {
         top: 10px;
         right: 10px;
-        width: 40px;
-        height: 40px;
-        font-size: 24px;
+        width: 34px;
+        height: 34px;
+        font-size: 1rem;
     }
 
     /* Products header optimizado */
@@ -2295,6 +2364,87 @@ textarea.form-control-modern {
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODAL CONFIRMAR ELIMINACIÓN — BOUTIQUE
+   ═══════════════════════════════════════════════════════════════════ */
+
+.dcm-dialog {
+    max-width: min(360px, calc(100vw - 32px));
+    margin: auto;
+}
+
+.dcm-content {
+    border: none;
+    border-radius: 0;
+    overflow: hidden;
+    background: white;
+    position: relative;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.14);
+}
+
+.dcm-body {
+    padding: 40px 28px 28px;
+}
+
+.dcm-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--color-texto);
+    margin: 0 0 10px 0;
+}
+
+.dcm-text {
+    font-size: 0.8rem;
+    color: var(--color-texto-secundario);
+    margin: 0 0 28px 0;
+    line-height: 1.6;
+}
+
+.dcm-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.dcm-btn-cancel {
+    flex: 1;
+    padding: 12px;
+    border: 1.5px solid #e0e0e0;
+    background: white;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--color-texto-secundario);
+    cursor: pointer;
+    transition: border-color 0.15s;
+    font-family: var(--fuente-principal);
+}
+
+.dcm-btn-cancel:hover {
+    border-color: #bbb;
+}
+
+.dcm-btn-delete {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: #1a1a1a;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: white;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: var(--fuente-principal);
+}
+
+.dcm-btn-delete:hover {
+    background: #333;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
