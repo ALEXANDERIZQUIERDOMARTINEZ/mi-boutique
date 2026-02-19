@@ -148,67 +148,89 @@
 </div>
 
 <div class="modal fade" id="productModal" tabindex="-1">
-<div class="modal-dialog modal-lg modal-dialog-centered">
-<div class="modal-content">
-<div class="modal-header">
-<h5 class="modal-title" id="modal-product-name">Producto</h5>
-<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-</div>
-<div class="modal-body">
-<div class="row g-4">
-<div class="col-md-6">
-<img src="" id="modal-product-image" class="modal-product-image" alt="Producto" loading="lazy">
-</div>
-<div class="col-md-6 d-flex flex-column">
-<p id="modal-product-desc" class="mb-3 modal-description"></p>
+<div class="modal-dialog mpd">
+<div class="modal-content mpc">
 
-<div class="mb-4 price-container-modal">
-<div class="price-detal-modal">
-<span class="price-detal-old" id="modal-price-old" style="display: none;"></span>
-<span class="price-detal" id="modal-price-detal">$0</span>
-</div>
-<div class="price-mayor-modal" style="display: none;">
-<span class="price-mayor" id="modal-price-mayor">$0</span>
-</div>
-</div>
+  <!-- Cerrar (flotante) -->
+  <button type="button" class="mp-close" data-bs-dismiss="modal" aria-label="Cerrar">
+    <i class="bi bi-x-lg"></i>
+  </button>
 
-<input type="hidden" id="modal-product-id">
-<input type="hidden" id="selected-talla">
-<input type="hidden" id="selected-color">
-<div class="mb-3" id="tallas-container">
-<label class="selector-label">Talla</label>
-<div id="tallas-buttons" class="size-color-buttons"></div>
-</div>
-<div class="mb-3" id="colores-container">
-<label class="selector-label">Color</label>
-<div class="alert alert-info py-2 px-3 mb-2" id="color-help-message" style="display: none; font-size: 0.9rem;">
-<i class="bi bi-info-circle me-1"></i>
-<strong>Primero selecciona una talla</strong> para ver los colores disponibles
-</div>
-<div id="color-select-hint" class="color-select-hint">Selecciona un color para continuar</div>
-<div id="colores-buttons" class="size-color-buttons"></div>
-</div>
-<div class="mb-3">
-<label class="selector-label">Cantidad</label>
-<div class="quantity-selector">
-<button class="quantity-btn" id="quantity-minus" type="button">-</button>
-<input type="number" id="select-cantidad" value="1" min="1" readonly>
-<button class="quantity-btn" id="quantity-plus" type="button">+</button>
-</div>
-</div>
-<div class="mb-3">
-<label class="selector-label">Observación (Opcional)</label>
-<textarea class="form-control" id="product-observation" rows="2" placeholder="Ej: Sin etiqueta, empaque especial..."></textarea>
-</div>
-<div class="stock-display mb-4" id="stock-display">
-<span id="stock-text">Seleccione talla y color</span>
-</div>
-<button class="btn btn-primary btn-lg w-100 mt-auto" id="btn-add-cart" disabled>
-Agregar al Carrito
-</button>
-</div>
-</div>
-</div>
+  <div class="mp-grid">
+
+    <!-- Imagen -->
+    <div class="mp-img-col">
+      <img src="" id="modal-product-image" class="modal-product-image" alt="Producto" loading="lazy">
+    </div>
+
+    <!-- Info -->
+    <div class="mp-info-col">
+
+      <h2 class="mp-name" id="modal-product-name">Producto</h2>
+      <p id="modal-product-desc" class="mp-desc"></p>
+
+      <!-- Precio -->
+      <div class="mp-price-block">
+        <div class="price-detal-modal">
+          <span class="price-detal-old" id="modal-price-old" style="display:none;"></span>
+          <span class="price-detal" id="modal-price-detal">$0</span>
+        </div>
+        <div class="price-mayor-modal" style="display:none;">
+          <span class="price-mayor" id="modal-price-mayor">$0</span>
+        </div>
+      </div>
+
+      <div class="mp-divider"></div>
+
+      <input type="hidden" id="modal-product-id">
+      <input type="hidden" id="selected-talla">
+      <input type="hidden" id="selected-color">
+
+      <!-- Talla -->
+      <div class="mp-group" id="tallas-container">
+        <span class="mp-label">Talla</span>
+        <div id="tallas-buttons" class="size-color-buttons"></div>
+      </div>
+
+      <!-- Color -->
+      <div class="mp-group" id="colores-container">
+        <span class="mp-label">Color</span>
+        <div id="color-help-message" class="mp-color-help" style="display:none;">
+          Selecciona una talla primero
+        </div>
+        <div id="color-select-hint" class="color-select-hint">Selecciona un color para continuar</div>
+        <div id="colores-buttons" class="size-color-buttons"></div>
+      </div>
+
+      <!-- Cantidad + Stock inline -->
+      <div class="mp-qty-row">
+        <div class="mp-group mp-group--qty">
+          <span class="mp-label">Cantidad</span>
+          <div class="mp-qty">
+            <button class="mp-qty-btn" id="quantity-minus" type="button">−</button>
+            <input type="number" id="select-cantidad" value="1" min="1" readonly>
+            <button class="mp-qty-btn" id="quantity-plus" type="button">+</button>
+          </div>
+        </div>
+        <div class="mp-stock" id="stock-display">
+          <span id="stock-text">Selecciona talla y color</span>
+        </div>
+      </div>
+
+      <!-- Agregar al carrito -->
+      <button class="mp-btn-add" id="btn-add-cart" disabled>
+        Agregar al carrito
+      </button>
+
+      <!-- Observación -->
+      <div class="mp-group mp-group--obs">
+        <span class="mp-label">Observación <span class="mp-optional">(opcional)</span></span>
+        <textarea class="mp-obs" id="product-observation" rows="2" placeholder="Ej: Sin etiqueta, empaque especial..."></textarea>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 </div>
 </div>
