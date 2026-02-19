@@ -128,22 +128,20 @@
 </nav>
 
 <div id="searchModal" class="search-modal">
-<button class="btn-close-modal" id="close-search-modal">&times;</button>
+<button class="btn-close-modal" id="close-search-modal"><i class="bi bi-x-lg"></i></button>
 <div class="search-modal-content">
-<h2 class="search-modal-title">¿Qué estás buscando?</h2>
+<p class="search-modal-title">¿Qué estás buscando?</p>
 <div class="search-box">
-<input type="text" class="form-control" id="search-modal-input" placeholder="Buscar vestidos, blusas...">
+<input type="text" class="form-control" id="search-modal-input" placeholder="Vestidos, blusas, tallas...">
 <i class="bi bi-search search-icon"></i>
 </div>
 </div>
 </div>
 
-<div class="toast-container position-fixed p-3">
-<div id="liveToast" class="toast align-items-center text-white border-0" role="alert">
-<div class="d-flex">
+<div class="toast-container">
+<div id="liveToast" class="toast" role="alert" aria-live="assertive">
 <div class="toast-body" id="toast-body">Mensaje</div>
-<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-</div>
+<button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Cerrar"></button>
 </div>
 </div>
 
@@ -390,25 +388,25 @@ Finalizar Pedido
 </div>
 
 <div class="modal fade" id="deleteCartModal" tabindex="-1">
-<div class="modal-dialog modal-dialog-centered modal-sm">
-<div class="modal-content">
-<div class="modal-header">
-<h5 class="modal-title">Confirmar</h5>
-<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-</div>
-<div class="modal-body">
-<p>¿Eliminar este producto del carrito?</p>
-</div>
-<div class="modal-footer">
-<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-<button type="button" class="btn btn-danger btn-sm" id="confirm-delete-cart-item">Eliminar</button>
-</div>
+<div class="modal-dialog modal-dialog-centered dcm-dialog">
+<div class="modal-content dcm-content">
+  <button type="button" class="mp-close" data-bs-dismiss="modal" aria-label="Cerrar">
+    <i class="bi bi-x-lg"></i>
+  </button>
+  <div class="dcm-body">
+    <p class="dcm-title">¿Eliminar producto?</p>
+    <p class="dcm-text">El producto se quitará del carrito.</p>
+    <div class="dcm-actions">
+      <button type="button" class="dcm-btn-cancel" data-bs-dismiss="modal">Cancelar</button>
+      <button type="button" class="dcm-btn-delete" id="confirm-delete-cart-item">Eliminar</button>
+    </div>
+  </div>
 </div>
 </div>
 </div>
 
 <div id="imageZoomOverlay" class="image-zoom-overlay">
-<button class="zoom-close-btn" id="closeZoomBtn">&times;</button>
+<button class="zoom-close-btn" id="closeZoomBtn"><i class="bi bi-x-lg"></i></button>
 <img src="" id="zoomedImage" class="zoomed-image" alt="Producto ampliado" loading="lazy">
 </div>
 
