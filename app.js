@@ -2097,22 +2097,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomedImage = document.getElementById('zoomedImage');
     const closeZoomBtn = document.getElementById('closeZoomBtn');
     const modalProductImage = document.getElementById('modal-product-image');
+    const modalZoomBtn = document.getElementById('modal-zoom-btn');
 
-    // Abrir zoom al hacer click en la imagen del modal
-    modalProductImage.addEventListener('click', () => {
+    function openZoom() {
         const imageSrc = modalProductImage.src;
-        if (imageSrc && !imageSrc.includes('placeholder')) {
-            zoomedImage.src = imageSrc;
-            zoomOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden'; // Prevenir scroll
+        if (!imageSrc || imageSrc.includes('placeholder')) return;
+        zoomedImage.src = imageSrc;
+        zoomOverlay.classList.add('active');
 
-            // 📊 Tracking: Zoom de imagen
-            const productId = document.getElementById('modal-product-id').value;
-            const product = productsMap.get(productId);
-            if (product) {
-                analytics.trackImageZoom(product);
-            }
-        }
+        // 📊 Tracking: Zoom de imagen
+        const productId = document.getElementById('modal-product-id').value;
+        const product = productsMap.get(productId);
+        if (product) analytics.trackImageZoom(product);
+    }
+
+    // Abrir zoom al hacer click en la imagen o en el botón
+    modalProductImage.addEventListener('click', openZoom);
+    modalZoomBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openZoom();
     });
 
     // Cerrar zoom con el botón X
@@ -2138,13 +2141,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Función para cerrar el zoom
     function closeZoom() {
         zoomOverlay.classList.remove('active');
-        document.body.style.overflow = ''; // Restaurar scroll
-        // Limpiar src después de la animación
         setTimeout(() => {
-            if (!zoomOverlay.classList.contains('active')) {
-                zoomedImage.src = '';
-            }
-        }, 300);
+            if (!zoomOverlay.classList.contains('active')) zoomedImage.src = '';
+        }, 280);
     }
 
     // Soporte para gestos táctiles en móvil (pinch to zoom)
