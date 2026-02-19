@@ -107,36 +107,36 @@
 </div>
 </footer>
 
+<div class="nav-search-suggestions d-lg-none" id="nav-search-suggestions"></div>
+
 <nav class="mobile-bottom-nav d-lg-none">
 <button class="nav-item active" id="mobile-home-btn">
 <i class="bi bi-house"></i>
-<span>Inicio</span>
 </button>
 <button class="nav-item" id="mobile-search-btn">
 <i class="bi bi-search"></i>
-<span>Buscar</span>
 </button>
 <button class="nav-item" id="mobile-cart-btn" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
 <i class="bi bi-bag"></i>
-<span>Carrito</span>
 <span class="cart-badge" id="cart-badge-mobile" style="display: none;">0</span>
 </button>
-</nav>
-
-<div id="searchModal" class="search-modal">
-  <div class="sm-bar">
-    <button class="sm-back" id="close-search-modal" aria-label="Volver">
-      <i class="bi bi-arrow-left"></i>
-    </button>
-    <input type="text"
-           class="sm-input"
-           id="search-modal-input"
-           placeholder="Buscar productos..."
-           autocomplete="off"
-           autocorrect="off"
-           spellcheck="false">
-  </div>
+<!-- Búsqueda inline (oculta por defecto) -->
+<div class="nav-inline-search" id="nav-inline-search">
+  <button class="nis-back" id="nis-back" aria-label="Cerrar búsqueda">
+    <i class="bi bi-arrow-left"></i>
+  </button>
+  <input type="text"
+         class="nis-input"
+         id="nav-search-input"
+         placeholder="Productos o categorías..."
+         autocomplete="off"
+         autocorrect="off"
+         spellcheck="false">
+  <button class="nis-clear" id="nis-clear" aria-label="Limpiar" style="display:none">
+    <i class="bi bi-x"></i>
+  </button>
 </div>
+</nav>
 
 <div class="toast-container">
 <div id="liveToast" class="toast" role="alert" aria-live="assertive">

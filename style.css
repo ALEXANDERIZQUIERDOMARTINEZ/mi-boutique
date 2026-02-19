@@ -918,75 +918,162 @@ h1, h2, h3, h4, h5, h6 {
     color: white;
 }
 
-/* ── Búsqueda móvil — full-screen minimalista ── */
-.search-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 1050;
-    background: white;
-    display: flex;
-    flex-direction: column;
-    padding-top: env(safe-area-inset-top, 0px);
-    /* Animación: invisible y desplazado por defecto */
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(-10px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
+/* ── Búsqueda inline en barra de navegación ── */
+
+/* Nav expandida para búsqueda */
+.mobile-bottom-nav.search-active {
+    width: calc(100% - 32px);
+    padding: 6px 10px;
+    border-radius: 28px;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                border-radius 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.search-modal.sm-open {
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
+.mobile-bottom-nav {
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                border-radius 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Barra superior: flecha + input */
-.sm-bar {
-    display: flex;
+/* Ocultar botones del nav cuando está en modo búsqueda */
+.mobile-bottom-nav.search-active .nav-item {
+    display: none;
+}
+
+/* Barra de búsqueda inline — oculta por defecto */
+.nav-inline-search {
+    display: none;
     align-items: center;
-    padding: 6px 16px 6px 4px;
-    border-bottom: 1px solid #f0f0f0;
+    width: 100%;
+    gap: 4px;
+}
+
+.mobile-bottom-nav.search-active .nav-inline-search {
+    display: flex;
 }
 
 /* Botón volver */
-.sm-back {
+.nis-back {
     flex-shrink: 0;
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     background: none;
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #222;
+    color: #555;
     font-size: 1.05rem;
+    border-radius: 50%;
     -webkit-tap-highlight-color: transparent;
-    transition: color 0.15s;
+    transition: color 0.15s, background 0.15s;
 }
 
-.sm-back:hover {
-    color: var(--color-primario);
+.nis-back:active {
+    background: rgba(0, 0, 0, 0.06);
 }
 
-/* Input principal */
-.sm-input {
+/* Input inline */
+.nis-input {
     flex: 1;
+    min-width: 0;
     border: none;
     outline: none;
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-family: var(--fuente-principal);
     color: var(--color-texto);
     background: transparent;
-    padding: 8px 0;
-    letter-spacing: 0.2px;
+    padding: 6px 0;
     caret-color: var(--color-primario);
 }
 
-.sm-input::placeholder {
+.nis-input::placeholder {
     color: #c4c4cc;
     font-style: italic;
     font-weight: 300;
+}
+
+/* Botón limpiar */
+.nis-clear {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.07);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #777;
+    font-size: 1rem;
+    border-radius: 50%;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+}
+
+.nis-clear:active {
+    background: rgba(0, 0, 0, 0.14);
+}
+
+/* Panel de sugerencias de categorías — encima del nav */
+.nav-search-suggestions {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-radius: 20px;
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.1),
+        0 1px 6px rgba(0, 0, 0, 0.06);
+    padding: 14px 16px;
+    z-index: 999;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.nav-search-suggestions.visible {
+    display: flex;
+}
+
+.nss-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+}
+
+.nss-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.nss-cat-chip {
+    background: var(--color-primario-claro);
+    color: var(--color-primario);
+    border: none;
+    border-radius: 20px;
+    padding: 5px 13px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--fuente-principal);
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, color 0.15s;
+}
+
+.nss-cat-chip:active,
+.nss-cat-chip:hover {
+    background: var(--color-primario);
+    color: white;
 }
 
 /* ────────────────────────────────────────────────────────────────────
