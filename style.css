@@ -2194,3 +2194,290 @@ textarea.form-control-modern {
         gap: 10px;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CARRITO (OFFCANVAS) — ESTILO BOUTIQUE
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Header del offcanvas */
+#cartOffcanvas .offcanvas-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #eee;
+    background: white;
+}
+
+#cartOffcanvas .offcanvas-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--color-texto);
+}
+
+/* Items del carrito */
+.cart-item {
+    padding: 16px 24px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+/* Imagen del producto en carrito */
+.cart-item-image {
+    width: 68px;
+    height: 88px;
+    object-fit: cover;
+    border-radius: 0;
+    border: none;
+    background: #f4f0ef;
+    flex-shrink: 0;
+}
+
+/* Nombre del producto */
+.cart-item h6 {
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--color-texto);
+    margin-bottom: 3px !important;
+    line-height: 1.4 !important;
+}
+
+/* Talla / color */
+.cart-item small.text-muted {
+    font-size: 0.68rem;
+    color: var(--color-texto-claro) !important;
+    letter-spacing: 0.3px;
+}
+
+/* Precio × cantidad */
+.cart-item .d-flex > span {
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    color: var(--color-texto);
+}
+
+/* Botón eliminar — minimal */
+.cart-item .btn-outline-danger {
+    border: 1.5px solid #e0e0e0 !important;
+    color: #bbb !important;
+    border-radius: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+    transition: border-color 0.15s, color 0.15s !important;
+}
+
+.cart-item .btn-outline-danger:hover {
+    border-color: #e53935 !important;
+    color: #e53935 !important;
+    background: white !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Footer: total + botón */
+.cart-total {
+    background: white;
+    padding: 20px 24px;
+    border-top: 1px solid #eee;
+}
+
+.total-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--color-texto-claro);
+}
+
+.total-amount {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--color-texto);
+    letter-spacing: -0.5px;
+}
+
+/* Botón "Finalizar Pedido" */
+#cartOffcanvas .btn-primary {
+    background: #1a1a1a !important;
+    border-color: #1a1a1a !important;
+    border-radius: 0 !important;
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 2.5px !important;
+    text-transform: uppercase !important;
+    padding: 14px 20px !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: background 0.2s !important;
+}
+
+#cartOffcanvas .btn-primary:hover {
+    background: var(--color-primario-oscuro) !important;
+    border-color: var(--color-primario-oscuro) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Estado vacío */
+#cart-empty i {
+    color: var(--color-texto-claro);
+}
+
+/* Advertencia de stock */
+#cartOffcanvas .alert-warning {
+    border-radius: 0;
+    border: none;
+    border-left: 3px solid #f59e0b;
+    background: #fffbeb;
+    font-size: 0.78rem;
+    padding: 10px 14px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHECKOUT — ESTILO BOUTIQUE
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Ajuste de redondeo del modal */
+#checkoutModal .modal-content.checkout-premium {
+    border-radius: 16px;
+}
+
+/* Título del header */
+#checkoutModal .modal-title {
+    font-size: 0.78rem;
+    letter-spacing: 2px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Subtítulo */
+.header-subtitle {
+    font-size: 0.68rem;
+    letter-spacing: 0.2px;
+}
+
+/* Body del checkout */
+#checkoutModal .modal-body {
+    background: #f8f7f4;
+}
+
+/* Cards de sección — esquinas cuadradas, borde fino */
+.form-card {
+    border-radius: 0;
+    border: 1px solid #e8e8e8;
+    padding: 18px 20px;
+}
+
+/* Headers internos de card */
+.card-header-mini {
+    margin-bottom: 18px;
+}
+
+.card-icon {
+    font-size: 0.85rem;
+    color: var(--color-texto-claro);
+}
+
+/* Título de cada sección del form */
+.card-title {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--color-texto-claro);
+}
+
+/* Labels de cada campo — igual que mp-label */
+#checkout-form .selector-label {
+    display: block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: var(--color-texto-claro);
+    margin-bottom: 7px;
+    gap: 0;
+}
+
+/* Inputs — cuadrados */
+.form-control-modern,
+.form-select.form-control-modern {
+    border-radius: 0;
+    border: 1.5px solid #e8e8e8;
+    font-size: 0.83rem;
+    padding: 10px 13px;
+    box-shadow: none;
+}
+
+.form-control-modern:focus,
+.form-select.form-control-modern:focus {
+    border-color: var(--color-primario);
+    box-shadow: none;
+    outline: none;
+}
+
+/* Card de efectivo */
+#cash-payment-section {
+    border-radius: 0;
+}
+
+/* Tarjeta de vuelto */
+.change-card {
+    border-radius: 0;
+    border: 1px solid #e8e8e8;
+}
+
+.change-item.highlight {
+    border-radius: 0;
+}
+
+.change-item.highlight .change-value {
+    color: var(--color-texto);
+}
+
+/* Resumen */
+.order-summary {
+    border-radius: 0;
+}
+
+.form-card[data-card="4"] {
+    border: 1.5px solid #1a1a1a;
+}
+
+.summary-label-total {
+    font-size: 0.62rem;
+    letter-spacing: 2px;
+    color: var(--color-texto-claro);
+}
+
+.summary-value-total {
+    font-size: 1.5rem;
+    color: var(--color-texto);
+    font-weight: 800;
+    letter-spacing: -0.3px;
+}
+
+/* Botón confirmar — igual que mp-btn-add */
+.btn-submit-premium {
+    border-radius: 0;
+    background: #1a1a1a;
+    font-size: 0.7rem;
+    letter-spacing: 2.5px;
+    padding: 15px 20px;
+    gap: 8px;
+    box-shadow: none;
+    transform: none;
+}
+
+.btn-submit-premium:hover {
+    background: var(--color-primario-oscuro);
+    transform: none;
+    box-shadow: none;
+}
+
+/* Responsive checkout en mobile */
+@media (max-width: 575.98px) {
+    #checkoutModal .modal-content.checkout-premium {
+        border-radius: 0;
+    }
+}
