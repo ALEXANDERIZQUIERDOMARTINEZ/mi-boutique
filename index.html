@@ -139,10 +139,15 @@
 </nav>
 
 <div class="toast-container">
-<div id="liveToast" class="toast" role="alert" aria-live="assertive">
-<div class="toast-body" id="toast-body">Mensaje</div>
-<button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Cerrar"></button>
-</div>
+  <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-inner">
+      <span class="toast-icon" id="toast-icon"></span>
+      <span class="toast-msg" id="toast-body">Mensaje</span>
+      <button type="button" class="toast-close" data-bs-dismiss="toast" aria-label="Cerrar">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  </div>
 </div>
 
 <div class="modal fade" id="productModal" tabindex="-1">

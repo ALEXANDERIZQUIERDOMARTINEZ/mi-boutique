@@ -1111,76 +1111,117 @@ h1, h2, h3, h4, h5, h6 {
     100% { transform: rotate(360deg); }
 }
 
-/* Toast boutique — blanco con franja de color lateral */
+/* ── Toast / Notificaciones ── */
 .toast-container {
     z-index: 9999;
-    /* Centrado sobre la nav pill en móvil */
     position: fixed !important;
-    bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+    /* Móvil por defecto: centrado encima del nav */
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 380px;
     padding: 0 !important;
     pointer-events: none;
 }
 
 #liveToast.toast {
     pointer-events: auto;
-    border-radius: 0;
-    font-size: 0.73rem;
-    font-weight: 500;
-    letter-spacing: 0.4px;
-    min-width: 240px;
-    max-width: min(340px, calc(100vw - 32px));
+    width: 100%;
+    border-radius: 14px;
     padding: 0;
     border: none;
-    color: #1a1a1a !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
-    /* Animar desde abajo */
-    transition: transform 0.25s ease, opacity 0.25s ease;
+    overflow: hidden;
+    background: white;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.13),
+        0 2px 8px rgba(0, 0, 0, 0.07);
+    transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
-#liveToast .toast-body {
-    padding: 13px 40px 13px 16px;
-    background: white;
+/* Layout interno: icono | mensaje | X */
+.toast-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 10px 13px 14px;
+}
+
+/* Icono de tipo */
+.toast-icon {
+    flex-shrink: 0;
+    font-size: 1.2rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+/* Mensaje */
+.toast-msg {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.82rem;
+    font-weight: 500;
     color: #1a1a1a;
     line-height: 1.45;
+    letter-spacing: 0.2px;
 }
 
-#liveToast .btn-close {
-    position: absolute;
-    top: 50%;
-    right: 12px;
-    transform: translateY(-50%);
-    opacity: 0.4;
-    filter: none;
+/* Botón X circular */
+.toast-close {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.07);
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-size: 1.05rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+    padding: 0;
+    line-height: 1;
 }
 
-/* Franjas de color según tipo */
+.toast-close:active {
+    background: rgba(0, 0, 0, 0.14);
+}
+
+/* Franjas de color + icono según tipo */
 #liveToast.text-bg-success {
     background: white !important;
-    color: #1a1a1a !important;
-    border-left: 3px solid #28a06a !important;
+    border-left: 3.5px solid #28a06a !important;
 }
+#liveToast.text-bg-success .toast-icon { color: #28a06a; }
 
 #liveToast.text-bg-danger {
     background: white !important;
-    color: #1a1a1a !important;
-    border-left: 3px solid #c62828 !important;
+    border-left: 3.5px solid #c62828 !important;
 }
+#liveToast.text-bg-danger .toast-icon { color: #c62828; }
 
 #liveToast.text-bg-warning {
     background: white !important;
-    color: #1a1a1a !important;
-    border-left: 3px solid #d4870a !important;
+    border-left: 3.5px solid #d4870a !important;
 }
+#liveToast.text-bg-warning .toast-icon { color: #d4870a; }
 
 /* Desktop: esquina inferior derecha */
-@media (min-width: 992px) {
+@media (min-width: 768px) {
     .toast-container {
         bottom: 1.5rem;
         left: auto;
         right: 1.5rem;
         transform: none;
+        width: auto;
+        max-width: 360px;
+    }
+    #liveToast.toast {
+        min-width: 260px;
     }
 }
 
@@ -1216,21 +1257,6 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-@media (min-width: 768px) {
-    .toast-container {
-        top: 20px !important;
-        left: 20px !important;
-    }
-}
-
-@media (max-width: 767.98px) {
-    .toast-container {
-        bottom: 80px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        width: calc(100% - 2rem);
-    }
-}
 
 /* ────────────────────────────────────────────────────────────────────
    ZOOM DE IMÁGENES
