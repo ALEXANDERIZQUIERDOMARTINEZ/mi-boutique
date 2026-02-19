@@ -1363,6 +1363,11 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const clickedFilter = e.currentTarget;
 
+        // Ignorar el botón hamburguesa y otros toggles de dropdown sin filtro propio
+        if (clickedFilter.dataset.bsToggle === 'dropdown' && !clickedFilter.dataset.filter) {
+            return;
+        }
+
         document.querySelectorAll('.header-left .filter-group.active, .header-left-mobile .filter-group.active').forEach(b => b.classList.remove('active'));
 
         if (clickedFilter.classList.contains('dropdown-item')) {
