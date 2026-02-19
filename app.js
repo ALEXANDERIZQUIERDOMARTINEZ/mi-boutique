@@ -258,12 +258,22 @@ function getColorHex(colorName) {
 function showToast(message, type = 'success') {
     const liveToastEl = document.getElementById('liveToast');
     const toastBodyEl = document.getElementById('toast-body');
+    const toastIconEl = document.getElementById('toast-icon');
     if (liveToastEl && toastBodyEl) {
         if (!bsToast) bsToast = new bootstrap.Toast(liveToastEl, { delay: 3000 });
-        
-        liveToastEl.className = 'toast align-items-center text-white border-0';
+
+        liveToastEl.className = 'toast border-0';
         const bgClass = type === 'error' ? 'text-bg-danger' : (type === 'warning' ? 'text-bg-warning' : 'text-bg-success');
         liveToastEl.classList.add(bgClass);
+
+        const icons = {
+            success: 'bi-check-circle-fill',
+            error:   'bi-x-circle-fill',
+            warning: 'bi-exclamation-triangle-fill'
+        };
+        if (toastIconEl) {
+            toastIconEl.innerHTML = `<i class="bi ${icons[type] || icons.success}"></i>`;
+        }
 
         toastBodyEl.textContent = message;
         bsToast.show();
