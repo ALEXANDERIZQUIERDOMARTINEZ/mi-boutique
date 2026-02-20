@@ -150,138 +150,90 @@
                 </div>
 
                 <!-- Tarjetas de Resumen Principal -->
-                <div class="row g-4 mb-4">
-                    <div class="col-md-3 col-sm-6">
-                        <div class="dashboard-card card-ventas">
-                            <div class="card-icon">
-                                <i class="bi bi-wallet2"></i>
-                            </div>
-                            <div class="card-content">
-                                <h6 class="card-label">Ventas Hoy</h6>
-                                <p class="card-value" id="db-ventas-hoy">$0</p>
-                                <small class="card-subtitle" id="db-ventas-count">0 ventas</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3 col-sm-6">
-                        <div class="dashboard-card card-productos">
-                            <div class="card-icon">
-                                <i class="bi bi-box-seam-fill"></i>
-                            </div>
-                            <div class="card-content">
-                                <h6 class="card-label">Productos Totales</h6>
-                                <p class="card-value" id="db-total-productos">0</p>
-                                <small class="card-subtitle" id="db-productos-disponibles">0 disponibles</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3 col-sm-6">
-                        <div class="dashboard-card card-stock" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
-                            <div class="card-icon">
-                                <i class="bi bi-exclamation-triangle-fill"></i>
-                            </div>
-                            <div class="card-content">
-                                <h6 class="card-label">Bajo Stock</h6>
-                                <p class="card-value" id="db-bajo-stock">0</p>
-                                <small class="card-subtitle">2 unidades o menos</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3 col-sm-6">
-                        <div class="dashboard-card card-apartados">
-                            <div class="card-icon">
-                                <i class="bi bi-clock-history"></i>
-                            </div>
-                            <div class="card-content">
-                                <h6 class="card-label">Apartados Activos</h6>
-                                <p class="card-value" id="db-apartados-vencer">0</p>
-                                <small class="card-subtitle" id="db-apartados-total-saldo">$0 pendiente</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Accesos Rápidos y Estadísticas -->
-                <div class="mb-3">
-                    <h5 class="text-muted fw-light"><i class="bi bi-lightning-charge me-2"></i>Accesos Rápidos</h5>
-                </div>
                 <div class="row g-3 mb-4">
-                    <!-- Pedidos Web -->
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="card shadow-sm border-0 h-100 hover-card" style="cursor: pointer;" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
-                            <div class="card-body text-center py-4">
-                                <div class="d-flex align-items-center justify-content-center mb-3">
-                                    <div class="icon-badge bg-info me-2" style="width: 55px; height: 55px; line-height: 55px; font-size: 24px;">
-                                        <i class="bi bi-bag-check"></i>
-                                    </div>
-                                </div>
-                                <h6 class="mb-2 text-muted">Pedidos Web</h6>
-                                <h2 class="mb-2 fw-bold text-info" id="db-pedidos-web">0</h2>
-                                <small class="text-muted d-block mb-2">Pedidos pendientes</small>
-                                <button class="btn btn-sm btn-outline-info w-100" onclick="event.stopPropagation(); document.querySelector('a[href=\'#pedidos-web\']').click();">
-                                    <i class="bi bi-arrow-right-circle me-1"></i>Ver pedidos
-                                </button>
+                    <div class="col-6 col-lg-3">
+                        <div class="stat-card stat-ventas">
+                            <div class="stat-body">
+                                <span class="stat-label">Ventas Hoy</span>
+                                <p class="stat-value" id="db-ventas-hoy">$0</p>
+                                <span class="stat-sub" id="db-ventas-count">0 ventas</span>
                             </div>
+                            <div class="stat-icon"><i class="bi bi-wallet2"></i></div>
                         </div>
                     </div>
-
-                    <!-- Clientes -->
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="card shadow-sm border-0 h-100 hover-card" style="cursor: pointer;" onclick="document.querySelector('a[href=\'#clientes\']').click()">
-                            <div class="card-body text-center py-4">
-                                <div class="d-flex align-items-center justify-content-center mb-3">
-                                    <div class="icon-badge bg-success me-2" style="width: 55px; height: 55px; line-height: 55px; font-size: 24px;">
-                                        <i class="bi bi-people"></i>
-                                    </div>
-                                </div>
-                                <h6 class="mb-2 text-muted">Clientes</h6>
-                                <h2 class="mb-2 fw-bold text-success" id="db-total-clientes">0</h2>
-                                <small class="text-muted d-block mb-2">Registrados en total</small>
-                                <button class="btn btn-sm btn-outline-success w-100" onclick="event.stopPropagation(); document.querySelector('a[href=\'#clientes\']').click();">
-                                    <i class="bi bi-person-plus me-1"></i>Gestionar clientes
-                                </button>
+                    <div class="col-6 col-lg-3">
+                        <div class="stat-card stat-productos">
+                            <div class="stat-body">
+                                <span class="stat-label">Productos</span>
+                                <p class="stat-value" id="db-total-productos">0</p>
+                                <span class="stat-sub" id="db-productos-disponibles">0 disponibles</span>
                             </div>
+                            <div class="stat-icon"><i class="bi bi-box-seam"></i></div>
                         </div>
                     </div>
-
-                    <!-- Promociones -->
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="card shadow-sm border-0 h-100 hover-card" style="cursor: pointer;" onclick="document.querySelector('a[href=\'#promociones\']').click()">
-                            <div class="card-body text-center py-4">
-                                <div class="d-flex align-items-center justify-content-center mb-3">
-                                    <div class="icon-badge bg-warning me-2" style="width: 55px; height: 55px; line-height: 55px; font-size: 24px;">
-                                        <i class="bi bi-tags"></i>
-                                    </div>
-                                </div>
-                                <h6 class="mb-2 text-muted">Promociones</h6>
-                                <h2 class="mb-2 fw-bold text-warning" id="db-promociones-activas">0</h2>
-                                <small class="text-muted d-block mb-2">Activas actualmente</small>
-                                <button class="btn btn-sm btn-outline-warning w-100" onclick="event.stopPropagation(); document.querySelector('a[href=\'#promociones\']').click();">
-                                    <i class="bi bi-plus-circle me-1"></i>Crear promoción
-                                </button>
+                    <div class="col-6 col-lg-3">
+                        <div class="stat-card stat-stock" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
+                            <div class="stat-body">
+                                <span class="stat-label">Bajo Stock</span>
+                                <p class="stat-value" id="db-bajo-stock">0</p>
+                                <span class="stat-sub">2 unidades o menos</span>
                             </div>
+                            <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
                         </div>
                     </div>
-
-                    <!-- Repartidores -->
-                    <div class="col-sm-6 col-lg-3">
-                        <div class="card shadow-sm border-0 h-100 hover-card" style="cursor: pointer;" onclick="document.querySelector('a[href=\'#repartidores\']').click()">
-                            <div class="card-body text-center py-4">
-                                <div class="d-flex align-items-center justify-content-center mb-3">
-                                    <div class="icon-badge bg-danger me-2" style="width: 55px; height: 55px; line-height: 55px; font-size: 24px;">
-                                        <i class="bi bi-truck"></i>
-                                    </div>
-                                </div>
-                                <h6 class="mb-2 text-muted">Repartidores</h6>
-                                <h2 class="mb-2 fw-bold text-danger" id="db-total-repartidores">0</h2>
-                                <small class="text-muted d-block mb-2">Disponibles</small>
-                                <button class="btn btn-sm btn-outline-danger w-100" onclick="event.stopPropagation(); document.querySelector('a[href=\'#repartidores\']').click();">
-                                    <i class="bi bi-gear me-1"></i>Gestionar equipo
-                                </button>
+                    <div class="col-6 col-lg-3">
+                        <div class="stat-card stat-apartados">
+                            <div class="stat-body">
+                                <span class="stat-label">Apartados</span>
+                                <p class="stat-value" id="db-apartados-vencer">0</p>
+                                <span class="stat-sub" id="db-apartados-total-saldo">$0 pendiente</span>
                             </div>
+                            <div class="stat-icon"><i class="bi bi-bookmark-star"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Accesos Rápidos -->
+                <p class="section-sub-label mb-3"><i class="bi bi-lightning-charge me-1"></i>Accesos rápidos</p>
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-lg-3">
+                        <div class="quick-card" onclick="if(window.adminShowSection){window.adminShowSection('#pedidos-web');window.adminMarkActive('#pedidos-web');}">
+                            <div class="quick-icon qi-blue"><i class="bi bi-bag-check"></i></div>
+                            <div class="quick-info">
+                                <span class="quick-value" id="db-pedidos-web">0</span>
+                                <span class="quick-label">Pedidos Web</span>
+                            </div>
+                            <i class="bi bi-chevron-right quick-arrow"></i>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="quick-card" onclick="if(window.adminShowSection){window.adminShowSection('#clientes');window.adminMarkActive('#clientes');}">
+                            <div class="quick-icon qi-green"><i class="bi bi-people"></i></div>
+                            <div class="quick-info">
+                                <span class="quick-value" id="db-total-clientes">0</span>
+                                <span class="quick-label">Clientes</span>
+                            </div>
+                            <i class="bi bi-chevron-right quick-arrow"></i>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="quick-card" onclick="if(window.adminShowSection){window.adminShowSection('#promociones');window.adminMarkActive('#promociones');}">
+                            <div class="quick-icon qi-amber"><i class="bi bi-tags"></i></div>
+                            <div class="quick-info">
+                                <span class="quick-value" id="db-promociones-activas">0</span>
+                                <span class="quick-label">Promociones</span>
+                            </div>
+                            <i class="bi bi-chevron-right quick-arrow"></i>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="quick-card" onclick="if(window.adminShowSection){window.adminShowSection('#repartidores');window.adminMarkActive('#repartidores');}">
+                            <div class="quick-icon qi-rose"><i class="bi bi-truck"></i></div>
+                            <div class="quick-info">
+                                <span class="quick-value" id="db-total-repartidores">0</span>
+                                <span class="quick-label">Repartidores</span>
+                            </div>
+                            <i class="bi bi-chevron-right quick-arrow"></i>
                         </div>
                     </div>
                 </div>
@@ -311,40 +263,32 @@
                 </div>
 
                 <!-- Sección: Inversión e Inventario -->
-                <div class="mb-3">
-                    <h5 class="text-muted fw-light"><i class="bi bi-box-seam me-2"></i>Inversión e Inventario</h5>
-                </div>
-                <div class="row g-4 mb-4">
+                <p class="section-sub-label mb-3"><i class="bi bi-box-seam me-1"></i>Inversión e inventario</p>
+                <div class="row g-3 mb-4">
                     <div class="col-md-6">
-                        <div class="dashboard-card card-inversion" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
-                            <div class="card-icon">
-                                <i class="bi bi-cash-stack"></i>
+                        <div class="stat-card stat-inversion" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
+                            <div class="stat-body">
+                                <span class="stat-label">Inversión en Inventario</span>
+                                <p class="stat-value" id="db-inversion-inventario">$0</p>
+                                <span class="stat-sub" id="db-inventario-unidades">0 unidades</span>
                             </div>
-                            <div class="card-content">
-                                <h6 class="card-label">Inversión Total en Inventario</h6>
-                                <p class="card-value" id="db-inversion-inventario">$0</p>
-                                <small class="card-subtitle" id="db-inventario-unidades">0 unidades</small>
-                            </div>
+                            <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="dashboard-card card-utilidad" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
-                            <div class="card-icon">
-                                <i class="bi bi-graph-up-arrow"></i>
+                        <div class="stat-card stat-utilidad" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
+                            <div class="stat-body">
+                                <span class="stat-label">Utilidad Potencial (Detal)</span>
+                                <p class="stat-value" id="db-utilidad-potencial">$0</p>
+                                <span class="stat-sub" id="db-margen-utilidad">0% de margen</span>
                             </div>
-                            <div class="card-content">
-                                <h6 class="card-label">Utilidad Potencial (Detal)</h6>
-                                <p class="card-value" id="db-utilidad-potencial">$0</p>
-                                <small class="card-subtitle" id="db-margen-utilidad"><i class="bi bi-percent"></i> 0% de margen</small>
-                            </div>
+                            <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Sección: Análisis de Datos -->
-                <div class="mb-3">
-                    <h5 class="text-muted fw-light"><i class="bi bi-bar-chart-line me-2"></i>Análisis de Datos</h5>
-                </div>
+                <p class="section-sub-label mb-3"><i class="bi bi-bar-chart-line me-1"></i>Análisis de datos</p>
                 <div class="row g-4 mb-4">
                     <div class="col-lg-8">
                         <div class="card shadow-sm">

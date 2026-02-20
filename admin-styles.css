@@ -352,132 +352,178 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   DASHBOARD CARDS - ICONOS PROFESIONALES
+   STAT CARDS — Métricas principales del dashboard
    ═══════════════════════════════════════════════════════════════════ */
-.dashboard-card {
-    border: 1px solid var(--admin-borde);
-    border-radius: 12px;               /* mismo que index */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+.stat-card {
     background: white;
-    padding: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 1.35rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     position: relative;
     overflow: hidden;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.dashboard-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.09);
 }
 
-.dashboard-card .card-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
+/* Acento superior de 3px por color */
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 16px 16px 0 0;
+}
+
+.stat-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+}
+
+.stat-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.3px;
+    color: var(--admin-texto-claro);
+    white-space: nowrap;
+}
+
+.stat-value {
+    font-family: var(--admin-fuente);
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: var(--admin-texto);
+    line-height: 1.15;
+    margin: 0.2rem 0 0.15rem;
+}
+
+.stat-sub {
+    font-size: 0.73rem;
+    color: var(--admin-texto-claro);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stat-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    box-shadow: var(--sombra-sm);
-    transition: all 0.3s;
+    font-size: 1.25rem;
+    flex-shrink: 0;
 }
 
-.dashboard-card:hover .card-icon {
-    transform: scale(1.05);
+/* Variantes de color */
+.stat-ventas::before    { background: linear-gradient(90deg, #10B981, #059669); }
+.stat-ventas .stat-icon { background: #ecfdf5; color: #059669; }
+
+.stat-productos::before    { background: linear-gradient(90deg, #3B82F6, #2563EB); }
+.stat-productos .stat-icon { background: #eff6ff; color: #2563EB; }
+
+.stat-stock::before    { background: linear-gradient(90deg, #F59E0B, #D97706); }
+.stat-stock .stat-icon { background: #fffbeb; color: #D97706; }
+
+.stat-apartados::before    { background: linear-gradient(90deg, var(--admin-primario), var(--admin-primario-oscuro)); }
+.stat-apartados .stat-icon { background: var(--admin-primario-claro); color: var(--admin-primario-oscuro); }
+
+.stat-inversion::before    { background: linear-gradient(90deg, #0d9488, #0f766e); }
+.stat-inversion .stat-icon { background: #f0fdfa; color: #0f766e; }
+
+.stat-utilidad::before    { background: linear-gradient(90deg, #059669, #047857); }
+.stat-utilidad .stat-icon { background: #ecfdf5; color: #047857; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   QUICK ACCESS CARDS — Accesos rápidos del dashboard
+   ═══════════════════════════════════════════════════════════════════ */
+.quick-card {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    padding: 1rem 1.15rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-/* Iconos con colores profesionales */
-.dashboard-card .card-icon {
-    background: var(--admin-primario);
-    color: white;
+.quick-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.1);
 }
 
-.dashboard-card.card-ventas .card-icon {
-    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+.quick-icon {
+    width: 40px; height: 40px;
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
 }
 
-.dashboard-card.card-productos .card-icon {
-    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+.qi-blue  { background: #eff6ff; color: #2563EB; }
+.qi-green { background: #ecfdf5; color: #059669; }
+.qi-amber { background: #fffbeb; color: #D97706; }
+.qi-rose  { background: var(--admin-primario-claro); color: var(--admin-primario-oscuro); }
+
+.quick-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    min-width: 0;
 }
 
-.dashboard-card.card-stock .card-icon {
-    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-}
-
-.dashboard-card.card-apartados .card-icon {
-    background: linear-gradient(135deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 100%);
-}
-
-.dashboard-card.card-inversion .card-icon {
-    background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
-}
-
-.dashboard-card.card-utilidad .card-icon {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
-}
-
-.dashboard-card .card-content {
-    position: relative;
-}
-
-.dashboard-card .card-label {
-    font-family: var(--admin-fuente);
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--admin-texto-sec);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 0.4rem;
-}
-
-.dashboard-card .card-value {
-    font-family: var(--admin-fuente);
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--admin-primario);
-    margin: 0.5rem 0;
+.quick-value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--admin-texto);
     line-height: 1;
 }
 
-.dashboard-card .card-subtitle {
-    font-size: 0.85rem;
-    color: var(--admin-texto-claro);
+.quick-label {
+    font-size: 0.73rem;
     font-weight: 500;
+    color: var(--admin-texto-claro);
+    white-space: nowrap;
 }
 
-/* Métricas secundarias - SOLO ICONOS SIN FONDO */
-.icon-badge {
-    width: 60px;
-    height: 60px;
+.quick-arrow {
+    color: #d0d0d0;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+    transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.quick-card:hover .quick-arrow {
+    transform: translateX(3px);
+    color: var(--admin-primario);
+}
+
+/* Sub-etiquetas de sección */
+.section-sub-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--admin-texto-claro);
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 2.2rem;
-    transition: all 0.3s;
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
-}
-
-.icon-badge.bg-info {
-    color: #2563EB !important;
-}
-
-.icon-badge.bg-success {
-    color: #059669 !important;
-}
-
-.icon-badge.bg-warning {
-    color: #D97706 !important;
-}
-
-.icon-badge.bg-danger {
-    color: #DC2626 !important;
-}
-
-.icon-badge:hover {
-    transform: scale(1.1);
+    gap: 0.35rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
