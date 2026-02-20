@@ -635,6 +635,20 @@ body.admin-page {
     border-bottom: none !important;
 }
 
+/* Estado vacío / cargando */
+.admin-page .table tbody td[colspan] {
+    padding: 3rem 1rem !important;
+    color: #ccc !important;
+    font-size: 0.82rem !important;
+    font-style: italic !important;
+}
+
+/* Primera y última columna con padding lateral generoso */
+.admin-page .table thead th:first-child,
+.admin-page .table tbody td:first-child { padding-left: 1.4rem !important; }
+.admin-page .table thead th:last-child,
+.admin-page .table tbody td:last-child  { padding-right: 1.4rem !important; }
+
 /* Contenedores de tabla */
 .admin-page .card-body .table-responsive,
 .admin-page .table-responsive {
