@@ -352,125 +352,147 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   DASHBOARD HEADER — tipográfico, sin decoración
+   DASHBOARD NUEVO (db2) — puramente tipográfico, sin cajas
    ═══════════════════════════════════════════════════════════════════ */
-.db-header {
+
+/* Cabecera */
+.db2-head {
     display: flex;
+    justify-content: space-between;
     align-items: baseline;
-    gap: 1rem;
 }
 
-.db-header-title {
-    font-size: 1.35rem;
-    font-weight: 700;
+.db2-title {
+    font-size: 1rem;
+    font-weight: 600;
     color: #1a1a1a;
-    margin: 0;
-    letter-spacing: -0.3px;
 }
 
-.db-header-date {
+.db2-date {
     font-size: 0.78rem;
-    color: #c0c0c0;
+    color: #ccc;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   KPI CARDS — número como protagonista, borde superior de acento
-   ═══════════════════════════════════════════════════════════════════ */
-.kpi-card {
-    background: white;
-    border: 1px solid rgba(0, 0, 0, 0.07);
-    border-top: 2.5px solid var(--kpi-color, #e0e0e0);
-    border-radius: 14px;
-    padding: 1.25rem 1.4rem;
+/* Separador fino */
+.db2-sep {
+    height: 1px;
+    background: #f0f0f0;
+    margin: 1.5rem 0;
+}
+
+/* Métricas — grid 2×2 mobile, 4 cols desktop, sin cajas */
+.db2-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.75rem 0;
+}
+
+@media (min-width: 992px) {
+    .db2-metrics {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0;
+    }
+    .db2-met:not(:last-child) {
+        border-right: 1px solid #f0f0f0;
+        padding-right: 2rem;
+    }
+    .db2-met:not(:first-child) {
+        padding-left: 2rem;
+    }
+}
+
+.db2-met {
     display: flex;
     flex-direction: column;
-    transition: box-shadow 0.15s ease;
 }
 
-.kpi-card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
-}
-
-.kpi-value {
-    font-family: var(--admin-fuente);
-    font-size: 1.8rem;
+.db2-met-val {
+    font-size: 2rem;
     font-weight: 700;
     color: #1a1a1a;
+    letter-spacing: -0.5px;
     line-height: 1;
-    margin: 0 0 0.35rem;
-    letter-spacing: -0.4px;
+    margin-bottom: 0.4rem;
 }
 
-.kpi-label {
+.db2-met-name {
     font-size: 0.67rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1px;
     color: #bbb;
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.15rem;
 }
 
-.kpi-sub {
-    font-size: 0.73rem;
-    color: #ccc;
-    font-weight: 400;
+.db2-met-sub {
+    font-size: 0.72rem;
+    color: #ddd;
 }
 
-/* Acento de color por variante */
-.kpi-ventas    { --kpi-color: #10B981; }
-.kpi-productos { --kpi-color: #6366f1; }
-.kpi-stock     { --kpi-color: #F59E0B; }
-.kpi-apartados { --kpi-color: var(--admin-primario); }
-.kpi-inversion { --kpi-color: #0d9488; }
-.kpi-utilidad  { --kpi-color: #059669; }
+/* Accesos rápidos + catálogo en una línea */
+.db2-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
 
-/* ═══════════════════════════════════════════════════════════════════
-   DB-STATS-ROW — accesos rápidos en barra horizontal compacta
-   ═══════════════════════════════════════════════════════════════════ */
-.db-stats-row {
+.db2-quick {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.6rem;
+}
+
+.db2-quick-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.db2-quick-val {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.db2-quick-name {
+    font-size: 0.75rem;
+    color: #bbb;
+    transition: color 0.12s ease;
+}
+
+.db2-quick-item:hover .db2-quick-name { color: var(--admin-primario); }
+
+.db2-dot {
+    color: #ddd;
+    font-size: 0.9rem;
+    user-select: none;
+}
+
+/* Cards financieras en columna derecha (inversión, utilidad) */
+.db2-fin-card {
     background: white;
     border: 1px solid rgba(0, 0, 0, 0.07);
-    border-radius: 14px;
-    display: flex;
-    align-items: stretch;
-    overflow: hidden;
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    transition: box-shadow 0.15s ease;
 }
 
-.db-stat {
-    flex: 1;
-    padding: 1rem 1.25rem;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.2rem;
-    user-select: none;
-    transition: background 0.12s ease;
+.db2-fin-card:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-.db-stat:hover { background: #fafafa; }
-
-.db-stat-value {
-    font-size: 1.45rem;
+.db2-fin-val {
+    font-size: 1.5rem;
     font-weight: 700;
     color: #1a1a1a;
     letter-spacing: -0.3px;
     line-height: 1;
-}
-
-.db-stat-label {
-    font-size: 0.67rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.9px;
-    color: #bbb;
-}
-
-.db-stat-divider {
-    width: 1px;
-    background: rgba(0, 0, 0, 0.06);
-    flex-shrink: 0;
-    margin: 0.75rem 0;
+    margin-bottom: 0.35rem;
 }
 
 /* Sub-etiquetas de sección */

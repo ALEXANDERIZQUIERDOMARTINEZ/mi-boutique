@@ -141,79 +141,68 @@
         <div class="tab-content">
             <div class="tab-pane fade show active" id="dashboard">
                 <!-- CABECERA -->
-                <div class="db-header mb-4">
-                    <h1 class="db-header-title">Dashboard</h1>
-                    <span class="db-header-date" id="dashboard-date"></span>
+                <div class="db2-head">
+                    <span class="db2-title">Dashboard</span>
+                    <span class="db2-date" id="dashboard-date"></span>
                 </div>
 
-                <!-- KPI PRINCIPALES -->
-                <div class="row g-3 mb-3">
-                    <div class="col-6 col-lg-3">
-                        <div class="kpi-card kpi-ventas">
-                            <p class="kpi-value" id="db-ventas-hoy">$0</p>
-                            <span class="kpi-label">Ventas hoy</span>
-                            <span class="kpi-sub" id="db-ventas-count">0 ventas</span>
-                        </div>
+                <div class="db2-sep"></div>
+
+                <!-- MÉTRICAS — sin cajas, números sobre el fondo -->
+                <div class="db2-metrics">
+                    <div class="db2-met">
+                        <div class="db2-met-val" id="db-ventas-hoy">$0</div>
+                        <div class="db2-met-name">Ventas hoy</div>
+                        <div class="db2-met-sub" id="db-ventas-count">0 ventas</div>
                     </div>
-                    <div class="col-6 col-lg-3">
-                        <div class="kpi-card kpi-productos">
-                            <p class="kpi-value" id="db-total-productos">0</p>
-                            <span class="kpi-label">Productos</span>
-                            <span class="kpi-sub" id="db-productos-disponibles">0 disponibles</span>
-                        </div>
+                    <div class="db2-met">
+                        <div class="db2-met-val" id="db-total-productos">0</div>
+                        <div class="db2-met-name">Productos</div>
+                        <div class="db2-met-sub" id="db-productos-disponibles">0 disponibles</div>
                     </div>
-                    <div class="col-6 col-lg-3">
-                        <div class="kpi-card kpi-stock" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
-                            <p class="kpi-value" id="db-bajo-stock">0</p>
-                            <span class="kpi-label">Bajo stock</span>
-                            <span class="kpi-sub">2 unidades o menos</span>
-                        </div>
+                    <div class="db2-met" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
+                        <div class="db2-met-val" id="db-bajo-stock">0</div>
+                        <div class="db2-met-name">Bajo stock</div>
+                        <div class="db2-met-sub">2 unidades o menos</div>
                     </div>
-                    <div class="col-6 col-lg-3">
-                        <div class="kpi-card kpi-apartados">
-                            <p class="kpi-value" id="db-apartados-vencer">0</p>
-                            <span class="kpi-label">Apartados</span>
-                            <span class="kpi-sub" id="db-apartados-total-saldo">$0 pendiente</span>
-                        </div>
+                    <div class="db2-met">
+                        <div class="db2-met-val" id="db-apartados-vencer">0</div>
+                        <div class="db2-met-name">Apartados</div>
+                        <div class="db2-met-sub" id="db-apartados-total-saldo">$0 pendiente</div>
                     </div>
                 </div>
 
-                <!-- ACCESOS RÁPIDOS — barra horizontal compacta -->
-                <div class="db-stats-row mb-3">
-                    <div class="db-stat" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
-                        <span class="db-stat-value" id="db-pedidos-web">0</span>
-                        <span class="db-stat-label">Pedidos Web</span>
-                    </div>
-                    <div class="db-stat-divider"></div>
-                    <div class="db-stat" onclick="document.querySelector('a[href=\'#clientes\']').click()">
-                        <span class="db-stat-value" id="db-total-clientes">0</span>
-                        <span class="db-stat-label">Clientes</span>
-                    </div>
-                    <div class="db-stat-divider"></div>
-                    <div class="db-stat" onclick="document.querySelector('a[href=\'#promociones\']').click()">
-                        <span class="db-stat-value" id="db-promociones-activas">0</span>
-                        <span class="db-stat-label">Promociones</span>
-                    </div>
-                    <div class="db-stat-divider"></div>
-                    <div class="db-stat" onclick="document.querySelector('a[href=\'#repartidores\']').click()">
-                        <span class="db-stat-value" id="db-total-repartidores">0</span>
-                        <span class="db-stat-label">Repartidores</span>
-                    </div>
-                </div>
+                <div class="db2-sep"></div>
 
-                <!-- CATÁLOGO -->
-                <div class="db-catalog-strip mb-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <i class="bi bi-file-earmark-pdf db-catalog-icon"></i>
-                        <div>
-                            <p class="db-catalog-title">Catálogo PDF</p>
-                            <p class="db-catalog-sub">Descarga el catálogo actualizado de productos</p>
+                <!-- ACCESOS RÁPIDOS + CATÁLOGO en una línea -->
+                <div class="db2-foot">
+                    <div class="db2-quick">
+                        <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
+                            <span class="db2-quick-val" id="db-pedidos-web">0</span>
+                            <span class="db2-quick-name">Pedidos Web</span>
+                        </div>
+                        <span class="db2-dot">·</span>
+                        <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#clientes\']').click()">
+                            <span class="db2-quick-val" id="db-total-clientes">0</span>
+                            <span class="db2-quick-name">Clientes</span>
+                        </div>
+                        <span class="db2-dot">·</span>
+                        <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#promociones\']').click()">
+                            <span class="db2-quick-val" id="db-promociones-activas">0</span>
+                            <span class="db2-quick-name">Promociones</span>
+                        </div>
+                        <span class="db2-dot">·</span>
+                        <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#repartidores\']').click()">
+                            <span class="db2-quick-val" id="db-total-repartidores">0</span>
+                            <span class="db2-quick-name">Repartidores</span>
                         </div>
                     </div>
                     <button class="btn btn-sm btn-outline-secondary" id="btn-descargar-catalogo-pdf">
-                        <i class="bi bi-download me-1"></i>Descargar
+                        <i class="bi bi-download me-1"></i>Catálogo PDF
                     </button>
                 </div>
+
+                <div class="db2-sep"></div>
 
                 <!-- GRÁFICA + FINANCIEROS -->
                 <div class="row g-3">
@@ -236,15 +225,15 @@
                         </div>
                     </div>
                     <div class="col-lg-4 d-flex flex-column gap-3">
-                        <div class="kpi-card kpi-inversion" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
-                            <p class="kpi-value" id="db-inversion-inventario">$0</p>
-                            <span class="kpi-label">Inversión en inventario</span>
-                            <span class="kpi-sub" id="db-inventario-unidades">0 unidades</span>
+                        <div class="db2-fin-card" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
+                            <div class="db2-fin-val" id="db-inversion-inventario">$0</div>
+                            <div class="db2-met-name">Inversión en inventario</div>
+                            <div class="db2-met-sub" id="db-inventario-unidades">0 unidades</div>
                         </div>
-                        <div class="kpi-card kpi-utilidad" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
-                            <p class="kpi-value" id="db-utilidad-potencial">$0</p>
-                            <span class="kpi-label">Utilidad potencial (detal)</span>
-                            <span class="kpi-sub" id="db-margen-utilidad">0% de margen</span>
+                        <div class="db2-fin-card" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
+                            <div class="db2-fin-val" id="db-utilidad-potencial">$0</div>
+                            <div class="db2-met-name">Utilidad potencial (detal)</div>
+                            <div class="db2-met-sub" id="db-margen-utilidad">0% de margen</div>
                         </div>
                         <div class="db-chart-card flex-grow-1">
                             <div class="db-chart-header">
