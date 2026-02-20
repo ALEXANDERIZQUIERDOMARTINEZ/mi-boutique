@@ -205,28 +205,18 @@
                     </div>
                 </div>
 
-                <!-- Sección: Herramientas del Catálogo -->
-                <div class="card mb-4 border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <div class="row align-items-center">
-                            <div class="col-lg-8">
-                                <div class="d-flex align-items-center mb-3 mb-lg-0">
-                                    <div class="icon-badge bg-primary me-3" style="width: 50px; height: 50px;">
-                                        <i class="bi bi-file-pdf" style="font-size: 1.5rem;"></i>
-                                    </div>
-                                    <div>
-                                        <h5 class="mb-1 fw-bold">Catálogo en PDF</h5>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-4 text-lg-end">
-                                <button class="btn btn-primary btn-lg" id="btn-descargar-catalogo-pdf">
-                                    <i class="bi bi-download me-2"></i>
-                                    Descargar catálogo en PDF
-                                </button>
-                            </div>
+                <!-- Sección: Catálogo PDF -->
+                <div class="db-catalog-strip mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-file-earmark-pdf db-catalog-icon"></i>
+                        <div>
+                            <p class="db-catalog-title">Catálogo de productos</p>
+                            <p class="db-catalog-sub">Genera y descarga el catálogo actualizado en PDF</p>
                         </div>
                     </div>
+                    <button class="btn btn-sm btn-outline-secondary" id="btn-descargar-catalogo-pdf">
+                        <i class="bi bi-download me-1"></i>Descargar PDF
+                    </button>
                 </div>
 
                 <!-- Sección: Inversión e Inventario -->
@@ -250,34 +240,31 @@
 
                 <!-- Sección: Análisis de Datos -->
                 <p class="section-sub-label mb-3"><i class="bi bi-bar-chart-line me-1"></i>Análisis de datos</p>
-                <div class="row g-4 mb-4">
+                <div class="row g-3 mb-4">
                     <div class="col-lg-8">
-                        <div class="card shadow-sm">
-                            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Tendencia de Ventas</h5>
-                                <div class="btn-group btn-group-sm" role="group">
+                        <div class="db-chart-card">
+                            <div class="db-chart-header">
+                                <span class="db-chart-title">Tendencia de ventas</span>
+                                <div class="db-period-tabs">
                                     <input type="radio" class="btn-check" name="chart-period" id="chart-7days" autocomplete="off" checked>
-                                    <label class="btn btn-outline-primary" for="chart-7days">7 días</label>
-
+                                    <label class="db-period-tab" for="chart-7days">7 días</label>
                                     <input type="radio" class="btn-check" name="chart-period" id="chart-30days" autocomplete="off">
-                                    <label class="btn btn-outline-primary" for="chart-30days">30 días</label>
-
+                                    <label class="db-period-tab" for="chart-30days">30 días</label>
                                     <input type="radio" class="btn-check" name="chart-period" id="chart-6months" autocomplete="off">
-                                    <label class="btn btn-outline-primary" for="chart-6months">6 meses</label>
+                                    <label class="db-period-tab" for="chart-6months">6 meses</label>
                                 </div>
                             </div>
-                            <div class="card-body">
+                            <div class="db-chart-body">
                                 <canvas id="ventasChart" height="80"></canvas>
                             </div>
                         </div>
                     </div>
-
                     <div class="col-lg-4">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-header bg-white">
-                                <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Top 15 Productos</h5>
+                        <div class="db-chart-card h-100">
+                            <div class="db-chart-header">
+                                <span class="db-chart-title">Top 15 productos</span>
                             </div>
-                            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                            <div class="db-chart-body" style="max-height: 560px; overflow-y: auto;">
                                 <canvas id="topProductosChart"></canvas>
                             </div>
                         </div>
