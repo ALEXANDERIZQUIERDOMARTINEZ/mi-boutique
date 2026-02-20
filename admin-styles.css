@@ -352,185 +352,131 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   STAT CARDS — Métricas principales del dashboard
+   KPI CARDS — Métricas del dashboard (borde izquierdo coloreado)
    ═══════════════════════════════════════════════════════════════════ */
-.stat-card {
+.kpi-card {
     background: white;
-    border-radius: 16px;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    padding: 1.35rem 1.25rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.09);
-}
-
-/* Acento superior de 3px por color */
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    border-radius: 16px 16px 0 0;
-}
-
-.stat-body {
-    flex: 1;
+    border: 1px solid #eaeaea;
+    border-left: 4px solid var(--kpi-color, #ccc);
+    border-radius: 0 10px 10px 0;
+    padding: 1.2rem 1.4rem;
     display: flex;
     flex-direction: column;
     gap: 0;
-    min-width: 0;
+    transition: box-shadow 0.18s ease;
 }
 
-.stat-label {
-    font-size: 0.62rem;
-    font-weight: 700;
+.kpi-card:hover {
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
+}
+
+.kpi-label {
+    font-size: 0.67rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 1.3px;
-    color: var(--admin-texto-claro);
-    white-space: nowrap;
+    letter-spacing: 1.1px;
+    color: #aaa;
+    margin-bottom: 0.4rem;
 }
 
-.stat-value {
+.kpi-value {
     font-family: var(--admin-fuente);
-    font-size: 1.65rem;
-    font-weight: 800;
-    color: var(--admin-texto);
-    line-height: 1.15;
-    margin: 0.2rem 0 0.15rem;
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: #1c1c1c;
+    line-height: 1;
+    margin: 0 0 0.35rem;
 }
 
-.stat-sub {
-    font-size: 0.73rem;
-    color: var(--admin-texto-claro);
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.kpi-sub {
+    font-size: 0.75rem;
+    color: #bbb;
+    font-weight: 400;
 }
 
-.stat-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 13px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    flex-shrink: 0;
-}
-
-/* Variantes de color */
-.stat-ventas::before    { background: linear-gradient(90deg, #10B981, #059669); }
-.stat-ventas .stat-icon { background: #ecfdf5; color: #059669; }
-
-.stat-productos::before    { background: linear-gradient(90deg, #3B82F6, #2563EB); }
-.stat-productos .stat-icon { background: #eff6ff; color: #2563EB; }
-
-.stat-stock::before    { background: linear-gradient(90deg, #F59E0B, #D97706); }
-.stat-stock .stat-icon { background: #fffbeb; color: #D97706; }
-
-.stat-apartados::before    { background: linear-gradient(90deg, var(--admin-primario), var(--admin-primario-oscuro)); }
-.stat-apartados .stat-icon { background: var(--admin-primario-claro); color: var(--admin-primario-oscuro); }
-
-.stat-inversion::before    { background: linear-gradient(90deg, #0d9488, #0f766e); }
-.stat-inversion .stat-icon { background: #f0fdfa; color: #0f766e; }
-
-.stat-utilidad::before    { background: linear-gradient(90deg, #059669, #047857); }
-.stat-utilidad .stat-icon { background: #ecfdf5; color: #047857; }
+/* Colores de acento por variante */
+.kpi-ventas    { --kpi-color: #10B981; }
+.kpi-productos { --kpi-color: #3B82F6; }
+.kpi-stock     { --kpi-color: #F59E0B; }
+.kpi-apartados { --kpi-color: var(--admin-primario); }
+.kpi-inversion { --kpi-color: #0d9488; }
+.kpi-utilidad  { --kpi-color: #059669; }
 
 /* ═══════════════════════════════════════════════════════════════════
-   QUICK ACCESS CARDS — Accesos rápidos del dashboard
+   QUICK NAV — Accesos rápidos (pills inline)
    ═══════════════════════════════════════════════════════════════════ */
-.quick-card {
-    background: white;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 14px;
-    padding: 1rem 1.15rem;
+.quick-nav {
     display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.quick-nav-item {
+    display: inline-flex;
     align-items: center;
-    gap: 0.85rem;
-    cursor: pointer;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-}
-
-.quick-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
-    border-color: rgba(0, 0, 0, 0.1);
-}
-
-.quick-icon {
-    width: 40px; height: 40px;
-    border-radius: 11px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem;
-    flex-shrink: 0;
-}
-
-.qi-blue  { background: #eff6ff; color: #2563EB; }
-.qi-green { background: #ecfdf5; color: #059669; }
-.qi-amber { background: #fffbeb; color: #D97706; }
-.qi-rose  { background: var(--admin-primario-claro); color: var(--admin-primario-oscuro); }
-
-.quick-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.05rem;
-    min-width: 0;
-}
-
-.quick-value {
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: var(--admin-texto);
-    line-height: 1;
-}
-
-.quick-label {
-    font-size: 0.73rem;
+    gap: 0.45rem;
+    padding: 0.48rem 1rem;
+    background: white;
+    border: 1px solid #e4e4e4;
+    border-radius: 8px;
+    font-size: 0.82rem;
     font-weight: 500;
-    color: var(--admin-texto-claro);
-    white-space: nowrap;
+    color: #555;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 
-.quick-arrow {
-    color: #d0d0d0;
-    font-size: 0.78rem;
-    flex-shrink: 0;
-    transition: transform 0.18s ease, color 0.18s ease;
+.quick-nav-item i {
+    font-size: 0.9rem;
+    color: #bbb;
+    transition: color 0.15s ease;
 }
 
-.quick-card:hover .quick-arrow {
-    transform: translateX(3px);
+.quick-nav-item:hover {
+    border-color: var(--admin-primario);
+    color: var(--admin-primario-oscuro);
+    background: var(--admin-primario-claro);
+}
+
+.quick-nav-item:hover i {
     color: var(--admin-primario);
+}
+
+.quick-nav-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+    color: #888;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.1rem 0.42rem;
+    border-radius: 20px;
+    min-width: 20px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.quick-nav-item:hover .quick-nav-badge {
+    background: var(--admin-primario);
+    color: white;
 }
 
 /* Sub-etiquetas de sección */
 .section-sub-label {
-    font-size: 0.65rem;
+    font-size: 0.63rem;
     font-weight: 700;
     letter-spacing: 1.6px;
     text-transform: uppercase;
-    color: var(--admin-texto-claro);
+    color: #bbb;
     display: flex;
     align-items: center;
     gap: 0.35rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   TABLAS - DISEÑO LIMPIO Y CONSISTENTE
+   TABLAS — minimalistas, funcionales, fáciles de leer
    ═══════════════════════════════════════════════════════════════════ */
-
-/* Resetear bordes en TODAS las tablas con máxima prioridad */
 .admin-page .table,
 .admin-page table.table {
     border-collapse: collapse !important;
@@ -540,54 +486,56 @@ body.admin-page {
     width: 100% !important;
 }
 
-/* Encabezados de tabla */
+/* Encabezados — texto gris sutil, sin fondo diferente, solo línea inferior */
 .admin-page .table thead th,
 .admin-page table.table thead th {
-    background: #f8f7f4 !important;           /* mismo fondo cálido del index */
-    border-bottom: 1px solid var(--admin-borde) !important;
+    background: transparent !important;
+    border-bottom: 1.5px solid #e8e8e8 !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
-    color: var(--admin-texto-sec) !important;
+    color: #b0b0b0 !important;
     font-family: var(--admin-fuente) !important;
     font-weight: 600 !important;
-    font-size: 0.72rem !important;
+    font-size: 0.67rem !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.8px !important;
-    padding: 0.85rem 1rem !important;
+    letter-spacing: 0.9px !important;
+    padding: 0.7rem 1rem 0.75rem !important;
     vertical-align: middle !important;
     white-space: nowrap !important;
 }
 
-/* Filas de tabla - Eliminar TODOS los bordes */
+/* Filas */
 .admin-page .table tbody tr,
 .admin-page table.table tbody tr,
 .admin-page .table-hover tbody tr {
     border: none !important;
     box-shadow: none !important;
-    transition: background-color 0.15s ease !important;
+    transition: background-color 0.12s ease !important;
 }
 
-/* Hover en filas — mismo fondo cálido del index */
-.admin-page .table-hover tbody tr:hover {
-    background: #f8f7f4 !important;
-    border: none !important;
+/* Hover — fondo rosado visible */
+.admin-page .table-hover tbody tr:hover,
+.admin-page .table-hover tbody tr:hover td {
+    background-color: #fdf2f8 !important;
 }
 
-/* Celdas de tabla - Alineación superior consistente */
+/* Celdas — centradas verticalmente, más aire, texto compacto */
 .admin-page .table tbody td,
 .admin-page table.table tbody td {
-    padding: 1rem !important;
-    vertical-align: top !important;
+    padding: 0.85rem 1rem !important;
+    vertical-align: middle !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
-    border-bottom: 1px solid #E9ECEF !important;
-    line-height: 1.5 !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    font-size: 0.855rem !important;
+    color: var(--admin-texto) !important;
+    line-height: 1.4 !important;
     overflow: visible !important;
 }
 
-/* Eliminar borde en la ÚLTIMA fila */
+/* Sin borde en la última fila */
 .admin-page .table tbody tr:last-child td,
 .admin-page table.table tbody tr:last-child td {
     border-bottom: none !important;
