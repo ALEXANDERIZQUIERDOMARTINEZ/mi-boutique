@@ -352,162 +352,125 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   DASHBOARD BANNER — encabezado con gradiente
+   DASHBOARD HEADER — tipográfico, sin decoración
    ═══════════════════════════════════════════════════════════════════ */
-.db-banner {
-    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #ec4899 100%);
-    border-radius: 18px;
-    padding: 1.5rem 1.75rem;
+.db-header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: white;
+    align-items: baseline;
+    gap: 1rem;
 }
 
-.db-banner-eyebrow {
-    font-size: 0.72rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1.3px;
-    opacity: 0.72;
-    margin: 0 0 0.3rem;
-}
-
-.db-banner-title {
-    font-size: 1.6rem;
-    font-weight: 800;
+.db-header-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #1a1a1a;
     margin: 0;
-    line-height: 1;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.3px;
 }
 
-.db-banner-date {
-    font-size: 0.8rem;
-    opacity: 0.78;
-    display: flex;
-    align-items: center;
+.db-header-date {
+    font-size: 0.78rem;
+    color: #c0c0c0;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   KPI CARDS — nuevo diseño con ícono (sin borde izquierdo)
+   KPI CARDS — número como protagonista, borde superior de acento
    ═══════════════════════════════════════════════════════════════════ */
 .kpi-card {
     background: white;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 16px;
-    padding: 1.3rem 1.4rem;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    border-top: 2.5px solid var(--kpi-color, #e0e0e0);
+    border-radius: 14px;
+    padding: 1.25rem 1.4rem;
     display: flex;
     flex-direction: column;
-    gap: 0;
-    transition: box-shadow 0.18s ease, transform 0.18s ease;
+    transition: box-shadow 0.15s ease;
 }
 
 .kpi-card:hover {
-    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
-}
-
-/* Icono coloreado dentro de la card */
-.kpi-icon-wrap {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: var(--kpi-bg, #f5f5f5);
-    color: var(--kpi-color, #999);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.15rem;
-    margin-bottom: 1rem;
-    flex-shrink: 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
 }
 
 .kpi-value {
     font-family: var(--admin-fuente);
-    font-size: 1.85rem;
-    font-weight: 800;
+    font-size: 1.8rem;
+    font-weight: 700;
     color: #1a1a1a;
     line-height: 1;
-    margin: 0 0 0.3rem;
-    letter-spacing: -0.5px;
+    margin: 0 0 0.35rem;
+    letter-spacing: -0.4px;
 }
 
 .kpi-label {
     font-size: 0.67rem;
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1px;
     color: #bbb;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.2rem;
 }
 
 .kpi-sub {
-    font-size: 0.75rem;
-    color: #c8c8c8;
+    font-size: 0.73rem;
+    color: #ccc;
     font-weight: 400;
 }
 
-/* Variantes — color del ícono y fondo del ícono */
-.kpi-ventas    { --kpi-color: #10B981; --kpi-bg: #ecfdf5; }
-.kpi-productos { --kpi-color: #3B82F6; --kpi-bg: #eff6ff; }
-.kpi-stock     { --kpi-color: #F59E0B; --kpi-bg: #fffbeb; }
-.kpi-apartados { --kpi-color: var(--admin-primario); --kpi-bg: var(--admin-primario-claro); }
-.kpi-inversion { --kpi-color: #0d9488; --kpi-bg: #f0fdfa; }
-.kpi-utilidad  { --kpi-color: #059669; --kpi-bg: #ecfdf5; }
+/* Acento de color por variante */
+.kpi-ventas    { --kpi-color: #10B981; }
+.kpi-productos { --kpi-color: #6366f1; }
+.kpi-stock     { --kpi-color: #F59E0B; }
+.kpi-apartados { --kpi-color: var(--admin-primario); }
+.kpi-inversion { --kpi-color: #0d9488; }
+.kpi-utilidad  { --kpi-color: #059669; }
 
 /* ═══════════════════════════════════════════════════════════════════
-   QN-CARD — Accesos rápidos como tarjetas con ícono centrado
+   DB-STATS-ROW — accesos rápidos en barra horizontal compacta
    ═══════════════════════════════════════════════════════════════════ */
-.qn-card {
+.db-stats-row {
     background: white;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 16px;
-    padding: 1.25rem 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    border-radius: 14px;
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+.db-stat {
+    flex: 1;
+    padding: 1rem 1.25rem;
     cursor: pointer;
-    text-align: center;
-    user-select: none;
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 0.2rem;
+    user-select: none;
+    transition: background 0.12s ease;
 }
 
-.qn-card:hover {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.09);
-    transform: translateY(-2px);
-}
+.db-stat:hover { background: #fafafa; }
 
-.qn-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.3rem;
-    margin-bottom: 0.8rem;
-}
-
-.qn-blue   { background: #eff6ff; color: #3b82f6; }
-.qn-violet { background: #f5f3ff; color: #7c3aed; }
-.qn-rose   { background: #fff1f2; color: #f43f5e; }
-.qn-amber  { background: #fffbeb; color: #d97706; }
-
-.qn-count {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: #1a1a1a;
-    margin: 0 0 0.2rem;
-    line-height: 1;
-    letter-spacing: -0.5px;
-}
-
-.qn-label {
-    font-size: 0.68rem;
+.db-stat-value {
+    font-size: 1.45rem;
     font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: -0.3px;
+    line-height: 1;
+}
+
+.db-stat-label {
+    font-size: 0.67rem;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.9px;
     color: #bbb;
+}
+
+.db-stat-divider {
+    width: 1px;
+    background: rgba(0, 0, 0, 0.06);
+    flex-shrink: 0;
+    margin: 0.75rem 0;
 }
 
 /* Sub-etiquetas de sección */
