@@ -569,7 +569,43 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   TABLAS — minimalistas, funcionales, fáciles de leer
+   TBL-WRAP — contenedor de tabla personalizado
+   ═══════════════════════════════════════════════════════════════════ */
+.tbl-wrap {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.tbl-head {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+}
+
+.tbl-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--admin-texto);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tbl-title i { color: var(--admin-primario); }
+
+.tbl-wrap .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABLAS — nuevo diseño completo
    ═══════════════════════════════════════════════════════════════════ */
 .admin-page .table,
 .admin-page table.table {
@@ -580,21 +616,21 @@ body.admin-page {
     width: 100% !important;
 }
 
-/* Encabezados — minimalistas: sin fondo, solo separador inferior */
+/* THEAD — fondo visible, tipografía clara */
 .admin-page .table thead th,
 .admin-page table.table thead th {
-    background: transparent !important;
-    border-bottom: 2px solid #efefef !important;
+    background: #f8f7f5 !important;
+    border-bottom: 1.5px solid #ebebeb !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
-    color: #c0c0c0 !important;
+    color: #999 !important;
     font-family: var(--admin-fuente) !important;
     font-weight: 700 !important;
-    font-size: 0.65rem !important;
+    font-size: 0.67rem !important;
     text-transform: uppercase !important;
-    letter-spacing: 1px !important;
-    padding: 0.6rem 1.1rem 0.65rem !important;
+    letter-spacing: 1.1px !important;
+    padding: 0.75rem 1rem !important;
     vertical-align: middle !important;
     white-space: nowrap !important;
 }
@@ -608,22 +644,22 @@ body.admin-page {
     transition: background-color 0.1s ease !important;
 }
 
-/* Hover — rosado muy sutil */
+/* Hover */
 .admin-page .table-hover tbody tr:hover,
 .admin-page .table-hover tbody tr:hover td {
-    background-color: #fef6fb !important;
+    background-color: #fdf5f9 !important;
 }
 
-/* Celdas — espacio generoso, texto legible */
+/* Celdas */
 .admin-page .table tbody td,
 .admin-page table.table tbody td {
-    padding: 0.9rem 1.1rem !important;
+    padding: 0.85rem 1rem !important;
     vertical-align: middle !important;
     border-top: none !important;
     border-left: none !important;
     border-right: none !important;
-    border-bottom: 1px solid #f5f5f5 !important;
-    font-size: 0.875rem !important;
+    border-bottom: 1px solid #f4f4f4 !important;
+    font-size: 0.865rem !important;
     color: var(--admin-texto) !important;
     line-height: 1.45 !important;
     overflow: visible !important;
@@ -637,17 +673,18 @@ body.admin-page {
 
 /* Estado vacío / cargando */
 .admin-page .table tbody td[colspan] {
-    padding: 3rem 1rem !important;
+    padding: 3.5rem 1rem !important;
     color: #ccc !important;
     font-size: 0.82rem !important;
     font-style: italic !important;
+    text-align: center !important;
 }
 
-/* Primera y última columna con padding lateral generoso */
+/* Padding lateral en primera y última columna */
 .admin-page .table thead th:first-child,
-.admin-page .table tbody td:first-child { padding-left: 1.4rem !important; }
+.admin-page .table tbody td:first-child { padding-left: 1.5rem !important; }
 .admin-page .table thead th:last-child,
-.admin-page .table tbody td:last-child  { padding-right: 1.4rem !important; }
+.admin-page .table tbody td:last-child  { padding-right: 1.5rem !important; }
 
 /* Contenedores de tabla */
 .admin-page .card-body .table-responsive,
@@ -676,10 +713,16 @@ body.admin-page {
     overflow: visible !important;
 }
 
-/* Card general sin overflow */
+/* Card con tabla directa (sin card-body) */
+.admin-page .card > .table-responsive {
+    margin: 0 !important;
+    border: none !important;
+}
+
+/* Card general */
 .admin-page .card {
     margin-bottom: 1.5rem !important;
-    overflow: visible !important;
+    overflow: hidden !important;
 }
 
 .table-product-img {
