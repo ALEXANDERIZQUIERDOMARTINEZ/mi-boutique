@@ -140,22 +140,16 @@
     <main class="admin-main">
         <div class="tab-content">
             <div class="tab-pane fade show active" id="dashboard">
-                <!-- BANNER -->
-                <div class="db-banner mb-3">
-                    <div>
-                        <p class="db-banner-eyebrow">Panel de control</p>
-                        <p class="db-banner-title">Mi Boutique</p>
-                    </div>
-                    <div class="db-banner-date">
-                        <i class="bi bi-calendar3 me-1"></i><span id="dashboard-date"></span>
-                    </div>
+                <!-- CABECERA -->
+                <div class="db-header mb-4">
+                    <h1 class="db-header-title">Dashboard</h1>
+                    <span class="db-header-date" id="dashboard-date"></span>
                 </div>
 
                 <!-- KPI PRINCIPALES -->
                 <div class="row g-3 mb-3">
                     <div class="col-6 col-lg-3">
                         <div class="kpi-card kpi-ventas">
-                            <div class="kpi-icon-wrap"><i class="bi bi-cash-stack"></i></div>
                             <p class="kpi-value" id="db-ventas-hoy">$0</p>
                             <span class="kpi-label">Ventas hoy</span>
                             <span class="kpi-sub" id="db-ventas-count">0 ventas</span>
@@ -163,7 +157,6 @@
                     </div>
                     <div class="col-6 col-lg-3">
                         <div class="kpi-card kpi-productos">
-                            <div class="kpi-icon-wrap"><i class="bi bi-grid-3x3-gap"></i></div>
                             <p class="kpi-value" id="db-total-productos">0</p>
                             <span class="kpi-label">Productos</span>
                             <span class="kpi-sub" id="db-productos-disponibles">0 disponibles</span>
@@ -171,7 +164,6 @@
                     </div>
                     <div class="col-6 col-lg-3">
                         <div class="kpi-card kpi-stock" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
-                            <div class="kpi-icon-wrap"><i class="bi bi-exclamation-triangle"></i></div>
                             <p class="kpi-value" id="db-bajo-stock">0</p>
                             <span class="kpi-label">Bajo stock</span>
                             <span class="kpi-sub">2 unidades o menos</span>
@@ -179,7 +171,6 @@
                     </div>
                     <div class="col-6 col-lg-3">
                         <div class="kpi-card kpi-apartados">
-                            <div class="kpi-icon-wrap"><i class="bi bi-bookmark-check"></i></div>
                             <p class="kpi-value" id="db-apartados-vencer">0</p>
                             <span class="kpi-label">Apartados</span>
                             <span class="kpi-sub" id="db-apartados-total-saldo">$0 pendiente</span>
@@ -187,35 +178,26 @@
                     </div>
                 </div>
 
-                <!-- ACCESOS RÁPIDOS como tarjetas con icono -->
-                <div class="row g-3 mb-3">
-                    <div class="col-6 col-md-3">
-                        <div class="qn-card" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
-                            <div class="qn-icon qn-blue"><i class="bi bi-bag-check"></i></div>
-                            <p class="qn-count" id="db-pedidos-web">0</p>
-                            <span class="qn-label">Pedidos Web</span>
-                        </div>
+                <!-- ACCESOS RÁPIDOS — barra horizontal compacta -->
+                <div class="db-stats-row mb-3">
+                    <div class="db-stat" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
+                        <span class="db-stat-value" id="db-pedidos-web">0</span>
+                        <span class="db-stat-label">Pedidos Web</span>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="qn-card" onclick="document.querySelector('a[href=\'#clientes\']').click()">
-                            <div class="qn-icon qn-violet"><i class="bi bi-people"></i></div>
-                            <p class="qn-count" id="db-total-clientes">0</p>
-                            <span class="qn-label">Clientes</span>
-                        </div>
+                    <div class="db-stat-divider"></div>
+                    <div class="db-stat" onclick="document.querySelector('a[href=\'#clientes\']').click()">
+                        <span class="db-stat-value" id="db-total-clientes">0</span>
+                        <span class="db-stat-label">Clientes</span>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="qn-card" onclick="document.querySelector('a[href=\'#promociones\']').click()">
-                            <div class="qn-icon qn-rose"><i class="bi bi-tags"></i></div>
-                            <p class="qn-count" id="db-promociones-activas">0</p>
-                            <span class="qn-label">Promociones</span>
-                        </div>
+                    <div class="db-stat-divider"></div>
+                    <div class="db-stat" onclick="document.querySelector('a[href=\'#promociones\']').click()">
+                        <span class="db-stat-value" id="db-promociones-activas">0</span>
+                        <span class="db-stat-label">Promociones</span>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="qn-card" onclick="document.querySelector('a[href=\'#repartidores\']').click()">
-                            <div class="qn-icon qn-amber"><i class="bi bi-truck"></i></div>
-                            <p class="qn-count" id="db-total-repartidores">0</p>
-                            <span class="qn-label">Repartidores</span>
-                        </div>
+                    <div class="db-stat-divider"></div>
+                    <div class="db-stat" onclick="document.querySelector('a[href=\'#repartidores\']').click()">
+                        <span class="db-stat-value" id="db-total-repartidores">0</span>
+                        <span class="db-stat-label">Repartidores</span>
                     </div>
                 </div>
 
@@ -255,13 +237,11 @@
                     </div>
                     <div class="col-lg-4 d-flex flex-column gap-3">
                         <div class="kpi-card kpi-inversion" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
-                            <div class="kpi-icon-wrap"><i class="bi bi-wallet2"></i></div>
                             <p class="kpi-value" id="db-inversion-inventario">$0</p>
                             <span class="kpi-label">Inversión en inventario</span>
                             <span class="kpi-sub" id="db-inventario-unidades">0 unidades</span>
                         </div>
                         <div class="kpi-card kpi-utilidad" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
-                            <div class="kpi-icon-wrap"><i class="bi bi-graph-up-arrow"></i></div>
                             <p class="kpi-value" id="db-utilidad-potencial">$0</p>
                             <span class="kpi-label">Utilidad potencial (detal)</span>
                             <span class="kpi-sub" id="db-margen-utilidad">0% de margen</span>
