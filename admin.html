@@ -140,90 +140,100 @@
     <main class="admin-main">
         <div class="tab-content">
             <div class="tab-pane fade show active" id="dashboard">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="h2 mb-0">
-                        <i class="bi bi-speedometer2 me-2"></i>Dashboard
-                    </h1>
-                    <div class="text-muted small">
-                        <i class="bi bi-calendar-event-fill"></i> Hoy: <span id="dashboard-date"></span>
+                <!-- BANNER -->
+                <div class="db-banner mb-3">
+                    <div>
+                        <p class="db-banner-eyebrow">Panel de control</p>
+                        <p class="db-banner-title">Mi Boutique</p>
+                    </div>
+                    <div class="db-banner-date">
+                        <i class="bi bi-calendar3 me-1"></i><span id="dashboard-date"></span>
                     </div>
                 </div>
 
-                <!-- Tarjetas principales -->
+                <!-- KPI PRINCIPALES -->
                 <div class="row g-3 mb-3">
                     <div class="col-6 col-lg-3">
                         <div class="kpi-card kpi-ventas">
-                            <span class="kpi-label">Ventas hoy</span>
+                            <div class="kpi-icon-wrap"><i class="bi bi-cash-stack"></i></div>
                             <p class="kpi-value" id="db-ventas-hoy">$0</p>
+                            <span class="kpi-label">Ventas hoy</span>
                             <span class="kpi-sub" id="db-ventas-count">0 ventas</span>
                         </div>
                     </div>
                     <div class="col-6 col-lg-3">
                         <div class="kpi-card kpi-productos">
-                            <span class="kpi-label">Productos</span>
+                            <div class="kpi-icon-wrap"><i class="bi bi-grid-3x3-gap"></i></div>
                             <p class="kpi-value" id="db-total-productos">0</p>
+                            <span class="kpi-label">Productos</span>
                             <span class="kpi-sub" id="db-productos-disponibles">0 disponibles</span>
                         </div>
                     </div>
                     <div class="col-6 col-lg-3">
                         <div class="kpi-card kpi-stock" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
-                            <span class="kpi-label">Bajo stock</span>
+                            <div class="kpi-icon-wrap"><i class="bi bi-exclamation-triangle"></i></div>
                             <p class="kpi-value" id="db-bajo-stock">0</p>
+                            <span class="kpi-label">Bajo stock</span>
                             <span class="kpi-sub">2 unidades o menos</span>
                         </div>
                     </div>
                     <div class="col-6 col-lg-3">
                         <div class="kpi-card kpi-apartados">
-                            <span class="kpi-label">Apartados</span>
+                            <div class="kpi-icon-wrap"><i class="bi bi-bookmark-check"></i></div>
                             <p class="kpi-value" id="db-apartados-vencer">0</p>
+                            <span class="kpi-label">Apartados</span>
                             <span class="kpi-sub" id="db-apartados-total-saldo">$0 pendiente</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Accesos rápidos + Catálogo en la misma fila -->
+                <!-- ACCESOS RÁPIDOS como tarjetas con icono -->
                 <div class="row g-3 mb-3">
-                    <div class="col-lg-8">
-                        <div class="quick-nav h-100 align-content-center">
-                            <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
-                                <i class="bi bi-bag-check"></i>
-                                <span>Pedidos Web</span>
-                                <span class="quick-nav-badge" id="db-pedidos-web">0</span>
-                            </div>
-                            <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#clientes\']').click()">
-                                <i class="bi bi-people"></i>
-                                <span>Clientes</span>
-                                <span class="quick-nav-badge" id="db-total-clientes">0</span>
-                            </div>
-                            <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#promociones\']').click()">
-                                <i class="bi bi-tags"></i>
-                                <span>Promociones</span>
-                                <span class="quick-nav-badge" id="db-promociones-activas">0</span>
-                            </div>
-                            <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#repartidores\']').click()">
-                                <i class="bi bi-truck"></i>
-                                <span>Repartidores</span>
-                                <span class="quick-nav-badge" id="db-total-repartidores">0</span>
-                            </div>
+                    <div class="col-6 col-md-3">
+                        <div class="qn-card" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
+                            <div class="qn-icon qn-blue"><i class="bi bi-bag-check"></i></div>
+                            <p class="qn-count" id="db-pedidos-web">0</p>
+                            <span class="qn-label">Pedidos Web</span>
                         </div>
                     </div>
-                    <div class="col-lg-4">
-                        <div class="db-catalog-strip h-100">
-                            <div class="d-flex align-items-center gap-3">
-                                <i class="bi bi-file-earmark-pdf db-catalog-icon"></i>
-                                <div>
-                                    <p class="db-catalog-title">Catálogo PDF</p>
-                                    <p class="db-catalog-sub">Descarga el catálogo actualizado</p>
-                                </div>
-                            </div>
-                            <button class="btn btn-sm btn-outline-secondary" id="btn-descargar-catalogo-pdf">
-                                <i class="bi bi-download me-1"></i>Descargar
-                            </button>
+                    <div class="col-6 col-md-3">
+                        <div class="qn-card" onclick="document.querySelector('a[href=\'#clientes\']').click()">
+                            <div class="qn-icon qn-violet"><i class="bi bi-people"></i></div>
+                            <p class="qn-count" id="db-total-clientes">0</p>
+                            <span class="qn-label">Clientes</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="qn-card" onclick="document.querySelector('a[href=\'#promociones\']').click()">
+                            <div class="qn-icon qn-rose"><i class="bi bi-tags"></i></div>
+                            <p class="qn-count" id="db-promociones-activas">0</p>
+                            <span class="qn-label">Promociones</span>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="qn-card" onclick="document.querySelector('a[href=\'#repartidores\']').click()">
+                            <div class="qn-icon qn-amber"><i class="bi bi-truck"></i></div>
+                            <p class="qn-count" id="db-total-repartidores">0</p>
+                            <span class="qn-label">Repartidores</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Gráfica principal + columna derecha (financieros + Top 15) -->
+                <!-- CATÁLOGO -->
+                <div class="db-catalog-strip mb-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="bi bi-file-earmark-pdf db-catalog-icon"></i>
+                        <div>
+                            <p class="db-catalog-title">Catálogo PDF</p>
+                            <p class="db-catalog-sub">Descarga el catálogo actualizado de productos</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary" id="btn-descargar-catalogo-pdf">
+                        <i class="bi bi-download me-1"></i>Descargar
+                    </button>
+                </div>
+
+                <!-- GRÁFICA + FINANCIEROS -->
                 <div class="row g-3">
                     <div class="col-lg-8">
                         <div class="db-chart-card">
@@ -245,13 +255,15 @@
                     </div>
                     <div class="col-lg-4 d-flex flex-column gap-3">
                         <div class="kpi-card kpi-inversion" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
-                            <span class="kpi-label">Inversión en inventario</span>
+                            <div class="kpi-icon-wrap"><i class="bi bi-wallet2"></i></div>
                             <p class="kpi-value" id="db-inversion-inventario">$0</p>
+                            <span class="kpi-label">Inversión en inventario</span>
                             <span class="kpi-sub" id="db-inventario-unidades">0 unidades</span>
                         </div>
                         <div class="kpi-card kpi-utilidad" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
-                            <span class="kpi-label">Utilidad potencial (detal)</span>
+                            <div class="kpi-icon-wrap"><i class="bi bi-graph-up-arrow"></i></div>
                             <p class="kpi-value" id="db-utilidad-potencial">$0</p>
+                            <span class="kpi-label">Utilidad potencial (detal)</span>
                             <span class="kpi-sub" id="db-margen-utilidad">0% de margen</span>
                         </div>
                         <div class="db-chart-card flex-grow-1">

@@ -352,114 +352,162 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   KPI CARDS — Métricas del dashboard (borde izquierdo coloreado)
+   DASHBOARD BANNER — encabezado con gradiente
+   ═══════════════════════════════════════════════════════════════════ */
+.db-banner {
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #ec4899 100%);
+    border-radius: 18px;
+    padding: 1.5rem 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+}
+
+.db-banner-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.3px;
+    opacity: 0.72;
+    margin: 0 0 0.3rem;
+}
+
+.db-banner-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1;
+    letter-spacing: -0.5px;
+}
+
+.db-banner-date {
+    font-size: 0.8rem;
+    opacity: 0.78;
+    display: flex;
+    align-items: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   KPI CARDS — nuevo diseño con ícono (sin borde izquierdo)
    ═══════════════════════════════════════════════════════════════════ */
 .kpi-card {
     background: white;
-    border: 1px solid #eaeaea;
-    border-left: 4px solid var(--kpi-color, #ccc);
-    border-radius: 0 10px 10px 0;
-    padding: 1.2rem 1.4rem;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    padding: 1.3rem 1.4rem;
     display: flex;
     flex-direction: column;
     gap: 0;
-    transition: box-shadow 0.18s ease;
+    transition: box-shadow 0.18s ease, transform 0.18s ease;
 }
 
 .kpi-card:hover {
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
 }
 
-.kpi-label {
-    font-size: 0.67rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1.1px;
-    color: #aaa;
-    margin-bottom: 0.4rem;
+/* Icono coloreado dentro de la card */
+.kpi-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--kpi-bg, #f5f5f5);
+    color: var(--kpi-color, #999);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    margin-bottom: 1rem;
+    flex-shrink: 0;
 }
 
 .kpi-value {
     font-family: var(--admin-fuente);
     font-size: 1.85rem;
-    font-weight: 700;
-    color: #1c1c1c;
+    font-weight: 800;
+    color: #1a1a1a;
     line-height: 1;
-    margin: 0 0 0.35rem;
+    margin: 0 0 0.3rem;
+    letter-spacing: -0.5px;
+}
+
+.kpi-label {
+    font-size: 0.67rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #bbb;
+    margin-bottom: 0.25rem;
 }
 
 .kpi-sub {
     font-size: 0.75rem;
-    color: #bbb;
+    color: #c8c8c8;
     font-weight: 400;
 }
 
-/* Colores de acento por variante */
-.kpi-ventas    { --kpi-color: #10B981; }
-.kpi-productos { --kpi-color: #3B82F6; }
-.kpi-stock     { --kpi-color: #F59E0B; }
-.kpi-apartados { --kpi-color: var(--admin-primario); }
-.kpi-inversion { --kpi-color: #0d9488; }
-.kpi-utilidad  { --kpi-color: #059669; }
+/* Variantes — color del ícono y fondo del ícono */
+.kpi-ventas    { --kpi-color: #10B981; --kpi-bg: #ecfdf5; }
+.kpi-productos { --kpi-color: #3B82F6; --kpi-bg: #eff6ff; }
+.kpi-stock     { --kpi-color: #F59E0B; --kpi-bg: #fffbeb; }
+.kpi-apartados { --kpi-color: var(--admin-primario); --kpi-bg: var(--admin-primario-claro); }
+.kpi-inversion { --kpi-color: #0d9488; --kpi-bg: #f0fdfa; }
+.kpi-utilidad  { --kpi-color: #059669; --kpi-bg: #ecfdf5; }
 
 /* ═══════════════════════════════════════════════════════════════════
-   QUICK NAV — Accesos rápidos (pills inline)
+   QN-CARD — Accesos rápidos como tarjetas con ícono centrado
    ═══════════════════════════════════════════════════════════════════ */
-.quick-nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.quick-nav-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.48rem 1rem;
+.qn-card {
     background: white;
-    border: 1px solid #e4e4e4;
-    border-radius: 8px;
-    font-size: 0.82rem;
-    font-weight: 500;
-    color: #555;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    padding: 1.25rem 1rem;
     cursor: pointer;
+    text-align: center;
     user-select: none;
-    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-.quick-nav-item i {
-    font-size: 0.9rem;
-    color: #bbb;
-    transition: color 0.15s ease;
+.qn-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.09);
+    transform: translateY(-2px);
 }
 
-.quick-nav-item:hover {
-    border-color: var(--admin-primario);
-    color: var(--admin-primario-oscuro);
-    background: var(--admin-primario-claro);
-}
-
-.quick-nav-item:hover i {
-    color: var(--admin-primario);
-}
-
-.quick-nav-badge {
-    display: inline-flex;
+.qn-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    display: flex;
     align-items: center;
     justify-content: center;
-    background: #f0f0f0;
-    color: #888;
-    font-size: 0.68rem;
-    font-weight: 700;
-    padding: 0.1rem 0.42rem;
-    border-radius: 20px;
-    min-width: 20px;
-    transition: background 0.15s ease, color 0.15s ease;
+    font-size: 1.3rem;
+    margin-bottom: 0.8rem;
 }
 
-.quick-nav-item:hover .quick-nav-badge {
-    background: var(--admin-primario);
-    color: white;
+.qn-blue   { background: #eff6ff; color: #3b82f6; }
+.qn-violet { background: #f5f3ff; color: #7c3aed; }
+.qn-rose   { background: #fff1f2; color: #f43f5e; }
+.qn-amber  { background: #fffbeb; color: #d97706; }
+
+.qn-count {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    margin: 0 0 0.2rem;
+    line-height: 1;
+    letter-spacing: -0.5px;
+}
+
+.qn-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    color: #bbb;
 }
 
 /* Sub-etiquetas de sección */
