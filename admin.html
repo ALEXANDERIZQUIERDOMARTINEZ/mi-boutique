@@ -149,8 +149,8 @@
                     </div>
                 </div>
 
-                <!-- Tarjetas de Resumen Principal -->
-                <div class="row g-3 mb-4">
+                <!-- Tarjetas principales -->
+                <div class="row g-3 mb-3">
                     <div class="col-6 col-lg-3">
                         <div class="kpi-card kpi-ventas">
                             <span class="kpi-label">Ventas hoy</span>
@@ -181,66 +181,50 @@
                     </div>
                 </div>
 
-                <!-- Accesos Rápidos -->
-                <div class="quick-nav mb-4">
-                    <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
-                        <i class="bi bi-bag-check"></i>
-                        <span>Pedidos Web</span>
-                        <span class="quick-nav-badge" id="db-pedidos-web">0</span>
-                    </div>
-                    <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#clientes\']').click()">
-                        <i class="bi bi-people"></i>
-                        <span>Clientes</span>
-                        <span class="quick-nav-badge" id="db-total-clientes">0</span>
-                    </div>
-                    <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#promociones\']').click()">
-                        <i class="bi bi-tags"></i>
-                        <span>Promociones</span>
-                        <span class="quick-nav-badge" id="db-promociones-activas">0</span>
-                    </div>
-                    <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#repartidores\']').click()">
-                        <i class="bi bi-truck"></i>
-                        <span>Repartidores</span>
-                        <span class="quick-nav-badge" id="db-total-repartidores">0</span>
-                    </div>
-                </div>
-
-                <!-- Sección: Catálogo PDF -->
-                <div class="db-catalog-strip mb-4">
-                    <div class="d-flex align-items-center gap-3">
-                        <i class="bi bi-file-earmark-pdf db-catalog-icon"></i>
-                        <div>
-                            <p class="db-catalog-title">Catálogo de productos</p>
-                            <p class="db-catalog-sub">Genera y descarga el catálogo actualizado en PDF</p>
+                <!-- Accesos rápidos + Catálogo en la misma fila -->
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-8">
+                        <div class="quick-nav h-100 align-content-center">
+                            <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
+                                <i class="bi bi-bag-check"></i>
+                                <span>Pedidos Web</span>
+                                <span class="quick-nav-badge" id="db-pedidos-web">0</span>
+                            </div>
+                            <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#clientes\']').click()">
+                                <i class="bi bi-people"></i>
+                                <span>Clientes</span>
+                                <span class="quick-nav-badge" id="db-total-clientes">0</span>
+                            </div>
+                            <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#promociones\']').click()">
+                                <i class="bi bi-tags"></i>
+                                <span>Promociones</span>
+                                <span class="quick-nav-badge" id="db-promociones-activas">0</span>
+                            </div>
+                            <div class="quick-nav-item" onclick="document.querySelector('a[href=\'#repartidores\']').click()">
+                                <i class="bi bi-truck"></i>
+                                <span>Repartidores</span>
+                                <span class="quick-nav-badge" id="db-total-repartidores">0</span>
+                            </div>
                         </div>
                     </div>
-                    <button class="btn btn-sm btn-outline-secondary" id="btn-descargar-catalogo-pdf">
-                        <i class="bi bi-download me-1"></i>Descargar PDF
-                    </button>
-                </div>
-
-                <!-- Sección: Inversión e Inventario -->
-                <p class="section-sub-label mb-3"><i class="bi bi-box-seam me-1"></i>Inversión e inventario</p>
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <div class="kpi-card kpi-inversion" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
-                            <span class="kpi-label">Inversión en inventario</span>
-                            <p class="kpi-value" id="db-inversion-inventario">$0</p>
-                            <span class="kpi-sub" id="db-inventario-unidades">0 unidades</span>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="kpi-card kpi-utilidad" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
-                            <span class="kpi-label">Utilidad potencial (detal)</span>
-                            <p class="kpi-value" id="db-utilidad-potencial">$0</p>
-                            <span class="kpi-sub" id="db-margen-utilidad">0% de margen</span>
+                    <div class="col-lg-4">
+                        <div class="db-catalog-strip h-100">
+                            <div class="d-flex align-items-center gap-3">
+                                <i class="bi bi-file-earmark-pdf db-catalog-icon"></i>
+                                <div>
+                                    <p class="db-catalog-title">Catálogo PDF</p>
+                                    <p class="db-catalog-sub">Descarga el catálogo actualizado</p>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary" id="btn-descargar-catalogo-pdf">
+                                <i class="bi bi-download me-1"></i>Descargar
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sección: Análisis de Datos -->
-                <p class="section-sub-label mb-3"><i class="bi bi-bar-chart-line me-1"></i>Análisis de datos</p>
-                <div class="row g-3 mb-4">
+                <!-- Gráfica principal + columna derecha (financieros + Top 15) -->
+                <div class="row g-3">
                     <div class="col-lg-8">
                         <div class="db-chart-card">
                             <div class="db-chart-header">
@@ -259,12 +243,22 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-4">
-                        <div class="db-chart-card h-100">
+                    <div class="col-lg-4 d-flex flex-column gap-3">
+                        <div class="kpi-card kpi-inversion" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
+                            <span class="kpi-label">Inversión en inventario</span>
+                            <p class="kpi-value" id="db-inversion-inventario">$0</p>
+                            <span class="kpi-sub" id="db-inventario-unidades">0 unidades</span>
+                        </div>
+                        <div class="kpi-card kpi-utilidad" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
+                            <span class="kpi-label">Utilidad potencial (detal)</span>
+                            <p class="kpi-value" id="db-utilidad-potencial">$0</p>
+                            <span class="kpi-sub" id="db-margen-utilidad">0% de margen</span>
+                        </div>
+                        <div class="db-chart-card flex-grow-1">
                             <div class="db-chart-header">
                                 <span class="db-chart-title">Top 15 productos</span>
                             </div>
-                            <div class="db-chart-body" style="max-height: 560px; overflow-y: auto;">
+                            <div class="db-chart-body" style="max-height: 420px; overflow-y: auto;">
                                 <canvas id="topProductosChart"></canvas>
                             </div>
                         </div>
@@ -429,17 +423,17 @@
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
+                                    <thead>
                                         <tr>
                                             <th>Foto</th>
                                             <th>Nombre</th>
                                             <th>Categoría</th>
                                             <th>Variaciones</th>
-                                            <th>P. Detal</th>
-                                            <th>P. Mayor</th>
+                                            <th>Detal</th>
+                                            <th>Mayor</th>
                                             <th>Stock</th>
-                                            <th>Código de Barras</th>
-                                            <th>Promoción</th>
+                                            <th>Barras</th>
+                                            <th>Promo</th>
                                             <th>Estado</th>
                                             <th>Acciones</th>
                                         </tr>
@@ -525,7 +519,7 @@
                                 </div>
 
                                 <table class="table table-sm table-hover align-middle my-2">
-                                    <thead class="table-light"><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead>
+                                    <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead>
                                     <tbody id="venta-carrito"></tbody>
                                 </table>
                                 <div class="row g-2">
@@ -664,7 +658,7 @@
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
+                                    <thead>
                                         <tr>
                                             <th>Fecha</th>
                                             <th>Cliente</th>
@@ -689,7 +683,7 @@
                 </div> 
             </div>
             
-            <div class="tab-pane fade" id="apartados"> <h1 class="h2">Apartados</h1> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Pendientes</h3></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Cliente</th><th>Productos</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Vence</th><th>Acciones</th></tr></thead><tbody id="lista-apartados"><tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
+            <div class="tab-pane fade" id="apartados"> <h1 class="h2">Apartados</h1> <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Pendientes</h3></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Cliente</th><th>Productos</th><th>Total</th><th>Abonado</th><th>Saldo</th><th>Vence</th><th>Acciones</th></tr></thead><tbody id="lista-apartados"><tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
             <!--apartados-->
             <div class="modal fade" id="abonoApartadoModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -780,7 +774,7 @@
                             <h6 class="border-top pt-3">Historial de Pagos</h6>
                             <div class="table-responsive">
                                 <table class="table table-sm table-hover">
-                                    <thead class="table-light">
+                                    <thead>
                                         <tr>
                                             <th>Fecha</th>
                                             <th>Monto</th>
@@ -801,7 +795,7 @@
                 </div>
             </div>
             <!--apartados-->
-            <div class="tab-pane fade" id="clientes"> <h1 class="h2">Clientes</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClientModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Nombre</th><th>Cédula</th><th>WhatsApp</th><th>Dirección</th><th>Última Compra</th><th>Acciones</th></tr></thead><tbody id="lista-clientes"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
+            <div class="tab-pane fade" id="clientes"> <h1 class="h2">Clientes</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addClientModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Nombre</th><th>Cédula</th><th>WhatsApp</th><th>Dirección</th><th>Última Compra</th><th>Acciones</th></tr></thead><tbody id="lista-clientes"><tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
             
             <div class="tab-pane fade" id="repartidores"> 
                 <div class="d-flex justify-content-between align-items-center mb-3"> 
@@ -817,7 +811,7 @@
                 </div> 
                 
                 <div id="delivery-history-view"> 
-                    <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div><div class="card-body"><form id="form-filter-delivery-history" class="mb-3"><div class="row"><div class="col-md-4"><label for="history-repartidor" class="form-label">Repartidor:</label><select id="history-repartidor" class="form-select"></select></div><div class="col-md-3"><label for="history-desde" class="form-label">Desde:</label><input type="date" id="history-desde" class="form-control"></div><div class="col-md-3"><label for="history-hasta" class="form-label">Hasta:</label><input type="date" id="history-hasta" class="form-control"></div><div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Filtrar</button></div></div></form><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Fecha</th><th>Repartidor</th><th>Efec. Esperado</th><th>Efec. Entregado</th><th>Diferencia</th></tr></thead><tbody id="lista-historial-repartidores"><tr><td colspan="5" class="text-center text-muted">Filtra.</td></tr></tbody></table></div></div></div> 
+                    <div class="card"><div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Historial</h3></div><div class="card-body"><form id="form-filter-delivery-history" class="mb-3"><div class="row"><div class="col-md-4"><label for="history-repartidor" class="form-label">Repartidor:</label><select id="history-repartidor" class="form-select"></select></div><div class="col-md-3"><label for="history-desde" class="form-label">Desde:</label><input type="date" id="history-desde" class="form-control"></div><div class="col-md-3"><label for="history-hasta" class="form-label">Hasta:</label><input type="date" id="history-hasta" class="form-control"></div><div class="col-md-2 d-flex align-items-end"><button type="submit" class="btn btn-primary w-100">Filtrar</button></div></div></form><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Fecha</th><th>Repartidor</th><th>Efec. Esperado</th><th>Efec. Entregado</th><th>Diferencia</th></tr></thead><tbody id="lista-historial-repartidores"><tr><td colspan="5" class="text-center text-muted">Filtra.</td></tr></tbody></table></div></div></div> 
                 </div> 
             </div>
             
@@ -956,7 +950,7 @@
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
+                                    <thead>
                                         <tr>
                                             <th>ID Orden</th>
                                             <th>Fecha</th>
@@ -969,7 +963,7 @@
                                     <tbody id="fin-detalle-tabla">
                                         <tr><td colspan="6" class="text-center text-muted py-4">Selecciona un periodo</td></tr>
                                     </tbody>
-                                    <tfoot id="fin-detalle-footer" class="table-light fw-bold" style="display: none;">
+                                    <tfoot id="fin-detalle-footer" class="fw-bold" style="display: none;">
                                         <tr>
                                             <td colspan="2">TOTALES</td>
                                             <td class="text-end" id="fin-footer-total"></td>
@@ -1842,7 +1836,7 @@
                     <p class="text-muted mb-3">Productos con 2 unidades o menos en inventario</p>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
-                            <thead class="table-light">
+                            <thead>
                                 <tr>
                                     <th>Producto</th>
                                     <th>Variación</th>
@@ -1919,7 +1913,7 @@
                     <!-- Tabla de Compras -->
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
-                            <thead class="table-light">
+                            <thead>
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Productos</th>
