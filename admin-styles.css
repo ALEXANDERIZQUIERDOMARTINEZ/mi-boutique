@@ -110,7 +110,11 @@ body.admin-page {
     padding: 0;
     flex: 1;
     gap: 0;
+    overflow-x: auto;           /* scroll si hay poco espacio */
+    overflow-y: visible;
+    scrollbar-width: none;      /* Firefox: oculta scrollbar */
 }
+.topnav-menu::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
 .topnav-item {
     display: flex;
