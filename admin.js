@@ -10584,59 +10584,7 @@ loadPromocionesGlobales();
 
 console.log("✅ Módulo de Promociones Globales inicializado");
 
-// ========================================================================
-// --- ACORDEÓN SIDEBAR — JavaScript puro, clases custom (sin Bootstrap) ---
-// ========================================================================
-(() => {
-    const subToggles = document.querySelectorAll('.sidebar-nav .sub-toggle');
-
-    subToggles.forEach(toggle => {
-        toggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const parentLi = this.closest('.nav-item.has-sub');
-            if (!parentLi) return;
-
-            const isOpen = parentLi.classList.contains('open');
-
-            // Cerrar todos (acordeón: uno abierto a la vez)
-            document.querySelectorAll('.nav-item.has-sub').forEach(item => {
-                item.classList.remove('open');
-            });
-
-            // Si no estaba abierto, abrirlo
-            if (!isOpen) parentLi.classList.add('open');
-        });
-    });
-
-    // Abrir automáticamente el sub-menú que contiene la sección activa
-    function openActiveSubmenu() {
-        const hash = window.location.hash || '#dashboard';
-        const activeLink = document.querySelector('.sub-menu a[href="' + hash + '"]');
-        if (activeLink) {
-            const parentMenu = activeLink.closest('.nav-item.has-sub');
-            if (parentMenu) parentMenu.classList.add('open');
-        }
-    }
-    openActiveSubmenu();
-
-    window.addEventListener('hashchange', function() {
-        document.querySelectorAll('.nav-item.has-sub').forEach(item => item.classList.remove('open'));
-        openActiveSubmenu();
-    });
-
-    // Cerrar al hacer click fuera del sidebar
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.admin-sidebar')) {
-            document.querySelectorAll('.nav-item.has-sub').forEach(item => {
-                item.classList.remove('open');
-            });
-        }
-    });
-
-    console.log("✅ Acordeón sidebar inicializado");
-})();
+// La lógica de navegación del topnav se maneja en admin.html (script inline)
 
 // ========================================================================
 // --- SIDEBAR TOGGLE PARA MÓVIL ---
