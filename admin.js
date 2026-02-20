@@ -726,11 +726,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
 
-                        const ventasTab = document.querySelector('a[href="#ventas"]');
-                        if (ventasTab) {
-                            const tab = bootstrap.Tab.getOrCreateInstance(ventasTab);
-                            tab.show();
-                        }
+                        if (window.adminShowSection) { window.adminShowSection('#ventas'); window.adminMarkActive('#ventas'); }
 
                         const salesFormViewBtn = document.getElementById('toggle-sales-form-view-btn');
                         if (salesFormViewBtn) salesFormViewBtn.click();
@@ -3436,11 +3432,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 viewSaleModalInstance.hide();
 
                 // Ir a la pestaña de ventas
-                const ventasTab = document.querySelector('a[href="#ventas"]');
-                if (ventasTab) {
-                    const tab = bootstrap.Tab.getOrCreateInstance(ventasTab);
-                    tab.show();
-                }
+                if (window.adminShowSection) { window.adminShowSection('#ventas'); window.adminMarkActive('#ventas'); }
 
                 showToast('📝 Editando venta - Modifica los datos y guarda', 'info');
             });
@@ -3515,10 +3507,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if(target.classList.contains('btn-manage-apartado')) {
                 // Redirigir a la pestaña de apartados
-                const apartadosTab = document.querySelector('a[href="#apartados"]');
-                if (apartadosTab) {
-                    const tab = bootstrap.Tab.getOrCreateInstance(apartadosTab);
-                    tab.show();
+                if (window.adminShowSection) {
+                    window.adminShowSection('#apartados');
+                    window.adminMarkActive('#apartados');
                     showToast(`Gestiona el apartado desde esta pestaña`, 'info');
                 }
             }

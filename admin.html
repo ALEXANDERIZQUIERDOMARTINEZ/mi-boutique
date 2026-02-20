@@ -2500,6 +2500,10 @@
                 });
             }
 
+            /* ─── Exponer globalmente para uso desde admin.js ─── */
+            window.adminShowSection = showSection;
+            window.adminMarkActive  = markActive;
+
             /* ─── Cierra todos los sub-menús desplegados ─── */
             function closeAllSubs() {
                 document.querySelectorAll('.topnav-item.has-sub.open').forEach(function(el) {
