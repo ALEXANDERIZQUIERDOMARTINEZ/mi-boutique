@@ -10500,53 +10500,57 @@ loadPromocionesGlobales();
 console.log("✅ Módulo de Promociones Globales inicializado");
 
 // ========================================================================
-// --- DROPDOWNS MANUALES - JavaScript Puro (SIN Bootstrap) ---
+// --- ACORDEÓN SIDEBAR — JavaScript puro, clases custom (sin Bootstrap) ---
 // ========================================================================
 (() => {
-    // Obtener todos los dropdown toggles
-    const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+    const subToggles = document.querySelectorAll('.sidebar-nav .sub-toggle');
 
-    dropdownToggles.forEach(toggle => {
+    subToggles.forEach(toggle => {
         toggle.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
 
-            const parentLi = this.closest('.nav-item.dropdown');
-            const dropdownMenu = parentLi.querySelector('.dropdown-menu');
+            const parentLi = this.closest('.nav-item.has-sub');
+            if (!parentLi) return;
 
-            // Verificar si este dropdown ya está abierto
-            const isCurrentlyOpen = parentLi.classList.contains('show');
+            const isOpen = parentLi.classList.contains('open');
 
-            // Cerrar TODOS los dropdowns primero
-            document.querySelectorAll('.nav-item.dropdown').forEach(item => {
-                item.classList.remove('show');
-                const menu = item.querySelector('.dropdown-menu');
-                if (menu) menu.classList.remove('show');
+            // Cerrar todos (acordeón: uno abierto a la vez)
+            document.querySelectorAll('.nav-item.has-sub').forEach(item => {
+                item.classList.remove('open');
             });
 
-            // Si NO estaba abierto, abrirlo
-            if (!isCurrentlyOpen) {
-                parentLi.classList.add('show');
-                if (dropdownMenu) {
-                    dropdownMenu.classList.add('show');
-                }
-            }
-            // Si SÍ estaba abierto, ya se cerró arriba, no hacer nada más
+            // Si no estaba abierto, abrirlo
+            if (!isOpen) parentLi.classList.add('open');
         });
     });
 
-    // Cerrar dropdowns al hacer click fuera
+    // Abrir automáticamente el sub-menú que contiene la sección activa
+    function openActiveSubmenu() {
+        const hash = window.location.hash || '#dashboard';
+        const activeLink = document.querySelector('.sub-menu a[href="' + hash + '"]');
+        if (activeLink) {
+            const parentMenu = activeLink.closest('.nav-item.has-sub');
+            if (parentMenu) parentMenu.classList.add('open');
+        }
+    }
+    openActiveSubmenu();
+
+    window.addEventListener('hashchange', function() {
+        document.querySelectorAll('.nav-item.has-sub').forEach(item => item.classList.remove('open'));
+        openActiveSubmenu();
+    });
+
+    // Cerrar al hacer click fuera del sidebar
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.nav-item.dropdown')) {
-            document.querySelectorAll('.nav-item.dropdown').forEach(item => {
-                item.classList.remove('show');
-                const menu = item.querySelector('.dropdown-menu');
-                if (menu) menu.classList.remove('show');
+        if (!e.target.closest('.admin-sidebar')) {
+            document.querySelectorAll('.nav-item.has-sub').forEach(item => {
+                item.classList.remove('open');
             });
         }
     });
 
-    console.log("✅ Dropdowns manuales inicializados");
+    console.log("✅ Acordeón sidebar inicializado");
 })();
 
 // ========================================================================

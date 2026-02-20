@@ -307,45 +307,60 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   DROPDOWN NAVIGATION — acordeón simple, un solo modo
+   MENÚ ACORDEÓN SIDEBAR — Implementación 100% custom, sin Bootstrap
    ═══════════════════════════════════════════════════════════════════ */
 
-/* Flecha — siempre visible, gira al abrir */
-.nav-item.dropdown .nav-link.dropdown-toggle::after {
+/* Flecha triangular — gira al abrir */
+.nav-item.has-sub .sub-toggle::after {
+    content: '';
+    display: inline-block;
     margin-left: auto;
-    transition: transform 0.22s ease;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid currentColor;
     flex-shrink: 0;
-}
-.nav-item.dropdown.show .nav-link.dropdown-toggle::after {
-    transform: rotate(180deg);
+    opacity: 0.55;
+    transition: transform 0.22s ease, opacity 0.15s ease;
 }
 
-/* ─── Acordeón con max-height — funciona en todas las pantallas ─── */
-.sidebar-nav .dropdown-menu {
-    display: block;           /* siempre en el flujo */
+.nav-item.has-sub.open .sub-toggle::after {
+    transform: rotate(180deg);
+    opacity: 0.85;
+}
+
+/* Toggle activo cuando el sub-menú está abierto */
+.nav-item.has-sub.open > .sub-toggle {
+    background: var(--admin-primario-claro);
+    color: var(--admin-primario);
+}
+
+/* ─── Sub-menú: acordeón con max-height ─── */
+.sub-menu {
+    list-style: none;
+    display: block;
     position: static;
     max-height: 0;
     overflow: hidden;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    border-radius: 0;
     padding: 0;
     margin: 0;
-    z-index: auto;
-    transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.sidebar-nav .dropdown-menu.show {
-    max-height: 300px;
+    transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+                padding  0.2s ease;
 }
 
-/* ─── Items dentro del acordeón ─── */
-.dropdown-item {
+.nav-item.has-sub.open .sub-menu {
+    max-height: 320px;
+    padding: 0.2rem 0 0.4rem;
+}
+
+/* ─── Items dentro del sub-menú ─── */
+.sub-menu .dropdown-item {
     font-family: var(--admin-fuente);
     font-size: 0.8rem;
     font-weight: 500;
     color: var(--admin-texto-sec);
-    padding: 0.55rem 1rem 0.55rem 2.75rem; /* indent para alinear bajo el icono */
+    padding: 0.52rem 1rem 0.52rem 2.75rem;
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -355,7 +370,7 @@ body.admin-page {
     text-decoration: none;
 }
 
-.dropdown-item i {
+.sub-menu .dropdown-item i {
     font-size: 0.9rem;
     width: 16px;
     min-width: 16px;
@@ -367,23 +382,22 @@ body.admin-page {
     transition: color 0.15s ease;
 }
 
-.dropdown-item:hover {
+.sub-menu .dropdown-item:hover {
     background: var(--admin-primario-claro);
     color: var(--admin-primario);
 }
-.dropdown-item:hover i  { color: var(--admin-primario); }
-.dropdown-item:active   { background: var(--admin-primario-claro); }
+.sub-menu .dropdown-item:hover i { color: var(--admin-primario); }
 
-.dropdown-item.active {
+.sub-menu .dropdown-item.active {
     color: var(--admin-primario);
     font-weight: 600;
     background: var(--admin-primario-claro);
 }
-.dropdown-item.active i { color: var(--admin-primario); }
+.sub-menu .dropdown-item.active i { color: var(--admin-primario); }
 
 /* Divider y badge */
-.dropdown-divider     { margin: 0.35rem 0; border-color: var(--admin-borde); }
-.dropdown-item .badge { margin-left: auto; }
+.sub-menu .dropdown-divider     { margin: 0.35rem 0; border-color: var(--admin-borde); }
+.sub-menu .dropdown-item .badge { margin-left: auto; }
 
 .admin-logout {
     font-weight: 500;
