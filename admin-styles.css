@@ -44,60 +44,25 @@ body.admin-page {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   SIDEBAR VERTICAL FIJO - FULL HEIGHT
+   TOP NAVIGATION BAR — Moderno, minimalista, horizontal
    ═══════════════════════════════════════════════════════════════════ */
-.admin-sidebar {
+.admin-topnav {
     position: fixed;
     top: 0;
     left: 0;
-    width: 240px;
-    height: 100vh;
+    right: 0;
+    height: 56px;
     background: white;
-    border-right: 1px solid rgba(0, 0, 0, 0.06);
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
-    overflow-y: auto;
-    overflow-x: hidden;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
     z-index: 1040;
     display: flex;
-    flex-direction: column;
+    align-items: stretch;
+    padding: 3px 1.5rem 0;
 }
 
-/* Custom scrollbar para sidebar */
-.admin-sidebar::-webkit-scrollbar {
-    width: 6px;
-}
-
-.admin-sidebar::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.admin-sidebar::-webkit-scrollbar-thumb {
-    background: var(--admin-primario-claro);
-    border-radius: 10px;
-}
-
-.admin-sidebar::-webkit-scrollbar-thumb:hover {
-    background: var(--admin-primario-hover);
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   SIDEBAR BRAND — idéntico a .header-brand del index
-   ══════════════════════════════════════════════════════════════════ */
-.sidebar-brand {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 0 1.25rem;
-    min-height: 57px;   /* 3px línea + 54px contenido */
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    background: white;
-    flex-shrink: 0;
-    gap: 6px;
-}
-
-/* Línea 3px rosa arriba — igual que header-gradient */
-.sidebar-brand::before {
+/* Línea 3px rosa — idéntica al header del index */
+.admin-topnav::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0;
@@ -105,20 +70,28 @@ body.admin-page {
     background: linear-gradient(90deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 50%, #a8638a 100%);
 }
 
-/* MISHELL en el span — mismo estilo que header-brand del index */
-.sidebar-brand .brand-name {
+/* ── Marca ── */
+.topnav-brand {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding-right: 1.25rem;
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    margin-right: 0.25rem;
+    flex-shrink: 0;
+}
+
+.topnav-brand .brand-name {
     font-family: var(--admin-fuente);
     font-weight: 800;
-    font-size: 1.05rem;
+    font-size: 1rem;
     letter-spacing: 3.5px;
     text-transform: uppercase;
     color: var(--admin-texto);
     white-space: nowrap;
 }
 
-/* BOUTIQUE subtexto */
-.sidebar-brand .brand-sub {
-    font-family: var(--admin-fuente);
+.topnav-brand .brand-sub {
     font-size: 0.42rem;
     font-weight: 600;
     letter-spacing: 2px;
@@ -128,173 +101,226 @@ body.admin-page {
     margin-top: 1px;
 }
 
-/* Navegación vertical - Centrada como Instagram */
-.sidebar-nav {
-    padding: 1.25rem 0;
+/* ── Menú horizontal ── */
+.topnav-menu {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    align-items: stretch;
+    list-style: none;
+    margin: 0;
+    padding: 0;
     flex: 1;
-    min-height: 0;
+    gap: 0;
 }
 
-.sidebar-nav .nav {
-    padding: 0 0.5rem;
+.topnav-item {
+    display: flex;
+    align-items: stretch;
+    position: relative;
 }
 
-/* ── Nav links del sidebar ── */
-.sidebar-nav .nav-link {
+/* ── Enlace / Botón de sección ── */
+.topnav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0 0.85rem;
+    font-family: var(--admin-fuente);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--admin-texto-sec);
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    position: relative;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.topnav-link i:not(.topnav-chevron) {
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.topnav-link:hover {
+    color: var(--admin-primario);
+    background: var(--admin-primario-claro);
+}
+
+/* Activo: color + línea inferior */
+.topnav-link.active,
+.topnav-item.open > .topnav-link {
+    color: var(--admin-primario);
+    font-weight: 600;
+}
+
+.topnav-link.active::after,
+.topnav-item.open > .topnav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--admin-primario);
+}
+
+/* Flecha chevron */
+.topnav-chevron {
+    font-size: 0.62rem !important;
+    margin-left: 0.1rem;
+    transition: transform 0.2s ease;
+    opacity: 0.55;
+}
+
+.topnav-item.open > .topnav-link .topnav-chevron {
+    transform: rotate(180deg);
+    opacity: 0.9;
+}
+
+/* ── Sub-menú desplegable (desktop) ── */
+.topnav-sub {
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 0;
+    min-width: 190px;
+    list-style: none;
+    padding: 0.4rem 0;
+    margin: 0;
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.10);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity 0.17s ease, transform 0.17s ease, visibility 0.17s;
+    z-index: 1050;
+}
+
+.topnav-item.open > .topnav-sub {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.topnav-sub-link {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 1.1rem;
     font-family: var(--admin-fuente);
     font-size: 0.82rem;
     font-weight: 500;
     color: var(--admin-texto-sec);
-    padding: 0.65rem 1rem;
-    margin: 0.1rem 0;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    white-space: nowrap;
-    position: relative;
-    transition: background 0.15s ease, color 0.15s ease;
     text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.13s ease, color 0.13s ease;
 }
 
-.sidebar-nav .nav-link i {
-    font-size: 1rem;
-    min-width: 20px;
-    width: 20px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+.topnav-sub-link i {
+    font-size: 0.88rem;
+    color: var(--admin-texto-claro);
+    width: 16px;
     flex-shrink: 0;
+    transition: color 0.13s ease;
 }
 
-.sidebar-nav .nav-link span {
-    display: inline;
-}
-
-/* Hover — mismo tono rosa claro que el index */
-.sidebar-nav .nav-link:hover {
+.topnav-sub-link:hover {
     background: var(--admin-primario-claro);
     color: var(--admin-primario);
 }
+.topnav-sub-link:hover i { color: var(--admin-primario); }
 
-/* Activo — línea izquierda rosa, fondo tintado, igual al nav del index */
-.sidebar-nav .nav-link.active {
+.topnav-sub-link.active {
     background: var(--admin-primario-claro);
     color: var(--admin-primario);
     font-weight: 600;
-    border-left: 3px solid var(--admin-primario);
-    padding-left: calc(1rem - 3px);
 }
+.topnav-sub-link.active i { color: var(--admin-primario); }
 
-/* Main content wrapper — offset por sidebar de 240px */
-.admin-content-wrapper {
-    margin-left: 240px;
-    min-height: 100vh;
-}
+.topnav-divider { margin: 0.3rem 0; border-color: var(--admin-borde); }
 
-/* ── Botón hamburguesa — vive dentro del admin-topbar ── */
-.sidebar-toggle {
+/* ── Hamburguesa (solo móvil) ── */
+.topnav-hamburger {
+    display: none;
+    margin-left: auto;
     background: transparent;
-    color: var(--admin-texto);
     border: none;
+    color: var(--admin-texto);
+    font-size: 1.4rem;
     width: 40px;
     height: 40px;
     border-radius: 8px;
-    display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.4rem;
-    transition: background 0.2s ease, color 0.2s ease;
     cursor: pointer;
     flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+    align-self: center;
     -webkit-tap-highlight-color: transparent;
 }
+.topnav-hamburger:hover { background: var(--admin-primario-claro); color: var(--admin-primario); }
 
-.sidebar-toggle:hover  { background: var(--admin-primario-claro); color: var(--admin-primario); }
-.sidebar-toggle:active { background: var(--admin-primario-claro); transform: scale(0.92); }
-
-/* ══════════════════════════════════════════════════════════════════
-   TOP HEADER BAR — mismo lenguaje visual que el header del index
-   ══════════════════════════════════════════════════════════════════ */
-.admin-topbar {
-    display: none;            /* oculta en desktop */
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-    z-index: 1060;
-    align-items: center;
-    padding: 3px 0.75rem 0;  /* 3px de sangría por la línea superior */
-    gap: 0.5rem;
-    min-height: 57px;         /* 3px línea + 54px contenido, igual que index */
+/* ── Content wrapper: empujado 56px por el topnav ── */
+.admin-content-wrapper {
+    padding-top: 56px;
+    min-height: 100vh;
 }
 
-/* Línea 3px en degradado rosa — copia exacta de .header-gradient del index */
-.admin-topbar::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--admin-primario) 0%, var(--admin-primario-oscuro) 50%, #a8638a 100%);
-    pointer-events: none;
-}
+/* ── Responsive: móvil y tablet (< 992px) ── */
+@media (max-width: 991.98px) {
+    .admin-topnav { padding: 3px 1rem 0; }
 
-/* ── Marca MISHELL — mismo estilo que .header-brand del index ── */
-.topbar-brand {
-    flex: 1;
-    display: flex;
-    align-items: baseline;
-    gap: 5px;
-}
+    .topnav-hamburger { display: flex; }
 
-.topbar-brand-name {
-    font-family: var(--admin-fuente);
-    font-weight: 800;
-    font-size: 1.1rem;
-    letter-spacing: 3.5px;
-    text-transform: uppercase;
-    color: var(--admin-texto);
-    white-space: nowrap;
-}
-
-.topbar-brand-sub {
-    font-size: 0.48rem;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--admin-texto-claro);
-    align-self: center;
-}
-
-/* ── Sección activa — esquina derecha, estilo nav link del index ── */
-.topbar-section-name {
-    font-family: var(--admin-fuente);
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 1.2px;
-    text-transform: uppercase;
-    color: var(--admin-texto-sec);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 130px;
-}
-
-/* Desktop (≥ 992px) — sidebar siempre visible, topbar oculta */
-@media (min-width: 992px) {
-    .admin-sidebar {
-        transform: translateX(0) !important;
-        width: 240px !important;
+    /* Menú oculto por defecto */
+    .topnav-menu {
+        display: none;
+        position: fixed;
+        top: 56px;
+        left: 0; right: 0;
+        flex-direction: column;
+        background: white;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.10);
+        max-height: calc(100vh - 56px);
+        overflow-y: auto;
+        padding: 0.5rem 0 1rem;
+        z-index: 1039;
     }
-    .admin-topbar  { display: none !important; }
-    .sidebar-toggle { display: none !important; }
+    .topnav-menu.show { display: flex; }
+
+    .topnav-item { flex-direction: column; align-items: stretch; }
+
+    .topnav-link {
+        padding: 0.72rem 1.25rem;
+        border-radius: 0;
+    }
+
+    /* Sin línea inferior en lista móvil */
+    .topnav-link.active::after,
+    .topnav-item.open > .topnav-link::after { display: none; }
+
+    /* Sub-menú: acordeón en móvil */
+    .topnav-sub {
+        position: static;
+        opacity: 1;
+        visibility: hidden;
+        max-height: 0;
+        overflow: hidden;
+        transform: none;
+        box-shadow: none;
+        border: none;
+        border-radius: 0;
+        padding: 0;
+        background: var(--admin-primario-claro);
+        transition: max-height 0.25s ease, visibility 0.25s, padding 0.2s ease;
+    }
+    .topnav-item.open > .topnav-sub {
+        visibility: visible;
+        max-height: 300px;
+        padding: 0.25rem 0;
+    }
+    .topnav-sub-link { padding: 0.6rem 1.25rem 0.6rem 2.75rem; }
 }
 
 .badge-new-order {
@@ -305,99 +331,6 @@ body.admin-page {
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.7; transform: scale(1.1); }
 }
-
-/* ═══════════════════════════════════════════════════════════════════
-   MENÚ ACORDEÓN SIDEBAR — Implementación 100% custom, sin Bootstrap
-   ═══════════════════════════════════════════════════════════════════ */
-
-/* Flecha triangular — gira al abrir */
-.nav-item.has-sub .sub-toggle::after {
-    content: '';
-    display: inline-block;
-    margin-left: auto;
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid currentColor;
-    flex-shrink: 0;
-    opacity: 0.55;
-    transition: transform 0.22s ease, opacity 0.15s ease;
-}
-
-.nav-item.has-sub.open .sub-toggle::after {
-    transform: rotate(180deg);
-    opacity: 0.85;
-}
-
-/* Toggle activo cuando el sub-menú está abierto */
-.nav-item.has-sub.open > .sub-toggle {
-    background: var(--admin-primario-claro);
-    color: var(--admin-primario);
-}
-
-/* ─── Sub-menú: acordeón con max-height ─── */
-.sub-menu {
-    list-style: none;
-    display: block;
-    position: static;
-    max-height: 0;
-    overflow: hidden;
-    padding: 0;
-    margin: 0;
-    transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
-                padding  0.2s ease;
-}
-
-.nav-item.has-sub.open .sub-menu {
-    max-height: 320px;
-    padding: 0.2rem 0 0.4rem;
-}
-
-/* ─── Items dentro del sub-menú ─── */
-.sub-menu .dropdown-item {
-    font-family: var(--admin-fuente);
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--admin-texto-sec);
-    padding: 0.52rem 1rem 0.52rem 2.75rem;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    white-space: nowrap;
-    transition: background 0.15s ease, color 0.15s ease;
-    text-decoration: none;
-}
-
-.sub-menu .dropdown-item i {
-    font-size: 0.9rem;
-    width: 16px;
-    min-width: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: var(--admin-texto-claro);
-    transition: color 0.15s ease;
-}
-
-.sub-menu .dropdown-item:hover {
-    background: var(--admin-primario-claro);
-    color: var(--admin-primario);
-}
-.sub-menu .dropdown-item:hover i { color: var(--admin-primario); }
-
-.sub-menu .dropdown-item.active {
-    color: var(--admin-primario);
-    font-weight: 600;
-    background: var(--admin-primario-claro);
-}
-.sub-menu .dropdown-item.active i { color: var(--admin-primario); }
-
-/* Divider y badge */
-.sub-menu .dropdown-divider     { margin: 0.35rem 0; border-color: var(--admin-borde); }
-.sub-menu .dropdown-item .badge { margin-left: auto; }
 
 .admin-logout {
     font-weight: 500;
@@ -1274,92 +1207,6 @@ textarea.form-control:focus {
     }
 }
 
-/* Responsive: Solo iconos en pantallas medianas */
-@media (max-width: 1400px) and (min-width: 992px) {
-    .nav-pills .nav-link {
-        padding: 0.6rem 0.65rem;
-        margin: 0 0.05rem;
-        font-size: 0;
-        position: relative;
-    }
-
-    .nav-pills .nav-link i {
-        margin-right: 0;
-        font-size: 1.2rem;
-    }
-
-    .nav-pills .nav-link .badge-new-order {
-        position: absolute;
-        top: -2px;
-        right: -2px;
-        font-size: 0.7rem;
-    }
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   RESPONSIVE — MÓVIL & TABLET (< 992px)
-   ═══════════════════════════════════════════════════════════════════ */
-@keyframes fadeInOverlay {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-}
-
-@media (max-width: 991.98px) {
-    /* ── Mostrar topbar nativo ── */
-    .admin-topbar {
-        display: flex;
-    }
-
-    /* ── Content wrapper: desplazado por topbar ── */
-    .admin-content-wrapper {
-        margin-left: 0 !important;
-        padding-top: 57px; /* 3px línea + 54px topbar, igual que index header */
-    }
-
-    /* ── Sidebar: off-canvas desde la izquierda ── */
-    .admin-sidebar {
-        position: fixed;
-        top: 0 !important;
-        left: 0;
-        height: 100vh;
-        transform: translateX(-100%);
-        width: 240px;
-        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
-        z-index: 1070;
-        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .admin-sidebar.show {
-        transform: translateX(0) !important;
-    }
-
-    /* ── Overlay oscuro ── */
-    body.sidebar-open::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.45);
-        z-index: 1065;
-        animation: fadeInOverlay 0.25s ease;
-        pointer-events: none;
-    }
-
-    body.sidebar-open {
-        overflow-y: hidden !important;
-    }
-
-    /* ── Main ── */
-    .admin-main {
-        padding: 1.25rem 1rem 2rem;
-    }
-
-    .admin-main h1,
-    .admin-main h2,
-    .admin-main .h2 {
-        padding-left: 0;
-        margin-bottom: 1.25rem;
-    }
-}
 
 /* Tablet — padding más amplio */
 @media (min-width: 576px) and (max-width: 991.98px) {

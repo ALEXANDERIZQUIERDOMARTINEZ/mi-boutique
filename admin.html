@@ -21,113 +21,112 @@
     </head>
 <body class="admin-page">
 
-    <!-- 📱 TOP HEADER BAR — visible solo en móvil/tablet -->
-    <header class="admin-topbar" id="adminTopbar">
-        <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Abrir menú">
-            <i class="bi bi-list"></i>
-        </button>
-        <div class="topbar-brand">
-            <span class="topbar-brand-name">MISHELL</span>
-            <span class="topbar-brand-sub">BOUTIQUE</span>
-        </div>
-        <div class="topbar-section-name" id="topbarSectionName">Dashboard</div>
-    </header>
+    <!-- 🎯 TOP NAVIGATION BAR — Moderno, minimalista, sin barra lateral -->
+    <nav class="admin-topnav" id="adminTopnav">
 
-    <!-- 🎯 SIDEBAR VERTICAL FIJO - Full Height -->
-    <aside class="admin-sidebar" id="adminSidebar">
-        <!-- Brand / Logo -->
-        <div class="sidebar-brand">
+        <!-- Marca -->
+        <div class="topnav-brand">
             <span class="brand-name">MISHELL</span>
             <span class="brand-sub">BOUTIQUE</span>
         </div>
 
-        <!-- Navegación Vertical -->
-        <nav class="sidebar-nav">
-            <ul class="nav flex-column">
-                <!-- 1️⃣ DASHBOARD -->
-                <li class="nav-item">
-                    <a href="#dashboard" class="nav-link active" data-bs-toggle="pill" data-tooltip="Dashboard">
-                        <i class="bi bi-grid-1x2"></i>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
+        <!-- Hamburguesa (solo móvil) -->
+        <button class="topnav-hamburger" id="topnavHamburger" type="button" aria-label="Abrir menú">
+            <i class="bi bi-list"></i>
+        </button>
 
-                <!-- 2️⃣ VENTAS -->
-                <li class="nav-item has-sub">
-                    <a class="nav-link sub-toggle" href="javascript:void(0)" data-tooltip="Ventas">
-                        <i class="bi bi-cart3"></i>
-                        <span>Ventas</span>
-                    </a>
-                    <ul class="sub-menu">
-                        <li><a class="dropdown-item" href="#ventas" data-bs-toggle="pill"><i class="bi bi-plus-circle"></i>Registrar Venta</a></li>
-                        <li><a class="dropdown-item position-relative" href="#pedidos-web" data-bs-toggle="pill">
-                            <i class="bi bi-bag-check"></i>Pedidos Web
-                            <span class="badge bg-danger ms-auto badge-new-order" id="pedidos-web-count" style="display: none;">0</span>
-                        </a></li>
-                        <li><a class="dropdown-item" href="#apartados" data-bs-toggle="pill"><i class="bi bi-bookmark-star"></i>Apartados</a></li>
-                    </ul>
-                </li>
+        <!-- Menú de navegación -->
+        <ul class="topnav-menu" id="topnavMenu">
 
-                <!-- 3️⃣ INVENTARIO -->
-                <li class="nav-item has-sub">
-                    <a class="nav-link sub-toggle" href="javascript:void(0)" data-tooltip="Inventario">
-                        <i class="bi bi-box-seam"></i>
-                        <span>Inventario</span>
-                    </a>
-                    <ul class="sub-menu">
-                        <li><a class="dropdown-item" href="#productos" data-bs-toggle="pill"><i class="bi bi-grid"></i>Productos</a></li>
-                        <li><a class="dropdown-item" href="#cargue-masivo" data-bs-toggle="pill"><i class="bi bi-file-earmark-excel"></i>Cargue Masivo</a></li>
-                        <li><a class="dropdown-item" href="#categorias" data-bs-toggle="pill"><i class="bi bi-tags"></i>Categorías</a></li>
-                    </ul>
-                </li>
+            <!-- Dashboard -->
+            <li class="topnav-item">
+                <a class="topnav-link" href="#dashboard" data-bs-toggle="pill">
+                    <i class="bi bi-grid-1x2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
 
-                <!-- 4️⃣ CLIENTES -->
-                <li class="nav-item">
-                    <a href="#clientes" class="nav-link" data-bs-toggle="pill" data-tooltip="Clientes">
-                        <i class="bi bi-people"></i>
-                        <span>Clientes</span>
-                    </a>
-                </li>
+            <!-- Ventas -->
+            <li class="topnav-item has-sub">
+                <button class="topnav-link is-sub-toggle" type="button">
+                    <i class="bi bi-cart3"></i>
+                    <span>Ventas</span>
+                    <i class="bi bi-chevron-down topnav-chevron"></i>
+                </button>
+                <ul class="topnav-sub">
+                    <li><a class="topnav-sub-link" href="#ventas" data-bs-toggle="pill"><i class="bi bi-plus-circle"></i>Registrar Venta</a></li>
+                    <li><a class="topnav-sub-link position-relative" href="#pedidos-web" data-bs-toggle="pill">
+                        <i class="bi bi-bag-check"></i>Pedidos Web
+                        <span class="badge bg-danger ms-auto badge-new-order" id="pedidos-web-count" style="display: none;">0</span>
+                    </a></li>
+                    <li><a class="topnav-sub-link" href="#apartados" data-bs-toggle="pill"><i class="bi bi-bookmark-star"></i>Apartados</a></li>
+                </ul>
+            </li>
 
-                <!-- 5️⃣ LOGÍSTICA -->
-                <li class="nav-item has-sub">
-                    <a class="nav-link sub-toggle" href="javascript:void(0)" data-tooltip="Logística">
-                        <i class="bi bi-truck"></i>
-                        <span>Logística</span>
-                    </a>
-                    <ul class="sub-menu">
-                        <li><a class="dropdown-item" href="#repartidores" data-bs-toggle="pill"><i class="bi bi-bicycle"></i>Repartidores</a></li>
-                        <li><a class="dropdown-item" href="#promociones" data-bs-toggle="pill"><i class="bi bi-megaphone"></i>Promociones</a></li>
-                    </ul>
-                </li>
+            <!-- Inventario -->
+            <li class="topnav-item has-sub">
+                <button class="topnav-link is-sub-toggle" type="button">
+                    <i class="bi bi-box-seam"></i>
+                    <span>Inventario</span>
+                    <i class="bi bi-chevron-down topnav-chevron"></i>
+                </button>
+                <ul class="topnav-sub">
+                    <li><a class="topnav-sub-link" href="#productos" data-bs-toggle="pill"><i class="bi bi-grid"></i>Productos</a></li>
+                    <li><a class="topnav-sub-link" href="#cargue-masivo" data-bs-toggle="pill"><i class="bi bi-file-earmark-excel"></i>Cargue Masivo</a></li>
+                    <li><a class="topnav-sub-link" href="#categorias" data-bs-toggle="pill"><i class="bi bi-tags"></i>Categorías</a></li>
+                </ul>
+            </li>
 
-                <!-- 6️⃣ FINANZAS -->
-                <li class="nav-item has-sub">
-                    <a class="nav-link sub-toggle" href="javascript:void(0)" data-tooltip="Finanzas">
-                        <i class="bi bi-wallet2"></i>
-                        <span>Finanzas</span>
-                    </a>
-                    <ul class="sub-menu">
-                        <li><a class="dropdown-item" href="#finanzas" data-bs-toggle="pill"><i class="bi bi-graph-up-arrow"></i>Finanzas</a></li>
-                        <li><a class="dropdown-item" href="#proveedores" data-bs-toggle="pill"><i class="bi bi-building"></i>Proveedores</a></li>
-                    </ul>
-                </li>
+            <!-- Clientes -->
+            <li class="topnav-item">
+                <a class="topnav-link" href="#clientes" data-bs-toggle="pill">
+                    <i class="bi bi-people"></i>
+                    <span>Clientes</span>
+                </a>
+            </li>
 
-                <!-- 7️⃣ CONFIG -->
-                <li class="nav-item has-sub">
-                    <a class="nav-link sub-toggle" href="javascript:void(0)" data-tooltip="Configuración">
-                        <i class="bi bi-gear"></i>
-                        <span>Config</span>
-                    </a>
-                    <ul class="sub-menu">
-                        <li><a class="dropdown-item" href="#backup" data-bs-toggle="pill"><i class="bi bi-cloud-arrow-down"></i>Backup</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="index.html" target="_blank"><i class="bi bi-shop"></i>Ver Catálogo</a></li>
-                    </ul>
-                </li>
-            </ul>
-        </nav>
-    </aside>
+            <!-- Logística -->
+            <li class="topnav-item has-sub">
+                <button class="topnav-link is-sub-toggle" type="button">
+                    <i class="bi bi-truck"></i>
+                    <span>Logística</span>
+                    <i class="bi bi-chevron-down topnav-chevron"></i>
+                </button>
+                <ul class="topnav-sub">
+                    <li><a class="topnav-sub-link" href="#repartidores" data-bs-toggle="pill"><i class="bi bi-bicycle"></i>Repartidores</a></li>
+                    <li><a class="topnav-sub-link" href="#promociones" data-bs-toggle="pill"><i class="bi bi-megaphone"></i>Promociones</a></li>
+                </ul>
+            </li>
+
+            <!-- Finanzas -->
+            <li class="topnav-item has-sub">
+                <button class="topnav-link is-sub-toggle" type="button">
+                    <i class="bi bi-wallet2"></i>
+                    <span>Finanzas</span>
+                    <i class="bi bi-chevron-down topnav-chevron"></i>
+                </button>
+                <ul class="topnav-sub">
+                    <li><a class="topnav-sub-link" href="#finanzas" data-bs-toggle="pill"><i class="bi bi-graph-up-arrow"></i>Finanzas</a></li>
+                    <li><a class="topnav-sub-link" href="#proveedores" data-bs-toggle="pill"><i class="bi bi-building"></i>Proveedores</a></li>
+                </ul>
+            </li>
+
+            <!-- Config -->
+            <li class="topnav-item has-sub">
+                <button class="topnav-link is-sub-toggle" type="button">
+                    <i class="bi bi-gear"></i>
+                    <span>Config</span>
+                    <i class="bi bi-chevron-down topnav-chevron"></i>
+                </button>
+                <ul class="topnav-sub">
+                    <li><a class="topnav-sub-link" href="#backup" data-bs-toggle="pill"><i class="bi bi-cloud-arrow-down"></i>Backup</a></li>
+                    <li><hr class="topnav-divider"></li>
+                    <li><a class="topnav-sub-link" href="index.html" target="_blank"><i class="bi bi-shop"></i>Ver Catálogo</a></li>
+                </ul>
+            </li>
+
+        </ul>
+    </nav>
 
     <!-- 📄 MAIN CONTENT WRAPPER -->
     <div class="admin-content-wrapper">
@@ -2475,85 +2474,82 @@
     <!-- jsPDF para generar PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <!-- Script para manejar el sidebar toggle en móvil -->
+    <!-- Script del topnav: hamburguesa, sub-menús y estado activo -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebarToggle');
-            const sidebar       = document.getElementById('adminSidebar');
-            const topbarSection = document.getElementById('topbarSectionName');
+            const hamburger  = document.getElementById('topnavHamburger');
+            const menu       = document.getElementById('topnavMenu');
+            const topnav     = document.getElementById('adminTopnav');
 
-            // Mapeo de hash → nombre legible para el topbar
-            const SECTION_NAMES = {
-                dashboard:      'Dashboard',
-                ventas:         'Registrar Venta',
-                'pedidos-web':  'Pedidos Web',
-                apartados:      'Apartados',
-                productos:      'Productos',
-                'cargue-masivo':'Cargue Masivo',
-                categorias:     'Categorías',
-                clientes:       'Clientes',
-                repartidores:   'Repartidores',
-                promociones:    'Promociones',
-                finanzas:       'Finanzas',
-                proveedores:    'Proveedores',
-                backup:         'Backup'
-            };
-
-            // Actualiza el título del topbar según la sección activa
-            function updateTopbarSection() {
-                const hash = (window.location.hash || '#dashboard').replace('#', '');
-                if (topbarSection) {
-                    topbarSection.textContent = SECTION_NAMES[hash] || 'Admin';
-                }
-            }
-            updateTopbarSection();
-            window.addEventListener('hashchange', updateTopbarSection);
-
-            // ── Guarda/restaura scroll para evitar el salto de posición ──
-            let savedScrollY = 0;
-
-            function openSidebar() {
-                savedScrollY = window.scrollY;
-                document.body.style.top = `-${savedScrollY}px`;
-                sidebar.classList.add('show');
-                document.body.classList.add('sidebar-open');
+            // ── Cierra todos los sub-menús ──
+            function closeAllSubs() {
+                document.querySelectorAll('.topnav-item.has-sub.open').forEach(function(item) {
+                    item.classList.remove('open');
+                });
             }
 
-            function closeSidebar() {
-                sidebar.classList.remove('show');
-                document.body.classList.remove('sidebar-open');
-                document.body.style.top = '';
-                window.scrollTo(0, savedScrollY);
+            // ── Cierra el menú móvil ──
+            function closeMenu() {
+                if (menu) menu.classList.remove('show');
+                if (hamburger) hamburger.innerHTML = '<i class="bi bi-list"></i>';
+                closeAllSubs();
             }
 
-            if (sidebarToggle && sidebar) {
-                sidebarToggle.addEventListener('click', function(e) {
+            // ── Hamburguesa: abre/cierra el menú en móvil ──
+            if (hamburger && menu) {
+                hamburger.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    e.preventDefault();
-                    sidebar.classList.contains('show') ? closeSidebar() : openSidebar();
+                    const isOpen = menu.classList.toggle('show');
+                    hamburger.innerHTML = isOpen
+                        ? '<i class="bi bi-x-lg"></i>'
+                        : '<i class="bi bi-list"></i>';
+                    if (!isOpen) closeAllSubs();
                 });
+            }
 
-                // Cerrar al hacer click fuera (en el overlay)
-                document.addEventListener('click', function(e) {
-                    if (sidebar.classList.contains('show') &&
-                        !sidebar.contains(e.target) &&
-                        !sidebarToggle.contains(e.target)) {
-                        closeSidebar();
-                    }
+            // ── Sub-menús: click para abrir/cerrar ──
+            document.querySelectorAll('.topnav-item.has-sub .is-sub-toggle').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const parentItem = this.closest('.topnav-item.has-sub');
+                    const isOpen = parentItem.classList.contains('open');
+                    closeAllSubs();
+                    if (!isOpen) parentItem.classList.add('open');
                 });
+            });
 
-                // Cerrar al navegar a una sección
-                const navLinks = sidebar.querySelectorAll('.nav-link[data-bs-toggle="pill"], .dropdown-item[data-bs-toggle="pill"]');
-                navLinks.forEach(function(link) {
+            // ── Cerrar al hacer click fuera del topnav ──
+            document.addEventListener('click', function(e) {
+                if (topnav && !topnav.contains(e.target)) {
+                    closeMenu();
+                }
+            });
+
+            // ── Cerrar menú al navegar (click en un enlace de sección) ──
+            if (menu) {
+                menu.querySelectorAll('[data-bs-toggle="pill"]').forEach(function(link) {
                     link.addEventListener('click', function() {
-                        if (window.innerWidth < 992) {
-                            closeSidebar();
-                            // Actualizar título tras un tick para que el hash ya cambiara
-                            setTimeout(updateTopbarSection, 50);
-                        }
+                        closeMenu();
+                        updateActiveLinks();
                     });
                 });
             }
+
+            // ── Marcar enlace activo según hash ──
+            function updateActiveLinks() {
+                const hash = window.location.hash || '#dashboard';
+                document.querySelectorAll('.topnav-link[data-bs-toggle="pill"]').forEach(function(link) {
+                    link.classList.toggle('active', link.getAttribute('href') === hash);
+                });
+                document.querySelectorAll('.topnav-sub-link[data-bs-toggle="pill"]').forEach(function(link) {
+                    link.classList.toggle('active', link.getAttribute('href') === hash);
+                });
+            }
+            updateActiveLinks();
+            window.addEventListener('hashchange', function() {
+                updateActiveLinks();
+                closeAllSubs();
+            });
         });
     </script>
 
