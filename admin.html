@@ -21,112 +21,109 @@
     </head>
 <body class="admin-page">
 
-    <!-- 🎯 TOP NAVIGATION BAR — Moderno, minimalista, sin barra lateral -->
-    <nav class="admin-topnav" id="adminTopnav">
+    <!-- ══ RAIL NAV — Sidebar plano, minimalista, sin dropdowns ══ -->
 
-        <!-- Marca -->
-        <div class="topnav-brand">
-            <span class="brand-name">MISHELL</span>
-            <span class="brand-sub">BOUTIQUE</span>
-        </div>
-
-        <!-- Hamburguesa (solo móvil) -->
-        <button class="topnav-hamburger" id="topnavHamburger" type="button" aria-label="Abrir menú">
+    <!-- Topbar mínima (visible solo en móvil) -->
+    <header class="rail-topbar" id="railTopbar">
+        <button class="rail-toggle" id="railToggle" aria-label="Abrir menú">
             <i class="bi bi-list"></i>
         </button>
+        <span class="rail-topbar-brand">MISHELL BOUTIQUE</span>
+    </header>
 
-        <!-- Menú de navegación -->
-        <ul class="topnav-menu" id="topnavMenu">
+    <!-- Sidebar fijo -->
+    <aside class="admin-rail" id="adminRail">
 
-            <!-- Dashboard -->
-            <li class="topnav-item">
-                <a class="topnav-link" href="#dashboard">
-                    <i class="bi bi-grid-1x2"></i>
-                    <span>Dashboard</span>
+        <!-- Marca -->
+        <div class="rail-brand">
+            <span class="rail-brand-name">MISHELL <em>BOUTIQUE</em></span>
+        </div>
+
+        <!-- Navegación plana -->
+        <nav class="rail-nav">
+
+            <!-- Principal -->
+            <div class="rail-group">
+                <a class="rail-link" href="#dashboard">
+                    <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
                 </a>
-            </li>
+            </div>
 
             <!-- Ventas -->
-            <li class="topnav-item has-sub">
-                <button class="topnav-link is-sub-toggle" type="button">
-                    <i class="bi bi-cart3"></i>
-                    <span>Ventas</span>
-                    <i class="bi bi-chevron-down topnav-chevron"></i>
-                </button>
-                <ul class="topnav-sub">
-                    <li><a class="topnav-sub-link" href="#ventas"><i class="bi bi-plus-circle"></i>Registrar Venta</a></li>
-                    <li><a class="topnav-sub-link position-relative" href="#pedidos-web">
-                        <i class="bi bi-bag-check"></i>Pedidos Web
-                        <span class="badge bg-danger ms-auto badge-new-order" id="pedidos-web-count" style="display: none;">0</span>
-                    </a></li>
-                    <li><a class="topnav-sub-link" href="#apartados"><i class="bi bi-bookmark-star"></i>Apartados</a></li>
-                </ul>
-            </li>
+            <div class="rail-group">
+                <span class="rail-group-label">Ventas</span>
+                <a class="rail-link" href="#ventas">
+                    <i class="bi bi-plus-circle"></i><span>Registrar Venta</span>
+                </a>
+                <a class="rail-link" href="#pedidos-web">
+                    <i class="bi bi-bag-check"></i><span>Pedidos Web</span>
+                    <span class="badge bg-danger ms-auto badge-new-order" id="pedidos-web-count" style="display:none;">0</span>
+                </a>
+                <a class="rail-link" href="#apartados">
+                    <i class="bi bi-bookmark-star"></i><span>Apartados</span>
+                </a>
+            </div>
 
             <!-- Inventario -->
-            <li class="topnav-item has-sub">
-                <button class="topnav-link is-sub-toggle" type="button">
-                    <i class="bi bi-box-seam"></i>
-                    <span>Inventario</span>
-                    <i class="bi bi-chevron-down topnav-chevron"></i>
-                </button>
-                <ul class="topnav-sub">
-                    <li><a class="topnav-sub-link" href="#productos"><i class="bi bi-grid"></i>Productos</a></li>
-                    <li><a class="topnav-sub-link" href="#cargue-masivo"><i class="bi bi-file-earmark-excel"></i>Cargue Masivo</a></li>
-                    <li><a class="topnav-sub-link" href="#categorias"><i class="bi bi-tags"></i>Categorías</a></li>
-                </ul>
-            </li>
+            <div class="rail-group">
+                <span class="rail-group-label">Inventario</span>
+                <a class="rail-link" href="#productos">
+                    <i class="bi bi-grid"></i><span>Productos</span>
+                </a>
+                <a class="rail-link" href="#cargue-masivo">
+                    <i class="bi bi-file-earmark-excel"></i><span>Cargue Masivo</span>
+                </a>
+                <a class="rail-link" href="#categorias">
+                    <i class="bi bi-tags"></i><span>Categorías</span>
+                </a>
+            </div>
 
             <!-- Clientes -->
-            <li class="topnav-item">
-                <a class="topnav-link" href="#clientes">
-                    <i class="bi bi-people"></i>
-                    <span>Clientes</span>
+            <div class="rail-group">
+                <a class="rail-link" href="#clientes">
+                    <i class="bi bi-people"></i><span>Clientes</span>
                 </a>
-            </li>
+            </div>
 
             <!-- Logística -->
-            <li class="topnav-item has-sub">
-                <button class="topnav-link is-sub-toggle" type="button">
-                    <i class="bi bi-truck"></i>
-                    <span>Logística</span>
-                    <i class="bi bi-chevron-down topnav-chevron"></i>
-                </button>
-                <ul class="topnav-sub">
-                    <li><a class="topnav-sub-link" href="#repartidores"><i class="bi bi-bicycle"></i>Repartidores</a></li>
-                    <li><a class="topnav-sub-link" href="#promociones"><i class="bi bi-megaphone"></i>Promociones</a></li>
-                </ul>
-            </li>
+            <div class="rail-group">
+                <span class="rail-group-label">Logística</span>
+                <a class="rail-link" href="#repartidores">
+                    <i class="bi bi-bicycle"></i><span>Repartidores</span>
+                </a>
+                <a class="rail-link" href="#promociones">
+                    <i class="bi bi-megaphone"></i><span>Promociones</span>
+                </a>
+            </div>
 
             <!-- Finanzas -->
-            <li class="topnav-item has-sub">
-                <button class="topnav-link is-sub-toggle" type="button">
-                    <i class="bi bi-wallet2"></i>
-                    <span>Finanzas</span>
-                    <i class="bi bi-chevron-down topnav-chevron"></i>
-                </button>
-                <ul class="topnav-sub">
-                    <li><a class="topnav-sub-link" href="#finanzas"><i class="bi bi-graph-up-arrow"></i>Finanzas</a></li>
-                    <li><a class="topnav-sub-link" href="#proveedores"><i class="bi bi-building"></i>Proveedores</a></li>
-                </ul>
-            </li>
+            <div class="rail-group">
+                <span class="rail-group-label">Finanzas</span>
+                <a class="rail-link" href="#finanzas">
+                    <i class="bi bi-graph-up-arrow"></i><span>Finanzas</span>
+                </a>
+                <a class="rail-link" href="#proveedores">
+                    <i class="bi bi-building"></i><span>Proveedores</span>
+                </a>
+            </div>
 
-            <!-- Config -->
-            <li class="topnav-item has-sub">
-                <button class="topnav-link is-sub-toggle" type="button">
-                    <i class="bi bi-gear"></i>
-                    <span>Config</span>
-                    <i class="bi bi-chevron-down topnav-chevron"></i>
-                </button>
-                <ul class="topnav-sub">
-                    <li><a class="topnav-sub-link" href="#backup"><i class="bi bi-cloud-arrow-down"></i>Backup</a></li>
-                    <li><hr class="topnav-divider"></li>
-                    <li><a class="topnav-sub-link" href="index.html" target="_blank"><i class="bi bi-shop"></i>Ver Catálogo</a></li>
-                </ul>
-            </li>
+            <!-- Config / Accesos -->
+            <div class="rail-group">
+                <span class="rail-group-label">Config</span>
+                <a class="rail-link" href="#backup">
+                    <i class="bi bi-cloud-arrow-down"></i><span>Backup</span>
+                </a>
+                <a class="rail-link" href="index.html" target="_blank">
+                    <i class="bi bi-shop"></i><span>Ver Catálogo</span>
+                </a>
+            </div>
 
-        </ul>
-    </nav>
+        </nav>
+    </aside>
+
+    <!-- Overlay oscuro para cerrar el rail en móvil -->
+    <div class="rail-overlay" id="railOverlay"></div>
+
 
     <!-- 📄 MAIN CONTENT WRAPPER -->
     <div class="admin-content-wrapper">
@@ -2477,88 +2474,59 @@
     <!-- jsPDF para generar PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-    <!-- ═══ TOPNAV: sección activa, hamburguesa y sub-menús ═══ -->
+    <!-- ══ RAIL NAV: sección activa + apertura móvil ══ -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const hamburger = document.getElementById('topnavHamburger');
-            const menu      = document.getElementById('topnavMenu');
-            const topnav    = document.getElementById('adminTopnav');
+            var rail    = document.getElementById('adminRail');
+            var overlay = document.getElementById('railOverlay');
+            var toggle  = document.getElementById('railToggle');
 
-            /* ─── Cambia la sección visible (sin Bootstrap Tab) ─── */
+            /* ─── Muestra la sección solicitada ─── */
             function showSection(hash) {
-                const id = (hash || '#dashboard').replace('#', '');
-                document.querySelectorAll('.tab-pane').forEach(function(pane) {
-                    pane.classList.remove('show', 'active');
+                var id = (hash || '#dashboard').replace('#', '');
+                document.querySelectorAll('.tab-pane').forEach(function(p) {
+                    p.classList.remove('show', 'active');
                 });
-                const target = document.getElementById(id);
+                var target = document.getElementById(id);
                 if (target) target.classList.add('show', 'active');
                 history.replaceState(null, '', '#' + id);
             }
 
-            /* ─── Resalta el enlace del topnav activo ─── */
+            /* ─── Resalta el enlace activo en el rail ─── */
             function markActive(hash) {
-                const h = (hash || '#dashboard');
-                document.querySelectorAll('.topnav-link[href], .topnav-sub-link[href]').forEach(function(link) {
+                var h = hash || '#dashboard';
+                document.querySelectorAll('.rail-link[href^="#"]').forEach(function(link) {
                     link.classList.toggle('active', link.getAttribute('href') === h);
                 });
             }
 
-            /* ─── Exponer globalmente para uso desde admin.js ─── */
+            /* ─── Exponer globalmente (usado por admin.js) ─── */
             window.adminShowSection = showSection;
             window.adminMarkActive  = markActive;
 
-            /* ─── Cierra todos los sub-menús desplegados ─── */
-            function closeAllSubs() {
-                document.querySelectorAll('.topnav-item.has-sub.open').forEach(function(el) {
-                    el.classList.remove('open');
-                });
-            }
-
-            /* ─── Cierra el menú móvil ─── */
-            function closeMenu() {
-                if (menu)      menu.classList.remove('show');
-                if (hamburger) hamburger.innerHTML = '<i class="bi bi-list"></i>';
-                closeAllSubs();
-            }
-
-            /* ─── Clics en enlaces de sección ─── */
-            document.querySelectorAll('.topnav-link[href^="#"], .topnav-sub-link[href^="#"]').forEach(function(link) {
+            /* ─── Clics en enlaces del rail ─── */
+            document.querySelectorAll('.rail-link[href^="#"]').forEach(function(link) {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const hash = this.getAttribute('href');
+                    var hash = this.getAttribute('href');
                     showSection(hash);
                     markActive(hash);
-                    closeMenu();
+                    closeRail();
                 });
             });
 
-            /* ─── Sub-menús: un clic para abrir / cerrar (acordeón) ─── */
-            document.querySelectorAll('.topnav-item.has-sub .is-sub-toggle').forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const item   = this.closest('.topnav-item.has-sub');
-                    const isOpen = item.classList.contains('open');
-                    closeAllSubs();
-                    if (!isOpen) item.classList.add('open');
-                });
-            });
-
-            /* ─── Hamburguesa (móvil) ─── */
-            if (hamburger && menu) {
-                hamburger.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const open = menu.classList.toggle('show');
-                    hamburger.innerHTML = open
-                        ? '<i class="bi bi-x-lg"></i>'
-                        : '<i class="bi bi-list"></i>';
-                    if (!open) closeAllSubs();
-                });
+            /* ─── Apertura / cierre del rail en móvil ─── */
+            function openRail() {
+                if (rail)    rail.classList.add('open');
+                if (overlay) overlay.classList.add('show');
+            }
+            function closeRail() {
+                if (rail)    rail.classList.remove('open');
+                if (overlay) overlay.classList.remove('show');
             }
 
-            /* ─── Click fuera cierra todo ─── */
-            document.addEventListener('click', function(e) {
-                if (topnav && !topnav.contains(e.target)) closeMenu();
-            });
+            if (toggle)  toggle.addEventListener('click',  openRail);
+            if (overlay) overlay.addEventListener('click', closeRail);
 
             /* ─── Estado inicial ─── */
             var initHash = window.location.hash || '#dashboard';
