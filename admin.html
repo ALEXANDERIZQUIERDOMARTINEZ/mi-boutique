@@ -36,7 +36,13 @@
 
         <!-- Marca -->
         <div class="rail-brand">
-            <span class="rail-brand-name">Mishell</span>
+            <div class="rail-brand-inner">
+                <img src="icon.svg" alt="M" class="rail-logo-img">
+                <span class="rail-brand-name">Mishell</span>
+            </div>
+            <button class="rail-collapse-btn" id="railCollapseBtn" aria-label="Colapsar menú">
+                <i class="bi bi-chevron-left" id="railCollapseIcon"></i>
+            </button>
         </div>
 
         <!-- Navegación plana -->
@@ -44,7 +50,7 @@
 
             <!-- Principal -->
             <div class="rail-group">
-                <a class="rail-link" href="#dashboard">
+                <a class="rail-link" href="#dashboard" data-tooltip="Dashboard">
                     <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
                 </a>
             </div>
@@ -52,14 +58,14 @@
             <!-- Ventas -->
             <div class="rail-group">
                 <span class="rail-group-label">Ventas</span>
-                <a class="rail-link" href="#ventas">
+                <a class="rail-link" href="#ventas" data-tooltip="Registrar Venta">
                     <i class="bi bi-plus-circle"></i><span>Registrar Venta</span>
                 </a>
-                <a class="rail-link" href="#pedidos-web">
+                <a class="rail-link" href="#pedidos-web" data-tooltip="Pedidos Web">
                     <i class="bi bi-bag-check"></i><span>Pedidos Web</span>
                     <span class="badge bg-danger ms-auto badge-new-order" id="pedidos-web-count" style="display:none;">0</span>
                 </a>
-                <a class="rail-link" href="#apartados">
+                <a class="rail-link" href="#apartados" data-tooltip="Apartados">
                     <i class="bi bi-bookmark-star"></i><span>Apartados</span>
                 </a>
             </div>
@@ -67,20 +73,20 @@
             <!-- Inventario -->
             <div class="rail-group">
                 <span class="rail-group-label">Inventario</span>
-                <a class="rail-link" href="#productos">
+                <a class="rail-link" href="#productos" data-tooltip="Productos">
                     <i class="bi bi-grid"></i><span>Productos</span>
                 </a>
-                <a class="rail-link" href="#cargue-masivo">
+                <a class="rail-link" href="#cargue-masivo" data-tooltip="Cargue Masivo">
                     <i class="bi bi-file-earmark-excel"></i><span>Cargue Masivo</span>
                 </a>
-                <a class="rail-link" href="#categorias">
+                <a class="rail-link" href="#categorias" data-tooltip="Categorías">
                     <i class="bi bi-tags"></i><span>Categorías</span>
                 </a>
             </div>
 
             <!-- Clientes -->
             <div class="rail-group">
-                <a class="rail-link" href="#clientes">
+                <a class="rail-link" href="#clientes" data-tooltip="Clientes">
                     <i class="bi bi-people"></i><span>Clientes</span>
                 </a>
             </div>
@@ -88,10 +94,10 @@
             <!-- Logística -->
             <div class="rail-group">
                 <span class="rail-group-label">Logística</span>
-                <a class="rail-link" href="#repartidores">
+                <a class="rail-link" href="#repartidores" data-tooltip="Repartidores">
                     <i class="bi bi-bicycle"></i><span>Repartidores</span>
                 </a>
-                <a class="rail-link" href="#promociones">
+                <a class="rail-link" href="#promociones" data-tooltip="Promociones">
                     <i class="bi bi-megaphone"></i><span>Promociones</span>
                 </a>
             </div>
@@ -99,10 +105,10 @@
             <!-- Finanzas -->
             <div class="rail-group">
                 <span class="rail-group-label">Finanzas</span>
-                <a class="rail-link" href="#finanzas">
+                <a class="rail-link" href="#finanzas" data-tooltip="Finanzas">
                     <i class="bi bi-graph-up-arrow"></i><span>Finanzas</span>
                 </a>
-                <a class="rail-link" href="#proveedores">
+                <a class="rail-link" href="#proveedores" data-tooltip="Proveedores">
                     <i class="bi bi-building"></i><span>Proveedores</span>
                 </a>
             </div>
@@ -110,15 +116,41 @@
             <!-- Config / Accesos -->
             <div class="rail-group">
                 <span class="rail-group-label">Config</span>
-                <a class="rail-link" href="#backup">
+                <a class="rail-link" href="#backup" data-tooltip="Backup">
                     <i class="bi bi-cloud-arrow-down"></i><span>Backup</span>
                 </a>
-                <a class="rail-link" href="index.html" target="_blank">
+                <a class="rail-link" href="index.html" target="_blank" data-tooltip="Ver Catálogo">
                     <i class="bi bi-shop"></i><span>Ver Catálogo</span>
                 </a>
             </div>
 
         </nav>
+
+        <!-- Pie del sidebar: Dark mode + Perfil -->
+        <div class="rail-bottom">
+            <div class="rail-darkmode-wrap">
+                <button class="rail-link rail-darkmode-btn w-100" id="darkModeToggle" title="Dark mode">
+                    <i class="bi bi-moon" id="darkModeIcon"></i>
+                    <span class="rail-label">Dark mode</span>
+                    <span class="rail-switch ms-auto" id="darkModeSwitch">
+                        <span class="rail-switch-thumb"></span>
+                    </span>
+                </button>
+            </div>
+            <div class="rail-profile">
+                <div class="rail-profile-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div class="rail-profile-info">
+                    <span class="rail-profile-name" id="rail-admin-name">Administrador</span>
+                    <span class="rail-profile-role">Admin</span>
+                </div>
+                <button class="rail-profile-logout" id="rail-logout-btn" title="Cerrar sesión">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
     </aside>
 
     <!-- Overlay oscuro para cerrar el rail en móvil -->
@@ -142,8 +174,62 @@
             <div class="tab-pane fade show active" id="dashboard">
                 <!-- CABECERA -->
                 <div class="db2-head">
-                    <span class="db2-title">Dashboard</span>
-                    <span class="db2-date" id="dashboard-date"></span>
+                    <div class="db2-head-left">
+                        <h1 class="db2-title">Dashboard</h1>
+                        <span class="db2-date" id="dashboard-date"></span>
+                    </div>
+                    <div class="db2-time-range">
+                        <button class="db2-range-btn active" data-range="today">Hoy</button>
+                        <button class="db2-range-btn" data-range="week">Semana</button>
+                        <button class="db2-range-btn" data-range="month">Mes</button>
+                        <button class="db2-range-btn" data-range="year">Año</button>
+                    </div>
+                </div>
+
+                <div class="db2-sep"></div>
+
+                <!-- KPI CARDS -->
+                <div class="db2-kpi-row">
+                    <div class="db2-kpi-card">
+                        <div class="db2-kpi-icon" style="background:#EFF6FF;color:#2563EB;">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <div class="db2-kpi-body">
+                            <div class="db2-kpi-val" id="kpi-total-customers">2,847</div>
+                            <div class="db2-kpi-name">Total customers</div>
+                            <div class="db2-kpi-growth positive"><i class="bi bi-arrow-up-short"></i>+12.5% vs mes anterior</div>
+                        </div>
+                    </div>
+                    <div class="db2-kpi-card">
+                        <div class="db2-kpi-icon" style="background:#F0FDF4;color:#16A34A;">
+                            <i class="bi bi-cash-stack"></i>
+                        </div>
+                        <div class="db2-kpi-body">
+                            <div class="db2-kpi-val" id="kpi-total-revenue">$48,350</div>
+                            <div class="db2-kpi-name">Total revenue</div>
+                            <div class="db2-kpi-growth positive"><i class="bi bi-arrow-up-short"></i>+8.3% vs mes anterior</div>
+                        </div>
+                    </div>
+                    <div class="db2-kpi-card">
+                        <div class="db2-kpi-icon" style="background:#FFF7ED;color:#EA580C;">
+                            <i class="bi bi-bag-fill"></i>
+                        </div>
+                        <div class="db2-kpi-body">
+                            <div class="db2-kpi-val" id="kpi-total-orders">1,284</div>
+                            <div class="db2-kpi-name">Total orders</div>
+                            <div class="db2-kpi-growth positive"><i class="bi bi-arrow-up-short"></i>+5.7% vs mes anterior</div>
+                        </div>
+                    </div>
+                    <div class="db2-kpi-card">
+                        <div class="db2-kpi-icon" style="background:#FDF4FF;color:#9333EA;">
+                            <i class="bi bi-receipt"></i>
+                        </div>
+                        <div class="db2-kpi-body">
+                            <div class="db2-kpi-val" id="kpi-avg-order">$37.65</div>
+                            <div class="db2-kpi-name">Avg. order value</div>
+                            <div class="db2-kpi-growth negative"><i class="bi bi-arrow-down-short"></i>-2.1% vs mes anterior</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="db2-sep"></div>
@@ -241,6 +327,67 @@
                             </div>
                             <div class="db-chart-body" style="max-height: 420px; overflow-y: auto;">
                                 <canvas id="topProductosChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="db2-sep"></div>
+
+                <!-- SECCIÓN DE GRÁFICOS ANALÍTICOS -->
+
+                <!-- Gráfico de barras amplio: Product sales -->
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <div class="db-chart-card">
+                            <div class="db-chart-header">
+                                <span class="db-chart-title">Product sales</span>
+                                <div class="db-period-tabs">
+                                    <input type="radio" class="btn-check" name="sales-period" id="sales-7d" autocomplete="off" checked>
+                                    <label class="db-period-tab" for="sales-7d">7 días</label>
+                                    <input type="radio" class="btn-check" name="sales-period" id="sales-30d" autocomplete="off">
+                                    <label class="db-period-tab" for="sales-30d">30 días</label>
+                                    <input type="radio" class="btn-check" name="sales-period" id="sales-12m" autocomplete="off">
+                                    <label class="db-period-tab" for="sales-12m">12 meses</label>
+                                </div>
+                            </div>
+                            <div class="db-chart-body">
+                                <canvas id="productSalesBarChart" height="70"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráfico dona + Tabla de países -->
+                <div class="row g-3">
+                    <div class="col-lg-5">
+                        <div class="db-chart-card">
+                            <div class="db-chart-header">
+                                <span class="db-chart-title">Sales by product category</span>
+                            </div>
+                            <div class="db-chart-body db-donut-body">
+                                <canvas id="salesByCategoryChart"></canvas>
+                                <div class="db-donut-legend" id="categoryLegend"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="db-chart-card">
+                            <div class="db-chart-header">
+                                <span class="db-chart-title">Sales by countries</span>
+                            </div>
+                            <div class="db-chart-body p-0">
+                                <table class="table table-hover mb-0 db-countries-table">
+                                    <thead>
+                                        <tr>
+                                            <th>País</th>
+                                            <th class="text-end">Pedidos</th>
+                                            <th class="text-end">Revenue</th>
+                                            <th class="text-end">Crecimiento</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="salesByCountriesBody"></tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -2514,6 +2661,266 @@
 
     <!-- 🔍 SISTEMA DE CÓDIGOS DE BARRAS -->
     <script src="barcode-system.js"></script>
+
+    <!-- DASHBOARD ANALYTICS CHARTS + SIDEBAR CONTROLS -->
+    <script>
+    (function() {
+        'use strict';
+
+        /* ─── SIDEBAR COLLAPSE (Desktop) ─── */
+        document.addEventListener('DOMContentLoaded', function() {
+            var rail    = document.getElementById('adminRail');
+            var wrapper = document.querySelector('.admin-content-wrapper');
+            var colBtn  = document.getElementById('railCollapseBtn');
+            var colIcon = document.getElementById('railCollapseIcon');
+            var COLLAPSED_KEY = 'railCollapsed';
+
+            function applyCollapsed(collapsed) {
+                if (collapsed) {
+                    rail.classList.add('collapsed');
+                    if (wrapper) wrapper.classList.add('rail-collapsed');
+                    colIcon.className = 'bi bi-chevron-right';
+                } else {
+                    rail.classList.remove('collapsed');
+                    if (wrapper) wrapper.classList.remove('rail-collapsed');
+                    colIcon.className = 'bi bi-chevron-left';
+                }
+            }
+
+            if (colBtn) {
+                var isCollapsed = localStorage.getItem(COLLAPSED_KEY) === '1';
+                applyCollapsed(isCollapsed);
+                colBtn.addEventListener('click', function() {
+                    isCollapsed = !isCollapsed;
+                    localStorage.setItem(COLLAPSED_KEY, isCollapsed ? '1' : '0');
+                    applyCollapsed(isCollapsed);
+                });
+            }
+
+            /* ─── DARK MODE ─── */
+            var dmToggle = document.getElementById('darkModeToggle');
+            var dmIcon   = document.getElementById('darkModeIcon');
+            var dmSwitch = document.getElementById('darkModeSwitch');
+            var DARK_KEY = 'adminDarkMode';
+
+            function applyDark(dark) {
+                document.body.classList.toggle('dark-mode', dark);
+                if (dmIcon)   dmIcon.className   = dark ? 'bi bi-sun' : 'bi bi-moon';
+                if (dmSwitch) dmSwitch.classList.toggle('active', dark);
+            }
+
+            if (dmToggle) {
+                var isDark = localStorage.getItem(DARK_KEY) === '1';
+                applyDark(isDark);
+                dmToggle.addEventListener('click', function() {
+                    isDark = !isDark;
+                    localStorage.setItem(DARK_KEY, isDark ? '1' : '0');
+                    applyDark(isDark);
+                });
+            }
+
+            /* ─── RAIL PROFILE: mostrar nombre del usuario auth ─── */
+            var nameEl = document.getElementById('rail-admin-name');
+            if (nameEl && window.firebase && firebase.auth) {
+                firebase.auth().onAuthStateChanged(function(user) {
+                    if (user) nameEl.textContent = user.displayName || user.email || 'Administrador';
+                });
+            }
+
+            /* ─── RAIL LOGOUT ─── */
+            var logoutBtn = document.getElementById('rail-logout-btn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (window.firebase && firebase.auth) {
+                        firebase.auth().signOut().then(function() {
+                            window.location.href = 'login.html';
+                        });
+                    } else {
+                        window.location.href = 'login.html';
+                    }
+                });
+            }
+
+            /* ─── TIME RANGE SELECTOR ─── */
+            var rangeBtns = document.querySelectorAll('.db2-range-btn');
+            rangeBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    rangeBtns.forEach(function(b) { b.classList.remove('active'); });
+                    this.classList.add('active');
+                    updateAnalyticsCharts(this.dataset.range);
+                });
+            });
+
+            /* ─── ANALYTICS CHARTS ─── */
+            var productSalesChart = null;
+            var categoryChart     = null;
+
+            var salesData = {
+                today: {
+                    labels: ['8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm'],
+                    data:   [12, 19, 14, 28, 35, 22, 30, 18, 25, 33, 27, 15]
+                },
+                week: {
+                    labels: ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],
+                    data:   [142, 198, 165, 210, 285, 320, 190]
+                },
+                month: {
+                    labels: ['S1','S2','S3','S4'],
+                    data:   [820, 940, 780, 1120]
+                },
+                year: {
+                    labels: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+                    data:   [3200, 3800, 4100, 3600, 4500, 5100, 4800, 5300, 4900, 5600, 6200, 7100]
+                }
+            };
+
+            var categoryData = {
+                labels: ['Blusas', 'Vestidos', 'Pantalones', 'Accesorios', 'Zapatos', 'Otros'],
+                values: [32, 25, 18, 12, 8, 5],
+                colors: ['#D988B9','#C273A2','#3B82F6','#10B981','#F59E0B','#8B5CF6']
+            };
+
+            var countriesData = [
+                { flag: '🇲🇽', name: 'México',    orders: 582,  revenue: '$24,180', growth: +14.2 },
+                { flag: '🇨🇴', name: 'Colombia',  orders: 341,  revenue: '$13,640', growth: +9.7  },
+                { flag: '🇺🇸', name: 'EE.UU.',    orders: 198,  revenue: '$8,910',  growth: +22.1 },
+                { flag: '🇨🇱', name: 'Chile',     orders: 112,  revenue: '$4,480',  growth: -3.4  },
+                { flag: '🇦🇷', name: 'Argentina', orders: 89,   revenue: '$3,560',  growth: +6.8  },
+                { flag: '🇵🇪', name: 'Perú',      orders: 62,   revenue: '$2,480',  growth: +11.5 }
+            ];
+
+            function initProductSalesChart(range) {
+                var canvas = document.getElementById('productSalesBarChart');
+                if (!canvas || typeof Chart === 'undefined') return;
+                var d = salesData[range] || salesData.today;
+                var isDarkMode = document.body.classList.contains('dark-mode');
+                var gridColor  = isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)';
+                var textColor  = isDarkMode ? '#aaa' : '#999';
+
+                if (productSalesChart) productSalesChart.destroy();
+                productSalesChart = new Chart(canvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: d.labels,
+                        datasets: [{
+                            label: 'Ventas',
+                            data: d.data,
+                            backgroundColor: 'rgba(217,136,185,0.75)',
+                            borderColor: '#D988B9',
+                            borderWidth: 0,
+                            borderRadius: 6,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) { return ' $' + ctx.parsed.y.toLocaleString(); }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: textColor, font: { size: 11 } }
+                            },
+                            y: {
+                                grid: { color: gridColor, drawBorder: false },
+                                ticks: {
+                                    color: textColor,
+                                    font: { size: 11 },
+                                    callback: function(v) { return '$' + v.toLocaleString(); }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            function initCategoryChart() {
+                var canvas = document.getElementById('salesByCategoryChart');
+                if (!canvas || typeof Chart === 'undefined') return;
+                if (categoryChart) categoryChart.destroy();
+                categoryChart = new Chart(canvas.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: categoryData.labels,
+                        datasets: [{
+                            data: categoryData.values,
+                            backgroundColor: categoryData.colors,
+                            borderWidth: 2,
+                            borderColor: document.body.classList.contains('dark-mode') ? '#1e1e2e' : '#fff',
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        cutout: '62%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        return ' ' + ctx.label + ': ' + ctx.parsed + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                /* Render custom legend */
+                var legendEl = document.getElementById('categoryLegend');
+                if (legendEl) {
+                    legendEl.innerHTML = categoryData.labels.map(function(label, i) {
+                        return '<div class="db-legend-item">'
+                            + '<span class="db-legend-dot" style="background:' + categoryData.colors[i] + '"></span>'
+                            + '<span class="db-legend-label">' + label + '</span>'
+                            + '<span class="db-legend-pct">' + categoryData.values[i] + '%</span>'
+                            + '</div>';
+                    }).join('');
+                }
+            }
+
+            function populateCountriesTable() {
+                var tbody = document.getElementById('salesByCountriesBody');
+                if (!tbody) return;
+                tbody.innerHTML = countriesData.map(function(c) {
+                    var growthClass = c.growth >= 0 ? 'text-success' : 'text-danger';
+                    var growthIcon  = c.growth >= 0 ? '↑' : '↓';
+                    return '<tr>'
+                        + '<td><span class="me-2">' + c.flag + '</span>' + c.name + '</td>'
+                        + '<td class="text-end">' + c.orders.toLocaleString() + '</td>'
+                        + '<td class="text-end fw-semibold">' + c.revenue + '</td>'
+                        + '<td class="text-end ' + growthClass + ' fw-semibold">'
+                        + growthIcon + ' ' + Math.abs(c.growth) + '%</td>'
+                        + '</tr>';
+                }).join('');
+            }
+
+            function updateAnalyticsCharts(range) {
+                initProductSalesChart(range);
+            }
+
+            /* Period selector for product sales bar */
+            document.querySelectorAll('input[name="sales-period"]').forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    var map = { 'sales-7d': 'today', 'sales-30d': 'week', 'sales-12m': 'year' };
+                    initProductSalesChart(map[this.id] || 'today');
+                });
+            });
+
+            /* Init on load */
+            initProductSalesChart('today');
+            initCategoryChart();
+            populateCountriesTable();
+        });
+    })();
+    </script>
 
 </body>
 </html>
