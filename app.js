@@ -981,17 +981,21 @@ function openProductModal(productId) {
         document.getElementById('modal-price-old').style.display = 'none';
     }
     document.getElementById('modal-price-detal').textContent = formatoMoneda.format(precioFinal);
-    
-    const priceMayorModalEl = document.getElementById('modal-price-mayor');
-    const priceMayorContainerEl = priceMayorModalEl.closest('.price-mayor-modal');
-    
-    if (precioMayorNum > 0) {
-        priceMayorModalEl.textContent = formatoMoneda.format(precioMayorNum);
-        priceMayorContainerEl.style.display = 'block';
-    } else {
-        priceMayorContainerEl.style.display = 'none';
-    }
-    
+
+    // --- Precio al por mayor en el modal (deshabilitado) ---
+    // Dejamos este bloque comentado para conservar la referencia,
+    // pero la vista ya no muestra el precio mayorista.
+    //
+    // const priceMayorModalEl = document.getElementById('modal-price-mayor');
+    // const priceMayorContainerEl = priceMayorModalEl.closest('.price-mayor-modal');
+    //
+    // if (precioMayorNum > 0) {
+    //     priceMayorModalEl.textContent = formatoMoneda.format(precioMayorNum);
+    //     priceMayorContainerEl.style.display = 'block';
+    // } else {
+    //     priceMayorContainerEl.style.display = 'none';
+    // }
+
     document.getElementById('modal-product-id').value = productId;
 
     // Resetear campos ocultos de talla y color
@@ -2157,32 +2161,35 @@ document.addEventListener('DOMContentLoaded', () => {
         setActiveNavItem(document.getElementById('mobile-home-btn'));
     });
 
-    document.getElementById('wholesale-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const input = document.getElementById('wholesale-code');
-        const code = input.value.trim().toUpperCase();
+    const wholesaleForm = document.getElementById('wholesale-form');
+    if (wholesaleForm) {
+        wholesaleForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('wholesale-code');
+            const code = input.value.trim().toUpperCase();
 
-        if (code === WHOLESALE_CODE) {
-            isWholesaleActive = true;
-            document.body.classList.add('wholesale-active');
-            showToast('¡Modo mayorista activado!', 'success');
-            input.value = 'MODO MAYORISTA ACTIVO';
-            input.disabled = true;
-            e.target.querySelector('button').disabled = true;
+            if (code === WHOLESALE_CODE) {
+                isWholesaleActive = true;
+                document.body.classList.add('wholesale-active');
+                showToast('¡Modo mayorista activado!', 'success');
+                input.value = 'MODO MAYORISTA ACTIVO';
+                input.disabled = true;
+                e.target.querySelector('button').disabled = true;
 
-            // 📊 Tracking: Modo mayorista activado
-            analytics.trackWholesaleActivation();
+                // 📊 Tracking: Modo mayorista activado
+                analytics.trackWholesaleActivation();
 
-            applyFiltersAndRender();
+                applyFiltersAndRender();
 
-            if (cart.length > 0) {
-                showToast('Vacía tu carrito para agregar productos con precio mayorista', 'warning');
+                if (cart.length > 0) {
+                    showToast('Vacía tu carrito para agregar productos con precio mayorista', 'warning');
+                }
+
+            } else {
+                showToast('Código incorrecto', 'error');
             }
-
-        } else {
-            showToast('Código incorrecto', 'error');
-        }
-    });
+        });
+    }
 
     // ═══════════════════════════════════════════════════════════════════
     // FUNCIONALIDAD DE ZOOM EN IMÁGENES
@@ -2194,8 +2201,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalZoomBtn = document.getElementById('modal-zoom-btn');
 
     function openZoom() {
+        if (!modalProductImage || !zoomOverlay || !zoomedImage) {
+            console.error('Zoom: elementos del DOM no encontrados');
+            return;
+        }
+
         const imageSrc = modalProductImage.src;
-        if (!imageSrc || imageSrc.includes('placeholder')) return;
+        // Permitir zoom siempre que exista una imagen cargada
+        if (!imageSrc) {
+            console.warn('Zoom: imagen sin src, no se puede ampliar');
+            return;
+        }
+
         zoomedImage.src = imageSrc;
         zoomOverlay.classList.add('active');
 
@@ -2206,17 +2223,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Abrir zoom al hacer click en la imagen o en el botón
-    modalProductImage.addEventListener('click', openZoom);
-    modalZoomBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openZoom();
-    });
+    if (modalProductImage) {
+        modalProductImage.addEventListener('click', openZoom);
+    }
+    if (modalZoomBtn) {
+        modalZoomBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openZoom();
+        });
+    }
 
     // Cerrar zoom con el botón X
-    closeZoomBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        closeZoom();
-    });
+    if (closeZoomBtn) {
+        closeZoomBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeZoom();
+        });
+    }
 
     // Cerrar zoom al hacer click en el overlay (fondo)
     zoomOverlay.addEventListener('click', (e) => {
