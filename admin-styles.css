@@ -456,7 +456,7 @@ body.admin-page::after {
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 52px;
+  height: 50px;
   background: var(--surface-overlay);
   backdrop-filter: var(--blur-md);
   -webkit-backdrop-filter: var(--blur-md);
@@ -465,6 +465,7 @@ body.admin-page::after {
   padding: 0 1rem;
   gap: 0.75rem;
   z-index: 1041;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.6), var(--shadow-xs);
 }
 .rail-topbar::before {
   content: '';
@@ -474,6 +475,42 @@ body.admin-page::after {
   background: var(--grad-brand);
 }
 
+/* Logo pequeño en topbar móvil */
+.rail-topbar-logo {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
+
+/* Título de sección en topbar móvil */
+.rail-topbar-section {
+  flex: 1;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Botón dark mode en topbar móvil */
+.rail-topbar-dark-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  line-height: 1;
+}
+.rail-topbar-dark-btn:active { background: var(--brand-50); }
+
+/* Keep .rail-toggle hidden on mobile (kept for sidebar toggle via mbnMore) */
 .rail-toggle {
   background: transparent;
   border: none;
@@ -487,17 +524,99 @@ body.admin-page::after {
 }
 .rail-toggle:hover { background: var(--brand-50); }
 
-.rail-topbar-brand {
-  font-family: var(--font-sans);
-  font-size: 0.95rem;
-  font-weight: 800;
-  letter-spacing: 3.5px;
-  text-transform: uppercase;
-  background: var(--grad-brand);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* ─────────────────────────────────────────────────────────────────────────
+   BOTTOM NAVIGATION — mobile app nav bar
+   ───────────────────────────────────────────────────────────────────────── */
+.mobile-bottom-nav {
+  display: none; /* hidden on desktop */
 }
+
+@media (max-width: 991.98px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 58px;
+    background: var(--surface-overlay);
+    backdrop-filter: var(--blur-md);
+    -webkit-backdrop-filter: var(--blur-md);
+    border-top: 1px solid var(--border-subtle);
+    z-index: 1041;
+    align-items: stretch;
+    box-shadow: 0 -2px 16px rgba(0,0,0,0.07);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+.mbn-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-decoration: none;
+  color: var(--text-tertiary);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 2px 2px;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mbn-item i {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.mbn-item span:not(.mbn-badge) {
+  font-size: 0.6rem;
+  line-height: 1.2;
+}
+
+.mbn-item.active {
+  color: var(--brand-500);
+}
+
+.mbn-item.active i {
+  color: var(--brand-500);
+}
+
+/* Active indicator dot */
+.mbn-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brand-500);
+}
+
+/* Badge rojo (pedidos nuevos) */
+.mbn-badge {
+  position: absolute;
+  top: 5px;
+  right: calc(50% - 16px);
+  width: 7px;
+  height: 7px;
+  background: var(--admin-danger);
+  border-radius: 50%;
+  border: 1.5px solid var(--surface-overlay);
+}
+
+body.dark-mode .mobile-bottom-nav {
+  background: rgba(22, 20, 31, 0.9);
+  border-top-color: rgba(255,255,255,0.06);
+}
+body.dark-mode .mbn-item { color: rgba(255,255,255,0.35); }
+body.dark-mode .mbn-item.active { color: var(--brand-400); }
 
 /* ── Overlay ── */
 .rail-overlay {
@@ -2616,6 +2735,138 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
 
   .db2-met:active { background: var(--surface-raised); }
   .db2-quick-item:active { background: rgba(217,136,185,0.08); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MODALES — Bottom Sheet en móvil
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Prevent Bootstrap modal from shifting layout */
+body.modal-open {
+  overflow: hidden;
+  padding-right: 0 !important;
+}
+.modal-open .admin-content-wrapper,
+.modal-open .rail-topbar,
+.modal-open .mobile-bottom-nav {
+  padding-right: 0 !important;
+}
+
+/* Modal como bottom sheet en pantallas pequeñas */
+@media (max-width: 767px) {
+  /* Animación: sube desde abajo */
+  .modal.fade .modal-dialog {
+    transform: translateY(60px);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+  .modal.show .modal-dialog {
+    transform: translateY(0);
+  }
+
+  /* Posición: pegado al fondo */
+  .modal-dialog,
+  .modal-dialog.modal-dialog-centered,
+  .modal-dialog.modal-lg,
+  .modal-dialog.modal-xl {
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    align-items: flex-end !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Contenido: esquinas redondeadas arriba */
+  .modal-content {
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0 !important;
+    border: none !important;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.14) !important;
+    width: 100% !important;
+    max-height: 90dvh;
+    overflow-y: auto;
+  }
+
+  /* Header con handle visual */
+  .modal-header {
+    padding-top: 1rem;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .modal-header::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border-default);
+  }
+
+  /* Scrollable body */
+  .modal-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: 65dvh;
+    flex-shrink: 1;
+    padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 0.75rem);
+  }
+
+  /* Scrollable dialogs nativos de Bootstrap */
+  .modal-dialog-scrollable .modal-body { max-height: 60dvh; }
+
+  .modal-footer { flex-shrink: 0; padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 0.5rem); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   GRÁFICAS — alturas responsivas
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Contenedor de la gráfica de ventas */
+.db-chart-body {
+  position: relative;
+}
+
+/* Desktop: altura razonable */
+@media (min-width: 992px) {
+  #ventasChart     { height: 240px !important; }
+  #topProductosChart { height: 360px !important; }
+}
+
+/* Móvil: más compacto */
+@media (max-width: 991.98px) {
+  .admin-content-wrapper { padding-bottom: 62px; }
+
+  #ventasChart     { height: 190px !important; }
+  #topProductosChart { height: 280px !important; }
+
+  /* Reducir max-height del contenedor del top productos en móvil */
+  .db-chart-body[style*="max-height"] {
+    max-height: 300px !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Las dos cartas de gráficas apilan completas */
+  .row.g-3 .col-lg-8,
+  .row.g-3 .col-lg-4 {
+    width: 100%;
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+}
+
+/* Gráfica de barras de ventas: fondo limpio */
+.db-chart-body canvas {
+  display: block;
+  width: 100% !important;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
