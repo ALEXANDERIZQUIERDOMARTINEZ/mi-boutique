@@ -160,6 +160,36 @@
     <!-- 📄 MAIN CONTENT WRAPPER -->
     <div class="admin-content-wrapper">
 
+    <!-- ══ DESKTOP TOPBAR ══ -->
+    <header class="admin-topbar" id="adminTopbar">
+        <div class="admin-topbar-left">
+            <span class="admin-topbar-title" id="topbar-section-title">Dashboard</span>
+        </div>
+        <div class="admin-topbar-center">
+            <div class="admin-topbar-search">
+                <i class="bi bi-search admin-topbar-search-icon"></i>
+                <input type="text" placeholder="Buscar en el panel..." class="admin-topbar-search-input" id="topbar-search" autocomplete="off">
+            </div>
+        </div>
+        <div class="admin-topbar-right">
+            <button class="admin-topbar-icon-btn" id="topbar-notifications" title="Notificaciones">
+                <i class="bi bi-bell"></i>
+                <span class="admin-topbar-badge" id="topbar-notif-count" style="display:none;">0</span>
+            </button>
+            <a href="index.html" target="_blank" class="admin-topbar-icon-btn" title="Ver catálogo">
+                <i class="bi bi-shop"></i>
+            </a>
+            <div class="admin-topbar-divider"></div>
+            <div class="admin-topbar-user" id="topbar-user">
+                <div class="admin-topbar-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <span class="admin-topbar-username" id="topbar-admin-name">Admin</span>
+                <i class="bi bi-chevron-down admin-topbar-chevron"></i>
+            </div>
+        </div>
+    </header>
+
     <div class="toast-container position-fixed top-0 start-0 p-3">
       <div id="liveToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
@@ -2547,6 +2577,15 @@
                 document.querySelectorAll('.rail-link[href^="#"]').forEach(function(link) {
                     link.classList.toggle('active', link.getAttribute('href') === h);
                 });
+                /* ─── Sync topbar title ─── */
+                var topbarTitle = document.getElementById('topbar-section-title');
+                if (topbarTitle) {
+                    var activeLink = document.querySelector('.rail-link[href="' + h + '"]');
+                    if (activeLink) {
+                        var tooltip = activeLink.getAttribute('data-tooltip') || activeLink.querySelector('span') && activeLink.querySelector('span').textContent;
+                        if (tooltip) topbarTitle.textContent = tooltip;
+                    }
+                }
             }
 
             /* ─── Exponer globalmente (usado por admin.js) ─── */
@@ -2581,6 +2620,18 @@
             var initHash = window.location.hash || '#dashboard';
             showSection(initHash);
             markActive(initHash);
+
+            /* ─── Sync topbar admin name from sidebar ─── */
+            (function syncTopbarName() {
+                var sidebarName = document.getElementById('rail-admin-name');
+                var topbarName  = document.getElementById('topbar-admin-name');
+                if (!sidebarName || !topbarName) return;
+                var observer = new MutationObserver(function() {
+                    topbarName.textContent = sidebarName.textContent;
+                });
+                observer.observe(sidebarName, { childList: true, subtree: true, characterData: true });
+                topbarName.textContent = sidebarName.textContent;
+            })();
 
             /* ─── Botón atrás / adelante del navegador ─── */
             window.addEventListener('popstate', function() {
