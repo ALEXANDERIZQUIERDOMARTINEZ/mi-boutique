@@ -620,10 +620,22 @@ function renderProducts(products) {
         const coloresUnicos = [...new Set(variacionesConStock.map(v => v.color).filter(Boolean))];
         const tallasUnicas = [...new Set(variacionesConStock.map(v => v.talla).filter(t => t && t.toLowerCase() !== 'unica' && t.toLowerCase() !== 'única'))];
 
-        const coloresHtml = coloresUnicos.slice(0, 6).map(color => {
-            const hex = COLOR_MAP[color.toLowerCase().trim()] || '#ccc';
-            return `<span class="card-color-dot" style="background:${hex}" title="${color}"></span>`;
-        }).join('');
+        // Dots de color: usar variantes_color (hex real) si existen, sino variaciones con stock
+        let coloresParaCard = [];
+        if ((product.variantes_color || []).length > 0) {
+            coloresParaCard = product.variantes_color.slice(0, 6).map(vc => ({
+                nombre: vc.nombre || '',
+                hex: vc.hex || COLOR_MAP[(vc.nombre || '').toLowerCase().trim()] || '#ccc'
+            }));
+        } else {
+            coloresParaCard = coloresUnicos.slice(0, 6).map(color => ({
+                nombre: color,
+                hex: COLOR_MAP[color.toLowerCase().trim()] || '#ccc'
+            }));
+        }
+        const coloresHtml = coloresParaCard.map(({ nombre, hex }) =>
+            `<span class="card-color-dot" style="background:${hex}" title="${nombre}"></span>`
+        ).join('');
 
         const tallasHtml = tallasUnicas.slice(0, 5).map(t => `<span class="card-size-chip">${t}</span>`).join('');
 
@@ -663,13 +675,7 @@ function renderProducts(products) {
 
     document.querySelectorAll('.product-card').forEach(card => {
         card.addEventListener('click', (e) => {
-            const stock = parseInt(e.currentTarget.dataset.stock);
             const productId = e.currentTarget.dataset.productId;
-
-            if (stock <= 0) {
-                showToast('Este producto se encuentra agotado', 'warning');
-                return;
-            }
             openProductModal(productId);
         });
     });
@@ -1019,6 +1025,66 @@ function updateStockDisplay(product) {
 }
 
 // --- ABRIR MODAL DE PRODUCTO ---
+/**
+ * Modo galería para productos agotados.
+ * Muestra todos los colores (de variantes_color o variaciones) como botones
+ * clicables que cambian la galería de imágenes, pero sin opciones de compra.
+ */
+function renderGalleryColors(product) {
+    const coloresButtons = document.getElementById('colores-buttons');
+    const coloresContainer = document.getElementById('colores-container');
+    const colorHint = document.getElementById('color-select-hint');
+    if (!coloresButtons || !coloresContainer) return;
+
+    if (colorHint) colorHint.classList.remove('visible');
+    coloresButtons.innerHTML = '';
+    coloresButtons.style.display = 'flex';
+    coloresContainer.style.display = 'block';
+
+    // Preferir variantes_color (tienen hex real), si no usar nombres de variaciones
+    const variantesColor = product.variantes_color || [];
+    let colores = variantesColor.map(vc => ({ nombre: vc.nombre, hex: vc.hex || null }));
+
+    if (colores.length === 0) {
+        const todosColores = [...new Set((product.variaciones || []).map(v => v.color).filter(Boolean))];
+        colores = todosColores.map(c => ({ nombre: c, hex: COLOR_MAP[c.toLowerCase().trim()] || null }));
+    }
+
+    if (colores.length === 0) {
+        coloresContainer.style.display = 'none';
+        return;
+    }
+
+    colores.forEach(({ nombre, hex }, index) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'size-color-btn';
+        btn.dataset.value = nombre;
+
+        if (hex) {
+            btn.innerHTML = `<span class="color-swatch-circle" style="background-color:${hex}"></span><span class="color-swatch-name">${nombre}</span>`;
+            btn.classList.add('has-swatch');
+        } else {
+            btn.textContent = nombre;
+        }
+
+        btn.addEventListener('click', () => {
+            coloresButtons.querySelectorAll('.size-color-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            updateColorGallery(product, nombre);
+        });
+
+        coloresButtons.appendChild(btn);
+    });
+
+    // Auto-seleccionar el primer color y mostrar su galería
+    const firstBtn = coloresButtons.querySelector('.size-color-btn');
+    if (firstBtn) {
+        firstBtn.classList.add('selected');
+        updateColorGallery(product, colores[0].nombre);
+    }
+}
+
 function openProductModal(productId) {
     const product = productsMap.get(productId);
     if (!product) return;
@@ -1078,24 +1144,38 @@ function openProductModal(productId) {
     // Resetear estado del stock display
     const stockDisplay = document.getElementById('stock-display');
     const stockText = document.getElementById('stock-text');
+    const btnAddCart = document.getElementById('btn-add-cart');
     stockText.textContent = 'Selecciona talla y color';
     stockDisplay.style.color = '';
     stockDisplay.style.background = '';
     stockDisplay.style.borderColor = '';
-    document.getElementById('btn-add-cart').disabled = true;
+    btnAddCart.disabled = true;
+    btnAddCart.textContent = 'Agregar al carrito';
     document.getElementById('select-cantidad').value = 1;
     document.getElementById('select-cantidad').setAttribute('max', 1);
     document.getElementById('product-observation').value = '';
 
+    // Restablecer visibilidad de sección de tallas (puede venir oculta de un modal anterior agotado)
+    const tallasContainer = document.getElementById('tallas-container');
+    if (tallasContainer) tallasContainer.style.display = '';
+
     // Obtener variaciones y tallas
     const variaciones = product.variaciones || [];
     const tallas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))];
+    const stockTotal = variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
 
-    // Determinar si es talla única
-    const esTallaUnica = (tallas.length === 0 || (tallas.length === 1 && (tallas[0] === '' || tallas[0].toLowerCase() === 'unica' || tallas[0].toLowerCase() === 'única')));
-
-    // Renderizar botones de talla
-    renderSizeButtons(tallas, esTallaUnica, product);
+    if (stockTotal <= 0) {
+        // ── Modo galería (agotado): mostrar colores para navegar imágenes ──
+        if (tallasContainer) tallasContainer.style.display = 'none';
+        stockText.textContent = 'Sin stock disponible';
+        btnAddCart.disabled = true;
+        btnAddCart.textContent = 'Agotado';
+        renderGalleryColors(product);
+    } else {
+        // ── Flujo normal: tallas → colores con stock ──
+        const esTallaUnica = (tallas.length === 0 || (tallas.length === 1 && (tallas[0] === '' || tallas[0].toLowerCase() === 'unica' || tallas[0].toLowerCase() === 'única')));
+        renderSizeButtons(tallas, esTallaUnica, product);
+    }
 
     // 📊 Tracking: Vista de producto
     analytics.trackProductView(product);
