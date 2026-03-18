@@ -3006,3 +3006,57 @@ body.dark-mode .rail-switch.active { background: var(--admin-primario); }
 body.dark-mode .db-legend-label { color: var(--admin-texto-sec); }
 body.dark-mode .db-legend-pct { color: var(--admin-texto); }
 
+
+/* ─── Galería por Color (admin) ─────────────────────────────────────────── */
+.color-variant-block {
+    background: #fafafa;
+    transition: box-shadow 0.15s;
+}
+.color-variant-block:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.cv-img-wrap {
+    position: relative;
+    width: 80px;
+    flex-shrink: 0;
+}
+.cv-thumb {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    display: block;
+}
+.cv-angle-select {
+    font-size: 0.65rem;
+    padding: 1px 2px;
+    margin-top: 3px;
+}
+.cv-remove-img {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    line-height: 1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.cv-new .cv-thumb {
+    opacity: 0.85;
+    border-style: dashed;
+}
+
+body.dark-mode .color-variant-block {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--admin-borde) !important;
+}
+body.dark-mode .cv-thumb {
+    border-color: var(--admin-borde);
+}
