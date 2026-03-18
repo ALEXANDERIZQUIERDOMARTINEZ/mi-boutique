@@ -612,25 +612,44 @@ function renderProducts(products) {
     products.forEach((product, index) => {
         const stockTotal = (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
         const isAgotado = stockTotal <= 0;
-        const imgUrl = product.imagenUrl || 'https://placehold.co/300x400/f5f5f5/ccc?text=Mishell';
         const { precioFinal, tienePromo, precioOriginal } = calculatePromotionPrice(product);
 
-        // Colores y tallas con stock
+        // Colores y tallas CON STOCK (disponibles para comprar)
         const variacionesConStock = (product.variaciones || []).filter(v => parseInt(v.stock, 10) > 0);
-        const coloresUnicos = [...new Set(variacionesConStock.map(v => v.color).filter(Boolean))];
+        const coloresConStock = [...new Set(variacionesConStock.map(v => v.color).filter(Boolean))];
         const tallasUnicas = [...new Set(variacionesConStock.map(v => v.talla).filter(t => t && t.toLowerCase() !== 'unica' && t.toLowerCase() !== 'única'))];
 
-        // Dots de color: usar variantes_color (hex real) si existen, sino variaciones con stock
-        let coloresParaCard = [];
-        if ((product.variantes_color || []).length > 0) {
-            coloresParaCard = product.variantes_color.slice(0, 6).map(vc => ({
+        // Map de nombre→hex desde variantes_color (colores con imagen real)
+        const variantesColorMap = Object.fromEntries(
+            (product.variantes_color || []).map(vc => [(vc.nombre || '').toLowerCase().trim(), vc.hex])
+        );
+
+        // Imagen de tarjeta: preferir imagen del primer color CON STOCK, si no imagenUrl
+        let imgUrl = product.imagenUrl || 'https://placehold.co/300x400/f5f5f5/ccc?text=Mishell';
+        const coloresCandidatos = coloresConStock.length > 0
+            ? coloresConStock
+            : (product.variantes_color || []).map(vc => vc.nombre).filter(Boolean);
+        for (const color of coloresCandidatos) {
+            const vc = (product.variantes_color || []).find(
+                v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim()
+            );
+            if (vc?.imagenes?.length > 0) {
+                const sorted = [...vc.imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+                const frente = sorted.find(img => img.angulo === 'frente') || sorted[0];
+                if (frente?.url) { imgUrl = frente.url; break; }
+            }
+        }
+
+        // Dots de color: solo colores CON STOCK, usando hex real si está en variantes_color
+        let coloresParaCard = coloresConStock.slice(0, 6).map(color => ({
+            nombre: color,
+            hex: variantesColorMap[color.toLowerCase().trim()] || COLOR_MAP[color.toLowerCase().trim()] || '#ccc'
+        }));
+        // Si agotado, mostrar todos los colores de variantes_color como referencia visual
+        if (coloresParaCard.length === 0) {
+            coloresParaCard = (product.variantes_color || []).slice(0, 6).map(vc => ({
                 nombre: vc.nombre || '',
                 hex: vc.hex || COLOR_MAP[(vc.nombre || '').toLowerCase().trim()] || '#ccc'
-            }));
-        } else {
-            coloresParaCard = coloresUnicos.slice(0, 6).map(color => ({
-                nombre: color,
-                hex: COLOR_MAP[color.toLowerCase().trim()] || '#ccc'
             }));
         }
         const coloresHtml = coloresParaCard.map(({ nombre, hex }) =>
@@ -920,7 +939,7 @@ function selectColor(color, product) {
 
 /**
  * Actualiza la galería de imágenes del modal según el color seleccionado.
- * Si el producto no tiene variantes_color, usa imagenUrl como fallback.
+ * Precarga todas las imágenes del color en segundo plano para evitar demoras.
  */
 function updateColorGallery(product, colorName) {
     const thumbsEl = document.getElementById('modal-gallery-thumbs');
@@ -935,20 +954,32 @@ function updateColorGallery(product, colorName) {
     const imagenes = (varianteColor?.imagenes || []).filter(img => img.url);
 
     if (imagenes.length === 0) {
-        // Fallback: usar imagen principal del producto
         thumbsEl.innerHTML = '';
         thumbsEl.style.display = 'none';
         mainImg.src = product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Sin+imagen';
         return;
     }
 
-    // Ordenar por campo "orden"
     const sorted = [...imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0));
 
-    // Mostrar primera imagen como principal
-    mainImg.src = sorted[0].url;
+    // Precargar TODAS las imágenes del color en segundo plano
+    sorted.forEach(img => { (new Image()).src = img.url; });
 
-    // Construir thumbnails
+    // Mostrar primera imagen con transición suave
+    const setMainImg = (url) => {
+        mainImg.classList.add('gallery-loading');
+        const preloader = new Image();
+        preloader.onload = () => {
+            mainImg.src = url;
+            mainImg.classList.remove('gallery-loading');
+        };
+        preloader.onerror = () => { mainImg.src = url; mainImg.classList.remove('gallery-loading'); };
+        preloader.src = url;
+        if (preloader.complete) { mainImg.src = url; mainImg.classList.remove('gallery-loading'); }
+    };
+    setMainImg(sorted[0].url);
+
+    // Construir thumbnails — sin lazy loading para que carguen de inmediato
     thumbsEl.style.display = '';
     thumbsEl.innerHTML = '';
 
@@ -957,9 +988,9 @@ function updateColorGallery(product, colorName) {
         thumb.type = 'button';
         thumb.className = 'mp-thumb' + (index === 0 ? ' active' : '');
         thumb.setAttribute('aria-label', img.angulo || `Ángulo ${index + 1}`);
-        thumb.innerHTML = `<img src="${img.url}" alt="${img.angulo || ''}" loading="lazy">`;
+        thumb.innerHTML = `<img src="${img.url}" alt="${img.angulo || ''}">`;
         thumb.addEventListener('click', () => {
-            mainImg.src = img.url;
+            setMainImg(img.url);
             thumbsEl.querySelectorAll('.mp-thumb').forEach(t => t.classList.remove('active'));
             thumb.classList.add('active');
         });
