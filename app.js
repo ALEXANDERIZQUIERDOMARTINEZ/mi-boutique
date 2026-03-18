@@ -835,8 +835,19 @@ function renderColorButtons(selectedTalla, product) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'size-color-btn';
-            btn.textContent = color;
             btn.dataset.value = color;
+
+            // Mostrar swatch de color si existe hex en variantes_color
+            const varianteColor = (product.variantes_color || []).find(
+                vc => vc.nombre && vc.nombre.toLowerCase().trim() === color.toLowerCase().trim()
+            );
+            if (varianteColor && varianteColor.hex) {
+                btn.innerHTML = `<span class="color-swatch-circle" style="background-color:${varianteColor.hex}"></span><span class="color-swatch-name">${color}</span>`;
+                btn.classList.add('has-swatch');
+            } else {
+                btn.textContent = color;
+            }
+
             btn.onclick = () => selectColor(color, product);
             coloresButtons.appendChild(btn);
         });
@@ -894,8 +905,60 @@ function selectColor(color, product) {
     const colorHint = document.getElementById('color-select-hint');
     if (colorHint) colorHint.classList.remove('visible');
 
+    // Actualizar galería de imágenes para el color seleccionado
+    updateColorGallery(product, color);
+
     // Actualizar stock
     updateStockDisplay(product);
+}
+
+/**
+ * Actualiza la galería de imágenes del modal según el color seleccionado.
+ * Si el producto no tiene variantes_color, usa imagenUrl como fallback.
+ */
+function updateColorGallery(product, colorName) {
+    const thumbsEl = document.getElementById('modal-gallery-thumbs');
+    const mainImg = document.getElementById('modal-product-image');
+    if (!thumbsEl || !mainImg) return;
+
+    // Buscar la variante de color que coincide
+    const varianteColor = (product.variantes_color || []).find(
+        vc => vc.nombre && vc.nombre.toLowerCase().trim() === colorName.toLowerCase().trim()
+    );
+
+    const imagenes = (varianteColor?.imagenes || []).filter(img => img.url);
+
+    if (imagenes.length === 0) {
+        // Fallback: usar imagen principal del producto
+        thumbsEl.innerHTML = '';
+        thumbsEl.style.display = 'none';
+        mainImg.src = product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Sin+imagen';
+        return;
+    }
+
+    // Ordenar por campo "orden"
+    const sorted = [...imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+
+    // Mostrar primera imagen como principal
+    mainImg.src = sorted[0].url;
+
+    // Construir thumbnails
+    thumbsEl.style.display = '';
+    thumbsEl.innerHTML = '';
+
+    sorted.forEach((img, index) => {
+        const thumb = document.createElement('button');
+        thumb.type = 'button';
+        thumb.className = 'mp-thumb' + (index === 0 ? ' active' : '');
+        thumb.setAttribute('aria-label', img.angulo || `Ángulo ${index + 1}`);
+        thumb.innerHTML = `<img src="${img.url}" alt="${img.angulo || ''}" loading="lazy">`;
+        thumb.addEventListener('click', () => {
+            mainImg.src = img.url;
+            thumbsEl.querySelectorAll('.mp-thumb').forEach(t => t.classList.remove('active'));
+            thumb.classList.add('active');
+        });
+        thumbsEl.appendChild(thumb);
+    });
 }
 
 function updateStockDisplay(product) {
@@ -971,8 +1034,19 @@ function openProductModal(productId) {
     const { precioFinal, tienePromo, precioOriginal } = calculatePromotionPrice(product);
 
     document.getElementById('modal-product-name').textContent = product.nombre;
-    document.getElementById('modal-product-image').src = product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
     document.getElementById('modal-product-desc').textContent = product.descripcion || 'No hay descripción disponible.';
+
+    // Inicializar galería: si hay variantes_color, mostrar imágenes del primer color
+    const thumbsEl = document.getElementById('modal-gallery-thumbs');
+    if (thumbsEl) { thumbsEl.innerHTML = ''; thumbsEl.style.display = 'none'; }
+
+    const primeraVariante = (product.variantes_color || [])[0];
+    if (primeraVariante && (primeraVariante.imagenes || []).length > 0) {
+        // Se cargará la galería cuando se seleccione el color (o al auto-seleccionar)
+        document.getElementById('modal-product-image').src = primeraVariante.imagenes[0]?.url || product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
+    } else {
+        document.getElementById('modal-product-image').src = product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
+    }
     
     if (tienePromo) {
         document.getElementById('modal-price-old').textContent = formatoMoneda.format(precioOriginal);

@@ -161,12 +161,19 @@
 
   <div class="mp-grid">
 
-    <!-- Imagen -->
+    <!-- Imagen + Galería -->
     <div class="mp-img-col">
-      <img src="" id="modal-product-image" class="modal-product-image" alt="Producto" loading="lazy">
-      <button class="mp-zoom-btn" id="modal-zoom-btn" aria-label="Ver foto completa">
-        <i class="bi bi-arrows-fullscreen"></i>
-      </button>
+      <div class="mp-gallery-wrapper">
+        <!-- Thumbnails verticales (izquierda) -->
+        <div class="mp-thumbs" id="modal-gallery-thumbs"></div>
+        <!-- Imagen principal -->
+        <div class="mp-main-img-wrapper">
+          <img src="" id="modal-product-image" class="modal-product-image" alt="Producto" loading="lazy">
+          <button class="mp-zoom-btn" id="modal-zoom-btn" aria-label="Ver foto completa">
+            <i class="bi bi-arrows-fullscreen"></i>
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Info -->

@@ -1704,18 +1704,192 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
         
-        window.clearProductForm = function() { 
-            productForm.reset(); 
-            productIdInput.value = ''; 
-            const margenDetalInfo = document.getElementById('margen-detal-info'); 
-            const margenMayorInfo = document.getElementById('margen-mayor-info'); 
-            if(margenDetalInfo) margenDetalInfo.textContent = ''; 
-            if(margenMayorInfo) margenMayorInfo.textContent = ''; 
-            const rows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)'); 
-            rows.forEach((row) => { row.remove(); }); 
-            aVR(); 
-            document.getElementById('product-form-title').textContent = "Agregar Producto"; 
-            imagenInput.required = true; 
+        // ─── GALERÍA POR COLOR ──────────────────────────────────────────────────
+        // colorVariantsState: array de objetos {id, nombre, hex, imagenes (URLs ya guardadas), newFiles (File[])}
+        let colorVariantsState = [];
+
+        const colorVariantsContainer = document.getElementById('color-variants-container');
+        const colorVariantTemplate  = document.getElementById('color-variant-template');
+        const addColorVariantBtn    = document.getElementById('add-color-variant-btn');
+
+        /** Renderiza la preview de imágenes dentro de un bloque de color */
+        function renderColorPreview(previewEl, imagenesGuardadas, newFiles) {
+            previewEl.innerHTML = '';
+
+            // Imágenes ya guardadas en Storage
+            (imagenesGuardadas || []).forEach((img, idx) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'cv-img-wrap';
+                wrap.innerHTML = `
+                    <img src="${img.url}" alt="${img.angulo || ''}" class="cv-thumb">
+                    <select class="cv-angle-select form-select form-select-sm" data-img-index="${idx}">
+                        <option value="frente" ${img.angulo==='frente'?'selected':''}>Frente</option>
+                        <option value="atrás" ${img.angulo==='atrás'?'selected':''}>Atrás</option>
+                        <option value="lateral" ${img.angulo==='lateral'?'selected':''}>Lateral</option>
+                        <option value="zoom" ${img.angulo==='zoom'?'selected':''}>Zoom</option>
+                        <option value="otro" ${(img.angulo && !['frente','atrás','lateral','zoom'].includes(img.angulo))?'selected':''}>Otro</option>
+                    </select>
+                    <button type="button" class="cv-remove-img btn btn-sm btn-outline-danger p-0" data-img-index="${idx}" data-img-type="saved" title="Eliminar">×</button>`;
+                previewEl.appendChild(wrap);
+            });
+
+            // Nuevas imágenes (aún no subidas)
+            (newFiles || []).forEach((file, idx) => {
+                const url = URL.createObjectURL(file);
+                const wrap = document.createElement('div');
+                wrap.className = 'cv-img-wrap cv-new';
+                wrap.innerHTML = `
+                    <img src="${url}" alt="nueva" class="cv-thumb">
+                    <select class="cv-angle-select form-select form-select-sm" data-new-index="${idx}">
+                        <option value="frente">Frente</option>
+                        <option value="atrás">Atrás</option>
+                        <option value="lateral">Lateral</option>
+                        <option value="zoom">Zoom</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                    <button type="button" class="cv-remove-img btn btn-sm btn-outline-danger p-0" data-new-index="${idx}" data-img-type="new" title="Eliminar">×</button>`;
+                previewEl.appendChild(wrap);
+            });
+        }
+
+        /** Crea y añade un bloque de color al DOM y a colorVariantsState */
+        function addColorVariantBlock(initialData) {
+            if (!colorVariantTemplate || !colorVariantsContainer) return;
+
+            const id = initialData?.id || ('cv_' + Date.now() + '_' + Math.random().toString(36).slice(2,6));
+            const stateItem = {
+                id,
+                nombre: initialData?.nombre || '',
+                hex: initialData?.hex || '#000000',
+                imagenes: initialData?.imagenes || [],   // ya guardadas [{url, angulo, orden}]
+                newFiles: [],                              // File[] pendientes de subir
+                newFileAngles: []                          // string[] para los nuevos archivos
+            };
+            colorVariantsState.push(stateItem);
+
+            const block = colorVariantTemplate.cloneNode(true);
+            block.classList.remove('d-none');
+            block.removeAttribute('id');
+            block.dataset.cvId = id;
+
+            const hexInput  = block.querySelector('.color-variant-hex');
+            const nameInput = block.querySelector('.color-variant-name');
+            const fileInput = block.querySelector('.color-variant-file-input');
+            const previewEl = block.querySelector('.color-variant-preview');
+            const removeBtn = block.querySelector('.remove-color-variant-btn');
+
+            hexInput.value  = stateItem.hex;
+            nameInput.value = stateItem.nombre;
+
+            renderColorPreview(previewEl, stateItem.imagenes, stateItem.newFiles);
+
+            // Sync cambios de nombre / hex al state
+            nameInput.addEventListener('input', () => { stateItem.nombre = nameInput.value.trim(); });
+            hexInput.addEventListener('input', () => { stateItem.hex = hexInput.value; });
+
+            // Nuevas imágenes seleccionadas
+            fileInput.addEventListener('change', () => {
+                const files = Array.from(fileInput.files);
+                stateItem.newFiles = files;
+                stateItem.newFileAngles = files.map(() => 'frente');
+                renderColorPreview(previewEl, stateItem.imagenes, stateItem.newFiles);
+                fileInput.value = ''; // resetear para permitir re-selección
+                bindPreviewEvents(previewEl, stateItem);
+            });
+
+            // Delegar eventos en el preview (eliminar / cambiar ángulo)
+            bindPreviewEvents(previewEl, stateItem);
+
+            // Eliminar bloque completo
+            removeBtn.addEventListener('click', () => {
+                colorVariantsState = colorVariantsState.filter(s => s.id !== id);
+                block.remove();
+            });
+
+            colorVariantsContainer.appendChild(block);
+        }
+
+        /** Asigna eventos de eliminar imagen y cambiar ángulo en la preview */
+        function bindPreviewEvents(previewEl, stateItem) {
+            previewEl.querySelectorAll('.cv-remove-img').forEach(btn => {
+                btn.onclick = () => {
+                    const type = btn.dataset.imgType;
+                    if (type === 'saved') {
+                        const idx = parseInt(btn.dataset.imgIndex, 10);
+                        stateItem.imagenes.splice(idx, 1);
+                    } else {
+                        const idx = parseInt(btn.dataset.newIndex, 10);
+                        stateItem.newFiles.splice(idx, 1);
+                        stateItem.newFileAngles.splice(idx, 1);
+                    }
+                    renderColorPreview(previewEl, stateItem.imagenes, stateItem.newFiles);
+                    bindPreviewEvents(previewEl, stateItem);
+                };
+            });
+            previewEl.querySelectorAll('.cv-angle-select').forEach(sel => {
+                sel.onchange = () => {
+                    if (sel.dataset.imgIndex !== undefined) {
+                        const idx = parseInt(sel.dataset.imgIndex, 10);
+                        if (stateItem.imagenes[idx]) stateItem.imagenes[idx].angulo = sel.value;
+                    } else if (sel.dataset.newIndex !== undefined) {
+                        const idx = parseInt(sel.dataset.newIndex, 10);
+                        stateItem.newFileAngles[idx] = sel.value;
+                    }
+                };
+            });
+        }
+
+        /** Limpia todos los bloques de color */
+        function clearColorVariants() {
+            colorVariantsState = [];
+            if (colorVariantsContainer) colorVariantsContainer.innerHTML = '';
+        }
+
+        /** Sube todas las imágenes nuevas y devuelve el array variantes_color listo para Firestore */
+        async function buildAndUploadColorVariants(productId, tenantId) {
+            const result = [];
+            for (const cv of colorVariantsState) {
+                // Subir nuevas imágenes
+                const nuevasImgs = [];
+                for (let i = 0; i < cv.newFiles.length; i++) {
+                    const file = cv.newFiles[i];
+                    const angulo = cv.newFileAngles[i] || 'frente';
+                    const fileName = `${tenantId || 'tenant'}/productos/${productId}/color_${cv.id}_${Date.now()}_${i}_${file.name}`;
+                    const storageRef = ref(storage, fileName);
+                    const snapshot = await uploadBytes(storageRef, file);
+                    const url = await getDownloadURL(snapshot.ref);
+                    nuevasImgs.push({ url, angulo, orden: cv.imagenes.length + i });
+                }
+
+                // Recalcular orden de imágenes guardadas
+                const imagenesFinales = [
+                    ...cv.imagenes.map((img, idx) => ({ ...img, orden: idx })),
+                    ...nuevasImgs
+                ];
+
+                result.push({ id: cv.id, nombre: cv.nombre, hex: cv.hex, imagenes: imagenesFinales });
+            }
+            return result;
+        }
+
+        if (addColorVariantBtn) {
+            addColorVariantBtn.addEventListener('click', () => addColorVariantBlock());
+        }
+        // ─── FIN GALERÍA POR COLOR ───────────────────────────────────────────────
+
+        window.clearProductForm = function() {
+            productForm.reset();
+            productIdInput.value = '';
+            const margenDetalInfo = document.getElementById('margen-detal-info');
+            const margenMayorInfo = document.getElementById('margen-mayor-info');
+            if(margenDetalInfo) margenDetalInfo.textContent = '';
+            if(margenMayorInfo) margenMayorInfo.textContent = '';
+            const rows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)');
+            rows.forEach((row) => { row.remove(); });
+            aVR();
+            clearColorVariants();
+            document.getElementById('product-form-title').textContent = "Agregar Producto";
+            imagenInput.required = true;
         }
         
         if (clearFormBtn) clearFormBtn.addEventListener('click', (e) => { e.preventDefault(); window.clearProductForm(); });
@@ -1769,12 +1943,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     const firstFile = files[0];
                     const fileName = `product_images/${Date.now()}-${firstFile.name}`;
                     const storageRef = ref(storage, fileName);
-                    
+
                     const uploadResult = await uploadBytes(storageRef, firstFile);
                     productData.imagenUrl = await getDownloadURL(uploadResult.ref);
                     console.log("Imagen subida:", productData.imagenUrl);
                 }
-                
+
+                // ─── Subir imágenes de galería por color ───────────────────────────
+                const tenantId = window.appContext?.tenantId || 'tenant';
+                const tempProductId = productId || ('temp_' + Date.now());
+                if (colorVariantsState.length > 0) {
+                    const hasNewFiles = colorVariantsState.some(cv => cv.newFiles.length > 0);
+                    if (hasNewFiles) showToast("Subiendo imágenes de colores...", 'info');
+                    productData.variantes_color = await buildAndUploadColorVariants(tempProductId, tenantId);
+                } else {
+                    productData.variantes_color = [];
+                }
+                // ───────────────────────────────────────────────────────────────────
+
                 if (productId) {
                     if (!productData.imagenUrl) {
                         const existingDoc = localProductsMap.get(productId);
@@ -1860,7 +2046,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         imagenInput.required = false; 
                         document.getElementById('product-form-title').textContent = `Editando: ${product.nombre}`;
                         
-                        variationsContainer.innerHTML = ''; 
+                        variationsContainer.innerHTML = '';
                         if (product.variaciones && product.variaciones.length > 0) {
                             product.variaciones.forEach(v => {
                                 const nR = document.getElementById('variation-template').cloneNode(true);
@@ -1871,10 +2057,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                 nR.querySelector('.remove-variation-btn').addEventListener('click', (ev)=>{ ev.preventDefault(); nR.remove(); });
                                 variationsContainer.appendChild(nR);
                             });
-                        } else { aVR(); } 
-                        
-                        costoInput.dispatchEvent(new Event('input')); 
-                        
+                        } else { aVR(); }
+
+                        // ─── Cargar galería por color ──────────────────────────────────
+                        clearColorVariants();
+                        (product.variantes_color || []).forEach(vc => addColorVariantBlock(vc));
+                        // ──────────────────────────────────────────────────────────────
+
+                        costoInput.dispatchEvent(new Event('input'));
+
                         if (formView) {
                             formView.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }
