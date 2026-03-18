@@ -168,12 +168,6 @@
         <div class="admin-topbar-left">
             <span class="admin-topbar-title" id="topbar-section-title">Dashboard</span>
         </div>
-        <div class="admin-topbar-center">
-            <div class="admin-topbar-search">
-                <i class="bi bi-search admin-topbar-search-icon"></i>
-                <input type="text" placeholder="Buscar en el panel..." class="admin-topbar-search-input" id="topbar-search" autocomplete="off">
-            </div>
-        </div>
         <div class="admin-topbar-right">
             <button class="admin-topbar-icon-btn" id="topbar-notifications" title="Notificaciones">
                 <i class="bi bi-bell"></i>
@@ -216,52 +210,6 @@
                         <button class="db2-range-btn" data-range="week">Semana</button>
                         <button class="db2-range-btn" data-range="month">Mes</button>
                         <button class="db2-range-btn" data-range="year">Año</button>
-                    </div>
-                </div>
-
-                <div class="db2-sep"></div>
-
-                <!-- KPI CARDS -->
-                <div class="db2-kpi-row">
-                    <div class="db2-kpi-card">
-                        <div class="db2-kpi-icon" style="background:#EFF6FF;color:#2563EB;">
-                            <i class="bi bi-people-fill"></i>
-                        </div>
-                        <div class="db2-kpi-body">
-                            <div class="db2-kpi-val" id="kpi-total-customers">2,847</div>
-                            <div class="db2-kpi-name">Total customers</div>
-                            <div class="db2-kpi-growth positive"><i class="bi bi-arrow-up-short"></i>+12.5% vs mes anterior</div>
-                        </div>
-                    </div>
-                    <div class="db2-kpi-card">
-                        <div class="db2-kpi-icon" style="background:#F0FDF4;color:#16A34A;">
-                            <i class="bi bi-cash-stack"></i>
-                        </div>
-                        <div class="db2-kpi-body">
-                            <div class="db2-kpi-val" id="kpi-total-revenue">$48,350</div>
-                            <div class="db2-kpi-name">Total revenue</div>
-                            <div class="db2-kpi-growth positive"><i class="bi bi-arrow-up-short"></i>+8.3% vs mes anterior</div>
-                        </div>
-                    </div>
-                    <div class="db2-kpi-card">
-                        <div class="db2-kpi-icon" style="background:#FFF7ED;color:#EA580C;">
-                            <i class="bi bi-bag-fill"></i>
-                        </div>
-                        <div class="db2-kpi-body">
-                            <div class="db2-kpi-val" id="kpi-total-orders">1,284</div>
-                            <div class="db2-kpi-name">Total orders</div>
-                            <div class="db2-kpi-growth positive"><i class="bi bi-arrow-up-short"></i>+5.7% vs mes anterior</div>
-                        </div>
-                    </div>
-                    <div class="db2-kpi-card">
-                        <div class="db2-kpi-icon" style="background:#FDF4FF;color:#9333EA;">
-                            <i class="bi bi-receipt"></i>
-                        </div>
-                        <div class="db2-kpi-body">
-                            <div class="db2-kpi-val" id="kpi-avg-order">$37.65</div>
-                            <div class="db2-kpi-name">Avg. order value</div>
-                            <div class="db2-kpi-growth negative"><i class="bi bi-arrow-down-short"></i>-2.1% vs mes anterior</div>
-                        </div>
                     </div>
                 </div>
 
@@ -365,66 +313,6 @@
                     </div>
                 </div>
 
-                <div class="db2-sep"></div>
-
-                <!-- SECCIÓN DE GRÁFICOS ANALÍTICOS -->
-
-                <!-- Gráfico de barras amplio: Product sales -->
-                <div class="row g-3 mb-3">
-                    <div class="col-12">
-                        <div class="db-chart-card">
-                            <div class="db-chart-header">
-                                <span class="db-chart-title">Product sales</span>
-                                <div class="db-period-tabs">
-                                    <input type="radio" class="btn-check" name="sales-period" id="sales-7d" autocomplete="off" checked>
-                                    <label class="db-period-tab" for="sales-7d">7 días</label>
-                                    <input type="radio" class="btn-check" name="sales-period" id="sales-30d" autocomplete="off">
-                                    <label class="db-period-tab" for="sales-30d">30 días</label>
-                                    <input type="radio" class="btn-check" name="sales-period" id="sales-12m" autocomplete="off">
-                                    <label class="db-period-tab" for="sales-12m">12 meses</label>
-                                </div>
-                            </div>
-                            <div class="db-chart-body">
-                                <canvas id="productSalesBarChart" height="70"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Gráfico dona + Tabla de países -->
-                <div class="row g-3">
-                    <div class="col-lg-5">
-                        <div class="db-chart-card">
-                            <div class="db-chart-header">
-                                <span class="db-chart-title">Sales by product category</span>
-                            </div>
-                            <div class="db-chart-body db-donut-body">
-                                <canvas id="salesByCategoryChart"></canvas>
-                                <div class="db-donut-legend" id="categoryLegend"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-7">
-                        <div class="db-chart-card">
-                            <div class="db-chart-header">
-                                <span class="db-chart-title">Sales by countries</span>
-                            </div>
-                            <div class="db-chart-body p-0">
-                                <table class="table table-hover mb-0 db-countries-table">
-                                    <thead>
-                                        <tr>
-                                            <th>País</th>
-                                            <th class="text-end">Pedidos</th>
-                                            <th class="text-end">Revenue</th>
-                                            <th class="text-end">Crecimiento</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="salesByCountriesBody"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
             </div>
 
