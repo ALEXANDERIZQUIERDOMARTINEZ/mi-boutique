@@ -1950,6 +1950,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // ─── Subir imágenes de galería por color ───────────────────────────
+                const sinNombre = colorVariantsState.find(cv => !cv.nombre);
+                if (sinNombre) {
+                    showToast('Cada color debe tener un nombre.', 'warning');
+                    throw new Error('Color sin nombre');
+                }
                 const tenantId = window.appContext?.tenantId || 'tenant';
                 const tempProductId = productId || ('temp_' + Date.now());
                 if (colorVariantsState.length > 0) {
@@ -1996,8 +2001,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 } 
             } catch (err) { 
                 console.error("Error saving product or image:", err); 
-                if (err.message !== "Imagen requerida") {
-                    showToast(`Error: ${err.message}`, 'error'); 
+                if (err.message !== "Imagen requerida" && err.message !== "Color sin nombre") {
+                    showToast(`Error: ${err.message}`, 'error');
                 }
             } finally {
                  if(saveProductBtn) { saveProductBtn.disabled = false; if(saveProductBtnText) saveProductBtnText.textContent = "Guardar"; if(saveProductBtnSpinner) saveProductBtnSpinner.style.display = 'none'; }
