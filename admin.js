@@ -1875,6 +1875,66 @@ document.addEventListener('DOMContentLoaded', () => {
         if (addColorVariantBtn) {
             addColorVariantBtn.addEventListener('click', () => addColorVariantBlock());
         }
+
+        /**
+         * Actualiza el <datalist id="variation-colors-list"> con los colores
+         * que hay actualmente en las filas de Variaciones, y marca en rojo
+         * los bloques de galería cuyo nombre no coincida con ninguna variación.
+         */
+        function syncColorSuggestions() {
+            const datalist = document.getElementById('variation-colors-list');
+            if (!datalist) return;
+
+            // Recolectar colores únicos de las filas de variaciones
+            const rows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)');
+            const variationColors = new Set();
+            rows.forEach(row => {
+                const c = row.querySelector('[name="variation_color[]"]')?.value?.trim();
+                if (c) variationColors.add(c);
+            });
+
+            // Actualizar datalist
+            datalist.innerHTML = [...variationColors]
+                .map(c => `<option value="${c}">`)
+                .join('');
+
+            // Mostrar/ocultar advertencia en cada bloque de galería
+            if (colorVariantsContainer) {
+                colorVariantsContainer.querySelectorAll('.color-variant-block').forEach(block => {
+                    const nameInput = block.querySelector('.color-variant-name');
+                    const warning   = block.querySelector('.cv-name-warning');
+                    if (!nameInput || !warning) return;
+                    const nombre = nameInput.value.trim();
+                    const coincide = !nombre || [...variationColors].some(
+                        vc => vc.toLowerCase() === nombre.toLowerCase()
+                    );
+                    warning.style.display = coincide ? 'none' : 'block';
+                });
+            }
+        }
+
+        // Escuchar cambios en cualquier input de color/talla de variaciones
+        if (variationsContainer) {
+            variationsContainer.addEventListener('input', e => {
+                if (e.target.matches('[name="variation_color[]"]')) syncColorSuggestions();
+            });
+        }
+
+        // También sincronizar cuando el usuario escribe en un input de nombre de galería
+        if (colorVariantsContainer) {
+            colorVariantsContainer.addEventListener('input', e => {
+                if (e.target.classList.contains('color-variant-name')) syncColorSuggestions();
+            });
+        }
+
+        // Cuando se elimina una fila de variación, re-sincronizar sugerencias
+        if (variationsContainer) {
+            variationsContainer.addEventListener('click', e => {
+                if (e.target.closest('.remove-variation-btn')) {
+                    setTimeout(syncColorSuggestions, 50);
+                }
+            });
+        }
         // ─── FIN GALERÍA POR COLOR ───────────────────────────────────────────────
 
         window.clearProductForm = function() {
@@ -2067,6 +2127,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         // ─── Cargar galería por color ──────────────────────────────────
                         clearColorVariants();
                         (product.variantes_color || []).forEach(vc => addColorVariantBlock(vc));
+                        syncColorSuggestions(); // actualizar sugerencias y advertencias
                         // ──────────────────────────────────────────────────────────────
 
                         costoInput.dispatchEvent(new Event('input'));
