@@ -901,6 +901,72 @@ body.admin-page::after {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   HERO BANNER
+   ───────────────────────────────────────────────────────────────────────── */
+.db2-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 2rem 2.25rem;
+  border-radius: var(--radius-2xl);
+  background: var(--grad-brand);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.db2-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg,
+    rgba(255,255,255,0.12) 0%,
+    transparent 50%,
+    rgba(0,0,0,0.06) 100%);
+  pointer-events: none;
+}
+.db2-hero-content { position: relative; z-index: 1; }
+.db2-hero-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+  color: rgba(255,255,255,0.75);
+  margin-bottom: 0.4rem;
+}
+.db2-hero-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -1.2px;
+  line-height: 1;
+  margin-bottom: 0.6rem;
+}
+.db2-hero-desc {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.82);
+  font-weight: 500;
+  margin: 0;
+}
+.db2-hero-orb {
+  position: relative;
+  z-index: 1;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  color: #fff;
+  flex-shrink: 0;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.3);
+  animation: pulseGlowBrand 3s ease-in-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    KPI CARDS — Hero metrics
    ───────────────────────────────────────────────────────────────────────── */
 .db2-kpi-row {
@@ -1011,15 +1077,42 @@ body.admin-page::after {
 .db2-met {
   padding: 1.25rem;
   border-radius: var(--radius-xl);
-  background: rgba(255,255,255,0.6);
+  background: var(--surface-raised);
   border: 1px solid var(--border-subtle);
   transition: all var(--duration-base) var(--ease-out);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  position: relative;
+  overflow: hidden;
+}
+.db2-met::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--grad-brand);
+  opacity: 0;
+  transition: opacity var(--duration-base) ease;
 }
 .db2-met:hover {
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
+.db2-met:hover::after { opacity: 0.7; }
+
+.db2-met-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.db2-met-body { flex: 1; min-width: 0; }
 
 .db2-met-val {
   font-size: 2rem;
@@ -1048,6 +1141,28 @@ body.admin-page::after {
 /* ─────────────────────────────────────────────────────────────────────────
    QUICK ACCESS — Inline stats
    ───────────────────────────────────────────────────────────────────────── */
+.db2-quick-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.5rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xs);
+}
+.db2-quick-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  padding-right: 0.75rem;
+  border-right: 1px solid var(--border-subtle);
+  margin-right: 0.25rem;
+}
 .db2-foot {
   display: flex;
   align-items: center;
@@ -2281,6 +2396,13 @@ body.dark-mode .card-header.bg-white {
 }
 
 /* Dashboard elements dark */
+body.dark-mode .db2-hero {
+  background: linear-gradient(135deg, #be185d 0%, #a855f7 100%);
+}
+body.dark-mode .db2-quick-card {
+  background: var(--surface-raised);
+  border-color: var(--border-subtle);
+}
 body.dark-mode .db2-kpi-card,
 body.dark-mode .db2-fin-card,
 body.dark-mode .db-chart-card,
