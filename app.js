@@ -1036,17 +1036,12 @@ function openProductModal(productId) {
     document.getElementById('modal-product-name').textContent = product.nombre;
     document.getElementById('modal-product-desc').textContent = product.descripcion || 'No hay descripción disponible.';
 
-    // Inicializar galería: si hay variantes_color, mostrar imágenes del primer color
+    // Imagen inicial: usar imagenUrl como placeholder.
+    // La galería correcta se cargará en cuanto se auto-seleccione el color
+    // (vía renderSizeButtons → renderColorButtons → selectColor → updateColorGallery).
     const thumbsEl = document.getElementById('modal-gallery-thumbs');
     if (thumbsEl) { thumbsEl.innerHTML = ''; thumbsEl.style.display = 'none'; }
-
-    const primeraVariante = (product.variantes_color || [])[0];
-    if (primeraVariante && (primeraVariante.imagenes || []).length > 0) {
-        // Se cargará la galería cuando se seleccione el color (o al auto-seleccionar)
-        document.getElementById('modal-product-image').src = primeraVariante.imagenes[0]?.url || product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
-    } else {
-        document.getElementById('modal-product-image').src = product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
-    }
+    document.getElementById('modal-product-image').src = product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
     
     if (tienePromo) {
         document.getElementById('modal-price-old').textContent = formatoMoneda.format(precioOriginal);

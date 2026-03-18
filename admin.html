@@ -481,15 +481,24 @@
                                 </div>
                                 <div id="color-variants-container"></div>
 
+                                <!-- Datalist de colores sugeridos (se llena desde las Variaciones) -->
+                                <datalist id="variation-colors-list"></datalist>
+
                                 <!-- Template oculto para un bloque de color -->
                                 <div class="color-variant-block border rounded p-3 mb-3 d-none" id="color-variant-template">
                                     <div class="d-flex align-items-center gap-2 mb-3">
                                         <input type="color" class="color-variant-hex form-control form-control-color" value="#000000" title="Color" style="width:40px;height:38px;padding:2px;">
-                                        <input type="text" class="color-variant-name form-control form-control-sm" placeholder="Nombre del color (ej: Rojo, Azul marino…)">
+                                        <input type="text" class="color-variant-name form-control form-control-sm"
+                                               placeholder="Selecciona o escribe el nombre del color"
+                                               list="variation-colors-list" autocomplete="off">
                                         <button type="button" class="btn btn-sm btn-outline-danger ms-auto remove-color-variant-btn" title="Eliminar color">
                                             <i class="bi bi-trash3"></i>
                                         </button>
                                     </div>
+                                    <small class="text-warning d-block mb-2 cv-name-warning" style="display:none!important">
+                                        <i class="bi bi-exclamation-triangle-fill"></i>
+                                        El nombre debe coincidir exactamente con el color en <strong>Variaciones</strong> para que aparezca en la tienda.
+                                    </small>
                                     <div class="color-variant-images-area">
                                         <label class="form-label small text-muted mb-1">Imágenes de este color (frente, atrás, lateral, zoom…)</label>
                                         <input type="file" class="color-variant-file-input form-control form-control-sm mb-2" accept="image/*" multiple>
