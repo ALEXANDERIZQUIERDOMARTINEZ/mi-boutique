@@ -28,10 +28,11 @@
 
     <!-- Topbar mínima (visible solo en móvil) -->
     <header class="rail-topbar" id="railTopbar">
-        <button class="rail-toggle" id="railToggle" aria-label="Abrir menú">
-            <i class="bi bi-list"></i>
+        <img src="icon.svg" alt="M" class="rail-topbar-logo">
+        <span class="rail-topbar-section" id="mobile-section-title">Dashboard</span>
+        <button class="rail-topbar-dark-btn" id="darkModeToggleMobile" title="Dark mode">
+            <i class="bi bi-moon" id="darkModeIconMobile"></i>
         </button>
-        <span class="rail-topbar-brand">Mishell</span>
     </header>
 
     <!-- Sidebar fijo -->
@@ -298,7 +299,7 @@
                                 </div>
                             </div>
                             <div class="db-chart-body">
-                                <canvas id="ventasChart" height="80"></canvas>
+                                <canvas id="ventasChart"></canvas>
                             </div>
                         </div>
                     </div>
@@ -1541,6 +1542,31 @@
     </main>
     </div><!-- /.admin-content-wrapper -->
 
+    <!-- ══ BOTTOM NAVIGATION — solo móvil ══ -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Navegación principal">
+        <a class="mbn-item active" href="#dashboard" data-section="#dashboard">
+            <i class="bi bi-grid-1x2"></i>
+            <span>Inicio</span>
+        </a>
+        <a class="mbn-item" href="#ventas" data-section="#ventas">
+            <i class="bi bi-plus-circle"></i>
+            <span>Venta</span>
+        </a>
+        <a class="mbn-item" href="#productos" data-section="#productos">
+            <i class="bi bi-grid"></i>
+            <span>Productos</span>
+        </a>
+        <a class="mbn-item mbn-pedidos" href="#pedidos-web" data-section="#pedidos-web">
+            <i class="bi bi-bag-check"></i>
+            <span>Pedidos</span>
+            <span class="mbn-badge badge-new-order" id="mbn-pedidos-count" style="display:none;"></span>
+        </a>
+        <button class="mbn-item" id="mbnMore" type="button">
+            <i class="bi bi-list"></i>
+            <span>Más</span>
+        </button>
+    </nav>
+
     <div class="modal fade" id="addClientModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-client"> <div class="mb-3"> <label for="new-client-cedula" class="form-label">Cédula:</label> <input type="text" class="form-control" id="new-client-cedula"> </div> <div class="mb-3"> <label for="new-client-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-client-nombre" required> </div> <div class="mb-3"> <label for="new-client-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-client-celular" required> </div> <div class="mb-3"> <label for="new-client-direccion" class="form-label">Dirección:</label> <input type="text" class="form-control" id="new-client-direccion"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-client" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addRepartidorModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Repartidor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-repartidor"> <div class="mb-3"> <label for="new-repartidor-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-repartidor-nombre" required> </div> <div class="mb-3"> <label for="new-repartidor-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-repartidor-celular" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-repartidor" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addSupplierModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Proveedor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-supplier"> <div class="mb-3"> <label for="new-supplier-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-supplier-nombre" required> </div> <div class="mb-3"> <label for="new-supplier-contacto" class="form-label">Contacto:</label> <input type="text" class="form-control" id="new-supplier-contacto"> </div> <div class="mb-3"> <label for="new-supplier-telefono" class="form-label">Teléfono:</label> <input type="tel" class="form-control" id="new-supplier-telefono"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-supplier" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
@@ -2479,15 +2505,20 @@
                 document.querySelectorAll('.rail-link[href^="#"]').forEach(function(link) {
                     link.classList.toggle('active', link.getAttribute('href') === h);
                 });
-                /* ─── Sync topbar title ─── */
-                var topbarTitle = document.getElementById('topbar-section-title');
-                if (topbarTitle) {
-                    var activeLink = document.querySelector('.rail-link[href="' + h + '"]');
-                    if (activeLink) {
-                        var tooltip = activeLink.getAttribute('data-tooltip') || activeLink.querySelector('span') && activeLink.querySelector('span').textContent;
-                        if (tooltip) topbarTitle.textContent = tooltip;
-                    }
+                /* ─── Sync topbar title (desktop + mobile) ─── */
+                var activeLink = document.querySelector('.rail-link[href="' + h + '"]');
+                var title = '';
+                if (activeLink) {
+                    title = activeLink.getAttribute('data-tooltip') || (activeLink.querySelector('span') && activeLink.querySelector('span').textContent) || '';
                 }
+                var topbarTitle = document.getElementById('topbar-section-title');
+                if (topbarTitle && title) topbarTitle.textContent = title;
+                var mobileTitle = document.getElementById('mobile-section-title');
+                if (mobileTitle && title) mobileTitle.textContent = title;
+                /* ─── Sync bottom nav active ─── */
+                document.querySelectorAll('.mbn-item[data-section]').forEach(function(item) {
+                    item.classList.toggle('active', item.getAttribute('data-section') === h);
+                });
             }
 
             /* ─── Exponer globalmente (usado por admin.js) ─── */
@@ -2517,6 +2548,52 @@
 
             if (toggle)  toggle.addEventListener('click',  openRail);
             if (overlay) overlay.addEventListener('click', closeRail);
+
+            /* ─── Bottom nav: clics en items de sección ─── */
+            document.querySelectorAll('.mbn-item[data-section]').forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var hash = this.getAttribute('data-section');
+                    showSection(hash);
+                    markActive(hash);
+                });
+            });
+
+            /* ─── Bottom nav: botón "Más" abre el rail ─── */
+            var mbnMore = document.getElementById('mbnMore');
+            if (mbnMore) mbnMore.addEventListener('click', openRail);
+
+            /* ─── Sincronizar badge pedidos al bottom nav ─── */
+            (function syncMbnBadge() {
+                var srcBadge = document.getElementById('pedidos-web-count');
+                var dstBadge = document.getElementById('mbn-pedidos-count');
+                if (!srcBadge || !dstBadge) return;
+                var observer = new MutationObserver(function() {
+                    var show = srcBadge.style.display !== 'none' && srcBadge.textContent !== '0';
+                    dstBadge.style.display = show ? 'block' : 'none';
+                });
+                observer.observe(srcBadge, { attributes: true, childList: true, subtree: true, characterData: true });
+            })();
+
+            /* ─── Dark mode móvil ─── */
+            var dmMobile = document.getElementById('darkModeToggleMobile');
+            var dmIconMobile = document.getElementById('darkModeIconMobile');
+            if (dmMobile) {
+                dmMobile.addEventListener('click', function() {
+                    var btn = document.getElementById('darkModeToggle');
+                    if (btn) btn.click();
+                });
+                /* Sincronizar icono */
+                (function syncDmIcon() {
+                    var mainIcon = document.getElementById('darkModeIcon');
+                    if (!mainIcon || !dmIconMobile) return;
+                    var obs = new MutationObserver(function() {
+                        dmIconMobile.className = mainIcon.className;
+                    });
+                    obs.observe(mainIcon, { attributes: true });
+                    dmIconMobile.className = mainIcon.className;
+                })();
+            }
 
             /* ─── Estado inicial ─── */
             var initHash = window.location.hash || '#dashboard';
