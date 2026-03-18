@@ -2086,7 +2086,11 @@ textarea.form-control-modern {
     object-fit: cover;
     display: block;
     cursor: zoom-in;
-    transition: transform 0.45s ease;
+    transition: transform 0.45s ease, opacity 0.2s ease;
+}
+/* Estado de carga al cambiar color en la galería */
+#productModal .modal-product-image.gallery-loading {
+    opacity: 0.4;
 }
 
 #productModal .modal-product-image:hover {

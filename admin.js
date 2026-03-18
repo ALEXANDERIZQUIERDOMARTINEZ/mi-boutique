@@ -1787,11 +1787,11 @@ document.addEventListener('DOMContentLoaded', () => {
             nameInput.addEventListener('input', () => { stateItem.nombre = nameInput.value.trim(); });
             hexInput.addEventListener('input', () => { stateItem.hex = hexInput.value; });
 
-            // Nuevas imágenes seleccionadas
+            // Nuevas imágenes seleccionadas — se acumulan (no reemplazan)
             fileInput.addEventListener('change', () => {
                 const files = Array.from(fileInput.files);
-                stateItem.newFiles = files;
-                stateItem.newFileAngles = files.map(() => 'frente');
+                stateItem.newFiles = [...(stateItem.newFiles || []), ...files];
+                stateItem.newFileAngles = [...(stateItem.newFileAngles || []), ...files.map(() => 'frente')];
                 renderColorPreview(previewEl, stateItem.imagenes, stateItem.newFiles);
                 fileInput.value = ''; // resetear para permitir re-selección
                 bindPreviewEvents(previewEl, stateItem);
