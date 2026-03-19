@@ -871,31 +871,116 @@ body.dark-mode .mbn-item.active { color: var(--brand-400); }
 /* ─────────────────────────────────────────────────────────────────────────
    TOAST — Premium notifications
    ───────────────────────────────────────────────────────────────────────── */
+
+/* Móvil por defecto: centrado sobre el nav inferior */
 .toast-container {
   z-index: 1200 !important;
-  top: 72px !important;
-  right: 1.5rem !important;
-  left: auto !important;
+  position: fixed !important;
+  bottom: calc(58px + env(safe-area-inset-bottom, 0px) + 10px) !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  transform: translateX(-50%) !important;
+  width: calc(100% - 2rem) !important;
+  max-width: 380px !important;
+  padding: 0 !important;
 }
 
-.toast {
+/* Desktop: esquina superior derecha */
+@media (min-width: 992px) {
+  .toast-container {
+    top: 72px !important;
+    right: 1.5rem !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    width: auto !important;
+    max-width: 360px !important;
+  }
+}
+
+#liveToast.toast {
+  pointer-events: auto;
+  width: 100%;
+  min-width: 260px;
   border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-lg) !important;
   border: 1px solid var(--border-subtle) !important;
   background: var(--surface-overlay) !important;
   backdrop-filter: var(--blur-sm) !important;
-  min-width: 270px;
-  max-width: 340px;
-  font-family: var(--font-sans);
-  font-size: 0.84rem;
+  -webkit-backdrop-filter: var(--blur-sm) !important;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg) !important;
+  transition: opacity 0.22s ease, transform 0.22s ease;
 }
 
-.toast-body {
-  font-family: var(--font-sans);
-  font-size: 0.84rem;
-  color: var(--text-primary);
-  padding: 0.75rem 1rem;
+/* Layout interno: icono | mensaje | X */
+.toast-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 10px 13px 14px;
 }
+
+/* Icono de tipo */
+.toast-icon {
+  flex-shrink: 0;
+  font-size: 1.15rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+/* Mensaje */
+.toast-msg {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.45;
+  font-family: var(--font-sans);
+}
+
+/* Botón X circular */
+.toast-close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  padding: 0;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+.toast-close:hover  { background: rgba(0, 0, 0, 0.1); }
+.toast-close:active { background: rgba(0, 0, 0, 0.16); }
+
+/* Franjas de color + icono por tipo */
+#liveToast.toast-success { border-left: 3.5px solid #10b981 !important; }
+#liveToast.toast-success .toast-icon { color: #10b981; }
+
+#liveToast.toast-error   { border-left: 3.5px solid #ef4444 !important; }
+#liveToast.toast-error   .toast-icon { color: #ef4444; }
+
+#liveToast.toast-warning { border-left: 3.5px solid #f59e0b !important; }
+#liveToast.toast-warning .toast-icon { color: #f59e0b; }
+
+#liveToast.toast-info    { border-left: 3.5px solid #3b82f6 !important; }
+#liveToast.toast-info    .toast-icon { color: #3b82f6; }
+
+/* Dark mode */
+body.dark-mode #liveToast.toast    { background: rgba(30, 27, 40, 0.97) !important; }
+body.dark-mode .toast-msg          { color: var(--text-primary); }
+body.dark-mode .toast-close        { background: rgba(255,255,255,0.08); color: var(--text-tertiary); }
+body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
 
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -3517,9 +3602,6 @@ body.modal-open {
     left: 0 !important;
     right: 0 !important;
     top: auto !important;
-    align-items: flex-end !important;
-    display: flex !important;
-    flex-direction: column !important;
   }
 
   /* Contenido: esquinas redondeadas arriba */

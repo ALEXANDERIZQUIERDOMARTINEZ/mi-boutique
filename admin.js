@@ -224,14 +224,16 @@ let bsToast = null;
 function showToast(message, type = 'success', title = 'Notificación') {
     const liveToastEl = document.getElementById('liveToast');
     const toastBodyEl = document.getElementById('toast-body');
-    
+    const toastIconEl = document.getElementById('toast-icon');
+
     if (liveToastEl && toastBodyEl) {
         if (!bsToast) { try { bsToast = new bootstrap.Toast(liveToastEl, { delay: 3500 }); } catch (e) { console.error("Toast init error", e); return; }}
-        liveToastEl.className = 'toast align-items-center border-0';
-        const bgClass = type === 'error' ? 'text-bg-danger' : (type === 'warning' ? 'text-bg-warning' : (type === 'info' ? 'text-bg-info' : 'text-bg-success'));
-        liveToastEl.classList.add(bgClass, 'text-white');
-        let iconClass = type === 'success' ? 'bi-check-circle-fill' : (type === 'error' ? 'bi-exclamation-triangle-fill' : (type === 'warning' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'));
-        toastBodyEl.innerHTML = `<i class="bi ${iconClass} me-2"></i> ${message}`;
+        liveToastEl.className = 'toast';
+        const typeMap = { success: 'toast-success', error: 'toast-error', warning: 'toast-warning', info: 'toast-info' };
+        const iconMap = { success: 'bi-check-circle-fill', error: 'bi-x-circle-fill', warning: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
+        liveToastEl.classList.add(typeMap[type] || 'toast-success');
+        if (toastIconEl) toastIconEl.innerHTML = `<i class="bi ${iconMap[type] || iconMap.success}"></i>`;
+        toastBodyEl.textContent = message;
         bsToast.show();
     } else { console.warn("Toast elements not found:", message); alert(`${type.toUpperCase()}: ${message}`); }
 }

@@ -1226,8 +1226,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 #liveToast.text-bg-warning .toast-icon { color: #d4870a; }
 
-/* Desktop: esquina inferior derecha */
-@media (min-width: 768px) {
+/* Desktop: esquina inferior derecha (se oculta el nav pill en 992px) */
+@media (min-width: 992px) {
     .toast-container {
         bottom: 1.5rem;
         left: auto;
@@ -2987,10 +2987,68 @@ textarea.form-control-modern {
     box-shadow: none;
 }
 
-/* Responsive checkout en mobile */
-@media (max-width: 575.98px) {
+/* Checkout — Bottom Sheet en móvil */
+@media (max-width: 767.98px) {
+    /* Animación: sube desde abajo */
+    #checkoutModal.fade .modal-dialog {
+        transform: translateY(60px);
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #checkoutModal.show .modal-dialog {
+        transform: translateY(0);
+    }
+
+    /* Dialog pegado al fondo, ancho completo */
+    #checkoutModal .modal-dialog {
+        margin: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+    }
+
+    /* Contenido: esquinas redondeadas arriba, altura máxima */
     #checkoutModal .modal-content.checkout-premium {
-        border-radius: 0;
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 92dvh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Handle visual arriba */
+    #checkoutModal .modal-header.checkout-header {
+        position: relative;
+        padding-top: 1.35rem;
+        flex-shrink: 0;
+    }
+    #checkoutModal .modal-header.checkout-header::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(0, 0, 0, 0.12);
+    }
+
+    /* Body scrollable */
+    #checkoutModal .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: 65dvh;
+    }
+
+    /* Footer no sangra detrás del nav */
+    #checkoutModal .modal-footer {
+        flex-shrink: 0;
+        padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 0.75rem);
     }
 }
 
