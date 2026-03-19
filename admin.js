@@ -8129,22 +8129,35 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ── Formateador ──
     const fmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
+    // ── Parsear fecha "YYYY-MM-DD" como hora local (NO UTC) ──
+    function parseLocalDate(str) {
+        const [y, m, d] = str.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+
     // ── Rangos de fecha ──
     function getDateRange(range) {
         const now = new Date();
-        const hoyInicio = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const hoyInicio = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
         const hoyFin    = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
         switch (range) {
             case 'hoy':
                 return { desde: hoyInicio, hasta: hoyFin, label: 'Hoy' };
+            case 'ayer': {
+                const desde = new Date(hoyInicio);
+                desde.setDate(desde.getDate() - 1);
+                const hasta = new Date(desde);
+                hasta.setHours(23, 59, 59, 999);
+                return { desde, hasta, label: 'Ayer' };
+            }
             case 'semana': {
                 const desde = new Date(hoyInicio);
                 desde.setDate(desde.getDate() - 6);
                 return { desde, hasta: hoyFin, label: 'Esta semana' };
             }
             default: { // 'mes'
-                const desde = new Date(now.getFullYear(), now.getMonth(), 1);
+                const desde = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
                 return { desde, hasta: hoyFin, label: 'Este mes' };
             }
         }
@@ -8450,11 +8463,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 showToast('Selecciona ambas fechas', 'warning');
                 return;
             }
-            const desde = new Date(inputDesde.value);
-            const hasta = new Date(inputHasta.value);
+            // parseLocalDate evita el bug UTC: "2025-03-18" → local midnight, no UTC
+            const desde = parseLocalDate(inputDesde.value);
+            const hasta = parseLocalDate(inputHasta.value);
             hasta.setHours(23, 59, 59, 999);
             calcularFinanzas(desde, hasta,
-                `${desde.toLocaleDateString('es-CO')} — ${hasta.toLocaleDateString('es-CO')}`);
+                `${desde.toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'})} — ${hasta.toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'})}`);
         });
     }
 
