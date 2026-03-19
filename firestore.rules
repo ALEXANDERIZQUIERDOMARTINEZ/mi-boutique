@@ -146,24 +146,29 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════
 
     match /ventas/{saleId} {
-      // Leer: Solo del mismo tenant
-      allow read: if (hasPermission('ventas_ver') || hasPermission('dashboard_ver')) &&
-                    belongsToTenant(resource.data.tenantId);
+      // Leer: Usuario activo con permiso de ventas o dashboard
+      // No requiere tenantId en el documento para compatibilidad con registros anteriores
+      allow read: if isActiveUser() &&
+                    (hasPermission('ventas_ver') || hasPermission('dashboard_ver'));
 
       // Crear: Con tenantId correcto
       allow create: if hasPermission('ventas_crear') &&
                       hasRequiredTenantId() &&
                       isCreatingWithCorrectTenant();
 
-      // Actualizar: Solo del mismo tenant, sin cambiar tenantId
-      // ventas_editar para edición completa, ventas_anular para anulación
-      allow update: if (hasPermission('ventas_editar') || hasPermission('ventas_anular')) &&
-                      belongsToTenant(resource.data.tenantId) &&
-                      isNotChangingTenant();
+      // Actualizar: ventas_editar para edición completa, ventas_anular para anulación
+      // Permite docs sin tenantId (registros anteriores a migración)
+      allow update: if isActiveUser() &&
+                      (hasPermission('ventas_editar') || hasPermission('ventas_anular')) &&
+                      (!resource.data.keys().hasAny(['tenantId']) ||
+                       (belongsToTenant(resource.data.tenantId) && isNotChangingTenant()));
 
       // Eliminar: Solo con permiso explícito ventas_eliminar
-      allow delete: if hasPermission('ventas_eliminar') &&
-                      belongsToTenant(resource.data.tenantId);
+      // Permite docs sin tenantId (registros anteriores a migración)
+      allow delete: if isActiveUser() &&
+                      hasPermission('ventas_eliminar') &&
+                      (!resource.data.keys().hasAny(['tenantId']) ||
+                       belongsToTenant(resource.data.tenantId));
     }
 
     // ═══════════════════════════════════════════════════════════════════

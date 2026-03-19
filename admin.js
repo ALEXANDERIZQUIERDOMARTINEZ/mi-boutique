@@ -21,6 +21,27 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 console.log("Firebase Initialized!");
 
+// Inicializar window.appContext desde sessionStorage (datos guardados en login)
+(function() {
+    try {
+        const stored = sessionStorage.getItem('adminUser');
+        if (stored) {
+            const u = JSON.parse(stored);
+            window.appContext = {
+                userId: u.uid,
+                email: u.email,
+                nombre: u.nombre,
+                rol: u.rol,
+                permisos: u.permisos || {},
+                tenantId: u.tenantId || null,
+                isSuperAdmin: u.rol === 'SUPER_ADMIN'
+            };
+        }
+    } catch(e) {
+        console.warn('Error al cargar contexto de usuario:', e);
+    }
+})();
+
 // Exponer funciones de Firebase globalmente para barcode-system.js
 window.db = db;
 window.collection = collection;
@@ -3262,8 +3283,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             ventasUnsubscribe = onSnapshot(q, renderSales, e => {
-                console.error("Error sales:", e);
-                if(salesListTableBody) salesListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';
+                console.error("Error ventas:", e);
+                if(salesListTableBody) salesListTableBody.innerHTML = `
+                    <div class="ventas-empty-state">
+                        <i class="bi bi-exclamation-triangle fs-2 d-block mb-2 text-danger"></i>
+                        <p class="text-danger mb-0">Error al cargar ventas. Verifica tu conexión.</p>
+                        <small class="text-muted">${e.code || e.message || ''}</small>
+                    </div>`;
             });
         }
 
