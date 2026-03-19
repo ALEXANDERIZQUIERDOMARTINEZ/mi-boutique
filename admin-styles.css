@@ -3712,3 +3712,111 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
   }
 }
 
+
+/* ============================================================================
+   📷 ESCÁNER CON CÁMARA - MÓVIL
+   ============================================================================ */
+
+.camera-scanner-modal-content {
+    background: #0a0a0a;
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.camera-scanner-header {
+    background: rgba(0, 0, 0, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 14px 16px;
+}
+
+.camera-scanner-header .btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+.camera-scanner-body {
+    position: relative;
+    background: #000;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+#camera-scanner-container {
+    flex: 1;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Sobreescribir estilos por defecto de html5-qrcode */
+#camera-scanner-container video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+}
+
+#camera-scanner-container #qr-shaded-region {
+    border-color: rgba(217, 136, 185, 0.8) !important;
+}
+
+#camera-scanner-container canvas {
+    display: none !important;
+}
+
+/* Ocultar el botón de stop nativo de html5-qrcode */
+#camera-scanner-container button {
+    display: none !important;
+}
+
+/* Ocultar el select de cámara (usamos la trasera por defecto) */
+#camera-scanner-container select {
+    display: none !important;
+}
+
+.camera-scanner-hint {
+    background: rgba(0, 0, 0, 0.75);
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.78rem;
+    text-align: center;
+    padding: 10px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.camera-scanner-status {
+    margin: 10px 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+/* Línea animada de escaneo sobre el visor */
+@keyframes scanLine {
+    0%   { top: 20%; }
+    50%  { top: 75%; }
+    100% { top: 20%; }
+}
+
+/* Botón de cámara en el input group de ventas */
+#btn-camera-scanner {
+    border-color: var(--bs-border-color);
+    color: var(--color-primary, #D988B9);
+    padding: 0 14px;
+    font-size: 1.1rem;
+    transition: background 0.2s, color 0.2s;
+}
+
+#btn-camera-scanner:active,
+#btn-camera-scanner:focus {
+    background: var(--color-primary, #D988B9);
+    color: #fff;
+    border-color: var(--color-primary, #D988B9);
+}
+
+@media (min-width: 768px) {
+    #btn-camera-scanner {
+        display: none !important;
+    }
+}
