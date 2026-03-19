@@ -652,6 +652,9 @@
                                     <span class="input-group-text sv-ig-text"><i class="bi bi-upc-scan"></i></span>
                                     <input type="text" id="barcode-scanner-input" class="form-control"
                                            placeholder="Escanear código de barras..." autocomplete="off">
+                                    <button type="button" class="btn btn-outline-secondary d-md-none" id="btn-camera-scanner" title="Escanear con cámara">
+                                        <i class="bi bi-camera-fill"></i>
+                                    </button>
                                 </div>
                                 <button type="button" class="sv-btn-search-product btn w-100"
                                         data-bs-toggle="modal" data-bs-target="#searchProductModal">
@@ -2717,8 +2720,33 @@
         </div>
     </div>
 
+    <!-- 📷 MODAL ESCÁNER CON CÁMARA (solo móvil) -->
+    <div class="modal fade" id="cameraScannerModal" tabindex="-1" aria-labelledby="cameraScannerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+            <div class="modal-content camera-scanner-modal-content">
+                <div class="modal-header camera-scanner-header">
+                    <h5 class="modal-title" id="cameraScannerModalLabel">
+                        <i class="bi bi-camera-fill me-2"></i>Escanear código
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body p-0 camera-scanner-body">
+                    <div id="camera-scanner-container"></div>
+                    <div class="camera-scanner-hint">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Apunta la cámara al código de barras o QR del producto
+                    </div>
+                    <div id="camera-scanner-status" class="camera-scanner-status d-none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 📚 LIBRERÍA JSBARCODE PARA GENERAR CÓDIGOS DE BARRAS -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+    <!-- 📷 LIBRERÍA HTML5-QRCODE PARA ESCANEO CON CÁMARA -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <!-- 🔍 SISTEMA DE CÓDIGOS DE BARRAS -->
     <script src="barcode-system.js"></script>
