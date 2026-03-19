@@ -2063,11 +2063,11 @@ small.text-muted {
   max-height: none !important;
 }
 
-/* Modal de búsqueda: altura fija para que la lista siempre sea visible */
+/* Modal de búsqueda: fullscreen en móvil — Bootstrap modal-fullscreen-md-down
+   gestiona automáticamente width: 100vw, height: 100%, margin: 0          */
 @media (max-width: 767px) {
   #searchProductModal .modal-content {
-    height: 92dvh !important;
-    min-height: 92dvh !important;
+    border-radius: 0 !important;
   }
   #searchProductModal .pm-modal-body {
     flex: 1;
