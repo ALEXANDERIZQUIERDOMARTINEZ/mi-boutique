@@ -2068,6 +2068,7 @@ small.text-muted {
   #searchProductModal .modal-content {
     height: 92dvh !important;
     min-height: 92dvh !important;
+    overflow-x: hidden !important; /* evita sangrado horizontal */
   }
   #searchProductModal .pm-modal-body {
     flex: 1;
@@ -2075,23 +2076,74 @@ small.text-muted {
     max-height: none !important;
   }
 
-  /* Imagen más compacta en móvil */
-  .product-search-img {
-    width: 52px;
-    height: 66px;
+  /* Filtros: forzar que no se salgan del borde */
+  .pm-filters {
+    overflow-x: hidden;
+    width: 100%;
   }
+  /* Selects no tan anchos en móvil */
+  .pm-select {
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 120px; /* pueden contraerse */
+    font-size: 0.78rem;
+  }
+
+  /* Items de producto: contener overflow */
   .search-modal-list .list-group-item {
+    overflow: hidden;
     padding: 0.65rem 0.75rem !important;
     margin-bottom: 5px;
   }
-  .product-search-name { font-size: 0.84rem; }
-  .search-modal-list .price-info { font-size: 0.95rem; }
+  /* Imagen más compacta en móvil */
+  .product-search-img {
+    width: 48px;
+    height: 62px;
+    flex-shrink: 0;
+  }
+  /* Gap más pequeño en el flex del item */
+  .search-modal-list .list-group-item .d-flex.gap-3 {
+    gap: 0.6rem !important;
+  }
+  /* Contenido central: truncar, no crecer más allá de su espacio */
+  .search-modal-list .list-group-item .flex-grow-1 {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .product-search-name {
+    font-size: 0.84rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Línea categoría + código: 1 sola línea truncada */
+  .search-modal-list .list-group-item .d-flex.gap-2 {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .search-modal-list .list-group-item .d-flex.gap-2 small {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
   .search-modal-list .stock-info { margin-top: 2px; }
 
-  /* Touch: sin hover transform */
-  .search-modal-list .list-group-item:hover:not(.disabled) {
-    transform: none;
+  /* Precio: no shrinkear, fuente más pequeña */
+  .search-modal-list .list-group-item > div > .text-end {
+    flex-shrink: 0;
   }
+  .search-modal-list .price-info {
+    font-size: 0.88rem;
+    white-space: nowrap;
+  }
+  .search-modal-list .list-group-item .text-end small {
+    font-size: 0.68rem;
+    white-space: nowrap;
+  }
+
+  /* Touch: sin hover transform */
+  .search-modal-list .list-group-item:hover:not(.disabled) { transform: none; }
   .search-modal-list .list-group-item:active:not(.disabled) {
     background: rgba(217,136,185,0.06) !important;
   }
@@ -2099,9 +2151,7 @@ small.text-muted {
 
 /* Desktop: mantener layout original */
 @media (min-width: 768px) {
-  .pm-filters {
-    flex-wrap: nowrap;
-  }
+  .pm-filters { flex-wrap: nowrap; }
   .pm-select { max-width: none; }
 }
 
