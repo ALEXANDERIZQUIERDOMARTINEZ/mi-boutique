@@ -8359,7 +8359,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     const tabLink = document.querySelector('a[href="#finanzas"]');
     if (tabLink) {
         tabLink.addEventListener('click', () => {
-            const { desde, hasta, label } = getDateRange('mes');
+            const { desde, hasta, label } = getDateRange('hoy');
             calcularFinanzas(desde, hasta, label);
         });
     }
