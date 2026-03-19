@@ -1670,19 +1670,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 li.innerHTML = `
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="pm-product-item">
                         <img src="${imagenUrlModal}" alt="${d.nombre}" class="product-search-img" onerror="this.src='${defaultImgModal}'">
-                        <div class="flex-grow-1">
+                        <div class="pm-product-body">
                             <div class="product-search-name">${d.nombre}</div>
-                            <div class="d-flex gap-2 align-items-center mt-1">
-                                <small class="text-muted">${categoryNameModal}</small>
-                                ${d.codigo ? `<small class="text-muted">• ${d.codigo}</small>` : ''}
+                            <div class="pm-product-meta">
+                                <span class="pm-product-cat">${categoryNameModal}</span>
+                                ${d.codigo ? `<span class="pm-product-code"># ${d.codigo}</span>` : ''}
                             </div>
-                            <div class="stock-info">Stock: ${stockTotal} unid.</div>
-                        </div>
-                        <div class="text-end">
-                            <div class="price-info">${formatoMoneda.format(d.precioDetal || 0)}</div>
-                            ${d.precioMayor ? `<small class="text-muted d-block">Mayor: ${formatoMoneda.format(d.precioMayor)}</small>` : ''}
+                            <div class="pm-product-footer">
+                                <div class="price-info">${formatoMoneda.format(d.precioDetal || 0)}</div>
+                                <div class="stock-info">Stock: ${stockTotal}</div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -3662,14 +3661,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 const d = ventaSnap.data();
                 const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('es-CO') : 'N/A';
                 
-                let itemsHtml = d.items.map(item => `
+                let itemsHtml = d.items.map(item => {
+                    const product = localProductsMap.get(item.productoId);
+                    const imgUrl = (product && (product.imagenUrl || product.imageUrl)) || '';
+                    const imgHtml = imgUrl
+                        ? `<img src="${imgUrl}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #e9ecef;flex-shrink:0;" alt="" loading="lazy">`
+                        : `<div style="width:44px;height:44px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#adb5bd;flex-shrink:0;border:1px solid #e9ecef;"><i class="bi bi-image" style="font-size:1.1rem;"></i></div>`;
+                    return `
                     <tr>
-                        <td>${item.nombreCompleto || item.nombre}</td>
-                        <td class="text-center">${item.cantidad}</td>
-                        <td class="text-end">${formatoMoneda.format(item.precio)}</td>
-                        <td class="text-end fw-bold">${formatoMoneda.format(item.total)}</td>
-                    </tr>
-                `).join('');
+                        <td style="min-width:0;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                ${imgHtml}
+                                <div style="min-width:0;">
+                                    <div style="font-size:0.85rem;font-weight:600;color:#212529;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">${item.nombreCompleto || item.nombre}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center" style="white-space:nowrap;">${item.cantidad}</td>
+                        <td class="text-end" style="white-space:nowrap;">${formatoMoneda.format(item.precio)}</td>
+                        <td class="text-end fw-bold" style="white-space:nowrap;">${formatoMoneda.format(item.total)}</td>
+                    </tr>`;
+                }).join('');
                 
                 let repartidorNombre = 'N/A';
                 if (d.repartidorId && repartidoresMap.has(d.repartidorId)) {
