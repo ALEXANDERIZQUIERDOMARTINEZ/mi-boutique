@@ -2993,3 +2993,496 @@ textarea.form-control-modern {
         border-radius: 0;
     }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   SECCIÓN VENTAS — DISEÑO RESPONSIVE MOBILE-FIRST
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Formulario general ── */
+.vf-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.vf-block {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.vf-block-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+    margin-bottom: 10px;
+}
+
+.vf-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 4px;
+}
+
+/* ── Carrito ── */
+.vf-cart-section {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.vf-cart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 0.85rem;
+}
+
+.vf-cart-items {
+    min-height: 60px;
+}
+
+.vf-cart-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    color: #adb5bd;
+    text-align: center;
+}
+
+/* ── Item del carrito (tarjeta) ── */
+.vf-cart-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.15s;
+}
+
+.vf-cart-item:last-child {
+    border-bottom: none;
+}
+
+.vf-cart-item:hover {
+    background: #f8f9fa;
+}
+
+.vf-cart-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.vf-cart-item-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #212529;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vf-cart-item-unit {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 1px;
+}
+
+.vf-cart-item-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Control de cantidad */
+.vf-qty-control {
+    display: flex;
+    align-items: center;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    height: 32px;
+}
+
+.vf-qty-btn {
+    border: none;
+    background: #f8f9fa;
+    width: 30px;
+    height: 100%;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: #495057;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+}
+
+.vf-qty-btn:hover {
+    background: #e9ecef;
+    color: #212529;
+}
+
+.vf-qty-input {
+    width: 38px;
+    height: 100%;
+    border: none;
+    border-left: 1px solid #dee2e6;
+    border-right: 1px solid #dee2e6;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    -moz-appearance: textfield;
+    padding: 0;
+    background: #fff;
+}
+
+.vf-qty-input::-webkit-outer-spin-button,
+.vf-qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.vf-cart-item-total {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #0d6efd;
+    min-width: 70px;
+    text-align: right;
+}
+
+.vf-cart-item-remove {
+    border: none;
+    background: transparent;
+    color: #dc3545;
+    padding: 4px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.vf-cart-item-remove:hover {
+    background: #fff0f0;
+}
+
+/* ── Sección inferior: dos columnas en tablet+ ── */
+.vf-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+@media (min-width: 640px) {
+    .vf-bottom-grid {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
+}
+
+.vf-bottom-left,
+.vf-bottom-right {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+/* ── Total ── */
+.vf-total-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: #fff;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+}
+
+.vf-total-label {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    font-weight: 500;
+}
+
+.vf-total-amount {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   HISTORIAL DE VENTAS — TARJETAS RESPONSIVE
+   ════════════════════════════════════════════════════════════════ */
+
+.ventas-card-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+@media (min-width: 640px) {
+    .ventas-card-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1200px) {
+    .ventas-card-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.ventas-empty-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 16px;
+    text-align: center;
+}
+
+/* ── Tarjeta de venta ── */
+.venta-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.venta-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+/* Cabecera de la tarjeta */
+.venta-card-head {
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.venta-card-meta-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.venta-card-fecha {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+.venta-card-cliente-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.venta-card-cliente {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #212529;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Productos dentro de la tarjeta */
+.venta-card-products {
+    padding: 10px 14px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.venta-prod-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.venta-prod-img {
+    width: 52px;
+    height: 52px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+    border: 1px solid #e9ecef;
+}
+
+.venta-prod-img-placeholder {
+    width: 52px;
+    height: 52px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #adb5bd;
+    font-size: 1.2rem;
+    border: 1px solid #e9ecef;
+}
+
+.venta-prod-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.venta-prod-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #212529;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.venta-prod-detail {
+    font-size: 0.73rem;
+    color: #6c757d;
+    margin-top: 2px;
+}
+
+/* Pie de la tarjeta */
+.venta-card-foot {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: #f8f9fa;
+    gap: 8px;
+}
+
+.venta-card-foot-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.venta-card-foot-right {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.venta-card-total {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0d6efd;
+    display: block;
+}
+
+.venta-card-pago {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.venta-pago-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.venta-pago-badge.efec {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.venta-pago-badge.transf {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.venta-card-entrega {
+    font-size: 0.73rem;
+}
+
+/* Acciones de la tarjeta */
+.venta-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 14px;
+    border-top: 1px solid #f0f0f0;
+    background: #fff;
+    flex-wrap: wrap;
+}
+
+.venta-card-actions .btn-action {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.72rem;
+    padding: 5px 6px;
+    border-radius: 7px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+}
+
+.venta-card-actions .btn-action-delete {
+    flex: 0 0 auto;
+    min-width: 32px;
+}
+
+/* Scrollbar dentro de productos */
+.venta-card-products::-webkit-scrollbar {
+    width: 4px;
+}
+.venta-card-products::-webkit-scrollbar-track {
+    background: transparent;
+}
+.venta-card-products::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 4px;
+}
+
+/* ── Ajustes para pantallas muy pequeñas (< 400px) ── */
+@media (max-width: 399px) {
+    .vf-cart-item-total {
+        min-width: 60px;
+        font-size: 0.8rem;
+    }
+    .vf-total-amount {
+        font-size: 1.25rem;
+    }
+    .venta-card-actions .btn-action-text {
+        display: none;
+    }
+}
