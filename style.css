@@ -3172,6 +3172,25 @@ textarea.form-control-modern {
     box-shadow: 0 3px 12px rgba(168, 85, 247, 0.2);
 }
 
+.sv-btn-camera {
+    background: linear-gradient(135deg, #D988B9 0%, #c45fa0 100%);
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.88rem;
+    border-radius: 10px;
+    padding: 10px;
+    transition: all 0.2s;
+}
+
+.sv-btn-camera:hover,
+.sv-btn-camera:active {
+    background: linear-gradient(135deg, #c45fa0 0%, #a83f84 100%);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 12px rgba(217, 136, 185, 0.4);
+}
+
 /* ── Catálogo ── */
 .sv-catalog-row {
     display: flex;

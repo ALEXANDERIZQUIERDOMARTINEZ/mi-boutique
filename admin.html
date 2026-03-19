@@ -652,10 +652,12 @@
                                     <span class="input-group-text sv-ig-text"><i class="bi bi-upc-scan"></i></span>
                                     <input type="text" id="barcode-scanner-input" class="form-control"
                                            placeholder="Escanear código de barras..." autocomplete="off">
-                                    <button type="button" class="btn btn-outline-secondary d-md-none" id="btn-camera-scanner" title="Escanear con cámara">
-                                        <i class="bi bi-camera-fill"></i>
-                                    </button>
                                 </div>
+                                <button type="button" class="sv-btn-camera btn w-100 d-md-none"
+                                        id="btn-camera-scanner"
+                                        data-bs-toggle="modal" data-bs-target="#cameraScannerModal">
+                                    <i class="bi bi-camera-fill me-2"></i>Escanear con cámara
+                                </button>
                                 <button type="button" class="sv-btn-search-product btn w-100"
                                         data-bs-toggle="modal" data-bs-target="#searchProductModal">
                                     <i class="bi bi-search me-2"></i>Buscar producto en inventario

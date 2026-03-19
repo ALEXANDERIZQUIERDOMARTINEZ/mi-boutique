@@ -3799,24 +3799,4 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
     100% { top: 20%; }
 }
 
-/* Botón de cámara en el input group de ventas */
-#btn-camera-scanner {
-    border-color: var(--bs-border-color);
-    color: var(--color-primary, #D988B9);
-    padding: 0 14px;
-    font-size: 1.1rem;
-    transition: background 0.2s, color 0.2s;
-}
-
-#btn-camera-scanner:active,
-#btn-camera-scanner:focus {
-    background: var(--color-primary, #D988B9);
-    color: #fff;
-    border-color: var(--color-primary, #D988B9);
-}
-
-@media (min-width: 768px) {
-    #btn-camera-scanner {
-        display: none !important;
-    }
-}
+/* El botón de cámara usa la clase .sv-btn-camera definida en style.css */
