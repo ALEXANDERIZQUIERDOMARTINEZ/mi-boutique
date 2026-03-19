@@ -2075,23 +2075,102 @@ small.text-muted {
     max-height: none !important;
   }
 
-  /* Imagen más compacta en móvil */
-  .product-search-img {
-    width: 52px;
-    height: 66px;
+  /* ── Inputs: font-size ≥ 16px evita que iOS haga zoom automático ── */
+  #product-modal-search {
+    font-size: 16px !important;
   }
-  .search-modal-list .list-group-item {
-    padding: 0.65rem 0.75rem !important;
-    margin-bottom: 5px;
-  }
-  .product-search-name { font-size: 0.84rem; }
-  .search-modal-list .price-info { font-size: 0.95rem; }
-  .search-modal-list .stock-info { margin-top: 2px; }
 
-  /* Touch: sin hover transform */
-  .search-modal-list .list-group-item:hover:not(.disabled) {
-    transform: none;
+  /* ── Filtros: 2 selects + chips en líneas que no desbordan ── */
+  .pm-filters {
+    width: 100%;
+    box-sizing: border-box;
   }
+  .pm-select {
+    /* flex-basis 0 + max-width 50%: cada select ocupa exactamente la mitad
+       del espacio disponible sin importar el texto de sus opciones          */
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: calc(50% - 0.2rem) !important;
+    /* 16 px mínimo: previene zoom automático de iOS en <select>             */
+    font-size: 16px !important;
+    /* Truncar texto de la opción seleccionada en pantallas pequeñas         */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Lista: clip horizontal para que nada sangre al borde ── */
+  .pm-list {
+    overflow-x: hidden !important;
+  }
+
+  /* ── Items de producto ── */
+  .search-modal-list .list-group-item {
+    overflow: hidden;
+    padding: 0.6rem 0.6rem !important;
+    margin-bottom: 4px;
+    box-sizing: border-box;
+  }
+
+  /* Imagen compacta */
+  .product-search-img {
+    width: 46px;
+    height: 60px;
+    flex-shrink: 0;
+  }
+
+  /* Reducir gap del flex del item */
+  .search-modal-list .list-group-item .d-flex.gap-3 {
+    gap: 0.5rem !important;
+  }
+
+  /* Columna central: puede ceder espacio */
+  .search-modal-list .list-group-item .flex-grow-1 {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .product-search-name {
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Categoría + código en 1 sola línea */
+  .search-modal-list .list-group-item .d-flex.gap-2 {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .search-modal-list .list-group-item .d-flex.gap-2 small {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    font-size: 0.72rem;
+  }
+  .search-modal-list .stock-info {
+    margin-top: 2px;
+    font-size: 0.75rem;
+  }
+
+  /* Columna de precio: ancho fijo, no sangra */
+  .search-modal-list .list-group-item > div > .text-end {
+    flex-shrink: 0;
+    max-width: 38%;        /* nunca ocupa más del 38 % del ítem      */
+    min-width: 0;
+    overflow: hidden;
+  }
+  .search-modal-list .price-info {
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+  .search-modal-list .list-group-item .text-end small {
+    font-size: 0.66rem;
+    white-space: nowrap;
+    display: block;
+  }
+
+  /* Touch */
+  .search-modal-list .list-group-item:hover:not(.disabled) { transform: none; }
   .search-modal-list .list-group-item:active:not(.disabled) {
     background: rgba(217,136,185,0.06) !important;
   }
@@ -2099,10 +2178,13 @@ small.text-muted {
 
 /* Desktop: mantener layout original */
 @media (min-width: 768px) {
-  .pm-filters {
-    flex-wrap: nowrap;
+  .pm-filters { flex-wrap: nowrap; }
+  .pm-select {
+    min-width: 110px !important;
+    max-width: 200px !important;
+    flex: 1 !important;
+    font-size: inherit !important;
   }
-  .pm-select { max-width: none; }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
