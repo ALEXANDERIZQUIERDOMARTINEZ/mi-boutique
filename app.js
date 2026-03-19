@@ -612,18 +612,49 @@ function renderProducts(products) {
     products.forEach((product, index) => {
         const stockTotal = (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
         const isAgotado = stockTotal <= 0;
-        const imgUrl = product.imagenUrl || 'https://placehold.co/300x400/f5f5f5/ccc?text=Mishell';
         const { precioFinal, tienePromo, precioOriginal } = calculatePromotionPrice(product);
 
-        // Colores y tallas con stock
+        // Colores y tallas CON STOCK (disponibles para comprar)
         const variacionesConStock = (product.variaciones || []).filter(v => parseInt(v.stock, 10) > 0);
-        const coloresUnicos = [...new Set(variacionesConStock.map(v => v.color).filter(Boolean))];
+        const coloresConStock = [...new Set(variacionesConStock.map(v => v.color).filter(Boolean))];
         const tallasUnicas = [...new Set(variacionesConStock.map(v => v.talla).filter(t => t && t.toLowerCase() !== 'unica' && t.toLowerCase() !== 'única'))];
 
-        const coloresHtml = coloresUnicos.slice(0, 6).map(color => {
-            const hex = COLOR_MAP[color.toLowerCase().trim()] || '#ccc';
-            return `<span class="card-color-dot" style="background:${hex}" title="${color}"></span>`;
-        }).join('');
+        // Map de nombre→hex desde variantes_color (colores con imagen real)
+        const variantesColorMap = Object.fromEntries(
+            (product.variantes_color || []).map(vc => [(vc.nombre || '').toLowerCase().trim(), vc.hex])
+        );
+
+        // Imagen de tarjeta: preferir imagen del primer color CON STOCK, si no imagenUrl
+        let imgUrl = product.imagenUrl || 'https://placehold.co/300x400/f5f5f5/ccc?text=Mishell';
+        const coloresCandidatos = coloresConStock.length > 0
+            ? coloresConStock
+            : (product.variantes_color || []).map(vc => vc.nombre).filter(Boolean);
+        for (const color of coloresCandidatos) {
+            const vc = (product.variantes_color || []).find(
+                v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim()
+            );
+            if (vc?.imagenes?.length > 0) {
+                const sorted = [...vc.imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+                const frente = sorted.find(img => img.angulo === 'frente') || sorted[0];
+                if (frente?.url) { imgUrl = frente.url; break; }
+            }
+        }
+
+        // Dots de color: solo colores CON STOCK, usando hex real si está en variantes_color
+        let coloresParaCard = coloresConStock.slice(0, 6).map(color => ({
+            nombre: color,
+            hex: variantesColorMap[color.toLowerCase().trim()] || COLOR_MAP[color.toLowerCase().trim()] || '#ccc'
+        }));
+        // Si agotado, mostrar todos los colores de variantes_color como referencia visual
+        if (coloresParaCard.length === 0) {
+            coloresParaCard = (product.variantes_color || []).slice(0, 6).map(vc => ({
+                nombre: vc.nombre || '',
+                hex: vc.hex || COLOR_MAP[(vc.nombre || '').toLowerCase().trim()] || '#ccc'
+            }));
+        }
+        const coloresHtml = coloresParaCard.map(({ nombre, hex }) =>
+            `<span class="card-color-dot" style="background:${hex}" title="${nombre}"></span>`
+        ).join('');
 
         const tallasHtml = tallasUnicas.slice(0, 5).map(t => `<span class="card-size-chip">${t}</span>`).join('');
 
@@ -663,13 +694,7 @@ function renderProducts(products) {
 
     document.querySelectorAll('.product-card').forEach(card => {
         card.addEventListener('click', (e) => {
-            const stock = parseInt(e.currentTarget.dataset.stock);
             const productId = e.currentTarget.dataset.productId;
-
-            if (stock <= 0) {
-                showToast('Este producto se encuentra agotado', 'warning');
-                return;
-            }
             openProductModal(productId);
         });
     });
@@ -914,7 +939,7 @@ function selectColor(color, product) {
 
 /**
  * Actualiza la galería de imágenes del modal según el color seleccionado.
- * Si el producto no tiene variantes_color, usa imagenUrl como fallback.
+ * Precarga todas las imágenes del color en segundo plano para evitar demoras.
  */
 function updateColorGallery(product, colorName) {
     const thumbsEl = document.getElementById('modal-gallery-thumbs');
@@ -929,20 +954,32 @@ function updateColorGallery(product, colorName) {
     const imagenes = (varianteColor?.imagenes || []).filter(img => img.url);
 
     if (imagenes.length === 0) {
-        // Fallback: usar imagen principal del producto
         thumbsEl.innerHTML = '';
         thumbsEl.style.display = 'none';
         mainImg.src = product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Sin+imagen';
         return;
     }
 
-    // Ordenar por campo "orden"
     const sorted = [...imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0));
 
-    // Mostrar primera imagen como principal
-    mainImg.src = sorted[0].url;
+    // Precargar TODAS las imágenes del color en segundo plano
+    sorted.forEach(img => { (new Image()).src = img.url; });
 
-    // Construir thumbnails
+    // Mostrar primera imagen con transición suave
+    const setMainImg = (url) => {
+        mainImg.classList.add('gallery-loading');
+        const preloader = new Image();
+        preloader.onload = () => {
+            mainImg.src = url;
+            mainImg.classList.remove('gallery-loading');
+        };
+        preloader.onerror = () => { mainImg.src = url; mainImg.classList.remove('gallery-loading'); };
+        preloader.src = url;
+        if (preloader.complete) { mainImg.src = url; mainImg.classList.remove('gallery-loading'); }
+    };
+    setMainImg(sorted[0].url);
+
+    // Construir thumbnails — sin lazy loading para que carguen de inmediato
     thumbsEl.style.display = '';
     thumbsEl.innerHTML = '';
 
@@ -951,9 +988,9 @@ function updateColorGallery(product, colorName) {
         thumb.type = 'button';
         thumb.className = 'mp-thumb' + (index === 0 ? ' active' : '');
         thumb.setAttribute('aria-label', img.angulo || `Ángulo ${index + 1}`);
-        thumb.innerHTML = `<img src="${img.url}" alt="${img.angulo || ''}" loading="lazy">`;
+        thumb.innerHTML = `<img src="${img.url}" alt="${img.angulo || ''}">`;
         thumb.addEventListener('click', () => {
-            mainImg.src = img.url;
+            setMainImg(img.url);
             thumbsEl.querySelectorAll('.mp-thumb').forEach(t => t.classList.remove('active'));
             thumb.classList.add('active');
         });
@@ -1019,6 +1056,66 @@ function updateStockDisplay(product) {
 }
 
 // --- ABRIR MODAL DE PRODUCTO ---
+/**
+ * Modo galería para productos agotados.
+ * Muestra todos los colores (de variantes_color o variaciones) como botones
+ * clicables que cambian la galería de imágenes, pero sin opciones de compra.
+ */
+function renderGalleryColors(product) {
+    const coloresButtons = document.getElementById('colores-buttons');
+    const coloresContainer = document.getElementById('colores-container');
+    const colorHint = document.getElementById('color-select-hint');
+    if (!coloresButtons || !coloresContainer) return;
+
+    if (colorHint) colorHint.classList.remove('visible');
+    coloresButtons.innerHTML = '';
+    coloresButtons.style.display = 'flex';
+    coloresContainer.style.display = 'block';
+
+    // Preferir variantes_color (tienen hex real), si no usar nombres de variaciones
+    const variantesColor = product.variantes_color || [];
+    let colores = variantesColor.map(vc => ({ nombre: vc.nombre, hex: vc.hex || null }));
+
+    if (colores.length === 0) {
+        const todosColores = [...new Set((product.variaciones || []).map(v => v.color).filter(Boolean))];
+        colores = todosColores.map(c => ({ nombre: c, hex: COLOR_MAP[c.toLowerCase().trim()] || null }));
+    }
+
+    if (colores.length === 0) {
+        coloresContainer.style.display = 'none';
+        return;
+    }
+
+    colores.forEach(({ nombre, hex }, index) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'size-color-btn';
+        btn.dataset.value = nombre;
+
+        if (hex) {
+            btn.innerHTML = `<span class="color-swatch-circle" style="background-color:${hex}"></span><span class="color-swatch-name">${nombre}</span>`;
+            btn.classList.add('has-swatch');
+        } else {
+            btn.textContent = nombre;
+        }
+
+        btn.addEventListener('click', () => {
+            coloresButtons.querySelectorAll('.size-color-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            updateColorGallery(product, nombre);
+        });
+
+        coloresButtons.appendChild(btn);
+    });
+
+    // Auto-seleccionar el primer color y mostrar su galería
+    const firstBtn = coloresButtons.querySelector('.size-color-btn');
+    if (firstBtn) {
+        firstBtn.classList.add('selected');
+        updateColorGallery(product, colores[0].nombre);
+    }
+}
+
 function openProductModal(productId) {
     const product = productsMap.get(productId);
     if (!product) return;
@@ -1078,24 +1175,38 @@ function openProductModal(productId) {
     // Resetear estado del stock display
     const stockDisplay = document.getElementById('stock-display');
     const stockText = document.getElementById('stock-text');
+    const btnAddCart = document.getElementById('btn-add-cart');
     stockText.textContent = 'Selecciona talla y color';
     stockDisplay.style.color = '';
     stockDisplay.style.background = '';
     stockDisplay.style.borderColor = '';
-    document.getElementById('btn-add-cart').disabled = true;
+    btnAddCart.disabled = true;
+    btnAddCart.textContent = 'Agregar al carrito';
     document.getElementById('select-cantidad').value = 1;
     document.getElementById('select-cantidad').setAttribute('max', 1);
     document.getElementById('product-observation').value = '';
 
+    // Restablecer visibilidad de sección de tallas (puede venir oculta de un modal anterior agotado)
+    const tallasContainer = document.getElementById('tallas-container');
+    if (tallasContainer) tallasContainer.style.display = '';
+
     // Obtener variaciones y tallas
     const variaciones = product.variaciones || [];
     const tallas = [...new Set(variaciones.map(v => v.talla).filter(Boolean))];
+    const stockTotal = variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
 
-    // Determinar si es talla única
-    const esTallaUnica = (tallas.length === 0 || (tallas.length === 1 && (tallas[0] === '' || tallas[0].toLowerCase() === 'unica' || tallas[0].toLowerCase() === 'única')));
-
-    // Renderizar botones de talla
-    renderSizeButtons(tallas, esTallaUnica, product);
+    if (stockTotal <= 0) {
+        // ── Modo galería (agotado): mostrar colores para navegar imágenes ──
+        if (tallasContainer) tallasContainer.style.display = 'none';
+        stockText.textContent = 'Sin stock disponible';
+        btnAddCart.disabled = true;
+        btnAddCart.textContent = 'Agotado';
+        renderGalleryColors(product);
+    } else {
+        // ── Flujo normal: tallas → colores con stock ──
+        const esTallaUnica = (tallas.length === 0 || (tallas.length === 1 && (tallas[0] === '' || tallas[0].toLowerCase() === 'unica' || tallas[0].toLowerCase() === 'única')));
+        renderSizeButtons(tallas, esTallaUnica, product);
+    }
 
     // 📊 Tracking: Vista de producto
     analytics.trackProductView(product);

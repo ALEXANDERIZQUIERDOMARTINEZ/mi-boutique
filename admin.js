@@ -1787,11 +1787,11 @@ document.addEventListener('DOMContentLoaded', () => {
             nameInput.addEventListener('input', () => { stateItem.nombre = nameInput.value.trim(); });
             hexInput.addEventListener('input', () => { stateItem.hex = hexInput.value; });
 
-            // Nuevas imágenes seleccionadas
+            // Nuevas imágenes seleccionadas — se acumulan (no reemplazan)
             fileInput.addEventListener('change', () => {
                 const files = Array.from(fileInput.files);
-                stateItem.newFiles = files;
-                stateItem.newFileAngles = files.map(() => 'frente');
+                stateItem.newFiles = [...(stateItem.newFiles || []), ...files];
+                stateItem.newFileAngles = [...(stateItem.newFileAngles || []), ...files.map(() => 'frente')];
                 renderColorPreview(previewEl, stateItem.imagenes, stateItem.newFiles);
                 fileInput.value = ''; // resetear para permitir re-selección
                 bindPreviewEvents(previewEl, stateItem);
@@ -8005,46 +8005,26 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 })();
 
 // ========================================================================
-// ✅ SECCIÓN: FINANZAS — Utilidad Neta & División de Socios
+// ✅ SECCIÓN: FINANZAS v2 — Utilidad Real por Producto
+// Lógica: utilidad = (precio_venta - costo) × cantidad_vendida
 // ========================================================================
 (() => {
-    // ── Configuración por defecto (editable desde el panel) ──
-    const CONFIG = {
-        pctSocioA: 60,
-        pctSocioB: 40,
-        pctComisionPasarela: 2.5,
-        margenDefecto: 30
-    };
-
     // ── DOM refs ──
-    const rangeButtons   = document.querySelectorAll('.fin-range-btn');
-    const customRangeDiv = document.getElementById('fin-custom-range');
-    const finDesde       = document.getElementById('fin-desde');
-    const finHasta       = document.getElementById('fin-hasta');
-    const btnCalcCustom  = document.getElementById('btn-calcular-finanzas-custom');
-    const loadingDiv     = document.getElementById('fin-loading');
-    const resultadosDiv  = document.getElementById('fin-resultados');
-    const inputPctA      = document.getElementById('fin-pct-socio-a');
-    const inputPctB      = document.getElementById('fin-pct-socio-b');
-    const inputComision  = document.getElementById('fin-pct-comision');
-    const inputMargen    = document.getElementById('fin-margen-defecto');
+    const filterBtns     = document.querySelectorAll('.fin2-filter-btn');
+    const customRangeBar = document.getElementById('fin2-custom-range');
+    const inputDesde     = document.getElementById('fin2-desde');
+    const inputHasta     = document.getElementById('fin2-hasta');
+    const btnCalc        = document.getElementById('fin2-btn-calc');
+    const loadingDiv     = document.getElementById('fin2-loading');
+    const resultadosDiv  = document.getElementById('fin2-resultados');
 
-    if (!rangeButtons.length) return;
+    if (!filterBtns.length) return;
 
-    // ── Sincronizar porcentajes: A + B = 100 ──
-    if (inputPctA) inputPctA.addEventListener('input', () => {
-        inputPctB.value = Math.max(0, 100 - (parseFloat(inputPctA.value) || 0));
-    });
-    if (inputPctB) inputPctB.addEventListener('input', () => {
-        inputPctA.value = Math.max(0, 100 - (parseFloat(inputPctB.value) || 0));
-    });
+    // ── Instancia del gráfico ──
+    let chartInstance = null;
 
-    function syncConfig() {
-        CONFIG.pctSocioA            = parseFloat(inputPctA.value)   || 60;
-        CONFIG.pctSocioB            = parseFloat(inputPctB.value)   || 40;
-        CONFIG.pctComisionPasarela  = parseFloat(inputComision.value) || 2.5;
-        CONFIG.margenDefecto        = parseFloat(inputMargen.value) || 30;
-    }
+    // ── Formateador ──
+    const fmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
     // ── Rangos de fecha ──
     function getDateRange(range) {
@@ -8053,66 +8033,166 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const hoyFin    = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
         switch (range) {
-            case 'mes-anterior': {
-                const desde = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                const hasta = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-                return { desde, hasta, label: 'Mes anterior' };
-            }
+            case 'hoy':
+                return { desde: hoyInicio, hasta: hoyFin, label: 'Hoy' };
             case 'semana': {
                 const desde = new Date(hoyInicio);
                 desde.setDate(desde.getDate() - 6);
-                return { desde, hasta: hoyFin, label: 'Últimos 7 días' };
+                return { desde, hasta: hoyFin, label: 'Esta semana' };
             }
-            default: {
+            default: { // 'mes'
                 const desde = new Date(now.getFullYear(), now.getMonth(), 1);
-                return { desde, hasta: hoyFin, label: 'Mes actual' };
+                return { desde, hasta: hoyFin, label: 'Este mes' };
             }
         }
     }
 
-    // ── Cálculo de Utilidad por Orden ──
-    // Fórmula: Utilidad = (TotalVenta - Impuestos - CostoEnvío) - (CostoBaseProductos + ComisiónPasarela)
-    function calcularUtilidadOrden(venta) {
-        const totalVenta  = venta.totalVenta || 0;
-        const impuestos   = venta.impuestos  || 0;
-        const costoEnvio  = venta.costoEnvio || venta.costoRuta || 0;
-        const comisionPasarela = totalVenta * (CONFIG.pctComisionPasarela / 100);
+    // ── Agrupar ventas por producto ──
+    function agruparPorProducto(ventas) {
+        const mapa = new Map();
 
-        let costoBaseProductos = 0;
-        if (venta.items && venta.items.length) {
+        ventas.forEach(({ venta, fecha }) => {
+            if (!venta.items || !venta.items.length) return;
+
             venta.items.forEach(item => {
-                const cant   = item.cantidad || 1;
-                const precio = item.precio || item.precioUnitario || 0;
-                const costo  = item.precioCosto || 0;
+                const nombre  = item.nombre || item.name || 'Producto sin nombre';
+                const costo   = parseFloat(item.precioCosto || item.costo || 0);
+                const precio  = parseFloat(item.precio || item.precioUnitario || 0);
+                const cant    = parseInt(item.cantidad || 1, 10);
 
-                if (costo > 0) {
-                    costoBaseProductos += costo * cant;
-                } else {
-                    // Sin costo base → margen por defecto (ej. 30% margen = costo es 70% del precio)
-                    costoBaseProductos += precio * (1 - CONFIG.margenDefecto / 100) * cant;
+                const key = nombre.trim().toLowerCase();
+
+                if (!mapa.has(key)) {
+                    mapa.set(key, {
+                        nombre: nombre.trim(),
+                        costo,
+                        precio,
+                        cantidad: 0,
+                        utilidadTotal: 0,
+                        ingresoTotal: 0,
+                        costoTotal: 0
+                    });
                 }
+
+                const entry = mapa.get(key);
+                const utilidadUnidad = precio - costo;
+
+                entry.cantidad    += cant;
+                entry.utilidadTotal += utilidadUnidad * cant;
+                entry.ingresoTotal  += precio * cant;
+                entry.costoTotal    += costo * cant;
+
+                // Actualizar precio/costo al último visto
+                entry.precio = precio;
+                entry.costo  = costo;
             });
+        });
+
+        return Array.from(mapa.values())
+            .sort((a, b) => b.utilidadTotal - a.utilidadTotal);
+    }
+
+    // ── Construir datos de gráfica por día ──
+    function buildChartData(ventas, desde, hasta) {
+        const dayMap = new Map();
+
+        // Inicializar todos los días del rango
+        const cur = new Date(desde);
+        cur.setHours(0, 0, 0, 0);
+        const end = new Date(hasta);
+        end.setHours(0, 0, 0, 0);
+
+        while (cur <= end) {
+            const key = cur.toISOString().slice(0, 10);
+            dayMap.set(key, 0);
+            cur.setDate(cur.getDate() + 1);
         }
 
-        const costosOperativos = impuestos + costoEnvio + costoBaseProductos + comisionPasarela;
-        const utilidadNeta     = totalVenta - costosOperativos;
+        ventas.forEach(({ venta, fecha }) => {
+            const key = fecha.toISOString().slice(0, 10);
+            if (!dayMap.has(key)) return;
 
-        return { totalVenta, impuestos, costoEnvio, comisionPasarela, costoBaseProductos, costosOperativos, utilidadNeta };
+            if (!venta.items) return;
+            venta.items.forEach(item => {
+                const costo  = parseFloat(item.precioCosto || item.costo || 0);
+                const precio = parseFloat(item.precio || item.precioUnitario || 0);
+                const cant   = parseInt(item.cantidad || 1, 10);
+                dayMap.set(key, (dayMap.get(key) || 0) + (precio - costo) * cant);
+            });
+        });
+
+        const labels = [];
+        const data   = [];
+        dayMap.forEach((val, key) => {
+            const d = new Date(key + 'T00:00:00');
+            labels.push(d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }));
+            data.push(Math.round(val));
+        });
+
+        return { labels, data };
     }
 
-    // ── División de ganancias entre socios ──
-    function dividirGanancias(utilidadNeta) {
-        return {
-            socioA: utilidadNeta * (CONFIG.pctSocioA / 100),
-            socioB: utilidadNeta * (CONFIG.pctSocioB / 100)
-        };
+    // ── Renderizar gráfica ──
+    function renderChart(labels, data) {
+        const canvas = document.getElementById('fin2-utilidad-chart');
+        if (!canvas) return;
+
+        const hasPositive = data.some(v => v > 0);
+        const barColor = data.map(v =>
+            v >= 0 ? 'rgba(16,185,129,0.85)' : 'rgba(239,68,68,0.75)'
+        );
+
+        if (chartInstance) {
+            chartInstance.destroy();
+            chartInstance = null;
+        }
+
+        chartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Utilidad ($)',
+                    data,
+                    backgroundColor: barColor,
+                    borderRadius: 6,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${fmt.format(ctx.parsed.y)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 }, color: '#7a7570' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: {
+                            font: { size: 11 },
+                            color: '#7a7570',
+                            callback: v => fmt.format(v)
+                        }
+                    }
+                }
+            }
+        });
     }
 
-    // ── Consulta principal ──
+    // ── Consulta y renderizado principal ──
     async function calcularFinanzas(desde, hasta, label) {
-        syncConfig();
-        loadingDiv.style.display  = 'block';
-        resultadosDiv.style.display = 'none';
+        if (loadingDiv)    loadingDiv.style.display  = 'flex';
+        if (resultadosDiv) resultadosDiv.style.display = 'none';
+
+        document.getElementById('fin2-period-badge').textContent = label;
 
         try {
             const q = query(
@@ -8123,145 +8203,156 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             );
 
             const snapshot = await getDocs(q);
-            let ingresosBrutos = 0;
-            let utilidadTotal  = 0;
-            const ordenes = [];
+            const ventas   = [];
 
             snapshot.forEach(docSnap => {
                 const venta = docSnap.data();
                 if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
-
-                const resultado = calcularUtilidadOrden(venta);
-                ingresosBrutos += resultado.totalVenta;
-                utilidadTotal  += resultado.utilidadNeta;
-
-                ordenes.push({
-                    id: docSnap.id,
-                    fecha: venta.timestamp ? venta.timestamp.toDate() : new Date(),
-                    ...resultado
+                ventas.push({
+                    venta,
+                    fecha: venta.timestamp ? venta.timestamp.toDate() : new Date()
                 });
             });
 
-            const { socioA, socioB } = dividirGanancias(utilidadTotal);
+            // ── Agrupar por producto ──
+            const productos = agruparPorProducto(ventas);
 
-            // ── KPIs ──
-            document.getElementById('fin-ingresos-brutos').textContent = formatoMoneda.format(ingresosBrutos);
+            // ── Totales globales ──
+            const utilidadTotal = productos.reduce((s, p) => s + p.utilidadTotal, 0);
+            const ingresosTotal = productos.reduce((s, p) => s + p.ingresoTotal, 0);
+            const costosTotal   = productos.reduce((s, p) => s + p.costoTotal, 0);
+            const udsTotal      = productos.reduce((s, p) => s + p.cantidad, 0);
+            const margen        = ingresosTotal > 0 ? ((utilidadTotal / ingresosTotal) * 100).toFixed(1) : 0;
 
-            const utilidadEl = document.getElementById('fin-utilidad-neta');
-            utilidadEl.textContent = formatoMoneda.format(utilidadTotal);
-            utilidadEl.className = `fw-bold mb-1 ${utilidadTotal >= 0 ? 'text-success' : 'text-danger'}`;
+            // ── KPI principal ──
+            const elUtilidad = document.getElementById('fin2-utilidad-total');
+            elUtilidad.textContent = fmt.format(utilidadTotal);
+            elUtilidad.className   = 'fin2-hero-value ' + (utilidadTotal >= 0 ? 'fin2-positive' : 'fin2-negative');
 
-            document.getElementById('fin-a-repartir').textContent = formatoMoneda.format(socioB);
-            document.getElementById('fin-total-ordenes').textContent = `${ordenes.length} órdenes — ${label}`;
-            document.getElementById('fin-label-socio-b').textContent = `Socio B (${CONFIG.pctSocioB}%)`;
-
-            // ── Tarjetas socios ──
-            document.getElementById('fin-label-socio-a-card').textContent  = `Socio A — Dueño (${CONFIG.pctSocioA}%)`;
-            document.getElementById('fin-ganancia-socio-a').textContent    = formatoMoneda.format(socioA);
-            document.getElementById('fin-label-socio-b-card').textContent  = `Socio B — Inversionista (${CONFIG.pctSocioB}%)`;
-            document.getElementById('fin-ganancia-socio-b').textContent    = formatoMoneda.format(socioB);
-
-            // ── Tabla detallada ──
-            const tabla  = document.getElementById('fin-detalle-tabla');
-            const footer = document.getElementById('fin-detalle-footer');
-
-            if (ordenes.length === 0) {
-                tabla.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No hay órdenes completadas en este periodo</td></tr>';
-                footer.style.display = 'none';
+            // ── Tendencia (simplificada: positivo / negativo) ──
+            const trendBadge = document.getElementById('fin2-trend-badge');
+            if (utilidadTotal > 0) {
+                trendBadge.innerHTML = '<i class="bi bi-arrow-up-right"></i> Ganancia positiva';
+                trendBadge.className = 'fin2-hero-trend fin2-trend-up';
+            } else if (utilidadTotal < 0) {
+                trendBadge.innerHTML = '<i class="bi bi-arrow-down-right"></i> Ganancia negativa';
+                trendBadge.className = 'fin2-hero-trend fin2-trend-down';
             } else {
-                let sumTotal = 0, sumCostos = 0, sumMiG = 0, sumSocioG = 0;
+                trendBadge.innerHTML = '<i class="bi bi-dash"></i> Sin movimientos';
+                trendBadge.className = 'fin2-hero-trend';
+            }
 
-                tabla.innerHTML = ordenes.map(o => {
-                    const miGanancia      = o.utilidadNeta * (CONFIG.pctSocioA / 100);
-                    const gananciaSocio   = o.utilidadNeta * (CONFIG.pctSocioB / 100);
-                    const color           = o.utilidadNeta >= 0 ? 'text-success' : 'text-danger';
+            // ── KPIs secundarios ──
+            document.getElementById('fin2-total-uds').textContent  = udsTotal.toLocaleString('es-CO');
+            document.getElementById('fin2-ingresos').textContent   = fmt.format(ingresosTotal);
+            document.getElementById('fin2-costos').textContent     = fmt.format(costosTotal);
+            document.getElementById('fin2-margen').textContent     = `${margen}%`;
 
-                    sumTotal  += o.totalVenta;
-                    sumCostos += o.costosOperativos;
-                    sumMiG    += miGanancia;
-                    sumSocioG += gananciaSocio;
+            // ── Gráfica ──
+            const { labels, data } = buildChartData(ventas, desde, hasta);
+            renderChart(labels, data);
+            const diffDays = Math.round((hasta - desde) / (1000 * 60 * 60 * 24));
+            document.getElementById('fin2-chart-subtitle').textContent = diffDays <= 31 ? 'por día' : 'por mes';
 
+            // ── Tabla de productos ──
+            const tbody  = document.getElementById('fin2-tabla-body');
+            const tfoot  = document.getElementById('fin2-tabla-footer');
+            const count  = document.getElementById('fin2-product-count');
+
+            count.textContent = `${productos.length} producto${productos.length !== 1 ? 's' : ''}`;
+
+            if (productos.length === 0) {
+                tbody.innerHTML = `<tr>
+                    <td colspan="6" class="fin2-empty-state">
+                        <i class="bi bi-bar-chart"></i>
+                        <span>No hay ventas completadas en este periodo</span>
+                    </td>
+                </tr>`;
+                tfoot.style.display = 'none';
+            } else {
+                tbody.innerHTML = productos.map(p => {
+                    const utilUnd  = p.precio - p.costo;
+                    const colorCls = p.utilidadTotal >= 0 ? 'fin2-positive-text' : 'fin2-negative-text';
                     return `<tr>
-                        <td><code>${o.id.slice(-6).toUpperCase()}</code></td>
-                        <td>${o.fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                        <td class="text-end">${formatoMoneda.format(o.totalVenta)}</td>
-                        <td class="text-end text-muted">${formatoMoneda.format(o.costosOperativos)}</td>
-                        <td class="text-end fw-semibold ${color}">${formatoMoneda.format(miGanancia)}</td>
-                        <td class="text-end fw-semibold ${color}">${formatoMoneda.format(gananciaSocio)}</td>
+                        <td class="fin2-td-nombre">${p.nombre}</td>
+                        <td class="text-end fin2-td-num">${fmt.format(p.costo)}</td>
+                        <td class="text-end fin2-td-num">${fmt.format(p.precio)}</td>
+                        <td class="text-end fin2-td-num">${p.cantidad}</td>
+                        <td class="text-end fin2-td-num ${colorCls}">${fmt.format(utilUnd)}</td>
+                        <td class="text-end fin2-td-num fw-semibold ${colorCls}">${fmt.format(p.utilidadTotal)}</td>
                     </tr>`;
                 }).join('');
 
-                // Footer totales
-                document.getElementById('fin-footer-total').textContent          = formatoMoneda.format(sumTotal);
-                document.getElementById('fin-footer-costos').textContent         = formatoMoneda.format(sumCostos);
-                document.getElementById('fin-footer-mi-ganancia').textContent    = formatoMoneda.format(sumMiG);
-                document.getElementById('fin-footer-ganancia-socio').textContent = formatoMoneda.format(sumSocioG);
-                footer.style.display = '';
+                document.getElementById('fin2-footer-cant').textContent     = udsTotal.toLocaleString('es-CO');
+                document.getElementById('fin2-footer-utilidad').textContent = fmt.format(utilidadTotal);
+                tfoot.style.display = '';
             }
 
-            loadingDiv.style.display    = 'none';
-            resultadosDiv.style.display = 'block';
+            if (loadingDiv)    loadingDiv.style.display    = 'none';
+            if (resultadosDiv) resultadosDiv.style.display = 'block';
 
         } catch (error) {
-            console.error("Error calculando finanzas:", error);
-            loadingDiv.style.display    = 'none';
-            resultadosDiv.style.display = 'block';
-            document.getElementById('fin-detalle-tabla').innerHTML =
-                `<tr><td colspan="6" class="text-center text-danger py-4">Error: ${error.message}</td></tr>`;
+            console.error("Error calculando finanzas v2:", error);
+            if (loadingDiv)    loadingDiv.style.display    = 'none';
+            if (resultadosDiv) resultadosDiv.style.display = 'block';
+            document.getElementById('fin2-tabla-body').innerHTML =
+                `<tr><td colspan="6" class="fin2-empty-state fin2-negative-text">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>Error al cargar datos: ${error.message}</span>
+                </td></tr>`;
         }
     }
 
-    // ── Event handlers: botones de periodo ──
-    rangeButtons.forEach(btn => {
+    // ── Event: botones de filtro ──
+    filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            rangeButtons.forEach(b => b.classList.remove('active'));
+            filterBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             const range = btn.dataset.range;
 
             if (range === 'personalizado') {
-                if (customRangeDiv) customRangeDiv.style.display = 'flex';
+                if (customRangeBar) customRangeBar.style.display = 'flex';
                 return;
             }
-            if (customRangeDiv) customRangeDiv.style.display = 'none';
+            if (customRangeBar) customRangeBar.style.display = 'none';
             const { desde, hasta, label } = getDateRange(range);
             calcularFinanzas(desde, hasta, label);
         });
     });
 
-    // ── Rango personalizado ──
-    if (btnCalcCustom) {
-        btnCalcCustom.addEventListener('click', () => {
-            if (!finDesde.value || !finHasta.value) {
+    // ── Event: rango personalizado ──
+    if (btnCalc) {
+        btnCalc.addEventListener('click', () => {
+            if (!inputDesde.value || !inputHasta.value) {
                 showToast('Selecciona ambas fechas', 'warning');
                 return;
             }
-            const desde = new Date(finDesde.value);
-            const hasta = new Date(finHasta.value);
+            const desde = new Date(inputDesde.value);
+            const hasta = new Date(inputHasta.value);
             hasta.setHours(23, 59, 59, 999);
-            calcularFinanzas(desde, hasta, `${desde.toLocaleDateString('es-CO')} — ${hasta.toLocaleDateString('es-CO')}`);
+            calcularFinanzas(desde, hasta,
+                `${desde.toLocaleDateString('es-CO')} — ${hasta.toLocaleDateString('es-CO')}`);
         });
     }
 
     // ── Auto-calcular al entrar a la sección ──
-    const tab = document.querySelector('a[href="#finanzas"]');
-    if (tab) {
-        tab.addEventListener('click', () => {
-            if (!resultadosDiv || resultadosDiv.style.display === 'none') {
-                const { desde, hasta, label } = getDateRange('mes-actual');
-                calcularFinanzas(desde, hasta, label);
-            }
+    const tabLink = document.querySelector('a[href="#finanzas"]');
+    if (tabLink) {
+        tabLink.addEventListener('click', () => {
+            const { desde, hasta, label } = getDateRange('mes');
+            calcularFinanzas(desde, hasta, label);
         });
     }
 
     // ── Exportar CSV ──
-    const btnExportar = document.getElementById('btn-exportar-finanzas');
-    if (btnExportar) {
-        btnExportar.addEventListener('click', () => {
-            const filas = document.getElementById('fin-detalle-tabla').querySelectorAll('tr');
-            if (!filas.length) return;
+    const btnExport = document.getElementById('fin2-btn-export');
+    if (btnExport) {
+        btnExport.addEventListener('click', () => {
+            const rows = document.getElementById('fin2-tabla-body').querySelectorAll('tr');
+            if (!rows.length || rows[0].querySelector('.fin2-empty-state')) return;
 
-            let csv = 'ID Orden,Fecha,Total Venta,Costos Operativos,Mi Ganancia,Ganancia Socio\n';
-            filas.forEach(row => {
+            let csv = 'Producto,Costo,Precio Venta,Cantidad Vendida,Utilidad por Unidad,Utilidad Total\n';
+            rows.forEach(row => {
                 const cols = row.querySelectorAll('td');
                 if (cols.length === 6) {
                     csv += Array.from(cols).map(c => `"${c.textContent.trim()}"`).join(',') + '\n';
@@ -8271,14 +8362,14 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `finanzas_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.download = `utilidades_${new Date().toISOString().slice(0, 10)}.csv`;
             link.click();
             URL.revokeObjectURL(link.href);
             showToast('CSV descargado', 'success');
         });
     }
 
-    console.log("✅ Módulo de Finanzas inicializado");
+    console.log("✅ Módulo Finanzas v2 inicializado (Utilidad Real por Producto)");
 })();
 
 // ========================================================================

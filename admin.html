@@ -916,163 +916,162 @@
                  SECCIÓN: FINANZAS
                  ═══════════════════════════════════════════════════════════════════ -->
             <div class="tab-pane fade" id="finanzas">
-                <h1 class="h2 mb-4"><i class="bi bi-graph-up-arrow me-2"></i>Finanzas</h1>
 
-                <!-- Configuración (colapsable) -->
-                <div class="card mb-4">
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#finanzas-config" role="button" aria-expanded="false">
-                        <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Configuración de costos y socios</h6>
-                        <i class="bi bi-chevron-down"></i>
+                <!-- ── Encabezado ── -->
+                <div class="fin2-page-header">
+                    <div>
+                        <h1 class="fin2-page-title"><i class="bi bi-graph-up-arrow"></i> Finanzas</h1>
+                        <p class="fin2-page-subtitle">Ganancia neta real basada en costo vs. precio de venta</p>
                     </div>
-                    <div id="finanzas-config" class="collapse">
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-semibold">% Socio A (Dueño)</label>
-                                    <input type="number" id="fin-pct-socio-a" class="form-control" value="60" min="0" max="100">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label fw-semibold">% Socio B (Inversionista)</label>
-                                    <input type="number" id="fin-pct-socio-b" class="form-control" value="40" min="0" max="100">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label fw-semibold">% Comisión Pasarela</label>
-                                    <input type="number" id="fin-pct-comision" class="form-control" value="2.5" step="0.1" min="0">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label fw-semibold">% Margen por defecto</label>
-                                    <input type="number" id="fin-margen-defecto" class="form-control" value="30" min="0" max="100">
-                                    <small class="text-muted">Si el producto no tiene costo base</small>
-                                </div>
-                            </div>
-                        </div>
+                    <span class="fin2-active-period" id="fin2-period-badge">Mes actual</span>
+                </div>
+
+                <!-- ── Filtros de periodo ── -->
+                <div class="fin2-filters-bar">
+                    <div class="fin2-filter-group">
+                        <button class="fin2-filter-btn" data-range="hoy">Hoy</button>
+                        <button class="fin2-filter-btn" data-range="semana">Esta semana</button>
+                        <button class="fin2-filter-btn active" data-range="mes">Este mes</button>
+                        <button class="fin2-filter-btn" data-range="personalizado">
+                            <i class="bi bi-calendar3"></i> Rango personalizado
+                        </button>
                     </div>
                 </div>
 
-                <!-- Selector de periodo -->
-                <div class="d-flex flex-wrap gap-2 mb-4">
-                    <button type="button" class="btn btn-outline-primary fin-range-btn active" data-range="mes-actual">Mes actual</button>
-                    <button type="button" class="btn btn-outline-primary fin-range-btn" data-range="mes-anterior">Mes anterior</button>
-                    <button type="button" class="btn btn-outline-primary fin-range-btn" data-range="semana">7 días</button>
-                    <button type="button" class="btn btn-outline-primary fin-range-btn" data-range="personalizado"><i class="bi bi-calendar3 me-1"></i>Rango</button>
+                <!-- ── Rango personalizado ── -->
+                <div id="fin2-custom-range" class="fin2-custom-range-bar" style="display:none;">
+                    <input type="date" id="fin2-desde" class="fin2-date-input">
+                    <span class="fin2-date-sep">→</span>
+                    <input type="date" id="fin2-hasta" class="fin2-date-input">
+                    <button id="fin2-btn-calc" class="fin2-btn-apply">
+                        <i class="bi bi-check2"></i> Calcular
+                    </button>
                 </div>
 
-                <!-- Rango personalizado -->
-                <div id="fin-custom-range" class="row g-2 mb-4" style="display: none;">
-                    <div class="col">
-                        <input type="date" id="fin-desde" class="form-control">
-                    </div>
-                    <div class="col">
-                        <input type="date" id="fin-hasta" class="form-control">
-                    </div>
-                    <div class="col-auto">
-                        <button type="button" id="btn-calcular-finanzas-custom" class="btn btn-primary">Calcular</button>
-                    </div>
+                <!-- ── Loading ── -->
+                <div id="fin2-loading" class="fin2-loading" style="display:none;">
+                    <div class="fin2-spinner"></div>
+                    <span>Calculando utilidades…</span>
                 </div>
 
-                <!-- Loading -->
-                <div id="fin-loading" class="text-center py-5" style="display: none;">
-                    <div class="spinner-border text-primary"></div>
-                </div>
+                <!-- ── Resultados ── -->
+                <div id="fin2-resultados">
 
-                <!-- Resultados -->
-                <div id="fin-resultados" style="display: none;">
-
-                    <!-- KPI Cards -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <div class="card fin-kpi-card fin-kpi-ingresos">
-                                <div class="card-body text-center py-4">
-                                    <small class="text-muted d-block mb-1">Ingresos Brutos</small>
-                                    <h2 class="fw-bold mb-1" id="fin-ingresos-brutos">$0</h2>
-                                    <small class="text-muted" id="fin-total-ordenes">0 órdenes</small>
-                                </div>
+                    <!-- KPI PRINCIPAL: UTILIDAD TOTAL -->
+                    <div class="fin2-hero-kpi">
+                        <div class="fin2-hero-kpi-inner">
+                            <div class="fin2-hero-icon">
+                                <i class="bi bi-currency-dollar"></i>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card fin-kpi-card fin-kpi-utilidad">
-                                <div class="card-body text-center py-4">
-                                    <small class="text-muted d-block mb-1">Utilidad Neta</small>
-                                    <h2 class="fw-bold mb-1" id="fin-utilidad-neta">$0</h2>
-                                    <small class="text-muted">Dinero real en mano</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card fin-kpi-card fin-kpi-repartir">
-                                <div class="card-body text-center py-4">
-                                    <small class="text-muted d-block mb-1">A Repartir</small>
-                                    <h2 class="fw-bold mb-1" id="fin-a-repartir">$0</h2>
-                                    <small class="text-muted" id="fin-label-socio-b">Socio B (40%)</small>
+                            <div class="fin2-hero-content">
+                                <div class="fin2-hero-label">UTILIDAD TOTAL (GANANCIA NETA)</div>
+                                <div class="fin2-hero-value" id="fin2-utilidad-total">$0</div>
+                                <div class="fin2-hero-trend" id="fin2-trend-badge">
+                                    <i class="bi bi-dash"></i> Sin datos anteriores
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Resumen socios -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-body d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <small class="text-muted" id="fin-label-socio-a-card">Socio A — Dueño (60%)</small>
-                                        <h4 class="fw-bold mb-0 text-primary" id="fin-ganancia-socio-a">$0</h4>
-                                    </div>
-                                    <i class="bi bi-person-circle fs-2 text-primary opacity-50"></i>
-                                </div>
+                    <!-- KPIs secundarios -->
+                    <div class="fin2-secondary-kpis">
+                        <div class="fin2-skpi-card">
+                            <div class="fin2-skpi-icon fin2-skpi-icon--blue">
+                                <i class="bi bi-box-seam"></i>
+                            </div>
+                            <div class="fin2-skpi-body">
+                                <div class="fin2-skpi-label">Productos vendidos</div>
+                                <div class="fin2-skpi-val" id="fin2-total-uds">0</div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-body d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <small class="text-muted" id="fin-label-socio-b-card">Socio B — Inversionista (40%)</small>
-                                        <h4 class="fw-bold mb-0 text-success" id="fin-ganancia-socio-b">$0</h4>
-                                    </div>
-                                    <i class="bi bi-person-circle fs-2 text-success opacity-50"></i>
-                                </div>
+                        <div class="fin2-skpi-card">
+                            <div class="fin2-skpi-icon fin2-skpi-icon--purple">
+                                <i class="bi bi-cash-stack"></i>
+                            </div>
+                            <div class="fin2-skpi-body">
+                                <div class="fin2-skpi-label">Total ingresos</div>
+                                <div class="fin2-skpi-val" id="fin2-ingresos">$0</div>
+                            </div>
+                        </div>
+                        <div class="fin2-skpi-card">
+                            <div class="fin2-skpi-icon fin2-skpi-icon--amber">
+                                <i class="bi bi-tag"></i>
+                            </div>
+                            <div class="fin2-skpi-body">
+                                <div class="fin2-skpi-label">Total costos</div>
+                                <div class="fin2-skpi-val" id="fin2-costos">$0</div>
+                            </div>
+                        </div>
+                        <div class="fin2-skpi-card">
+                            <div class="fin2-skpi-icon fin2-skpi-icon--green">
+                                <i class="bi bi-percent"></i>
+                            </div>
+                            <div class="fin2-skpi-body">
+                                <div class="fin2-skpi-label">Margen promedio</div>
+                                <div class="fin2-skpi-val" id="fin2-margen">0%</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Tabla detallada -->
-                    <div class="card">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Detalle por orden</h6>
-                            <button class="btn btn-sm btn-outline-success" id="btn-exportar-finanzas">
-                                <i class="bi bi-download me-1"></i>Exportar CSV
+                    <!-- Gráfica: Utilidad en el tiempo -->
+                    <div class="fin2-chart-card">
+                        <div class="fin2-chart-header">
+                            <span class="fin2-chart-title">
+                                <i class="bi bi-bar-chart-line"></i> Utilidad en el tiempo
+                            </span>
+                            <span class="fin2-chart-subtitle" id="fin2-chart-subtitle">por día</span>
+                        </div>
+                        <div class="fin2-chart-body">
+                            <canvas id="fin2-utilidad-chart" height="90"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Tabla detallada por producto -->
+                    <div class="fin2-table-card">
+                        <div class="fin2-table-header">
+                            <div>
+                                <span class="fin2-table-title">
+                                    <i class="bi bi-table"></i> Detalle por producto
+                                </span>
+                                <span class="fin2-table-count" id="fin2-product-count">0 productos</span>
+                            </div>
+                            <button class="fin2-btn-export" id="fin2-btn-export">
+                                <i class="bi bi-download"></i> Exportar CSV
                             </button>
                         </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>ID Orden</th>
-                                            <th>Fecha</th>
-                                            <th class="text-end">Total Venta</th>
-                                            <th class="text-end">Costos Op.</th>
-                                            <th class="text-end">Mi Ganancia</th>
-                                            <th class="text-end">Ganancia Socio</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="fin-detalle-tabla">
-                                        <tr><td colspan="6" class="text-center text-muted py-4">Selecciona un periodo</td></tr>
-                                    </tbody>
-                                    <tfoot id="fin-detalle-footer" class="fw-bold" style="display: none;">
-                                        <tr>
-                                            <td colspan="2">TOTALES</td>
-                                            <td class="text-end" id="fin-footer-total"></td>
-                                            <td class="text-end" id="fin-footer-costos"></td>
-                                            <td class="text-end" id="fin-footer-mi-ganancia"></td>
-                                            <td class="text-end" id="fin-footer-ganancia-socio"></td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
+                        <div class="fin2-table-wrapper">
+                            <table class="fin2-table">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th class="text-end">Costo</th>
+                                        <th class="text-end">Precio venta</th>
+                                        <th class="text-end">Cant. vendida</th>
+                                        <th class="text-end">Utilidad/unidad</th>
+                                        <th class="text-end">Utilidad total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fin2-tabla-body">
+                                    <tr>
+                                        <td colspan="6" class="fin2-empty-state">
+                                            <i class="bi bi-bar-chart"></i>
+                                            <span>Selecciona un periodo para ver los datos</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot id="fin2-tabla-footer" style="display:none;">
+                                    <tr class="fin2-tfoot-row">
+                                        <td colspan="3"><strong>TOTALES</strong></td>
+                                        <td class="text-end" id="fin2-footer-cant"></td>
+                                        <td class="text-end">—</td>
+                                        <td class="text-end" id="fin2-footer-utilidad"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
                     </div>
-                </div>
+
+                </div><!-- /fin2-resultados -->
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════════════
