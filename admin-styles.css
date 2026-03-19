@@ -3553,3 +3553,69 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
   body.admin-page::after { display: none; }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   PRODUCT SEARCH MODAL — new item layout (pm-product-item)
+   Reemplaza el layout de dos columnas (nombre | precio) por uno vertical
+   que siempre muestra imagen + nombre + categoría + precio + stock
+   ───────────────────────────────────────────────────────────────────────── */
+
+.pm-product-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pm-product-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pm-product-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 1px;
+}
+
+.pm-product-cat {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+}
+
+.pm-product-code {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  font-family: monospace;
+}
+
+.pm-product-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* On mobile, image size slightly larger for clarity */
+@media (max-width: 767px) {
+  .product-search-img {
+    width: 56px !important;
+    height: 72px !important;
+  }
+
+  /* Remove overflow:hidden that clips item content on small screens */
+  .search-modal-list .list-group-item {
+    overflow: visible !important;
+  }
+
+  /* Remove the old two-column text-end price constraint */
+  .search-modal-list .list-group-item > div > .text-end {
+    display: none !important;
+  }
+}
+
