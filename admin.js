@@ -8061,31 +8061,50 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ── Agrupar ventas por producto ──
+    // Calcula el ratio de descuento de una venta (1 = sin descuento, 0.9 = 10% desc)
+    function discountRatio(venta) {
+        const items = venta.items || [];
+        const sumItems = items.reduce((s, it) =>
+            s + parseFloat(it.precio || 0) * parseInt(it.cantidad || 1, 10), 0);
+        if (sumItems <= 0) return 1;
+
+        const raw = parseFloat(venta.descuento) || 0;
+        if (raw <= 0) return 1;
+
+        const montoDesc = venta.descuentoTipo === 'porcentaje'
+            ? sumItems * (raw / 100)
+            : raw;
+
+        return Math.max(0, (sumItems - montoDesc) / sumItems);
+    }
+
     function agruparPorProducto(ventas, productCostMap) {
         const mapa = new Map();
 
-        ventas.forEach(({ venta, fecha }) => {
+        ventas.forEach(({ venta }) => {
             if (!venta.items || !venta.items.length) return;
 
+            const ratio = discountRatio(venta);
+
             venta.items.forEach(item => {
-                const nombre  = item.nombre || item.name || 'Producto sin nombre';
-                // Costo: primero del item, si no, del mapa de productos por ID
-                const costo   = parseFloat(
+                const nombre = item.nombre || item.name || 'Producto sin nombre';
+                const costo  = parseFloat(
                     item.precioCosto ||
                     item.costo ||
                     (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
                     0
                 );
-                const precio  = parseFloat(item.precio || item.precioUnitario || 0);
-                const cant    = parseInt(item.cantidad || 1, 10);
-
-                const key = nombre.trim().toLowerCase();
+                // Precio efectivo = precio catálogo × ratio de descuento
+                const precioBase     = parseFloat(item.precio || item.precioUnitario || 0);
+                const precioEfectivo = precioBase * ratio;
+                const cant           = parseInt(item.cantidad || 1, 10);
+                const key            = nombre.trim().toLowerCase();
 
                 if (!mapa.has(key)) {
                     mapa.set(key, {
                         nombre: nombre.trim(),
                         costo,
-                        precio,
+                        precio: precioEfectivo,
                         cantidad: 0,
                         utilidadTotal: 0,
                         ingresoTotal: 0,
@@ -8093,17 +8112,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     });
                 }
 
-                const entry = mapa.get(key);
-                const utilidadUnidad = precio - costo;
-
-                entry.cantidad    += cant;
-                entry.utilidadTotal += utilidadUnidad * cant;
-                entry.ingresoTotal  += precio * cant;
+                const entry          = mapa.get(key);
+                entry.cantidad      += cant;
+                entry.utilidadTotal += (precioEfectivo - costo) * cant;
+                entry.ingresoTotal  += precioEfectivo * cant;
                 entry.costoTotal    += costo * cant;
-
-                // Actualizar precio/costo al último visto
-                entry.precio = precio;
-                entry.costo  = costo;
+                entry.precio         = precioEfectivo;
+                entry.costo          = costo;
             });
         });
 
@@ -8130,8 +8145,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         ventas.forEach(({ venta, fecha }) => {
             const key = fecha.toISOString().slice(0, 10);
             if (!dayMap.has(key)) return;
-
             if (!venta.items) return;
+
+            const ratio = discountRatio(venta);
+
             venta.items.forEach(item => {
                 const costo  = parseFloat(
                     item.precioCosto ||
@@ -8139,7 +8156,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
                     0
                 );
-                const precio = parseFloat(item.precio || item.precioUnitario || 0);
+                const precio = parseFloat(item.precio || item.precioUnitario || 0) * ratio;
                 const cant   = parseInt(item.cantidad || 1, 10);
                 dayMap.set(key, (dayMap.get(key) || 0) + (precio - costo) * cant);
             });
