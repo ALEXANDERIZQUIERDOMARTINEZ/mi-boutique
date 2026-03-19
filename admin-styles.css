@@ -2068,7 +2068,6 @@ small.text-muted {
   #searchProductModal .modal-content {
     height: 92dvh !important;
     min-height: 92dvh !important;
-    overflow-x: hidden !important; /* evita sangrado horizontal */
   }
   #searchProductModal .pm-modal-body {
     flex: 1;
@@ -2076,47 +2075,67 @@ small.text-muted {
     max-height: none !important;
   }
 
-  /* Filtros: forzar que no se salgan del borde */
-  .pm-filters {
-    overflow-x: hidden;
-    width: 100%;
-  }
-  /* Selects no tan anchos en móvil */
-  .pm-select {
-    min-width: 0;
-    max-width: none;
-    flex: 1 1 120px; /* pueden contraerse */
-    font-size: 0.78rem;
+  /* ── Inputs: font-size ≥ 16px evita que iOS haga zoom automático ── */
+  #product-modal-search {
+    font-size: 16px !important;
   }
 
-  /* Items de producto: contener overflow */
+  /* ── Filtros: 2 selects + chips en líneas que no desbordan ── */
+  .pm-filters {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .pm-select {
+    /* flex-basis 0 + max-width 50%: cada select ocupa exactamente la mitad
+       del espacio disponible sin importar el texto de sus opciones          */
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: calc(50% - 0.2rem) !important;
+    /* 16 px mínimo: previene zoom automático de iOS en <select>             */
+    font-size: 16px !important;
+    /* Truncar texto de la opción seleccionada en pantallas pequeñas         */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Lista: clip horizontal para que nada sangre al borde ── */
+  .pm-list {
+    overflow-x: hidden !important;
+  }
+
+  /* ── Items de producto ── */
   .search-modal-list .list-group-item {
     overflow: hidden;
-    padding: 0.65rem 0.75rem !important;
-    margin-bottom: 5px;
+    padding: 0.6rem 0.6rem !important;
+    margin-bottom: 4px;
+    box-sizing: border-box;
   }
-  /* Imagen más compacta en móvil */
+
+  /* Imagen compacta */
   .product-search-img {
-    width: 48px;
-    height: 62px;
+    width: 46px;
+    height: 60px;
     flex-shrink: 0;
   }
-  /* Gap más pequeño en el flex del item */
+
+  /* Reducir gap del flex del item */
   .search-modal-list .list-group-item .d-flex.gap-3 {
-    gap: 0.6rem !important;
+    gap: 0.5rem !important;
   }
-  /* Contenido central: truncar, no crecer más allá de su espacio */
+
+  /* Columna central: puede ceder espacio */
   .search-modal-list .list-group-item .flex-grow-1 {
     min-width: 0;
     overflow: hidden;
   }
   .product-search-name {
-    font-size: 0.84rem;
+    font-size: 0.82rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  /* Línea categoría + código: 1 sola línea truncada */
+  /* Categoría + código en 1 sola línea */
   .search-modal-list .list-group-item .d-flex.gap-2 {
     flex-wrap: nowrap;
     overflow: hidden;
@@ -2126,23 +2145,31 @@ small.text-muted {
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
+    font-size: 0.72rem;
   }
-  .search-modal-list .stock-info { margin-top: 2px; }
+  .search-modal-list .stock-info {
+    margin-top: 2px;
+    font-size: 0.75rem;
+  }
 
-  /* Precio: no shrinkear, fuente más pequeña */
+  /* Columna de precio: ancho fijo, no sangra */
   .search-modal-list .list-group-item > div > .text-end {
     flex-shrink: 0;
+    max-width: 38%;        /* nunca ocupa más del 38 % del ítem      */
+    min-width: 0;
+    overflow: hidden;
   }
   .search-modal-list .price-info {
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     white-space: nowrap;
   }
   .search-modal-list .list-group-item .text-end small {
-    font-size: 0.68rem;
+    font-size: 0.66rem;
     white-space: nowrap;
+    display: block;
   }
 
-  /* Touch: sin hover transform */
+  /* Touch */
   .search-modal-list .list-group-item:hover:not(.disabled) { transform: none; }
   .search-modal-list .list-group-item:active:not(.disabled) {
     background: rgba(217,136,185,0.06) !important;
@@ -2152,7 +2179,12 @@ small.text-muted {
 /* Desktop: mantener layout original */
 @media (min-width: 768px) {
   .pm-filters { flex-wrap: nowrap; }
-  .pm-select { max-width: none; }
+  .pm-select {
+    min-width: 110px !important;
+    max-width: 200px !important;
+    flex: 1 !important;
+    font-size: inherit !important;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
