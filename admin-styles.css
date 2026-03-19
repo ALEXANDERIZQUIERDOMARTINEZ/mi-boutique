@@ -1974,47 +1974,72 @@ small.text-muted {
 /* Custom Range Bar */
 .fin2-custom-range-bar {
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  align-items: flex-end;
+  gap: 0.75rem;
   flex-wrap: wrap;
   margin-bottom: 1.25rem;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.1rem;
   background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs);
+  border: 1.5px solid var(--border-brand);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
 }
-.fin2-date-input {
+.fin2-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
   flex: 1;
   min-width: 130px;
+}
+.fin2-date-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.fin2-date-input {
+  width: 100%;
   border: 1.5px solid var(--border-default);
   border-radius: var(--radius-md);
-  padding: 0.4rem 0.75rem;
-  font-size: 0.85rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.9rem;
+  font-family: inherit;
   color: var(--text-primary);
   background: var(--surface-base);
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.fin2-date-input:focus { border-color: var(--brand-400); }
-.fin2-date-sep {
+.fin2-date-input:focus {
+  border-color: var(--brand-400);
+  box-shadow: 0 0 0 3px rgba(217,136,185,0.15);
+}
+.fin2-date-arrow {
   color: var(--text-tertiary);
-  font-size: 0.9rem;
+  font-size: 1rem;
+  padding-bottom: 0.55rem;
+  flex-shrink: 0;
 }
 .fin2-btn-apply {
   background: var(--grad-brand);
   border: none;
   color: #fff;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  padding: 0.45rem 1.1rem;
+  padding: 0.58rem 1.25rem;
   border-radius: var(--radius-full);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   box-shadow: var(--shadow-brand);
   transition: opacity 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-end;
 }
 .fin2-btn-apply:hover { opacity: 0.88; }
 
@@ -2325,17 +2350,16 @@ small.text-muted {
     font-size: 0.78rem;
   }
 
-  /* Rango personalizado: apilado */
+  /* Rango personalizado: 2 campos arriba + botón abajo */
   .fin2-custom-range-bar {
-    flex-direction: column;
-    align-items: stretch;
     gap: 0.5rem;
-    padding: 0.75rem;
+    padding: 0.85rem;
     margin-bottom: 0.75rem;
   }
-  .fin2-date-sep { display: none; }
-  .fin2-date-input { width: 100%; font-size: 1rem; padding: 0.55rem 0.75rem; }
-  .fin2-btn-apply { width: 100%; justify-content: center; padding: 0.6rem; font-size: 0.88rem; }
+  .fin2-date-field { min-width: calc(50% - 0.75rem); flex: 1; }
+  .fin2-date-arrow { display: none; }
+  .fin2-date-input { font-size: 0.95rem; padding: 0.6rem 0.65rem; }
+  .fin2-btn-apply { width: 100%; justify-content: center; padding: 0.65rem; font-size: 0.88rem; align-self: stretch; }
 
   /* Hero KPI */
   .fin2-hero-kpi { padding: 1.1rem 1.1rem 1.25rem; margin-bottom: 0.75rem; }
