@@ -548,234 +548,282 @@
                 </div> 
             </div>
             
-            <div class="tab-pane fade" id="ventas"> 
-                <div class="d-flex justify-content-between align-items-center mb-3"> 
-                    <h1 class="h2 mb-0">Ventas</h1> 
-                    <div class="btn-group"> 
-                        <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active"> <i class="bi bi-plus-circle me-1"></i><span class="d-none d-md-inline"> Registrar</span></button> 
-                        <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary"> <i class="bi bi-list-check me-1"></i><span class="d-none d-md-inline"> Historial</span></button> 
-                    </div> 
-                </div> 
-                
-                <div id="sales-form-view"> 
-                    <div class="card"> 
-                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Registrar Venta</h3></div> 
-                        <div class="card-body"> 
-                            <form id="form-venta"> 
-                                <input type="hidden" id="venta-cliente-id"> 
-                                <div class="row align-items-end">
-                                    <div class="col-md-5 mb-3"> <label for="venta-cliente" class="form-label">Cliente:</label>
-                                        <div class="input-group">
-                                            <input type="text" id="venta-cliente" class="form-control" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor: pointer;">
-                                            <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Agregar">+</button>
-                                        </div>
-                                        <div class="row mt-2 gx-2">
-                                            <div class="col-6"> <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled> </div>
-                                            <div class="col-6"> <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled> </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2 mb-3"> <label for="tipo-venta-select" class="form-label">Tipo Venta:</label> <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm"> <option value="detal" selected>Detal</option> <option value="mayorista">Mayorista</option> <option value="apartado">Apartado</option> <option value="catalogo">Por Catálogo</option> </select> </div>
-                                    <div class="col-md-3 mb-3"> <label for="tipo-entrega-select" class="form-label">Tipo Entrega:</label> <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm"> <option value="tienda" selected>Recoge Tienda</option> <option value="domicilio">Domicilio</option> </select> </div>
-                                    <div class="col-md-2 mb-3 apartado-fecha-field" style="display: none;">
-                                        <label for="apartado-fecha-max" class="form-label">Vence:</label>
-                                        <input type="date" id="apartado-fecha-max" class="form-control form-control-sm">
-                                    </div>
-                                </div> 
-                                <div class="row delivery-fields">
-                                    <div class="col-md-6 mb-2"> <label for="venta-repartidor" class="form-label small mb-1">Repartidor:</label> <select id="venta-repartidor" class="form-select form-select-sm"></select> </div>
-                                    <div class="col-md-6 mb-2"> <label for="costo-ruta" class="form-label small mb-1">Costo Ruta ($):</label> <input type="text" inputmode="numeric" id="costo-ruta" class="form-control form-control-sm" value="0"> </div>
-                                </div>
-                                <!-- 🔍 BÚSQUEDA RÁPIDA POR CÓDIGO DE BARRAS -->
-                                <div class="producto-tienda-field mb-2">
-                                    <label for="barcode-scanner-input" class="form-label small mb-1"><i class="bi bi-upc-scan"></i> Escanear Código de Barras:</label>
-                                    <input type="text" id="barcode-scanner-input" class="form-control form-control-sm" placeholder="Escanea o escribe código..." autocomplete="off" autofocus>
-                                    <small class="text-muted small">Escanea con lector USB o escribe el código</small>
-                                </div>
-                                <div class="producto-tienda-field mb-2">
-                                    <label for="venta-producto" class="form-label small mb-1">O Buscar Producto:</label>
-                                    <input type="text" id="venta-producto" class="form-control form-control-sm" placeholder="Clic para buscar..." readonly data-bs-toggle="modal" data-bs-target="#searchProductModal" style="cursor: pointer;">
-                                </div>
+            <div class="tab-pane fade" id="ventas">
+                <!-- ── HEADER ── -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1 class="h2 mb-0">Ventas</h1>
+                    <div class="btn-group">
+                        <button type="button" id="toggle-sales-form-view-btn" class="btn btn-sm btn-outline-secondary active">
+                            <i class="bi bi-plus-circle me-1"></i><span class="d-none d-sm-inline">Registrar</span>
+                        </button>
+                        <button type="button" id="toggle-sales-list-view-btn" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-list-check me-1"></i><span class="d-none d-sm-inline">Historial</span>
+                        </button>
+                    </div>
+                </div>
 
-                                <div class="producto-catalogo-field" style="display: none;">
-                                    <label class="form-label small mb-1">Agregar Item de Catálogo:</label>
-                                    <div class="row g-2 mb-2">
-                                        <div class="col-md-5">
-                                            <input type="text" id="catalogo-descripcion" class="form-control form-control-sm" placeholder="Descripción del producto">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <input type="number" id="catalogo-cantidad" class="form-control form-control-sm" placeholder="Cant." min="1" value="1">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <input type="text" inputmode="numeric" id="catalogo-precio" class="form-control form-control-sm" placeholder="Precio unitario">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <button type="button" class="btn btn-primary btn-sm w-100" id="btn-agregar-item-catalogo">
-                                                <i class="bi bi-plus-lg"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                <!-- ══════════════════════════════════════════
+                     REGISTRAR VENTA — diseño mobile-first
+                ══════════════════════════════════════════ -->
+                <div id="sales-form-view">
+                    <form id="form-venta" class="vf-form">
+                        <input type="hidden" id="venta-cliente-id">
 
-                                <div class="table-responsive">
-                                <table class="table table-sm table-hover align-middle my-2">
-                                    <thead><tr><th>Producto</th><th>Cant.</th><th>Precio</th><th>Total</th><th></th></tr></thead>
-                                    <tbody id="venta-carrito"></tbody>
-                                </table>
-                                </div>
-                                <div class="row g-2">
-                                    <div class="col-md-6">
-                                        <div class="mb-2">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="venta-whatsapp" disabled>
-                                                <label class="form-check-label small" for="venta-whatsapp">Pedido WhatsApp</label>
-                                            </div>
-                                        </div>
-                                        <div class="mb-2 delivery-fields">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia">
-                                                <label class="form-check-label small" for="ruta-pagada-transferencia">Ruta pagada por Transferencia</label>
-                                            </div>
-                                        </div>
-                                        <label for="venta-observaciones" class="form-label small mb-1">Observaciones:</label>
-                                        <textarea id="venta-observaciones" class="form-control form-control-sm" rows="2"></textarea>
-                                        <div class="row mt-2">
-                                            <div class="col-7">
-                                                <label for="venta-descuento" class="form-label small mb-1">Descuento:</label>
-                                                <input type="text" inputmode="numeric" id="venta-descuento" class="form-control form-control-sm" value="0">
-                                            </div>
-                                            <div class="col-5">
-                                                <label class="form-label small mb-1">&nbsp;</label>
-                                                <select class="form-select form-select-sm" id="venta-descuento-tipo"> <option value="fijo">$ Fijo</option> <option value="porcentaje">%</option> </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <!-- TOTAL PROMINENTE -->
-                                        <div class="card bg-light border-0 mb-3">
-                                            <div class="card-body p-2 text-center">
-                                                <small class="text-muted d-block mb-1">Total a cobrar</small>
-                                                <h3 class="mb-0"><span id="venta-total" class="text-primary fw-bold">$0</span></h3>
-                                            </div>
-                                        </div>
-
-                                        <!-- MÉTODO DE PAGO -->
-                                        <div class="btn-group w-100 mb-2" role="group">
-                                            <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-efectivo" value="efectivo" checked>
-                                            <label class="btn btn-outline-success btn-sm" for="metodo-efectivo"><i class="bi bi-cash-coin"></i> Efectivo</label>
-                                            <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-transferencia" value="transferencia">
-                                            <label class="btn btn-outline-primary btn-sm" for="metodo-transferencia"><i class="bi bi-bank"></i> Transfer.</label>
-                                            <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-mixto" value="mixto">
-                                            <label class="btn btn-outline-warning btn-sm" for="metodo-mixto"><i class="bi bi-wallet2"></i> Mixto</label>
-                                        </div>
-
-                                        <!-- EFECTIVO -->
-                                        <div id="efectivo-fields" class="payment-fields">
-                                            <div class="input-group input-group-sm mb-2">
-                                                <span class="input-group-text">💵 Recibe</span>
-                                                <input type="text" inputmode="numeric" id="efectivo-recibido" class="form-control" placeholder="0">
-                                            </div>
-                                            <div id="vuelto-efectivo-info" class="alert alert-success py-1 px-2 mb-0 small" style="display: none;">
-                                                <strong>💸 Vuelto:</strong> <span id="vuelto-amount" class="fw-bold">$0</span>
-                                            </div>
-                                        </div>
-
-                                        <!-- TRANSFERENCIA -->
-                                        <div id="transferencia-fields" class="payment-fields" style="display: none;">
-                                            <div class="input-group input-group-sm mb-2">
-                                                <span class="input-group-text">💳 Monto</span>
-                                                <input type="text" inputmode="numeric" id="transferencia-recibida" class="form-control" placeholder="0">
-                                            </div>
-                                            <div id="transferencia-info" class="alert alert-info py-1 px-2 mb-0 small" style="display: none;">
-                                                <span class="text-danger fw-bold">⚠️ Falta: <span id="transferencia-falta">$0</span></span>
-                                            </div>
-                                        </div>
-
-                                        <!-- MIXTO -->
-                                        <div id="mixto-fields" class="payment-fields" style="display: none;">
-                                            <div class="row g-1 mb-2">
-                                                <div class="col-6">
-                                                    <div class="input-group input-group-sm">
-                                                        <span class="input-group-text">💵</span>
-                                                        <input type="text" inputmode="numeric" id="efectivo-mixto-recibido" class="form-control" placeholder="0">
-                                                    </div>
-                                                </div>
-                                                <div class="col-6">
-                                                    <div class="input-group input-group-sm">
-                                                        <span class="input-group-text">💳</span>
-                                                        <input type="text" inputmode="numeric" id="transferencia-mixto-recibida" class="form-control" placeholder="0">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div id="mixto-info" class="alert alert-warning py-1 px-2 mb-0 small">
-                                                <div class="d-flex justify-content-between">
-                                                    <span>Recibido:</span>
-                                                    <strong id="mixto-total-recibido">$0</strong>
-                                                </div>
-                                                <div id="vuelto-mixto-info" style="display: none;">
-                                                    <strong>💸 Vuelto:</strong> <span id="vuelto-amount-mixto" class="fw-bold">$0</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button type="submit" class="btn btn-primary btn-sm w-100 mt-3">Registrar Venta</button>
-                                    </div>
-                                </div> 
-                            </form> 
-                        </div> 
-                    </div> 
-                </div> 
-                
-                <div id="sales-list-view">
-                    <div class="card">
-                        <div class="card-header bg-white border-0 pt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h3 class="h5 mb-0">Historial</h3>
+                        <!-- BLOQUE 1: Cliente -->
+                        <div class="vf-block">
+                            <div class="vf-block-title"><i class="bi bi-person-fill me-2"></i>Cliente</div>
+                            <div class="input-group">
+                                <input type="text" id="venta-cliente" class="form-control" placeholder="Toca para seleccionar cliente..." readonly data-bs-toggle="modal" data-bs-target="#searchClientModal" style="cursor:pointer;">
+                                <button class="btn btn-outline-secondary add-client-btn" type="button" data-bs-toggle="modal" data-bs-target="#addClientModal" title="Nuevo cliente">
+                                    <i class="bi bi-person-plus-fill"></i>
+                                </button>
                             </div>
+                            <div class="row gx-2 mt-2">
+                                <div class="col-6">
+                                    <input type="text" id="venta-cliente-celular" class="form-control form-control-sm client-info-display" placeholder="Celular" readonly disabled>
+                                </div>
+                                <div class="col-6">
+                                    <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm client-info-display" placeholder="Dirección" readonly disabled>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BLOQUE 2: Tipo Venta + Tipo Entrega (2 columnas siempre) -->
+                        <div class="row gx-2 mb-3">
+                            <div class="col-6">
+                                <label class="vf-label"><i class="bi bi-tag me-1"></i>Tipo Venta</label>
+                                <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm">
+                                    <option value="detal" selected>Detal</option>
+                                    <option value="mayorista">Mayorista</option>
+                                    <option value="apartado">Apartado</option>
+                                    <option value="catalogo">Por Catálogo</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="vf-label"><i class="bi bi-truck me-1"></i>Entrega</label>
+                                <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm">
+                                    <option value="tienda" selected>Recoge Tienda</option>
+                                    <option value="domicilio">Domicilio</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Fecha vencimiento apartado (oculto por defecto) -->
+                        <div class="mb-3 apartado-fecha-field" style="display:none;">
+                            <label class="vf-label"><i class="bi bi-calendar-x me-1"></i>Fecha Límite Apartado</label>
+                            <input type="date" id="apartado-fecha-max" class="form-control form-control-sm">
+                        </div>
+
+                        <!-- Campos domicilio (ocultos por defecto) -->
+                        <div class="row gx-2 mb-3 delivery-fields" style="display:none;">
+                            <div class="col-6">
+                                <label class="vf-label"><i class="bi bi-bicycle me-1"></i>Repartidor</label>
+                                <select id="venta-repartidor" class="form-select form-select-sm"></select>
+                            </div>
+                            <div class="col-6">
+                                <label class="vf-label"><i class="bi bi-geo-alt me-1"></i>Costo Ruta ($)</label>
+                                <input type="text" inputmode="numeric" id="costo-ruta" class="form-control form-control-sm" value="0">
+                            </div>
+                        </div>
+
+                        <!-- BLOQUE 3: Agregar Productos -->
+                        <div class="vf-block producto-tienda-field">
+                            <div class="vf-block-title"><i class="bi bi-basket2-fill me-2"></i>Agregar Productos</div>
+                            <div class="input-group input-group-sm mb-2">
+                                <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+                                <input type="text" id="barcode-scanner-input" class="form-control" placeholder="Escanear código de barras..." autocomplete="off">
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm w-100" data-bs-toggle="modal" data-bs-target="#searchProductModal">
+                                <i class="bi bi-search me-2"></i>Buscar Producto en Inventario
+                            </button>
+                            <input type="text" id="venta-producto" style="display:none;" readonly>
+                        </div>
+
+                        <!-- Campos catálogo (ocultos por defecto) -->
+                        <div class="vf-block producto-catalogo-field" style="display:none;">
+                            <div class="vf-block-title"><i class="bi bi-journals me-2"></i>Item de Catálogo</div>
                             <div class="row g-2">
-                                <div class="col-md-4">
-                                    <label for="filtro-buscar-ventas" class="form-label small">Buscar cliente o producto:</label>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                        <input type="text" id="filtro-buscar-ventas" class="form-control" placeholder="Nombre de cliente o producto...">
-                                    </div>
+                                <div class="col-12">
+                                    <input type="text" id="catalogo-descripcion" class="form-control form-control-sm" placeholder="Descripción del producto">
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="filtro-categoria-ventas" class="form-label small">Categoría:</label>
-                                    <select id="filtro-categoria-ventas" class="form-select form-select-sm">
-                                        <option value="">Todas las categorías</option>
-                                    </select>
+                                <div class="col-4">
+                                    <input type="number" id="catalogo-cantidad" class="form-control form-control-sm" placeholder="Cant." min="1" value="1">
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="filtro-fecha-ventas" class="form-label small">Fecha:</label>
-                                    <input type="date" id="filtro-fecha-ventas" class="form-control form-control-sm">
+                                <div class="col-5">
+                                    <input type="text" inputmode="numeric" id="catalogo-precio" class="form-control form-control-sm" placeholder="Precio unitario">
                                 </div>
-                                <div class="col-md-2 d-flex align-items-end">
-                                    <button type="button" id="btn-limpiar-filtro-ventas" class="btn btn-sm btn-outline-secondary w-100">
-                                        <i class="bi bi-x-circle"></i> Limpiar
+                                <div class="col-3">
+                                    <button type="button" class="btn btn-primary btn-sm w-100" id="btn-agregar-item-catalogo">
+                                        <i class="bi bi-plus-lg"></i>
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha</th>
-                                        <th>Cliente</th>
-                                        <th>Productos</th>
-                                        <th>Tipo</th>
-                                        <th>Total</th>
-                                        <th>Pago</th>
-                                        <th>Repartidor</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="lista-ventas-anteriores">
-                                    <tr id="empty-sales-row">
-                                        <td colspan="9" class="text-center text-muted">Cargando...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+
+                        <!-- BLOQUE 4: Carrito -->
+                        <div class="vf-cart-section">
+                            <div class="vf-cart-header">
+                                <span class="fw-semibold"><i class="bi bi-cart3 me-1"></i>Carrito</span>
+                                <span class="badge bg-secondary" id="venta-items-count">0 items</span>
+                            </div>
+                            <div id="venta-carrito" class="vf-cart-items">
+                                <div class="vf-cart-empty">
+                                    <i class="bi bi-cart-x fs-4 d-block mb-1"></i>
+                                    <small>Aún no has agregado productos</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BLOQUE 5: Opciones + Pago -->
+                        <div class="vf-bottom-grid">
+                            <!-- Columna izquierda: Obs + Descuento -->
+                            <div class="vf-bottom-left">
+                                <div class="mb-2">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="venta-whatsapp" disabled>
+                                        <label class="form-check-label small" for="venta-whatsapp">Pedido WhatsApp</label>
+                                    </div>
+                                </div>
+                                <div class="mb-2 delivery-fields" style="display:none;">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="ruta-pagada-transferencia">
+                                        <label class="form-check-label small" for="ruta-pagada-transferencia">Ruta pagada por Transferencia</label>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="vf-label">Observaciones</label>
+                                    <textarea id="venta-observaciones" class="form-control form-control-sm" rows="2" placeholder="Notas de la venta..."></textarea>
+                                </div>
+                                <div class="row gx-2">
+                                    <div class="col-7">
+                                        <label class="vf-label">Descuento</label>
+                                        <input type="text" inputmode="numeric" id="venta-descuento" class="form-control form-control-sm" value="0">
+                                    </div>
+                                    <div class="col-5">
+                                        <label class="vf-label">&nbsp;</label>
+                                        <select class="form-select form-select-sm" id="venta-descuento-tipo">
+                                            <option value="fijo">$ Fijo</option>
+                                            <option value="porcentaje">%</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Columna derecha: Total + Pago -->
+                            <div class="vf-bottom-right">
+                                <!-- Total prominente -->
+                                <div class="vf-total-box">
+                                    <span class="vf-total-label">Total a cobrar</span>
+                                    <span id="venta-total" class="vf-total-amount">$0</span>
+                                </div>
+
+                                <!-- Método de pago -->
+                                <div class="btn-group w-100 mb-2" role="group">
+                                    <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-efectivo" value="efectivo" checked>
+                                    <label class="btn btn-outline-success btn-sm" for="metodo-efectivo">
+                                        <i class="bi bi-cash-coin"></i><span class="d-none d-sm-inline"> Efectivo</span>
+                                    </label>
+                                    <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-transferencia" value="transferencia">
+                                    <label class="btn btn-outline-primary btn-sm" for="metodo-transferencia">
+                                        <i class="bi bi-bank"></i><span class="d-none d-sm-inline"> Transfer.</span>
+                                    </label>
+                                    <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-mixto" value="mixto">
+                                    <label class="btn btn-outline-warning btn-sm" for="metodo-mixto">
+                                        <i class="bi bi-wallet2"></i><span class="d-none d-sm-inline"> Mixto</span>
+                                    </label>
+                                </div>
+
+                                <!-- Efectivo -->
+                                <div id="efectivo-fields" class="payment-fields">
+                                    <div class="input-group input-group-sm mb-2">
+                                        <span class="input-group-text">💵 Recibe</span>
+                                        <input type="text" inputmode="numeric" id="efectivo-recibido" class="form-control" placeholder="0">
+                                    </div>
+                                    <div id="vuelto-efectivo-info" class="alert alert-success py-1 px-2 mb-0 small" style="display:none;">
+                                        <strong>💸 Vuelto:</strong> <span id="vuelto-amount" class="fw-bold">$0</span>
+                                    </div>
+                                </div>
+
+                                <!-- Transferencia -->
+                                <div id="transferencia-fields" class="payment-fields" style="display:none;">
+                                    <div class="input-group input-group-sm mb-2">
+                                        <span class="input-group-text">💳 Monto</span>
+                                        <input type="text" inputmode="numeric" id="transferencia-recibida" class="form-control" placeholder="0">
+                                    </div>
+                                    <div id="transferencia-info" class="alert alert-info py-1 px-2 mb-0 small" style="display:none;">
+                                        <span class="text-danger fw-bold">⚠️ Falta: <span id="transferencia-falta">$0</span></span>
+                                    </div>
+                                </div>
+
+                                <!-- Mixto -->
+                                <div id="mixto-fields" class="payment-fields" style="display:none;">
+                                    <div class="row g-1 mb-2">
+                                        <div class="col-6">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">💵</span>
+                                                <input type="text" inputmode="numeric" id="efectivo-mixto-recibido" class="form-control" placeholder="0">
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">💳</span>
+                                                <input type="text" inputmode="numeric" id="transferencia-mixto-recibida" class="form-control" placeholder="0">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="mixto-info" class="alert alert-warning py-1 px-2 mb-0 small">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Recibido:</span>
+                                            <strong id="mixto-total-recibido">$0</strong>
+                                        </div>
+                                        <div id="vuelto-mixto-info" style="display:none;">
+                                            <strong>💸 Vuelto:</strong> <span id="vuelto-amount-mixto" class="fw-bold">$0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100 mt-3 py-2">
+                                    <i class="bi bi-check-circle-fill me-2"></i>Registrar Venta
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ══════════════════════════════════════════
+                     HISTORIAL DE VENTAS — tarjetas responsive
+                ══════════════════════════════════════════ -->
+                <div id="sales-list-view">
+                    <!-- Filtros compactos -->
+                    <div class="vf-block mb-3">
+                        <div class="row g-2">
+                            <div class="col-12 col-sm-5 col-lg-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="filtro-buscar-ventas" class="form-control" placeholder="Buscar cliente o producto...">
+                                </div>
+                            </div>
+                            <div class="col-6 col-sm-3 col-lg-3">
+                                <select id="filtro-categoria-ventas" class="form-select form-select-sm">
+                                    <option value="">Todas las categorías</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-sm-2 col-lg-3">
+                                <input type="date" id="filtro-fecha-ventas" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-12 col-sm-2 col-lg-2">
+                                <button type="button" id="btn-limpiar-filtro-ventas" class="btn btn-sm btn-outline-secondary w-100">
+                                    <i class="bi bi-x-circle me-1"></i>Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de ventas en tarjetas -->
+                    <div id="lista-ventas-anteriores" class="ventas-card-grid">
+                        <div id="empty-sales-row" class="ventas-empty-state">
+                            <i class="bi bi-inbox fs-2 d-block mb-2 text-muted"></i>
+                            <p class="text-muted mb-0">Cargando ventas...</p>
                         </div>
                     </div>
                 </div>

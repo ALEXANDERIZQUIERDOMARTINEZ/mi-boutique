@@ -2878,17 +2878,68 @@ document.addEventListener('DOMContentLoaded', () => {
          
          function quitarItemDelCarrito(index) { window.ventaItems.splice(index, 1); renderCarrito(); window.calcularTotalVentaGeneral(); }
          
-         function renderCarrito() { 
-            ventaCarritoTbody.innerHTML = ''; 
-            window.ventaItems.forEach((item, index) => { 
-                const tr = document.createElement('tr'); 
-                tr.innerHTML = `<td>${item.nombreCompleto}</td><td><input type="number" class="form-control form-control-sm item-qty-input" value="${item.cantidad}" min="1" data-index="${index}"></td><td>${formatoMoneda.format(item.precio)}</td><td>${formatoMoneda.format(item.total)}</td><td><button type="button" class="btn btn-action btn-action-delete btn-quitar-item" data-index="${index}"><i class="bi bi-x-lg"></i></button></td>`; 
-                ventaCarritoTbody.appendChild(tr); 
-            }); 
+         function renderCarrito() {
+            if (!ventaCarritoTbody) return;
+            ventaCarritoTbody.innerHTML = '';
+
+            const countEl = document.getElementById('venta-items-count');
+            if (countEl) countEl.textContent = window.ventaItems.length + (window.ventaItems.length === 1 ? ' item' : ' items');
+
+            if (window.ventaItems.length === 0) {
+                ventaCarritoTbody.innerHTML = `
+                    <div class="vf-cart-empty">
+                        <i class="bi bi-cart-x fs-4 d-block mb-1"></i>
+                        <small>Aún no has agregado productos</small>
+                    </div>`;
+                return;
+            }
+
+            window.ventaItems.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'vf-cart-item';
+                card.innerHTML = `
+                    <div class="vf-cart-item-info">
+                        <div class="vf-cart-item-name">${item.nombreCompleto}</div>
+                        <div class="vf-cart-item-unit">${formatoMoneda.format(item.precio)} c/u</div>
+                    </div>
+                    <div class="vf-cart-item-controls">
+                        <div class="vf-qty-control">
+                            <button type="button" class="vf-qty-btn btn-qty-minus" data-index="${index}">−</button>
+                            <input type="number" class="vf-qty-input item-qty-input" value="${item.cantidad}" min="1" data-index="${index}">
+                            <button type="button" class="vf-qty-btn btn-qty-plus" data-index="${index}">+</button>
+                        </div>
+                        <div class="vf-cart-item-total">${formatoMoneda.format(item.total)}</div>
+                        <button type="button" class="vf-cart-item-remove btn-quitar-item" data-index="${index}" title="Quitar">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>`;
+                ventaCarritoTbody.appendChild(card);
+            });
          }
          
          if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('change', (e) => { if (e.target.classList.contains('item-qty-input')) { const index = parseInt(e.target.dataset.index, 10); const newQty = parseInt(e.target.value, 10); if (newQty > 0 && window.ventaItems[index]) { window.ventaItems[index].cantidad = newQty; window.ventaItems[index].total = newQty * window.ventaItems[index].precio; renderCarrito(); window.calcularTotalVentaGeneral(); } } });
-         if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('click', (e) => { e.preventDefault(); if (e.target.closest('.btn-quitar-item')) { quitarItemDelCarrito(parseInt(e.target.closest('.btn-quitar-item').dataset.index, 10)); } });
+         if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('click', (e) => {
+             e.preventDefault();
+             if (e.target.closest('.btn-quitar-item')) { quitarItemDelCarrito(parseInt(e.target.closest('.btn-quitar-item').dataset.index, 10)); return; }
+             if (e.target.closest('.btn-qty-minus')) {
+                 const index = parseInt(e.target.closest('.btn-qty-minus').dataset.index, 10);
+                 if (window.ventaItems[index] && window.ventaItems[index].cantidad > 1) {
+                     window.ventaItems[index].cantidad -= 1;
+                     window.ventaItems[index].total = window.ventaItems[index].cantidad * window.ventaItems[index].precio;
+                     renderCarrito(); window.calcularTotalVentaGeneral();
+                 }
+                 return;
+             }
+             if (e.target.closest('.btn-qty-plus')) {
+                 const index = parseInt(e.target.closest('.btn-qty-plus').dataset.index, 10);
+                 if (window.ventaItems[index]) {
+                     window.ventaItems[index].cantidad += 1;
+                     window.ventaItems[index].total = window.ventaItems[index].cantidad * window.ventaItems[index].precio;
+                     renderCarrito(); window.calcularTotalVentaGeneral();
+                 }
+                 return;
+             }
+         });
          
          window.calcularTotalVentaGeneral = function() { 
              let subtotalItems = window.ventaItems.reduce((sum, item) => sum + item.total, 0); 
@@ -3052,112 +3103,116 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Renderizar resultados
             if (filteredSales.length === 0) {
-                if(emptyRow) { emptyRow.style.display = ''; salesListTableBody.appendChild(emptyRow); }
+                salesListTableBody.innerHTML = `
+                    <div class="ventas-empty-state">
+                        <i class="bi bi-search fs-2 d-block mb-2 text-muted"></i>
+                        <p class="text-muted mb-0">No se encontraron ventas</p>
+                    </div>`;
                 return;
             }
-            if(emptyRow) emptyRow.style.display = 'none';
 
             filteredSales.forEach(d => {
                 const id = d.id;
-                const tr = document.createElement('tr');
-                tr.dataset.id = id;
+                const card = document.createElement('div');
+                card.className = 'venta-card';
+                card.dataset.id = id;
+
                 const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('es-CO', {
-                    dateStyle: 'short',
-                    timeStyle: 'short'
+                    dateStyle: 'short', timeStyle: 'short'
                 }) : 'N/A';
-                const pago = (d.pagoEfectivo>0?'Efec.':'') + (d.pagoTransferencia>0?(d.pagoEfectivo>0?'+':''):'') + (d.pagoTransferencia>0?'Transf.':'');
-                const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge' : '-');
+
+                const pagoPartes = [];
+                if (d.pagoEfectivo > 0) pagoPartes.push('<span class="venta-pago-badge efec"><i class="bi bi-cash-coin"></i> Efectivo</span>');
+                if (d.pagoTransferencia > 0) pagoPartes.push('<span class="venta-pago-badge transf"><i class="bi bi-bank"></i> Transfer.</span>');
+                const pagoHtml = pagoPartes.length ? pagoPartes.join('') : '<span class="text-muted small">-</span>';
+
+                const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge en tienda' : '-');
+                const entregaIcon = d.tipoEntrega === 'domicilio' ? 'bi-bicycle' : 'bi-shop';
                 const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
 
                 let estadoBadgeClass = 'bg-success';
-                if (estado === 'Pendiente') {
-                    estadoBadgeClass = 'bg-warning text-dark';
-                } else if (estado === 'Anulada' || estado === 'Cancelada') {
-                    estadoBadgeClass = 'bg-danger';
-                }
+                if (estado === 'Pendiente') estadoBadgeClass = 'bg-warning text-dark';
+                else if (estado === 'Anulada' || estado === 'Cancelada') estadoBadgeClass = 'bg-danger';
                 const estaAnulada = (estado === 'Anulada' || estado === 'Cancelada');
 
-                // Construir columna de productos con información completa
+                // Tipo venta badge
+                const tipoMap = { detal: ['bg-primary', 'Detal'], mayorista: ['bg-info text-dark', 'Mayor.'], apartado: ['bg-warning text-dark', 'Apartado'], catalogo: ['bg-secondary', 'Catálogo'] };
+                const [tipoCls, tipoLabel] = tipoMap[d.tipoVenta] || ['bg-secondary', d.tipoVenta || '-'];
+
+                // Total display
+                let totalHtml;
+                if (d.tipoVenta === 'apartado') {
+                    const montoAbonado = d.totalVenta || 0;
+                    const totalProducto = d.montoTotalProducto || d.totalVenta || 0;
+                    const pct = totalProducto > 0 ? Math.round((montoAbonado / totalProducto) * 100) : 0;
+                    totalHtml = `<span class="venta-card-total text-warning">${formatoMoneda.format(montoAbonado)}</span>
+                                 <small class="d-block text-muted" style="font-size:0.7rem;">${pct}% de ${formatoMoneda.format(totalProducto)}</small>`;
+                } else {
+                    totalHtml = `<span class="venta-card-total">${formatoMoneda.format(d.totalVenta || 0)}</span>`;
+                }
+
+                // Productos
                 let productosHtml = '';
                 if (d.items && d.items.length > 0) {
-                    const productosDetalles = d.items.map(item => {
+                    productosHtml = d.items.map(item => {
                         const product = localProductsMap.get(item.productoId);
-                        if (!product) return '';
-
-                        const imagenUrl = product.imagenUrl || product.imageUrl || 'https://placehold.co/40x40/f0f0f0/cccccc?text=?';
-                        const nombre = product.nombre || item.nombre || 'Producto';
-
-                        // Resolver categoría desde categoriesMap
-                        let categoria = 'Sin categoría';
-                        if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map && product.categoriaId) {
-                            categoria = categoriesMap.get(product.categoriaId) || 'Sin categoría';
-                        }
-
-                        const variacion = item.talla && item.color ? `${item.talla} - ${item.color}` : 'N/A';
-
-                        // El campo correcto es 'precio', no 'precioUnitario'
+                        const imagenUrl = (product && (product.imagenUrl || product.imageUrl)) || '';
+                        const nombre = (product && product.nombre) || item.nombre || item.nombreCompleto || 'Producto';
+                        const variacion = (item.talla && item.color) ? `${item.talla} · ${item.color}` : (item.talla || item.color || '');
                         const precioNum = parseFloat(item.precio) || 0;
-                        const precio = precioNum > 0 ? formatoMoneda.format(precioNum) : '$0';
-
-                        const cantidad = item.cantidad || 0;
-
+                        const imgTag = imagenUrl
+                            ? `<img src="${imagenUrl}" alt="${nombre}" class="venta-prod-img" loading="lazy">`
+                            : `<div class="venta-prod-img-placeholder"><i class="bi bi-image"></i></div>`;
                         return `
-                            <div class="d-flex gap-2 mb-2 align-items-start" style="font-size: 0.85rem;">
-                                <img src="${imagenUrl}" alt="${nombre}"
-                                    style="width:40px;height:40px;object-fit:cover;border-radius:6px;flex-shrink:0;">
-                                <div class="flex-grow-1" style="min-width:0;">
-                                    <div class="fw-semibold text-truncate" style="max-width:200px;" title="${nombre}">${nombre}</div>
-                                    <small class="text-muted d-block"><i class="bi bi-tag-fill me-1"></i>${categoria}</small>
-                                    <small class="text-muted d-block">${variacion} | x${cantidad}</small>
-                                    <small class="fw-bold text-primary">${precio} c/u</small>
+                            <div class="venta-prod-row">
+                                ${imgTag}
+                                <div class="venta-prod-info">
+                                    <div class="venta-prod-name">${nombre}</div>
+                                    <div class="venta-prod-detail">
+                                        ${variacion ? `<span>${variacion}</span> · ` : ''}
+                                        <span>x${item.cantidad || 0}</span>
+                                        ${precioNum > 0 ? ` · <span class="text-primary fw-semibold">${formatoMoneda.format(precioNum)} c/u</span>` : ''}
+                                    </div>
                                 </div>
-                            </div>
-                        `;
-                    }).filter(html => html !== '').join('');
-
-                    productosHtml = productosDetalles || '<small class="text-muted">Sin detalles</small>';
+                            </div>`;
+                    }).join('');
                 } else {
-                    productosHtml = '<small class="text-muted">Sin productos</small>';
+                    productosHtml = '<span class="text-muted small">Sin productos registrados</span>';
                 }
 
-                // Calcular información de apartado si aplica
-                let totalDisplay = formatoMoneda.format(d.totalVenta||0);
-                if (d.tipoVenta === 'apartado') {
-                    // Para apartados: totalVenta = lo recibido, montoTotalProducto = el 100%
-                    const montoAbonado = d.totalVenta || 0; // Ya es el monto abonado
-                    const totalProducto = d.montoTotalProducto || d.totalVenta || 0;
-                    const porcentajeAbonado = totalProducto > 0 ? Math.round((montoAbonado / totalProducto) * 100) : 0;
-                    totalDisplay = `
-                        <div>
-                            <div class="fw-bold text-warning" style="font-size: 1.1em;">
-                                <i class="bi bi-calendar-check"></i> ${formatoMoneda.format(montoAbonado)}
-                            </div>
-                            <small class="text-muted">
-                                ${porcentajeAbonado}% apartado
-                                <br>Total: ${formatoMoneda.format(totalProducto)}
-                            </small>
+                card.innerHTML = `
+                    <div class="venta-card-head">
+                        <div class="venta-card-meta-top">
+                            <span class="venta-card-fecha"><i class="bi bi-clock me-1"></i>${fecha}</span>
+                            <span class="badge ${estadoBadgeClass}">${estado}</span>
                         </div>
-                    `;
-                }
-
-                tr.innerHTML = `<td>${fecha}</td>
-                                <td>${d.clienteNombre || 'General'}</td>
-                                <td>${productosHtml}</td>
-                                <td>${d.tipoVenta}</td>
-                                <td>${totalDisplay}</td>
-                                <td>${pago||'-'}</td>
-                                <td>${repartidor}</td>
-                                <td><span class="badge ${estadoBadgeClass}">${estado}</span></td>
-                                <td class="action-buttons">
-                                    <button class="btn btn-action btn-action-view btn-view-sale"><i class="bi bi-eye"></i><span class="btn-action-text">Ver</span></button>
-                                    ${!estaAnulada ? `<button class="btn btn-action btn-action-edit btn-edit-sale"><i class="bi bi-pencil-square"></i><span class="btn-action-text">Editar</span></button>` : ''}
-                                    ${d.tipoVenta === 'apartado' && !estaAnulada ? `<button class="btn btn-action btn-action-warning btn-manage-apartado"><i class="bi bi-calendar-heart"></i><span class="btn-action-text">Gestionar</span></button>` : ''}
-                                    <button class="btn btn-action btn-action-danger btn-cancel-sale" ${estaAnulada ? 'disabled' : ''}>
-                                        <i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span>
-                                    </button>
-                                    ${!estaAnulada ? `<button class="btn btn-action btn-action-delete btn-delete-sale"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button>` : ''}
-                                </td>`;
-                salesListTableBody.appendChild(tr);
+                        <div class="venta-card-cliente-row">
+                            <span class="venta-card-cliente"><i class="bi bi-person-fill me-1"></i>${d.clienteNombre || 'Cliente general'}</span>
+                            <span class="badge ${tipoCls}">${tipoLabel}</span>
+                        </div>
+                    </div>
+                    <div class="venta-card-products">${productosHtml}</div>
+                    <div class="venta-card-foot">
+                        <div class="venta-card-foot-left">
+                            <div class="venta-card-pago">${pagoHtml}</div>
+                            <div class="venta-card-entrega small text-muted">
+                                <i class="bi ${entregaIcon} me-1"></i>${repartidor}
+                            </div>
+                        </div>
+                        <div class="venta-card-foot-right">
+                            ${totalHtml}
+                        </div>
+                    </div>
+                    <div class="venta-card-actions">
+                        <button class="btn btn-action btn-action-view btn-view-sale" title="Ver detalle"><i class="bi bi-eye"></i><span class="btn-action-text">Ver</span></button>
+                        ${!estaAnulada ? `<button class="btn btn-action btn-action-edit btn-edit-sale" title="Editar"><i class="bi bi-pencil-square"></i><span class="btn-action-text">Editar</span></button>` : ''}
+                        ${d.tipoVenta === 'apartado' && !estaAnulada ? `<button class="btn btn-action btn-action-warning btn-manage-apartado" title="Gestionar apartado"><i class="bi bi-calendar-heart"></i><span class="btn-action-text">Abonar</span></button>` : ''}
+                        <button class="btn btn-action btn-action-danger btn-cancel-sale" title="Anular venta" ${estaAnulada ? 'disabled' : ''}>
+                            <i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span>
+                        </button>
+                        ${!estaAnulada ? `<button class="btn btn-action btn-action-delete btn-delete-sale" title="Eliminar"><i class="bi bi-trash"></i></button>` : ''}
+                    </div>`;
+                salesListTableBody.appendChild(card);
             });
         }
 
