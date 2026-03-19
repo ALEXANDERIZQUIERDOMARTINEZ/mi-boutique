@@ -3534,6 +3534,118 @@ body.modal-open {
 body.dark-mode .list-group-item { background: var(--surface-raised); color: var(--text-secondary); }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   FORMULARIO DE VENTA — Responsive mobile
+   ───────────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+  /* Tarjeta: padding compacto */
+  #sales-form-view .card-body {
+    padding: 0.6rem 0.75rem !important;
+  }
+  #sales-form-view .card-header {
+    padding: 0.5rem 0.75rem !important;
+  }
+  #sales-form-view .card-header h3 {
+    font-size: 1rem !important;
+  }
+
+  /* Labels más pequeños */
+  #form-venta .form-label {
+    font-size: 0.76rem;
+    margin-bottom: 0.15rem !important;
+    font-weight: 600;
+  }
+
+  /* Reducir espaciado vertical */
+  #form-venta .mb-3 { margin-bottom: 0.45rem !important; }
+  #form-venta .mb-2 { margin-bottom: 0.35rem !important; }
+  #form-venta .mt-2 { margin-top: 0.35rem !important; }
+  #form-venta .mt-3 { margin-top: 0.5rem !important; }
+
+  /* Todos los inputs y selects del form: 16px para evitar zoom iOS */
+  #form-venta input,
+  #form-venta select,
+  #form-venta textarea {
+    font-size: 16px !important;
+  }
+
+  /* Hacer form-control que no son -sm más compactos */
+  #form-venta .form-control:not(.form-control-sm):not([type="number"]) {
+    padding: 0.3rem 0.5rem;
+  }
+
+  /* Textarea de observaciones: más baja */
+  #form-venta textarea.form-control-sm {
+    rows: 2;
+    min-height: 52px;
+    resize: none;
+  }
+
+  /* ── Tabla del carrito ── */
+  #form-venta table.table {
+    font-size: 0.76rem;
+    margin-bottom: 0.5rem !important;
+    table-layout: fixed;
+    width: 100%;
+  }
+  /* Anchos de columna: Producto | Cant. | Precio | (Total oculto) | Borrar */
+  #form-venta table th:nth-child(1),
+  #form-venta table td:nth-child(1) { width: 48%; }
+  #form-venta table th:nth-child(2),
+  #form-venta table td:nth-child(2) { width: 18%; }
+  #form-venta table th:nth-child(3),
+  #form-venta table td:nth-child(3) { width: 22%; }
+  /* Columna Total: ocultar en móvil (el Total general ya se muestra abajo) */
+  #form-venta table th:nth-child(4),
+  #form-venta table td:nth-child(4) { display: none; }
+  /* Columna eliminar */
+  #form-venta table th:nth-child(5),
+  #form-venta table td:nth-child(5) { width: 12%; text-align: center; }
+
+  /* Truncar nombre de producto en la tabla */
+  #form-venta table td:nth-child(1) {
+    overflow: hidden;
+    word-break: break-word;
+    line-height: 1.2;
+  }
+
+  /* Input de cantidad: compacto */
+  #form-venta .item-qty-input {
+    padding: 0.15rem 0.2rem !important;
+    font-size: 14px !important; /* dentro de la tabla es aceptable; no hay autofocus */
+    width: 100%;
+    min-width: 36px;
+    text-align: center;
+  }
+
+  /* Botón eliminar ítem: solo ícono pequeño */
+  #form-venta .btn-quitar-item {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.7rem;
+  }
+
+  /* Sección de pago: botones más compactos */
+  #form-venta .btn-group .btn {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.4rem;
+  }
+
+  /* Total a cobrar: más prominente pero no tanto */
+  #sales-form-view .card.bg-light .card-body {
+    padding: 0.4rem !important;
+  }
+  #sales-form-view .card.bg-light h3 {
+    font-size: 1.4rem !important;
+  }
+
+  /* Botón registrar venta */
+  #form-venta button[type="submit"] {
+    padding: 0.55rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    PRINT
    ───────────────────────────────────────────────────────────────────────── */
 @media print {
