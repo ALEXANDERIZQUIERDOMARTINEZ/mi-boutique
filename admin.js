@@ -1679,7 +1679,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ${d.codigo ? `<span class="pm-product-code"># ${d.codigo}</span>` : ''}
                             </div>
                             <div class="pm-product-footer">
-                                <div class="price-info">${formatoMoneda.format(d.precioDetal || 0)}</div>
+                                <div class="price-info" data-precio-detal="${d.precioDetal || 0}" data-precio-mayor="${d.precioMayor || 0}">
+                                    ${formatoMoneda.format(d.precioDetal || 0)}
+                                </div>
+                                ${d.precioMayor ? `<div class="pm-price-mayor text-muted" style="font-size:0.72rem;">Mayor: ${formatoMoneda.format(d.precioMayor)}</div>` : ''}
                                 <div class="stock-info">Stock: ${stockTotal}</div>
                             </div>
                         </div>
@@ -4358,9 +4361,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const productoTiendaField = document.querySelector('.producto-tienda-field');
             const productoCatalogoField = document.querySelector('.producto-catalogo-field');
 
-            // Advertir si hay productos en el carrito al cambiar el tipo de venta
+            // Actualizar precios del carrito según el tipo de venta seleccionado
             if (tipoVenta && window.ventaItems && window.ventaItems.length > 0) {
-                showToast("Importante: Vacíe el carrito antes de cambiar el tipo de venta para aplicar los precios correctos", "warning");
+                const nuevoTipo = tipoVenta.value;
+                let actualizados = 0;
+                window.ventaItems.forEach(item => {
+                    const product = localProductsMap.get(item.productoId);
+                    if (!product) return; // item de catálogo, no tocar
+                    let nuevoPrecio;
+                    if (nuevoTipo === 'mayorista') {
+                        nuevoPrecio = product.precioMayor || 0;
+                        if (nuevoPrecio === 0) nuevoPrecio = product.precioDetal || 0;
+                    } else {
+                        nuevoPrecio = product.precioDetal || 0;
+                    }
+                    if (nuevoPrecio !== item.precio) {
+                        item.precio = nuevoPrecio;
+                        item.total = item.cantidad * nuevoPrecio;
+                        actualizados++;
+                    }
+                });
+                if (actualizados > 0) {
+                    const label = nuevoTipo === 'mayorista' ? 'mayorista' : 'detal';
+                    showToast(`Precios actualizados a ${label} (${actualizados} item${actualizados > 1 ? 's' : ''})`, 'info');
+                    renderCarrito();
+                    window.calcularTotalVentaGeneral();
+                }
             }
 
             if (tipoVenta && apartadoFechaField && apartadoFechaInput) {
@@ -4392,7 +4418,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.getElementById('tipo-entrega-select').addEventListener('change', toggleDeliveryFields);
-        document.getElementById('tipo-venta-select').addEventListener('change', toggleApartadoFields);
+        document.getElementById('tipo-venta-select').addEventListener('change', () => {
+            toggleApartadoFields();
+            // Actualizar precios mostrados en el modal de búsqueda de productos
+            const tipo = document.getElementById('tipo-venta-select').value;
+            document.querySelectorAll('#product-modal-list .price-info').forEach(el => {
+                const pd = parseFloat(el.dataset.precioDetal) || 0;
+                const pm = parseFloat(el.dataset.precioMayor) || 0;
+                el.textContent = formatoMoneda.format(tipo === 'mayorista' && pm > 0 ? pm : pd);
+                el.style.color = tipo === 'mayorista' ? 'var(--admin-success, #198754)' : '';
+            });
+        });
         toggleDeliveryFields();
         toggleApartadoFields();
         window.calcularTotalVentaGeneral();
