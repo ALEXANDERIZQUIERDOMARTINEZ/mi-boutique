@@ -3053,6 +3053,13 @@ document.addEventListener('DOMContentLoaded', () => {
          if (efectivoMixtoRecibidoInput) efectivoMixtoRecibidoInput.addEventListener('input', calcularResumenMixto);
          if (transferenciaMixtoRecibidaInput) transferenciaMixtoRecibidaInput.addEventListener('input', calcularResumenMixto);
 
+         // --- Helper de permisos para ventas ---
+         function puedeHacer(permiso) {
+             if (!window.appContext) return true; // sin contexto = acceso directo, permitir
+             if (window.appContext.isSuperAdmin) return true;
+             return window.appContext.permisos?.[permiso] === true;
+         }
+
          // --- R (Read) ---
          let allSalesData = []; // Almacenar todas las ventas sin filtrar
 
@@ -3118,6 +3125,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = document.createElement('div');
                 card.className = 'venta-card';
                 card.dataset.id = id;
+                card.dataset.estado = estado;
 
                 const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('es-CO', {
                     dateStyle: 'short', timeStyle: 'short'
@@ -3206,13 +3214,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                     <div class="venta-card-actions">
-                        <button class="btn btn-action btn-action-view btn-view-sale" title="Ver detalle"><i class="bi bi-eye"></i><span class="btn-action-text">Ver</span></button>
-                        ${!estaAnulada ? `<button class="btn btn-action btn-action-edit btn-edit-sale" title="Editar"><i class="bi bi-pencil-square"></i><span class="btn-action-text">Editar</span></button>` : ''}
+                        ${puedeHacer('ventas_ver') ? `<button class="btn btn-action btn-action-view btn-view-sale" title="Ver detalle"><i class="bi bi-eye"></i><span class="btn-action-text">Ver</span></button>` : ''}
+                        ${!estaAnulada && puedeHacer('ventas_editar') ? `<button class="btn btn-action btn-action-edit btn-edit-sale" title="Editar"><i class="bi bi-pencil-square"></i><span class="btn-action-text">Editar</span></button>` : ''}
                         ${d.tipoVenta === 'apartado' && !estaAnulada ? `<button class="btn btn-action btn-action-warning btn-manage-apartado" title="Gestionar apartado"><i class="bi bi-calendar-heart"></i><span class="btn-action-text">Abonar</span></button>` : ''}
-                        <button class="btn btn-action btn-action-danger btn-cancel-sale" title="Anular venta" ${estaAnulada ? 'disabled' : ''}>
-                            <i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span>
-                        </button>
-                        ${!estaAnulada ? `<button class="btn btn-action btn-action-delete btn-delete-sale" title="Eliminar"><i class="bi bi-trash"></i></button>` : ''}
+                        ${puedeHacer('ventas_anular') ? `<button class="btn btn-action btn-action-danger btn-cancel-sale" title="Anular venta" ${estaAnulada ? 'disabled' : ''}><i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span></button>` : ''}
+                        ${!estaAnulada && puedeHacer('ventas_eliminar') ? `<button class="btn btn-action btn-action-delete btn-delete-sale" title="Eliminar"><i class="bi bi-trash"></i></button>` : ''}
                     </div>`;
                 salesListTableBody.appendChild(card);
             });
@@ -3401,8 +3407,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 montoTotalProducto: tipoVentaSelect.value === 'apartado' ? totalCalculado : null,
                 estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada',
                 esCatalogoExterno: esCatalogo, // Flag para identificar ventas por catálogo
-                timestamp: serverTimestamp()
-            }; 
+                timestamp: serverTimestamp(),
+                tenantId: window.appContext?.tenantId || null
+            };
             
             if (ventaData.tipoVenta === 'apartado') {
                 const abonoInicial = ventaData.pagoEfectivo + ventaData.pagoTransferencia;
@@ -3520,6 +3527,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         fechaVencimiento: Timestamp.fromDate(fechaVencimiento),
                         estado: 'Pendiente',
                         items: ventaData.items, // Guardar items para referencia
+                        tenantId: ventaData.tenantId,
                         abonos: [{
                             fecha: Timestamp.fromDate(new Date()), // ✅ Usar Timestamp en lugar de serverTimestamp
                             monto: abonoInicial,
@@ -3586,6 +3594,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Función para Anular Venta (D) ---
         async function anularVenta(ventaId) {
             if (!ventaId) return;
+            if (!puedeHacer('ventas_anular')) {
+                showToast('No tienes permisos para anular ventas.', 'error');
+                return;
+            }
             if (!confirm('¿Estás seguro de que quieres ANULAR esta venta?\nEsta acción repondrá el stock y marcará la venta como "Anulada".')) {
                 return;
             }
@@ -3906,8 +3918,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault(); 
             const target = e.target.closest('button'); 
             if (!target) return; 
-            const id = target.closest('tr')?.dataset.id; 
-            if (!id) return; 
+            const id = target.closest('.venta-card')?.dataset.id;
+            if (!id) return;
             
             if(target.classList.contains('btn-view-sale')) {
                 handleViewSale(id); 
@@ -3941,6 +3953,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // FUNCIÓN: ABRIR MODAL EDITAR VENTA
         // ═══════════════════════════════════════════════════════════════════
         async function abrirModalEditarVenta(ventaId) {
+            if (!puedeHacer('ventas_editar')) {
+                showToast('No tienes permisos para editar ventas.', 'error');
+                return;
+            }
             try {
                 const ventaRef = doc(db, 'ventas', ventaId);
                 const ventaSnap = await getDoc(ventaRef);
@@ -4217,6 +4233,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // FUNCIÓN: ABRIR MODAL ELIMINAR VENTA
         // ═══════════════════════════════════════════════════════════════════
         async function abrirModalEliminarVenta(ventaId) {
+            if (!puedeHacer('ventas_eliminar')) {
+                showToast('No tienes permisos para eliminar ventas.', 'error');
+                return;
+            }
             try {
                 const ventaRef = doc(db, 'ventas', ventaId);
                 const ventaSnap = await getDoc(ventaRef);
