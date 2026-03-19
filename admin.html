@@ -991,11 +991,17 @@
 
                 <!-- ── Rango personalizado ── -->
                 <div id="fin2-custom-range" class="fin2-custom-range-bar" style="display:none;">
-                    <input type="date" id="fin2-desde" class="fin2-date-input">
-                    <span class="fin2-date-sep">→</span>
-                    <input type="date" id="fin2-hasta" class="fin2-date-input">
+                    <div class="fin2-date-field">
+                        <label class="fin2-date-label"><i class="bi bi-calendar-event"></i> Desde</label>
+                        <input type="date" id="fin2-desde" class="fin2-date-input">
+                    </div>
+                    <div class="fin2-date-arrow"><i class="bi bi-arrow-right"></i></div>
+                    <div class="fin2-date-field">
+                        <label class="fin2-date-label"><i class="bi bi-calendar-check"></i> Hasta</label>
+                        <input type="date" id="fin2-hasta" class="fin2-date-input">
+                    </div>
                     <button id="fin2-btn-calc" class="fin2-btn-apply">
-                        <i class="bi bi-check2"></i> Calcular
+                        <i class="bi bi-search"></i> Calcular
                     </button>
                 </div>
 
