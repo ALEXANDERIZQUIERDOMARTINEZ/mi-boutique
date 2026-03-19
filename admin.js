@@ -3143,6 +3143,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             filteredSales.forEach(d => {
                 const id = d.id;
+                const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
+
                 const card = document.createElement('div');
                 card.className = 'venta-card';
                 card.dataset.id = id;
@@ -3159,7 +3161,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge en tienda' : '-');
                 const entregaIcon = d.tipoEntrega === 'domicilio' ? 'bi-bicycle' : 'bi-shop';
-                const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
 
                 let estadoBadgeClass = 'bg-success';
                 if (estado === 'Pendiente') estadoBadgeClass = 'bg-warning text-dark';
