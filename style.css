@@ -2998,6 +2998,10 @@ textarea.form-control-modern {
    SECCIÓN VENTAS — DISEÑO RESPONSIVE MOBILE-FIRST
    ════════════════════════════════════════════════════════════════ */
 
+/* ════════════════════════════════════════════════════════════════
+   SECCIÓN VENTAS — FORMULARIO REGISTRAR VENTA
+   ════════════════════════════════════════════════════════════════ */
+
 /* ── Formulario general ── */
 .vf-form {
     display: flex;
@@ -3007,46 +3011,63 @@ textarea.form-control-modern {
 
 .vf-block {
     background: #fff;
-    border: 1px solid #e9ecef;
-    border-radius: 12px;
-    padding: 14px;
+    border: 1px solid #f0e6f6;
+    border-left: 3px solid var(--brand-400, #f472b6);
+    border-radius: 14px;
+    padding: 14px 16px;
     margin-bottom: 12px;
+    box-shadow: 0 1px 6px rgba(217,136,185,0.07);
+    transition: box-shadow 0.2s;
+}
+
+.vf-block:focus-within {
+    box-shadow: 0 2px 12px rgba(217,136,185,0.15);
+    border-left-color: var(--brand-500, #D988B9);
 }
 
 .vf-block-title {
-    font-size: 0.8rem;
-    font-weight: 700;
+    font-size: 0.75rem;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #6c757d;
+    letter-spacing: 0.06em;
+    background: linear-gradient(90deg, var(--brand-600, #c026d3), var(--brand-400, #f472b6));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .vf-label {
     display: block;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 600;
-    color: #495057;
+    color: #5a3e6b;
     margin-bottom: 4px;
 }
 
 /* ── Carrito ── */
 .vf-cart-section {
     background: #fff;
-    border: 1px solid #e9ecef;
-    border-radius: 12px;
+    border: 1px solid #f0e6f6;
+    border-radius: 14px;
     overflow: hidden;
     margin-bottom: 12px;
+    box-shadow: 0 1px 6px rgba(217,136,185,0.07);
 }
 
 .vf-cart-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 14px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
+    padding: 11px 16px;
+    background: linear-gradient(90deg, #fdf2f8 0%, #fce7f3 100%);
+    border-bottom: 1px solid #f0e6f6;
     font-size: 0.85rem;
+    font-weight: 600;
+    color: #5a3e6b;
 }
 
 .vf-cart-items {
@@ -3058,8 +3079,8 @@ textarea.form-control-modern {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px 16px;
-    color: #adb5bd;
+    padding: 28px 16px;
+    color: #c4a1d4;
     text-align: center;
 }
 
@@ -3068,8 +3089,8 @@ textarea.form-control-modern {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px 14px;
-    border-bottom: 1px solid #f0f0f0;
+    padding: 10px 16px;
+    border-bottom: 1px solid #fdf2f8;
     transition: background 0.15s;
 }
 
@@ -3078,7 +3099,7 @@ textarea.form-control-modern {
 }
 
 .vf-cart-item:hover {
-    background: #f8f9fa;
+    background: #fdf2f8;
 }
 
 .vf-cart-item-info {
@@ -3089,7 +3110,7 @@ textarea.form-control-modern {
 .vf-cart-item-name {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #212529;
+    color: #2d1f3d;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3097,7 +3118,7 @@ textarea.form-control-modern {
 
 .vf-cart-item-unit {
     font-size: 0.75rem;
-    color: #6c757d;
+    color: #9b7db5;
     margin-top: 1px;
 }
 
@@ -3112,21 +3133,21 @@ textarea.form-control-modern {
 .vf-qty-control {
     display: flex;
     align-items: center;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    border: 1.5px solid #e8d5f0;
+    border-radius: 10px;
     overflow: hidden;
-    height: 32px;
+    height: 34px;
 }
 
 .vf-qty-btn {
     border: none;
-    background: #f8f9fa;
-    width: 30px;
+    background: #fdf2f8;
+    width: 32px;
     height: 100%;
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
-    color: #495057;
+    color: var(--brand-600, #c026d3);
     transition: background 0.15s;
     display: flex;
     align-items: center;
@@ -3136,22 +3157,23 @@ textarea.form-control-modern {
 }
 
 .vf-qty-btn:hover {
-    background: #e9ecef;
-    color: #212529;
+    background: #fce7f3;
+    color: var(--brand-700, #a21caf);
 }
 
 .vf-qty-input {
     width: 38px;
     height: 100%;
     border: none;
-    border-left: 1px solid #dee2e6;
-    border-right: 1px solid #dee2e6;
+    border-left: 1.5px solid #e8d5f0;
+    border-right: 1.5px solid #e8d5f0;
     text-align: center;
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
     -moz-appearance: textfield;
     padding: 0;
     background: #fff;
+    color: #2d1f3d;
 }
 
 .vf-qty-input::-webkit-outer-spin-button,
@@ -3162,8 +3184,8 @@ textarea.form-control-modern {
 
 .vf-cart-item-total {
     font-size: 0.85rem;
-    font-weight: 700;
-    color: #0d6efd;
+    font-weight: 800;
+    color: var(--brand-600, #c026d3);
     min-width: 70px;
     text-align: right;
 }
@@ -3171,9 +3193,9 @@ textarea.form-control-modern {
 .vf-cart-item-remove {
     border: none;
     background: transparent;
-    color: #dc3545;
+    color: #e8708a;
     padding: 4px 6px;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     transition: background 0.15s;
     font-size: 0.9rem;
@@ -3182,7 +3204,8 @@ textarea.form-control-modern {
 }
 
 .vf-cart-item-remove:hover {
-    background: #fff0f0;
+    background: #ffeef2;
+    color: #dc3545;
 }
 
 /* ── Sección inferior: dos columnas en tablet+ ── */
@@ -3203,9 +3226,10 @@ textarea.form-control-modern {
 .vf-bottom-left,
 .vf-bottom-right {
     background: #fff;
-    border: 1px solid #e9ecef;
-    border-radius: 12px;
-    padding: 14px;
+    border: 1px solid #f0e6f6;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 6px rgba(217,136,185,0.07);
 }
 
 /* ── Total ── */
@@ -3213,23 +3237,62 @@ textarea.form-control-modern {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 45%, #a855f7 100%));
     color: #fff;
-    border-radius: 10px;
-    padding: 12px 16px;
+    border-radius: 12px;
+    padding: 14px 18px;
     margin-bottom: 12px;
+    box-shadow: 0 4px 16px rgba(217,136,185,0.35);
 }
 
 .vf-total-label {
-    font-size: 0.8rem;
-    opacity: 0.85;
+    font-size: 0.78rem;
+    opacity: 0.9;
     font-weight: 500;
 }
 
 .vf-total-amount {
-    font-size: 1.5rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    font-size: 1.6rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+/* ── Botón registrar venta ── */
+#form-venta .btn-primary[type="submit"] {
+    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 45%, #a855f7 100%)) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    padding: 12px !important;
+    box-shadow: 0 4px 16px rgba(217,136,185,0.4) !important;
+    transition: box-shadow 0.2s, transform 0.15s !important;
+    letter-spacing: 0.02em;
+}
+
+#form-venta .btn-primary[type="submit"]:hover {
+    box-shadow: 0 6px 22px rgba(217,136,185,0.55) !important;
+    transform: translateY(-1px) !important;
+}
+
+#form-venta .btn-primary[type="submit"]:active {
+    transform: translateY(0) !important;
+}
+
+/* ── Toggle Registrar / Historial ── */
+#toggle-sales-form-view-btn,
+#toggle-sales-list-view-btn {
+    border-radius: 10px !important;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+#toggle-sales-form-view-btn.active,
+#toggle-sales-list-view-btn.active {
+    background: var(--brand-500, #D988B9) !important;
+    border-color: var(--brand-500, #D988B9) !important;
+    color: #fff !important;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -3239,16 +3302,16 @@ textarea.form-control-modern {
 .ventas-card-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 14px;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 580px) {
     .ventas-card-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 1100px) {
     .ventas-card-grid {
         grid-template-columns: repeat(3, 1fr);
     }
@@ -3260,30 +3323,55 @@ textarea.form-control-modern {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 48px 16px;
+    padding: 56px 16px;
     text-align: center;
 }
 
 /* ── Tarjeta de venta ── */
 .venta-card {
     background: #fff;
-    border: 1px solid #e9ecef;
-    border-radius: 14px;
+    border: 1px solid #f0e6f6;
+    border-radius: 16px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    transition: box-shadow 0.2s, transform 0.2s;
+    transition: box-shadow 0.22s, transform 0.18s;
+    box-shadow: 0 2px 8px rgba(217,136,185,0.08);
+    position: relative;
+}
+
+.venta-card::before {
+    content: '';
+    display: block;
+    height: 3px;
+    background: var(--grad-brand, linear-gradient(90deg, #f472b6, #D988B9, #a855f7));
+    opacity: 0.6;
 }
 
 .venta-card:hover {
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(217,136,185,0.22);
+    transform: translateY(-3px);
+}
+
+/* Accento de color en tarjeta según estado */
+.venta-card[data-estado="Anulada"]::before,
+.venta-card[data-estado="Cancelada"]::before {
+    background: linear-gradient(90deg, #f87171, #ef4444);
+    opacity: 1;
+}
+.venta-card[data-estado="Pendiente"]::before {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    opacity: 1;
+}
+.venta-card[data-estado="Completada"]::before {
+    background: linear-gradient(90deg, #34d399, #10b981);
+    opacity: 1;
 }
 
 /* Cabecera de la tarjeta */
 .venta-card-head {
-    padding: 12px 14px 10px;
-    border-bottom: 1px solid #f0f0f0;
+    padding: 12px 15px 10px;
+    border-bottom: 1px solid #fdf2f8;
 }
 
 .venta-card-meta-top {
@@ -3294,8 +3382,9 @@ textarea.form-control-modern {
 }
 
 .venta-card-fecha {
-    font-size: 0.75rem;
-    color: #6c757d;
+    font-size: 0.72rem;
+    color: #9b7db5;
+    font-weight: 500;
 }
 
 .venta-card-cliente-row {
@@ -3306,9 +3395,9 @@ textarea.form-control-modern {
 }
 
 .venta-card-cliente {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #212529;
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #2d1f3d;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3316,14 +3405,14 @@ textarea.form-control-modern {
 
 /* Productos dentro de la tarjeta */
 .venta-card-products {
-    padding: 10px 14px;
+    padding: 10px 15px;
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 220px;
+    max-height: 200px;
     overflow-y: auto;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #fdf2f8;
 }
 
 .venta-prod-row {
@@ -3333,26 +3422,26 @@ textarea.form-control-modern {
 }
 
 .venta-prod-img {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: 10px;
     flex-shrink: 0;
-    border: 1px solid #e9ecef;
+    border: 1.5px solid #f0e6f6;
 }
 
 .venta-prod-img-placeholder {
-    width: 52px;
-    height: 52px;
-    border-radius: 8px;
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
     flex-shrink: 0;
-    background: #f0f0f0;
+    background: #fdf2f8;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #adb5bd;
-    font-size: 1.2rem;
-    border: 1px solid #e9ecef;
+    color: #c4a1d4;
+    font-size: 1.1rem;
+    border: 1.5px solid #f0e6f6;
 }
 
 .venta-prod-info {
@@ -3362,16 +3451,16 @@ textarea.form-control-modern {
 
 .venta-prod-name {
     font-size: 0.82rem;
-    font-weight: 600;
-    color: #212529;
+    font-weight: 700;
+    color: #2d1f3d;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .venta-prod-detail {
-    font-size: 0.73rem;
-    color: #6c757d;
+    font-size: 0.72rem;
+    color: #9b7db5;
     margin-top: 2px;
 }
 
@@ -3380,8 +3469,8 @@ textarea.form-control-modern {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    padding: 10px 14px;
-    background: #f8f9fa;
+    padding: 10px 15px;
+    background: linear-gradient(90deg, #fdf9fe 0%, #fdf2f8 100%);
     gap: 8px;
 }
 
@@ -3398,10 +3487,11 @@ textarea.form-control-modern {
 }
 
 .venta-card-total {
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: #0d6efd;
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: var(--brand-600, #c026d3);
     display: block;
+    letter-spacing: -0.02em;
 }
 
 .venta-card-pago {
@@ -3411,9 +3501,9 @@ textarea.form-control-modern {
 }
 
 .venta-pago-badge {
-    font-size: 0.7rem;
-    font-weight: 600;
-    padding: 2px 7px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
     border-radius: 20px;
     white-space: nowrap;
 }
@@ -3429,48 +3519,78 @@ textarea.form-control-modern {
 }
 
 .venta-card-entrega {
-    font-size: 0.73rem;
+    font-size: 0.71rem;
+    color: #9b7db5;
 }
 
 /* Acciones de la tarjeta */
 .venta-card-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 8px 14px;
-    border-top: 1px solid #f0f0f0;
+    gap: 5px;
+    padding: 9px 15px;
+    border-top: 1px solid #fdf2f8;
     background: #fff;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow: hidden;
 }
 
 .venta-card-actions .btn-action {
     flex: 1;
     min-width: 0;
     font-size: 0.72rem;
-    padding: 5px 6px;
-    border-radius: 7px;
+    padding: 6px 7px;
+    border-radius: 9px;
     white-space: nowrap;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 3px;
+    font-weight: 600;
+    min-height: 34px;
 }
 
 .venta-card-actions .btn-action-delete {
     flex: 0 0 auto;
-    min-width: 32px;
+    min-width: 34px;
+    width: 34px;
 }
 
 /* Scrollbar dentro de productos */
 .venta-card-products::-webkit-scrollbar {
-    width: 4px;
+    width: 3px;
 }
 .venta-card-products::-webkit-scrollbar-track {
     background: transparent;
 }
 .venta-card-products::-webkit-scrollbar-thumb {
-    background: #dee2e6;
+    background: #e8d5f0;
     border-radius: 4px;
+}
+
+/* ── Filtros del historial ── */
+#ventas .vf-block.mb-3 {
+    background: linear-gradient(135deg, #fff 0%, #fdf9fe 100%);
+    border-left-color: var(--brand-300, #f9a8d4);
+}
+
+/* ── Ajustes para tablet (≤ 768px) ── */
+@media (max-width: 767px) {
+    .venta-card-actions {
+        gap: 4px;
+        padding: 8px 12px;
+    }
+    .venta-card-actions .btn-action {
+        padding: 7px 5px;
+        min-height: 38px;
+        font-size: 0.7rem;
+    }
+    .vf-total-amount {
+        font-size: 1.4rem;
+    }
+    .venta-card-total {
+        font-size: 1.1rem;
+    }
 }
 
 /* ── Ajustes para pantallas muy pequeñas (< 400px) ── */
@@ -3484,5 +3604,12 @@ textarea.form-control-modern {
     }
     .venta-card-actions .btn-action-text {
         display: none;
+    }
+    .venta-card-actions .btn-action {
+        min-height: 40px;
+        padding: 8px 6px;
+    }
+    .ventas-card-grid {
+        gap: 10px;
     }
 }
