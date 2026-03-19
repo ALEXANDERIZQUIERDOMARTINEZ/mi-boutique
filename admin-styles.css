@@ -130,6 +130,11 @@
   box-sizing: border-box;
 }
 
+/* Prevent iOS Safari from expanding the layout viewport beyond device width */
+html:has(body.admin-page) {
+  overflow-x: hidden;
+}
+
 body.admin-page {
   font-family: var(--font-sans);
   background: var(--surface-base);
@@ -3382,10 +3387,15 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
 body.modal-open {
   overflow: hidden;
   padding-right: 0 !important;
+  margin-right: 0 !important;
 }
 .modal-open .admin-content-wrapper,
 .modal-open .rail-topbar,
 .modal-open .mobile-bottom-nav {
+  padding-right: 0 !important;
+}
+/* Ensure the modal itself is always anchored to the visual viewport */
+#searchProductModal {
   padding-right: 0 !important;
 }
 
