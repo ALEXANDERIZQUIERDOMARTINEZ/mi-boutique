@@ -8048,7 +8048,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ── Agrupar ventas por producto ──
-    function agruparPorProducto(ventas) {
+    function agruparPorProducto(ventas, productCostMap) {
         const mapa = new Map();
 
         ventas.forEach(({ venta, fecha }) => {
@@ -8056,7 +8056,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             venta.items.forEach(item => {
                 const nombre  = item.nombre || item.name || 'Producto sin nombre';
-                const costo   = parseFloat(item.precioCosto || item.costo || 0);
+                // Costo: primero del item, si no, del mapa de productos por ID
+                const costo   = parseFloat(
+                    item.precioCosto ||
+                    item.costo ||
+                    (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
+                    0
+                );
                 const precio  = parseFloat(item.precio || item.precioUnitario || 0);
                 const cant    = parseInt(item.cantidad || 1, 10);
 
@@ -8093,7 +8099,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ── Construir datos de gráfica por día ──
-    function buildChartData(ventas, desde, hasta) {
+    function buildChartData(ventas, desde, hasta, productCostMap) {
         const dayMap = new Map();
 
         // Inicializar todos los días del rango
@@ -8114,7 +8120,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             if (!venta.items) return;
             venta.items.forEach(item => {
-                const costo  = parseFloat(item.precioCosto || item.costo || 0);
+                const costo  = parseFloat(
+                    item.precioCosto ||
+                    item.costo ||
+                    (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
+                    0
+                );
                 const precio = parseFloat(item.precio || item.precioUnitario || 0);
                 const cant   = parseInt(item.cantidad || 1, 10);
                 dayMap.set(key, (dayMap.get(key) || 0) + (precio - costo) * cant);
@@ -8195,16 +8206,25 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         document.getElementById('fin2-period-badge').textContent = label;
 
         try {
-            const q = query(
-                salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(desde)),
-                where('timestamp', '<=', Timestamp.fromDate(hasta)),
-                orderBy('timestamp', 'desc')
-            );
+            // Cargar ventas y productos en paralelo
+            const [snapshot, prodsSnapshot] = await Promise.all([
+                getDocs(query(
+                    salesCollection,
+                    where('timestamp', '>=', Timestamp.fromDate(desde)),
+                    where('timestamp', '<=', Timestamp.fromDate(hasta)),
+                    orderBy('timestamp', 'desc')
+                )),
+                getDocs(productsCollection)
+            ]);
 
-            const snapshot = await getDocs(q);
-            const ventas   = [];
+            // Mapa productoId → costoCompra (el costo real del producto)
+            const productCostMap = new Map();
+            prodsSnapshot.forEach(d => {
+                const data = d.data();
+                productCostMap.set(d.id, parseFloat(data.costoCompra) || 0);
+            });
 
+            const ventas = [];
             snapshot.forEach(docSnap => {
                 const venta = docSnap.data();
                 if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
@@ -8214,8 +8234,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 });
             });
 
-            // ── Agrupar por producto ──
-            const productos = agruparPorProducto(ventas);
+            // ── Agrupar por producto (con costos desde el catálogo) ──
+            const productos = agruparPorProducto(ventas, productCostMap);
 
             // ── Totales globales ──
             const utilidadTotal = productos.reduce((s, p) => s + p.utilidadTotal, 0);
@@ -8249,7 +8269,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             document.getElementById('fin2-margen').textContent     = `${margen}%`;
 
             // ── Gráfica ──
-            const { labels, data } = buildChartData(ventas, desde, hasta);
+            const { labels, data } = buildChartData(ventas, desde, hasta, productCostMap);
             renderChart(labels, data);
             const diffDays = Math.round((hasta - desde) / (1000 * 60 * 60 * 24));
             document.getElementById('fin2-chart-subtitle').textContent = diffDays <= 31 ? 'por día' : 'por mes';
