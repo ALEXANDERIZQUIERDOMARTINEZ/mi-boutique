@@ -2547,6 +2547,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             selectVariationModalInstance.show();
         }
+        window.openVariationModal = openVariationModal;
 
         const addVariationBtn = document.getElementById('add-variation-to-cart-btn');
         if (addVariationBtn) {

@@ -299,19 +299,8 @@
                             if (!scannerActive) return;
                             scannerActive = false;
 
-                            // Feedback visual
-                            if (status) {
-                                status.textContent = `Código detectado: ${decodedText}`;
-                                status.classList.remove('d-none', 'alert-danger');
-                                status.classList.add('alert', 'alert-success');
-                            }
-
                             // Detener escáner
                             try { await html5QrCode.stop(); } catch(e) {}
-
-                            // Cerrar modal
-                            const modalInstance = bootstrap.Modal.getInstance(cameraScannerModal);
-                            if (modalInstance) modalInstance.hide();
 
                             // Buscar producto - primero por código de barras estándar
                             let producto = null;
@@ -325,7 +314,20 @@
                                 producto = await buscarProductoPorCodigo(decodedText);
                             }
 
-                            if (producto) {
+                            // Cerrar modal y esperar que termine la animación antes de abrir el siguiente
+                            const modalInstance = bootstrap.Modal.getInstance(cameraScannerModal);
+                            if (modalInstance) {
+                                if (producto) {
+                                    cameraScannerModal.addEventListener('hidden.bs.modal', function onHidden() {
+                                        cameraScannerModal.removeEventListener('hidden.bs.modal', onHidden);
+                                        window.openVariationModal(producto.id);
+                                        showToast(`Producto encontrado: ${producto.nombre}`, 'success');
+                                    }, { once: true });
+                                } else {
+                                    showToast('Producto no encontrado para este código', 'warning');
+                                }
+                                modalInstance.hide();
+                            } else if (producto) {
                                 window.openVariationModal(producto.id);
                                 showToast(`Producto encontrado: ${producto.nombre}`, 'success');
                             } else {
