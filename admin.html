@@ -188,7 +188,7 @@
         </div>
     </header>
 
-    <div class="toast-container position-fixed top-0 start-0 p-3">
+    <div class="toast-container p-3">
       <div id="liveToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
             <div class="toast-body" id="toast-body"> Mensaje. </div>
@@ -734,67 +734,17 @@
                                 <span id="venta-total" class="sv-total-amount">$0</span>
                             </div>
 
-                            <!-- Métodos de pago -->
-                            <div class="sv-pay-methods">
-                                <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-efectivo" value="efectivo" checked>
-                                <label class="sv-pay-option" for="metodo-efectivo">
-                                    <i class="bi bi-cash-coin"></i>
-                                    <span>Efectivo</span>
-                                </label>
-                                <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-transferencia" value="transferencia">
-                                <label class="sv-pay-option" for="metodo-transferencia">
-                                    <i class="bi bi-bank"></i>
-                                    <span>Transferencia</span>
-                                </label>
-                                <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-mixto" value="mixto">
-                                <label class="sv-pay-option" for="metodo-mixto">
-                                    <i class="bi bi-wallet2"></i>
-                                    <span>Mixto</span>
-                                </label>
-                            </div>
+                            <!-- Radio oculto para compatibilidad JS (siempre efectivo) -->
+                            <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-efectivo" value="efectivo" checked style="display:none;">
 
-                            <!-- Efectivo -->
-                            <div id="efectivo-fields" class="payment-fields sv-pay-input">
+                            <!-- Recibe (siempre efectivo) -->
+                            <div id="efectivo-fields" class="sv-pay-input">
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text">💵 Recibe</span>
                                     <input type="text" inputmode="numeric" id="efectivo-recibido" class="form-control" placeholder="0">
                                 </div>
                                 <div id="vuelto-efectivo-info" class="sv-change-info" style="display:none;">
                                     <i class="bi bi-arrow-return-right me-1"></i>Vuelto: <strong><span id="vuelto-amount">$0</span></strong>
-                                </div>
-                            </div>
-
-                            <!-- Transferencia -->
-                            <div id="transferencia-fields" class="payment-fields sv-pay-input" style="display:none;">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">💳 Monto</span>
-                                    <input type="text" inputmode="numeric" id="transferencia-recibida" class="form-control" placeholder="0">
-                                </div>
-                                <div id="transferencia-info" class="sv-change-info sv-change-danger" style="display:none;">
-                                    ⚠️ Falta: <strong><span id="transferencia-falta">$0</span></strong>
-                                </div>
-                            </div>
-
-                            <!-- Mixto -->
-                            <div id="mixto-fields" class="payment-fields sv-pay-input" style="display:none;">
-                                <div class="sv-mixto-row">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">💵</span>
-                                        <input type="text" inputmode="numeric" id="efectivo-mixto-recibido" class="form-control" placeholder="Efectivo">
-                                    </div>
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">💳</span>
-                                        <input type="text" inputmode="numeric" id="transferencia-mixto-recibida" class="form-control" placeholder="Transferencia">
-                                    </div>
-                                </div>
-                                <div id="mixto-info" class="sv-change-info">
-                                    <div class="d-flex justify-content-between">
-                                        <span>Total recibido:</span>
-                                        <strong id="mixto-total-recibido">$0</strong>
-                                    </div>
-                                    <div id="vuelto-mixto-info" style="display:none;">
-                                        Vuelto: <strong><span id="vuelto-amount-mixto">$0</span></strong>
-                                    </div>
                                 </div>
                             </div>
 

@@ -3015,11 +3015,11 @@ document.addEventListener('DOMContentLoaded', () => {
              if (recibido > 0 && vuelto > 0) {
                  vueltoEl.textContent = formatoMoneda.format(vuelto);
                  vueltoInfo.style.display = 'block';
-                 vueltoInfo.className = 'alert alert-success py-1 px-2 mb-0 small';
+                 vueltoInfo.className = 'sv-change-info';
              } else if (recibido > 0 && vuelto < 0) {
                  vueltoEl.textContent = 'Falta ' + formatoMoneda.format(Math.abs(vuelto));
                  vueltoInfo.style.display = 'block';
-                 vueltoInfo.className = 'alert alert-danger py-1 px-2 mb-0 small';
+                 vueltoInfo.className = 'sv-change-info sv-change-danger';
              } else {
                  vueltoInfo.style.display = 'none';
              }
