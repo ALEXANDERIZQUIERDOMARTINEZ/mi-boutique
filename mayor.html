@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
+
+<title>Mishell Boutique - Mayoristas</title>
+
+<!-- Preconnect para recursos externos críticos -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://www.googletagmanager.com">
+
+<!-- CSS crítico con carga optimizada -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="style.css?v=1.8.3">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#D988B9">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mishell">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<style>
+  .wholesale-banner {
+    background: linear-gradient(135deg, #7B4FA6, #C273A2);
+    color: #fff;
+    text-align: center;
+    padding: 8px 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .wholesale-banner i {
+    margin-right: 6px;
+  }
+</style>
+</head>
+<body class="wholesale-active">
+
+<div class="wholesale-banner">
+  <i class="bi bi-shop"></i> CATÁLOGO MAYORISTAS — Solo se muestran prendas con precio al por mayor
+</div>
+
+<header class="site-header sticky-top">
+<div class="header-gradient"></div>
+<nav class="header-nav">
+    <div class="container">
+        <div class="header-layout">
+            <!-- Desktop: Nav links -->
+            <div class="header-left d-none d-lg-flex">
+                <button class="nav-link-header filter-group active" data-filter="disponible">Disponibles</button>
+                <div class="dropdown">
+                    <button class="nav-link-header filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="category-dropdown-button">
+                        Categorías <i class="bi bi-chevron-down" style="font-size: 0.65em; margin-left: 3px;"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-enhanced" id="category-dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Cargando...</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Mobile: Menu hamburguesa -->
+            <div class="header-left-mobile d-lg-none">
+                <div class="dropdown">
+                    <button class="nav-link-header filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-enhanced" id="category-dropdown-menu-mobile">
+                        <li><a class="dropdown-item" href="#">Cargando...</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Centro: Marca -->
+            <a class="header-brand" href="mayor.html">MISHELL</a>
+
+            <!-- Derecha: Buscador + Carrito -->
+            <div class="header-right d-none d-lg-flex">
+                <div class="search-box">
+                    <input type="text" class="form-control" id="search-input" placeholder="Buscar...">
+                    <i class="bi bi-search search-icon"></i>
+                </div>
+                <a href="#" class="header-icon" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+                    <i class="bi bi-bag"></i>
+                    <span class="cart-counter" id="cart-badge-desktop">0</span>
+                </a>
+            </div>
+
+            <!-- Mobile: placeholder derecho para centrar marca -->
+            <div class="d-lg-none" style="width: 40px;"></div>
+        </div>
+    </div>
+</nav>
+</header>
+
+<main class="container-fluid px-0" id="main-content">
+
+<!-- Grid de productos -->
+<div class="container-fluid px-2 px-md-4">
+    <div class="row g-2 g-md-3" id="products-container">
+        <div class="col-12 text-center py-5" id="loading-products">
+            <div class="loading-spinner"></div>
+            <p class="mt-3 text-muted">Cargando productos</p>
+        </div>
+    </div>
+</div>
+</main>
+
+<footer class="footer-minimal">
+<div class="container text-center">
+<p class="text-muted small m-0">© 2026 Mishell Boutique. Todos los derechos reservados.</p>
+<p class="text-muted small m-0 mt-1">Desarrollado por <a href="https://www.instagram.com/amei_group/" target="_blank" rel="noopener noreferrer" style="color: #D988B9; text-decoration: none;">amei_group</a></p>
+</div>
+</footer>
+
+<div class="nav-search-suggestions d-lg-none" id="nav-search-suggestions"></div>
+
+<nav class="mobile-bottom-nav d-lg-none">
+<button class="nav-item active" id="mobile-home-btn">
+<i class="bi bi-house"></i>
+</button>
+<button class="nav-item" id="mobile-search-btn">
+<i class="bi bi-search"></i>
+</button>
+<button class="nav-item" id="mobile-cart-btn" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
+<i class="bi bi-bag"></i>
+<span class="cart-badge" id="cart-badge-mobile" style="display: none;">0</span>
+</button>
+<!-- Búsqueda inline (oculta por defecto) -->
+<div class="nav-inline-search" id="nav-inline-search">
+  <button class="nis-back" id="nis-back" aria-label="Cerrar búsqueda">
+    <i class="bi bi-arrow-left"></i>
+  </button>
+  <input type="text"
+         class="nis-input"
+         id="nav-search-input"
+         placeholder="Productos o categorías..."
+         autocomplete="off"
+         autocorrect="off"
+         spellcheck="false">
+  <button class="nis-clear" id="nis-clear" aria-label="Limpiar" style="display:none">
+    <i class="bi bi-x"></i>
+  </button>
+</div>
+</nav>
+
+<div class="toast-container">
+  <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-inner">
+      <span class="toast-icon" id="toast-icon"></span>
+      <span class="toast-msg" id="toast-body">Mensaje</span>
+      <button type="button" class="toast-close" data-bs-dismiss="toast" aria-label="Cerrar">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="productModal" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered mpd">
+<div class="modal-content mpc">
+
+  <!-- Cerrar (flotante) -->
+  <button type="button" class="mp-close" data-bs-dismiss="modal" aria-label="Cerrar">
+    <i class="bi bi-x-lg"></i>
+  </button>
+
+  <div class="mp-grid">
+
+    <!-- Imagen + Galería -->
+    <div class="mp-img-col">
+      <div class="mp-gallery-wrapper">
+        <!-- Thumbnails verticales (izquierda) -->
+        <div class="mp-thumbs" id="modal-gallery-thumbs"></div>
+        <!-- Imagen principal -->
+        <div class="mp-main-img-wrapper">
+          <img src="" id="modal-product-image" class="modal-product-image" alt="Producto" loading="lazy">
+          <button class="mp-zoom-btn" id="modal-zoom-btn" aria-label="Ver foto completa">
+            <i class="bi bi-arrows-fullscreen"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="mp-info-col">
+
+      <h2 class="mp-name" id="modal-product-name">Producto</h2>
+      <p id="modal-product-desc" class="mp-desc"></p>
+
+      <!-- Precio -->
+      <div class="mp-price-block">
+        <div class="price-detal-modal">
+          <span class="price-detal-old" id="modal-price-old" style="display:none;"></span>
+          <span class="price-detal" id="modal-price-detal">$0</span>
+        </div>
+      </div>
+
+      <div class="mp-divider"></div>
+
+      <input type="hidden" id="modal-product-id">
+      <input type="hidden" id="selected-talla">
+      <input type="hidden" id="selected-color">
+
+      <!-- Talla -->
+      <div class="mp-group" id="tallas-container">
+        <span class="mp-label">Talla</span>
+        <div id="tallas-buttons" class="size-color-buttons"></div>
+      </div>
+
+      <!-- Color -->
+      <div class="mp-group" id="colores-container">
+        <span class="mp-label">Color</span>
+        <div id="color-help-message" class="mp-color-help" style="display:none;">
+          Selecciona una talla primero
+        </div>
+        <div id="color-select-hint" class="color-select-hint">Selecciona un color para continuar</div>
+        <div id="colores-buttons" class="size-color-buttons"></div>
+      </div>
+
+      <!-- Cantidad + Stock inline -->
+      <div class="mp-qty-row">
+        <div class="mp-group mp-group--qty">
+          <span class="mp-label">Cantidad</span>
+          <div class="mp-qty">
+            <button class="mp-qty-btn" id="quantity-minus" type="button">−</button>
+            <input type="number" id="select-cantidad" value="1" min="1" readonly>
+            <button class="mp-qty-btn" id="quantity-plus" type="button">+</button>
+          </div>
+        </div>
+        <div class="mp-stock" id="stock-display">
+          <span id="stock-text">Selecciona talla y color</span>
+        </div>
+      </div>
+
+      <!-- Agregar al carrito -->
+      <button class="mp-btn-add" id="btn-add-cart" disabled>
+        Agregar al carrito
+      </button>
+
+      <!-- Observación -->
+      <div class="mp-group mp-group--obs">
+        <span class="mp-label">Observación <span class="mp-optional">(opcional)</span></span>
+        <textarea class="mp-obs" id="product-observation" rows="2" placeholder="Ej: Sin etiqueta, empaque especial..."></textarea>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas" style="width: 420px;">
+<div class="offcanvas-header">
+<h5 class="offcanvas-title">Tu Carrito</h5>
+<button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+</div>
+<div class="offcanvas-body p-0">
+<div id="cart-items-container">
+<div class="text-center py-5" id="cart-empty">
+<i class="bi bi-cart-x" style="font-size: 3rem; opacity: 0.3;"></i>
+<p class="mt-3 text-muted">Tu carrito está vacío</p>
+</div>
+</div>
+</div>
+<div class="cart-total" id="cart-footer" style="display: none;">
+<div class="d-flex justify-content-between align-items-center mb-3">
+<span class="total-label">Total</span>
+<span class="total-amount" id="cart-total">$0</span>
+</div>
+<button class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#checkoutModal">
+Finalizar Pedido
+</button>
+</div>
+</div>
+
+<div class="modal fade" id="checkoutModal" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+<div class="modal-content checkout-premium">
+<div class="modal-header checkout-header">
+<div class="header-content">
+<div class="pulse-dot"></div>
+<h5 class="modal-title">Finalizar Pedido</h5>
+<p class="header-subtitle">Completa tus datos para confirmar la compra</p>
+</div>
+<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+<form id="checkout-form">
+
+<div class="form-card" data-card="1">
+<div class="card-header-mini">
+<span class="card-icon"><i class="bi bi-person"></i></span>
+<span class="card-title">Datos personales</span>
+</div>
+<div class="form-group-modern">
+<label class="selector-label">Cedula</label>
+<input type="text" class="form-control form-control-modern" id="checkout-cedula" placeholder="1234567890" required>
+<small class="text-muted">Si ya compraste antes, tus datos se cargan al ingresar la cedula</small>
+</div>
+<div class="delivery-info" id="delivery-info" style="display: none;">
+<div class="info-title">Informacion de envio</div>
+<div class="info-content">Pedido fuera de Monteria</div>
+<div class="cedula-display">Cedula: <span id="cedula-display">-</span></div>
+</div>
+<div class="form-group-modern">
+<label class="selector-label">Nombre completo</label>
+<input type="text" class="form-control form-control-modern" id="checkout-name" placeholder="Maria Garcia" required>
+</div>
+<div class="form-group-modern">
+<label class="selector-label">WhatsApp</label>
+<input type="tel" class="form-control form-control-modern" id="checkout-phone" placeholder="300 123 4567" required>
+</div>
+</div>
+
+<div class="form-card" data-card="2">
+<div class="card-header-mini">
+<span class="card-icon"><i class="bi bi-geo-alt"></i></span>
+<span class="card-title">Direccion de envio</span>
+</div>
+<div class="form-group-modern">
+<label class="selector-label">Ciudad</label>
+<select class="form-select form-control-modern" id="checkout-city" required>
+<option value="">Selecciona tu ciudad</option>
+<option value="Montería">Montería</option>
+<option value="Cereté">Cereté</option>
+<option value="Lorica">Lorica</option>
+<option value="Sahagún">Sahagún</option>
+<option value="Planeta Rica">Planeta Rica</option>
+<option value="Montelíbano">Montelíbano</option>
+<option value="Tierralta">Tierralta</option>
+<option value="Ayapel">Ayapel</option>
+<option value="Otra">Otra ciudad</option>
+</select>
+</div>
+<div class="form-group-modern" id="neighborhood-section" style="display: none;">
+<label class="selector-label">Barrio</label>
+<input type="text" class="form-control form-control-modern" id="checkout-neighborhood" list="neighborhood-list" placeholder="Escribe o selecciona">
+<datalist id="neighborhood-list"></datalist>
+</div>
+<div class="form-group-modern">
+<label class="selector-label">Direccion completa</label>
+<input type="text" class="form-control form-control-modern" id="checkout-address" placeholder="Calle 123 #45-67" required>
+</div>
+<div class="form-group-modern">
+<label class="selector-label">Observaciones</label>
+<textarea class="form-control form-control-modern" id="checkout-notes" rows="2" placeholder="Instrucciones especiales, referencias..."></textarea>
+</div>
+</div>
+
+<div class="form-card" data-card="3">
+<div class="card-header-mini">
+<span class="card-icon"><i class="bi bi-credit-card"></i></span>
+<span class="card-title">Metodo de pago</span>
+</div>
+<div class="form-group-modern">
+<label class="selector-label">Forma de pago</label>
+<select class="form-select form-control-modern" id="checkout-payment" required>
+<option value="">Selecciona una opcion</option>
+<option value="Efectivo" id="payment-efectivo">Efectivo (Pago contra entrega)</option>
+<option value="Transferencia">Transferencia Bancaria</option>
+</select>
+<small class="text-muted" id="payment-info"></small>
+</div>
+<div class="form-group-modern" id="cash-payment-section" style="display: none;">
+<label class="selector-label">Monto con el que pagas</label>
+<input type="number" class="form-control form-control-modern" id="checkout-cash-amount" placeholder="50000" min="0">
+<div class="mt-2" id="change-display" style="display: none;">
+<div class="change-card">
+<div class="change-item">
+<span class="change-label">Total del pedido:</span>
+<span class="change-value" id="change-total">$0</span>
+</div>
+<div class="change-item highlight">
+<span class="change-label">Vuelto a entregar:</span>
+<span class="change-value" id="change-amount">$0</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="form-card" data-card="4">
+<div class="card-header-mini">
+<span class="card-icon"><i class="bi bi-receipt"></i></span>
+<span class="card-title">Resumen</span>
+</div>
+<div class="order-summary">
+<div class="summary-row total-row">
+<span class="summary-label-total">Total</span>
+<span class="summary-value-total" id="order-total">$0</span>
+</div>
+</div>
+</div>
+
+<button type="submit" class="btn-submit-premium">
+<span class="btn-text">Confirmar Pedido</span>
+<span class="btn-icon"><i class="bi bi-arrow-right"></i></span>
+</button>
+
+</form>
+</div>
+</div>
+</div>
+</div>
+
+<div class="modal fade" id="deleteCartModal" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered dcm-dialog">
+<div class="modal-content dcm-content">
+  <button type="button" class="mp-close" data-bs-dismiss="modal" aria-label="Cerrar">
+    <i class="bi bi-x-lg"></i>
+  </button>
+  <div class="dcm-body">
+    <p class="dcm-title">¿Eliminar producto?</p>
+    <p class="dcm-text">El producto se quitará del carrito.</p>
+    <div class="dcm-actions">
+      <button type="button" class="dcm-btn-cancel" data-bs-dismiss="modal">Cancelar</button>
+      <button type="button" class="dcm-btn-delete" id="confirm-delete-cart-item">Eliminar</button>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<div id="imageZoomOverlay" class="image-zoom-overlay">
+<button class="zoom-close-btn" id="closeZoomBtn"><i class="bi bi-x-lg"></i></button>
+<img src="" id="zoomedImage" class="zoomed-image" alt="Producto ampliado" loading="lazy">
+</div>
+
+<!-- Scripts optimizados con carga diferida -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+
+<!-- Scripts de la aplicación -->
+<script type="module" src="analytics.js?v=1.0.0"></script>
+<script type="module" src="app.js?v=1.9.2"></script>
+
+</body>
+</html>
