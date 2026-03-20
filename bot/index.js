@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, getDocs, addDoc, query, where, serverTimestamp } = require('firebase/firestore');
+const { getFirestore, collection, getDocs, addDoc, query, where, serverTimestamp, onSnapshot, updateDoc, doc } = require('firebase/firestore');
 
 // ─── Firebase ────────────────────────────────────────────────────────────────
 const firebaseApp = initializeApp({
@@ -67,9 +67,6 @@ client.on('qr', qr => {
     qrcode.generate(qr, { small: true });
 });
 
-client.on('ready', () => {
-    console.log('✅ Bot de Mishell Boutique conectado y listo!');
-});
 
 client.on('auth_failure', msg => {
     console.error('❌ Error de autenticación:', msg);
@@ -279,6 +276,62 @@ client.on('message', async msg => {
         console.error('Error procesando mensaje:', error);
         await msg.reply('😔 Ocurrió un error. Por favor escribe *0* para reiniciar.');
     }
+});
+
+// ─── Notificaciones de pedidos web ───────────────────────────────────────────
+const OWNER_PHONE = process.env.OWNER_PHONE || '573017850041'; // número del dueño
+
+function formatPrecioBot(n) {
+    return `$${Number(n).toLocaleString('es-CO')}`;
+}
+
+client.on('ready', async () => {
+    console.log('✅ Bot de Mishell Boutique conectado y listo!');
+
+    // Escuchar pedidos nuevos sin notificar (notificadoBot != true)
+    const pedidosQuery = query(
+        collection(db, 'pedidosWeb'),
+        where('notificadoBot', '==', false)
+    );
+
+    onSnapshot(pedidosQuery, async (snapshot) => {
+        for (const change of snapshot.docChanges()) {
+            if (change.type !== 'added') continue;
+
+            const pedido = change.doc.data();
+            const pedidoId = change.doc.id;
+
+            try {
+                // Marcar primero para evitar doble envío
+                await updateDoc(doc(db, 'pedidosWeb', pedidoId), { notificadoBot: true });
+
+                const items = (pedido.items || [])
+                    .map(i => `  • ${i.nombre}${i.talla ? ' T:' + i.talla : ''}${i.color ? ' C:' + i.color : ''} x${i.cantidad} — ${formatPrecioBot(i.total || i.precio * i.cantidad)}`)
+                    .join('\n');
+
+                const tipo = pedido.tipoVenta === 'Mayorista' ? '🏪 *MAYORISTA*' : '🛍️ *DETAL*';
+                const msg =
+                    `🔔 *NUEVO PEDIDO WEB* #${pedidoId.slice(-6).toUpperCase()}\n` +
+                    `${tipo}\n\n` +
+                    `👤 ${pedido.clienteNombre}\n` +
+                    `📞 ${pedido.clienteCelular}\n` +
+                    `🪪 CC: ${pedido.clienteCedula}\n` +
+                    `📍 ${pedido.clienteCiudad}${pedido.clienteBarrio ? ', ' + pedido.clienteBarrio : ''}\n` +
+                    `   ${pedido.clienteDireccion}\n` +
+                    (pedido.observaciones ? `📝 ${pedido.observaciones}\n` : '') +
+                    `\n*Productos:*\n${items}\n\n` +
+                    `💳 Pago: ${pedido.metodoPagoSolicitado}\n` +
+                    `📦 Envío: ${formatPrecioBot(pedido.costoEnvio || 0)}\n` +
+                    `💰 *Total: ${formatPrecioBot(pedido.totalPedido)}*`;
+
+                await client.sendMessage(`${OWNER_PHONE}@c.us`, msg);
+                console.log(`✅ Notificación enviada al dueño — Pedido #${pedidoId.slice(-6).toUpperCase()}`);
+
+            } catch (err) {
+                console.error(`❌ Error notificando pedido ${pedidoId}:`, err.message);
+            }
+        }
+    });
 });
 
 client.initialize();

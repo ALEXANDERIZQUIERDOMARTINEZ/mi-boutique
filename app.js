@@ -2152,6 +2152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 costoEnvio: costoEnvio,
                 totalPedido: total,
                 estado: "pendiente",
+                notificadoBot: false,
                 timestamp: serverTimestamp(),
                 origen: "web",
                 tipoVenta: isWholesaleActive ? "Mayorista" : "Detal"
