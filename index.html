@@ -396,14 +396,33 @@ Finalizar Pedido
 </form>
 
 <!-- Pantalla de éxito (oculta hasta confirmar pedido) -->
-<div id="checkout-success" style="display:none; text-align:center; padding: 2.5rem 1rem;">
-  <div style="font-size:4rem; margin-bottom:1rem;">✅</div>
-  <h4 style="font-weight:700; margin-bottom:0.75rem;">¡Pedido finalizado!</h4>
-  <p style="color:#444; font-size:1.05rem; margin-bottom:0.5rem; font-weight:500;">En segundos un asesor se comunicará contigo.</p>
-  <p style="color:#6c757d; font-size:0.9rem; margin-bottom:2rem;">Revisa tu WhatsApp, te contactaremos para confirmar los detalles de tu pedido.</p>
-  <button type="button" class="btn btn-dark w-100" id="checkout-continue-btn" style="border-radius:12px; padding:0.85rem; font-weight:600;">
-    Listo
-  </button>
+<div id="checkout-success" style="display:none;">
+  <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:55vh; padding:2rem 1.5rem; text-align:center;">
+
+    <!-- Ícono animado -->
+    <div style="width:80px; height:80px; border-radius:50%; background:var(--color-primario-claro); display:flex; align-items:center; justify-content:center; margin-bottom:1.5rem;">
+      <div style="width:56px; height:56px; border-radius:50%; background:var(--color-primario); display:flex; align-items:center; justify-content:center;">
+        <i class="bi bi-check-lg" style="font-size:1.75rem; color:#fff; font-weight:900;"></i>
+      </div>
+    </div>
+
+    <!-- Textos -->
+    <h4 style="font-weight:700; color:var(--color-texto); font-size:1.3rem; margin-bottom:0.5rem; letter-spacing:-0.3px;">¡Pedido finalizado!</h4>
+    <p style="font-weight:600; color:var(--color-texto); font-size:1rem; margin-bottom:0.4rem;">En segundos un asesor se comunicará contigo.</p>
+    <p style="color:var(--color-texto-claro); font-size:0.85rem; margin-bottom:2.5rem; line-height:1.5;">Revisa tu WhatsApp — te contactaremos<br>para confirmar los detalles de tu pedido.</p>
+
+    <!-- Botón -->
+    <button type="button" id="checkout-continue-btn"
+      style="width:100%; padding:0.9rem; border:none; border-radius:12px;
+             background:var(--color-primario); color:#fff; font-size:1rem;
+             font-weight:700; letter-spacing:0.3px; cursor:pointer;
+             box-shadow:0 4px 16px rgba(217,136,185,0.35); transition:background 0.2s;"
+      onmouseover="this.style.background='var(--color-primario-oscuro)'"
+      onmouseout="this.style.background='var(--color-primario)'">
+      Listo
+    </button>
+
+  </div>
 </div>
 
 </div>

@@ -23,13 +23,6 @@ const webOrdersCollection = collection(db, 'pedidosWeb');
 const promocionesCollection = collection(db, 'promociones');
 const promocionesGlobalesCollection = collection(db, 'promocionesGlobales');
 
-// --- CONFIGURACIÓN NOTIFICACIONES WHATSAPP (CallMeBot) ---
-// Para activar: sigue las instrucciones en README o pregúntale al administrador
-// 1. Guarda el contacto +34 644 59 79 50 en WhatsApp como "CallMeBot"
-// 2. Envíale el mensaje: I allow callmebot to send me messages
-// 3. Recibirás tu API key por WhatsApp — ponla aquí abajo
-const WHATSAPP_NOTIF_PHONE  = '573017850041'; // Tu número (código país + número)
-const WHATSAPP_NOTIF_APIKEY = '';             // ← Pega aquí tu API key de CallMeBot
 const categoriesCollection = collection(db, 'categorias');
 const clientsCollection = collection(db, 'clientes');
 const chatConversationsCollection = collection(db, 'chatConversations');
@@ -48,22 +41,6 @@ function openWhatsApp(url) {
     document.body.removeChild(a);
 }
 
-// --- Envío automático de notificación al dueño de la tienda (CallMeBot) ---
-async function sendNotificacionPedido(mensaje) {
-    if (!WHATSAPP_NOTIF_APIKEY) {
-        // API key no configurada: abrir WhatsApp manualmente como respaldo
-        return false;
-    }
-    try {
-        const url = `https://api.callmebot.com/whatsapp.php?phone=${WHATSAPP_NOTIF_PHONE}&text=${encodeURIComponent(mensaje)}&apikey=${WHATSAPP_NOTIF_APIKEY}`;
-        // no-cors: no necesitamos leer la respuesta, solo disparar el envío
-        await fetch(url, { mode: 'no-cors' });
-        return true;
-    } catch (err) {
-        console.error('Error enviando notificación WhatsApp:', err);
-        return false;
-    }
-}
 
 let bsToast = null;
 let cart = [];
@@ -2179,40 +2156,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 items: pedidoData.items
             });
 
-            // Crear mensaje LIMPIO para WhatsApp (sin emojis)
-            let mensajeWhatsApp = `NUEVO PEDIDO WEB #${docRef.id.substring(0, 6).toUpperCase()}\n\n`;
-            if (isWholesaleActive) {
-                mensajeWhatsApp += "TIPO: MAYORISTA\n\n";
-            }
-            mensajeWhatsApp += `Cliente: ${nombre}\n`;
-            mensajeWhatsApp += `Cedula: ${cedula}\n`;
-            mensajeWhatsApp += `WhatsApp: ${whatsapp}\n`;
-            mensajeWhatsApp += `Ciudad: ${ciudad}\n`;
-            if (barrio) mensajeWhatsApp += `Barrio: ${barrio}\n`;
-            mensajeWhatsApp += `Direccion: ${direccion}\n`;
-            if(observaciones) mensajeWhatsApp += `Observaciones: ${observaciones}\n`;
-            mensajeWhatsApp += `\nPago: ${pago}\n`;
-
-            // Si es pago en efectivo, agregar monto y vuelto
-            if (pago === 'Efectivo') {
-                const cashAmount = parseFloat(document.getElementById('checkout-cash-amount').value) || 0;
-                if (cashAmount > 0) {
-                    const change = cashAmount - total;
-                    mensajeWhatsApp += `Paga con: ${formatoMoneda.format(cashAmount)}\n`;
-                    mensajeWhatsApp += `Vuelto: ${formatoMoneda.format(change)}\n`;
-                }
-            }
-
-            mensajeWhatsApp += "\nPRODUCTOS:\n\n";
-            cart.forEach((item, i) => {
-                mensajeWhatsApp += `${i + 1}. ${item.nombre}\n`;
-                mensajeWhatsApp += `   Talla: ${item.talla} | Color: ${item.color}\n`;
-                mensajeWhatsApp += `   ${item.cantidad} unid. x ${formatoMoneda.format(item.precio)}\n`;
-                mensajeWhatsApp += `   Subtotal: ${formatoMoneda.format(item.total)}\n\n`;
-            });
-
-            mensajeWhatsApp += `\nTOTAL: ${formatoMoneda.format(total)}`;
-
             // Mostrar pantalla de éxito ANTES de cerrar — el cliente la ve de inmediato
             const checkoutForm = document.getElementById('checkout-form');
             const checkoutSuccess = document.getElementById('checkout-success');
@@ -2231,9 +2174,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCart();
             saveCart();
             document.getElementById('checkout-form').reset();
-
-            // Enviar notificación al dueño en segundo plano (el bot de Firestore también lo hace)
-            sendNotificacionPedido(mensajeWhatsApp).catch(() => {});
 
             // Al presionar "Listo" cerrar el modal y restaurar el formulario
             const checkoutModalEl = document.getElementById('checkoutModal');
