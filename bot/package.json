@@ -1,0 +1,16 @@
+{
+  "name": "mishell-whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Bot de WhatsApp para Mishell Boutique",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "whatsapp-web.js": "^1.26.0",
+    "qrcode-terminal": "^0.12.0",
+    "firebase": "^10.12.0",
+    "dotenv": "^16.4.5"
+  }
+}
