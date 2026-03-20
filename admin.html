@@ -284,6 +284,32 @@
                     </button>
                 </div>
 
+                <!-- FINANCIEROS (resumen rápido) -->
+                <div class="db-fin-row">
+                    <div class="db-fin-item" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
+                        <div class="db-fin-icon" style="background:#EFF6FF;color:#2563EB;">
+                            <i class="bi bi-box-seam-fill"></i>
+                        </div>
+                        <div class="db-fin-body">
+                            <span class="db-fin-label">Inversión en inventario</span>
+                            <span class="db-fin-val" id="db-inversion-inventario">$0</span>
+                            <span class="db-fin-sub" id="db-inventario-unidades">0 unidades</span>
+                        </div>
+                        <i class="bi bi-chevron-right db-fin-chevron"></i>
+                    </div>
+                    <div class="db-fin-item" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
+                        <div class="db-fin-icon" style="background:#F0FDF4;color:#16A34A;">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                        <div class="db-fin-body">
+                            <span class="db-fin-label">Utilidad potencial (detal)</span>
+                            <span class="db-fin-val" id="db-utilidad-potencial">$0</span>
+                            <span class="db-fin-sub" id="db-margen-utilidad">0% de margen</span>
+                        </div>
+                        <i class="bi bi-chevron-right db-fin-chevron"></i>
+                    </div>
+                </div>
+
                 <div class="db2-sep"></div>
 
                 <!-- TABLAS MÓVIL-FIRST: TENDENCIA + TOP PRODUCTOS -->
@@ -314,60 +340,6 @@
                             </div>
                             <div id="db-top-table" style="max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
                                 <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="db2-sep"></div>
-
-                <!-- FINANCIEROS -->
-                <div class="row g-3">
-                    <div class="col-6 col-md">
-                        <div class="db2-fin-card" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
-                            <div class="db2-fin-val" id="db-inversion-inventario">$0</div>
-                            <div class="db2-met-name">Inversión en inventario</div>
-                            <div class="db2-met-sub" id="db-inventario-unidades">0 unidades</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md">
-                        <div class="db2-fin-card" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
-                            <div class="db2-fin-val" id="db-utilidad-potencial">$0</div>
-                            <div class="db2-met-name">Utilidad potencial (detal)</div>
-                            <div class="db2-met-sub" id="db-margen-utilidad">0% de margen</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="db2-sep"></div>
-
-                <!-- GRÁFICAS DETALLADAS AL FONDO -->
-                <div class="row g-3">
-                    <div class="col-lg-8">
-                        <div class="db-chart-card">
-                            <div class="db-chart-header">
-                                <span class="db-chart-title">Tendencia de ventas</span>
-                                <div class="db-period-tabs">
-                                    <input type="radio" class="btn-check" name="chart-period" id="chart-7days" autocomplete="off" checked>
-                                    <label class="db-period-tab" for="chart-7days">7 días</label>
-                                    <input type="radio" class="btn-check" name="chart-period" id="chart-30days" autocomplete="off">
-                                    <label class="db-period-tab" for="chart-30days">30 días</label>
-                                    <input type="radio" class="btn-check" name="chart-period" id="chart-6months" autocomplete="off">
-                                    <label class="db-period-tab" for="chart-6months">6 meses</label>
-                                </div>
-                            </div>
-                            <div class="db-chart-body">
-                                <canvas id="ventasChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="db-chart-card">
-                            <div class="db-chart-header">
-                                <span class="db-chart-title">Top 15 productos</span>
-                            </div>
-                            <div class="db-chart-body" style="max-height: 420px; overflow-y: auto;">
-                                <canvas id="topProductosChart"></canvas>
                             </div>
                         </div>
                     </div>

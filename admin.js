@@ -7672,17 +7672,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // EVENT LISTENERS
     // ================================================================
 
-    // Cambiar período del gráfico de ventas
-    const periodoBtns = document.querySelectorAll('input[name="chart-period"]');
-    periodoBtns.forEach(btn => {
-        btn.addEventListener('change', (e) => {
-            const dias = e.target.id === 'chart-7days' ? 7 :
-                        e.target.id === 'chart-30days' ? 30 :
-                        180; // 6 meses
-            crearGraficoVentas(dias);
-        });
-    });
-
     // Cambiar período de la tabla móvil de tendencia
     const mtPeriodoBtns = document.querySelectorAll('input[name="mt-period"]');
     mtPeriodoBtns.forEach(btn => {
@@ -7697,8 +7686,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ================================================================
     // INICIALIZAR
     // ================================================================
-    crearGraficoVentas(7);
-    crearGraficoTopProductos();
+
     crearTablaTendenciaMobile(7);
     crearTablaTopProductosMobile();
     actualizarTablaStockCritico();

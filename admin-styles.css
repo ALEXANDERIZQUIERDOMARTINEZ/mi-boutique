@@ -3876,6 +3876,103 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
 /* El botón de cámara usa la clase .sv-btn-camera definida en style.css */
 
 /* ─────────────────────────────────────────────────────────────────────────
+   TARJETAS FINANCIERAS — diseño móvil-first
+   ───────────────────────────────────────────────────────────────────────── */
+.db-fin-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.875rem;
+}
+
+@media (max-width: 479.98px) {
+  .db-fin-row { grid-template-columns: 1fr; }
+}
+
+.db-fin-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: box-shadow var(--duration-base) var(--ease-out),
+              transform var(--duration-base) var(--ease-out);
+  position: relative;
+  overflow: hidden;
+}
+.db-fin-item::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--grad-brand);
+  opacity: 0.5;
+}
+.db-fin-item:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.db-fin-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.db-fin-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.db-fin-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.db-fin-val {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.8px;
+  line-height: 1.2;
+}
+
+.db-fin-sub {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.db-fin-chevron {
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+body.dark-mode .db-fin-item {
+  background: var(--surface-raised);
+  border-color: var(--border-subtle);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    TABLAS MÓVIL-FIRST DEL DASHBOARD
    ───────────────────────────────────────────────────────────────────────── */
 
