@@ -78,6 +78,8 @@ client.on('auth_failure', msg => {
 // ─── Lógica principal ─────────────────────────────────────────────────────────
 client.on('message', async msg => {
     if (msg.isGroupMsg) return;
+    if (msg.isStatus) return;
+    if (msg.from === 'status@broadcast') return;
     const chatId = msg.from;
     const texto  = msg.body.trim().toLowerCase();
     const sesion = getSesion(chatId);
