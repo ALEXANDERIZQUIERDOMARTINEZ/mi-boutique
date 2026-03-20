@@ -2485,6 +2485,7 @@ textarea.form-control-modern {
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        padding-top: env(safe-area-inset-top, 0px);
     }
 
     /* Grid en columna única: imagen fija, info ocupa el resto */
@@ -2620,10 +2621,10 @@ textarea.form-control-modern {
         font-size: 0.72rem;
     }
 
-    /* Botón cerrar con glass effect */
+    /* Botón cerrar con glass effect — por encima del notch/Dynamic Island */
     .mp-close {
-        top: 10px;
-        right: 10px;
+        top: calc(env(safe-area-inset-top, 0px) + 12px);
+        right: calc(env(safe-area-inset-right, 0px) + 12px);
         background: rgba(255,255,255,0.9);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
