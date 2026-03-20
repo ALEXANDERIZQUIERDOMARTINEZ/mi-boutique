@@ -63,8 +63,8 @@ let allProducts = [];
 let activePromotions = new Map();
 let globalPromotion = null; // Promoción global activa (ej: Black Friday)
 let itemToDelete = null;
-let isWholesaleActive = false;
-const WHOLESALE_CODE = "MISHELLMAYOR"; 
+let isWholesaleActive = window.location.pathname.includes('mayor');
+const WHOLESALE_CODE = "MISHELLMAYOR";
 
 let categoriesMap = new Map();
 
@@ -440,6 +440,11 @@ function applyFiltersAndRender() {
 
     let filtered = allProducts;
 
+    // En modo mayorista, excluir productos sin precio al por mayor
+    if (isWholesaleActive) {
+        filtered = filtered.filter(p => parseFloat(p.precioMayor) > 0);
+    }
+
     // 1. Filtrar por Categoría (filtros principales del header)
     if (activeFilter === 'disponible') {
         // Solo productos con stock > 0
@@ -613,6 +618,7 @@ function renderProducts(products) {
         const stockTotal = (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
         const isAgotado = stockTotal <= 0;
         const { precioFinal, tienePromo, precioOriginal } = calculatePromotionPrice(product);
+        const precioMostrado = isWholesaleActive ? (parseFloat(product.precioMayor) || 0) : precioFinal;
 
         // Colores y tallas CON STOCK (disponibles para comprar)
         const variacionesConStock = (product.variaciones || []).filter(v => parseInt(v.stock, 10) > 0);
@@ -682,7 +688,7 @@ function renderProducts(products) {
                     <div class="card-bottom">
                         <div class="price-detal-card">
                             ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
-                            ${formatoMoneda.format(precioFinal)}
+                            ${formatoMoneda.format(precioMostrado)}
                         </div>
                         ${!isAgotado ? '<button class="btn-add-card" type="button">Agregar</button>' : ''}
                     </div>
@@ -1146,7 +1152,8 @@ function openProductModal(productId) {
     } else {
         document.getElementById('modal-price-old').style.display = 'none';
     }
-    document.getElementById('modal-price-detal').textContent = formatoMoneda.format(precioFinal);
+    const precioModalMostrado = isWholesaleActive ? precioMayorNum : precioFinal;
+    document.getElementById('modal-price-detal').textContent = formatoMoneda.format(precioModalMostrado);
 
     // --- Precio al por mayor en el modal (deshabilitado) ---
     // Dejamos este bloque comentado para conservar la referencia,
