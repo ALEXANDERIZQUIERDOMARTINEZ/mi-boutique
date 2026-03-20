@@ -277,19 +277,34 @@
                     scannerActive = true;
 
                     await html5QrCode.start(
-                        { facingMode: 'environment' },
                         {
-                            fps: 15,
+                            facingMode: 'environment',
+                            advanced: [{ zoom: 1.5 }]
+                        },
+                        {
+                            fps: 25,
                             qrbox: function(viewfinderWidth, viewfinderHeight) {
-                                const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.75;
-                                return { width: size, height: Math.round(size * 0.5) };
+                                // Caja ancha y baja — ideal para códigos de barras lineales
+                                return {
+                                    width: Math.round(viewfinderWidth * 0.9),
+                                    height: Math.round(viewfinderHeight * 0.3)
+                                };
                             },
+                            aspectRatio: 1.7,
                             formatsToSupport: [
                                 Html5QrcodeSupportedFormats.EAN_13,
                                 Html5QrcodeSupportedFormats.EAN_8,
                                 Html5QrcodeSupportedFormats.UPC_A,
                                 Html5QrcodeSupportedFormats.CODE_128,
-                            ]
+                            ],
+                            experimentalFeatures: {
+                                useBarCodeDetectorIfSupported: true
+                            },
+                            videoConstraints: {
+                                facingMode: 'environment',
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 }
+                            }
                         },
                         async (decodedText) => {
                             if (!scannerActive) return;
