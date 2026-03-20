@@ -154,6 +154,7 @@ h1, h2, h3, h4, h5, h6 {
     -webkit-transform: translateZ(0);
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
+    padding-top: env(safe-area-inset-top);
 }
 
 .header-gradient {
