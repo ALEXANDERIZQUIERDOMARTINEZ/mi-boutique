@@ -2547,6 +2547,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             selectVariationModalInstance.show();
         }
+        // Exponer globalmente para barcode-system.js
         window.openVariationModal = openVariationModal;
 
         const addVariationBtn = document.getElementById('add-variation-to-cart-btn');

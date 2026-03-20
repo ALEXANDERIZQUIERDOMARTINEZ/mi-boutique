@@ -3975,3 +3975,168 @@ textarea.form-control-modern {
         border-bottom: 1px solid #e9ecef;
     }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   SECCIÓN PRODUCTOS — FILTROS MEJORADOS
+   ════════════════════════════════════════════════════════════════ */
+
+.inv-filters-block {
+    background: #fff;
+    border: 1px solid #f0e6f6;
+    border-left: 3px solid var(--brand-400, #f472b6);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 6px rgba(217,136,185,0.07);
+}
+
+.inv-filters-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+@media (min-width: 640px) {
+    .inv-filters-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (min-width: 960px) {
+    .inv-filters-grid {
+        grid-template-columns: 2fr 1fr 1fr auto;
+        align-items: center;
+    }
+}
+
+/* Campo de búsqueda */
+.inv-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.inv-search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--brand-500, #D988B9);
+    font-size: 0.9rem;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.inv-search-input {
+    width: 100%;
+    padding: 9px 12px 9px 36px;
+    border: 1.5px solid #e8d5f0;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    background: #fdf9fe;
+    color: #2d1f3d;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.inv-search-input::placeholder { color: #b59ec8; }
+
+.inv-search-input:focus {
+    border-color: var(--brand-400, #f472b6);
+    box-shadow: 0 0 0 3px rgba(244,114,182,0.12);
+    background: #fff;
+}
+
+/* Selects de filtro */
+.inv-select {
+    padding: 9px 12px;
+    border: 1.5px solid #e8d5f0;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    background: #fdf9fe;
+    color: #2d1f3d;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23D988B9' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+}
+
+.inv-select:focus {
+    border-color: var(--brand-400, #f472b6);
+    box-shadow: 0 0 0 3px rgba(244,114,182,0.12);
+    background-color: #fff;
+}
+
+/* Fila con toggle y botón limpiar */
+.inv-filters-row2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.inv-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.83rem;
+    font-weight: 500;
+    color: #5a3e6b;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.inv-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 14px;
+    border: 1.5px solid #e8d5f0;
+    border-radius: 10px;
+    background: #fdf9fe;
+    color: #9b7db5;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.inv-clear-btn:hover {
+    background: #fce7f3;
+    border-color: var(--brand-400, #f472b6);
+    color: var(--brand-600, #c026d3);
+}
+
+/* Mejora header de la tabla de inventario */
+.tbl-wrap {
+    border: 1px solid #f0e6f6 !important;
+}
+
+.tbl-head {
+    background: linear-gradient(90deg, #fdf2f8 0%, #fdf9fe 100%) !important;
+    border-bottom: 1px solid #f0e6f6 !important;
+}
+
+.tbl-title {
+    background: linear-gradient(90deg, var(--brand-600, #c026d3), var(--brand-400, #f472b6));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800 !important;
+}
+
+/* Responsive: en móvil los dos selects van en columna */
+@media (max-width: 639px) {
+    .inv-filters-row2 {
+        justify-content: space-between;
+    }
+    .inv-search-input,
+    .inv-select {
+        font-size: 0.9rem;
+        padding: 10px 12px 10px 36px;
+    }
+    .inv-select { padding-left: 12px; }
+}
