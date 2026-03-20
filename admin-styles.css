@@ -143,6 +143,7 @@ body.admin-page {
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'cv02','cv03','cv04','cv11';
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
   overflow-x: hidden;
 }
@@ -466,13 +467,13 @@ body.admin-page::after {
   width: 100vw !important;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
-  height: 50px;
+  height: calc(50px + env(safe-area-inset-top, 0px));
   background: var(--surface-overlay);
   backdrop-filter: var(--blur-md);
   -webkit-backdrop-filter: var(--blur-md);
   border-bottom: 1px solid var(--border-subtle);
   align-items: center;
-  padding: 0 1rem;
+  padding: env(safe-area-inset-top, 0px) 1rem 0;
   gap: 0.75rem;
   z-index: 1041;
   box-shadow: 0 1px 0 rgba(255,255,255,0.6), var(--shadow-xs);
@@ -696,6 +697,7 @@ body.dark-mode .mbn-item.active { color: var(--brand-400); }
 .admin-content-wrapper {
   margin-left: 228px;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -2449,6 +2451,8 @@ small.text-muted {
   background: var(--surface-base);
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-appearance: none;
+  appearance: none;
 }
 .fin2-date-input:focus {
   border-color: var(--brand-400);
@@ -3430,7 +3434,7 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
   .rail-topbar { display: flex; }
   .admin-content-wrapper {
     margin-left: 0 !important;
-    padding-top: 52px;
+    padding-top: calc(52px + env(safe-area-inset-top, 0px));
   }
   .admin-topbar { display: none !important; }
   .admin-main {
@@ -4113,3 +4117,29 @@ body.dark-mode .db-trend-row--today {
 body.dark-mode .db-top-rank--gold   { background: rgba(254,243,199,0.12); }
 body.dark-mode .db-top-rank--silver { background: rgba(241,245,249,0.08); }
 body.dark-mode .db-top-rank--bronze { background: rgba(253,242,233,0.08); }
+
+/* ─── iOS/Safari: normalizar estilo nativo de inputs de fecha ─── */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ─── iOS: evitar zoom automático al enfocar inputs (requiere font-size >= 16px) ─── */
+@supports (-webkit-touch-callout: none) {
+  .form-control,
+  .form-select,
+  textarea.form-control,
+  .fin2-date-input,
+  input[type="date"],
+  input[type="number"],
+  input[type="text"],
+  input[type="tel"],
+  input[type="email"],
+  input[type="search"],
+  input[type="password"],
+  select {
+    font-size: 16px !important;
+  }
+}

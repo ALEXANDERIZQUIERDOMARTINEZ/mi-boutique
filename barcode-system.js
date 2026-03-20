@@ -276,11 +276,14 @@
                     html5QrCode = new Html5Qrcode('camera-scanner-container');
                     scannerActive = true;
 
+                    // iOS Safari no soporta el constraint 'advanced' y lanza excepción
+                    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                    const cameraConstraints = isIOS
+                        ? { facingMode: 'environment' }
+                        : { facingMode: 'environment', advanced: [{ zoom: 1.5 }] };
+
                     await html5QrCode.start(
-                        {
-                            facingMode: 'environment',
-                            advanced: [{ zoom: 1.5 }]
-                        },
+                        cameraConstraints,
                         {
                             fps: 25,
                             qrbox: function(viewfinderWidth, viewfinderHeight) {
