@@ -286,7 +286,62 @@
 
                 <div class="db2-sep"></div>
 
-                <!-- GRÁFICA + FINANCIEROS -->
+                <!-- TABLAS MÓVIL-FIRST: TENDENCIA + TOP PRODUCTOS -->
+                <div class="row g-3">
+                    <div class="col-12 col-lg-7">
+                        <div class="db-chart-card">
+                            <div class="db-chart-header">
+                                <span class="db-chart-title">Tendencia de ventas</span>
+                                <div class="db-period-tabs">
+                                    <input type="radio" class="btn-check" name="mt-period" id="mt-7days" autocomplete="off" checked>
+                                    <label class="db-period-tab" for="mt-7days">7d</label>
+                                    <input type="radio" class="btn-check" name="mt-period" id="mt-30days" autocomplete="off">
+                                    <label class="db-period-tab" for="mt-30days">30d</label>
+                                    <input type="radio" class="btn-check" name="mt-period" id="mt-6months" autocomplete="off">
+                                    <label class="db-period-tab" for="mt-6months">6m</label>
+                                </div>
+                            </div>
+                            <div id="db-trend-table">
+                                <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-5">
+                        <div class="db-chart-card h-100">
+                            <div class="db-chart-header">
+                                <span class="db-chart-title">Top 15 productos</span>
+                                <small class="text-muted" style="font-size:0.72rem;">Últimos 30 días</small>
+                            </div>
+                            <div id="db-top-table" style="max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+                                <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="db2-sep"></div>
+
+                <!-- FINANCIEROS -->
+                <div class="row g-3">
+                    <div class="col-6 col-md">
+                        <div class="db2-fin-card" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
+                            <div class="db2-fin-val" id="db-inversion-inventario">$0</div>
+                            <div class="db2-met-name">Inversión en inventario</div>
+                            <div class="db2-met-sub" id="db-inventario-unidades">0 unidades</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="db2-fin-card" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
+                            <div class="db2-fin-val" id="db-utilidad-potencial">$0</div>
+                            <div class="db2-met-name">Utilidad potencial (detal)</div>
+                            <div class="db2-met-sub" id="db-margen-utilidad">0% de margen</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="db2-sep"></div>
+
+                <!-- GRÁFICAS DETALLADAS AL FONDO -->
                 <div class="row g-3">
                     <div class="col-lg-8">
                         <div class="db-chart-card">
@@ -306,18 +361,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-4 d-flex flex-column gap-3">
-                        <div class="db2-fin-card" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
-                            <div class="db2-fin-val" id="db-inversion-inventario">$0</div>
-                            <div class="db2-met-name">Inversión en inventario</div>
-                            <div class="db2-met-sub" id="db-inventario-unidades">0 unidades</div>
-                        </div>
-                        <div class="db2-fin-card" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
-                            <div class="db2-fin-val" id="db-utilidad-potencial">$0</div>
-                            <div class="db2-met-name">Utilidad potencial (detal)</div>
-                            <div class="db2-met-sub" id="db-margen-utilidad">0% de margen</div>
-                        </div>
-                        <div class="db-chart-card flex-grow-1">
+                    <div class="col-lg-4">
+                        <div class="db-chart-card">
                             <div class="db-chart-header">
                                 <span class="db-chart-title">Top 15 productos</span>
                             </div>

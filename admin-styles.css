@@ -3874,3 +3874,145 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
 }
 
 /* El botón de cámara usa la clase .sv-btn-camera definida en style.css */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TABLAS MÓVIL-FIRST DEL DASHBOARD
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Tendencia de ventas – lista ── */
+.db-trend-list { padding: 0.25rem 0; }
+
+.db-trend-row {
+  display: grid;
+  grid-template-columns: 76px 1fr 88px;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background var(--duration-fast);
+}
+.db-trend-row:last-child { border-bottom: none; }
+.db-trend-row:hover { background: rgba(0,0,0,0.02); }
+
+.db-trend-row--today {
+  background: rgba(99,102,241,0.05);
+}
+.db-trend-row--today .db-trend-label { font-weight: 700; color: var(--text-primary); }
+.db-trend-row--today .db-trend-val   { font-weight: 700; color: #6366f1; }
+
+.db-trend-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.db-trend-bar-wrap {
+  height: 8px;
+  background: rgba(0,0,0,0.06);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.db-trend-bar {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(99,102,241,0.65), rgba(139,92,246,0.85));
+  border-radius: var(--radius-full);
+  transition: width 0.7s var(--ease-out);
+  min-width: 2px;
+}
+.db-trend-row--today .db-trend-bar {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+}
+
+.db-trend-val {
+  font-size: 0.79rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── Top productos – lista ── */
+.db-top-list { padding: 0.25rem 0; }
+
+.db-top-row {
+  display: grid;
+  grid-template-columns: 30px 1fr 42px;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background var(--duration-fast);
+}
+.db-top-row:last-child { border-bottom: none; }
+.db-top-row:hover { background: rgba(0,0,0,0.02); }
+
+.db-top-rank {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.67rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.db-top-rank--gold   { background: #fef3c7; color: #d97706; }
+.db-top-rank--silver { background: #f1f5f9; color: #64748b; }
+.db-top-rank--bronze { background: #fdf2e9; color: #b45309; }
+
+.db-top-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.db-top-name {
+  font-size: 0.79rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.db-top-bar-wrap {
+  height: 4px;
+  background: rgba(0,0,0,0.06);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.db-top-bar {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(16,185,129,0.7), rgba(5,150,105,0.9));
+  border-radius: var(--radius-full);
+  transition: width 0.7s var(--ease-out);
+  min-width: 2px;
+}
+
+.db-top-units {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── Dark mode ── */
+body.dark-mode .db-trend-bar-wrap,
+body.dark-mode .db-top-bar-wrap {
+  background: rgba(255,255,255,0.08);
+}
+body.dark-mode .db-trend-row--today {
+  background: rgba(99,102,241,0.1);
+}
+body.dark-mode .db-top-rank--gold   { background: rgba(254,243,199,0.12); }
+body.dark-mode .db-top-rank--silver { background: rgba(241,245,249,0.08); }
+body.dark-mode .db-top-rank--bronze { background: rgba(253,242,233,0.08); }
