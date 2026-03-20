@@ -28,7 +28,7 @@ const promocionesGlobalesCollection = collection(db, 'promocionesGlobales');
 // 1. Guarda el contacto +34 644 59 79 50 en WhatsApp como "CallMeBot"
 // 2. Envíale el mensaje: I allow callmebot to send me messages
 // 3. Recibirás tu API key por WhatsApp — ponla aquí abajo
-const WHATSAPP_NOTIF_PHONE  = '573046084971'; // Tu número (código país + número)
+const WHATSAPP_NOTIF_PHONE  = '573017850041'; // Tu número (código país + número)
 const WHATSAPP_NOTIF_APIKEY = '';             // ← Pega aquí tu API key de CallMeBot
 const categoriesCollection = collection(db, 'categorias');
 const clientsCollection = collection(db, 'clientes');
@@ -2229,7 +2229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('checkout-form').reset();
 
             // URL de respaldo (por si el envío automático falla)
-            const numeroWhatsApp = '573046084971'; // Número de la empresa
+            const numeroWhatsApp = '573017850041'; // Número de la empresa
             const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensajeWhatsApp)}`;
 
             // Intentar envío automático al dueño de la tienda
