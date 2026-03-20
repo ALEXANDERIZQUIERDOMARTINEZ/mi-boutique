@@ -271,7 +271,6 @@
 
             async function iniciarEscaner() {
                 const container = document.getElementById('camera-scanner-container');
-                const status = document.getElementById('camera-scanner-status');
 
                 try {
                     html5QrCode = new Html5Qrcode('camera-scanner-container');
@@ -280,53 +279,46 @@
                     await html5QrCode.start(
                         { facingMode: 'environment' },
                         {
-                            fps: 10,
+                            fps: 15,
                             qrbox: function(viewfinderWidth, viewfinderHeight) {
-                                const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.7;
-                                return { width: size, height: Math.round(size * 0.55) };
+                                const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.75;
+                                return { width: size, height: Math.round(size * 0.5) };
                             },
                             formatsToSupport: [
                                 Html5QrcodeSupportedFormats.EAN_13,
                                 Html5QrcodeSupportedFormats.EAN_8,
                                 Html5QrcodeSupportedFormats.UPC_A,
-                                Html5QrcodeSupportedFormats.UPC_E,
                                 Html5QrcodeSupportedFormats.CODE_128,
-                                Html5QrcodeSupportedFormats.QR_CODE,
-                                Html5QrcodeSupportedFormats.CODE_39,
                             ]
                         },
                         async (decodedText) => {
                             if (!scannerActive) return;
                             scannerActive = false;
 
-                            // Detener escáner
-                            try { await html5QrCode.stop(); } catch(e) {}
+                            // Parar escáner sin await para no bloquear
+                            html5QrCode.stop().catch(() => {});
 
-                            // Buscar producto - primero por código de barras estándar
-                            let producto = null;
-                            const validacion = validarCodigoBarrasLocal(decodedText);
-                            if (validacion.valido) {
-                                producto = await window.buscarProductoPorBarcode(decodedText);
-                            }
+                            // Guardar código y cerrar modal INMEDIATAMENTE
+                            const codigoEscaneado = decodedText;
+                            bootstrap.Modal.getOrCreateInstance(cameraScannerModal).hide();
 
-                            // Si no encontró, intentar búsqueda directa por código de producto
-                            if (!producto) {
-                                producto = await buscarProductoPorCodigo(decodedText);
-                            }
-
-                            // Cerrar modal usando getOrCreateInstance (funciona aunque haya sido abierto via data-bs-toggle)
-                            const modalInstance = bootstrap.Modal.getOrCreateInstance(cameraScannerModal);
-
-                            if (producto) {
-                                cameraScannerModal.addEventListener('hidden.bs.modal', function() {
+                            // Buscar producto DESPUÉS de que el modal cierre
+                            cameraScannerModal.addEventListener('hidden.bs.modal', async function() {
+                                let producto = null;
+                                const validacion = validarCodigoBarrasLocal(codigoEscaneado);
+                                if (validacion.valido) {
+                                    producto = await window.buscarProductoPorBarcode(codigoEscaneado);
+                                }
+                                if (!producto) {
+                                    producto = await buscarProductoPorCodigo(codigoEscaneado);
+                                }
+                                if (producto) {
                                     window.openVariationModal(producto.id);
                                     showToast(`Producto encontrado: ${producto.nombre}`, 'success');
-                                }, { once: true });
-                            } else {
-                                showToast('Producto no encontrado para este código', 'warning');
-                            }
-
-                            modalInstance.hide();
+                                } else {
+                                    showToast('Producto no encontrado para este código', 'warning');
+                                }
+                            }, { once: true });
                         },
                         () => { /* errores de frame ignorados */ }
                     );

@@ -3761,16 +3761,8 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
     border-color: rgba(217, 136, 185, 0.8) !important;
 }
 
-#camera-scanner-container canvas {
-    display: none !important;
-}
-
-/* Ocultar el botón de stop nativo de html5-qrcode */
-#camera-scanner-container button {
-    display: none !important;
-}
-
-/* Ocultar el select de cámara (usamos la trasera por defecto) */
+/* Ocultar controles nativos de html5-qrcode que no usamos */
+#camera-scanner-container button,
 #camera-scanner-container select {
     display: none !important;
 }
