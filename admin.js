@@ -7523,6 +7523,152 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ================================================================
+    // TABLA MÓVIL 1: TENDENCIA DE VENTAS
+    // ================================================================
+    async function crearTablaTendenciaMobile(dias = 7) {
+        const container = document.getElementById('db-trend-table');
+        if (!container) return;
+
+        container.innerHTML = '<div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>';
+
+        try {
+            const hoy = new Date();
+            const fechaInicio = new Date(hoy);
+            fechaInicio.setDate(fechaInicio.getDate() - dias + 1);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(fechaInicio)),
+                orderBy('timestamp', 'asc')
+            );
+
+            const snapshot = await getDocs(q);
+
+            const ventasPorDia = {};
+            const labels = [];
+
+            for (let i = 0; i < dias; i++) {
+                const fecha = new Date(fechaInicio);
+                fecha.setDate(fecha.getDate() + i);
+                const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                ventasPorDia[key] = 0;
+                labels.push(key);
+            }
+
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const fecha = venta.timestamp?.toDate();
+                    if (fecha) {
+                        const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+                        if (ventasPorDia.hasOwnProperty(key)) {
+                            const monto = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                            ventasPorDia[key] += monto;
+                        }
+                    }
+                }
+            });
+
+            const data = labels.map(l => ventasPorDia[l] || 0);
+            const maxVal = Math.max(...data, 1);
+
+            let html = '<div class="db-trend-list">';
+            labels.forEach((label, i) => {
+                const val = data[i];
+                const pct = Math.round((val / maxVal) * 100);
+                const isToday = i === labels.length - 1;
+                html += `
+                    <div class="db-trend-row${isToday ? ' db-trend-row--today' : ''}">
+                        <span class="db-trend-label">${label}</span>
+                        <div class="db-trend-bar-wrap">
+                            <div class="db-trend-bar" style="width:${pct}%"></div>
+                        </div>
+                        <span class="db-trend-val">${val > 0 ? '$' + val.toLocaleString('es-CO') : '—'}</span>
+                    </div>`;
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+
+        } catch (error) {
+            console.error("❌ Error tabla tendencia mobile:", error);
+            container.innerHTML = '<div class="text-center text-danger py-3">Error al cargar</div>';
+        }
+    }
+
+    // ================================================================
+    // TABLA MÓVIL 2: TOP PRODUCTOS
+    // ================================================================
+    async function crearTablaTopProductosMobile() {
+        const container = document.getElementById('db-top-table');
+        if (!container) return;
+
+        container.innerHTML = '<div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>';
+
+        try {
+            const fechaInicio = new Date();
+            fechaInicio.setDate(fechaInicio.getDate() - 30);
+            fechaInicio.setHours(0, 0, 0, 0);
+
+            const q = query(
+                salesCollection,
+                where('timestamp', '>=', Timestamp.fromDate(fechaInicio))
+            );
+
+            const snapshot = await getDocs(q);
+
+            const productosVendidos = {};
+            snapshot.forEach(doc => {
+                const venta = doc.data();
+                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const items = venta.items || [];
+                    items.forEach(item => {
+                        const nombre = item.nombre || 'Sin nombre';
+                        if (!productosVendidos[nombre]) productosVendidos[nombre] = 0;
+                        productosVendidos[nombre] += (item.cantidad || 0);
+                    });
+                }
+            });
+
+            const topProductos = Object.entries(productosVendidos)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 15);
+
+            if (topProductos.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted py-4">Sin datos de ventas</div>';
+                return;
+            }
+
+            const maxUnits = topProductos[0][1];
+
+            let html = '<div class="db-top-list">';
+            topProductos.forEach(([nombre, unidades], i) => {
+                const pct = Math.round((unidades / maxUnits) * 100);
+                const rankClass = i === 0 ? 'db-top-rank--gold' : i === 1 ? 'db-top-rank--silver' : i === 2 ? 'db-top-rank--bronze' : '';
+                html += `
+                    <div class="db-top-row">
+                        <span class="db-top-rank ${rankClass}">${i + 1}</span>
+                        <div class="db-top-info">
+                            <span class="db-top-name">${nombre}</span>
+                            <div class="db-top-bar-wrap">
+                                <div class="db-top-bar" style="width:${pct}%"></div>
+                            </div>
+                        </div>
+                        <span class="db-top-units">${unidades} u.</span>
+                    </div>`;
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+
+        } catch (error) {
+            console.error("❌ Error tabla top productos mobile:", error);
+            container.innerHTML = '<div class="text-center text-danger py-3">Error al cargar</div>';
+        }
+    }
+
+    // ================================================================
     // EVENT LISTENERS
     // ================================================================
 
@@ -7537,11 +7683,24 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         });
     });
 
+    // Cambiar período de la tabla móvil de tendencia
+    const mtPeriodoBtns = document.querySelectorAll('input[name="mt-period"]');
+    mtPeriodoBtns.forEach(btn => {
+        btn.addEventListener('change', (e) => {
+            const dias = e.target.id === 'mt-7days' ? 7 :
+                        e.target.id === 'mt-30days' ? 30 :
+                        180;
+            crearTablaTendenciaMobile(dias);
+        });
+    });
+
     // ================================================================
     // INICIALIZAR
     // ================================================================
     crearGraficoVentas(7);
     crearGraficoTopProductos();
+    crearTablaTendenciaMobile(7);
+    crearTablaTopProductosMobile();
     actualizarTablaStockCritico();
     actualizarActividadReciente();
 
