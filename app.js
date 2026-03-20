@@ -28,32 +28,16 @@ const chatConversationsCollection = collection(db, 'chatConversations');
 const neighborhoodsCollection = collection(db, 'barrios');
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
 
-// --- Helper: Open WhatsApp (PWA Compatible) ---
+// --- Helper: Open WhatsApp sin salir de la página ---
 function openWhatsApp(url) {
-    // Detectar si estamos en una PWA instalada
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                  window.navigator.standalone === true ||
-                  document.referrer.includes('android-app://');
-
-    console.log('🔍 Detectando modo de aplicación:');
-    console.log('  - Es PWA instalada:', isPWA);
-    console.log('  - URL WhatsApp:', url);
-
-    if (isPWA || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        // En PWA o móvil, usar window.location.href para abrir WhatsApp
-        // Esto fuerza a abrir en la app de WhatsApp instalada
-        console.log('📱 Abriendo WhatsApp en app instalada...');
-        window.location.href = url;
-    } else {
-        // En navegador desktop, usar window.open
-        console.log('💻 Abriendo WhatsApp en nueva pestaña...');
-        const ventana = window.open(url, '_blank');
-        if (!ventana) {
-            // Si el popup fue bloqueado, intentar con location
-            console.warn('⚠️ Popup bloqueado, intentando con location.href');
-            window.location.href = url;
-        }
-    }
+    // Usar anchor con target="_blank" para abrir WhatsApp sin navegar fuera
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 let bsToast = null;
@@ -1962,10 +1946,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Actualizar totales cuando se abre el modal
+    // Actualizar totales y restablecer estado al abrir el modal
     const checkoutModalEl = document.getElementById('checkoutModal');
     checkoutModalEl.addEventListener('show.bs.modal', function() {
         updateOrderTotals();
+        // Asegurar que se muestra el formulario y no la pantalla de éxito
+        const checkoutForm = document.getElementById('checkout-form');
+        const checkoutSuccess = document.getElementById('checkout-success');
+        if (checkoutForm) checkoutForm.style.display = 'block';
+        if (checkoutSuccess) checkoutSuccess.style.display = 'none';
     });
 
     document.getElementById('checkout-form').addEventListener('submit', async (e) => {
@@ -2219,11 +2208,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const mensajeWhatsAppURL = encodeURIComponent(mensajeWhatsApp);
             const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${mensajeWhatsAppURL}`;
 
-            // Abrir WhatsApp (compatible con PWA)
+            // Abrir WhatsApp sin salir de la página
             openWhatsApp(urlWhatsApp);
 
-            // Mostrar mensaje de éxito
-            showToast('✅ ¡Pedido confirmado! Se abrió WhatsApp para enviar los detalles.', 'success');
+            // Mostrar pantalla de éxito dentro del modal
+            const checkoutForm = document.getElementById('checkout-form');
+            const checkoutSuccess = document.getElementById('checkout-success');
+            const whatsappBtn = document.getElementById('whatsapp-confirm-btn');
+            const continueBtn = document.getElementById('checkout-continue-btn');
+
+            if (checkoutForm) checkoutForm.style.display = 'none';
+            if (whatsappBtn) whatsappBtn.href = urlWhatsApp;
+            if (checkoutSuccess) checkoutSuccess.style.display = 'block';
+
+            // Al presionar "Seguir comprando" restaurar el formulario para la próxima compra
+            if (continueBtn) {
+                continueBtn.onclick = () => {
+                    if (checkoutForm) checkoutForm.style.display = 'block';
+                    if (checkoutSuccess) checkoutSuccess.style.display = 'none';
+                };
+            }
 
         } catch (err) {
             console.error("Error al guardar pedido: ", err);
