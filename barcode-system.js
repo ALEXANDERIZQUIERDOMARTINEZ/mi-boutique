@@ -303,51 +303,26 @@
                             bootstrap.Modal.getOrCreateInstance(cameraScannerModal).hide();
 
                             // Buscar producto DESPUÉS de que el modal cierre
-                            cameraScannerModal.addEventListener('hidden.bs.modal', async function() {
+                            cameraScannerModal.addEventListener('hidden.bs.modal', function() {
                                 const texto = codigoEscaneado.trim();
-                                let producto = null;
+                                const ean13 = texto.length === 12 && /^\d+$/.test(texto) ? '0' + texto : null;
+                                let productoId = null;
 
-                                try {
-                                    // 1. Buscar directamente por codigoBarras (sin validar formato)
-                                    let snap = await getDocs(query(
-                                        collection(db, 'productos'),
-                                        where('codigoBarras', '==', texto),
-                                        limit(1)
-                                    ));
-                                    if (!snap.empty) {
-                                        producto = { id: snap.docs[0].id, ...snap.docs[0].data() };
-                                    }
-
-                                    // 2. Si es UPC-A (12 dígitos), intentar con 0 al frente (EAN-13)
-                                    if (!producto && texto.length === 12 && /^\d+$/.test(texto)) {
-                                        snap = await getDocs(query(
-                                            collection(db, 'productos'),
-                                            where('codigoBarras', '==', '0' + texto),
-                                            limit(1)
-                                        ));
-                                        if (!snap.empty) {
-                                            producto = { id: snap.docs[0].id, ...snap.docs[0].data() };
+                                // Buscar en el mapa local (ya cargado, ya filtrado por tenant, sin red)
+                                const mapa = window.localProductsMap;
+                                if (mapa && mapa.size > 0) {
+                                    for (const [id, p] of mapa) {
+                                        if (p.codigoBarras === texto ||
+                                            (ean13 && p.codigoBarras === ean13) ||
+                                            p.codigo === texto) {
+                                            productoId = id;
+                                            break;
                                         }
                                     }
-
-                                    // 3. Buscar por código interno del producto
-                                    if (!producto) {
-                                        snap = await getDocs(query(
-                                            collection(db, 'productos'),
-                                            where('codigo', '==', texto),
-                                            limit(1)
-                                        ));
-                                        if (!snap.empty) {
-                                            producto = { id: snap.docs[0].id, ...snap.docs[0].data() };
-                                        }
-                                    }
-                                } catch (err) {
-                                    console.error('Error buscando producto por cámara:', err);
                                 }
 
-                                if (producto) {
-                                    window.openVariationModal(producto.id);
-                                    showToast(`Producto encontrado: ${producto.nombre}`, 'success');
+                                if (productoId) {
+                                    window.openVariationModal(productoId);
                                 } else {
                                     showToast('Producto no encontrado para este código', 'warning');
                                 }

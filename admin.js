@@ -249,6 +249,7 @@ let verApartadoModalInstance = null; // ✅ --- NUEVO: Modal de Ver Apartado ---
 
 let localClientsMap = new Map([["Cliente General", {id: null, celular: "", direccion: ""}]]);
 let localProductsMap = new Map();
+window.localProductsMap = localProductsMap;
 let repartidoresMap = new Map(); // ✅ Mapa de repartidores para el modal de ver venta
 
 // ========================================================================
