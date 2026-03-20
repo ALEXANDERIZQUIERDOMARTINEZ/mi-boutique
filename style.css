@@ -1226,8 +1226,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 #liveToast.text-bg-warning .toast-icon { color: #d4870a; }
 
-/* Desktop: esquina inferior derecha */
-@media (min-width: 768px) {
+/* Desktop: esquina inferior derecha (se oculta el nav pill en 992px) */
+@media (min-width: 992px) {
     .toast-container {
         bottom: 1.5rem;
         left: auto;
@@ -2987,10 +2987,68 @@ textarea.form-control-modern {
     box-shadow: none;
 }
 
-/* Responsive checkout en mobile */
-@media (max-width: 575.98px) {
+/* Checkout — Bottom Sheet en móvil */
+@media (max-width: 767.98px) {
+    /* Animación: sube desde abajo */
+    #checkoutModal.fade .modal-dialog {
+        transform: translateY(60px);
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #checkoutModal.show .modal-dialog {
+        transform: translateY(0);
+    }
+
+    /* Dialog pegado al fondo, ancho completo */
+    #checkoutModal .modal-dialog {
+        margin: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+    }
+
+    /* Contenido: esquinas redondeadas arriba, altura máxima */
     #checkoutModal .modal-content.checkout-premium {
-        border-radius: 0;
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 92dvh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Handle visual arriba */
+    #checkoutModal .modal-header.checkout-header {
+        position: relative;
+        padding-top: 1.35rem;
+        flex-shrink: 0;
+    }
+    #checkoutModal .modal-header.checkout-header::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(0, 0, 0, 0.12);
+    }
+
+    /* Body scrollable */
+    #checkoutModal .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        max-height: 65dvh;
+    }
+
+    /* Footer no sangra detrás del nav */
+    #checkoutModal .modal-footer {
+        flex-shrink: 0;
+        padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 0.75rem);
     }
 }
 
@@ -2999,80 +3057,481 @@ textarea.form-control-modern {
    ════════════════════════════════════════════════════════════════ */
 
 /* ════════════════════════════════════════════════════════════════
-   SECCIÓN VENTAS — FORMULARIO REGISTRAR VENTA
+   SECCIÓN VENTAS — REDISEÑO MODERNO POS
    ════════════════════════════════════════════════════════════════ */
 
-/* ── Formulario general ── */
-.vf-form {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-}
-
-.vf-block {
-    background: #fff;
-    border: 1px solid #f0e6f6;
-    border-left: 3px solid var(--brand-400, #f472b6);
-    border-radius: 14px;
-    padding: 14px 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 6px rgba(217,136,185,0.07);
-    transition: box-shadow 0.2s;
-}
-
-.vf-block:focus-within {
-    box-shadow: 0 2px 12px rgba(217,136,185,0.15);
-    border-left-color: var(--brand-500, #D988B9);
-}
-
-.vf-block-title {
-    font-size: 0.75rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    background: linear-gradient(90deg, var(--brand-600, #c026d3), var(--brand-400, #f472b6));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.vf-label {
-    display: block;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #5a3e6b;
-    margin-bottom: 4px;
-}
-
-/* ── Carrito ── */
-.vf-cart-section {
-    background: #fff;
-    border: 1px solid #f0e6f6;
-    border-radius: 14px;
-    overflow: hidden;
-    margin-bottom: 12px;
-    box-shadow: 0 1px 6px rgba(217,136,185,0.07);
-}
-
-.vf-cart-header {
+/* ── Header ── */
+.sv-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 11px 16px;
-    background: linear-gradient(90deg, #fdf2f8 0%, #fce7f3 100%);
-    border-bottom: 1px solid #f0e6f6;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #5a3e6b;
+    margin-bottom: 20px;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
-.vf-cart-items {
+.sv-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1a1a2e;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.sv-tabs {
+    display: flex;
+    gap: 5px;
+    background: #f3f4f6;
+    border-radius: 12px;
+    padding: 4px;
+}
+
+.sv-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.sv-tab.active {
+    background: linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(168, 85, 247, 0.3);
+}
+
+/* ── Formulario general ── */
+.sv-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 680px;
+}
+
+/* ── Secciones / Cards ── */
+.sv-section {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.sv-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 0.73rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #4b5563;
+}
+
+.sv-section-header i {
+    color: var(--brand-500, #D988B9);
+    font-size: 0.9rem;
+}
+
+.sv-section-body {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ── Cliente ── */
+.sv-client-input {
+    cursor: pointer !important;
+    font-weight: 600;
+    color: #1a1a2e;
+}
+
+.sv-btn-add-client {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    color: #6b7280;
+}
+
+.sv-btn-add-client:hover {
+    background: #fdf2f8;
+    border-color: var(--brand-300, #f9a8d4);
+    color: var(--brand-600, #c026d3);
+}
+
+.sv-client-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+/* ── Tipo + Entrega ── */
+.sv-section-inline {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.sv-inline-group {
+    padding: 12px 16px;
+}
+
+.sv-inline-group:first-child {
+    border-right: 1px solid #e9ecef;
+}
+
+.sv-field-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #6b7280;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sv-field-label i {
+    color: var(--brand-500, #D988B9);
+}
+
+/* ── Productos ── */
+.sv-ig-text {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    color: #6b7280;
+}
+
+.sv-btn-search-product {
+    background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+    border: 1.5px solid #f0e6f6;
+    color: var(--brand-700, #a21caf);
+    font-weight: 600;
+    font-size: 0.88rem;
+    border-radius: 10px;
+    padding: 10px;
+    transition: all 0.2s;
+}
+
+.sv-btn-search-product:hover {
+    background: linear-gradient(135deg, #fce7f3 0%, #f5d0fe 100%);
+    border-color: var(--brand-400, #f472b6);
+    color: var(--brand-800, #86198f);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 12px rgba(168, 85, 247, 0.2);
+}
+
+.sv-btn-camera {
+    background: linear-gradient(135deg, #D988B9 0%, #c45fa0 100%);
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.88rem;
+    border-radius: 10px;
+    padding: 10px;
+    transition: all 0.2s;
+}
+
+.sv-btn-camera:hover,
+.sv-btn-camera:active {
+    background: linear-gradient(135deg, #c45fa0 0%, #a83f84 100%);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 12px rgba(217, 136, 185, 0.4);
+}
+
+/* ── Catálogo ── */
+.sv-catalog-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.sv-catalog-qty {
+    max-width: 75px;
+    flex-shrink: 0;
+}
+
+/* ── Carrito ── */
+.sv-cart {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.sv-cart-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+    border-bottom: 1px solid #f0e6f6;
+}
+
+.sv-cart-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.73rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #4b5563;
+}
+
+.sv-cart-title i {
+    color: var(--brand-500, #D988B9);
+}
+
+.sv-cart-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    background: rgba(168, 85, 247, 0.1);
+    color: var(--brand-700, #a21caf);
+    border-radius: 20px;
+}
+
+.sv-cart-body {
     min-height: 60px;
 }
+
+/* ── Panel de Pago ── */
+.sv-payment {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sv-payment-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sv-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.83rem;
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Notas + Descuento */
+.sv-notes-discount {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: start;
+}
+
+.sv-discount-wrap {
+    min-width: 130px;
+}
+
+.sv-discount-row {
+    display: flex;
+    gap: 5px;
+}
+
+/* Total */
+.sv-total-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: 14px 20px;
+    box-shadow: 0 4px 16px rgba(168, 85, 247, 0.3);
+}
+
+.sv-total-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.sv-total-amount {
+    font-size: 1.7rem;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+}
+
+/* Métodos de pago */
+.sv-pay-methods {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.sv-pay-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 8px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #6b7280;
+    text-align: center;
+    background: #f9fafb;
+}
+
+.sv-pay-option i {
+    font-size: 1.3rem;
+}
+
+.btn-check:checked + .sv-pay-option {
+    border-color: var(--brand-400, #f472b6);
+    background: linear-gradient(135deg, #fdf2f8, #fce7f3);
+    color: var(--brand-700, #a21caf);
+    box-shadow: 0 2px 8px rgba(168, 85, 247, 0.2);
+}
+
+.sv-pay-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sv-change-info {
+    font-size: 0.82rem;
+    color: #059669;
+    font-weight: 600;
+    padding: 8px 12px;
+    background: #f0fdf4;
+    border-radius: 8px;
+    border: 1px solid #bbf7d0;
+}
+
+.sv-change-danger {
+    color: #dc2626;
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.sv-mixto-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+/* Botón Registrar Venta */
+.sv-submit-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(168, 85, 247, 0.4);
+}
+
+.sv-submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(168, 85, 247, 0.55);
+}
+
+.sv-submit-btn:active {
+    transform: translateY(0);
+}
+
+/* ── Filtros del historial ── */
+.sv-filters {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sv-filter-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f8f9fa;
+    border: 1.5px solid #e9ecef;
+    border-radius: 10px;
+    padding: 0 14px;
+    transition: border-color 0.2s;
+}
+
+.sv-filter-search:focus-within {
+    border-color: var(--brand-300, #f9a8d4);
+    background: #fff;
+}
+
+.sv-filter-icon {
+    color: #9ca3af;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.sv-filter-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 0;
+    font-size: 0.9rem;
+    color: #1a1a2e;
+    outline: none;
+}
+
+.sv-filter-input::placeholder {
+    color: #9ca3af;
+}
+
+.sv-filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.sv-filter-row > .form-select,
+.sv-filter-row > .form-control {
+    flex: 1;
+    min-width: 100px;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   CARRITO — clases vf-* usadas por renderCarrito() JS
+   ════════════════════════════════════════════════════════════════ */
 
 .vf-cart-empty {
     display: flex;
@@ -3084,13 +3543,12 @@ textarea.form-control-modern {
     text-align: center;
 }
 
-/* ── Item del carrito (tarjeta) ── */
 .vf-cart-item {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 10px 16px;
-    border-bottom: 1px solid #fdf2f8;
+    border-bottom: 1px solid #f3f4f6;
     transition: background 0.15s;
 }
 
@@ -3099,7 +3557,7 @@ textarea.form-control-modern {
 }
 
 .vf-cart-item:hover {
-    background: #fdf2f8;
+    background: #fdf9fe;
 }
 
 .vf-cart-item-info {
@@ -3110,7 +3568,7 @@ textarea.form-control-modern {
 .vf-cart-item-name {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #2d1f3d;
+    color: #1a1a2e;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3129,11 +3587,10 @@ textarea.form-control-modern {
     flex-shrink: 0;
 }
 
-/* Control de cantidad */
 .vf-qty-control {
     display: flex;
     align-items: center;
-    border: 1.5px solid #e8d5f0;
+    border: 1.5px solid #e5e7eb;
     border-radius: 10px;
     overflow: hidden;
     height: 34px;
@@ -3141,7 +3598,7 @@ textarea.form-control-modern {
 
 .vf-qty-btn {
     border: none;
-    background: #fdf2f8;
+    background: #f9fafb;
     width: 32px;
     height: 100%;
     font-size: 1rem;
@@ -3165,15 +3622,15 @@ textarea.form-control-modern {
     width: 38px;
     height: 100%;
     border: none;
-    border-left: 1.5px solid #e8d5f0;
-    border-right: 1.5px solid #e8d5f0;
+    border-left: 1.5px solid #e5e7eb;
+    border-right: 1.5px solid #e5e7eb;
     text-align: center;
     font-size: 0.85rem;
     font-weight: 700;
     -moz-appearance: textfield;
     padding: 0;
     background: #fff;
-    color: #2d1f3d;
+    color: #1a1a2e;
 }
 
 .vf-qty-input::-webkit-outer-spin-button,
@@ -3208,95 +3665,8 @@ textarea.form-control-modern {
     color: #dc3545;
 }
 
-/* ── Sección inferior: dos columnas en tablet+ ── */
-.vf-bottom-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-    margin-bottom: 0;
-}
-
-@media (min-width: 640px) {
-    .vf-bottom-grid {
-        grid-template-columns: 1fr 1fr;
-        align-items: start;
-    }
-}
-
-.vf-bottom-left,
-.vf-bottom-right {
-    background: #fff;
-    border: 1px solid #f0e6f6;
-    border-radius: 14px;
-    padding: 14px 16px;
-    box-shadow: 0 1px 6px rgba(217,136,185,0.07);
-}
-
-/* ── Total ── */
-.vf-total-box {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 45%, #a855f7 100%));
-    color: #fff;
-    border-radius: 12px;
-    padding: 14px 18px;
-    margin-bottom: 12px;
-    box-shadow: 0 4px 16px rgba(217,136,185,0.35);
-}
-
-.vf-total-label {
-    font-size: 0.78rem;
-    opacity: 0.9;
-    font-weight: 500;
-}
-
-.vf-total-amount {
-    font-size: 1.6rem;
-    font-weight: 900;
-    letter-spacing: -0.03em;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.15);
-}
-
-/* ── Botón registrar venta ── */
-#form-venta .btn-primary[type="submit"] {
-    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 45%, #a855f7 100%)) !important;
-    border: none !important;
-    border-radius: 12px !important;
-    font-weight: 700 !important;
-    font-size: 0.95rem !important;
-    padding: 12px !important;
-    box-shadow: 0 4px 16px rgba(217,136,185,0.4) !important;
-    transition: box-shadow 0.2s, transform 0.15s !important;
-    letter-spacing: 0.02em;
-}
-
-#form-venta .btn-primary[type="submit"]:hover {
-    box-shadow: 0 6px 22px rgba(217,136,185,0.55) !important;
-    transform: translateY(-1px) !important;
-}
-
-#form-venta .btn-primary[type="submit"]:active {
-    transform: translateY(0) !important;
-}
-
-/* ── Toggle Registrar / Historial ── */
-#toggle-sales-form-view-btn,
-#toggle-sales-list-view-btn {
-    border-radius: 10px !important;
-    font-weight: 600;
-    transition: all 0.2s;
-}
-
-#toggle-sales-form-view-btn.active,
-#toggle-sales-list-view-btn.active {
-    background: var(--brand-500, #D988B9) !important;
-    border-color: var(--brand-500, #D988B9) !important;
-    color: #fff !important;
-}
-
 /* ════════════════════════════════════════════════════════════════
-   HISTORIAL DE VENTAS — TARJETAS RESPONSIVE
+   HISTORIAL DE VENTAS — clases usadas por renderSales() JS
    ════════════════════════════════════════════════════════════════ */
 
 .ventas-card-grid {
@@ -3327,16 +3697,15 @@ textarea.form-control-modern {
     text-align: center;
 }
 
-/* ── Tarjeta de venta ── */
 .venta-card {
     background: #fff;
-    border: 1px solid #f0e6f6;
+    border: 1px solid #e9ecef;
     border-radius: 16px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     transition: box-shadow 0.22s, transform 0.18s;
-    box-shadow: 0 2px 8px rgba(217,136,185,0.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     position: relative;
 }
 
@@ -3349,11 +3718,10 @@ textarea.form-control-modern {
 }
 
 .venta-card:hover {
-    box-shadow: 0 8px 28px rgba(217,136,185,0.22);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.12);
     transform: translateY(-3px);
 }
 
-/* Accento de color en tarjeta según estado */
 .venta-card[data-estado="Anulada"]::before,
 .venta-card[data-estado="Cancelada"]::before {
     background: linear-gradient(90deg, #f87171, #ef4444);
@@ -3368,10 +3736,9 @@ textarea.form-control-modern {
     opacity: 1;
 }
 
-/* Cabecera de la tarjeta */
 .venta-card-head {
     padding: 12px 15px 10px;
-    border-bottom: 1px solid #fdf2f8;
+    border-bottom: 1px solid #f3f4f6;
 }
 
 .venta-card-meta-top {
@@ -3397,13 +3764,12 @@ textarea.form-control-modern {
 .venta-card-cliente {
     font-size: 0.92rem;
     font-weight: 800;
-    color: #2d1f3d;
+    color: #1a1a2e;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* Productos dentro de la tarjeta */
 .venta-card-products {
     padding: 10px 15px;
     flex: 1;
@@ -3412,7 +3778,7 @@ textarea.form-control-modern {
     gap: 8px;
     max-height: 200px;
     overflow-y: auto;
-    border-bottom: 1px solid #fdf2f8;
+    border-bottom: 1px solid #f3f4f6;
 }
 
 .venta-prod-row {
@@ -3427,7 +3793,7 @@ textarea.form-control-modern {
     object-fit: cover;
     border-radius: 10px;
     flex-shrink: 0;
-    border: 1.5px solid #f0e6f6;
+    border: 1.5px solid #e9ecef;
 }
 
 .venta-prod-img-placeholder {
@@ -3435,13 +3801,13 @@ textarea.form-control-modern {
     height: 48px;
     border-radius: 10px;
     flex-shrink: 0;
-    background: #fdf2f8;
+    background: #f3f4f6;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #c4a1d4;
+    color: #9ca3af;
     font-size: 1.1rem;
-    border: 1.5px solid #f0e6f6;
+    border: 1.5px solid #e9ecef;
 }
 
 .venta-prod-info {
@@ -3452,7 +3818,7 @@ textarea.form-control-modern {
 .venta-prod-name {
     font-size: 0.82rem;
     font-weight: 700;
-    color: #2d1f3d;
+    color: #1a1a2e;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3464,13 +3830,12 @@ textarea.form-control-modern {
     margin-top: 2px;
 }
 
-/* Pie de la tarjeta */
 .venta-card-foot {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
     padding: 10px 15px;
-    background: linear-gradient(90deg, #fdf9fe 0%, #fdf2f8 100%);
+    background: #f9fafb;
     gap: 8px;
 }
 
@@ -3523,13 +3888,12 @@ textarea.form-control-modern {
     color: #9b7db5;
 }
 
-/* Acciones de la tarjeta */
 .venta-card-actions {
     display: flex;
     align-items: center;
     gap: 5px;
     padding: 9px 15px;
-    border-top: 1px solid #fdf2f8;
+    border-top: 1px solid #f3f4f6;
     background: #fff;
     flex-wrap: nowrap;
     overflow: hidden;
@@ -3556,26 +3920,18 @@ textarea.form-control-modern {
     width: 34px;
 }
 
-/* Scrollbar dentro de productos */
-.venta-card-products::-webkit-scrollbar {
-    width: 3px;
-}
-.venta-card-products::-webkit-scrollbar-track {
-    background: transparent;
-}
-.venta-card-products::-webkit-scrollbar-thumb {
-    background: #e8d5f0;
-    border-radius: 4px;
-}
+.venta-card-products::-webkit-scrollbar { width: 3px; }
+.venta-card-products::-webkit-scrollbar-track { background: transparent; }
+.venta-card-products::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
 
-/* ── Filtros del historial ── */
-#ventas .vf-block.mb-3 {
-    background: linear-gradient(135deg, #fff 0%, #fdf9fe 100%);
-    border-left-color: var(--brand-300, #f9a8d4);
-}
-
-/* ── Ajustes para tablet (≤ 768px) ── */
+/* ── Responsive ── */
 @media (max-width: 767px) {
+    .sv-notes-discount {
+        grid-template-columns: 1fr;
+    }
+    .sv-discount-wrap {
+        min-width: unset;
+    }
     .venta-card-actions {
         gap: 4px;
         padding: 8px 12px;
@@ -3585,7 +3941,7 @@ textarea.form-control-modern {
         min-height: 38px;
         font-size: 0.7rem;
     }
-    .vf-total-amount {
+    .sv-total-amount {
         font-size: 1.4rem;
     }
     .venta-card-total {
@@ -3593,13 +3949,12 @@ textarea.form-control-modern {
     }
 }
 
-/* ── Ajustes para pantallas muy pequeñas (< 400px) ── */
 @media (max-width: 399px) {
     .vf-cart-item-total {
         min-width: 60px;
         font-size: 0.8rem;
     }
-    .vf-total-amount {
+    .sv-total-amount {
         font-size: 1.25rem;
     }
     .venta-card-actions .btn-action-text {
@@ -3611,6 +3966,13 @@ textarea.form-control-modern {
     }
     .ventas-card-grid {
         gap: 10px;
+    }
+    .sv-section-inline {
+        grid-template-columns: 1fr;
+    }
+    .sv-inline-group:first-child {
+        border-right: none;
+        border-bottom: 1px solid #e9ecef;
     }
 }
 

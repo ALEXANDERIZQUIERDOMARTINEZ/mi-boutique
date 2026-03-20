@@ -224,14 +224,16 @@ let bsToast = null;
 function showToast(message, type = 'success', title = 'Notificación') {
     const liveToastEl = document.getElementById('liveToast');
     const toastBodyEl = document.getElementById('toast-body');
-    
+    const toastIconEl = document.getElementById('toast-icon');
+
     if (liveToastEl && toastBodyEl) {
         if (!bsToast) { try { bsToast = new bootstrap.Toast(liveToastEl, { delay: 3500 }); } catch (e) { console.error("Toast init error", e); return; }}
-        liveToastEl.className = 'toast align-items-center border-0';
-        const bgClass = type === 'error' ? 'text-bg-danger' : (type === 'warning' ? 'text-bg-warning' : (type === 'info' ? 'text-bg-info' : 'text-bg-success'));
-        liveToastEl.classList.add(bgClass, 'text-white');
-        let iconClass = type === 'success' ? 'bi-check-circle-fill' : (type === 'error' ? 'bi-exclamation-triangle-fill' : (type === 'warning' ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'));
-        toastBodyEl.innerHTML = `<i class="bi ${iconClass} me-2"></i> ${message}`;
+        liveToastEl.className = 'toast';
+        const typeMap = { success: 'toast-success', error: 'toast-error', warning: 'toast-warning', info: 'toast-info' };
+        const iconMap = { success: 'bi-check-circle-fill', error: 'bi-x-circle-fill', warning: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
+        liveToastEl.classList.add(typeMap[type] || 'toast-success');
+        if (toastIconEl) toastIconEl.innerHTML = `<i class="bi ${iconMap[type] || iconMap.success}"></i>`;
+        toastBodyEl.textContent = message;
         bsToast.show();
     } else { console.warn("Toast elements not found:", message); alert(`${type.toUpperCase()}: ${message}`); }
 }
@@ -3017,11 +3019,11 @@ document.addEventListener('DOMContentLoaded', () => {
              if (recibido > 0 && vuelto > 0) {
                  vueltoEl.textContent = formatoMoneda.format(vuelto);
                  vueltoInfo.style.display = 'block';
-                 vueltoInfo.className = 'alert alert-success py-1 px-2 mb-0 small';
+                 vueltoInfo.className = 'sv-change-info';
              } else if (recibido > 0 && vuelto < 0) {
                  vueltoEl.textContent = 'Falta ' + formatoMoneda.format(Math.abs(vuelto));
                  vueltoInfo.style.display = 'block';
-                 vueltoInfo.className = 'alert alert-danger py-1 px-2 mb-0 small';
+                 vueltoInfo.className = 'sv-change-info sv-change-danger';
              } else {
                  vueltoInfo.style.display = 'none';
              }
@@ -3145,6 +3147,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             filteredSales.forEach(d => {
                 const id = d.id;
+                const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
+
                 const card = document.createElement('div');
                 card.className = 'venta-card';
                 card.dataset.id = id;
@@ -3161,7 +3165,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const repartidor = d.repartidorNombre || (d.tipoEntrega === 'tienda' ? 'Recoge en tienda' : '-');
                 const entregaIcon = d.tipoEntrega === 'domicilio' ? 'bi-bicycle' : 'bi-shop';
-                const estado = d.estado || (d.tipoVenta === 'apartado' ? 'Pendiente' : 'Completada');
 
                 let estadoBadgeClass = 'bg-success';
                 if (estado === 'Pendiente') estadoBadgeClass = 'bg-warning text-dark';
@@ -8177,53 +8180,85 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ── Formateador ──
     const fmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
+    // ── Parsear fecha "YYYY-MM-DD" como hora local (NO UTC) ──
+    function parseLocalDate(str) {
+        const [y, m, d] = str.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+
     // ── Rangos de fecha ──
     function getDateRange(range) {
         const now = new Date();
-        const hoyInicio = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const hoyInicio = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
         const hoyFin    = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
         switch (range) {
             case 'hoy':
                 return { desde: hoyInicio, hasta: hoyFin, label: 'Hoy' };
+            case 'ayer': {
+                const desde = new Date(hoyInicio);
+                desde.setDate(desde.getDate() - 1);
+                const hasta = new Date(desde);
+                hasta.setHours(23, 59, 59, 999);
+                return { desde, hasta, label: 'Ayer' };
+            }
             case 'semana': {
                 const desde = new Date(hoyInicio);
                 desde.setDate(desde.getDate() - 6);
                 return { desde, hasta: hoyFin, label: 'Esta semana' };
             }
             default: { // 'mes'
-                const desde = new Date(now.getFullYear(), now.getMonth(), 1);
+                const desde = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
                 return { desde, hasta: hoyFin, label: 'Este mes' };
             }
         }
     }
 
     // ── Agrupar ventas por producto ──
+    // Calcula el ratio de descuento de una venta (1 = sin descuento, 0.9 = 10% desc)
+    function discountRatio(venta) {
+        const items = venta.items || [];
+        const sumItems = items.reduce((s, it) =>
+            s + parseFloat(it.precio || 0) * parseInt(it.cantidad || 1, 10), 0);
+        if (sumItems <= 0) return 1;
+
+        const raw = parseFloat(venta.descuento) || 0;
+        if (raw <= 0) return 1;
+
+        const montoDesc = venta.descuentoTipo === 'porcentaje'
+            ? sumItems * (raw / 100)
+            : raw;
+
+        return Math.max(0, (sumItems - montoDesc) / sumItems);
+    }
+
     function agruparPorProducto(ventas, productCostMap) {
         const mapa = new Map();
 
-        ventas.forEach(({ venta, fecha }) => {
+        ventas.forEach(({ venta }) => {
             if (!venta.items || !venta.items.length) return;
 
+            const ratio = discountRatio(venta);
+
             venta.items.forEach(item => {
-                const nombre  = item.nombre || item.name || 'Producto sin nombre';
-                // Costo: primero del item, si no, del mapa de productos por ID
-                const costo   = parseFloat(
+                const nombre = item.nombre || item.name || 'Producto sin nombre';
+                const costo  = parseFloat(
                     item.precioCosto ||
                     item.costo ||
                     (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
                     0
                 );
-                const precio  = parseFloat(item.precio || item.precioUnitario || 0);
-                const cant    = parseInt(item.cantidad || 1, 10);
-
-                const key = nombre.trim().toLowerCase();
+                // Precio efectivo = precio catálogo × ratio de descuento
+                const precioBase     = parseFloat(item.precio || item.precioUnitario || 0);
+                const precioEfectivo = precioBase * ratio;
+                const cant           = parseInt(item.cantidad || 1, 10);
+                const key            = nombre.trim().toLowerCase();
 
                 if (!mapa.has(key)) {
                     mapa.set(key, {
                         nombre: nombre.trim(),
                         costo,
-                        precio,
+                        precio: precioEfectivo,
                         cantidad: 0,
                         utilidadTotal: 0,
                         ingresoTotal: 0,
@@ -8231,17 +8266,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     });
                 }
 
-                const entry = mapa.get(key);
-                const utilidadUnidad = precio - costo;
-
-                entry.cantidad    += cant;
-                entry.utilidadTotal += utilidadUnidad * cant;
-                entry.ingresoTotal  += precio * cant;
+                const entry          = mapa.get(key);
+                entry.cantidad      += cant;
+                entry.utilidadTotal += (precioEfectivo - costo) * cant;
+                entry.ingresoTotal  += precioEfectivo * cant;
                 entry.costoTotal    += costo * cant;
-
-                // Actualizar precio/costo al último visto
-                entry.precio = precio;
-                entry.costo  = costo;
+                entry.precio         = precioEfectivo;
+                entry.costo          = costo;
             });
         });
 
@@ -8268,8 +8299,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         ventas.forEach(({ venta, fecha }) => {
             const key = fecha.toISOString().slice(0, 10);
             if (!dayMap.has(key)) return;
-
             if (!venta.items) return;
+
+            const ratio = discountRatio(venta);
+
             venta.items.forEach(item => {
                 const costo  = parseFloat(
                     item.precioCosto ||
@@ -8277,7 +8310,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
                     0
                 );
-                const precio = parseFloat(item.precio || item.precioUnitario || 0);
+                const precio = parseFloat(item.precio || item.precioUnitario || 0) * ratio;
                 const cant   = parseInt(item.cantidad || 1, 10);
                 dayMap.set(key, (dayMap.get(key) || 0) + (precio - costo) * cant);
             });
@@ -8498,11 +8531,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 showToast('Selecciona ambas fechas', 'warning');
                 return;
             }
-            const desde = new Date(inputDesde.value);
-            const hasta = new Date(inputHasta.value);
+            // parseLocalDate evita el bug UTC: "2025-03-18" → local midnight, no UTC
+            const desde = parseLocalDate(inputDesde.value);
+            const hasta = parseLocalDate(inputHasta.value);
             hasta.setHours(23, 59, 59, 999);
             calcularFinanzas(desde, hasta,
-                `${desde.toLocaleDateString('es-CO')} — ${hasta.toLocaleDateString('es-CO')}`);
+                `${desde.toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'})} — ${hasta.toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'})}`);
         });
     }
 

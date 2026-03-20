@@ -205,6 +205,41 @@
     };
 
     // ========================================================================
+    // BÚSQUEDA POR CÓDIGO DE PRODUCTO (para QR personalizados)
+    // ========================================================================
+
+    async function buscarProductoPorCodigo(texto) {
+        try {
+            const q = query(
+                collection(db, 'productos'),
+                where('codigo', '==', texto.trim()),
+                limit(1)
+            );
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const doc = snapshot.docs[0];
+                return { id: doc.id, ...doc.data() };
+            }
+            return null;
+        } catch (error) {
+            console.error('Error buscando por código:', error);
+            return null;
+        }
+    }
+
+    // Versión local de validación (sin mostrar toast) para uso interno
+    function validarCodigoBarrasLocal(codigo) {
+        codigo = codigo.replace(/[\s-]/g, '');
+        if ((codigo.length !== 13 && codigo.length !== 12) || !/^\d+$/.test(codigo)) {
+            return { valido: false };
+        }
+        if (codigo.length === 12) codigo = '0' + codigo;
+        const providedCheck = parseInt(codigo[12]);
+        const calculatedCheck = parseInt(calcularDigitoVerificadorEAN13(codigo.substring(0, 12)));
+        return { valido: providedCheck === calculatedCheck, codigo };
+    }
+
+    // ========================================================================
     // INICIALIZACIÓN
     // ========================================================================
 
@@ -222,6 +257,120 @@
                 inputCodigoBarras.value = nuevoBarcode;
                 showToast('Código de barras generado', 'success');
             });
+        }
+
+        // ====================================================================
+        // ESCÁNER CON CÁMARA (MÓVIL)
+        // ====================================================================
+        const btnCameraScanner = document.getElementById('btn-camera-scanner');
+        const cameraScannerModal = document.getElementById('cameraScannerModal');
+
+        if (btnCameraScanner && cameraScannerModal) {
+            let html5QrCode = null;
+            let scannerActive = false;
+
+            async function iniciarEscaner() {
+                const container = document.getElementById('camera-scanner-container');
+                const status = document.getElementById('camera-scanner-status');
+
+                try {
+                    html5QrCode = new Html5Qrcode('camera-scanner-container');
+                    scannerActive = true;
+
+                    await html5QrCode.start(
+                        { facingMode: 'environment' },
+                        {
+                            fps: 10,
+                            qrbox: function(viewfinderWidth, viewfinderHeight) {
+                                const size = Math.min(viewfinderWidth, viewfinderHeight) * 0.7;
+                                return { width: size, height: Math.round(size * 0.55) };
+                            },
+                            formatsToSupport: [
+                                Html5QrcodeSupportedFormats.EAN_13,
+                                Html5QrcodeSupportedFormats.EAN_8,
+                                Html5QrcodeSupportedFormats.UPC_A,
+                                Html5QrcodeSupportedFormats.UPC_E,
+                                Html5QrcodeSupportedFormats.CODE_128,
+                                Html5QrcodeSupportedFormats.QR_CODE,
+                                Html5QrcodeSupportedFormats.CODE_39,
+                            ]
+                        },
+                        async (decodedText) => {
+                            if (!scannerActive) return;
+                            scannerActive = false;
+
+                            // Detener escáner
+                            try { await html5QrCode.stop(); } catch(e) {}
+
+                            // Buscar producto - primero por código de barras estándar
+                            let producto = null;
+                            const validacion = validarCodigoBarrasLocal(decodedText);
+                            if (validacion.valido) {
+                                producto = await window.buscarProductoPorBarcode(decodedText);
+                            }
+
+                            // Si no encontró, intentar búsqueda directa por código de producto
+                            if (!producto) {
+                                producto = await buscarProductoPorCodigo(decodedText);
+                            }
+
+                            // Cerrar modal y esperar que termine la animación antes de abrir el siguiente
+                            const modalInstance = bootstrap.Modal.getInstance(cameraScannerModal);
+                            if (modalInstance) {
+                                if (producto) {
+                                    cameraScannerModal.addEventListener('hidden.bs.modal', function onHidden() {
+                                        cameraScannerModal.removeEventListener('hidden.bs.modal', onHidden);
+                                        window.openVariationModal(producto.id);
+                                        showToast(`Producto encontrado: ${producto.nombre}`, 'success');
+                                    }, { once: true });
+                                } else {
+                                    showToast('Producto no encontrado para este código', 'warning');
+                                }
+                                modalInstance.hide();
+                            } else if (producto) {
+                                window.openVariationModal(producto.id);
+                                showToast(`Producto encontrado: ${producto.nombre}`, 'success');
+                            } else {
+                                showToast('Producto no encontrado para este código', 'warning');
+                            }
+                        },
+                        () => { /* errores de frame ignorados */ }
+                    );
+                } catch (err) {
+                    console.error('Error iniciando cámara:', err);
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="p-4 text-center text-danger">
+                                <i class="bi bi-camera-video-off fs-1 d-block mb-2"></i>
+                                <p>No se pudo acceder a la cámara.</p>
+                                <small class="text-muted">Asegúrate de dar permiso de cámara al navegador.</small>
+                            </div>`;
+                    }
+                }
+            }
+
+            async function detenerEscaner() {
+                scannerActive = false;
+                if (html5QrCode) {
+                    try {
+                        if (html5QrCode.isScanning) {
+                            await html5QrCode.stop();
+                        }
+                    } catch(e) {}
+                    html5QrCode = null;
+                }
+                // Limpiar el contenedor para evitar duplicados
+                const container = document.getElementById('camera-scanner-container');
+                if (container) container.innerHTML = '';
+                const status = document.getElementById('camera-scanner-status');
+                if (status) {
+                    status.textContent = '';
+                    status.classList.add('d-none');
+                }
+            }
+
+            cameraScannerModal.addEventListener('shown.bs.modal', iniciarEscaner);
+            cameraScannerModal.addEventListener('hide.bs.modal', detenerEscaner);
         }
 
         // ====================================================================
