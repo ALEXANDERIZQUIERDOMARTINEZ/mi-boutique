@@ -394,6 +394,24 @@ Finalizar Pedido
 </button>
 
 </form>
+
+<!-- Pantalla de éxito (oculta hasta confirmar pedido) -->
+<div id="checkout-success" style="display:none; text-align:center; padding: 2rem 1rem;">
+  <div style="font-size:4rem; margin-bottom:1rem;">🎉</div>
+  <h4 style="font-weight:700; margin-bottom:0.5rem;">¡Pedido recibido!</h4>
+  <p style="color:#6c757d; margin-bottom:1.5rem;">Tu pedido fue registrado correctamente. Abre WhatsApp para enviarnos los detalles y confirmar.</p>
+  <a id="whatsapp-confirm-btn" href="#" target="_blank" rel="noopener noreferrer"
+     style="display:flex; align-items:center; justify-content:center; gap:0.5rem;
+            background:#25D366; color:#fff; font-weight:600; padding:0.85rem 1.5rem;
+            border-radius:12px; text-decoration:none; font-size:1rem; margin-bottom:1rem;">
+    <i class="bi bi-whatsapp" style="font-size:1.3rem;"></i>
+    Enviar pedido por WhatsApp
+  </a>
+  <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal" id="checkout-continue-btn">
+    Seguir comprando
+  </button>
+</div>
+
 </div>
 </div>
 </div>
