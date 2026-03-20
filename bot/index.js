@@ -15,6 +15,9 @@ const firebaseApp = initializeApp({
 });
 const db = getFirestore(firebaseApp);
 
+// ─── Configuración dueño ─────────────────────────────────────────────────────
+const OWNER_PHONE = process.env.OWNER_PHONE || '573017850041';
+
 // ─── Estado por usuario ───────────────────────────────────────────────────────
 // { [chatId]: { paso, carrito, categoriaActual, productosActuales, nombre, direccion } }
 const sesiones = {};
@@ -77,6 +80,7 @@ client.on('message', async msg => {
     if (msg.isGroupMsg) return;
     if (msg.isStatus) return;
     if (msg.from === 'status@broadcast') return;
+    if (msg.from === `${OWNER_PHONE}@c.us`) return;
     const chatId = msg.from;
     const texto  = msg.body.trim().toLowerCase();
     const sesion = getSesion(chatId);
@@ -279,8 +283,6 @@ client.on('message', async msg => {
 });
 
 // ─── Notificaciones de pedidos web ───────────────────────────────────────────
-const OWNER_PHONE = process.env.OWNER_PHONE || '573017850041'; // número del dueño
-
 function formatPrecioBot(n) {
     return `$${Number(n).toLocaleString('es-CO')}`;
 }
