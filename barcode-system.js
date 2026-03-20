@@ -314,25 +314,19 @@
                                 producto = await buscarProductoPorCodigo(decodedText);
                             }
 
-                            // Cerrar modal y esperar que termine la animación antes de abrir el siguiente
-                            const modalInstance = bootstrap.Modal.getInstance(cameraScannerModal);
-                            if (modalInstance) {
-                                if (producto) {
-                                    cameraScannerModal.addEventListener('hidden.bs.modal', function onHidden() {
-                                        cameraScannerModal.removeEventListener('hidden.bs.modal', onHidden);
-                                        window.openVariationModal(producto.id);
-                                        showToast(`Producto encontrado: ${producto.nombre}`, 'success');
-                                    }, { once: true });
-                                } else {
-                                    showToast('Producto no encontrado para este código', 'warning');
-                                }
-                                modalInstance.hide();
-                            } else if (producto) {
-                                window.openVariationModal(producto.id);
-                                showToast(`Producto encontrado: ${producto.nombre}`, 'success');
+                            // Cerrar modal usando getOrCreateInstance (funciona aunque haya sido abierto via data-bs-toggle)
+                            const modalInstance = bootstrap.Modal.getOrCreateInstance(cameraScannerModal);
+
+                            if (producto) {
+                                cameraScannerModal.addEventListener('hidden.bs.modal', function() {
+                                    window.openVariationModal(producto.id);
+                                    showToast(`Producto encontrado: ${producto.nombre}`, 'success');
+                                }, { once: true });
                             } else {
                                 showToast('Producto no encontrado para este código', 'warning');
                             }
+
+                            modalInstance.hide();
                         },
                         () => { /* errores de frame ignorados */ }
                     );
