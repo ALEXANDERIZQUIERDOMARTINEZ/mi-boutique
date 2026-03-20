@@ -60,6 +60,7 @@ body {
     color: var(--color-texto);
     line-height: 1.6;
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     padding-bottom: calc(88px + env(safe-area-inset-bottom));
@@ -1937,11 +1938,13 @@ textarea.form-control-modern {
         margin: 0;
         max-width: 100%;
         min-height: 100vh;
+        min-height: 100dvh;
     }
 
     #checkoutModal .modal-content.checkout-premium {
         border-radius: 0;
         min-height: 100vh;
+        min-height: 100dvh;
     }
 
     #checkoutModal .modal-body {
@@ -4140,4 +4143,29 @@ textarea.form-control-modern {
         padding: 10px 12px 10px 36px;
     }
     .inv-select { padding-left: 12px; }
+}
+
+/* ─── iOS/Safari: normalizar estilo nativo de inputs de fecha ─── */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ─── iOS: evitar zoom automático al enfocar inputs (requiere font-size >= 16px) ─── */
+@supports (-webkit-touch-callout: none) {
+  .form-control,
+  .form-select,
+  .form-control-modern,
+  input[type="text"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="email"],
+  input[type="search"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 }
