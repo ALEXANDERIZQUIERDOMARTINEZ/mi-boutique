@@ -22,6 +22,14 @@ const productsCollection = collection(db, 'productos');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const promocionesCollection = collection(db, 'promociones');
 const promocionesGlobalesCollection = collection(db, 'promocionesGlobales');
+
+// --- CONFIGURACIÓN NOTIFICACIONES WHATSAPP (CallMeBot) ---
+// Para activar: sigue las instrucciones en README o pregúntale al administrador
+// 1. Guarda el contacto +34 644 59 79 50 en WhatsApp como "CallMeBot"
+// 2. Envíale el mensaje: I allow callmebot to send me messages
+// 3. Recibirás tu API key por WhatsApp — ponla aquí abajo
+const WHATSAPP_NOTIF_PHONE  = '573046084971'; // Tu número (código país + número)
+const WHATSAPP_NOTIF_APIKEY = '';             // ← Pega aquí tu API key de CallMeBot
 const categoriesCollection = collection(db, 'categorias');
 const clientsCollection = collection(db, 'clientes');
 const chatConversationsCollection = collection(db, 'chatConversations');
@@ -38,6 +46,23 @@ function openWhatsApp(url) {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+}
+
+// --- Envío automático de notificación al dueño de la tienda (CallMeBot) ---
+async function sendNotificacionPedido(mensaje) {
+    if (!WHATSAPP_NOTIF_APIKEY) {
+        // API key no configurada: abrir WhatsApp manualmente como respaldo
+        return false;
+    }
+    try {
+        const url = `https://api.callmebot.com/whatsapp.php?phone=${WHATSAPP_NOTIF_PHONE}&text=${encodeURIComponent(mensaje)}&apikey=${WHATSAPP_NOTIF_APIKEY}`;
+        // no-cors: no necesitamos leer la respuesta, solo disparar el envío
+        await fetch(url, { mode: 'no-cors' });
+        return true;
+    } catch (err) {
+        console.error('Error enviando notificación WhatsApp:', err);
+        return false;
+    }
 }
 
 let bsToast = null;
@@ -2203,13 +2228,12 @@ document.addEventListener('DOMContentLoaded', () => {
             saveCart();
             document.getElementById('checkout-form').reset();
 
-            // Crear URL de WhatsApp con número correcto
+            // URL de respaldo (por si el envío automático falla)
             const numeroWhatsApp = '573046084971'; // Número de la empresa
-            const mensajeWhatsAppURL = encodeURIComponent(mensajeWhatsApp);
-            const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${mensajeWhatsAppURL}`;
+            const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensajeWhatsApp)}`;
 
-            // Abrir WhatsApp sin salir de la página
-            openWhatsApp(urlWhatsApp);
+            // Intentar envío automático al dueño de la tienda
+            const enviado = await sendNotificacionPedido(mensajeWhatsApp);
 
             // Mostrar pantalla de éxito dentro del modal
             const checkoutForm = document.getElementById('checkout-form');
@@ -2218,8 +2242,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const continueBtn = document.getElementById('checkout-continue-btn');
 
             if (checkoutForm) checkoutForm.style.display = 'none';
-            if (whatsappBtn) whatsappBtn.href = urlWhatsApp;
             if (checkoutSuccess) checkoutSuccess.style.display = 'block';
+
+            // Si el envío automático funcionó, ocultar el botón manual de WhatsApp
+            // Si no, mostrarlo como respaldo para que el cliente pueda enviar
+            if (whatsappBtn) {
+                if (enviado) {
+                    whatsappBtn.style.display = 'none';
+                    const infoMsg = document.getElementById('checkout-success-msg');
+                    if (infoMsg) infoMsg.textContent = 'Tu pedido fue registrado y la tienda ya fue notificada automáticamente.';
+                } else {
+                    whatsappBtn.style.display = 'flex';
+                    whatsappBtn.href = urlWhatsApp;
+                }
+            }
 
             // Al presionar "Seguir comprando" restaurar el formulario para la próxima compra
             if (continueBtn) {
