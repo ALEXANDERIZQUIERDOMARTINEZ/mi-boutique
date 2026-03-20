@@ -2213,14 +2213,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             mensajeWhatsApp += `\nTOTAL: ${formatoMoneda.format(total)}`;
 
-            // Limpiar y cerrar modales
-            const checkoutModalEl = document.getElementById('checkoutModal');
+            // Mostrar pantalla de éxito ANTES de cerrar — el cliente la ve de inmediato
+            const checkoutForm = document.getElementById('checkout-form');
+            const checkoutSuccess = document.getElementById('checkout-success');
+            const continueBtn = document.getElementById('checkout-continue-btn');
+
+            if (checkoutForm) checkoutForm.style.display = 'none';
+            if (checkoutSuccess) checkoutSuccess.style.display = 'block';
+
+            // Cerrar el offcanvas del carrito (pero NO el modal — el cliente lo cierra)
             const cartOffcanvasEl = document.getElementById('cartOffcanvas');
-
-            const checkoutModalInstance = bootstrap.Modal.getInstance(checkoutModalEl) || bootstrap.Modal.getOrCreateInstance(checkoutModalEl);
             const cartOffcanvasInstance = bootstrap.Offcanvas.getInstance(cartOffcanvasEl) || bootstrap.Offcanvas.getOrCreateInstance(cartOffcanvasEl);
-
-            checkoutModalInstance.hide();
             cartOffcanvasInstance.hide();
 
             // Limpiar carrito
@@ -2229,40 +2232,20 @@ document.addEventListener('DOMContentLoaded', () => {
             saveCart();
             document.getElementById('checkout-form').reset();
 
-            // URL de respaldo (por si el envío automático falla)
-            const numeroWhatsApp = '573017850041'; // Número de la empresa
-            const urlWhatsApp = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensajeWhatsApp)}`;
+            // Enviar notificación al dueño en segundo plano (el bot de Firestore también lo hace)
+            sendNotificacionPedido(mensajeWhatsApp).catch(() => {});
 
-            // Intentar envío automático al dueño de la tienda
-            const enviado = await sendNotificacionPedido(mensajeWhatsApp);
+            // Al presionar "Listo" cerrar el modal y restaurar el formulario
+            const checkoutModalEl = document.getElementById('checkoutModal');
+            const checkoutModalInstance = bootstrap.Modal.getInstance(checkoutModalEl) || bootstrap.Modal.getOrCreateInstance(checkoutModalEl);
 
-            // Mostrar pantalla de éxito dentro del modal
-            const checkoutForm = document.getElementById('checkout-form');
-            const checkoutSuccess = document.getElementById('checkout-success');
-            const whatsappBtn = document.getElementById('whatsapp-confirm-btn');
-            const continueBtn = document.getElementById('checkout-continue-btn');
-
-            if (checkoutForm) checkoutForm.style.display = 'none';
-            if (checkoutSuccess) checkoutSuccess.style.display = 'block';
-
-            // Si el envío automático funcionó, ocultar el botón manual de WhatsApp
-            // Si no, mostrarlo como respaldo para que el cliente pueda enviar
-            if (whatsappBtn) {
-                if (enviado) {
-                    whatsappBtn.style.display = 'none';
-                    const infoMsg = document.getElementById('checkout-success-msg');
-                    if (infoMsg) infoMsg.textContent = 'Tu pedido fue registrado y la tienda ya fue notificada automáticamente.';
-                } else {
-                    whatsappBtn.style.display = 'flex';
-                    whatsappBtn.href = urlWhatsApp;
-                }
-            }
-
-            // Al presionar "Seguir comprando" restaurar el formulario para la próxima compra
             if (continueBtn) {
                 continueBtn.onclick = () => {
-                    if (checkoutForm) checkoutForm.style.display = 'block';
-                    if (checkoutSuccess) checkoutSuccess.style.display = 'none';
+                    checkoutModalInstance.hide();
+                    setTimeout(() => {
+                        if (checkoutForm) checkoutForm.style.display = 'block';
+                        if (checkoutSuccess) checkoutSuccess.style.display = 'none';
+                    }, 300);
                 };
             }
 
