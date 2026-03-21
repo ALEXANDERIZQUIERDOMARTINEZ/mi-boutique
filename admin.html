@@ -349,20 +349,74 @@
             </div>
 
             <div class="tab-pane fade" id="pedidos-web">
-                <h1 class="h2 mb-4"><i class="bi bi-globe me-2"></i>Pedidos desde la Web</h1>
-                <div class="card">
-                    <div class="card-header bg-white border-0 pt-3">
-                        <h3 class="h5 mb-0">Pedidos Pendientes</h3>
+                <!-- Header -->
+                <div class="pw-header">
+                    <div>
+                        <h1 class="h2 mb-0">Pedidos Web</h1>
+                        <p class="text-muted small mb-0">Gestiona los pedidos recibidos desde la tienda</p>
                     </div>
-                    <div class="card-body p-0">
-                        <div id="web-orders-container" class="p-3">
-                            <div class="text-center text-muted py-5" id="loading-web-orders">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Cargando...</span>
-                                </div>
-                                <p class="mt-2">Cargando pedidos...</p>
-                            </div>
+                    <span class="pw-pending-pill" id="pedidos-pending-pill" style="display:none">
+                        <i class="bi bi-clock-fill me-1"></i>
+                        <span id="pedidos-pending-count">0</span> pendientes
+                    </span>
+                </div>
+
+                <!-- Stats rápidas -->
+                <div class="pw-stats">
+                    <div class="pw-stat pw-stat-warning">
+                        <span class="pw-stat-val" id="pw-stat-pendientes">0</span>
+                        <span class="pw-stat-label">Pendientes</span>
+                    </div>
+                    <div class="pw-stat pw-stat-success">
+                        <span class="pw-stat-val" id="pw-stat-hoy">0</span>
+                        <span class="pw-stat-label">Aceptados hoy</span>
+                    </div>
+                    <div class="pw-stat pw-stat-brand">
+                        <span class="pw-stat-val" id="pw-stat-valor">$0</span>
+                        <span class="pw-stat-label">Valor hoy</span>
+                    </div>
+                </div>
+
+                <!-- Toolbar -->
+                <div class="pw-toolbar">
+                    <div class="pw-search-wrap">
+                        <i class="bi bi-search pw-search-icon"></i>
+                        <input type="text" id="pw-search" class="pw-search-input" placeholder="Buscar cliente o pedido...">
+                    </div>
+                    <select id="pw-filter-pago" class="pw-filter-select">
+                        <option value="">Todos los pagos</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Nequi">Nequi</option>
+                    </select>
+                </div>
+
+                <!-- Tabs -->
+                <div class="pw-tabs" id="pw-tabs">
+                    <button class="pw-tab active" data-tab="pendiente">
+                        <i class="bi bi-clock"></i>
+                        <span>Pendientes</span>
+                        <span class="pw-tab-badge pw-tab-badge-warning" id="pw-badge-pendiente">0</span>
+                    </button>
+                    <button class="pw-tab" data-tab="aceptado">
+                        <i class="bi bi-check-circle"></i>
+                        <span>Aceptados</span>
+                        <span class="pw-tab-badge pw-tab-badge-success" id="pw-badge-aceptado">0</span>
+                    </button>
+                    <button class="pw-tab" data-tab="rechazado">
+                        <i class="bi bi-x-circle"></i>
+                        <span>Rechazados</span>
+                        <span class="pw-tab-badge pw-tab-badge-neutral" id="pw-badge-rechazado">0</span>
+                    </button>
+                </div>
+
+                <!-- Orders container -->
+                <div id="web-orders-container">
+                    <div class="text-center text-muted py-5" id="loading-web-orders">
+                        <div class="spinner-border" role="status" style="color:var(--brand-400)">
+                            <span class="visually-hidden">Cargando...</span>
                         </div>
+                        <p class="mt-2">Cargando pedidos...</p>
                     </div>
                 </div>
             </div>

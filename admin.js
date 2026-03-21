@@ -1,6 +1,6 @@
 // Import Firebase core and Firestore modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 // Import Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
@@ -470,362 +470,290 @@ document.addEventListener('DOMContentLoaded', () => {
         const webOrdersContainer = document.getElementById('web-orders-container');
         const loadingWebOrders = document.getElementById('loading-web-orders');
         const pedidosWebCountBadge = document.getElementById('pedidos-web-count');
+        const mbnBadge = document.getElementById('mbn-pedidos-count');
 
-        if (!webOrdersContainer) {
-            console.warn("Contenedor de pedidos web no encontrado");
-            return;
+        if (!webOrdersContainer) { console.warn("Contenedor de pedidos web no encontrado"); return; }
+
+        // ── Estado ───────────────────────────────────────────────────────────
+        let allOrders = { pendiente: [], aceptado: [], rechazado: [] };
+        let currentTab = 'pendiente';
+        let searchQuery = '';
+        let filterPago = '';
+
+        // ── UI listeners ─────────────────────────────────────────────────────
+        const searchInput = document.getElementById('pw-search');
+        const filterSelect = document.getElementById('pw-filter-pago');
+        const tabButtons = document.querySelectorAll('.pw-tab');
+
+        if (searchInput) {
+            let st;
+            searchInput.addEventListener('input', e => { clearTimeout(st); st = setTimeout(() => { searchQuery = e.target.value.toLowerCase().trim(); renderCurrentTab(); }, 200); });
+        }
+        if (filterSelect) filterSelect.addEventListener('change', e => { filterPago = e.target.value; renderCurrentTab(); });
+        tabButtons.forEach(btn => btn.addEventListener('click', () => {
+            tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTab = btn.dataset.tab;
+            renderCurrentTab();
+        }));
+
+        // ── Helpers ──────────────────────────────────────────────────────────
+        function getFiltered(estado) {
+            return allOrders[estado].filter(({ order }) => {
+                const ms = !searchQuery || (order.clienteNombre || '').toLowerCase().includes(searchQuery) || (order.clienteCelular || '').includes(searchQuery);
+                const mp = !filterPago || (order.metodoPagoSolicitado || '').toLowerCase() === filterPago.toLowerCase();
+                return ms && mp;
+            });
         }
 
+        function formatFecha(ts) {
+            if (!ts?.toDate) return 'Fecha no disponible';
+            return ts.toDate().toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+        }
+
+        // ── Stats ────────────────────────────────────────────────────────────
+        function updateStats() {
+            const count = allOrders.pendiente.length;
+            if (pedidosWebCountBadge) { pedidosWebCountBadge.textContent = count; pedidosWebCountBadge.style.display = count > 0 ? 'inline' : 'none'; }
+            if (mbnBadge) { mbnBadge.textContent = count; mbnBadge.style.display = count > 0 ? 'inline-flex' : 'none'; }
+            const pill = document.getElementById('pedidos-pending-pill');
+            const pillCount = document.getElementById('pedidos-pending-count');
+            if (pill && pillCount) { pillCount.textContent = count; pill.style.display = count > 0 ? 'inline-flex' : 'none'; }
+            const statPendientes = document.getElementById('pw-stat-pendientes');
+            if (statPendientes) statPendientes.textContent = count;
+            ['pendiente','aceptado','rechazado'].forEach(t => { const b = document.getElementById(`pw-badge-${t}`); if (b) b.textContent = allOrders[t].length; });
+            const hoy = new Date(); hoy.setHours(0,0,0,0);
+            const aceptadosHoy = allOrders.aceptado.filter(({ order }) => { const f = order.fechaAceptacion?.toDate?.(); return f && f >= hoy; });
+            const valorHoy = aceptadosHoy.reduce((s, { order }) => s + (order.totalPedido || 0), 0);
+            const sH = document.getElementById('pw-stat-hoy'); if (sH) sH.textContent = aceptadosHoy.length;
+            const sV = document.getElementById('pw-stat-valor'); if (sV) sV.textContent = formatoMoneda.format(valorHoy);
+            const dbB = document.getElementById('db-pedidos-web'); if (dbB) dbB.textContent = count;
+        }
+
+        // ── Render ───────────────────────────────────────────────────────────
+        function renderCurrentTab() {
+            webOrdersContainer.querySelectorAll('.pw-order-card, .pw-empty').forEach(el => el.remove());
+            const orders = getFiltered(currentTab);
+            if (orders.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'pw-empty';
+                const labels = { pendiente: 'No hay pedidos pendientes', aceptado: 'No hay pedidos aceptados', rechazado: 'No hay pedidos rechazados' };
+                const icons  = { pendiente: 'bi-clock', aceptado: 'bi-check-circle', rechazado: 'bi-x-circle' };
+                empty.innerHTML = `<i class="bi ${icons[currentTab]} pw-empty-icon"></i><p class="pw-empty-text">${labels[currentTab]}</p>`;
+                webOrdersContainer.appendChild(empty);
+                return;
+            }
+            const frag = document.createDocumentFragment();
+            orders.forEach(({ id, order }) => frag.appendChild(createOrderCard(order, id)));
+            webOrdersContainer.appendChild(frag);
+        }
+
+        // ── Card builder ─────────────────────────────────────────────────────
         function createOrderCard(order, orderId) {
             const card = document.createElement('div');
-            card.className = 'card mb-3 web-order-card';
+            const estado = order.estado || 'pendiente';
+            card.className = `pw-order-card pw-status-${estado}`;
             card.dataset.orderId = orderId;
 
-            const fechaTexto = order.timestamp?.toDate ? 
-                order.timestamp.toDate().toLocaleString('es-CO', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short'
-                }) : 'Fecha no disponible';
+            const isPendiente = estado === 'pendiente';
+            const isAceptado  = estado === 'aceptado';
 
-            let itemsHtml = '';
-            if (order.items && order.items.length > 0) {
-                itemsHtml = order.items.map(item => {
-                    const product = localProductsMap.get(item.productoId);
-                    const imagenHtml = product && product.imageUrl
-                        ? `<img src="${product.imageUrl}" alt="${item.nombre}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:8px;vertical-align:middle;">`
-                        : '';
-                    const categoria = product && product.categoria
-                        ? `<small class="badge bg-secondary" style="font-size:0.7rem;">${product.categoria}</small>`
-                        : '';
+            // Items
+            const itemsHtml = (order.items || []).map(item => {
+                const product = localProductsMap.get(item.productoId);
+                const imgHtml = product?.imageUrl
+                    ? `<img src="${product.imageUrl}" class="pw-item-img" alt="${item.nombre}">`
+                    : `<div class="pw-item-img-placeholder"><i class="bi bi-image"></i></div>`;
+                return `<div class="pw-item-row">
+                    ${imgHtml}
+                    <div class="pw-item-info">
+                        <div class="pw-item-name">${item.nombre}</div>
+                        <div class="pw-item-meta">${[item.talla, item.color].filter(Boolean).join(' · ')} · x${item.cantidad}</div>
+                    </div>
+                    <div class="pw-item-total">${formatoMoneda.format(item.total)}</div>
+                </div>`;
+            }).join('');
 
-                    return `
-                    <tr>
-                        <td>${imagenHtml}<span>${item.nombre}</span><br>${categoria}</td>
-                        <td>${item.talla || '-'}</td>
-                        <td>${item.color || '-'}</td>
-                        <td class="text-center">${item.cantidad}</td>
-                        <td class="text-end">${formatoMoneda.format(item.precio)}</td>
-                        <td class="text-end fw-bold">${formatoMoneda.format(item.total)}</td>
-                    </tr>
-                    `;
-                }).join('');
-            }
+            // Status badge
+            const statusLabels = { pendiente: 'Pendiente', aceptado: 'Aceptado', rechazado: 'Rechazado' };
+            const statusIcons  = { pendiente: 'bi-clock-fill', aceptado: 'bi-check-circle-fill', rechazado: 'bi-x-circle-fill' };
+            const statusBadge  = `<span class="pw-status-badge ${estado}"><i class="bi ${statusIcons[estado]}"></i>${statusLabels[estado]}</span>`;
+
+            // Delivery strip (solo para aceptados)
+            const deliveryStrip = isAceptado && (order.repartidor || order.costoEnvio)
+                ? `<div class="pw-delivery-strip">
+                    ${order.repartidor ? `<span><i class="bi bi-person-fill"></i>${order.repartidor}</span>` : ''}
+                    ${order.costoEnvio > 0 ? `<span><i class="bi bi-truck"></i>${formatoMoneda.format(order.costoEnvio)}</span>` : ''}
+                    ${order.fechaAceptacion ? `<span><i class="bi bi-calendar-check"></i>${formatFecha(order.fechaAceptacion)}</span>` : ''}
+                   </div>`
+                : '';
+
+            // Observaciones
+            const obsHtml = order.observaciones
+                ? `<div class="pw-obs"><i class="bi bi-chat-text me-1"></i>${order.observaciones}</div>` : '';
+
+            // Acciones
+            const actionsHtml = isPendiente ? `
+                <div class="pw-actions">
+                    <button class="pw-btn pw-btn-whatsapp btn-whatsapp-order" data-order-id="${orderId}">
+                        <i class="bi bi-whatsapp"></i><span class="d-none d-sm-inline ms-1">WhatsApp</span>
+                    </button>
+                    <button class="pw-btn pw-btn-reject btn-reject-order" data-order-id="${orderId}">
+                        <i class="bi bi-x-lg"></i><span class="d-none d-sm-inline ms-1">Rechazar</span>
+                    </button>
+                    <button class="pw-btn pw-btn-accept btn-accept-order" data-order-id="${orderId}">
+                        <i class="bi bi-check-lg"></i><span class="ms-1">Aceptar</span>
+                    </button>
+                </div>` : '';
 
             card.innerHTML = `
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div class="pw-card-header">
                     <div>
-                        <h5 class="mb-0"><i class="bi bi-bag-check me-2"></i>Pedido #${orderId.substring(0, 8).toUpperCase()}</h5>
-                        <small class="text-muted">${fechaTexto}</small>
+                        <div class="pw-card-id"><i class="bi bi-bag-check me-1"></i>#${orderId.substring(0,8).toUpperCase()}</div>
+                        <div class="pw-card-date">${formatFecha(order.timestamp)}</div>
                     </div>
-                    <span class="badge bg-warning text-dark">Pendiente</span>
+                    ${statusBadge}
                 </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-2"><i class="bi bi-person me-1"></i>Datos del Cliente</h6>
-                            <p class="mb-1"><strong>Nombre:</strong> ${order.clienteNombre}</p>
-                            <p class="mb-1"><strong>WhatsApp:</strong> <a href="https://wa.me/57${order.clienteCelular}" target="_blank">${order.clienteCelular}</a></p>
-                            <p class="mb-1"><strong>Dirección:</strong> ${order.clienteDireccion}</p>
-                            ${order.observaciones ? `<p class="mb-1"><strong>Observaciones:</strong> ${order.observaciones}</p>` : ''}
-                            <p class="mb-1"><strong>Método de Pago:</strong> <span class="badge bg-info">${order.metodoPagoSolicitado}</span></p>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-muted mb-2"><i class="bi bi-box-seam me-1"></i>Productos</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm table-borderless mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Producto</th>
-                                            <th>Talla</th>
-                                            <th>Color</th>
-                                            <th class="text-center">Cant.</th>
-                                            <th class="text-end">Precio</th>
-                                            <th class="text-end">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${itemsHtml}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="text-end mt-2">
-                                <h5 class="mb-0">Total: <span class="text-primary">${formatoMoneda.format(order.totalPedido)}</span></h5>
-                            </div>
-                        </div>
+                <div class="pw-card-body">
+                    <div class="pw-client-row">
+                        <div class="pw-client-name">${order.clienteNombre || '—'}</div>
+                        <div class="pw-client-chip"><i class="bi bi-telephone"></i><a href="https://wa.me/57${order.clienteCelular}" target="_blank">${order.clienteCelular}</a></div>
+                        ${order.clienteDireccion ? `<div class="pw-client-chip"><i class="bi bi-geo-alt"></i>${order.clienteDireccion}</div>` : ''}
+                        <span class="pw-pago-badge"><i class="bi bi-credit-card"></i>${order.metodoPagoSolicitado || '—'}</span>
                     </div>
-                    <hr>
-                    <div class="d-flex justify-content-end gap-2">
-                        <button class="btn btn-action btn-action-info btn-whatsapp-order" data-order-id="${orderId}">
-                            <i class="bi bi-whatsapp"></i><span class="btn-action-text">Enviar WhatsApp</span>
-                        </button>
-                        <button class="btn btn-action btn-action-danger btn-reject-order" data-order-id="${orderId}">
-                            <i class="bi bi-x-circle"></i><span class="btn-action-text">Rechazar</span>
-                        </button>
-                        <button class="btn btn-action btn-action-success btn-accept-order" data-order-id="${orderId}">
-                            <i class="bi bi-check-circle"></i><span class="btn-action-text">Aceptar</span>
-                        </button>
-                    </div>
+                    ${deliveryStrip}
+                    ${obsHtml}
+                    <div class="pw-items-list">${itemsHtml}</div>
                 </div>
-            `;
+                <div class="pw-card-footer">
+                    <div>
+                        <div class="pw-total-label">Total del pedido</div>
+                        <div class="pw-total-val">${formatoMoneda.format(order.totalPedido || 0)}</div>
+                    </div>
+                    ${actionsHtml}
+                </div>`;
 
             return card;
         }
 
-        function renderWebOrders(snapshot) {
-            if (loadingWebOrders) loadingWebOrders.style.display = 'none';
-            
-            const existingCards = webOrdersContainer.querySelectorAll('.web-order-card');
-            existingCards.forEach(card => card.remove());
-
-            if (snapshot.empty) {
-                webOrdersContainer.innerHTML = '<div class="text-center text-muted py-5"><i class="bi bi-inbox display-1"></i><p class="mt-3">No hay pedidos pendientes</p></div>';
-                if (pedidosWebCountBadge) pedidosWebCountBadge.style.display = 'none';
-                return;
-            }
-
-            const pendingCount = snapshot.size;
-            if (pedidosWebCountBadge) {
-                pedidosWebCountBadge.textContent = pendingCount;
-                pedidosWebCountBadge.style.display = 'inline';
-            }
-
-            snapshot.forEach(docSnap => {
-                const order = docSnap.data();
-                const orderId = docSnap.id;
-                const card = createOrderCard(order, orderId);
-                webOrdersContainer.appendChild(card);
-            });
-        }
-
-        const webOrdersQuery = query(
-            webOrdersCollection,
-            where('estado', '==', 'pendiente'),
-            orderBy('timestamp', 'desc')
-        );
-
-        onSnapshot(webOrdersQuery, renderWebOrders, (error) => {
-            console.error("Error al cargar pedidos web:", error);
-            if (loadingWebOrders) loadingWebOrders.style.display = 'none';
-            webOrdersContainer.innerHTML = '<div class="alert alert-danger">Error al cargar pedidos</div>';
+        // ── Firestore: 3 listeners (pendiente / aceptado / rechazado) ────────
+        ['pendiente', 'aceptado', 'rechazado'].forEach(estado => {
+            const q = query(webOrdersCollection, where('estado', '==', estado), orderBy('timestamp', 'desc'), limit(50));
+            onSnapshot(q, snapshot => {
+                allOrders[estado] = [];
+                snapshot.forEach(d => allOrders[estado].push({ id: d.id, order: d.data() }));
+                if (loadingWebOrders) loadingWebOrders.style.display = 'none';
+                updateStats();
+                if (estado === currentTab) renderCurrentTab();
+            }, err => console.error(`Error pedidos ${estado}:`, err));
         });
 
-        webOrdersContainer.addEventListener('click', async (e) => {
-            const acceptBtn = e.target.closest('.btn-accept-order');
-            const rejectBtn = e.target.closest('.btn-reject-order');
-            const whatsappBtn = e.target.closest('.btn-whatsapp-order');
-
-            if (acceptBtn) {
-                e.preventDefault();
-                const orderId = acceptBtn.dataset.orderId;
-                await handleAcceptOrder(orderId);
-            } else if (rejectBtn) {
-                e.preventDefault();
-                const orderId = rejectBtn.dataset.orderId;
-                await handleRejectOrder(orderId);
-            } else if (whatsappBtn) {
-                e.preventDefault();
-                const orderId = whatsappBtn.dataset.orderId;
-                await handleWhatsAppOrder(orderId);
-            }
+        // ── Click delegation ─────────────────────────────────────────────────
+        webOrdersContainer.addEventListener('click', async e => {
+            const a = e.target.closest('.btn-accept-order');
+            const r = e.target.closest('.btn-reject-order');
+            const w = e.target.closest('.btn-whatsapp-order');
+            if (a) { e.preventDefault(); await handleAcceptOrder(a.dataset.orderId); }
+            else if (r) { e.preventDefault(); await handleRejectOrder(r.dataset.orderId); }
+            else if (w) { e.preventDefault(); await handleWhatsAppOrder(w.dataset.orderId); }
         });
 
+        // ── Handlers ─────────────────────────────────────────────────────────
         async function handleRejectOrder(orderId) {
             if (!confirm('¿Estás seguro de que quieres rechazar este pedido?')) return;
-
             try {
-                const orderRef = doc(db, 'pedidosWeb', orderId);
-                await updateDoc(orderRef, {
-                    estado: 'rechazado',
-                    fechaRechazo: serverTimestamp()
-                });
-                
+                await updateDoc(doc(db, 'pedidosWeb', orderId), { estado: 'rechazado', fechaRechazo: serverTimestamp() });
                 showToast('Pedido rechazado correctamente', 'info');
-            } catch (error) {
-                console.error('Error al rechazar pedido:', error);
-                showToast('Error al rechazar el pedido', 'error');
-            }
+            } catch (err) { console.error('Error al rechazar:', err); showToast('Error al rechazar el pedido', 'error'); }
+        }
+
+        async function loadRepartidores() {
+            const sel = document.getElementById('delivery-person-select');
+            sel.innerHTML = '';
+            try {
+                const snap = await getDocs(query(repartidoresCollection, orderBy('nombre')));
+                if (snap.empty) { sel.innerHTML = '<option value="Papi">Papi</option>'; }
+                else snap.forEach(d => { const o = document.createElement('option'); o.value = d.data().nombre; o.textContent = d.data().nombre; sel.appendChild(o); });
+            } catch { sel.innerHTML = '<option value="Papi">Papi</option>'; }
+        }
+
+        function buildPreviewHtml(subtotal, dc) {
+            const total = subtotal + dc;
+            return `<h6 class="mb-3"><i class="bi bi-receipt me-2"></i>Resumen del Pedido</h6>
+                <div class="d-flex justify-content-between mb-2"><span>Subtotal:</span><strong>${formatoMoneda.format(subtotal)}</strong></div>
+                <div class="d-flex justify-content-between mb-2"><span>Domicilio:</span><strong class="text-success">${formatoMoneda.format(dc)}</strong></div>
+                <hr>
+                <div class="d-flex justify-content-between"><span class="fw-bold">Total:</span><strong class="text-primary fs-5">${formatoMoneda.format(total)}</strong></div>`;
         }
 
         async function handleAcceptOrder(orderId) {
             try {
                 const orderRef = doc(db, 'pedidosWeb', orderId);
                 const orderSnap = await getDoc(orderRef);
-
-                if (!orderSnap.exists()) {
-                    showToast('Pedido no encontrado', 'error');
-                    return;
-                }
-
+                if (!orderSnap.exists()) { showToast('Pedido no encontrado', 'error'); return; }
                 const orderData = orderSnap.data();
-                const subtotalProductos = orderData.subtotalProductos || orderData.totalPedido || 0;
+                const subtotal = orderData.subtotalProductos || orderData.totalPedido || 0;
 
-                // Cargar repartidores desde la base de datos
-                const deliveryPersonSelect = document.getElementById('delivery-person-select');
-                deliveryPersonSelect.innerHTML = ''; // Limpiar opciones
-
-                try {
-                    const repartidoresSnap = await getDocs(query(repartidoresCollection, orderBy('nombre')));
-                    if (repartidoresSnap.empty) {
-                        // Si no hay repartidores, agregar uno por defecto
-                        deliveryPersonSelect.innerHTML = '<option value="Papi">Papi</option>';
-                    } else {
-                        repartidoresSnap.forEach(doc => {
-                            const repartidor = doc.data();
-                            const option = document.createElement('option');
-                            option.value = repartidor.nombre;
-                            option.textContent = repartidor.nombre;
-                            deliveryPersonSelect.appendChild(option);
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error al cargar repartidores:', error);
-                    deliveryPersonSelect.innerHTML = '<option value="Papi">Papi</option>';
-                }
-
-                // Mostrar modal para ingresar costo de domicilio y repartidor
-                const modal = new bootstrap.Modal(document.getElementById('deliveryCostModal'));
-                const deliveryCostInput = document.getElementById('delivery-cost-input');
-                const orderSummaryPreview = document.getElementById('order-summary-preview');
+                await loadRepartidores();
+                const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('deliveryCostModal'));
+                const costInput = document.getElementById('delivery-cost-input');
+                const preview  = document.getElementById('order-summary-preview');
                 const confirmBtn = document.getElementById('confirm-whatsapp-btn');
+                const sel = document.getElementById('delivery-person-select');
 
-                // Cambiar texto del botón para aceptar pedido
                 confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Aceptar Pedido';
+                costInput.value = orderData.costoEnvio || 0;
+                sel.value = orderData.repartidor || sel.options[0]?.value || '';
 
-                // Resetear inputs
-                deliveryCostInput.value = orderData.costoEnvio || 0;
-                deliveryPersonSelect.value = orderData.repartidor || 'Papi';
-
-                // Función para actualizar el preview
-                function updatePreview() {
-                    const deliveryCost = parseFloat(deliveryCostInput.value) || 0;
-                    const total = subtotalProductos + deliveryCost;
-
-                    orderSummaryPreview.innerHTML = `
-                        <h6 class="mb-3"><i class="bi bi-receipt me-2"></i>Resumen del Pedido</h6>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal Productos:</span>
-                            <strong>${formatoMoneda.format(subtotalProductos)}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Costo de Domicilio:</span>
-                            <strong class="text-success">${formatoMoneda.format(deliveryCost)}</strong>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between">
-                            <span class="fw-bold">Total a Pagar:</span>
-                            <strong class="text-primary fs-5">${formatoMoneda.format(total)}</strong>
-                        </div>
-                    `;
-                }
-
-                // Actualizar preview al cambiar el costo
-                deliveryCostInput.removeEventListener('input', updatePreview);
-                deliveryCostInput.addEventListener('input', updatePreview);
-                updatePreview();
-
-                // Mostrar modal
+                const onInput = () => { preview.innerHTML = buildPreviewHtml(subtotal, parseFloat(costInput.value) || 0); };
+                costInput.removeEventListener('input', onInput);
+                costInput.addEventListener('input', onInput);
+                onInput();
                 modal.show();
 
-                // Manejar confirmación
-                confirmBtn.onclick = async function() {
+                confirmBtn.onclick = async () => {
                     try {
-                        const deliveryCost = parseFloat(deliveryCostInput.value) || 0;
-                        const deliveryPerson = deliveryPersonSelect.value;
-                        const total = subtotalProductos + deliveryCost;
-
-                        // Actualizar pedido con costo de domicilio y repartidor
-                        await updateDoc(orderRef, {
-                            estado: 'aceptado',
-                            fechaAceptacion: serverTimestamp(),
-                            costoEnvio: deliveryCost,
-                            repartidor: deliveryPerson,
-                            totalPedido: total
-                        });
-
-                        // Cerrar modal
+                        const dc = parseFloat(costInput.value) || 0;
+                        const dp = sel.value;
+                        const total = subtotal + dc;
+                        await updateDoc(orderRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp(), costoEnvio: dc, repartidor: dp, totalPedido: total });
                         modal.hide();
-
-                        // Pre-llenar formulario de venta con el costo de domicilio y repartidor
-                        await preFillSalesForm(orderData, orderId, deliveryCost, total, deliveryPerson);
-
+                        await preFillSalesForm(orderData, orderId, dc, total, dp);
                         showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
-
                         if (window.adminShowSection) { window.adminShowSection('#ventas'); window.adminMarkActive('#ventas'); }
-
-                        const salesFormViewBtn = document.getElementById('toggle-sales-form-view-btn');
-                        if (salesFormViewBtn) salesFormViewBtn.click();
-
-                        // Restaurar texto del botón
+                        const btn = document.getElementById('toggle-sales-form-view-btn');
+                        if (btn) btn.click();
                         confirmBtn.innerHTML = '<i class="bi bi-whatsapp me-1"></i>Enviar WhatsApp';
-
-                        // Notificar al repartidor
-                        await notificarRepartidor(deliveryPerson, orderData, deliveryCost, total);
-
-                    } catch (error) {
-                        console.error('Error al aceptar pedido:', error);
-                        showToast('Error al procesar el pedido', 'error');
-                    }
+                        await notificarRepartidor(dp, orderData, dc, total);
+                    } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
                 };
-
-            } catch (error) {
-                console.error('Error al aceptar pedido:', error);
-                showToast('Error al procesar el pedido', 'error');
-            }
+            } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
         }
 
         async function preFillSalesForm(orderData, orderId, deliveryCost = 0, total = 0, deliveryPerson = 'Papi') {
             window.ventaItems = [];
-
-            const ventaClienteInput = document.getElementById('venta-cliente');
-            const ventaCelularInput = document.getElementById('venta-cliente-celular');
-            const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
-
-            if (ventaClienteInput) ventaClienteInput.value = orderData.clienteNombre;
-            if (ventaCelularInput) ventaCelularInput.value = orderData.clienteCelular;
-            if (ventaDireccionInput) ventaDireccionInput.value = orderData.clienteDireccion;
-
-            const tipoVentaSelect = document.getElementById('tipo-venta-select');
-            if (tipoVentaSelect) tipoVentaSelect.value = 'detal';
-
-            const tipoEntregaSelect = document.getElementById('tipo-entrega-select');
-            if (tipoEntregaSelect) {
-                tipoEntregaSelect.value = 'domicilio';
-                tipoEntregaSelect.dispatchEvent(new Event('change'));
-            }
-
-            // Agregar costo de domicilio si existe el campo
-            const costoDomicilioInput = document.getElementById('costo-domicilio');
-            if (costoDomicilioInput && deliveryCost > 0) {
-                costoDomicilioInput.value = deliveryCost;
-                costoDomicilioInput.dispatchEvent(new Event('input'));
-            }
-
-            const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp');
-            if (ventaWhatsappCheckbox) ventaWhatsappCheckbox.checked = false; // Invertido para corregir lógica
-
-            const ventaObservaciones = document.getElementById('venta-observaciones');
-            if (ventaObservaciones) {
-                let obs = `Pedido Web #${orderId.substring(0, 8).toUpperCase()}\n`;
-                obs += `Repartidor: ${deliveryPerson}\n`;
+            const vc = document.getElementById('venta-cliente');
+            const vcel = document.getElementById('venta-cliente-celular');
+            const vdir = document.getElementById('venta-cliente-direccion');
+            if (vc) vc.value = orderData.clienteNombre;
+            if (vcel) vcel.value = orderData.clienteCelular;
+            if (vdir) vdir.value = orderData.clienteDireccion;
+            const tvs = document.getElementById('tipo-venta-select'); if (tvs) tvs.value = 'detal';
+            const tes = document.getElementById('tipo-entrega-select');
+            if (tes) { tes.value = 'domicilio'; tes.dispatchEvent(new Event('change')); }
+            const cdi = document.getElementById('costo-domicilio');
+            if (cdi && deliveryCost > 0) { cdi.value = deliveryCost; cdi.dispatchEvent(new Event('input')); }
+            const vwc = document.getElementById('venta-whatsapp'); if (vwc) vwc.checked = false;
+            const vobs = document.getElementById('venta-observaciones');
+            if (vobs) {
+                let obs = `Pedido Web #${orderId.substring(0,8).toUpperCase()}\nRepartidor: ${deliveryPerson}\n`;
                 if (orderData.observaciones) obs += `${orderData.observaciones}\n`;
                 if (deliveryCost > 0) obs += `Costo Domicilio: ${formatoMoneda.format(deliveryCost)}`;
-                ventaObservaciones.value = obs;
+                vobs.value = obs;
             }
-
-            if (orderData.items && orderData.items.length > 0) {
-                orderData.items.forEach(item => {
-                    window.agregarItemAlCarrito(
-                        item.productoId,
-                        item.nombre,
-                        item.cantidad,
-                        item.precio,
-                        item.talla,
-                        item.color,
-                        `${item.nombre} (${item.talla}/${item.color})`
-                    );
-                });
-            }
-
+            (orderData.items || []).forEach(item => {
+                window.agregarItemAlCarrito(item.productoId, item.nombre, item.cantidad, item.precio, item.talla, item.color, `${item.nombre} (${item.talla}/${item.color})`);
+            });
             window.calcularTotalVentaGeneral();
         }
 
@@ -833,242 +761,80 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const orderRef = doc(db, 'pedidosWeb', orderId);
                 const orderSnap = await getDoc(orderRef);
-
-                if (!orderSnap.exists()) {
-                    showToast('Pedido no encontrado', 'error');
-                    return;
-                }
-
+                if (!orderSnap.exists()) { showToast('Pedido no encontrado', 'error'); return; }
                 const orderData = orderSnap.data();
-                const subtotalProductos = orderData.subtotalProductos || orderData.totalPedido || 0;
+                const subtotal = orderData.subtotalProductos || orderData.totalPedido || 0;
 
-                // Cargar repartidores desde la base de datos
-                const deliveryPersonSelect = document.getElementById('delivery-person-select');
-                deliveryPersonSelect.innerHTML = ''; // Limpiar opciones
-
-                try {
-                    const repartidoresSnap = await getDocs(query(repartidoresCollection, orderBy('nombre')));
-                    if (repartidoresSnap.empty) {
-                        // Si no hay repartidores, agregar uno por defecto
-                        deliveryPersonSelect.innerHTML = '<option value="Papi">Papi</option>';
-                    } else {
-                        repartidoresSnap.forEach(doc => {
-                            const repartidor = doc.data();
-                            const option = document.createElement('option');
-                            option.value = repartidor.nombre;
-                            option.textContent = repartidor.nombre;
-                            deliveryPersonSelect.appendChild(option);
-                        });
-                    }
-                } catch (error) {
-                    console.error('Error al cargar repartidores:', error);
-                    deliveryPersonSelect.innerHTML = '<option value="Papi">Papi</option>';
-                }
-
-                // Mostrar modal para ingresar costo de domicilio y repartidor
-                const modal = new bootstrap.Modal(document.getElementById('deliveryCostModal'));
-                const deliveryCostInput = document.getElementById('delivery-cost-input');
-                const orderSummaryPreview = document.getElementById('order-summary-preview');
+                await loadRepartidores();
+                const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('deliveryCostModal'));
+                const costInput  = document.getElementById('delivery-cost-input');
+                const preview    = document.getElementById('order-summary-preview');
                 const confirmBtn = document.getElementById('confirm-whatsapp-btn');
+                const sel = document.getElementById('delivery-person-select');
 
-                // Resetear inputs
-                deliveryCostInput.value = orderData.costoEnvio || 0;
-                deliveryPersonSelect.value = orderData.repartidor || 'Papi';
+                costInput.value = orderData.costoEnvio || 0;
+                sel.value = orderData.repartidor || sel.options[0]?.value || '';
 
-                // Función para actualizar el preview
-                function updatePreview() {
-                    const deliveryCost = parseFloat(deliveryCostInput.value) || 0;
-                    const total = subtotalProductos + deliveryCost;
-
-                    orderSummaryPreview.innerHTML = `
-                        <h6 class="mb-3"><i class="bi bi-receipt me-2"></i>Resumen del Pedido</h6>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal Productos:</span>
-                            <strong>${formatoMoneda.format(subtotalProductos)}</strong>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Costo de Domicilio:</span>
-                            <strong class="text-success">${formatoMoneda.format(deliveryCost)}</strong>
-                        </div>
-                        <hr>
-                        <div class="d-flex justify-content-between">
-                            <span class="fw-bold">Total a Pagar:</span>
-                            <strong class="text-primary fs-5">${formatoMoneda.format(total)}</strong>
-                        </div>
-                    `;
-                }
-
-                // Actualizar preview al cambiar el costo
-                deliveryCostInput.addEventListener('input', updatePreview);
-                updatePreview();
-
-                // Mostrar modal
+                const onInput = () => { preview.innerHTML = buildPreviewHtml(subtotal, parseFloat(costInput.value) || 0); };
+                costInput.addEventListener('input', onInput);
+                onInput();
                 modal.show();
 
-                // Manejar confirmación
-                confirmBtn.onclick = async function() {
+                confirmBtn.onclick = async () => {
                     try {
-                        const deliveryCost = parseFloat(deliveryCostInput.value) || 0;
-                        const deliveryPerson = deliveryPersonSelect.value;
-                        const total = subtotalProductos + deliveryCost;
+                        const dc = parseFloat(costInput.value) || 0;
+                        const dp = sel.value;
+                        const total = subtotal + dc;
+                        await updateDoc(orderRef, { costoEnvio: dc, repartidor: dp, totalPedido: total });
 
-                        // Actualizar pedido en la base de datos con el costo de domicilio y repartidor
-                        await updateDoc(orderRef, {
-                            costoEnvio: deliveryCost,
-                            repartidor: deliveryPerson,
-                            totalPedido: total
+                        let msg = `*CONFIRMACION DE PEDIDO*\n\nHola *${orderData.clienteNombre}*,\n\nHemos recibido tu pedido. A continuacion los detalles:\n\n*PRODUCTOS:*\n\n`;
+                        (orderData.items || []).forEach((item, i) => {
+                            const p = localProductsMap.get(item.productoId);
+                            msg += `\n${i+1}. *${item.nombre}*${p?.categoria ? ` [${p.categoria}]` : ''}`;
+                            msg += `\n   Talla: ${item.talla||'N/A'} | Color: ${item.color||'N/A'}`;
+                            msg += `\n   Cantidad: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}`;
+                            if (p?.imageUrl) msg += `\n   Link: ${p.imageUrl}`;
+                            msg += '\n';
                         });
+                        msg += `\n*Direccion de entrega:*\n${orderData.clienteDireccion}\n`;
+                        if (orderData.observaciones) msg += `\n*Observaciones:*\n${orderData.observaciones}\n`;
+                        msg += `\n*Repartidor:* ${dp}\n*Metodo de pago:* ${orderData.metodoPagoSolicitado}\n`;
+                        msg += `\n*RESUMEN:*\nSubtotal Productos: ${formatoMoneda.format(subtotal)}\n`;
+                        if (dc > 0) msg += `Costo de Envio: ${formatoMoneda.format(dc)}\n`;
+                        msg += `\n*TOTAL A PAGAR: ${formatoMoneda.format(total)}*\n\nGracias por tu compra!`;
 
-                        // Construir mensaje de WhatsApp (sin emojis para mejor compatibilidad)
-                        let mensaje = `*CONFIRMACION DE PEDIDO*\n\n`;
-                        mensaje += `Hola *${orderData.clienteNombre}*,\n\n`;
-                        mensaje += `Hemos recibido tu pedido. A continuacion los detalles:\n\n`;
-                        mensaje += `*PRODUCTOS:*\n\n`;
-
-                        if (orderData.items && orderData.items.length > 0) {
-                            orderData.items.forEach((item, index) => {
-                                const product = localProductsMap.get(item.productoId);
-                                const categoria = product && product.categoria ? `[${product.categoria}]` : '';
-                                const imageUrl = product && product.imageUrl ? `\n   Link: ${product.imageUrl}` : '';
-
-                                mensaje += `\n${index + 1}. *${item.nombre}* ${categoria}`;
-                                mensaje += `\n   Talla: ${item.talla || 'N/A'} | Color: ${item.color || 'N/A'}`;
-                                mensaje += `\n   Cantidad: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}`;
-                                if (imageUrl) mensaje += imageUrl;
-                                mensaje += `\n`;
-                            });
-                        }
-
-                        mensaje += `\n*Direccion de entrega:*\n${orderData.clienteDireccion}\n`;
-
-                        if (orderData.observaciones) {
-                            mensaje += `\n*Observaciones:*\n${orderData.observaciones}\n`;
-                        }
-
-                        mensaje += `\n*Repartidor:* ${deliveryPerson}\n`;
-                        mensaje += `\n*Metodo de pago:* ${orderData.metodoPagoSolicitado}\n`;
-                        mensaje += `\n*RESUMEN:*\n`;
-                        mensaje += `Subtotal Productos: ${formatoMoneda.format(subtotalProductos)}\n`;
-                        if (deliveryCost > 0) {
-                            mensaje += `Costo de Envio: ${formatoMoneda.format(deliveryCost)}\n`;
-                        }
-                        mensaje += `\n*TOTAL A PAGAR: ${formatoMoneda.format(total)}*\n`;
-                        mensaje += `\nGracias por tu compra!`;
-
-                        // ⚠️ DEBUG: Mostrar mensaje en consola
-                        console.log('=== MENSAJE GENERADO ===');
-                        console.log(mensaje);
-                        console.log('========================');
-
-                        // Preparar número de WhatsApp
-                        let telefono = orderData.clienteCelular.replace(/\D/g, '');
-
-                        // Si el número ya comienza con 57 (código de Colombia), quitarlo para evitar duplicación
-                        if (telefono.startsWith('57')) {
-                            telefono = telefono.substring(2);
-                        }
-
-                        const whatsappUrl = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
-
-                        // Cerrar modal
+                        let tel = orderData.clienteCelular.replace(/\D/g, '');
+                        if (tel.startsWith('57')) tel = tel.substring(2);
                         modal.hide();
-
-                        // Abrir WhatsApp
-                        openWhatsApp(whatsappUrl);
-
+                        openWhatsApp(`https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`);
                         showToast('Pedido actualizado y abriendo WhatsApp...', 'success');
-
-                    } catch (error) {
-                        console.error('Error al confirmar:', error);
-                        showToast('Error al procesar el pedido', 'error');
-                    }
+                    } catch (err) { console.error('Error WA:', err); showToast('Error al procesar el pedido', 'error'); }
                 };
-
-            } catch (error) {
-                console.error('Error al generar mensaje de WhatsApp:', error);
-                showToast('Error al generar el mensaje', 'error');
-            }
+            } catch (err) { console.error('Error WA order:', err); showToast('Error al generar el mensaje', 'error'); }
         }
 
-        // Función para notificar al repartidor por WhatsApp
         async function notificarRepartidor(nombreRepartidor, orderData, deliveryCost, total) {
             try {
-                // Buscar el repartidor en la base de datos
-                const repartidorQuery = query(repartidoresCollection, where('nombre', '==', nombreRepartidor));
-                const repartidorSnap = await getDocs(repartidorQuery);
+                const snap = await getDocs(query(repartidoresCollection, where('nombre', '==', nombreRepartidor)));
+                if (snap.empty) return;
+                const rd = snap.docs[0].data();
+                if (!rd.celular) { showToast('El repartidor no tiene número de celular', 'warning'); return; }
 
-                if (repartidorSnap.empty) {
-                    console.log('Repartidor no encontrado en la base de datos');
-                    return;
-                }
+                let msg = `*NUEVO PEDIDO ASIGNADO*\n\nHola ${nombreRepartidor},\n\nTe han asignado un nuevo pedido:\n\n`;
+                msg += `*CLIENTE:*\nNombre: ${orderData.clienteNombre}\nTelefono: ${orderData.clienteCelular}\n\n`;
+                msg += `*DIRECCION:*\n${orderData.clienteDireccion}\nCiudad: ${orderData.clienteCiudad}\n`;
+                if (orderData.clienteBarrio) msg += `Barrio: ${orderData.clienteBarrio}\n`;
+                if (orderData.observaciones) msg += `\n*OBSERVACIONES:*\n${orderData.observaciones}\n`;
+                msg += `\n*PRODUCTOS:*\n`;
+                (orderData.items || []).forEach((item, i) => { msg += `\n${i+1}. ${item.nombre}\n   Talla: ${item.talla} | Color: ${item.color}\n   Cantidad: ${item.cantidad}\n`; });
+                msg += `\n*PAGO:*\nMetodo: ${orderData.metodoPagoSolicitado}\nTotal a cobrar: ${formatoMoneda.format(total)}\n`;
+                if (orderData.metodoPagoSolicitado === 'Efectivo') msg += `\n*IMPORTANTE:* Cobrar en efectivo\n`;
+                msg += `\nDomicilio: ${formatoMoneda.format(deliveryCost)}`;
 
-                const repartidorData = repartidorSnap.docs[0].data();
-
-                if (!repartidorData.celular) {
-                    console.log('El repartidor no tiene número de celular registrado');
-                    showToast('El repartidor no tiene número de celular', 'warning');
-                    return;
-                }
-
-                // Construir mensaje para el repartidor
-                let mensaje = `*NUEVO PEDIDO ASIGNADO*\n\n`;
-                mensaje += `Hola ${nombreRepartidor},\n\n`;
-                mensaje += `Te han asignado un nuevo pedido:\n\n`;
-
-                mensaje += `*CLIENTE:*\n`;
-                mensaje += `Nombre: ${orderData.clienteNombre}\n`;
-                mensaje += `Telefono: ${orderData.clienteCelular}\n\n`;
-
-                mensaje += `*DIRECCION DE ENTREGA:*\n`;
-                mensaje += `${orderData.clienteDireccion}\n`;
-                mensaje += `Ciudad: ${orderData.clienteCiudad}\n`;
-                if (orderData.clienteBarrio) {
-                    mensaje += `Barrio: ${orderData.clienteBarrio}\n`;
-                }
-
-                if (orderData.observaciones) {
-                    mensaje += `\n*OBSERVACIONES:*\n${orderData.observaciones}\n`;
-                }
-
-                mensaje += `\n*PRODUCTOS:*\n`;
-                if (orderData.items && orderData.items.length > 0) {
-                    orderData.items.forEach((item, index) => {
-                        mensaje += `\n${index + 1}. ${item.nombre}`;
-                        mensaje += `\n   Talla: ${item.talla} | Color: ${item.color}`;
-                        mensaje += `\n   Cantidad: ${item.cantidad}\n`;
-                    });
-                }
-
-                mensaje += `\n*PAGO:*\n`;
-                mensaje += `Metodo: ${orderData.metodoPagoSolicitado}\n`;
-                mensaje += `Total a cobrar: ${formatoMoneda.format(total)}\n`;
-
-                if (orderData.metodoPagoSolicitado === 'Efectivo') {
-                    mensaje += `\n*IMPORTANTE:* Cobrar en efectivo\n`;
-                }
-
-                mensaje += `\nDomicilio: ${formatoMoneda.format(deliveryCost)}`;
-
-                // Limpiar número de WhatsApp
-                let telefono = repartidorData.celular.replace(/\D/g, '');
-
-                // Si el número ya comienza con 57, quitarlo para evitar duplicación
-                if (telefono.startsWith('57')) {
-                    telefono = telefono.substring(2);
-                }
-
-                const whatsappUrl = `https://wa.me/57${telefono}?text=${encodeURIComponent(mensaje)}`;
-
-                // Abrir WhatsApp
-                setTimeout(() => {
-                    openWhatsApp(whatsappUrl);
-                    showToast(`Notificando a ${nombreRepartidor}...`, 'info');
-                }, 1000); // Pequeño delay para que no interfiera con el flujo
-
-            } catch (error) {
-                console.error('Error al notificar al repartidor:', error);
-                showToast('Error al notificar al repartidor', 'error');
-            }
+                let tel = rd.celular.replace(/\D/g, '');
+                if (tel.startsWith('57')) tel = tel.substring(2);
+                setTimeout(() => { openWhatsApp(`https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`); showToast(`Notificando a ${nombreRepartidor}...`, 'info'); }, 1000);
+            } catch (err) { console.error('Error notificar repartidor:', err); showToast('Error al notificar al repartidor', 'error'); }
         }
 
     })();
