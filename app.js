@@ -892,7 +892,9 @@ function selectTalla(talla, product) {
     });
 
     // Seleccionar nueva talla
-    event.target.classList.add('selected');
+    const tallasButtons = document.getElementById('tallas-buttons');
+    const selectedBtn = tallasButtons.querySelector(`[data-value="${talla}"]`);
+    if (selectedBtn) selectedBtn.classList.add('selected');
     document.getElementById('selected-talla').value = talla;
 
     // Limpiar selección de color
@@ -1204,7 +1206,7 @@ function openProductModal(productId) {
     // 📊 Tracking: Vista de producto
     analytics.trackProductView(product);
 
-    const modal = new bootstrap.Modal(document.getElementById('productModal'));
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('productModal'));
     modal.show();
 }
 
