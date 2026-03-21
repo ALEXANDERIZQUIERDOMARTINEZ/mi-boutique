@@ -298,26 +298,26 @@ Finalizar Pedido
     <div class="co-step-inner">
       <div class="co-title-block">
         <h2>Datos personales</h2>
-        <p>Confirmaremos tu pedido por WhatsApp</p>
+        <p>Ingresa tu cédula para cargar tus datos automáticamente</p>
       </div>
 
       <div class="co-field">
-        <label class="co-label">WhatsApp <span class="co-req">*</span></label>
-        <input type="tel" class="co-input" id="checkout-phone" inputmode="numeric" placeholder="300 123 4567" autocomplete="tel">
-      </div>
-      <div class="co-field">
-        <label class="co-label">Confirmar WhatsApp <span class="co-req">*</span></label>
-        <input type="tel" class="co-input" id="checkout-phone-confirm" inputmode="numeric" placeholder="300 123 4567">
-        <span class="co-hint" id="co-phone-hint"></span>
+        <label class="co-label">Cédula <span class="co-req">*</span></label>
+        <input type="text" class="co-input" id="checkout-cedula" inputmode="numeric" placeholder="1234567890" autocomplete="off">
+        <span class="co-hint co-hint-info" id="co-cedula-hint">Si ya compraste antes, tus datos se cargarán</span>
       </div>
       <div class="co-field">
         <label class="co-label">Nombre completo <span class="co-req">*</span></label>
         <input type="text" class="co-input" id="checkout-name" placeholder="María García" autocomplete="name">
       </div>
       <div class="co-field">
-        <label class="co-label">Cédula <span class="co-req">*</span></label>
-        <input type="text" class="co-input" id="checkout-cedula" inputmode="numeric" placeholder="1234567890">
-        <span class="co-hint co-hint-info" id="co-cedula-hint">Si ya compraste antes, tus datos se cargarán</span>
+        <label class="co-label">WhatsApp <span class="co-req">*</span></label>
+        <input type="tel" class="co-input" id="checkout-phone" inputmode="numeric" placeholder="300 123 4567" autocomplete="tel">
+      </div>
+      <div class="co-field">
+        <label class="co-label">Confirmar WhatsApp <span class="co-req">*</span></label>
+        <input type="tel" class="co-input" id="checkout-phone-confirm" inputmode="numeric" placeholder="300 123 4567" autocomplete="off">
+        <span class="co-hint" id="co-phone-hint"></span>
       </div>
 
       <!-- Delivery info strip (controlled by existing JS) -->
