@@ -667,7 +667,7 @@ function renderProducts(products) {
                 <div class="product-image-wrapper">
                     <img src="${imgUrl}" alt="${product.nombre}" loading="lazy">
                     ${isAgotado ? '<span class="badge-agotado">AGOTADO</span>' : ''}
-                    ${tienePromo ? '<span class="badge-promo">SALE</span>' : ''}
+                    ${tienePromo ? '<span class="badge-promo">DESCUENTO</span>' : ''}
                 </div>
                 <div class="product-card-body">
                     <h3 class="product-title">${product.nombre}</h3>
