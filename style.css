@@ -822,6 +822,23 @@ h1, h2, h3, h4, h5, h6 {
     border: 1px solid var(--color-borde);
 }
 
+/* Alerta de stock en el carrito */
+.cart-stock-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #fff8e1;
+    border: 1px solid #f59e0b;
+    border-left: 4px solid #f59e0b;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 0 12px 8px;
+    font-size: 13px;
+    color: #78350f;
+    line-height: 1.4;
+}
+.cart-stock-icon { flex-shrink: 0; font-size: 15px; }
+
 .cart-total {
     background: var(--color-primario-claro);
     padding: 1.5rem;
@@ -4176,20 +4193,21 @@ input[type="datetime-local"] {
    Mobile-first, sin scroll, auto-avance
    ═══════════════════════════════════════════════════════════════ */
 
-/* Overlay base — NO transform on the fixed element (iOS Safari bug fix:
-   inputs inside position:fixed + transform are non-interactive) */
+/* Overlay base — display:none to avoid ANY transform on position:fixed
+   (iOS Safari bug: inputs inside fixed+transform are non-interactive) */
 .co-overlay {
     position: fixed;
     inset: 0;
     z-index: 1060;
-    pointer-events: none; /* transparent when closed */
+    display: none;
     background: transparent;
 }
 .co-overlay.co-open {
-    pointer-events: auto;
+    display: block;
 }
 
-/* Sheet — gets the slide animation (not fixed, so transform is safe) */
+/* Sheet — slides up via @keyframes (no persistent transform after animation,
+   so iOS Safari inputs remain interactive once animation completes) */
 .co-sheet {
     position: absolute;
     inset: 0;
@@ -4197,11 +4215,23 @@ input[type="datetime-local"] {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transform: translateY(100%);
-    transition: transform 0.38s cubic-bezier(.4,0,.2,1);
+    /* NO transform in resting state */
 }
 .co-overlay.co-open .co-sheet {
-    transform: translateY(0);
+    animation: co-slide-up 0.35s cubic-bezier(.4,0,.2,1);
+}
+@keyframes co-slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+}
+
+/* Prevent double-tap zoom on all interactive elements */
+.co-overlay button,
+.co-overlay input,
+.co-overlay select,
+.co-overlay textarea,
+.co-overlay label {
+    touch-action: manipulation;
 }
 
 /* ─── Header ─── */
@@ -4669,25 +4699,23 @@ input[type="datetime-local"] {
 /* ─── Responsive: pantallas grandes (tablet/desktop) ─── */
 @media (min-width: 600px) {
     /* Fondo oscuro semitransparente */
-    .co-overlay.co-open {
-        background: rgba(0,0,0,.45);
-        transition: background .3s ease;
-    }
-    /* Sheet centrado como modal */
+    .co-overlay.co-open { background: rgba(0,0,0,.45); }
+    /* Sheet centrado como modal — desktop uses transform safely (no iOS bug) */
     .co-sheet {
         position: absolute;
         top: 50%;
         left: 50%;
+        inset: auto;
         width: min(480px, 96vw);
         height: min(700px, 92vh);
-        transform: translate(-50%, calc(-50% + 30px)) scale(0.96);
         border-radius: 20px;
         box-shadow: 0 24px 80px rgba(0,0,0,.22);
         opacity: 0;
-        inset: auto; /* reset */
-        transition: transform .38s cubic-bezier(.4,0,.2,1), opacity .3s ease;
+        transform: translate(-50%, calc(-50% + 24px)) scale(0.97);
+        transition: transform .32s cubic-bezier(.4,0,.2,1), opacity .25s ease;
     }
     .co-overlay.co-open .co-sheet {
+        animation: none; /* override mobile keyframes */
         transform: translate(-50%, -50%) scale(1);
         opacity: 1;
     }

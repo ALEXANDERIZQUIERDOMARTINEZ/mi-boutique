@@ -1254,21 +1254,29 @@ function renderCart() {
         }
     });
 
+    // Deshabilitar botón de finalizar si hay problemas de stock
+    const btnFinalizar = document.getElementById('btn-finalizar');
+    if (btnFinalizar) {
+        if (productosConProblemas.length > 0) {
+            btnFinalizar.disabled = true;
+            btnFinalizar.title = 'Hay productos sin stock en el carrito';
+        } else {
+            btnFinalizar.disabled = false;
+            btnFinalizar.title = '';
+        }
+    }
+
     // Mostrar advertencia si hay productos con problemas de stock
     if (productosConProblemas.length > 0) {
         const advertenciaDiv = document.createElement('div');
-        advertenciaDiv.className = 'alert alert-warning mx-3 mb-3';
-        advertenciaDiv.style.fontSize = '0.85rem';
+        advertenciaDiv.className = 'cart-stock-alert';
         advertenciaDiv.innerHTML = `
-            <strong>⚠️ Atención:</strong><br>
-            ${productosConProblemas.map(p => {
-                if (p.tipo === 'agotado') {
-                    return `• <strong>${p.nombre}</strong> (${p.talla}/${p.color}) - <span class="text-danger">SIN STOCK</span>`;
-                } else {
-                    return `• <strong>${p.nombre}</strong> (${p.talla}/${p.color}) - Solo quedan ${p.stockDisponible} unidades`;
-                }
-            }).join('<br>')}
-            <br><small class="d-block mt-2">Por favor, elimina o ajusta estos productos antes de finalizar tu compra.</small>
+            <span class="cart-stock-icon">⚠️</span>
+            <span>${productosConProblemas.map(p =>
+                p.tipo === 'agotado'
+                    ? `<b>${p.nombre}</b> (${p.talla}/${p.color}) se agotó`
+                    : `<b>${p.nombre}</b> solo tiene ${p.stockDisponible} disponibles`
+            ).join('<br>')}</span>
         `;
         container.appendChild(advertenciaDiv);
     }
@@ -1614,6 +1622,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`✅ ${allProducts.length} productos cargados correctamente`);
         loadAvailableColors();
         applyFiltersAndRender();
+        renderCart(); // re-validate cart stock when products change
     }, (error) => {
         console.error("❌ Error al cargar productos:", error);
         const container = document.getElementById('products-container');
@@ -1975,6 +1984,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function openCheckout() {
         const overlay = document.getElementById('checkout-overlay');
         if (!overlay) return;
+
+        // Verificar stock antes de abrir
+        const hayProblemas = cart.some(item => {
+            const product = productsMap.get(item.id);
+            if (!product) return true;
+            const v = (product.variaciones || []).find(v =>
+                (v.talla || 'unica') === item.talla && (v.color || 'unico') === item.color
+            );
+            return !v || v.stock <= 0 || v.stock < item.cantidad;
+        });
+        if (hayProblemas) {
+            showToast('Hay productos sin stock en el carrito. Elimínalos para continuar.', 'error', 4000);
+            return;
+        }
 
         // Resetear al paso 1 siempre
         coCurrentStep = 1;
