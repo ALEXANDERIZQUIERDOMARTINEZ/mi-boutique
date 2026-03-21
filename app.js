@@ -64,6 +64,8 @@ let advancedFilters = {
     sortBy: 'newest'
 };
 let allAvailableColors = new Set();
+let promoPriceCache = new Map();
+let cachedAvailableCount = 0;
 
 // ✅ MAPEO DE COLORES: Texto → Código Hex
 const COLOR_MAP = {
@@ -413,8 +415,17 @@ function calculatePromotionPrice(producto) {
     };
 }
 
+// Versión cacheada: reutiliza el resultado dentro del mismo ciclo de render
+function getPromoPrice(product) {
+    if (!promoPriceCache.has(product.id)) {
+        promoPriceCache.set(product.id, calculatePromotionPrice(product));
+    }
+    return promoPriceCache.get(product.id);
+}
+
 // ✅ FUNCIÓN DE FILTRO MEJORADA CON FILTROS AVANZADOS
 function applyFiltersAndRender() {
+    promoPriceCache.clear();
     const activeFilterEl = document.querySelector('.filter-group.active');
 
     // Si no hay filtro activo, mostrar productos disponibles por defecto
@@ -480,7 +491,7 @@ function applyFiltersAndRender() {
 
     // 3.1 Filtro por Rango de Precio
     filtered = filtered.filter(p => {
-        const { precioFinal } = calculatePromotionPrice(p);
+        const { precioFinal } = getPromoPrice(p);
         const price = isWholesaleActive ? (parseFloat(p.precioMayor) || 0) : precioFinal;
         return price >= advancedFilters.priceMin && price <= advancedFilters.priceMax;
     });
@@ -536,15 +547,15 @@ function sortProducts(products, sortBy) {
     switch (sortBy) {
         case 'price-asc':
             ordered = sorted.sort((a, b) => {
-                const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : calculatePromotionPrice(a).precioFinal;
-                const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : calculatePromotionPrice(b).precioFinal;
+                const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : getPromoPrice(a).precioFinal;
+                const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : getPromoPrice(b).precioFinal;
                 return priceA - priceB;
             });
             break;
         case 'price-desc':
             ordered = sorted.sort((a, b) => {
-                const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : calculatePromotionPrice(a).precioFinal;
-                const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : calculatePromotionPrice(b).precioFinal;
+                const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : getPromoPrice(a).precioFinal;
+                const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : getPromoPrice(b).precioFinal;
                 return priceB - priceA;
             });
             break;
@@ -564,8 +575,8 @@ function sortProducts(products, sortBy) {
     }
 
     // Separar: disponibles en promo → disponibles normales → agotados
-    const disponiblesPromo = ordered.filter(p => getStock(p) > 0 && calculatePromotionPrice(p).tienePromo);
-    const disponiblesNormal = ordered.filter(p => getStock(p) > 0 && !calculatePromotionPrice(p).tienePromo);
+    const disponiblesPromo = ordered.filter(p => getStock(p) > 0 && getPromoPrice(p).tienePromo);
+    const disponiblesNormal = ordered.filter(p => getStock(p) > 0 && !getPromoPrice(p).tienePromo);
     const agotados = ordered.filter(p => getStock(p) <= 0);
 
     return [...disponiblesPromo, ...disponiblesNormal, ...agotados];
@@ -585,25 +596,20 @@ function renderProducts(products) {
         productsCountEl.textContent = products.length;
     }
 
-    // Actualizar badge de disponibles
+    // Actualizar badge de disponibles (ya calculado al cargar productos)
     const availableBadge = document.getElementById('available-badge');
-    if (availableBadge) {
-        const availableCount = allProducts.filter(p => {
-            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-            return stock > 0;
-        }).length;
-        availableBadge.textContent = availableCount;
-    }
+    if (availableBadge) availableBadge.textContent = cachedAvailableCount;
 
     if (products.length === 0) {
         container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">No se encontraron productos</p></div>';
         return;
     }
 
+    const fragment = document.createDocumentFragment();
     products.forEach((product, index) => {
         const stockTotal = (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
         const isAgotado = stockTotal <= 0;
-        const { precioFinal, tienePromo, precioOriginal } = calculatePromotionPrice(product);
+        const { precioFinal, tienePromo, precioOriginal } = getPromoPrice(product);
         const precioMostrado = isWholesaleActive ? (parseFloat(product.precioMayor) || 0) : precioFinal;
 
         // Colores y tallas CON STOCK (disponibles para comprar)
@@ -681,15 +687,9 @@ function renderProducts(products) {
                 </div>
             </div>
         `;
-        container.appendChild(col);
+        fragment.appendChild(col);
     });
-
-    document.querySelectorAll('.product-card').forEach(card => {
-        card.addEventListener('click', (e) => {
-            const productId = e.currentTarget.dataset.productId;
-            openProductModal(productId);
-        });
-    });
+    container.appendChild(fragment);
 }
 
 // --- FUNCIONES AUXILIARES PARA BOTONES DE TALLA Y COLOR ---
@@ -1606,6 +1606,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return timestampB - timestampA;
         });
 
+        cachedAvailableCount = allProducts.reduce((count, p) => {
+            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+            return stock > 0 ? count + 1 : count;
+        }, 0);
+
         console.log(`✅ ${allProducts.length} productos cargados correctamente`);
         loadAvailableColors();
         applyFiltersAndRender();
@@ -1627,6 +1632,12 @@ document.addEventListener('DOMContentLoaded', () => {
             applyFiltersAndRender();
         });
     }
+
+    // ✅ Event delegation para clicks en tarjetas de producto (un solo listener global)
+    document.getElementById('products-container').addEventListener('click', (e) => {
+        const card = e.target.closest('.product-card');
+        if (card) openProductModal(card.dataset.productId);
+    });
 
     // ✅ Búsqueda en tiempo real
     document.getElementById('search-input').addEventListener('input', applyFiltersAndRedraw);
