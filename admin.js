@@ -3593,10 +3593,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.calcularTotalVentaGeneral();
 
                 // ✅ Resetear campos de pago
-                efectivoRecibidoInput.value = '';
-                transferenciaRecibidaInput.value = '';
-                efectivoMixtoRecibidoInput.value = '';
-                transferenciaMixtoRecibidaInput.value = '';
+                if (efectivoRecibidoInput) efectivoRecibidoInput.value = '';
+                if (transferenciaRecibidaInput) transferenciaRecibidaInput.value = '';
+                if (efectivoMixtoRecibidoInput) efectivoMixtoRecibidoInput.value = '';
+                if (transferenciaMixtoRecibidaInput) transferenciaMixtoRecibidaInput.value = '';
 
                 // ✅ Ocultar todos los mensajes de info de pago
                 const vueltoEfectivoInfo = document.getElementById('vuelto-efectivo-info');
