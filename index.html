@@ -364,20 +364,13 @@ Finalizar Pedido
         <option value="Otra">Otra ciudad</option>
       </select>
 
-      <!-- Visible city select for "otra ciudad" -->
+      <!-- Campo libre para "otra ciudad" -->
       <div class="co-field" id="co-other-city-field" style="display:none">
-        <label class="co-label">Ciudad</label>
-        <select class="co-input" id="co-city-visible" onchange="coSyncCity(this.value)">
-          <option value="">Selecciona...</option>
-          <option value="Cereté">Cereté</option>
-          <option value="Lorica">Lorica</option>
-          <option value="Sahagún">Sahagún</option>
-          <option value="Planeta Rica">Planeta Rica</option>
-          <option value="Montelíbano">Montelíbano</option>
-          <option value="Tierralta">Tierralta</option>
-          <option value="Ayapel">Ayapel</option>
-          <option value="Otra">Otra ciudad</option>
-        </select>
+        <label class="co-label">¿Cuál ciudad? <span class="co-req">*</span></label>
+        <input type="text" class="co-input" id="co-city-visible"
+               placeholder="Ej: Bogotá, Medellín, Barranquilla..."
+               autocomplete="off"
+               oninput="coSyncCity(this.value)">
       </div>
 
       <div class="co-field" id="neighborhood-section" style="display:none">

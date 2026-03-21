@@ -2127,7 +2127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Listeners de validación en tiempo real — paso 2
-    ['checkout-address'].forEach(id => {
+    ['checkout-address', 'co-city-visible'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.addEventListener('input', () => coUpdateNextBtn2());
@@ -2140,10 +2140,12 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.classList.add('active');
 
         if (city === 'otra') {
-            // Mostrar select de otra ciudad
+            // Mostrar campo de texto libre para escribir la ciudad
             document.getElementById('co-other-city-field').style.display = '';
+            document.getElementById('co-city-visible').value = '';
             document.getElementById('checkout-city').value = '';
             document.getElementById('neighborhood-section').style.display = 'none';
+            setTimeout(() => document.getElementById('co-city-visible')?.focus(), 80);
         } else {
             // Montería seleccionada directamente
             document.getElementById('co-other-city-field').style.display = 'none';
