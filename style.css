@@ -4176,19 +4176,31 @@ input[type="datetime-local"] {
    Mobile-first, sin scroll, auto-avance
    ═══════════════════════════════════════════════════════════════ */
 
-/* Overlay base */
+/* Overlay base — NO transform on the fixed element (iOS Safari bug fix:
+   inputs inside position:fixed + transform are non-interactive) */
 .co-overlay {
     position: fixed;
     inset: 0;
     z-index: 1060;
+    pointer-events: none; /* transparent when closed */
+    background: transparent;
+}
+.co-overlay.co-open {
+    pointer-events: auto;
+}
+
+/* Sheet — gets the slide animation (not fixed, so transform is safe) */
+.co-sheet {
+    position: absolute;
+    inset: 0;
     background: #fff;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     transform: translateY(100%);
     transition: transform 0.38s cubic-bezier(.4,0,.2,1);
-    overflow: hidden;
 }
-.co-overlay.co-open {
+.co-overlay.co-open .co-sheet {
     transform: translateY(0);
 }
 
@@ -4656,30 +4668,27 @@ input[type="datetime-local"] {
 
 /* ─── Responsive: pantallas grandes (tablet/desktop) ─── */
 @media (min-width: 600px) {
-    .co-overlay {
-        /* En pantallas grandes: modal centrado en vez de pantalla completa */
-        inset: auto;
+    /* Fondo oscuro semitransparente */
+    .co-overlay.co-open {
+        background: rgba(0,0,0,.45);
+        transition: background .3s ease;
+    }
+    /* Sheet centrado como modal */
+    .co-sheet {
+        position: absolute;
         top: 50%;
         left: 50%;
         width: min(480px, 96vw);
         height: min(700px, 92vh);
-        transform: translate(-50%, calc(-50% + 40px)) scale(0.96);
+        transform: translate(-50%, calc(-50% + 30px)) scale(0.96);
         border-radius: 20px;
         box-shadow: 0 24px 80px rgba(0,0,0,.22);
         opacity: 0;
+        inset: auto; /* reset */
         transition: transform .38s cubic-bezier(.4,0,.2,1), opacity .3s ease;
     }
-    .co-overlay.co-open {
+    .co-overlay.co-open .co-sheet {
         transform: translate(-50%, -50%) scale(1);
         opacity: 1;
-    }
-    /* Fondo oscuro */
-    .co-overlay::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.45);
-        z-index: -1;
-        border-radius: 0;
     }
 }
