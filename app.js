@@ -1982,9 +1982,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const coStepLabels = ['Datos personales', 'Datos de envío', 'Pago y resumen'];
 
     function openCheckout() {
-        const overlay = document.getElementById('checkout-overlay');
-        if (!overlay) return;
-
         // Verificar stock antes de abrir
         const hayProblemas = cart.some(item => {
             const product = productsMap.get(item.id);
@@ -1999,23 +1996,40 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Resetear al paso 1 siempre
-        coCurrentStep = 1;
-        coGoToStep(1, false);
+        // CRITICAL: cerrar el offcanvas del carrito PRIMERO.
+        // Bootstrap pone focus-trap/inert en el offcanvas que bloquea todos los
+        // inputs fuera de él, sin importar el z-index del checkout overlay.
+        const cartEl = document.getElementById('cartOffcanvas');
+        const cartInstance = cartEl ? (bootstrap.Offcanvas.getInstance(cartEl) || null) : null;
 
-        // Mostrar form, ocultar success
-        const form = document.getElementById('checkout-form');
-        const success = document.getElementById('checkout-success');
-        if (form) form.style.display = '';
-        if (success) success.style.display = 'none';
+        function _doOpen() {
+            const overlay = document.getElementById('checkout-overlay');
+            if (!overlay) return;
 
-        // Rellenar resumen de carrito en paso 3
-        renderCoOrderItems();
-        updateOrderTotals();
+            coGoToStep(1);
 
-        // Abrir overlay
-        overlay.classList.add('co-open');
-        document.body.style.overflow = 'hidden';
+            const form = document.getElementById('checkout-form');
+            const success = document.getElementById('checkout-success');
+            if (form) form.style.display = '';
+            if (success) success.style.display = 'none';
+
+            renderCoOrderItems();
+            updateOrderTotals();
+
+            overlay.classList.add('co-open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        if (cartInstance) {
+            // Esperar a que el offcanvas cierre del todo, luego abrir checkout
+            cartEl.addEventListener('hidden.bs.offcanvas', function handler() {
+                cartEl.removeEventListener('hidden.bs.offcanvas', handler);
+                _doOpen();
+            });
+            cartInstance.hide();
+        } else {
+            _doOpen();
+        }
     }
 
     function closeCheckout() {
