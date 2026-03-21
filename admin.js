@@ -561,8 +561,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Items
             const itemsHtml = (order.items || []).map(item => {
                 const product = localProductsMap.get(item.productoId);
-                const imgHtml = product?.imageUrl
-                    ? `<img src="${product.imageUrl}" class="pw-item-img" alt="${item.nombre}">`
+                const imgHtml = product?.imagenUrl
+                    ? `<img src="${product.imagenUrl}" class="pw-item-img" alt="${item.nombre}">`
                     : `<div class="pw-item-img-placeholder"><i class="bi bi-image"></i></div>`;
                 return `<div class="pw-item-row">
                     ${imgHtml}
@@ -793,7 +793,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             msg += `\n${i+1}. *${item.nombre}*${p?.categoria ? ` [${p.categoria}]` : ''}`;
                             msg += `\n   Talla: ${item.talla||'N/A'} | Color: ${item.color||'N/A'}`;
                             msg += `\n   Cantidad: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}`;
-                            if (p?.imageUrl) msg += `\n   Link: ${p.imageUrl}`;
+                            if (p?.imagenUrl) msg += `\n   Link: ${p.imagenUrl}`;
                             msg += '\n';
                         });
                         msg += `\n*Direccion de entrega:*\n${orderData.clienteDireccion}\n`;
