@@ -3010,7 +3010,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
          // ✅ Calcular resumen EFECTIVO - Compacto, solo muestra vuelto si es necesario
          function calcularResumenEfectivo() {
-             const recibido = parseFloat(eliminarFormatoNumero(efectivoRecibidoInput.value)) || 0;
+             const recibido = parseFloat(eliminarFormatoNumero(efectivoRecibidoInput?.value)) || 0;
              const total = window.calcularTotalVentaGeneral();
              const vuelto = recibido - total;
 
@@ -3032,7 +3032,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
          // ✅ Calcular resumen TRANSFERENCIA - Compacto
          function calcularResumenTransferencia() {
-             const recibido = parseFloat(eliminarFormatoNumero(transferenciaRecibidaInput.value)) || 0;
+             const recibido = parseFloat(eliminarFormatoNumero(transferenciaRecibidaInput?.value)) || 0;
              const total = window.calcularTotalVentaGeneral();
              const falta = total - recibido;
 
@@ -3403,17 +3403,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (metodoPagoSeleccionado === 'efectivo') {
                 // En efectivo: para apartados usar el monto ingresado, para ventas normales el total
                 if (tipoVentaSelect.value === 'apartado') {
-                    montoEfectivo = parseFloat(eliminarFormatoNumero(efectivoRecibidoInput.value)) || 0;
+                    montoEfectivo = parseFloat(eliminarFormatoNumero(efectivoRecibidoInput?.value)) || 0;
                 } else {
                     montoEfectivo = totalCalculado;
                 }
             } else if (metodoPagoSeleccionado === 'transferencia') {
                 // En transferencia: guardar lo que recibió
-                montoTransferencia = parseFloat(eliminarFormatoNumero(transferenciaRecibidaInput.value)) || 0;
+                montoTransferencia = parseFloat(eliminarFormatoNumero(transferenciaRecibidaInput?.value)) || 0;
             } else if (metodoPagoSeleccionado === 'mixto') {
                 // En mixto: guardar efectivo y transferencia recibidos
-                montoEfectivo = parseFloat(eliminarFormatoNumero(efectivoMixtoRecibidoInput.value)) || 0;
-                montoTransferencia = parseFloat(eliminarFormatoNumero(transferenciaMixtoRecibidaInput.value)) || 0;
+                montoEfectivo = parseFloat(eliminarFormatoNumero(efectivoMixtoRecibidoInput?.value)) || 0;
+                montoTransferencia = parseFloat(eliminarFormatoNumero(transferenciaMixtoRecibidaInput?.value)) || 0;
             }
 
             const ventaData = {
