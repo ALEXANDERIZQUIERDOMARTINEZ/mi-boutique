@@ -1772,19 +1772,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (confirmEl) confirmEl.value = clientData.celular || '';
                 document.getElementById('checkout-address').value = clientData.direccion || '';
                 coUpdateNextBtn1();
+
                 if (clientData.ciudad) {
                     document.getElementById('checkout-city').value = clientData.ciudad;
-                    // Trigger change event para validar método de pago y cargar barrios
                     document.getElementById('checkout-city').dispatchEvent(new Event('change'));
+
+                    // Reflejar ciudad en los botones toggle del paso 2
+                    const isMonteria = clientData.ciudad === 'Montería';
+                    document.querySelectorAll('.co-city-opt').forEach(b => {
+                        b.classList.toggle('active',
+                            isMonteria ? b.dataset.city === 'Montería' : b.dataset.city === 'otra'
+                        );
+                    });
+                    if (!isMonteria) {
+                        const otherField = document.getElementById('co-other-city-field');
+                        const cityVisible = document.getElementById('co-city-visible');
+                        if (otherField) otherField.style.display = '';
+                        if (cityVisible) cityVisible.value = clientData.ciudad;
+                    }
 
                     // Cargar barrio si existe
                     if (clientData.barrio) {
-                        // Esperar a que se carguen los barrios
                         setTimeout(() => {
                             document.getElementById('checkout-neighborhood').value = clientData.barrio;
-                        }, 100);
+                            coUpdateNextBtn2();
+                        }, 150);
                     }
                 }
+
+                // Activar botón continuar del paso 2 con los datos cargados
+                coUpdateNextBtn2();
                 showToast('¡Datos cargados! Bienvenido de nuevo', 'success');
             }
         } catch (err) {
