@@ -1759,7 +1759,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const clientData = snapshot.docs[0].data();
                 document.getElementById('checkout-name').value = clientData.nombre || '';
                 document.getElementById('checkout-phone').value = clientData.celular || '';
+                const confirmEl = document.getElementById('checkout-phone-confirm');
+                if (confirmEl) confirmEl.value = clientData.celular || '';
                 document.getElementById('checkout-address').value = clientData.direccion || '';
+                coUpdateNextBtn1();
                 if (clientData.ciudad) {
                     document.getElementById('checkout-city').value = clientData.ciudad;
                     // Trigger change event para validar método de pago y cargar barrios
@@ -1961,16 +1964,203 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Actualizar totales y restablecer estado al abrir el modal
-    const checkoutModalEl = document.getElementById('checkoutModal');
-    checkoutModalEl.addEventListener('show.bs.modal', function() {
+    // ═══════════════════════════════════════════════════════════════
+    // CHECKOUT OVERLAY — Wizard de 3 pasos, pantalla completa
+    // ═══════════════════════════════════════════════════════════════
+
+    let coCurrentStep = 1;
+    const CO_TOTAL_STEPS = 3;
+    const coStepLabels = ['Datos personales', 'Datos de envío', 'Pago y resumen'];
+
+    function openCheckout() {
+        const overlay = document.getElementById('checkout-overlay');
+        if (!overlay) return;
+
+        // Resetear al paso 1 siempre
+        coCurrentStep = 1;
+        coGoToStep(1, false);
+
+        // Mostrar form, ocultar success
+        const form = document.getElementById('checkout-form');
+        const success = document.getElementById('checkout-success');
+        if (form) form.style.display = '';
+        if (success) success.style.display = 'none';
+
+        // Rellenar resumen de carrito en paso 3
+        renderCoOrderItems();
         updateOrderTotals();
-        // Asegurar que se muestra el formulario y no la pantalla de éxito
-        const checkoutForm = document.getElementById('checkout-form');
-        const checkoutSuccess = document.getElementById('checkout-success');
-        if (checkoutForm) checkoutForm.style.display = 'block';
-        if (checkoutSuccess) checkoutSuccess.style.display = 'none';
+
+        // Abrir overlay
+        overlay.classList.add('co-open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeCheckout() {
+        const overlay = document.getElementById('checkout-overlay');
+        if (!overlay) return;
+        overlay.classList.remove('co-open');
+        document.body.style.overflow = '';
+    }
+
+    function coGoToStep(step, animate = true) {
+        const slider = document.getElementById('co-slider');
+        const progFill = document.getElementById('co-prog-fill');
+        const stepLbl = document.getElementById('co-step-lbl');
+        const backBtn = document.getElementById('co-back-btn');
+        if (!slider) return;
+
+        coCurrentStep = step;
+
+        // Mover slider
+        if (animate) {
+            slider.style.transition = 'transform 0.32s cubic-bezier(.4,0,.2,1)';
+        } else {
+            slider.style.transition = 'none';
+        }
+        slider.style.transform = `translateX(${-(step - 1) * 100}%)`;
+
+        // Barra de progreso
+        const pct = (step / CO_TOTAL_STEPS) * 100;
+        if (progFill) progFill.style.width = pct + '%';
+
+        // Label
+        if (stepLbl) stepLbl.textContent = coStepLabels[step - 1];
+
+        // Botón atrás
+        if (backBtn) backBtn.style.visibility = step > 1 ? 'visible' : 'hidden';
+
+        // Si es paso 3, actualizar resumen
+        if (step === 3) {
+            renderCoOrderItems();
+            updateOrderTotals();
+        }
+    }
+
+    function coBack() {
+        if (coCurrentStep > 1) coGoToStep(coCurrentStep - 1);
+    }
+
+    function coNext() {
+        if (coCurrentStep < CO_TOTAL_STEPS) coGoToStep(coCurrentStep + 1);
+    }
+
+    // Validación paso 1: whatsapp, confirmar whatsapp, nombre, cédula
+    function coIsStep1Valid() {
+        const phone = (document.getElementById('checkout-phone')?.value || '').trim();
+        const phoneConfirm = (document.getElementById('checkout-phone-confirm')?.value || '').trim();
+        const name = (document.getElementById('checkout-name')?.value || '').trim();
+        const cedula = (document.getElementById('checkout-cedula')?.value || '').trim();
+        return phone.length >= 7 && phone === phoneConfirm && name.length >= 2 && cedula.length >= 4;
+    }
+
+    // Validación paso 2: ciudad + dirección requeridos; barrio si tiene barrios
+    function coIsStep2Valid() {
+        const ciudad = (document.getElementById('checkout-city')?.value || '').trim();
+        const dir = (document.getElementById('checkout-address')?.value || '').trim();
+        return ciudad.length > 0 && dir.length >= 4;
+    }
+
+    function coUpdateNextBtn1() {
+        const btn = document.getElementById('co-next-1');
+        if (btn) btn.disabled = !coIsStep1Valid();
+    }
+
+    function coUpdateNextBtn2() {
+        const btn = document.getElementById('co-next-2');
+        if (btn) btn.disabled = !coIsStep2Valid();
+    }
+
+    // Auto-advance: cuando paso 1 sea válido, pasar solo al paso 2
+    function coCheckAutoAdvance1() {
+        if (coIsStep1Valid() && coCurrentStep === 1) {
+            coGoToStep(2);
+        }
+    }
+
+    // Listeners de validación en tiempo real — paso 1
+    ['checkout-phone', 'checkout-phone-confirm', 'checkout-name', 'checkout-cedula'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => {
+            coUpdateNextBtn1();
+        });
     });
+
+    // Auto-advance desde confirmación de teléfono (último campo "requerido" del paso 1)
+    document.getElementById('checkout-phone-confirm')?.addEventListener('input', function() {
+        coUpdateNextBtn1();
+        // Auto-avanzar solo si todos los campos están listos
+        if (coIsStep1Valid() && coCurrentStep === 1) {
+            setTimeout(() => coGoToStep(2), 350);
+        }
+    });
+
+    // Listeners de validación en tiempo real — paso 2
+    ['checkout-address'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => coUpdateNextBtn2());
+    });
+
+    // Seleccionar ciudad con los botones toggle
+    window.coSelectCity = function(city, btn) {
+        // Activar botón
+        document.querySelectorAll('.co-city-opt').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (city === 'otra') {
+            // Mostrar select de otra ciudad
+            document.getElementById('co-other-city-field').style.display = '';
+            document.getElementById('checkout-city').value = '';
+            document.getElementById('neighborhood-section').style.display = 'none';
+        } else {
+            // Montería seleccionada directamente
+            document.getElementById('co-other-city-field').style.display = 'none';
+            document.getElementById('checkout-city').value = city;
+            document.getElementById('checkout-city').dispatchEvent(new Event('change'));
+        }
+        coUpdateNextBtn2();
+    };
+
+    // Sync el select visible de "otra ciudad" con el hidden checkout-city
+    window.coSyncCity = function(val) {
+        document.getElementById('checkout-city').value = val;
+        document.getElementById('checkout-city').dispatchEvent(new Event('change'));
+        coUpdateNextBtn2();
+    };
+
+    // Seleccionar método de pago con los botones de tarjeta
+    window.coSelectPayment = function(method, btn) {
+        document.querySelectorAll('.co-pay-card').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('checkout-payment').value = method;
+        document.getElementById('checkout-payment').dispatchEvent(new Event('change'));
+    };
+
+    // Renderizar items del carrito en paso 3
+    function renderCoOrderItems() {
+        const container = document.getElementById('co-order-items');
+        if (!container) return;
+        if (cart.length === 0) {
+            container.innerHTML = '<p class="co-empty-cart">Tu carrito está vacío</p>';
+            return;
+        }
+        container.innerHTML = cart.map(item => `
+            <div class="co-item">
+                <div class="co-item-info">
+                    <span class="co-item-name">${item.nombre || ''}</span>
+                    <span class="co-item-detail">${item.talla ? item.talla + ' · ' : ''}${item.color ? item.color + ' · ' : ''}×${item.cantidad}</span>
+                </div>
+                <span class="co-item-price">${formatoMoneda.format(item.total)}</span>
+            </div>
+        `).join('');
+    }
+
+    // Exponer para los onclick del HTML
+    window.openCheckout = openCheckout;
+    window.closeCheckout = closeCheckout;
+    window.coBack = coBack;
+    window.coNext = coNext;
 
     document.getElementById('checkout-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -2052,12 +2242,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showToast(mensaje, 'error', 8000);
 
-            // Cerrar modal de checkout para que el usuario vea el carrito
-            const checkoutModalEl = document.getElementById('checkoutModal');
-            const checkoutModalInstance = bootstrap.Modal.getInstance(checkoutModalEl);
-            if (checkoutModalInstance) {
-                checkoutModalInstance.hide();
-            }
+            // Cerrar checkout para que el usuario vea el carrito
+            closeCheckout();
 
             return; // Cancelar la compra
         }
@@ -2188,17 +2374,15 @@ document.addEventListener('DOMContentLoaded', () => {
             saveCart();
             document.getElementById('checkout-form').reset();
 
-            // Al presionar "Listo" cerrar el modal y restaurar el formulario
-            const checkoutModalEl = document.getElementById('checkoutModal');
-            const checkoutModalInstance = bootstrap.Modal.getInstance(checkoutModalEl) || bootstrap.Modal.getOrCreateInstance(checkoutModalEl);
-
+            // Al presionar "Listo" cerrar overlay y restaurar formulario
             if (continueBtn) {
                 continueBtn.onclick = () => {
-                    checkoutModalInstance.hide();
+                    closeCheckout();
                     setTimeout(() => {
-                        if (checkoutForm) checkoutForm.style.display = 'block';
+                        if (checkoutForm) checkoutForm.style.display = '';
                         if (checkoutSuccess) checkoutSuccess.style.display = 'none';
-                    }, 300);
+                        coGoToStep(1, false);
+                    }, 350);
                 };
             }
 

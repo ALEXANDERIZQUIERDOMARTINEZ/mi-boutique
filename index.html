@@ -263,172 +263,226 @@
 <span class="total-label">Total</span>
 <span class="total-amount" id="cart-total">$0</span>
 </div>
-<button class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#checkoutModal">
+<button class="btn btn-primary btn-lg w-100" onclick="openCheckout()">
 Finalizar Pedido
 </button>
 </div>
 </div>
 
-<div class="modal fade" id="checkoutModal" tabindex="-1">
-<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-<div class="modal-content checkout-premium">
-<div class="modal-header checkout-header">
-<div class="header-content">
-<div class="pulse-dot"></div>
-<h5 class="modal-title">Finalizar Pedido</h5>
-<p class="header-subtitle">Completa tus datos para confirmar la compra</p>
-</div>
-<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-</div>
-<div class="modal-body">
-<form id="checkout-form">
+<!-- ╔══════════════════════════════════════════════════════════╗
+     ║  CHECKOUT — PANTALLA COMPLETA (3 pasos)                 ║
+     ╚══════════════════════════════════════════════════════════╝ -->
+<div id="checkout-overlay" class="co-overlay" aria-modal="true" role="dialog">
 
-<div class="form-card" data-card="1">
-<div class="card-header-mini">
-<span class="card-icon"><i class="bi bi-person"></i></span>
-<span class="card-title">Datos personales</span>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Cedula</label>
-<input type="text" class="form-control form-control-modern" id="checkout-cedula" placeholder="1234567890" required>
-<small class="text-muted">Si ya compraste antes, tus datos se cargan al ingresar la cedula</small>
-</div>
-<div class="delivery-info" id="delivery-info" style="display: none;">
-<div class="info-title">Informacion de envio</div>
-<div class="info-content">Pedido fuera de Monteria</div>
-<div class="cedula-display">Cedula: <span id="cedula-display">-</span></div>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Nombre completo</label>
-<input type="text" class="form-control form-control-modern" id="checkout-name" placeholder="Maria Garcia" required>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">WhatsApp</label>
-<input type="tel" class="form-control form-control-modern" id="checkout-phone" placeholder="300 123 4567" required>
-</div>
-</div>
+  <!-- ── Header ── -->
+  <div class="co-header">
+    <button type="button" class="co-icon-btn" id="co-back-btn" onclick="coBack()" aria-label="Atrás">
+      <i class="bi bi-chevron-left"></i>
+    </button>
+    <div class="co-header-center">
+      <div class="co-prog-track"><div class="co-prog-fill" id="co-prog-fill"></div></div>
+      <span class="co-step-lbl" id="co-step-lbl">Datos personales</span>
+    </div>
+    <button type="button" class="co-icon-btn" onclick="closeCheckout()" aria-label="Cerrar">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
 
-<div class="form-card" data-card="2">
-<div class="card-header-mini">
-<span class="card-icon"><i class="bi bi-geo-alt"></i></span>
-<span class="card-title">Direccion de envio</span>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Ciudad</label>
-<select class="form-select form-control-modern" id="checkout-city" required>
-<option value="">Selecciona tu ciudad</option>
-<option value="Montería">Montería</option>
-<option value="Cereté">Cereté</option>
-<option value="Lorica">Lorica</option>
-<option value="Sahagún">Sahagún</option>
-<option value="Planeta Rica">Planeta Rica</option>
-<option value="Montelíbano">Montelíbano</option>
-<option value="Tierralta">Tierralta</option>
-<option value="Ayapel">Ayapel</option>
-<option value="Otra">Otra ciudad</option>
-</select>
-</div>
-<div class="form-group-modern" id="neighborhood-section" style="display: none;">
-<label class="selector-label">Barrio</label>
-<input type="text" class="form-control form-control-modern" id="checkout-neighborhood" list="neighborhood-list" placeholder="Escribe o selecciona">
-<datalist id="neighborhood-list"></datalist>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Direccion completa</label>
-<input type="text" class="form-control form-control-modern" id="checkout-address" placeholder="Calle 123 #45-67" required>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Observaciones</label>
-<textarea class="form-control form-control-modern" id="checkout-notes" rows="2" placeholder="Instrucciones especiales, referencias..."></textarea>
-</div>
-</div>
+  <!-- ── Form + Slider ── -->
+  <form id="checkout-form" class="co-form-wrap" novalidate>
+  <div class="co-slider" id="co-slider">
 
-<div class="form-card" data-card="3">
-<div class="card-header-mini">
-<span class="card-icon"><i class="bi bi-credit-card"></i></span>
-<span class="card-title">Metodo de pago</span>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Forma de pago</label>
-<select class="form-select form-control-modern" id="checkout-payment" required>
-<option value="">Selecciona una opcion</option>
-<option value="Efectivo" id="payment-efectivo">Efectivo (Pago contra entrega)</option>
-<option value="Transferencia">Transferencia Bancaria</option>
-</select>
-<small class="text-muted" id="payment-info"></small>
-</div>
-<div class="form-group-modern" id="cash-payment-section" style="display: none;">
-<label class="selector-label">Monto con el que pagas</label>
-<input type="number" class="form-control form-control-modern" id="checkout-cash-amount" placeholder="50000" min="0">
-<div class="mt-2" id="change-display" style="display: none;">
-<div class="change-card">
-<div class="change-item">
-<span class="change-label">Total del pedido:</span>
-<span class="change-value" id="change-total">$0</span>
-</div>
-<div class="change-item highlight">
-<span class="change-label">Vuelto a entregar:</span>
-<span class="change-value" id="change-amount">$0</span>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-<div class="form-card" data-card="4">
-<div class="card-header-mini">
-<span class="card-icon"><i class="bi bi-receipt"></i></span>
-<span class="card-title">Resumen</span>
-</div>
-<div class="order-summary">
-<div class="summary-row total-row">
-<span class="summary-label-total">Total</span>
-<span class="summary-value-total" id="order-total">$0</span>
-</div>
-</div>
-</div>
-
-<button type="submit" class="btn-submit-premium">
-<span class="btn-text">Confirmar Pedido</span>
-<span class="btn-icon"><i class="bi bi-arrow-right"></i></span>
-</button>
-
-</form>
-
-<!-- Pantalla de éxito (oculta hasta confirmar pedido) -->
-<div id="checkout-success" style="display:none;">
-  <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:55vh; padding:2rem 1.5rem; text-align:center;">
-
-    <!-- Ícono animado -->
-    <div style="width:80px; height:80px; border-radius:50%; background:var(--color-primario-claro); display:flex; align-items:center; justify-content:center; margin-bottom:1.5rem;">
-      <div style="width:56px; height:56px; border-radius:50%; background:var(--color-primario); display:flex; align-items:center; justify-content:center;">
-        <i class="bi bi-check-lg" style="font-size:1.75rem; color:#fff; font-weight:900;"></i>
+    <!-- ───────────── PASO 1: Quién eres ───────────── -->
+    <div class="co-step" id="co-step-1">
+    <div class="co-step-inner">
+      <div class="co-title-block">
+        <h2>¿Quién eres?</h2>
+        <p>Usaremos tu WhatsApp para confirmar el pedido</p>
       </div>
+
+      <div class="co-field">
+        <label class="co-label">WhatsApp <span class="co-req">*</span></label>
+        <input type="tel" class="co-input" id="checkout-phone" inputmode="numeric" placeholder="300 123 4567" autocomplete="tel">
+      </div>
+      <div class="co-field">
+        <label class="co-label">Confirmar WhatsApp <span class="co-req">*</span></label>
+        <input type="tel" class="co-input" id="checkout-phone-confirm" inputmode="numeric" placeholder="300 123 4567">
+        <span class="co-hint" id="co-phone-hint"></span>
+      </div>
+      <div class="co-field">
+        <label class="co-label">Nombre completo <span class="co-req">*</span></label>
+        <input type="text" class="co-input" id="checkout-name" placeholder="María García" autocomplete="name">
+      </div>
+      <div class="co-field">
+        <label class="co-label">Cédula <span class="co-req">*</span></label>
+        <input type="text" class="co-input" id="checkout-cedula" inputmode="numeric" placeholder="1234567890">
+        <span class="co-hint co-hint-info" id="co-cedula-hint">Si ya compraste antes, tus datos se cargarán</span>
+      </div>
+
+      <!-- Delivery info strip (controlled by existing JS) -->
+      <div class="co-info-strip" id="delivery-info" style="display:none">
+        <i class="bi bi-info-circle-fill"></i>
+        <span>Envío fuera de Montería · Cédula: <b id="cedula-display">—</b></span>
+      </div>
+
+      <button type="button" class="co-btn-next" id="co-next-1" onclick="coNext()" disabled>
+        Continuar <i class="bi bi-arrow-right-short"></i>
+      </button>
+    </div>
     </div>
 
-    <!-- Textos -->
-    <h4 style="font-weight:700; color:var(--color-texto); font-size:1.3rem; margin-bottom:0.5rem; letter-spacing:-0.3px;">¡Pedido finalizado!</h4>
-    <p style="font-weight:600; color:var(--color-texto); font-size:1rem; margin-bottom:0.4rem;">En segundos un asesor se comunicará contigo.</p>
-    <p style="color:var(--color-texto-claro); font-size:0.85rem; margin-bottom:2.5rem; line-height:1.5;">Revisa tu WhatsApp — te contactaremos<br>para confirmar los detalles de tu pedido.</p>
+    <!-- ───────────── PASO 2: Dirección ───────────── -->
+    <div class="co-step" id="co-step-2">
+    <div class="co-step-inner">
+      <div class="co-title-block">
+        <h2>¿A dónde enviamos?</h2>
+        <p>Dirección de entrega</p>
+      </div>
 
-    <!-- Botón -->
-    <button type="button" id="checkout-continue-btn"
-      style="width:100%; padding:0.9rem; border:none; border-radius:12px;
-             background:var(--color-primario); color:#fff; font-size:1rem;
-             font-weight:700; letter-spacing:0.3px; cursor:pointer;
-             box-shadow:0 4px 16px rgba(217,136,185,0.35); transition:background 0.2s;"
-      onmouseover="this.style.background='var(--color-primario-oscuro)'"
-      onmouseout="this.style.background='var(--color-primario)'">
-      Listo
-    </button>
+      <!-- City quick-pick -->
+      <div class="co-city-toggle">
+        <button type="button" class="co-city-opt active" data-city="Montería" onclick="coSelectCity('Montería',this)">
+          <i class="bi bi-buildings"></i><span>Montería</span>
+        </button>
+        <button type="button" class="co-city-opt" data-city="otra" onclick="coSelectCity('otra',this)">
+          <i class="bi bi-map"></i><span>Otra ciudad</span>
+        </button>
+      </div>
 
+      <!-- Hidden real select (needed for existing JS event handlers) -->
+      <select id="checkout-city" style="display:none" required>
+        <option value="">Selecciona tu ciudad</option>
+        <option value="Montería">Montería</option>
+        <option value="Cereté">Cereté</option>
+        <option value="Lorica">Lorica</option>
+        <option value="Sahagún">Sahagún</option>
+        <option value="Planeta Rica">Planeta Rica</option>
+        <option value="Montelíbano">Montelíbano</option>
+        <option value="Tierralta">Tierralta</option>
+        <option value="Ayapel">Ayapel</option>
+        <option value="Otra">Otra ciudad</option>
+      </select>
+
+      <!-- Visible city select for "otra ciudad" -->
+      <div class="co-field" id="co-other-city-field" style="display:none">
+        <label class="co-label">Ciudad</label>
+        <select class="co-input" id="co-city-visible" onchange="coSyncCity(this.value)">
+          <option value="">Selecciona...</option>
+          <option value="Cereté">Cereté</option>
+          <option value="Lorica">Lorica</option>
+          <option value="Sahagún">Sahagún</option>
+          <option value="Planeta Rica">Planeta Rica</option>
+          <option value="Montelíbano">Montelíbano</option>
+          <option value="Tierralta">Tierralta</option>
+          <option value="Ayapel">Ayapel</option>
+          <option value="Otra">Otra ciudad</option>
+        </select>
+      </div>
+
+      <div class="co-field" id="neighborhood-section" style="display:none">
+        <label class="co-label">Barrio</label>
+        <input type="text" class="co-input" id="checkout-neighborhood" list="neighborhood-list" placeholder="Escribe o selecciona tu barrio">
+        <datalist id="neighborhood-list"></datalist>
+      </div>
+
+      <div class="co-field">
+        <label class="co-label">Dirección completa <span class="co-req">*</span></label>
+        <input type="text" class="co-input" id="checkout-address" placeholder="Calle 45 #12-34" required>
+      </div>
+
+      <div class="co-field">
+        <label class="co-label">Observaciones <span class="co-opt">(opcional)</span></label>
+        <textarea class="co-input co-textarea" id="checkout-notes" rows="2" placeholder="Referencias, instrucciones especiales..."></textarea>
+      </div>
+
+      <button type="button" class="co-btn-next" id="co-next-2" onclick="coNext()" disabled>
+        Continuar <i class="bi bi-arrow-right-short"></i>
+      </button>
+    </div>
+    </div>
+
+    <!-- ───────────── PASO 3: Pago ───────────── -->
+    <div class="co-step" id="co-step-3">
+    <div class="co-step-inner">
+      <div class="co-title-block">
+        <h2>¿Cómo pagas?</h2>
+        <p>Revisa tu pedido y elige el pago</p>
+      </div>
+
+      <!-- Mini resumen de productos -->
+      <div class="co-order-items" id="co-order-items"></div>
+
+      <!-- Métodos de pago -->
+      <div class="co-pay-grid">
+        <button type="button" class="co-pay-card" id="co-pay-efectivo" onclick="coSelectPayment('Efectivo',this)">
+          <i class="bi bi-cash-coin co-pay-ico"></i>
+          <div class="co-pay-name">Efectivo</div>
+          <div class="co-pay-sub">Contra entrega</div>
+          <i class="bi bi-check-circle-fill co-pay-chk"></i>
+        </button>
+        <button type="button" class="co-pay-card" id="co-pay-transferencia" onclick="coSelectPayment('Transferencia',this)">
+          <i class="bi bi-phone co-pay-ico"></i>
+          <div class="co-pay-name">Transferencia</div>
+          <div class="co-pay-sub">Nequi · Bancolombia</div>
+          <i class="bi bi-check-circle-fill co-pay-chk"></i>
+        </button>
+      </div>
+
+      <!-- Hidden select (needed for existing JS handlers) -->
+      <select id="checkout-payment" style="display:none" required>
+        <option value="">Selecciona una opcion</option>
+        <option value="Efectivo" id="payment-efectivo">Efectivo (Pago contra entrega)</option>
+        <option value="Transferencia">Transferencia Bancaria</option>
+      </select>
+      <small id="payment-info" class="co-pay-info-msg"></small>
+
+      <!-- Efectivo: monto (mostrado por JS existente) -->
+      <div id="cash-payment-section" style="display:none" class="co-cash-wrap">
+        <div class="co-field">
+          <label class="co-label">¿Con cuánto pagas?</label>
+          <input type="number" class="co-input" id="checkout-cash-amount" placeholder="50000" min="0" inputmode="numeric">
+        </div>
+        <div id="change-display" style="display:none" class="co-change">
+          <div class="co-change-row">
+            <span>Total del pedido:</span><strong id="change-total">$0</strong>
+          </div>
+          <div class="co-change-row co-change-hl">
+            <span>Vuelto a entregar:</span><strong id="change-amount">$0</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total -->
+      <div class="co-total-bar">
+        <span class="co-total-lbl">Total del pedido</span>
+        <span class="co-total-val" id="order-total">$0</span>
+      </div>
+
+      <button type="submit" class="co-btn-submit">
+        <i class="bi bi-check-circle"></i> Confirmar Pedido
+      </button>
+    </div>
+    </div>
+
+  </div><!-- /co-slider -->
+  </form>
+
+  <!-- ── Pantalla de éxito ── -->
+  <div id="checkout-success" class="co-success" style="display:none">
+    <div class="co-success-inner">
+      <div class="co-success-icon">
+        <i class="bi bi-check-lg"></i>
+      </div>
+      <h3>¡Pedido finalizado!</h3>
+      <p class="co-success-msg">En segundos un asesor se comunicará contigo.</p>
+      <p class="co-success-sub">Revisa tu WhatsApp — te contactaremos para confirmar los detalles de tu pedido.</p>
+      <button type="button" id="checkout-continue-btn" class="co-btn-submit">
+        Listo
+      </button>
+    </div>
   </div>
-</div>
 
-</div>
-</div>
-</div>
-</div>
+</div><!-- /checkout-overlay -->
 
 <div class="modal fade" id="deleteCartModal" tabindex="-1">
 <div class="modal-dialog modal-dialog-centered dcm-dialog">
