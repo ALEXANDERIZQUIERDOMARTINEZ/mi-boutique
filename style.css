@@ -4255,23 +4255,23 @@ input[type="datetime-local"] {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-height: 0; /* prevent flex overflow */
 }
 .co-slider {
     display: flex;
     flex: 1;
     width: 300%;
+    min-height: 0;
     transform: translateX(0);
     will-change: transform;
 }
 .co-step {
     width: 33.3333%;
     flex-shrink: 0;
+    height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 20px 16px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
 }
 
@@ -4513,7 +4513,8 @@ input[type="datetime-local"] {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    height: 100%;
+    padding: 20px 16px 24px;
+    min-height: 100%;
 }
 
 /* ─── Title block ─── */
