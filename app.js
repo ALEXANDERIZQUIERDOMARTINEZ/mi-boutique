@@ -2025,31 +2025,25 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.overflow = '';
     }
 
-    function coGoToStep(step, animate = true) {
-        const slider = document.getElementById('co-slider');
-        const progFill = document.getElementById('co-prog-fill');
-        const stepLbl = document.getElementById('co-step-lbl');
-        const backBtn = document.getElementById('co-back-btn');
-        if (!slider) return;
+    function coGoToStep(step) {
+        // Show/hide steps with display — NO transforms near inputs (iOS Safari fix)
+        document.querySelectorAll('.co-step').forEach(s => s.classList.remove('co-step-active'));
+        const activeStep = document.getElementById(`co-step-${step}`);
+        if (activeStep) activeStep.classList.add('co-step-active');
 
         coCurrentStep = step;
 
-        // Mover slider
-        if (animate) {
-            slider.style.transition = 'transform 0.32s cubic-bezier(.4,0,.2,1)';
-        } else {
-            slider.style.transition = 'none';
-        }
-        slider.style.transform = `translateX(${-(step - 1) * 100}%)`;
-
         // Barra de progreso
         const pct = (step / CO_TOTAL_STEPS) * 100;
+        const progFill = document.getElementById('co-prog-fill');
         if (progFill) progFill.style.width = pct + '%';
 
         // Label
+        const stepLbl = document.getElementById('co-step-lbl');
         if (stepLbl) stepLbl.textContent = coStepLabels[step - 1];
 
         // Botón atrás
+        const backBtn = document.getElementById('co-back-btn');
         if (backBtn) backBtn.style.visibility = step > 1 ? 'visible' : 'hidden';
 
         // Si es paso 3, actualizar resumen

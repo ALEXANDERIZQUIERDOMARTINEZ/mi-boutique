@@ -4291,30 +4291,33 @@ input[type="datetime-local"] {
 }
 .co-icon-btn:hover { background: var(--color-primario-claro, #F5E8ED); }
 
-/* ─── Slider / Steps ─── */
+/* ─── Steps — NO transforms anywhere near inputs (definitive iOS fix) ─── */
 .co-form-wrap {
     flex: 1;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* prevent flex overflow */
-}
-.co-slider {
-    display: flex;
-    flex: 1;
-    width: 300%;
     min-height: 0;
-    transform: translateX(0);
-    will-change: transform;
+    position: relative;
+    overflow: hidden;
 }
+/* Slider is now just a stacking container — no width trick, no transform */
+.co-slider {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+}
+/* Steps are absolutely stacked; only the active one is shown */
 .co-step {
-    width: 33.3333%;
-    flex-shrink: 0;
-    height: 100%;
+    position: absolute;
+    inset: 0;
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    display: none;
+}
+.co-step.co-step-active {
+    display: block;
 }
 
 /* ─── Campos de formulario ─── */
@@ -4556,7 +4559,11 @@ input[type="datetime-local"] {
     flex-direction: column;
     gap: 14px;
     padding: 20px 16px 24px;
-    min-height: 100%;
+}
+/* Push continue button to bottom when content is short */
+.co-step-inner .co-btn-next,
+.co-step-inner .co-btn-submit {
+    margin-top: 12px;
 }
 
 /* ─── Title block ─── */
