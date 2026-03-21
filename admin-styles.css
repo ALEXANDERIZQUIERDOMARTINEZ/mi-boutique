@@ -2665,6 +2665,59 @@ body.dark-mode .pw-tab-badge-neutral { background: rgba(255,255,255,.08); }
 body.dark-mode .pw-delivery-strip { background: rgba(34,197,94,.08); }
 body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
 
+/* ── Mobile-first tweaks (< 540px) ─────────────────────────────────────── */
+@media (max-width: 540px) {
+  /* Stats: más compactas */
+  .pw-stat { padding: .65rem .5rem; }
+  .pw-stat-val { font-size: 1.25rem; }
+  .pw-stat-label { font-size: .62rem; }
+  .pw-stat-brand .pw-stat-val { font-size: 1rem; }
+
+  /* Toolbar: búsqueda encima, filtro debajo */
+  .pw-toolbar { flex-direction: column; gap: .4rem; }
+  .pw-filter-select { max-width: 100%; width: 100%; }
+
+  /* Tabs: texto más corto, íconos prominentes */
+  .pw-tab { padding: .55rem .65rem; font-size: .78rem; gap: .25rem; }
+  .pw-tab > span:not(.pw-tab-badge) { display: none; }  /* ocultar texto, dejar ícono + badge */
+  .pw-tab.active > span:not(.pw-tab-badge) { display: inline; } /* texto solo en tab activo */
+  .pw-tab i { font-size: 1rem; }
+
+  /* Card header: info compacta */
+  .pw-card-header { padding: .65rem .75rem; }
+  .pw-card-id { font-size: .75rem; }
+
+  /* Card body: menos padding */
+  .pw-card-body { padding: .65rem .75rem; }
+
+  /* Cliente: nombre más grande, chips más compactos */
+  .pw-client-name { font-size: .85rem; }
+  .pw-client-chip { font-size: .75rem; }
+
+  /* Items: imagen más pequeña */
+  .pw-item-img, .pw-item-img-placeholder { width: 30px; height: 30px; }
+  .pw-item-row { padding: .4rem .6rem; gap: .5rem; }
+  .pw-item-name { font-size: .78rem; }
+  .pw-item-meta { font-size: .7rem; }
+  .pw-item-total { font-size: .8rem; }
+
+  /* Footer: total a la izquierda, botones a la derecha */
+  .pw-card-footer { padding: .6rem .75rem; flex-wrap: nowrap; }
+  .pw-total-val { font-size: .95rem; }
+
+  /* Botones: mostrar solo íconos en móvil */
+  .pw-btn { padding: .45rem .6rem; }
+  .pw-btn span { display: none; }        /* ocultar texto */
+  .pw-btn i { font-size: .9rem; }
+
+  /* Pedido header: pill de estado compacto */
+  .pw-status-badge { font-size: .65rem; padding: .2rem .45rem; }
+
+  /* Header de sección */
+  .pw-header { margin-bottom: .875rem; }
+  .pw-pending-pill { font-size: .75rem; padding: .28rem .65rem; }
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    PRODUCT / NAMES in tables
    ───────────────────────────────────────────────────────────────────────── */
