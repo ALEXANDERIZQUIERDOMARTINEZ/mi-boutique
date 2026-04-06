@@ -1538,16 +1538,9 @@ document.addEventListener('DOMContentLoaded', () => {
             categoryDropdownMenu.appendChild(li);
         });
 
-        categoryDropdownMenu.querySelectorAll('.filter-group').forEach(item => {
-            item.addEventListener('click', handleFilterClick);
-        });
-
         // Populate mobile dropdown
         if (categoryDropdownMenuMobile) {
             categoryDropdownMenuMobile.innerHTML = categoryDropdownMenu.innerHTML;
-            categoryDropdownMenuMobile.querySelectorAll('.filter-group').forEach(item => {
-                item.addEventListener('click', handleFilterClick);
-            });
         }
 
         console.log(`✅ ${categories.length} categorías cargadas correctamente`);
@@ -1559,13 +1552,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Event delegation: un único listener en el contenedor padre evita la acumulación
+    // de handlers duplicados cada vez que onSnapshot reconstruye el HTML interior.
+    categoryDropdownMenu.addEventListener('click', (e) => {
+        if (e.target.closest('.filter-group')) handleFilterClick(e);
+    });
+    if (categoryDropdownMenuMobile) {
+        categoryDropdownMenuMobile.addEventListener('click', (e) => {
+            if (e.target.closest('.filter-group')) handleFilterClick(e);
+        });
+    }
+
     document.querySelectorAll('.header-left .filter-group, .header-left-mobile .filter-group').forEach(btn => {
         btn.addEventListener('click', handleFilterClick);
     });
 
     function handleFilterClick(e) {
         e.preventDefault();
-        const clickedFilter = e.currentTarget;
+        const clickedFilter = e.target.closest('.filter-group') || e.currentTarget;
 
         // Ignorar el botón hamburguesa y otros toggles de dropdown sin filtro propio
         if (clickedFilter.dataset.bsToggle === 'dropdown' && !clickedFilter.dataset.filter) {
