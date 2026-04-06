@@ -473,7 +473,7 @@ h1, h2, h3, h4, h5, h6 {
 .product-card img {
     width: 100%;
     aspect-ratio: 2 / 3;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
     background: #f8f5f6;
     transition: opacity 0.3s ease, transform 0.4s ease;
@@ -1309,9 +1309,16 @@ h1, h2, h3, h4, h5, h6 {
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-
+/* Propagar pointer-events:none a TODOS los hijos cuando el overlay está inactivo.
+   Sin esto los botones hijos capturan clics aunque el overlay sea invisible. */
+.image-zoom-overlay * {
+    pointer-events: none;
+}
 .image-zoom-overlay.active {
     opacity: 1;
+    pointer-events: auto;
+}
+.image-zoom-overlay.active * {
     pointer-events: auto;
 }
 
