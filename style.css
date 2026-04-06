@@ -2107,15 +2107,63 @@ textarea.form-control-modern {
     object-fit: cover;
     display: block;
     cursor: zoom-in;
-    transition: transform 0.45s ease, opacity 0.2s ease;
+    transition: opacity 0.15s ease;
 }
-/* Estado de carga al cambiar color en la galería */
+/* Estado de carga al cambiar color en la galería (fallback) */
 #productModal .modal-product-image.gallery-loading {
     opacity: 0.4;
 }
 
+/* Animación de deslizamiento al cambiar foto (estilo SHEIN) */
+#productModal .modal-product-image.swipe-slide-out-left {
+    animation: swipeOutLeft 0.18s ease forwards;
+}
+#productModal .modal-product-image.swipe-slide-out-right {
+    animation: swipeOutRight 0.18s ease forwards;
+}
+#productModal .modal-product-image.swipe-slide-in-right {
+    animation: swipeInRight 0.22s ease forwards;
+}
+#productModal .modal-product-image.swipe-slide-in-left {
+    animation: swipeInLeft 0.22s ease forwards;
+}
+@keyframes swipeOutLeft {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(-8%); }
+}
+@keyframes swipeOutRight {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(8%); }
+}
+@keyframes swipeInRight {
+    from { opacity: 0; transform: translateX(8%); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes swipeInLeft {
+    from { opacity: 0; transform: translateX(-8%); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* hover zoom desactivado: las animaciones de swipe lo reemplazan */
 #productModal .modal-product-image:hover {
-    transform: scale(1.04);
+    transform: none;
+}
+
+/* Contador de posición X/N estilo SHEIN */
+.mp-swipe-counter {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0, 0, 0, 0.42);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    z-index: 7;
+    pointer-events: none;
+    font-family: var(--fuente-principal, sans-serif);
 }
 
 /* Botón de zoom flotante sobre la imagen */
@@ -2614,38 +2662,56 @@ textarea.form-control-modern {
         overflow: hidden;
     }
 
-    /* Imagen: proporción fija — nunca se desplaza */
+    /* Imagen: altura generosa como SHEIN, sin miniaturas */
     .mp-img-col {
-        flex: 0 0 clamp(130px, 37dvh, 260px);
-        height: clamp(130px, 37dvh, 260px);
+        flex: 0 0 clamp(300px, 55dvh, 460px);
+        height: clamp(300px, 55dvh, 460px);
         flex-shrink: 0;
     }
 
-    /* En móvil los thumbnails van abajo (fila horizontal) */
+    /* Sin miniaturas en móvil — el contador reemplaza la navegación */
     .mp-gallery-wrapper {
-        flex-direction: column-reverse;
+        flex-direction: column;
     }
     .mp-thumbs {
-        flex-direction: row;
-        min-width: unset;
-        max-width: unset;
-        min-height: 62px;
-        max-height: 62px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        padding: 6px 10px;
-    }
-    .mp-thumb {
-        width: 46px;
-        height: 46px;
-        flex-shrink: 0;
+        display: none !important;
     }
 
-    /* Prenda completa visible */
+    /* Imagen a pantalla completa estilo SHEIN */
     #productModal .modal-product-image {
         height: 100%;
-        object-fit: contain;
-        background: #f4f0ef;
+        object-fit: cover;
+        background: #f0ebe9;
+        transform: none !important; /* sin zoom hover en móvil */
+    }
+    #productModal .modal-product-image:hover {
+        transform: none;
+    }
+
+    /* Contador en esquina inferior derecha (SHEIN style) */
+    .mp-swipe-counter {
+        bottom: 12px;
+        right: 12px;
+    }
+
+    /* Zoom se mueve a la esquina superior derecha en móvil */
+    .mp-zoom-btn {
+        bottom: auto;
+        top: 12px;
+        right: 12px;
+    }
+
+    /* Flechas ocultas en móvil: el gesto táctil navega */
+    .mp-nav-arrow {
+        display: none !important;
+    }
+
+    /* Puntos de color reposicionados (no solapan el contador) */
+    .mp-color-dots {
+        bottom: 12px;
+        left: 12px;
+        right: auto;
+        transform: none;
     }
 
     /* Info: ocupa el espacio restante; scroll interno si hace falta */
