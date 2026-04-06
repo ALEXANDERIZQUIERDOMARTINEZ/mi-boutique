@@ -1055,8 +1055,9 @@ function initSwipeGallery(product) {
     // Adjuntar manejadores de gestos (solo la primera vez)
     attachSwipeHandlers();
 
-    // Actualizar flechas
+    // Actualizar flechas y contador
     updateSwipeNavArrows();
+    updateSwipeCounter(0, images.length);
 }
 
 /** Renderiza los puntos de color en la parte inferior de la imagen principal */
@@ -1100,15 +1101,26 @@ function navigateSwipeGallery(newIndex) {
     swipeGallery.currentIndex = newIndex;
     const cur = images[newIndex];
 
-    // Actualizar imagen principal con transición suave
+    // Actualizar imagen principal con animación de deslizamiento
     const mainImg = document.getElementById('modal-product-image');
     if (mainImg) {
-        mainImg.classList.add('gallery-loading');
+        const goingForward = !prevImg || newIndex > swipeGallery.images.indexOf(prevImg);
+        const slideOut = goingForward ? 'swipe-slide-out-left' : 'swipe-slide-out-right';
+        const slideIn  = goingForward ? 'swipe-slide-in-right' : 'swipe-slide-in-left';
+
         const pl = new Image();
-        pl.onload = () => { mainImg.src = cur.url; mainImg.classList.remove('gallery-loading'); };
-        pl.onerror = () => { mainImg.src = cur.url; mainImg.classList.remove('gallery-loading'); };
+        const doSwap = () => {
+            mainImg.classList.remove(slideOut);
+            mainImg.src = cur.url;
+            mainImg.classList.add(slideIn);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => { mainImg.classList.remove(slideIn); });
+            });
+        };
+        pl.onload = doSwap;
+        pl.onerror = doSwap;
         pl.src = cur.url;
-        if (pl.complete) { mainImg.src = cur.url; mainImg.classList.remove('gallery-loading'); }
+        if (pl.complete) { doSwap(); } else { mainImg.classList.add(slideOut); }
     }
 
     // Si cambió de color: reconstruir thumbnails y actualizar botones
@@ -1129,6 +1141,19 @@ function navigateSwipeGallery(newIndex) {
     });
 
     updateSwipeNavArrows();
+    updateSwipeCounter(newIndex, images.length);
+}
+
+/** Actualiza el contador de posición X/N al estilo SHEIN */
+function updateSwipeCounter(currentIndex, total) {
+    const counterEl = document.getElementById('swipe-counter');
+    if (!counterEl) return;
+    if (total <= 1) {
+        counterEl.style.display = 'none';
+        return;
+    }
+    counterEl.textContent = `${currentIndex + 1}/${total}`;
+    counterEl.style.display = '';
 }
 
 /** Reconstruye los thumbnails para el color dado, con navegación swipe en los clicks */
