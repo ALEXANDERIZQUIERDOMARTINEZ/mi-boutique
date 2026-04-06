@@ -1096,31 +1096,22 @@ function navigateSwipeGallery(newIndex) {
     const { images, product } = swipeGallery;
     if (!images.length) return;
     newIndex = Math.max(0, Math.min(newIndex, images.length - 1));
+    if (newIndex === swipeGallery.currentIndex) return; // sin cambio
 
     const prevImg = images[swipeGallery.currentIndex];
     swipeGallery.currentIndex = newIndex;
     const cur = images[newIndex];
 
-    // Actualizar imagen principal con animación de deslizamiento
+    // Transición suave: desactivar transition → dim → cambiar src → restaurar transition → fade in
     const mainImg = document.getElementById('modal-product-image');
     if (mainImg) {
-        const goingForward = !prevImg || newIndex > swipeGallery.images.indexOf(prevImg);
-        const slideOut = goingForward ? 'swipe-slide-out-left' : 'swipe-slide-out-right';
-        const slideIn  = goingForward ? 'swipe-slide-in-right' : 'swipe-slide-in-left';
-
-        const pl = new Image();
-        const doSwap = () => {
-            mainImg.classList.remove(slideOut);
-            mainImg.src = cur.url;
-            mainImg.classList.add(slideIn);
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => { mainImg.classList.remove(slideIn); });
-            });
-        };
-        pl.onload = doSwap;
-        pl.onerror = doSwap;
-        pl.src = cur.url;
-        if (pl.complete) { doSwap(); } else { mainImg.classList.add(slideOut); }
+        mainImg.style.transition = 'none';
+        mainImg.style.opacity = '0.15';
+        mainImg.src = cur.url;
+        requestAnimationFrame(() => {
+            mainImg.style.transition = '';
+            mainImg.style.opacity = '';
+        });
     }
 
     // Si cambió de color: reconstruir thumbnails y actualizar botones
@@ -2946,19 +2937,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (animate) {
-            zoomedImage.classList.add('gallery-loading');
+            zoomedImage.style.transition = 'none';
+            zoomedImage.style.opacity = '0.15';
         }
-        const pl = new Image();
-        pl.onload = () => {
-            zoomedImage.src = src;
-            zoomedImage.classList.remove('gallery-loading');
-        };
-        pl.onerror = () => {
-            zoomedImage.src = src;
-            zoomedImage.classList.remove('gallery-loading');
-        };
-        pl.src = src;
-        if (pl.complete) { zoomedImage.src = src; zoomedImage.classList.remove('gallery-loading'); }
+        zoomedImage.src = src;
+        if (animate) {
+            requestAnimationFrame(() => {
+                zoomedImage.style.transition = '';
+                zoomedImage.style.opacity = '';
+            });
+        }
 
         // Contador
         if (zoomCounterEl) {
@@ -2984,10 +2972,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const total = swipeGallery.images.length;
         if (total === 0) return;
         newIdx = Math.max(0, Math.min(newIdx, total - 1));
+        if (newIdx === viewerIndex) return;
         viewerIndex = newIdx;
         renderViewerImage(newIdx, true);
-        // Sincronizar también la galería del modal
-        navigateSwipeGallery(newIdx);
+        // Sincronizar la galería del modal sin re-animar (currentIndex ya es newIdx via swipeGallery)
+        swipeGallery.currentIndex = newIdx; // actualizar estado sin llamar navigateSwipeGallery
+        const cur = swipeGallery.images[newIdx];
+        if (cur) {
+            const mainImg = document.getElementById('modal-product-image');
+            if (mainImg) mainImg.src = cur.url;
+            updateSwipeCounter(newIdx, total);
+            document.querySelectorAll('#swipe-color-dots .mp-color-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === cur.colorIndex);
+            });
+        }
     }
 
     /** Construye los swatches de color en la barra inferior */

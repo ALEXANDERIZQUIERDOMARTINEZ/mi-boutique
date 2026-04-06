@@ -2200,35 +2200,7 @@ textarea.form-control-modern {
     opacity: 0.4;
 }
 
-/* Animación de deslizamiento al cambiar foto (estilo SHEIN) */
-#productModal .modal-product-image.swipe-slide-out-left {
-    animation: swipeOutLeft 0.18s ease forwards;
-}
-#productModal .modal-product-image.swipe-slide-out-right {
-    animation: swipeOutRight 0.18s ease forwards;
-}
-#productModal .modal-product-image.swipe-slide-in-right {
-    animation: swipeInRight 0.22s ease forwards;
-}
-#productModal .modal-product-image.swipe-slide-in-left {
-    animation: swipeInLeft 0.22s ease forwards;
-}
-@keyframes swipeOutLeft {
-    from { opacity: 1; transform: translateX(0); }
-    to   { opacity: 0; transform: translateX(-8%); }
-}
-@keyframes swipeOutRight {
-    from { opacity: 1; transform: translateX(0); }
-    to   { opacity: 0; transform: translateX(8%); }
-}
-@keyframes swipeInRight {
-    from { opacity: 0; transform: translateX(8%); }
-    to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes swipeInLeft {
-    from { opacity: 0; transform: translateX(-8%); }
-    to   { opacity: 1; transform: translateX(0); }
-}
+/* La transición de imagen se maneja con inline styles desde JS */
 
 /* hover zoom desactivado: las animaciones de swipe lo reemplazan */
 #productModal .modal-product-image:hover {
