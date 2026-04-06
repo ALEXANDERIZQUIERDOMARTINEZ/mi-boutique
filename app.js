@@ -67,6 +67,17 @@ let allAvailableColors = new Set();
 let promoPriceCache = new Map();
 let cachedAvailableCount = 0;
 
+// Estado de la galería deslizable entre colores
+let swipeGallery = {
+    images: [],        // [{url, angulo, colorNombre, colorHex, colorIndex, indexInColor}]
+    currentIndex: 0,
+    product: null,
+    touchStartX: 0,
+    touchStartY: 0,
+    didSwipe: false
+};
+let swipeListenersAttached = false;
+
 // ✅ MAPEO DE COLORES: Texto → Código Hex
 const COLOR_MAP = {
     // Colores básicos
@@ -924,7 +935,20 @@ function selectColor(color, product) {
     const colorHint = document.getElementById('color-select-hint');
     if (colorHint) colorHint.classList.remove('visible');
 
-    // Actualizar galería de imágenes para el color seleccionado
+    // Navegar al primer fotograma de este color en la galería deslizable
+    if (swipeGallery.images.length > 0) {
+        const colorNameNorm = color.toLowerCase().trim();
+        const firstIdx = swipeGallery.images.findIndex(
+            img => img.colorNombre.toLowerCase().trim() === colorNameNorm
+        );
+        if (firstIdx !== -1) {
+            navigateSwipeGallery(firstIdx);
+            updateStockDisplay(product);
+            return;
+        }
+    }
+
+    // Fallback: galería tradicional (sin variantes_color)
     updateColorGallery(product, color);
 
     // Actualizar stock
@@ -989,6 +1013,247 @@ function updateColorGallery(product, colorName) {
             thumb.classList.add('active');
         });
         thumbsEl.appendChild(thumb);
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GALERÍA DESLIZABLE ENTRE COLORES (swipe)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Construye el array plano de todas las imágenes de todos los colores
+ * y prepara la galería de deslizamiento.
+ */
+function initSwipeGallery(product) {
+    const images = [];
+    (product.variantes_color || []).forEach((vc, colorIndex) => {
+        const sorted = [...(vc.imagenes || []).filter(img => img.url)]
+            .sort((a, b) => (a.orden || 0) - (b.orden || 0));
+        sorted.forEach((img, indexInColor) => {
+            images.push({
+                url: img.url,
+                angulo: img.angulo || '',
+                colorNombre: vc.nombre,
+                colorHex: vc.hex || null,
+                colorIndex,
+                indexInColor
+            });
+        });
+    });
+
+    swipeGallery.images = images;
+    swipeGallery.product = product;
+    swipeGallery.currentIndex = 0;
+    swipeGallery.didSwipe = false;
+
+    // Precargar todas las imágenes en segundo plano
+    images.forEach(img => { (new Image()).src = img.url; });
+
+    // Renderizar puntos de color
+    renderSwipeColorDots(product.variantes_color || []);
+
+    // Adjuntar manejadores de gestos (solo la primera vez)
+    attachSwipeHandlers();
+
+    // Actualizar flechas
+    updateSwipeNavArrows();
+}
+
+/** Renderiza los puntos de color en la parte inferior de la imagen principal */
+function renderSwipeColorDots(variantesColor) {
+    const dotsEl = document.getElementById('swipe-color-dots');
+    if (!dotsEl) return;
+    dotsEl.innerHTML = '';
+
+    if (variantesColor.length <= 1) {
+        dotsEl.style.display = 'none';
+        return;
+    }
+
+    dotsEl.style.display = 'flex';
+    variantesColor.forEach((vc, index) => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'mp-color-dot' + (index === 0 ? ' active' : '');
+        dot.title = vc.nombre || `Color ${index + 1}`;
+        dot.setAttribute('aria-label', vc.nombre || `Color ${index + 1}`);
+        if (vc.hex) dot.style.background = vc.hex;
+        dot.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const firstIdx = swipeGallery.images.findIndex(img => img.colorIndex === index);
+            if (firstIdx !== -1) navigateSwipeGallery(firstIdx);
+        });
+        dotsEl.appendChild(dot);
+    });
+}
+
+/**
+ * Navega a una imagen específica en el array plano de todas las imágenes.
+ * Actualiza la imagen principal, los thumbnails y los indicadores de color.
+ */
+function navigateSwipeGallery(newIndex) {
+    const { images, product } = swipeGallery;
+    if (!images.length) return;
+    newIndex = Math.max(0, Math.min(newIndex, images.length - 1));
+
+    const prevImg = images[swipeGallery.currentIndex];
+    swipeGallery.currentIndex = newIndex;
+    const cur = images[newIndex];
+
+    // Actualizar imagen principal con transición suave
+    const mainImg = document.getElementById('modal-product-image');
+    if (mainImg) {
+        mainImg.classList.add('gallery-loading');
+        const pl = new Image();
+        pl.onload = () => { mainImg.src = cur.url; mainImg.classList.remove('gallery-loading'); };
+        pl.onerror = () => { mainImg.src = cur.url; mainImg.classList.remove('gallery-loading'); };
+        pl.src = cur.url;
+        if (pl.complete) { mainImg.src = cur.url; mainImg.classList.remove('gallery-loading'); }
+    }
+
+    // Si cambió de color: reconstruir thumbnails y actualizar botones
+    if (!prevImg || prevImg.colorNombre !== cur.colorNombre) {
+        rebuildSwipeThumbs(cur.colorNombre, product);
+        syncColorButtonSelection(cur.colorNombre);
+        const selColor = document.getElementById('selected-color');
+        if (selColor) selColor.value = cur.colorNombre;
+        updateStockDisplay(product);
+    }
+
+    // Marcar thumbnail activo según posición dentro del color
+    setActiveThumbnailByIndex(cur.indexInColor);
+
+    // Actualizar puntos de color
+    document.querySelectorAll('#swipe-color-dots .mp-color-dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === cur.colorIndex);
+    });
+
+    updateSwipeNavArrows();
+}
+
+/** Reconstruye los thumbnails para el color dado, con navegación swipe en los clicks */
+function rebuildSwipeThumbs(colorName, product) {
+    const thumbsEl = document.getElementById('modal-gallery-thumbs');
+    if (!thumbsEl) return;
+
+    const varianteColor = (product.variantes_color || []).find(
+        vc => vc.nombre && vc.nombre.toLowerCase().trim() === colorName.toLowerCase().trim()
+    );
+    const imagenes = (varianteColor?.imagenes || []).filter(img => img.url);
+
+    if (imagenes.length === 0) {
+        thumbsEl.innerHTML = '';
+        thumbsEl.style.display = 'none';
+        return;
+    }
+
+    const sorted = [...imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+    thumbsEl.style.display = '';
+    thumbsEl.innerHTML = '';
+
+    // Índice global de la primera imagen de este color
+    const colorOffset = swipeGallery.images.findIndex(
+        img => img.colorNombre.toLowerCase().trim() === colorName.toLowerCase().trim()
+    );
+
+    sorted.forEach((img, index) => {
+        const thumb = document.createElement('button');
+        thumb.type = 'button';
+        thumb.className = 'mp-thumb' + (index === 0 ? ' active' : '');
+        thumb.setAttribute('aria-label', img.angulo || `Ángulo ${index + 1}`);
+        thumb.innerHTML = `<img src="${img.url}" alt="${img.angulo || ''}">`;
+        thumb.addEventListener('click', () => {
+            const globalIdx = colorOffset + index;
+            if (globalIdx >= 0) navigateSwipeGallery(globalIdx);
+        });
+        thumbsEl.appendChild(thumb);
+    });
+}
+
+/** Marca el thumbnail en la posición dada como activo */
+function setActiveThumbnailByIndex(indexInColor) {
+    const thumbs = document.querySelectorAll('#modal-gallery-thumbs .mp-thumb');
+    thumbs.forEach((t, i) => t.classList.toggle('active', i === indexInColor));
+}
+
+/** Sincroniza la selección de botones de color sin disparar re-renders */
+function syncColorButtonSelection(colorName) {
+    document.querySelectorAll('#colores-buttons .size-color-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.value === colorName);
+    });
+    const colorHint = document.getElementById('color-select-hint');
+    if (colorHint) colorHint.classList.remove('visible');
+}
+
+/** Muestra u oculta las flechas prev/next según la posición actual */
+function updateSwipeNavArrows() {
+    const prevBtn = document.getElementById('swipe-prev');
+    const nextBtn = document.getElementById('swipe-next');
+    const total = swipeGallery.images.length;
+
+    if (!prevBtn || !nextBtn) return;
+
+    if (total <= 1) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+        return;
+    }
+    prevBtn.style.display = '';
+    nextBtn.style.display = '';
+    prevBtn.disabled = swipeGallery.currentIndex === 0;
+    nextBtn.disabled = swipeGallery.currentIndex === total - 1;
+}
+
+/** Adjunta los manejadores de gestos táctiles y clics de flecha (solo una vez) */
+function attachSwipeHandlers() {
+    if (swipeListenersAttached) return;
+    swipeListenersAttached = true;
+
+    const wrapper = document.querySelector('.mp-main-img-wrapper');
+    if (!wrapper) return;
+
+    // Botón anterior
+    const prevBtn = document.getElementById('swipe-prev');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (swipeGallery.images.length) navigateSwipeGallery(swipeGallery.currentIndex - 1);
+        });
+    }
+
+    // Botón siguiente
+    const nextBtn = document.getElementById('swipe-next');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (swipeGallery.images.length) navigateSwipeGallery(swipeGallery.currentIndex + 1);
+        });
+    }
+
+    // Deslizamiento táctil
+    wrapper.addEventListener('touchstart', (e) => {
+        swipeGallery.touchStartX = e.touches[0].clientX;
+        swipeGallery.touchStartY = e.touches[0].clientY;
+        swipeGallery.didSwipe = false;
+    }, { passive: true });
+
+    wrapper.addEventListener('touchend', (e) => {
+        if (!swipeGallery.images.length) return;
+        const dx = e.changedTouches[0].clientX - swipeGallery.touchStartX;
+        const dy = e.changedTouches[0].clientY - swipeGallery.touchStartY;
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+            swipeGallery.didSwipe = true;
+            navigateSwipeGallery(swipeGallery.currentIndex + (dx < 0 ? 1 : -1));
+        }
+    }, { passive: true });
+
+    // Teclas de flecha (accesibilidad en escritorio)
+    document.addEventListener('keydown', (e) => {
+        const modal = document.getElementById('productModal');
+        if (!modal || !modal.classList.contains('show')) return;
+        if (!swipeGallery.images.length) return;
+        if (e.key === 'ArrowRight') navigateSwipeGallery(swipeGallery.currentIndex + 1);
+        if (e.key === 'ArrowLeft') navigateSwipeGallery(swipeGallery.currentIndex - 1);
     });
 }
 
@@ -1096,7 +1361,12 @@ function renderGalleryColors(product) {
         btn.addEventListener('click', () => {
             coloresButtons.querySelectorAll('.size-color-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
-            updateColorGallery(product, nombre);
+            // Navegar al primer fotograma de este color en la galería deslizable
+            const firstIdx = swipeGallery.images.findIndex(
+                img => img.colorNombre.toLowerCase().trim() === nombre.toLowerCase().trim()
+            );
+            if (firstIdx !== -1) navigateSwipeGallery(firstIdx);
+            else updateColorGallery(product, nombre);
         });
 
         coloresButtons.appendChild(btn);
@@ -1106,7 +1376,9 @@ function renderGalleryColors(product) {
     const firstBtn = coloresButtons.querySelector('.size-color-btn');
     if (firstBtn) {
         firstBtn.classList.add('selected');
-        updateColorGallery(product, colores[0].nombre);
+        const firstIdx = swipeGallery.images.findIndex(img => img.colorIndex === 0);
+        if (firstIdx !== -1) navigateSwipeGallery(firstIdx);
+        else updateColorGallery(product, colores[0].nombre);
     }
 }
 
@@ -1129,10 +1401,13 @@ function openProductModal(productId) {
 
     // Imagen inicial: usar imagenUrl como placeholder.
     // La galería correcta se cargará en cuanto se auto-seleccione el color
-    // (vía renderSizeButtons → renderColorButtons → selectColor → updateColorGallery).
+    // (vía renderSizeButtons → renderColorButtons → selectColor → navigateSwipeGallery).
     const thumbsEl = document.getElementById('modal-gallery-thumbs');
     if (thumbsEl) { thumbsEl.innerHTML = ''; thumbsEl.style.display = 'none'; }
     document.getElementById('modal-product-image').src = product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
+
+    // Inicializar galería deslizable con todas las imágenes de todos los colores
+    initSwipeGallery(product);
     
     if (tienePromo) {
         document.getElementById('modal-price-old').textContent = formatoMoneda.format(precioOriginal);
