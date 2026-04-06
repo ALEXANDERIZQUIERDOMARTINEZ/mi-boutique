@@ -2894,39 +2894,154 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // FUNCIONALIDAD DE ZOOM EN IMÁGENES
+    // VISOR DE PANTALLA COMPLETA ESTILO SHEIN
     // ═══════════════════════════════════════════════════════════════════
-    const zoomOverlay = document.getElementById('imageZoomOverlay');
-    const zoomedImage = document.getElementById('zoomedImage');
-    const closeZoomBtn = document.getElementById('closeZoomBtn');
+    const zoomOverlay    = document.getElementById('imageZoomOverlay');
+    const zoomedImage    = document.getElementById('zoomedImage');
+    const closeZoomBtn   = document.getElementById('closeZoomBtn');
+    const zoomCounterEl  = document.getElementById('zoomCounter');
+    const zoomColorLabel = document.getElementById('zoomColorLabel');
+    const zoomSwatches   = document.getElementById('zoomColorSwatches');
+    const zoomAddBtn     = document.getElementById('zoomAddToCart');
+    const zoomImgArea    = document.getElementById('zoomImgArea');
     const modalProductImage = document.getElementById('modal-product-image');
-    const modalZoomBtn = document.getElementById('modal-zoom-btn');
+    const modalZoomBtn   = document.getElementById('modal-zoom-btn');
 
+    // Índice local del visor (sincronizado con swipeGallery)
+    let viewerIndex = 0;
+
+    /** Abre el visor de pantalla completa en la imagen actualmente visible */
     function openZoom() {
-        if (!modalProductImage || !zoomOverlay || !zoomedImage) {
-            console.error('Zoom: elementos del DOM no encontrados');
-            return;
-        }
+        if (!zoomOverlay || !zoomedImage) return;
+        const imageSrc = modalProductImage ? modalProductImage.src : '';
+        if (!imageSrc) return;
 
-        const imageSrc = modalProductImage.src;
-        // Permitir zoom siempre que exista una imagen cargada
-        if (!imageSrc) {
-            console.warn('Zoom: imagen sin src, no se puede ampliar');
-            return;
-        }
+        // Sincronizar con la posición actual del swipe gallery
+        viewerIndex = swipeGallery.images.length ? swipeGallery.currentIndex : 0;
 
-        zoomedImage.src = imageSrc;
+        renderViewerImage(viewerIndex, false);
+        renderViewerSwatches();
+        updateViewerAddBtn();
         zoomOverlay.classList.add('active');
 
-        // 📊 Tracking: Zoom de imagen
+        // 📊 Tracking
         const productId = document.getElementById('modal-product-id').value;
         const product = productsMap.get(productId);
         if (product) analytics.trackImageZoom(product);
     }
 
-    // Abrir zoom al hacer click en la imagen o en el botón
+    /** Renderiza la imagen en el visor con animación opcional */
+    function renderViewerImage(idx, animate) {
+        const images = swipeGallery.images;
+        const total = images.length;
+
+        let src, colorName;
+        if (total > 0) {
+            const cur = images[idx];
+            src = cur.url;
+            colorName = cur.colorNombre || '';
+        } else {
+            src = modalProductImage ? modalProductImage.src : '';
+            colorName = '';
+        }
+
+        if (animate) {
+            zoomedImage.classList.add('gallery-loading');
+        }
+        const pl = new Image();
+        pl.onload = () => {
+            zoomedImage.src = src;
+            zoomedImage.classList.remove('gallery-loading');
+        };
+        pl.onerror = () => {
+            zoomedImage.src = src;
+            zoomedImage.classList.remove('gallery-loading');
+        };
+        pl.src = src;
+        if (pl.complete) { zoomedImage.src = src; zoomedImage.classList.remove('gallery-loading'); }
+
+        // Contador
+        if (zoomCounterEl) {
+            zoomCounterEl.textContent = total > 1 ? `${idx + 1}/${total}` : '';
+        }
+
+        // Nombre del color
+        if (zoomColorLabel) {
+            zoomColorLabel.textContent = colorName || '';
+        }
+
+        // Marcar swatch activo
+        if (zoomSwatches && total > 0) {
+            const colorIdx = images[idx].colorIndex;
+            zoomSwatches.querySelectorAll('.izoom-swatch').forEach((s, i) => {
+                s.classList.toggle('active', i === colorIdx);
+            });
+        }
+    }
+
+    /** Navega en el visor hacia un índice dado */
+    function navigateViewer(newIdx) {
+        const total = swipeGallery.images.length;
+        if (total === 0) return;
+        newIdx = Math.max(0, Math.min(newIdx, total - 1));
+        viewerIndex = newIdx;
+        renderViewerImage(newIdx, true);
+        // Sincronizar también la galería del modal
+        navigateSwipeGallery(newIdx);
+    }
+
+    /** Construye los swatches de color en la barra inferior */
+    function renderViewerSwatches() {
+        if (!zoomSwatches) return;
+        zoomSwatches.innerHTML = '';
+        const product = swipeGallery.product;
+        const bottomBar = document.getElementById('zoomBottomBar');
+        const variantesColor = product ? (product.variantes_color || []) : [];
+
+        if (variantesColor.length <= 1) {
+            if (bottomBar) bottomBar.classList.add('no-colors');
+            return;
+        }
+        if (bottomBar) bottomBar.classList.remove('no-colors');
+
+        const currentColorIdx = swipeGallery.images.length
+            ? swipeGallery.images[viewerIndex].colorIndex : 0;
+
+        variantesColor.forEach((vc, i) => {
+            const s = document.createElement('button');
+            s.type = 'button';
+            s.className = 'izoom-swatch' + (i === currentColorIdx ? ' active' : '');
+            s.title = vc.nombre || `Color ${i + 1}`;
+            s.setAttribute('aria-label', vc.nombre || `Color ${i + 1}`);
+            if (vc.hex) s.style.background = vc.hex;
+            s.addEventListener('click', () => {
+                const firstIdx = swipeGallery.images.findIndex(img => img.colorIndex === i);
+                if (firstIdx !== -1) navigateViewer(firstIdx);
+            });
+            zoomSwatches.appendChild(s);
+        });
+
+        // Scroll al swatch activo
+        requestAnimationFrame(() => {
+            const active = zoomSwatches.querySelector('.izoom-swatch.active');
+            if (active) active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+        });
+    }
+
+    /** Actualiza el estado del botón Añadir */
+    function updateViewerAddBtn() {
+        if (!zoomAddBtn) return;
+        const btn = document.getElementById('btn-add-cart');
+        zoomAddBtn.disabled = btn ? btn.disabled : false;
+    }
+
+    // ── Eventos del visor ──
+
+    // Abrir al clic en la imagen del modal o en el botón de zoom
     if (modalProductImage) {
-        modalProductImage.addEventListener('click', openZoom);
+        modalProductImage.addEventListener('click', (e) => {
+            if (!swipeGallery.didSwipe) openZoom();
+        });
     }
     if (modalZoomBtn) {
         modalZoomBtn.addEventListener('click', (e) => {
@@ -2935,7 +3050,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Cerrar zoom con el botón X
+    // Cerrar con botón X
     if (closeZoomBtn) {
         closeZoomBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -2943,63 +3058,51 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Cerrar zoom al hacer click en el overlay (fondo)
-    zoomOverlay.addEventListener('click', (e) => {
-        if (e.target === zoomOverlay) {
-            closeZoom();
-        }
-    });
-
-    // Cerrar zoom con la tecla ESC
+    // Cerrar con ESC
     document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && zoomOverlay.classList.contains('active')) {
-            closeZoom();
+        if (e.key === 'Escape' && zoomOverlay && zoomOverlay.classList.contains('active')) closeZoom();
+        if (zoomOverlay && zoomOverlay.classList.contains('active')) {
+            if (e.key === 'ArrowRight') navigateViewer(viewerIndex + 1);
+            if (e.key === 'ArrowLeft')  navigateViewer(viewerIndex - 1);
         }
     });
 
-    // Función para cerrar el zoom
-    function closeZoom() {
-        zoomOverlay.classList.remove('active');
-        setTimeout(() => {
-            if (!zoomOverlay.classList.contains('active')) zoomedImage.src = '';
-        }, 280);
+    // Botón "Añadir a la bolsa"
+    if (zoomAddBtn) {
+        zoomAddBtn.addEventListener('click', () => {
+            const mainAddBtn = document.getElementById('btn-add-cart');
+            if (mainAddBtn && !mainAddBtn.disabled) {
+                closeZoom();
+                setTimeout(() => mainAddBtn.click(), 220);
+            } else {
+                closeZoom();
+                // Mostrar aviso de selección si falta talla/color
+                showToast('Selecciona tu talla y color primero', 'warning');
+            }
+        });
     }
 
-    // Soporte para gestos táctiles en móvil (pinch to zoom)
-    let initialDistance = 0;
-    let currentScale = 1;
+    // Función para cerrar el visor
+    function closeZoom() {
+        if (zoomOverlay) zoomOverlay.classList.remove('active');
+    }
 
-    zoomedImage.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
-            e.preventDefault();
-            initialDistance = getDistance(e.touches[0], e.touches[1]);
-        }
-    });
-
-    zoomedImage.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2) {
-            e.preventDefault();
-            const currentDistance = getDistance(e.touches[0], e.touches[1]);
-            const scale = currentDistance / initialDistance;
-            currentScale = Math.min(Math.max(1, scale), 3); // Limitar entre 1x y 3x
-            zoomedImage.style.transform = `scale(${currentScale})`;
-        }
-    });
-
-    zoomedImage.addEventListener('touchend', (e) => {
-        if (e.touches.length < 2) {
-            // Resetear escala al soltar
-            setTimeout(() => {
-                currentScale = 1;
-                zoomedImage.style.transform = 'scale(1)';
-            }, 300);
-        }
-    });
-
-    function getDistance(touch1, touch2) {
-        const dx = touch1.clientX - touch2.clientX;
-        const dy = touch1.clientY - touch2.clientY;
-        return Math.sqrt(dx * dx + dy * dy);
+    // ── Deslizamiento táctil dentro del visor ──
+    if (zoomImgArea) {
+        let vzStartX = 0, vzStartY = 0;
+        zoomImgArea.addEventListener('touchstart', (e) => {
+            if (e.touches.length !== 1) return;
+            vzStartX = e.touches[0].clientX;
+            vzStartY = e.touches[0].clientY;
+        }, { passive: true });
+        zoomImgArea.addEventListener('touchend', (e) => {
+            if (e.changedTouches.length !== 1 || !swipeGallery.images.length) return;
+            const dx = e.changedTouches[0].clientX - vzStartX;
+            const dy = e.changedTouches[0].clientY - vzStartY;
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+                navigateViewer(viewerIndex + (dx < 0 ? 1 : -1));
+            }
+        }, { passive: true });
     }
 
     // ═══════════════════════════════════════════════════════════════════
