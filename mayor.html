@@ -433,9 +433,21 @@ Finalizar Pedido
 </div>
 </div>
 
+<!-- Visor de pantalla completa estilo SHEIN -->
 <div id="imageZoomOverlay" class="image-zoom-overlay">
-<button class="zoom-close-btn" id="closeZoomBtn"><i class="bi bi-x-lg"></i></button>
-<img src="" id="zoomedImage" class="zoomed-image" alt="Producto ampliado" loading="lazy">
+  <div class="izoom-topbar">
+    <button class="izoom-icon-btn" id="closeZoomBtn" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+    <span class="izoom-counter" id="zoomCounter">1/1</span>
+    <button class="izoom-icon-btn izoom-expand" id="zoomExpandBtn" aria-label="Ver detalle"><i class="bi bi-fullscreen"></i></button>
+  </div>
+  <div class="izoom-img-area" id="zoomImgArea">
+    <img src="" id="zoomedImage" class="zoomed-image" alt="Producto ampliado">
+  </div>
+  <div class="izoom-bottombar" id="zoomBottomBar">
+    <div class="izoom-color-label" id="zoomColorLabel"></div>
+    <div class="izoom-swatches" id="zoomColorSwatches"></div>
+    <button class="izoom-add-btn" id="zoomAddToCart">AÑADIR A LA BOLSA</button>
+  </div>
 </div>
 
 <!-- Scripts optimizados con carga diferida -->
