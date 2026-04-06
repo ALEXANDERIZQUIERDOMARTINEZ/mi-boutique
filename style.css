@@ -2147,6 +2147,105 @@ textarea.form-control-modern {
     transform: scale(1.12);
 }
 
+/* ─── Flechas de navegación prev/next (swipe entre colores) ─── */
+.mp-nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 52px;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: none;
+    border-radius: 6px;
+    font-size: 1.7rem;
+    line-height: 1;
+    color: #444;
+    cursor: pointer;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0;
+}
+.mp-nav-prev { left: 6px; }
+.mp-nav-next { right: 6px; }
+
+/* Mostrar flechas al pasar el cursor (desktop) */
+.mp-main-img-wrapper:hover .mp-nav-arrow {
+    opacity: 1;
+}
+/* En móvil siempre visibles cuando tienen contenido */
+@media (max-width: 767px) {
+    .mp-nav-arrow {
+        opacity: 0.85;
+        width: 30px;
+        height: 44px;
+        font-size: 1.4rem;
+    }
+}
+.mp-nav-arrow:disabled {
+    opacity: 0.2 !important;
+    cursor: default;
+}
+.mp-nav-arrow:not(:disabled):hover {
+    background: white;
+}
+.mp-nav-arrow:not(:disabled):active {
+    transform: translateY(-50%) scale(0.93);
+}
+
+/* ─── Puntos de color (indicador de variante activa) ─── */
+.mp-color-dots {
+    position: absolute;
+    bottom: 46px;           /* por encima del botón de zoom */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 6;
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.65);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: 20px;
+}
+
+.mp-color-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.9);
+    background: #ccc;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 0 0 1.5px rgba(0,0,0,0.18);
+}
+.mp-color-dot.active {
+    transform: scale(1.25);
+    box-shadow: 0 0 0 2.5px white, 0 0 0 4px rgba(0,0,0,0.25);
+}
+.mp-color-dot:not(.active):hover {
+    transform: scale(1.1);
+}
+
+@media (max-width: 767px) {
+    .mp-color-dots {
+        bottom: 42px;
+        gap: 5px;
+    }
+    .mp-color-dot {
+        width: 13px;
+        height: 13px;
+    }
+}
+
 /* Columna info — scroll interno si el contenido excede */
 .mp-info-col {
     padding: 36px 30px 28px;
