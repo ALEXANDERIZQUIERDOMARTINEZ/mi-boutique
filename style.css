@@ -1356,6 +1356,10 @@ h1, h2, h3, h4, h5, h6 {
 .izoom-icon-btn:active {
     background: rgba(255,255,255,0.12);
 }
+/* Botón expandir sin funcionalidad en iOS → oculto para no confundir */
+.izoom-expand {
+    display: none;
+}
 
 .izoom-counter {
     color: #fff;
@@ -2319,8 +2323,7 @@ textarea.form-control-modern {
 
 /* ─── Puntos de color (indicador de variante activa) ─── */
 .mp-color-dots {
-    position: absolute;
-    bottom: 46px;           /* por encima del botón de zoom */
+    display: none !important;  /* se quita: el contador y los botones de color ya indican la posición */
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -2747,12 +2750,21 @@ textarea.form-control-modern {
         display: none !important;
     }
 
-    /* Imagen a pantalla completa estilo SHEIN */
+    /* Imagen desplazable verticalmente: el usuario puede arrastrar para ver más */
+    .mp-main-img-wrapper {
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        align-items: flex-start; /* imagen empieza desde arriba, se desplaza hacia abajo */
+    }
+
+    /* Imagen ocupa el ancho completo con altura natural (no recortada, desplazable) */
     #productModal .modal-product-image {
-        height: 100%;
-        object-fit: contain;
+        height: auto;
+        width: 100%;
+        object-fit: unset;
         background: #f0ebe9;
-        transform: none !important; /* sin zoom hover en móvil */
+        transform: none !important;
     }
     #productModal .modal-product-image:hover {
         transform: none;

@@ -2973,18 +2973,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (total === 0) return;
         newIdx = Math.max(0, Math.min(newIdx, total - 1));
         if (newIdx === viewerIndex) return;
+        const prevColor = swipeGallery.images[viewerIndex]?.colorNombre;
         viewerIndex = newIdx;
         renderViewerImage(newIdx, true);
-        // Sincronizar la galería del modal sin re-animar (currentIndex ya es newIdx via swipeGallery)
-        swipeGallery.currentIndex = newIdx; // actualizar estado sin llamar navigateSwipeGallery
+        // Sincronizar la galería del modal sin re-animar
+        swipeGallery.currentIndex = newIdx;
         const cur = swipeGallery.images[newIdx];
         if (cur) {
             const mainImg = document.getElementById('modal-product-image');
             if (mainImg) mainImg.src = cur.url;
             updateSwipeCounter(newIdx, total);
-            document.querySelectorAll('#swipe-color-dots .mp-color-dot').forEach((dot, i) => {
-                dot.classList.toggle('active', i === cur.colorIndex);
-            });
+            // Sincronizar botones de color del modal al cambiar de variante
+            if (prevColor !== cur.colorNombre) {
+                syncColorButtonSelection(cur.colorNombre);
+                const selColor = document.getElementById('selected-color');
+                if (selColor) selColor.value = cur.colorNombre;
+                updateStockDisplay(swipeGallery.product);
+            }
         }
     }
 
