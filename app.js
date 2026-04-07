@@ -2989,6 +2989,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const selColor = document.getElementById('selected-color');
                 if (selColor) selColor.value = cur.colorNombre;
                 updateStockDisplay(swipeGallery.product);
+                updateViewerAddBtn();
             }
         }
     }
