@@ -3038,11 +3038,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /** Actualiza el estado del botón Añadir */
+    /** Actualiza el estado visual del botón Añadir (nunca deshabilita el clic) */
     function updateViewerAddBtn() {
         if (!zoomAddBtn) return;
         const btn = document.getElementById('btn-add-cart');
-        zoomAddBtn.disabled = btn ? btn.disabled : false;
+        const isUnavailable = btn ? btn.disabled : false;
+        zoomAddBtn.classList.toggle('unavailable', isUnavailable);
+        // No se asigna .disabled para que el clic siempre funcione
     }
 
     // ── Eventos del visor ──
