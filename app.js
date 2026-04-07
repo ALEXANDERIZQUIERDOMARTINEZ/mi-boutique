@@ -1464,6 +1464,10 @@ function openProductModal(productId) {
     const colorHintEl = document.getElementById('color-select-hint');
     if (colorHintEl) colorHintEl.classList.remove('visible');
 
+    // Limpiar etiqueta de nombre de color del producto anterior
+    const colorNameLabel = document.getElementById('color-name-label');
+    if (colorNameLabel) colorNameLabel.textContent = '';
+
     // Resetear estado del stock display
     const stockDisplay = document.getElementById('stock-display');
     const stockText = document.getElementById('stock-text');
