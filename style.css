@@ -1305,7 +1305,9 @@ h1, h2, h3, h4, h5, h6 {
     flex-direction: column;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.22s ease;
+    visibility: hidden;
+    /* visibility cambia después del fade-out; aparece antes del fade-in */
+    transition: opacity 0.22s ease, visibility 0s linear 0.22s;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -1317,6 +1319,9 @@ h1, h2, h3, h4, h5, h6 {
 .image-zoom-overlay.active {
     opacity: 1;
     pointer-events: auto;
+    visibility: visible;
+    /* Al activar: visibility visible de inmediato, luego inicia el fade-in */
+    transition: opacity 0.22s ease, visibility 0s linear;
 }
 .image-zoom-overlay.active * {
     pointer-events: auto;
@@ -2191,7 +2196,7 @@ textarea.form-control-modern {
     flex: 1;
     position: relative;
     overflow: hidden;
-    cursor: zoom-in;
+    cursor: pointer;
 }
 
 #productModal .modal-product-image {
@@ -2199,7 +2204,7 @@ textarea.form-control-modern {
     height: 100%;
     object-fit: cover;
     display: block;
-    cursor: zoom-in;
+    cursor: pointer;
     transition: opacity 0.15s ease;
 }
 /* Estado de carga al cambiar color en la galería (fallback) */
