@@ -790,6 +790,8 @@ function renderColorButtons(selectedTalla, product) {
         coloresContainer.style.display = 'block';
         coloresButtons.style.display = 'none';
         if (colorHelpMessage) colorHelpMessage.style.display = 'block';
+        const colorNameLabelEl = document.getElementById('color-name-label');
+        if (colorNameLabelEl) colorNameLabelEl.textContent = '';
         return;
     }
 
@@ -887,6 +889,8 @@ function renderColorButtons(selectedTalla, product) {
         } else {
             // Limpiar selección anterior y mostrar aviso de selección
             document.getElementById('selected-color').value = '';
+            const colorNameLabelEl = document.getElementById('color-name-label');
+            if (colorNameLabelEl) colorNameLabelEl.textContent = '';
             const stockText = document.getElementById('stock-text');
             stockText.textContent = 'Seleccione un color';
             document.getElementById('btn-add-cart').disabled = true;
