@@ -1426,20 +1426,22 @@ h1, h2, h3, h4, h5, h6 {
 
 .izoom-swatch {
     flex-shrink: 0;
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    border: 2px solid transparent;
+    border: 2px solid rgba(255,255,255,0.15);
     cursor: pointer;
     background: #555;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 0 0 1.5px rgba(255,255,255,0.2);
+    transition: transform 0.15s, outline 0.1s;
+    box-shadow: none;
 }
 .izoom-swatch.active {
-    border-color: #fff;
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.6);
-    transform: scale(1.12);
+    border-color: transparent;
+    outline: 2.5px solid #fff;
+    outline-offset: 3px;
+    transform: scale(1.05);
+    box-shadow: none;
 }
 .izoom-swatch:not(.active):active {
     transform: scale(0.92);
@@ -1447,9 +1449,9 @@ h1, h2, h3, h4, h5, h6 {
 
 .izoom-add-btn {
     width: 100%;
-    background: #1a1a1a;
-    border: 1.5px solid rgba(255,255,255,0.18);
-    color: #fff;
+    background: #fff;
+    border: none;
+    color: #1a1a1a;
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 2.5px;
@@ -1459,14 +1461,17 @@ h1, h2, h3, h4, h5, h6 {
     cursor: pointer;
     transition: background 0.18s;
     -webkit-tap-highlight-color: transparent;
+    border-radius: 2px;
 }
 .izoom-add-btn:active {
-    background: #333;
+    background: #e8e8e8;
 }
 .izoom-add-btn:disabled,
 .izoom-add-btn.unavailable {
-    opacity: 0.45;
+    opacity: 0.4;
     cursor: default;
+    background: rgba(255,255,255,0.5);
+    color: #666;
 }
 
 /* Ocultar si no hay colores */
