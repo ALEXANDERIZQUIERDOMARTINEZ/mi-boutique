@@ -1462,9 +1462,10 @@ h1, h2, h3, h4, h5, h6 {
 .izoom-add-btn:active {
     background: #333;
 }
-.izoom-add-btn:disabled {
+.izoom-add-btn:disabled,
+.izoom-add-btn.unavailable {
     opacity: 0.45;
-    cursor: not-allowed;
+    cursor: default;
 }
 
 /* Ocultar si no hay colores */
@@ -2769,6 +2770,7 @@ textarea.form-control-modern {
         grid-template-columns: 1fr;
         display: flex;
         flex-direction: column;
+        overflow: visible;
     }
 
     /* Imagen: altura natural, sin recorte */
@@ -2828,9 +2830,11 @@ textarea.form-control-modern {
         transform: none;
     }
 
-    /* Info: flujo normal junto a la imagen */
+    /* Info: flujo normal junto a la imagen, sin scroll interno */
     .mp-info-col {
         flex: 0 0 auto;
+        overflow-y: visible;
+        overflow-x: visible;
         padding: 12px 16px 18px;
     }
 
