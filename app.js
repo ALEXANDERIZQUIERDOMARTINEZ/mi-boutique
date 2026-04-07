@@ -872,6 +872,7 @@ function renderColorButtons(selectedTalla, product) {
             if (varianteColor && varianteColor.hex) {
                 btn.innerHTML = `<span class="color-swatch-circle" style="background-color:${varianteColor.hex}"></span><span class="color-swatch-name">${color}</span>`;
                 btn.classList.add('has-swatch');
+                btn.title = color;
             } else {
                 btn.textContent = color;
             }
@@ -930,6 +931,10 @@ function selectColor(color, product) {
     });
 
     document.getElementById('selected-color').value = color;
+
+    // Actualizar etiqueta con el nombre del color seleccionado
+    const colorNameLabel = document.getElementById('color-name-label');
+    if (colorNameLabel) colorNameLabel.textContent = color;
 
     // Ocultar aviso de selección de color
     const colorHint = document.getElementById('color-select-hint');
@@ -1370,6 +1375,7 @@ function renderGalleryColors(product) {
         if (hex) {
             btn.innerHTML = `<span class="color-swatch-circle" style="background-color:${hex}"></span><span class="color-swatch-name">${nombre}</span>`;
             btn.classList.add('has-swatch');
+            btn.title = nombre;
         } else {
             btn.textContent = nombre;
         }

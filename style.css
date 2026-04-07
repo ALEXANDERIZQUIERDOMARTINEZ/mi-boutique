@@ -2514,28 +2514,65 @@ textarea.form-control-modern {
 }
 
 /* ─── Botones de color con swatch ─── */
-#productModal .size-color-btn.has-swatch {
+#productModal .size-color-btn.has-swatch,
+#colores-buttons .size-color-btn.has-swatch {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 5px 11px 5px 6px;
+    justify-content: center;
+    gap: 0;
+    padding: 3px;
+    border: 2px solid transparent;
+    background: transparent;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+#productModal .size-color-btn.has-swatch.selected,
+#colores-buttons .size-color-btn.has-swatch.selected {
+    background: transparent;
+    border-color: transparent;
+    color: inherit;
+}
+
+#productModal .size-color-btn.has-swatch:hover:not(.selected),
+#colores-buttons .size-color-btn.has-swatch:hover:not(.selected) {
+    transform: scale(1.08);
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
 }
 
 .color-swatch-circle {
     display: inline-block;
-    width: 18px;
-    height: 18px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    border: 1.5px solid rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.13);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.14);
     flex-shrink: 0;
+    transition: box-shadow 0.15s ease;
 }
 
 .color-swatch-name {
-    line-height: 1;
+    display: none;
 }
 
-#productModal .size-color-btn.has-swatch.selected .color-swatch-circle {
-    border-color: rgba(255,255,255,0.5);
+.color-name-label {
+    font-weight: 700;
+    color: var(--color-texto);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.7rem;
+}
+
+#productModal .size-color-btn.has-swatch.selected .color-swatch-circle,
+#colores-buttons .size-color-btn.has-swatch.selected .color-swatch-circle {
+    box-shadow: 0 0 0 2.5px white, 0 0 0 4.5px #333;
+    border-color: transparent;
 }
 
 /* Mensaje ayuda color */
