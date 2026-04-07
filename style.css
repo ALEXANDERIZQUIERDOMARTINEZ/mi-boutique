@@ -2202,7 +2202,7 @@ textarea.form-control-modern {
 #productModal .modal-product-image {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     display: block;
     cursor: pointer;
     transition: opacity 0.15s ease;
@@ -2750,7 +2750,7 @@ textarea.form-control-modern {
     /* Imagen a pantalla completa estilo SHEIN */
     #productModal .modal-product-image {
         height: 100%;
-        object-fit: cover;
+        object-fit: contain;
         background: #f0ebe9;
         transform: none !important; /* sin zoom hover en móvil */
     }
