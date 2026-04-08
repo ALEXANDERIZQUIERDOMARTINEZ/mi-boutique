@@ -1607,7 +1607,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const imgUrl = stateItem.imagenes[0]?.url || null;
                 if (imgUrl && stateItem.dotPosition) {
                     miniPreview.style.backgroundImage    = `url('${imgUrl}')`;
-                    miniPreview.style.backgroundSize     = 'cover';
+                    miniPreview.style.backgroundSize     = '400%';
                     miniPreview.style.backgroundPosition = `${stateItem.dotPosition.x}% ${stateItem.dotPosition.y}%`;
                     miniPreview.style.backgroundColor    = '';
                 } else {
@@ -1721,6 +1721,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             imgEl.src = imgUrl;
             imgEl.onload = () => {
+                // Ajustar tamaño del círculo indicador al recorte real (zoom 400%)
+                const cropPx = imgEl.offsetWidth / 4;
+                circleEl.style.width  = cropPx + 'px';
+                circleEl.style.height = cropPx + 'px';
                 updateDotZoneUI(circleEl, previewEl, imgEl, dotZonePos.x, dotZonePos.y);
             };
 
@@ -1738,10 +1742,10 @@ document.addEventListener('DOMContentLoaded', () => {
             circleEl.style.top  = `${(yPct / 100) * rendH}px`;
             dotZonePos = { x: +xPct.toFixed(1), y: +yPct.toFixed(1) };
 
-            // Preview: recorte circular de la foto en la posición seleccionada
+            // Preview: recorte circular con mismo zoom (400%) que el catálogo
             if (previewEl) {
                 previewEl.style.backgroundImage    = `url('${imgEl.src}')`;
-                previewEl.style.backgroundSize     = 'cover';
+                previewEl.style.backgroundSize     = '400%';
                 previewEl.style.backgroundPosition = `${xPct}% ${yPct}%`;
             }
         }
