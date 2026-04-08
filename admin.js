@@ -1742,6 +1742,8 @@ document.addEventListener('DOMContentLoaded', () => {
             clearColorVariants();
             document.getElementById('product-form-title').textContent = "Agregar Producto";
             imagenInput.required = true;
+            const mostrarFotoChk = document.getElementById('mostrar-foto-principal');
+            if (mostrarFotoChk) mostrarFotoChk.checked = true;
         }
         
         if (clearFormBtn) clearFormBtn.addEventListener('click', (e) => { e.preventDefault(); window.clearProductForm(); });
@@ -1783,7 +1785,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Error en validación de nombre:", validationErr);
             }
 
-            let productData = { nombre: nombreProducto, codigo: codigoInput ? codigoInput.value.trim() : '', codigoBarras: codigoBarrasInput ? codigoBarrasInput.value.trim() : '', proveedor: proveedorInput.value.trim(), descripcion: descripcionInput.value.trim(), categoriaId: categoriaSelect.value, costoCompra: parseFloat(costoInput.value) || 0, precioDetal: parseFloat(detalInput.value) || 0, precioMayor: parseFloat(mayorInput.value) || 0, visible: visibleCheckbox.checked, timestamp: serverTimestamp(), variaciones: [], imagenUrl: null };
+            const mostrarFotoPrincipalCheckbox = document.getElementById('mostrar-foto-principal');
+            let productData = { nombre: nombreProducto, codigo: codigoInput ? codigoInput.value.trim() : '', codigoBarras: codigoBarrasInput ? codigoBarrasInput.value.trim() : '', proveedor: proveedorInput.value.trim(), descripcion: descripcionInput.value.trim(), categoriaId: categoriaSelect.value, costoCompra: parseFloat(costoInput.value) || 0, precioDetal: parseFloat(detalInput.value) || 0, precioMayor: parseFloat(mayorInput.value) || 0, visible: visibleCheckbox.checked, mostrarFotoPrincipal: mostrarFotoPrincipalCheckbox ? mostrarFotoPrincipalCheckbox.checked : true, timestamp: serverTimestamp(), variaciones: [], imagenUrl: null };
 
             const variationRows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)');
             variationRows.forEach(row => { const talla = row.querySelector('[name="variation_talla[]"]').value.trim(); const color = row.querySelector('[name="variation_color[]"]').value.trim(); const stock = parseInt(row.querySelector('[name="variation_stock[]"]').value, 10) || 0; if (talla || color || stock > 0) { productData.variaciones.push({ talla, color, stock }); } });
@@ -1900,7 +1903,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         detalInput.value = Math.round(product.precioDetal || 0);
                         mayorInput.value = Math.round(product.precioMayor || 0);
                         visibleCheckbox.checked = product.visible;
-                        imagenInput.required = false; 
+                        const mostrarFotoCheckbox = document.getElementById('mostrar-foto-principal');
+                        if (mostrarFotoCheckbox) mostrarFotoCheckbox.checked = product.mostrarFotoPrincipal !== false;
+                        imagenInput.required = false;
                         document.getElementById('product-form-title').textContent = `Editando: ${product.nombre}`;
                         
                         variationsContainer.innerHTML = '';

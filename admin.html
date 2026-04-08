@@ -520,6 +520,11 @@
                                         <label for="imagen" class="form-label">Foto principal (portada):</label>
                                         <input type="file" class="form-control" id="imagen" accept="image/*" multiple>
                                         <small class="text-muted" id="image-upload-label">Se usa como portada si no hay galería de colores. Si editas y no subes una nueva, se mantiene la anterior.</small>
+                                        <div class="form-check form-switch mt-2">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="mostrar-foto-principal" checked>
+                                            <label class="form-check-label" for="mostrar-foto-principal">Mostrar foto principal en catálogo</label>
+                                        </div>
+                                        <small class="text-muted d-block">Desactiva si el producto tiene galería de colores y no quieres mostrar la portada cuando no hay foto por color</small>
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label d-block">Visibilidad en Tienda:</label>
