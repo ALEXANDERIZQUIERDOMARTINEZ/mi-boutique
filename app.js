@@ -2607,6 +2607,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return; // Cancelar la compra
         }
 
+        // Abrir ventana en blanco ANTES del primer await para evitar bloqueo de popups en móvil
+        let _waWindow = null;
+        try { _waWindow = window.open('about:blank', '_blank'); } catch (_) {}
+
         try {
             // 1. Guardar barrio personalizado si es nuevo
             if (barrio && ciudad && neighborhoodsByCity[ciudad]) {
@@ -2695,7 +2699,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const docRef = await addDoc(webOrdersCollection, pedidoData);
 
-            // 📲 Generar enlace de WhatsApp con detalles del pedido para el cliente
+            // 📲 Abrir WhatsApp automáticamente con todos los detalles del pedido
             {
                 const orderId = docRef.id.slice(-6).toUpperCase();
                 const fmt = n => n.toLocaleString('es-CO');
@@ -2719,10 +2723,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (pedidoData.observaciones) {
                     waMsg += `\n\n📝 ${pedidoData.observaciones}`;
                 }
-                const waBtn = document.getElementById('whatsapp-confirm-btn');
-                if (waBtn) {
-                    waBtn.href = `https://wa.me/573046084971?text=${encodeURIComponent(waMsg)}`;
+                const waUrl = `https://wa.me/573046084971?text=${encodeURIComponent(waMsg)}`;
+                // Redirigir la ventana abierta antes del await (evita bloqueo de popup)
+                if (_waWindow) {
+                    _waWindow.location.href = waUrl;
+                } else {
+                    // Fallback: intentar abrir de nuevo
+                    window.open(waUrl, '_blank');
                 }
+                // Actualizar botón de respaldo en pantalla de éxito
+                const waBtn = document.getElementById('whatsapp-confirm-btn');
+                if (waBtn) waBtn.href = waUrl;
             }
 
             // Actualizar contador de ventas en cada producto del pedido
@@ -2778,6 +2789,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error("Error al guardar pedido: ", err);
             showToast('Error al procesar el pedido', 'error');
+            // Cerrar la ventana en blanco si el pedido falló
+            if (_waWindow) try { _waWindow.close(); } catch (_) {}
         }
     });
 
