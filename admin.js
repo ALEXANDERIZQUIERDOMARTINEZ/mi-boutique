@@ -1604,18 +1604,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const miniPreview = block.querySelector('.dot-zone-mini-preview');
 
             function updateMiniPreview() {
-                const imgUrl = stateItem.imagenes[0]?.url || null;
-                if (imgUrl) {
-                    miniPreview.style.backgroundImage = `url('${imgUrl}')`;
-                    miniPreview.style.backgroundPosition = `${stateItem.dotPosition.x}% ${stateItem.dotPosition.y}%`;
-                } else {
-                    miniPreview.style.backgroundImage = '';
-                }
+                miniPreview.style.backgroundColor = stateItem.hex || '#e9ecef';
+                miniPreview.style.backgroundImage = '';
             }
             updateMiniPreview();
 
+            // Sincronizar mini preview cuando cambia el hex manualmente
+            hexInput.addEventListener('input', updateMiniPreview);
+
             if (dotZoneBtn) {
-                dotZoneBtn.addEventListener('click', () => openDotZoneModal(stateItem, updateMiniPreview));
+                dotZoneBtn.addEventListener('click', () => openDotZoneModal(stateItem, updateMiniPreview, hexInput));
             }
 
             colorVariantsContainer.appendChild(block);
@@ -1688,25 +1686,28 @@ document.addEventListener('DOMContentLoaded', () => {
             addColorVariantBtn.addEventListener('click', () => addColorVariantBlock());
         }
 
-        // ─── MODAL SELECTOR DE ZONA PARA BOLITA ─────────────────────────────────
-        let dotZoneModal = null;
+        // ─── MODAL SELECTOR DE ZONA / COLOR PARA BOLITA ────────────────────────
+        let dotZoneModal        = null;
         let dotZoneCurrentState = null;
-        let dotZoneOnSave = null;
-        let dotZonePos = { x: 50, y: 15 }; // posición actual en el modal
+        let dotZoneCurrentHexInput = null;
+        let dotZoneOnSave       = null;
+        let dotZonePos          = { x: 50, y: 15 };
+        let dotZoneSampledHex   = null;
+        let dotZoneCanvas       = null;
+        let dotZoneCtx          = null;
 
-        function openDotZoneModal(stateItem, onSaveCallback) {
-            const imgEl    = document.getElementById('dot-zone-img');
-            const circleEl = document.getElementById('dot-zone-circle');
+        /** Abre el modal, carga la imagen y prepara el canvas para muestreo */
+        function openDotZoneModal(stateItem, onSaveCallback, hexInputEl) {
+            const imgEl     = document.getElementById('dot-zone-img');
+            const circleEl  = document.getElementById('dot-zone-circle');
             const previewEl = document.getElementById('dot-zone-preview');
-            const container = document.getElementById('dot-zone-img-container');
-            if (!imgEl || !circleEl || !container) return;
+            if (!imgEl || !circleEl) return;
 
-            // Obtener URL de imagen (guardada o nueva blob)
+            // Obtener URL de imagen (guardada o blob de archivo nuevo)
             let imgUrl = null;
             if (stateItem.imagenes.length > 0) {
                 const sorted = [...stateItem.imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0));
-                const frente = sorted.find(i => i.angulo === 'frente') || sorted[0];
-                imgUrl = frente?.url || null;
+                imgUrl = (sorted.find(i => i.angulo === 'frente') || sorted[0])?.url || null;
             } else if (stateItem.newFiles.length > 0) {
                 imgUrl = URL.createObjectURL(stateItem.newFiles[0]);
             }
@@ -1716,13 +1717,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            dotZoneCurrentState = stateItem;
-            dotZoneOnSave = onSaveCallback;
-            dotZonePos = { ...stateItem.dotPosition };
+            dotZoneCurrentState    = stateItem;
+            dotZoneCurrentHexInput = hexInputEl;
+            dotZoneOnSave          = onSaveCallback;
+            dotZonePos             = { ...stateItem.dotPosition };
+            dotZoneSampledHex      = stateItem.hex || null;
+            dotZoneCanvas          = null;
+            dotZoneCtx             = null;
 
+            // crossOrigin solo para URLs remotas (no blob)
+            imgEl.removeAttribute('crossOrigin');
+            if (!imgUrl.startsWith('blob:')) imgEl.crossOrigin = 'anonymous';
+            imgEl.src = '';        // forzar recarga para que onload dispare
             imgEl.src = imgUrl;
+
             imgEl.onload = () => {
-                updateDotZoneCircle(circleEl, previewEl, imgEl, imgUrl, dotZonePos.x, dotZonePos.y);
+                // Construir canvas oculto para muestrear píxeles
+                try {
+                    const c = document.createElement('canvas');
+                    c.width  = imgEl.naturalWidth;
+                    c.height = imgEl.naturalHeight;
+                    const ctx = c.getContext('2d');
+                    ctx.drawImage(imgEl, 0, 0);
+                    dotZoneCanvas = c;
+                    dotZoneCtx    = ctx;
+                } catch (err) {
+                    console.warn('Canvas color sampling no disponible (CORS):', err);
+                }
+                updateDotZoneUI(circleEl, previewEl, imgEl, dotZonePos.x, dotZonePos.y);
             };
 
             if (!dotZoneModal) {
@@ -1731,53 +1753,73 @@ document.addEventListener('DOMContentLoaded', () => {
             dotZoneModal.show();
         }
 
-        function updateDotZoneCircle(circleEl, previewEl, imgEl, imgUrl, xPct, yPct) {
-            const rect = imgEl.getBoundingClientRect();
-            const naturalW = imgEl.naturalWidth;
-            const naturalH = imgEl.naturalHeight;
-            // Para el DOM usamos offsetWidth/offsetHeight (tamaño renderizado)
+        /** Mueve el círculo y actualiza color muestreado */
+        function updateDotZoneUI(circleEl, previewEl, imgEl, xPct, yPct) {
             const rendW = imgEl.offsetWidth;
             const rendH = imgEl.offsetHeight;
             if (!rendW || !rendH) return;
 
-            const px = (xPct / 100) * rendW;
-            const py = (yPct / 100) * rendH;
+            circleEl.style.left = `${(xPct / 100) * rendW}px`;
+            circleEl.style.top  = `${(yPct / 100) * rendH}px`;
 
-            circleEl.style.left = px + 'px';
-            circleEl.style.top  = py + 'px';
-
-            if (previewEl) {
-                previewEl.style.backgroundImage = `url('${imgUrl}')`;
-                previewEl.style.backgroundSize  = 'cover';
-                previewEl.style.backgroundPosition = `${xPct}% ${yPct}%`;
+            // Muestrear color promedio (área 9×9 px) del canvas
+            let hex = null;
+            if (dotZoneCanvas && dotZoneCtx) {
+                try {
+                    const cx = Math.round((xPct / 100) * (dotZoneCanvas.width  - 1));
+                    const cy = Math.round((yPct / 100) * (dotZoneCanvas.height - 1));
+                    const r0 = Math.max(0, cx - 4), c0 = Math.max(0, cy - 4);
+                    const data = dotZoneCtx.getImageData(r0, c0, 9, 9).data;
+                    let r = 0, g = 0, b = 0, n = 0;
+                    for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i+1]; b += data[i+2]; n++; }
+                    r = Math.round(r/n); g = Math.round(g/n); b = Math.round(b/n);
+                    hex = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+                } catch(_) {}
             }
-            dotZonePos = { x: Math.round(xPct * 10) / 10, y: Math.round(yPct * 10) / 10 };
+
+            dotZoneSampledHex = hex;
+            dotZonePos = { x: +xPct.toFixed(1), y: +yPct.toFixed(1) };
+
+            // Preview: muestra color sólido si se pudo muestrear, si no foto
+            if (previewEl) {
+                if (hex) {
+                    previewEl.style.backgroundColor = hex;
+                    previewEl.style.backgroundImage = '';
+                } else {
+                    previewEl.style.backgroundColor = '';
+                    previewEl.style.backgroundImage = `url('${imgEl.src}')`;
+                    previewEl.style.backgroundSize  = 'cover';
+                    previewEl.style.backgroundPosition = `${xPct}% ${yPct}%`;
+                }
+            }
+
+            // Actualizar hex input en tiempo real
+            if (hex && dotZoneCurrentHexInput) dotZoneCurrentHexInput.value = hex;
         }
 
         function getPosFromEvent(e, imgEl) {
             const rect = imgEl.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const xPct = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
-            const yPct = Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100));
-            return { xPct, yPct };
+            return {
+                xPct: Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width)  * 100)),
+                yPct: Math.min(100, Math.max(0, ((clientY - rect.top)  / rect.height) * 100))
+            };
         }
 
         const dotZoneImgContainer = document.getElementById('dot-zone-img-container');
         if (dotZoneImgContainer) {
             let isDragging = false;
-
             function handleDotMove(e) {
                 e.preventDefault();
-                const imgEl = document.getElementById('dot-zone-img');
+                const imgEl    = document.getElementById('dot-zone-img');
                 const circleEl = document.getElementById('dot-zone-circle');
-                const previewEl = document.getElementById('dot-zone-preview');
+                const previewEl= document.getElementById('dot-zone-preview');
                 const { xPct, yPct } = getPosFromEvent(e, imgEl);
-                updateDotZoneCircle(circleEl, previewEl, imgEl, imgEl.src, xPct, yPct);
+                updateDotZoneUI(circleEl, previewEl, imgEl, xPct, yPct);
             }
-
-            dotZoneImgContainer.addEventListener('mousedown', (e) => { isDragging = true; handleDotMove(e); });
-            dotZoneImgContainer.addEventListener('mousemove', (e) => { if (isDragging) handleDotMove(e); });
+            dotZoneImgContainer.addEventListener('mousedown',  (e) => { isDragging = true;  handleDotMove(e); });
+            dotZoneImgContainer.addEventListener('mousemove',  (e) => { if (isDragging) handleDotMove(e); });
             document.addEventListener('mouseup', () => { isDragging = false; });
             dotZoneImgContainer.addEventListener('touchstart', handleDotMove, { passive: false });
             dotZoneImgContainer.addEventListener('touchmove',  handleDotMove, { passive: false });
@@ -1788,12 +1830,17 @@ document.addEventListener('DOMContentLoaded', () => {
             dotZoneConfirmBtn.addEventListener('click', () => {
                 if (dotZoneCurrentState) {
                     dotZoneCurrentState.dotPosition = { ...dotZonePos };
+                    // Guardar color muestreado en el estado y en el input hex
+                    if (dotZoneSampledHex) {
+                        dotZoneCurrentState.hex = dotZoneSampledHex;
+                        if (dotZoneCurrentHexInput) dotZoneCurrentHexInput.value = dotZoneSampledHex;
+                    }
                     if (dotZoneOnSave) dotZoneOnSave();
                 }
                 if (dotZoneModal) dotZoneModal.hide();
             });
         }
-        // ─── FIN MODAL SELECTOR ZONA BOLITA ─────────────────────────────────────
+        // ─── FIN MODAL SELECTOR ZONA / COLOR BOLITA ─────────────────────────────
 
         /**
          * Actualiza el <datalist id="variation-colors-list"> con los colores
