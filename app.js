@@ -668,9 +668,12 @@ function renderProducts(products) {
             imgUrl = product.imagenUrl || imgUrl;
         }
 
-        const coloresHtml = coloresParaCard.map(({ nombre, hex, imgUrl: cImg }, i) =>
-            `<button class="card-color-dot${i === activeColorIdx ? ' active' : ''}" style="background:${hex}" title="${nombre}" data-color-img="${cImg}" type="button"></button>`
-        ).join('');
+        const coloresHtml = coloresParaCard.map(({ nombre, hex, imgUrl: cImg }, i) => {
+            const dotStyle = cImg
+                ? `background-image:url('${cImg}');background-size:cover;background-position:center top;`
+                : `background:${hex};`;
+            return `<button class="card-color-dot${i === activeColorIdx ? ' active' : ''}" style="${dotStyle}" title="${nombre}" data-color-img="${cImg}" type="button"></button>`;
+        }).join('');
 
         const tallasHtml = tallasUnicas.slice(0, 5).map(t => `<span class="card-size-chip">${t}</span>`).join('');
 

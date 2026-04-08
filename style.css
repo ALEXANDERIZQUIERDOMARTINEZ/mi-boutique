@@ -532,28 +532,29 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .card-color-dot {
-    width: 14px;
-    height: 14px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     display: inline-block;
     border: 1.5px solid rgba(0, 0, 0, 0.15);
     flex-shrink: 0;
     cursor: pointer;
     padding: 0;
-    background-clip: content-box;
+    overflow: hidden;
+    background-clip: border-box;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
     position: relative;
 }
 
 .card-color-dot:hover {
-    transform: scale(1.25);
-    box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(0, 0, 0, 0.25);
+    transform: scale(1.2);
+    box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px rgba(0, 0, 0, 0.3);
     z-index: 1;
 }
 
 .card-color-dot.active {
-    transform: scale(1.2);
-    box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px rgba(0, 0, 0, 0.45);
+    transform: scale(1.15);
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(0, 0, 0, 0.55);
     z-index: 1;
 }
 
