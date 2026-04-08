@@ -2611,6 +2611,51 @@ document.addEventListener('DOMContentLoaded', () => {
         let _waWindow = null;
         try { _waWindow = window.open('about:blank', '_blank'); } catch (_) {}
 
+        // Construir y enviar mensaje WhatsApp AHORA (sin esperar Firebase)
+        // Emojis via String.fromCodePoint para evitar problemas de encoding del archivo
+        {
+            const em = String.fromCodePoint;
+            const E = {
+                bag:   em(0x1F6CD) + '\uFE0F',  // 🛍️
+                clip:  em(0x1F4CB),              // 📋
+                user:  em(0x1F464),              // 👤
+                phone: em(0x1F4DE),              // 📞
+                id:    em(0x1F194),              // 🆔
+                pin:   em(0x1F4CD),              // 📍
+                cart:  em(0x1F6D2),              // 🛒
+                card:  em(0x1F4B3),              // 💳
+                money: em(0x1F4B0),              // 💰
+                box:   em(0x1F4E6),              // 📦
+                note:  em(0x1F4DD),              // 📝
+            };
+            const fmt = n => n.toLocaleString('es-CO');
+            const localRef = Date.now().toString(36).slice(-6).toUpperCase();
+            let waMsg = `${E.bag} Hola! Acabo de hacer un pedido\n\n`;
+            waMsg += `${E.clip} *Pedido #${localRef}*\n`;
+            waMsg += `${E.user} ${nombre}\n`;
+            waMsg += `${E.phone} ${whatsapp}\n`;
+            waMsg += `${E.id} Cedula: ${cedula}\n`;
+            waMsg += `${E.pin} ${ciudad}`;
+            if (barrio) waMsg += `, ${barrio}`;
+            waMsg += `\n   ${direccion}\n\n`;
+            waMsg += `${E.cart} *Productos:*\n`;
+            cart.forEach(item => {
+                waMsg += `\u2022 ${item.nombre} T:${item.talla} C:${item.color} x${item.cantidad} \u2014 $${fmt(item.total)}\n`;
+            });
+            waMsg += `\n${E.card} *Pago:* ${pago}\n`;
+            waMsg += `${E.money} *Total: $${fmt(subtotal)}*`;
+            if (observaciones) waMsg += `\n\n${E.note} ${observaciones}`;
+
+            const waUrl = `https://wa.me/573046084971?text=${encodeURIComponent(waMsg)}`;
+            if (_waWindow) {
+                _waWindow.location.href = waUrl;
+            } else {
+                window.open(waUrl, '_blank');
+            }
+            const waBtn = document.getElementById('whatsapp-confirm-btn');
+            if (waBtn) waBtn.href = waUrl;
+        }
+
         try {
             // 1. Guardar barrio personalizado si es nuevo
             if (barrio && ciudad && neighborhoodsByCity[ciudad]) {
@@ -2698,43 +2743,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const docRef = await addDoc(webOrdersCollection, pedidoData);
-
-            // 📲 Abrir WhatsApp automáticamente con todos los detalles del pedido
-            {
-                const orderId = docRef.id.slice(-6).toUpperCase();
-                const fmt = n => n.toLocaleString('es-CO');
-                let waMsg = `¡Hola! Acabo de realizar un pedido 🛍️\n\n`;
-                waMsg += `📋 *Pedido #${orderId}*\n`;
-                waMsg += `👤 ${pedidoData.clienteNombre}\n`;
-                waMsg += `📞 ${pedidoData.clienteCelular}\n`;
-                waMsg += `🪪 Cédula: ${pedidoData.clienteCedula}\n`;
-                waMsg += `📍 ${pedidoData.clienteCiudad}`;
-                if (pedidoData.clienteBarrio) waMsg += `, ${pedidoData.clienteBarrio}`;
-                waMsg += `\n   ${pedidoData.clienteDireccion}\n\n`;
-                waMsg += `🛒 *Productos:*\n`;
-                pedidoData.items.forEach(item => {
-                    waMsg += `• ${item.nombre} T:${item.talla} C:${item.color} x${item.cantidad} — $${fmt(item.total)}\n`;
-                });
-                waMsg += `\n💳 *Pago:* ${pedidoData.metodoPagoSolicitado}\n`;
-                if (pedidoData.costoEnvio > 0) {
-                    waMsg += `📦 *Envío:* $${fmt(pedidoData.costoEnvio)}\n`;
-                }
-                waMsg += `💰 *Total: $${fmt(pedidoData.totalPedido)}*`;
-                if (pedidoData.observaciones) {
-                    waMsg += `\n\n📝 ${pedidoData.observaciones}`;
-                }
-                const waUrl = `https://wa.me/573046084971?text=${encodeURIComponent(waMsg)}`;
-                // Redirigir la ventana abierta antes del await (evita bloqueo de popup)
-                if (_waWindow) {
-                    _waWindow.location.href = waUrl;
-                } else {
-                    // Fallback: intentar abrir de nuevo
-                    window.open(waUrl, '_blank');
-                }
-                // Actualizar botón de respaldo en pantalla de éxito
-                const waBtn = document.getElementById('whatsapp-confirm-btn');
-                if (waBtn) waBtn.href = waUrl;
-            }
 
             // Actualizar contador de ventas en cada producto del pedido
             await Promise.all(
