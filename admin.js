@@ -1604,16 +1604,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const miniPreview = block.querySelector('.dot-zone-mini-preview');
 
             function updateMiniPreview() {
-                miniPreview.style.backgroundColor = stateItem.hex || '#e9ecef';
-                miniPreview.style.backgroundImage = '';
+                const imgUrl = stateItem.imagenes[0]?.url || null;
+                if (imgUrl && stateItem.dotPosition) {
+                    miniPreview.style.backgroundImage    = `url('${imgUrl}')`;
+                    miniPreview.style.backgroundSize     = 'cover';
+                    miniPreview.style.backgroundPosition = `${stateItem.dotPosition.x}% ${stateItem.dotPosition.y}%`;
+                    miniPreview.style.backgroundColor    = '';
+                } else {
+                    miniPreview.style.backgroundImage = '';
+                    miniPreview.style.backgroundColor = stateItem.hex || '#e9ecef';
+                }
             }
             updateMiniPreview();
 
-            // Sincronizar mini preview cuando cambia el hex manualmente
-            hexInput.addEventListener('input', updateMiniPreview);
-
             if (dotZoneBtn) {
-                dotZoneBtn.addEventListener('click', () => openDotZoneModal(stateItem, updateMiniPreview, hexInput));
+                dotZoneBtn.addEventListener('click', () => openDotZoneModal(stateItem, updateMiniPreview));
             }
 
             colorVariantsContainer.appendChild(block);
@@ -1686,24 +1691,20 @@ document.addEventListener('DOMContentLoaded', () => {
             addColorVariantBtn.addEventListener('click', () => addColorVariantBlock());
         }
 
-        // ─── MODAL SELECTOR DE ZONA / COLOR PARA BOLITA ────────────────────────
+        // ─── MODAL SELECTOR DE ZONA PARA BOLITA (recorte circular de foto) ────────
         let dotZoneModal        = null;
         let dotZoneCurrentState = null;
-        let dotZoneCurrentHexInput = null;
         let dotZoneOnSave       = null;
         let dotZonePos          = { x: 50, y: 15 };
-        let dotZoneSampledHex   = null;
-        let dotZoneCanvas       = null;
-        let dotZoneCtx          = null;
 
-        /** Abre el modal, carga la imagen y prepara el canvas para muestreo */
-        function openDotZoneModal(stateItem, onSaveCallback, hexInputEl) {
+        /** Abre el modal con la foto del vestido para elegir zona del recorte */
+        function openDotZoneModal(stateItem, onSaveCallback) {
             const imgEl     = document.getElementById('dot-zone-img');
             const circleEl  = document.getElementById('dot-zone-circle');
             const previewEl = document.getElementById('dot-zone-preview');
             if (!imgEl || !circleEl) return;
 
-            // Obtener URL de imagen (guardada o blob de archivo nuevo)
+            // URL de la imagen "frente" del color (o primer archivo nuevo)
             let imgUrl = null;
             if (stateItem.imagenes.length > 0) {
                 const sorted = [...stateItem.imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0));
@@ -1712,48 +1713,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 imgUrl = URL.createObjectURL(stateItem.newFiles[0]);
             }
 
-            if (!imgUrl) {
-                alert('Primero sube al menos una imagen para este color.');
-                return;
-            }
+            if (!imgUrl) { alert('Primero sube al menos una imagen para este color.'); return; }
 
-            dotZoneCurrentState    = stateItem;
-            dotZoneCurrentHexInput = hexInputEl;
-            dotZoneOnSave          = onSaveCallback;
-            dotZonePos             = { ...stateItem.dotPosition };
-            dotZoneSampledHex      = stateItem.hex || null;
-            dotZoneCanvas          = null;
-            dotZoneCtx             = null;
+            dotZoneCurrentState = stateItem;
+            dotZoneOnSave       = onSaveCallback;
+            dotZonePos          = { ...(stateItem.dotPosition || { x: 50, y: 15 }) };
 
-            // crossOrigin solo para URLs remotas (no blob)
-            imgEl.removeAttribute('crossOrigin');
-            if (!imgUrl.startsWith('blob:')) imgEl.crossOrigin = 'anonymous';
-            imgEl.src = '';        // forzar recarga para que onload dispare
             imgEl.src = imgUrl;
-
             imgEl.onload = () => {
-                // Construir canvas oculto para muestrear píxeles
-                try {
-                    const c = document.createElement('canvas');
-                    c.width  = imgEl.naturalWidth;
-                    c.height = imgEl.naturalHeight;
-                    const ctx = c.getContext('2d');
-                    ctx.drawImage(imgEl, 0, 0);
-                    dotZoneCanvas = c;
-                    dotZoneCtx    = ctx;
-                } catch (err) {
-                    console.warn('Canvas color sampling no disponible (CORS):', err);
-                }
                 updateDotZoneUI(circleEl, previewEl, imgEl, dotZonePos.x, dotZonePos.y);
             };
 
-            if (!dotZoneModal) {
-                dotZoneModal = new bootstrap.Modal(document.getElementById('dotZoneModal'));
-            }
+            if (!dotZoneModal) dotZoneModal = new bootstrap.Modal(document.getElementById('dotZoneModal'));
             dotZoneModal.show();
         }
 
-        /** Mueve el círculo y actualiza color muestreado */
+        /** Mueve el círculo indicador y actualiza el preview de recorte */
         function updateDotZoneUI(circleEl, previewEl, imgEl, xPct, yPct) {
             const rendW = imgEl.offsetWidth;
             const rendH = imgEl.offsetHeight;
@@ -1761,40 +1736,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             circleEl.style.left = `${(xPct / 100) * rendW}px`;
             circleEl.style.top  = `${(yPct / 100) * rendH}px`;
-
-            // Muestrear color promedio (área 9×9 px) del canvas
-            let hex = null;
-            if (dotZoneCanvas && dotZoneCtx) {
-                try {
-                    const cx = Math.round((xPct / 100) * (dotZoneCanvas.width  - 1));
-                    const cy = Math.round((yPct / 100) * (dotZoneCanvas.height - 1));
-                    const r0 = Math.max(0, cx - 4), c0 = Math.max(0, cy - 4);
-                    const data = dotZoneCtx.getImageData(r0, c0, 9, 9).data;
-                    let r = 0, g = 0, b = 0, n = 0;
-                    for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i+1]; b += data[i+2]; n++; }
-                    r = Math.round(r/n); g = Math.round(g/n); b = Math.round(b/n);
-                    hex = `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
-                } catch(_) {}
-            }
-
-            dotZoneSampledHex = hex;
             dotZonePos = { x: +xPct.toFixed(1), y: +yPct.toFixed(1) };
 
-            // Preview: muestra color sólido si se pudo muestrear, si no foto
+            // Preview: recorte circular de la foto en la posición seleccionada
             if (previewEl) {
-                if (hex) {
-                    previewEl.style.backgroundColor = hex;
-                    previewEl.style.backgroundImage = '';
-                } else {
-                    previewEl.style.backgroundColor = '';
-                    previewEl.style.backgroundImage = `url('${imgEl.src}')`;
-                    previewEl.style.backgroundSize  = 'cover';
-                    previewEl.style.backgroundPosition = `${xPct}% ${yPct}%`;
-                }
+                previewEl.style.backgroundImage    = `url('${imgEl.src}')`;
+                previewEl.style.backgroundSize     = 'cover';
+                previewEl.style.backgroundPosition = `${xPct}% ${yPct}%`;
             }
-
-            // Actualizar hex input en tiempo real
-            if (hex && dotZoneCurrentHexInput) dotZoneCurrentHexInput.value = hex;
         }
 
         function getPosFromEvent(e, imgEl) {
@@ -1812,9 +1761,9 @@ document.addEventListener('DOMContentLoaded', () => {
             let isDragging = false;
             function handleDotMove(e) {
                 e.preventDefault();
-                const imgEl    = document.getElementById('dot-zone-img');
-                const circleEl = document.getElementById('dot-zone-circle');
-                const previewEl= document.getElementById('dot-zone-preview');
+                const imgEl     = document.getElementById('dot-zone-img');
+                const circleEl  = document.getElementById('dot-zone-circle');
+                const previewEl = document.getElementById('dot-zone-preview');
                 const { xPct, yPct } = getPosFromEvent(e, imgEl);
                 updateDotZoneUI(circleEl, previewEl, imgEl, xPct, yPct);
             }
@@ -1830,17 +1779,12 @@ document.addEventListener('DOMContentLoaded', () => {
             dotZoneConfirmBtn.addEventListener('click', () => {
                 if (dotZoneCurrentState) {
                     dotZoneCurrentState.dotPosition = { ...dotZonePos };
-                    // Guardar color muestreado en el estado y en el input hex
-                    if (dotZoneSampledHex) {
-                        dotZoneCurrentState.hex = dotZoneSampledHex;
-                        if (dotZoneCurrentHexInput) dotZoneCurrentHexInput.value = dotZoneSampledHex;
-                    }
                     if (dotZoneOnSave) dotZoneOnSave();
                 }
                 if (dotZoneModal) dotZoneModal.hide();
             });
         }
-        // ─── FIN MODAL SELECTOR ZONA / COLOR BOLITA ─────────────────────────────
+        // ─── FIN MODAL SELECTOR ZONA BOLITA ──────────────────────────────────────
 
         /**
          * Actualiza el <datalist id="variation-colors-list"> con los colores
