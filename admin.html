@@ -510,6 +510,12 @@
                                         <label class="form-label small text-muted mb-1">Imágenes de este color (frente, atrás, lateral, zoom…)</label>
                                         <input type="file" class="color-variant-file-input form-control form-control-sm mb-2" accept="image/*" multiple>
                                         <div class="color-variant-preview d-flex flex-wrap gap-2 mt-2"></div>
+                                        <div class="d-flex align-items-center gap-2 mt-2">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary btn-dot-zone" title="Seleccionar qué parte del vestido se muestra en la bolita del catálogo">
+                                                <i class="bi bi-circle-half"></i> Zona de bolita
+                                            </button>
+                                            <div class="dot-zone-mini-preview" style="width:22px;height:22px;border-radius:50%;background-size:cover;border:1.5px solid rgba(0,0,0,0.2);flex-shrink:0;background-color:#e9ecef;" title="Vista previa de la bolita"></div>
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- ▲ FIN GALERÍA POR COLOR ▲ -->
@@ -3070,6 +3076,40 @@
         });
     })();
     </script>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MODAL: SELECTOR DE ZONA PARA BOLITA DE COLOR
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="dotZoneModal" tabindex="-1" aria-labelledby="dotZoneModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dotZoneModalLabel"><i class="bi bi-circle-half me-2"></i>Seleccionar zona para la bolita</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Haz clic o arrastra sobre la foto para elegir qué parte del vestido se mostrará en la bolita del catálogo.</p>
+                    <div class="d-flex gap-4 align-items-start flex-wrap">
+                        <div id="dot-zone-img-container" style="position:relative;display:inline-block;cursor:crosshair;flex-shrink:0;touch-action:none;max-width:320px;">
+                            <img id="dot-zone-img" alt="Foto del color" style="display:block;max-width:320px;max-height:480px;user-select:none;-webkit-user-drag:none;" draggable="false">
+                            <div id="dot-zone-circle" style="position:absolute;width:64px;height:64px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.4);pointer-events:none;transform:translate(-50%,-50%);"></div>
+                        </div>
+                        <div class="d-flex flex-column align-items-center gap-2">
+                            <p class="fw-semibold mb-0 small">Vista previa:</p>
+                            <div id="dot-zone-preview" style="width:48px;height:48px;border-radius:50%;background-size:cover;border:2px solid rgba(0,0,0,0.15);background-color:#e9ecef;"></div>
+                            <p class="text-muted" style="font-size:0.7rem;">Así se verá la bolita</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="dot-zone-confirm">
+                        <i class="bi bi-check2"></i> Guardar posición
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 </html>
