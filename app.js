@@ -2695,6 +2695,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const docRef = await addDoc(webOrdersCollection, pedidoData);
 
+            // 📲 Generar enlace de WhatsApp con detalles del pedido para el cliente
+            {
+                const orderId = docRef.id.slice(-6).toUpperCase();
+                const fmt = n => n.toLocaleString('es-CO');
+                let waMsg = `¡Hola! Acabo de realizar un pedido 🛍️\n\n`;
+                waMsg += `📋 *Pedido #${orderId}*\n`;
+                waMsg += `👤 ${pedidoData.clienteNombre}\n`;
+                waMsg += `📞 ${pedidoData.clienteCelular}\n`;
+                waMsg += `🪪 Cédula: ${pedidoData.clienteCedula}\n`;
+                waMsg += `📍 ${pedidoData.clienteCiudad}`;
+                if (pedidoData.clienteBarrio) waMsg += `, ${pedidoData.clienteBarrio}`;
+                waMsg += `\n   ${pedidoData.clienteDireccion}\n\n`;
+                waMsg += `🛒 *Productos:*\n`;
+                pedidoData.items.forEach(item => {
+                    waMsg += `• ${item.nombre} T:${item.talla} C:${item.color} x${item.cantidad} — $${fmt(item.total)}\n`;
+                });
+                waMsg += `\n💳 *Pago:* ${pedidoData.metodoPagoSolicitado}\n`;
+                if (pedidoData.costoEnvio > 0) {
+                    waMsg += `📦 *Envío:* $${fmt(pedidoData.costoEnvio)}\n`;
+                }
+                waMsg += `💰 *Total: $${fmt(pedidoData.totalPedido)}*`;
+                if (pedidoData.observaciones) {
+                    waMsg += `\n\n📝 ${pedidoData.observaciones}`;
+                }
+                const waBtn = document.getElementById('whatsapp-confirm-btn');
+                if (waBtn) {
+                    waBtn.href = `https://wa.me/573046084971?text=${encodeURIComponent(waMsg)}`;
+                }
+            }
+
             // Actualizar contador de ventas en cada producto del pedido
             await Promise.all(
                 cart
