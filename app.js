@@ -453,22 +453,20 @@ function applyFiltersAndRender() {
         filtered = filtered.filter(p => parseFloat(p.precioMayor) > 0);
     }
 
-    // 1. Filtrar por Categoría (filtros principales del header)
-    if (activeFilter === 'disponible') {
-        // Solo productos con stock > 0
-        filtered = filtered.filter(p => {
-            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-            return stock > 0;
-        });
-    } else if (activeFilter === 'all') {
-        // Mostrar todos los productos (incluye agotados)
-    } else if (activeFilter === 'promocion') {
+    // 1. En la tienda pública solo se muestran productos con stock disponible
+    filtered = filtered.filter(p => {
+        const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+        return stock > 0;
+    });
+
+    // 2. Filtrar por tipo/categoría (el filtro de stock ya aplica a todos)
+    if (activeFilter === 'promocion') {
         filtered = filtered.filter(p => {
             const tienePromoIndividual = p.promocion?.activa && !isWholesaleActive;
             const tienePromoGlobal = globalPromotion && !isWholesaleActive;
             return tienePromoIndividual || tienePromoGlobal;
         });
-    } else {
+    } else if (activeFilter !== 'disponible' && activeFilter !== 'all') {
         // Filtrar por categoría específica
         filtered = filtered.filter(p => {
             const categoryValue = p.categoriaId || p.categoria;
@@ -633,36 +631,45 @@ function renderProducts(products) {
             (product.variantes_color || []).map(vc => [(vc.nombre || '').toLowerCase().trim(), vc.hex])
         );
 
-        // Imagen de tarjeta: preferir imagen del primer color CON STOCK, si no imagenUrl
-        let imgUrl = product.imagenUrl || 'https://placehold.co/300x400/f5f5f5/ccc?text=Mishell';
-        const coloresCandidatos = coloresConStock.length > 0
-            ? coloresConStock
-            : (product.variantes_color || []).map(vc => vc.nombre).filter(Boolean);
-        for (const color of coloresCandidatos) {
-            const vc = (product.variantes_color || []).find(
-                v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim()
-            );
-            if (vc?.imagenes?.length > 0) {
-                const sorted = [...vc.imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0));
-                const frente = sorted.find(img => img.angulo === 'frente') || sorted[0];
-                if (frente?.url) { imgUrl = frente.url; break; }
-            }
+        // Helper: obtener la imagen "frente" de una variante de color
+        function getColorFrenteImg(vc) {
+            if (!vc?.imagenes?.length) return '';
+            const sorted = [...vc.imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+            return (sorted.find(img => img.angulo === 'frente') || sorted[0])?.url || '';
         }
 
-        // Dots de color: solo colores CON STOCK, usando hex real si está en variantes_color
-        let coloresParaCard = coloresConStock.slice(0, 6).map(color => ({
-            nombre: color,
-            hex: variantesColorMap[color.toLowerCase().trim()] || COLOR_MAP[color.toLowerCase().trim()] || '#ccc'
-        }));
-        // Si agotado, mostrar todos los colores de variantes_color como referencia visual
-        if (coloresParaCard.length === 0) {
-            coloresParaCard = (product.variantes_color || []).slice(0, 6).map(vc => ({
-                nombre: vc.nombre || '',
-                hex: vc.hex || COLOR_MAP[(vc.nombre || '').toLowerCase().trim()] || '#ccc'
-            }));
+        // Dots de color: colores CON STOCK con imagen, incluyendo su URL para la tarjeta
+        const coloresBaseList = coloresConStock.length > 0
+            ? coloresConStock.slice(0, 6)
+            : (product.variantes_color || []).map(vc => vc.nombre).filter(Boolean).slice(0, 6);
+
+        const coloresParaCard = coloresBaseList.map(colorNombre => {
+            const vc = (product.variantes_color || []).find(
+                v => (v.nombre || '').toLowerCase().trim() === colorNombre.toLowerCase().trim()
+            );
+            return {
+                nombre: colorNombre,
+                hex: variantesColorMap[colorNombre.toLowerCase().trim()] || COLOR_MAP[colorNombre.toLowerCase().trim()] || '#ccc',
+                imgUrl: getColorFrenteImg(vc)
+            };
+        });
+
+        // Imagen de tarjeta: primer color con imagen, luego foto principal (si mostrarFotoPrincipal no es false)
+        let imgUrl = 'https://placehold.co/300x400/f5f5f5/ccc?text=Mishell';
+        let activeColorIdx = -1;
+        for (let i = 0; i < coloresParaCard.length; i++) {
+            if (coloresParaCard[i].imgUrl) {
+                imgUrl = coloresParaCard[i].imgUrl;
+                activeColorIdx = i;
+                break;
+            }
         }
-        const coloresHtml = coloresParaCard.map(({ nombre, hex }) =>
-            `<span class="card-color-dot" style="background:${hex}" title="${nombre}"></span>`
+        if (activeColorIdx === -1 && product.mostrarFotoPrincipal !== false) {
+            imgUrl = product.imagenUrl || imgUrl;
+        }
+
+        const coloresHtml = coloresParaCard.map(({ nombre, hex, imgUrl: cImg }, i) =>
+            `<button class="card-color-dot${i === activeColorIdx ? ' active' : ''}" style="background:${hex}" title="${nombre}" data-color-img="${cImg}" type="button"></button>`
         ).join('');
 
         const tallasHtml = tallasUnicas.slice(0, 5).map(t => `<span class="card-size-chip">${t}</span>`).join('');
@@ -1953,6 +1960,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ✅ Event delegation para clicks en tarjetas de producto (un solo listener global)
     document.getElementById('products-container').addEventListener('click', (e) => {
+        // Clic en bolita de color → cambiar imagen de la tarjeta sin abrir modal
+        const dot = e.target.closest('.card-color-dot');
+        if (dot) {
+            e.stopPropagation();
+            const colorImg = dot.dataset.colorImg;
+            if (colorImg) {
+                const card = dot.closest('.product-card');
+                const img = card?.querySelector('.product-image-wrapper img');
+                if (img) img.src = colorImg;
+                // Marcar punto activo
+                card?.querySelectorAll('.card-color-dot').forEach(d => d.classList.remove('active'));
+                dot.classList.add('active');
+            }
+            return;
+        }
+        // Clic en el resto de la tarjeta → abrir modal
         const card = e.target.closest('.product-card');
         if (card) openProductModal(card.dataset.productId);
     });
