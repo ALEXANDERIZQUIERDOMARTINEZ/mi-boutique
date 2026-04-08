@@ -672,7 +672,7 @@ function renderProducts(products) {
 
         const coloresHtml = coloresParaCard.map(({ nombre, hex, imgUrl: cImg, dotPos }, i) => {
             const dotStyle = cImg
-                ? `background-image:url('${cImg}');background-size:cover;background-position:${dotPos.x}% ${dotPos.y}%;`
+                ? `background-image:url('${cImg}');background-size:400%;background-position:${dotPos.x}% ${dotPos.y}%;`
                 : `background:${hex};`;
             return `<button class="card-color-dot${i === activeColorIdx ? ' active' : ''}" style="${dotStyle}" title="${nombre}" data-color-img="${cImg}" type="button"></button>`;
         }).join('');
