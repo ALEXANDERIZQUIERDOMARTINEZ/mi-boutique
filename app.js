@@ -2446,9 +2446,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function coUpdateNextBtn2() {
-        const btn = document.getElementById('co-next-2');
-        if (btn) btn.disabled = !coIsStep2Valid();
+        // El botón siempre está activo; la validación ocurre al hacer clic
     }
+
+    window.coNextStep2 = function() {
+        const ciudad = (document.getElementById('checkout-city')?.value || '').trim();
+        const dir = (document.getElementById('checkout-address')?.value || '').trim();
+
+        if (!ciudad) {
+            showToast('Selecciona una ciudad de entrega', 'error');
+            return;
+        }
+        if (dir.length < 4) {
+            showToast('Ingresa la dirección completa de entrega', 'error');
+            document.getElementById('checkout-address')?.focus();
+            return;
+        }
+        coNext();
+    };
 
     // Auto-advance: cuando paso 1 sea válido, pasar solo al paso 2
     function coCheckAutoAdvance1() {
