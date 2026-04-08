@@ -647,10 +647,12 @@ function renderProducts(products) {
             const vc = (product.variantes_color || []).find(
                 v => (v.nombre || '').toLowerCase().trim() === colorNombre.toLowerCase().trim()
             );
+            const dp = vc?.dotPosition || { x: 50, y: 15 };
             return {
                 nombre: colorNombre,
                 hex: variantesColorMap[colorNombre.toLowerCase().trim()] || COLOR_MAP[colorNombre.toLowerCase().trim()] || '#ccc',
-                imgUrl: getColorFrenteImg(vc)
+                imgUrl: getColorFrenteImg(vc),
+                dotPos: dp
             };
         });
 
@@ -668,9 +670,12 @@ function renderProducts(products) {
             imgUrl = product.imagenUrl || imgUrl;
         }
 
-        const coloresHtml = coloresParaCard.map(({ nombre, hex, imgUrl: cImg }, i) =>
-            `<button class="card-color-dot${i === activeColorIdx ? ' active' : ''}" style="background:${hex}" title="${nombre}" data-color-img="${cImg}" type="button"></button>`
-        ).join('');
+        const coloresHtml = coloresParaCard.map(({ nombre, hex, imgUrl: cImg, dotPos }, i) => {
+            const dotStyle = cImg
+                ? `background-image:url('${cImg}');background-size:cover;background-position:${dotPos.x}% ${dotPos.y}%;`
+                : `background:${hex};`;
+            return `<button class="card-color-dot${i === activeColorIdx ? ' active' : ''}" style="${dotStyle}" title="${nombre}" data-color-img="${cImg}" data-dot-x="${dotPos.x}" data-dot-y="${dotPos.y}" type="button"></button>`;
+        }).join('');
 
         const tallasHtml = tallasUnicas.slice(0, 5).map(t => `<span class="card-size-chip">${t}</span>`).join('');
 
