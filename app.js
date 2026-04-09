@@ -601,12 +601,11 @@ function sortProducts(products, sortBy) {
             break;
     }
 
-    // Separar: disponibles en promo → disponibles normales → agotados
+    // Separar: disponibles en promo → disponibles normales (agotados se ocultan del catálogo)
     const disponiblesPromo = ordered.filter(p => getStock(p) > 0 && getPromoPrice(p).tienePromo);
     const disponiblesNormal = ordered.filter(p => getStock(p) > 0 && !getPromoPrice(p).tienePromo);
-    const agotados = ordered.filter(p => getStock(p) <= 0);
 
-    return [...disponiblesPromo, ...disponiblesNormal, ...agotados];
+    return [...disponiblesPromo, ...disponiblesNormal];
 }
 
 // ✅ RENDERIZAR PRODUCTOS CON COLORES REALES
@@ -1088,11 +1087,13 @@ function initSwipeGallery(product) {
     swipeGallery.currentIndex = 0;
     swipeGallery.didSwipe = false;
 
-    // Mostrar la primera imagen de la galería inmediatamente para evitar
-    // que la foto principal quede visible cuando mostrarFotoPrincipal es false
+    // Mostrar la primera imagen de la galería inmediatamente y construir thumbnails
+    // para el primer color, evitando que quede sin thumbnails cuando el color
+    // auto-seleccionado coincide con el índice 0 y navigateSwipeGallery retorna temprano.
     if (images.length > 0) {
         const mainImg = document.getElementById('modal-product-image');
         if (mainImg) mainImg.src = images[0].url;
+        rebuildSwipeThumbs(images[0].colorNombre, product);
     }
 
     // Precargar todas las imágenes en segundo plano
@@ -1467,14 +1468,17 @@ function openProductModal(productId) {
     document.getElementById('modal-product-name').textContent = product.nombre;
     document.getElementById('modal-product-desc').textContent = product.descripcion || 'No hay descripción disponible.';
 
-    // Imagen inicial: respetar mostrarFotoPrincipal antes de asignar imagenUrl como placeholder.
-    // La galería correcta se cargará en cuanto se auto-seleccione el color
-    // (vía renderSizeButtons → renderColorButtons → selectColor → navigateSwipeGallery).
+    // Imagen inicial: siempre usar la primera foto de la galería de colores.
+    // Si no hay imágenes en la galería, usar imagenUrl como fallback.
     const thumbsEl = document.getElementById('modal-gallery-thumbs');
     if (thumbsEl) { thumbsEl.innerHTML = ''; thumbsEl.style.display = 'none'; }
-    document.getElementById('modal-product-image').src = product.mostrarFotoPrincipal !== false
-        ? (product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell')
-        : 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
+    const _primeraVc = (product.variantes_color || []).find(vc => (vc.imagenes || []).some(img => img.url));
+    const _primeraFotoGaleria = _primeraVc
+        ? [..._primeraVc.imagenes.filter(img => img.url)].sort((a, b) => (a.orden || 0) - (b.orden || 0))[0]?.url
+        : null;
+    document.getElementById('modal-product-image').src = _primeraFotoGaleria
+        || (product.mostrarFotoPrincipal !== false ? product.imagenUrl : null)
+        || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
 
     // Inicializar galería deslizable con todas las imágenes de todos los colores
     initSwipeGallery(product);
