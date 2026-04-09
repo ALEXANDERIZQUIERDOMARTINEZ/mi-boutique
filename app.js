@@ -252,6 +252,24 @@ function getColorHex(colorName) {
     return '#9E9E9E';
 }
 
+/** Devuelve el estilo CSS para una bolita de color:
+ *  - Si la variante tiene imagen, usa recorte circular (igual que las tarjetas del catálogo).
+ *  - Si no, usa el color sólido hex.
+ */
+function getColorSwatchStyle(vc) {
+    const imgs = vc?.imagenes || [];
+    if (imgs.length) {
+        const sorted = [...imgs].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+        const frenteImg = (sorted.find(i => i.angulo === 'frente') || sorted[0])?.url || '';
+        if (frenteImg) {
+            const dp = vc.dotPosition || { x: 50, y: 15 };
+            return `background-image:url('${frenteImg}');background-size:400%;background-position:${dp.x}% ${dp.y}%;`;
+        }
+    }
+    if (vc?.hex) return `background-color:${vc.hex};`;
+    return 'background-color:#ccc;';
+}
+
 // --- FUNCIONES DE RENDERIZADO ---
 
 function showToast(message, type = 'success') {
@@ -879,12 +897,13 @@ function renderColorButtons(selectedTalla, product) {
             btn.className = 'size-color-btn';
             btn.dataset.value = color;
 
-            // Mostrar swatch de color si existe hex en variantes_color
+            // Mostrar swatch de color con imagen de recorte (o color sólido como fallback)
             const varianteColor = (product.variantes_color || []).find(
                 vc => vc.nombre && vc.nombre.toLowerCase().trim() === color.toLowerCase().trim()
             );
-            if (varianteColor && varianteColor.hex) {
-                btn.innerHTML = `<span class="color-swatch-circle" style="background-color:${varianteColor.hex}"></span><span class="color-swatch-name">${color}</span>`;
+            if (varianteColor && (varianteColor.hex || varianteColor.imagenes?.length)) {
+                const swatchStyle = getColorSwatchStyle(varianteColor);
+                btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span><span class="color-swatch-name">${color}</span>`;
                 btn.classList.add('has-swatch');
                 btn.title = color;
             } else {
@@ -1377,13 +1396,13 @@ function renderGalleryColors(product) {
     coloresButtons.style.display = 'flex';
     coloresContainer.style.display = 'block';
 
-    // Preferir variantes_color (tienen hex real), si no usar nombres de variaciones
+    // Preferir variantes_color (tienen hex real e imágenes), si no usar nombres de variaciones
     const variantesColor = product.variantes_color || [];
-    let colores = variantesColor.map(vc => ({ nombre: vc.nombre, hex: vc.hex || null }));
+    let colores = variantesColor.map(vc => ({ nombre: vc.nombre, hex: vc.hex || null, vc }));
 
     if (colores.length === 0) {
         const todosColores = [...new Set((product.variaciones || []).map(v => v.color).filter(Boolean))];
-        colores = todosColores.map(c => ({ nombre: c, hex: COLOR_MAP[c.toLowerCase().trim()] || null }));
+        colores = todosColores.map(c => ({ nombre: c, hex: COLOR_MAP[c.toLowerCase().trim()] || null, vc: null }));
     }
 
     if (colores.length === 0) {
@@ -1391,14 +1410,16 @@ function renderGalleryColors(product) {
         return;
     }
 
-    colores.forEach(({ nombre, hex }, index) => {
+    colores.forEach(({ nombre, hex, vc }) => {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'size-color-btn';
         btn.dataset.value = nombre;
 
-        if (hex) {
-            btn.innerHTML = `<span class="color-swatch-circle" style="background-color:${hex}"></span><span class="color-swatch-name">${nombre}</span>`;
+        const hasVisual = vc ? (vc.imagenes?.length || vc.hex) : hex;
+        if (hasVisual) {
+            const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${hex};`;
+            btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span><span class="color-swatch-name">${nombre}</span>`;
             btn.classList.add('has-swatch');
             btn.title = nombre;
         } else {
