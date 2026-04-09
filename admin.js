@@ -1738,8 +1738,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const rendH = imgEl.offsetHeight;
             if (!rendW || !rendH) return;
 
-            circleEl.style.left = `${(xPct / 100) * rendW}px`;
-            circleEl.style.top  = `${(yPct / 100) * rendH}px`;
+            // Con background-size:400%, el centro visible del recorte NO es xPct% de la imagen.
+            // El centro real que muestra la bolita es:
+            //   X: (3*xPct/100 + 0.5) / 4  (fracción del ancho de imagen)
+            //   Y: ((4*AR-1)*yPct/100 + 0.5) / (4*AR)  (fracción del alto de imagen)
+            // donde AR = rendH/rendW (proporción de la imagen).
+            const AR = rendH / rendW;
+            const cxFrac = (3 * xPct / 100 + 0.5) / 4;
+            const cyFrac = ((4 * AR - 1) * yPct / 100 + 0.5) / (4 * AR);
+
+            circleEl.style.left = `${cxFrac * rendW}px`;
+            circleEl.style.top  = `${cyFrac * rendH}px`;
             dotZonePos = { x: +xPct.toFixed(1), y: +yPct.toFixed(1) };
 
             // Preview: recorte circular con mismo zoom (400%) que el catálogo
@@ -1754,9 +1763,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const rect = imgEl.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            // Fracción del punto clicado respecto a la imagen renderizada
+            const sx = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+            const sy = Math.min(1, Math.max(0, (clientY - rect.top)  / rect.height));
+            const AR = rect.height / rect.width;
+
+            // Convertir a background-position% tal que el centro visible
+            // de la bolita (background-size:400%) quede exactamente en (sx, sy).
+            //   xPct = (4*sx - 0.5) * 100/3
+            //   yPct = (4*AR*sy - 0.5) * 100 / (4*AR - 1)
             return {
-                xPct: Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width)  * 100)),
-                yPct: Math.min(100, Math.max(0, ((clientY - rect.top)  / rect.height) * 100))
+                xPct: Math.min(100, Math.max(0, (4 * sx - 0.5) * 100 / 3)),
+                yPct: Math.min(100, Math.max(0, (4 * AR * sy - 0.5) * 100 / (4 * AR - 1)))
             };
         }
 
