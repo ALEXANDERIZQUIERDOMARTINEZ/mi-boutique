@@ -1062,12 +1062,25 @@ function updateColorGallery(product, colorName) {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Construye el array plano de todas las imágenes de todos los colores
+ * Construye el array plano de imágenes solo de colores CON STOCK
  * y prepara la galería de deslizamiento.
  */
 function initSwipeGallery(product) {
+    // Colores que tienen stock (al menos en una talla)
+    const coloresConStock = new Set(
+        (product.variaciones || [])
+            .filter(v => parseInt(v.stock, 10) > 0 && v.color)
+            .map(v => v.color.toLowerCase().trim())
+    );
+
+    // Si hay colores con nombre específico en stock, filtrar; si no (producto sin color o todo agotado), mostrar todos
+    const variantesColor = product.variantes_color || [];
+    const variantesParaGaleria = coloresConStock.size > 0
+        ? variantesColor.filter(vc => coloresConStock.has((vc.nombre || '').toLowerCase().trim()))
+        : variantesColor;
+
     const images = [];
-    (product.variantes_color || []).forEach((vc, colorIndex) => {
+    variantesParaGaleria.forEach((vc, colorIndex) => {
         const sorted = [...(vc.imagenes || []).filter(img => img.url)]
             .sort((a, b) => (a.orden || 0) - (b.orden || 0));
         sorted.forEach((img, indexInColor) => {
@@ -1087,9 +1100,7 @@ function initSwipeGallery(product) {
     swipeGallery.currentIndex = 0;
     swipeGallery.didSwipe = false;
 
-    // Mostrar la primera imagen de la galería inmediatamente y construir thumbnails
-    // para el primer color, evitando que quede sin thumbnails cuando el color
-    // auto-seleccionado coincide con el índice 0 y navigateSwipeGallery retorna temprano.
+    // Mostrar la primera imagen (primer color disponible) y construir thumbnails
     if (images.length > 0) {
         const mainImg = document.getElementById('modal-product-image');
         if (mainImg) mainImg.src = images[0].url;
@@ -1099,8 +1110,8 @@ function initSwipeGallery(product) {
     // Precargar todas las imágenes en segundo plano
     images.forEach(img => { (new Image()).src = img.url; });
 
-    // Renderizar puntos de color
-    renderSwipeColorDots(product.variantes_color || []);
+    // Renderizar puntos de color solo para colores con stock
+    renderSwipeColorDots(variantesParaGaleria);
 
     // Adjuntar manejadores de gestos (solo la primera vez)
     attachSwipeHandlers();
@@ -1468,13 +1479,22 @@ function openProductModal(productId) {
     document.getElementById('modal-product-name').textContent = product.nombre;
     document.getElementById('modal-product-desc').textContent = product.descripcion || 'No hay descripción disponible.';
 
-    // Imagen inicial: siempre usar la primera foto de la galería de colores.
-    // Si no hay imágenes en la galería, usar imagenUrl como fallback.
+    // Imagen inicial: primera foto del primer color con stock.
+    // Fallback a imagenUrl si no hay imágenes en la galería.
     const thumbsEl = document.getElementById('modal-gallery-thumbs');
     if (thumbsEl) { thumbsEl.innerHTML = ''; thumbsEl.style.display = 'none'; }
-    const _primeraVc = (product.variantes_color || []).find(vc => (vc.imagenes || []).some(img => img.url));
-    const _primeraFotoGaleria = _primeraVc
-        ? [..._primeraVc.imagenes.filter(img => img.url)].sort((a, b) => (a.orden || 0) - (b.orden || 0))[0]?.url
+    const _coloresConStockSet = new Set(
+        (product.variaciones || [])
+            .filter(v => parseInt(v.stock, 10) > 0 && v.color)
+            .map(v => v.color.toLowerCase().trim())
+    );
+    const _primeraVcConStock = (product.variantes_color || []).find(vc => {
+        const nombre = (vc.nombre || '').toLowerCase().trim();
+        const enStock = _coloresConStockSet.size === 0 || _coloresConStockSet.has(nombre);
+        return enStock && (vc.imagenes || []).some(img => img.url);
+    });
+    const _primeraFotoGaleria = _primeraVcConStock
+        ? [..._primeraVcConStock.imagenes.filter(img => img.url)].sort((a, b) => (a.orden || 0) - (b.orden || 0))[0]?.url
         : null;
     document.getElementById('modal-product-image').src = _primeraFotoGaleria
         || (product.mostrarFotoPrincipal !== false ? product.imagenUrl : null)
