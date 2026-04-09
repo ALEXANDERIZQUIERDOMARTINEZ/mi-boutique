@@ -995,7 +995,9 @@ function updateColorGallery(product, colorName) {
     if (imagenes.length === 0) {
         thumbsEl.innerHTML = '';
         thumbsEl.style.display = 'none';
-        mainImg.src = product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Sin+imagen';
+        mainImg.src = product.mostrarFotoPrincipal !== false
+            ? (product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Sin+imagen')
+            : 'https://placehold.co/500x500/f5f5f5/ccc?text=Sin+imagen';
         return;
     }
 
@@ -1066,6 +1068,13 @@ function initSwipeGallery(product) {
     swipeGallery.product = product;
     swipeGallery.currentIndex = 0;
     swipeGallery.didSwipe = false;
+
+    // Mostrar la primera imagen de la galería inmediatamente para evitar
+    // que la foto principal quede visible cuando mostrarFotoPrincipal es false
+    if (images.length > 0) {
+        const mainImg = document.getElementById('modal-product-image');
+        if (mainImg) mainImg.src = images[0].url;
+    }
 
     // Precargar todas las imágenes en segundo plano
     images.forEach(img => { (new Image()).src = img.url; });
@@ -1437,12 +1446,14 @@ function openProductModal(productId) {
     document.getElementById('modal-product-name').textContent = product.nombre;
     document.getElementById('modal-product-desc').textContent = product.descripcion || 'No hay descripción disponible.';
 
-    // Imagen inicial: usar imagenUrl como placeholder.
+    // Imagen inicial: respetar mostrarFotoPrincipal antes de asignar imagenUrl como placeholder.
     // La galería correcta se cargará en cuanto se auto-seleccione el color
     // (vía renderSizeButtons → renderColorButtons → selectColor → navigateSwipeGallery).
     const thumbsEl = document.getElementById('modal-gallery-thumbs');
     if (thumbsEl) { thumbsEl.innerHTML = ''; thumbsEl.style.display = 'none'; }
-    document.getElementById('modal-product-image').src = product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
+    document.getElementById('modal-product-image').src = product.mostrarFotoPrincipal !== false
+        ? (product.imagenUrl || 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell')
+        : 'https://placehold.co/500x500/f5f5f5/ccc?text=Mishell';
 
     // Inicializar galería deslizable con todas las imágenes de todos los colores
     initSwipeGallery(product);
