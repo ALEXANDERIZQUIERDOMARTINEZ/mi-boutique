@@ -1719,16 +1719,20 @@ document.addEventListener('DOMContentLoaded', () => {
             dotZoneOnSave       = onSaveCallback;
             dotZonePos          = { ...(stateItem.dotPosition || { x: 50, y: 15 }) };
 
-            imgEl.src = imgUrl;
-            imgEl.onload = () => {
-                // Ajustar tamaño del círculo indicador al recorte real (zoom 400%)
+            const initDotZoneUI = () => {
+                if (!imgEl.complete || !imgEl.offsetWidth) return;
                 const cropPx = imgEl.offsetWidth / 4;
                 circleEl.style.width  = cropPx + 'px';
                 circleEl.style.height = cropPx + 'px';
                 updateDotZoneUI(circleEl, previewEl, imgEl, dotZonePos.x, dotZonePos.y);
             };
 
+            imgEl.onload = initDotZoneUI;
+            imgEl.src = imgUrl;
+
             if (!dotZoneModal) dotZoneModal = new bootstrap.Modal(document.getElementById('dotZoneModal'));
+            // Fallback for cached images that load before the modal is visible
+            document.getElementById('dotZoneModal').addEventListener('shown.bs.modal', initDotZoneUI, { once: true });
             dotZoneModal.show();
         }
 
@@ -1751,8 +1755,12 @@ document.addEventListener('DOMContentLoaded', () => {
             circleEl.style.top  = `${cyFrac * rendH}px`;
             dotZonePos = { x: +xPct.toFixed(1), y: +yPct.toFixed(1) };
 
-            // Preview: recorte circular con mismo zoom (400%) que el catálogo
+            // Preview: mismo tamaño y zoom que el círculo indicador para que
+            // muestre exactamente el mismo recorte que está seleccionando el usuario.
             if (previewEl) {
+                const sz = parseFloat(circleEl.style.width) || 80;
+                previewEl.style.width              = sz + 'px';
+                previewEl.style.height             = sz + 'px';
                 previewEl.style.backgroundImage    = `url('${imgEl.src}')`;
                 previewEl.style.backgroundSize     = '400%';
                 previewEl.style.backgroundPosition = `${xPct}% ${yPct}%`;
