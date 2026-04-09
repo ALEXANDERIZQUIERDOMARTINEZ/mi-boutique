@@ -494,7 +494,10 @@
                                 <!-- Template oculto para un bloque de color -->
                                 <div class="color-variant-block border rounded p-3 mb-3 d-none" id="color-variant-template">
                                     <div class="d-flex align-items-center gap-2 mb-3">
-                                        <input type="color" class="color-variant-hex form-control form-control-color" value="#000000" title="Color" style="width:40px;height:38px;padding:2px;">
+                                        <div class="color-hex-wrapper" style="position:relative;width:40px;height:38px;flex-shrink:0;border-radius:4px;overflow:hidden;">
+                                            <input type="color" class="color-variant-hex form-control form-control-color" value="#000000" title="Color" style="width:40px;height:38px;padding:2px;">
+                                            <div class="color-hex-img-overlay" style="position:absolute;inset:0;background-size:400%;pointer-events:none;display:none;"></div>
+                                        </div>
                                         <input type="text" class="color-variant-name form-control form-control-sm"
                                                placeholder="Selecciona o escribe el nombre del color"
                                                list="variation-colors-list" autocomplete="off">
