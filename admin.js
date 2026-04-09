@@ -1604,7 +1604,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const miniPreview = block.querySelector('.dot-zone-mini-preview');
 
             function updateMiniPreview() {
-                const imgUrl = stateItem.imagenes[0]?.url || null;
+                // Buscar imagen igual que openDotZoneModal: primero en imagenes guardadas,
+                // luego en newFiles (imágenes recién subidas aún no guardadas en el servidor).
+                let imgUrl = null;
+                if (stateItem.imagenes.length > 0) {
+                    const sorted = [...stateItem.imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+                    imgUrl = (sorted.find(i => i.angulo === 'frente') || sorted[0])?.url || null;
+                } else if (stateItem.newFiles && stateItem.newFiles.length > 0) {
+                    imgUrl = URL.createObjectURL(stateItem.newFiles[0]);
+                }
+
                 if (imgUrl && stateItem.dotPosition) {
                     miniPreview.style.backgroundImage    = `url('${imgUrl}')`;
                     miniPreview.style.backgroundSize     = '400%';
