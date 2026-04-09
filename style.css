@@ -2537,15 +2537,16 @@ textarea.form-control-modern {
 #productModal .size-color-btn.has-swatch,
 #colores-buttons .size-color-btn.has-swatch {
     display: inline-flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 0;
-    padding: 3px;
+    justify-content: flex-start;
+    gap: 5px;
+    padding: 4px 2px;
     border: 2px solid transparent;
     background: transparent;
-    border-radius: 50%;
-    width: 44px;
-    height: 44px;
+    border-radius: 10px;
+    width: auto;
+    height: auto;
     min-width: 44px;
     cursor: pointer;
     transition: transform 0.15s ease;
@@ -2578,7 +2579,16 @@ textarea.form-control-modern {
 }
 
 .color-swatch-name {
-    display: none;
+    display: block;
+    font-size: 0.58rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--color-texto);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    max-width: 50px;
+    line-height: 1.2;
+    word-break: break-word;
 }
 
 .color-name-label {
