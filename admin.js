@@ -1603,6 +1603,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const dotZoneBtn = block.querySelector('.btn-dot-zone');
             const miniPreview = block.querySelector('.dot-zone-mini-preview');
 
+            const hexOverlay = block.querySelector('.color-hex-img-overlay');
+
             function updateMiniPreview() {
                 // Buscar imagen igual que openDotZoneModal: primero en imagenes guardadas,
                 // luego en newFiles (imágenes recién subidas aún no guardadas en el servidor).
@@ -1615,13 +1617,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (imgUrl && stateItem.dotPosition) {
-                    miniPreview.style.backgroundImage    = `url('${imgUrl}')`;
+                    const bg = `url('${imgUrl}')`;
+                    const pos = `${stateItem.dotPosition.x}% ${stateItem.dotPosition.y}%`;
+                    // Mini-preview bolita inferior
+                    miniPreview.style.backgroundImage    = bg;
                     miniPreview.style.backgroundSize     = '400%';
-                    miniPreview.style.backgroundPosition = `${stateItem.dotPosition.x}% ${stateItem.dotPosition.y}%`;
+                    miniPreview.style.backgroundPosition = pos;
                     miniPreview.style.backgroundColor    = '';
+                    // Overlay encima del input de color (parte superior del bloque)
+                    if (hexOverlay) {
+                        hexOverlay.style.backgroundImage    = bg;
+                        hexOverlay.style.backgroundSize     = '400%';
+                        hexOverlay.style.backgroundPosition = pos;
+                        hexOverlay.style.display = 'block';
+                    }
                 } else {
                     miniPreview.style.backgroundImage = '';
                     miniPreview.style.backgroundColor = stateItem.hex || '#e9ecef';
+                    if (hexOverlay) hexOverlay.style.display = 'none';
                 }
             }
             updateMiniPreview();
