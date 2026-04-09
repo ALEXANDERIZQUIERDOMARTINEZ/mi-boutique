@@ -3157,7 +3157,17 @@ document.addEventListener('DOMContentLoaded', () => {
             s.className = 'izoom-swatch' + (i === currentColorIdx ? ' active' : '');
             s.title = vc.nombre || `Color ${i + 1}`;
             s.setAttribute('aria-label', vc.nombre || `Color ${i + 1}`);
-            if (vc.hex) s.style.background = vc.hex;
+            const imgs = vc.imagenes || [];
+            const sorted = [...imgs].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+            const frenteImg = (sorted.find(img => img.angulo === 'frente') || sorted[0])?.url || '';
+            if (frenteImg) {
+                const dp = vc.dotPosition || { x: 50, y: 15 };
+                s.style.backgroundImage = `url('${frenteImg}')`;
+                s.style.backgroundSize = '400%';
+                s.style.backgroundPosition = `${dp.x}% ${dp.y}%`;
+            } else if (vc.hex) {
+                s.style.background = vc.hex;
+            }
             s.addEventListener('click', () => {
                 const firstIdx = swipeGallery.images.findIndex(img => img.colorIndex === i);
                 if (firstIdx !== -1) navigateViewer(firstIdx);
