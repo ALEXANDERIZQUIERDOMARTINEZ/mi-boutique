@@ -146,6 +146,10 @@ body.admin-page {
   min-height: 100dvh;
   position: relative;
   overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y pinch-zoom;
+  overscroll-behavior-y: auto;
 }
 
 /* Organic gradient background orbs */
@@ -189,6 +193,8 @@ body.admin-page::after {
   z-index: 1040;
   overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   scrollbar-width: thin;
   scrollbar-color: rgba(0,0,0,0.06) transparent;
   transition: width var(--duration-base) var(--ease-out);
@@ -703,6 +709,7 @@ body.dark-mode .mbn-item.active { color: var(--brand-400); }
   position: relative;
   z-index: 1;
   transition: margin-left var(--duration-base) var(--ease-out);
+  touch-action: pan-y pinch-zoom;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -868,6 +875,7 @@ body.dark-mode .mbn-item.active { color: var(--brand-400); }
 .admin-main {
   padding: 2rem 2rem;
   flex: 1;
+  touch-action: pan-y pinch-zoom;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -2029,7 +2037,7 @@ small.text-muted {
 /* ─────────────────────────────────────────────────────────────────────────
    PRODUCT SEARCH LIST
    ───────────────────────────────────────────────────────────────────────── */
-.search-modal-list { max-height: 520px; overflow-y: auto; }
+.search-modal-list { max-height: 520px; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 
 .search-modal-list .list-group-item {
   cursor: pointer;
