@@ -65,6 +65,9 @@ client.on('ready', async () => {
 
                 const tipo = pedido.tipoVenta === 'Mayorista' ? '🏪 *MAYORISTA*' : '🛍️ *DETAL*';
 
+                const pagoStr = pedido.metodoPagoSolicitado +
+                    (pedido.tipoTransferencia ? ` (${pedido.tipoTransferencia})` : '');
+
                 const mensaje =
                     `🔔 *NUEVO PEDIDO* #${pedidoId.slice(-6).toUpperCase()}\n` +
                     `${tipo}\n\n` +
@@ -75,9 +78,10 @@ client.on('ready', async () => {
                     `   ${pedido.clienteDireccion}\n` +
                     (pedido.observaciones ? `📝 ${pedido.observaciones}\n` : '') +
                     `\n*Productos:*\n${items}\n\n` +
-                    `💳 Pago: ${pedido.metodoPagoSolicitado}\n` +
+                    `💳 Pago: ${pagoStr}\n` +
                     `📦 Envío: ${formatPrecio(pedido.costoEnvio || 0)}\n` +
-                    `💰 *Total: ${formatPrecio(pedido.totalPedido)}*`;
+                    `💰 *Total: ${formatPrecio(pedido.totalPedido)}*` +
+                    (pedido.comprobanteUrl ? `\n\n🧾 *Comprobante:*\n${pedido.comprobanteUrl}` : '');
 
                 await client.sendMessage(`${OWNER_PHONE}@c.us`, mensaje);
                 console.log(`✅ Pedido #${pedidoId.slice(-6).toUpperCase()} notificado al dueño`);

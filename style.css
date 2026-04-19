@@ -4943,6 +4943,125 @@ input[type="datetime-local"] {
 #cash-payment-section .co-label { margin-bottom: 6px; }
 .co-cash-wrap { display: flex; flex-direction: column; gap: 8px; }
 
+/* ─── Transfer section ─── */
+.co-transfer-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
+}
+.co-transfer-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-texto-secundario, #666);
+    margin: 0;
+}
+.co-transfer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.co-transfer-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 10px;
+    border: 1.5px solid var(--color-borde, #E5E5E5);
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-texto-secundario, #666);
+}
+.co-transfer-card.active {
+    border-color: var(--color-primario, #D988B9);
+    background: var(--color-primario-claro, #F5E8ED);
+    color: var(--color-primario-oscuro, #C273A2);
+}
+.co-transfer-logo { font-size: 22px; }
+
+/* ─── QR / account panel ─── */
+.co-qr-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: var(--color-fondo, #F9F9F9);
+    border-radius: 14px;
+    padding: 16px;
+}
+.co-qr-img {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    border-radius: 10px;
+    background: #fff;
+}
+.co-btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--color-primario, #D988B9);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    text-decoration: none;
+    cursor: pointer;
+}
+.co-account-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.co-account-label {
+    font-size: 12px;
+    color: var(--color-texto-claro, #999);
+}
+.co-account-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-texto, #333);
+    letter-spacing: 1px;
+}
+
+/* ─── Comprobante upload ─── */
+.co-comprobante-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.co-upload-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 110px;
+    border: 2px dashed var(--color-borde, #E5E5E5);
+    border-radius: 12px;
+    cursor: pointer;
+    padding: 16px;
+    transition: border-color .15s;
+    background: #fafafa;
+}
+.co-upload-area:hover { border-color: var(--color-primario, #D988B9); }
+.co-upload-area.has-file { border-color: #28a745; border-style: solid; }
+.co-upload-ico { font-size: 28px; color: var(--color-texto-claro, #999); }
+.co-upload-text { font-size: 13px; color: var(--color-texto-secundario, #666); margin: 0; text-align: center; }
+.co-comprobante-preview {
+    width: 100%;
+    max-height: 180px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
 /* ─── Change display ─── */
 .co-change {
     background: #f0f8ff;
