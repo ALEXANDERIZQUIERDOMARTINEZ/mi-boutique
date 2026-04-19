@@ -450,6 +450,52 @@ Finalizar Pedido
         </div>
       </div>
 
+      <!-- Transferencia: tipo y comprobante -->
+      <div id="transfer-payment-section" style="display:none" class="co-transfer-wrap">
+        <p class="co-transfer-title">Selecciona tu plataforma:</p>
+        <div class="co-transfer-grid">
+          <button type="button" class="co-transfer-card" id="co-ttype-nequi" onclick="coSelectTransferType('Nequi',this)">
+            <span class="co-transfer-logo">📱</span>
+            <span>Nequi</span>
+          </button>
+          <button type="button" class="co-transfer-card" id="co-ttype-bancolombia" onclick="coSelectTransferType('Bancolombia',this)">
+            <span class="co-transfer-logo">🏦</span>
+            <span>Bancolombia</span>
+          </button>
+        </div>
+
+        <!-- Panel Nequi: QR + número -->
+        <div id="nequi-panel" style="display:none" class="co-qr-panel">
+          <img src="images/nequi-qr.png" alt="QR Nequi Andrea Espitia" class="co-qr-img">
+          <a href="images/nequi-qr.png" download="QR-Nequi-AndreaEspitia.png" class="co-btn-download">
+            <i class="bi bi-download"></i> Descargar QR
+          </a>
+          <div class="co-account-info">
+            <span class="co-account-label">Número Nequi</span>
+            <strong class="co-account-number">3046084971</strong>
+          </div>
+        </div>
+
+        <!-- Panel Bancolombia: número de cuenta -->
+        <div id="bancolombia-panel" style="display:none" class="co-qr-panel">
+          <div class="co-account-info">
+            <span class="co-account-label">Número de cuenta Bancolombia</span>
+            <strong class="co-account-number">3046084971</strong>
+          </div>
+        </div>
+
+        <!-- Subir comprobante -->
+        <div id="comprobante-section" style="display:none" class="co-comprobante-wrap">
+          <label class="co-label">Sube tu comprobante de pago</label>
+          <div class="co-upload-area" id="co-upload-area" onclick="document.getElementById('checkout-comprobante').click()">
+            <i class="bi bi-cloud-upload co-upload-ico" id="co-upload-ico"></i>
+            <p class="co-upload-text" id="co-upload-text">Toca para seleccionar imagen</p>
+            <img id="comprobante-preview" style="display:none" class="co-comprobante-preview" alt="Vista previa">
+          </div>
+          <input type="file" id="checkout-comprobante" accept="image/*" style="display:none">
+        </div>
+      </div>
+
       <!-- Total -->
       <div class="co-total-bar">
         <span class="co-total-lbl">Total del pedido</span>

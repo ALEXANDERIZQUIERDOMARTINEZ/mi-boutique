@@ -1,6 +1,7 @@
 // --- IMPORTACIONES DE FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
@@ -18,6 +19,7 @@ const firebaseConfig = {
 // --- INICIALIZACIÓN Y GLOBALES ---
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 const productsCollection = collection(db, 'productos');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const promocionesCollection = collection(db, 'promociones');
@@ -45,6 +47,8 @@ function openWhatsApp(url) {
 let bsToast = null;
 let cart = [];
 let productsMap = new Map();
+let selectedTransferType = '';
+let comprobanteFile = null;
 let allProducts = [];
 let activePromotions = new Map();
 let globalPromotion = null; // Promoción global activa (ej: Black Friday)
@@ -2593,7 +2597,69 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.classList.add('active');
         document.getElementById('checkout-payment').value = method;
         document.getElementById('checkout-payment').dispatchEvent(new Event('change'));
+
+        const transferSection = document.getElementById('transfer-payment-section');
+        if (method === 'Transferencia') {
+            transferSection.style.display = 'flex';
+        } else {
+            transferSection.style.display = 'none';
+            coResetTransferState();
+        }
     };
+
+    // Seleccionar tipo de transferencia (Nequi / Bancolombia)
+    window.coSelectTransferType = function(type, btn) {
+        document.querySelectorAll('.co-transfer-card').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        selectedTransferType = type;
+        document.getElementById('nequi-panel').style.display = type === 'Nequi' ? 'flex' : 'none';
+        document.getElementById('bancolombia-panel').style.display = type === 'Bancolombia' ? 'flex' : 'none';
+        document.getElementById('comprobante-section').style.display = 'flex';
+    };
+
+    function coResetTransferState() {
+        selectedTransferType = '';
+        comprobanteFile = null;
+        document.querySelectorAll('.co-transfer-card').forEach(c => c.classList.remove('active'));
+        const nequiPanel = document.getElementById('nequi-panel');
+        const bancolombiaPanel = document.getElementById('bancolombia-panel');
+        const comprobanteSection = document.getElementById('comprobante-section');
+        const comprobanteInput = document.getElementById('checkout-comprobante');
+        const preview = document.getElementById('comprobante-preview');
+        const uploadArea = document.getElementById('co-upload-area');
+        if (nequiPanel) nequiPanel.style.display = 'none';
+        if (bancolombiaPanel) bancolombiaPanel.style.display = 'none';
+        if (comprobanteSection) comprobanteSection.style.display = 'none';
+        if (comprobanteInput) comprobanteInput.value = '';
+        if (preview) { preview.style.display = 'none'; preview.src = ''; }
+        if (uploadArea) {
+            uploadArea.classList.remove('has-file');
+            const ico = document.getElementById('co-upload-ico');
+            const txt = document.getElementById('co-upload-text');
+            if (ico) ico.style.display = '';
+            if (txt) txt.textContent = 'Toca para seleccionar imagen';
+        }
+    }
+
+    // Previsualizar comprobante al seleccionar archivo
+    document.getElementById('checkout-comprobante').addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) return;
+        comprobanteFile = file;
+        const preview = document.getElementById('comprobante-preview');
+        const uploadArea = document.getElementById('co-upload-area');
+        const ico = document.getElementById('co-upload-ico');
+        const txt = document.getElementById('co-upload-text');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+            uploadArea.classList.add('has-file');
+            if (ico) ico.style.display = 'none';
+            if (txt) txt.textContent = file.name;
+        };
+        reader.readAsDataURL(file);
+    });
 
     // Renderizar items del carrito en paso 3
     function renderCoOrderItems() {
@@ -2641,6 +2707,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pago === 'Efectivo' && ciudad !== 'Montería') {
             showToast('El pago en efectivo solo está disponible en Montería', 'error');
             return;
+        }
+
+        // Validar datos de transferencia
+        if (pago === 'Transferencia') {
+            if (!selectedTransferType) {
+                showToast('Selecciona el tipo de transferencia: Nequi o Bancolombia', 'error');
+                return;
+            }
+            if (!comprobanteFile) {
+                showToast('Por favor sube el comprobante de pago para continuar', 'error');
+                return;
+            }
         }
 
         const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
@@ -2726,7 +2804,10 @@ document.addEventListener('DOMContentLoaded', () => {
             cart.forEach(item => {
                 waMsg += '\u2022 ' + item.nombre + ' T:' + item.talla + ' C:' + item.color + ' x' + item.cantidad + ' \u2014 $' + fmt(item.total) + '\n';
             });
-            waMsg += '\n\uD83D\uDCB3 *Pago:* ' + pago + '\n';
+            waMsg += '\n\uD83D\uDCB3 *Pago:* ' + pago;
+            if (pago === 'Transferencia' && selectedTransferType) waMsg += ' (' + selectedTransferType + ')';
+            waMsg += '\n';
+            if (pago === 'Transferencia' && comprobanteFile) waMsg += '\uD83E\uDDFE Comprobante adjunto en el sistema\n';
             waMsg += '\uD83D\uDCB0 *Total: $' + fmt(subtotal) + '*';
             if (observaciones) waMsg += '\n\n\uD83D\uDCDD ' + observaciones;
 
@@ -2795,7 +2876,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 clientId = newClientRef.id;
             }
 
-            // 3. Crear pedido
+            // 3. Subir comprobante ANTES de crear el pedido para que el bot ya tenga la URL
+            let comprobanteUrl = '';
+            if (pago === 'Transferencia' && comprobanteFile) {
+                try {
+                    const ext = comprobanteFile.name.split('.').pop() || 'jpg';
+                    const sRef = storageRef(storage, `comprobantes/${Date.now()}.${ext}`);
+                    const snapshot = await uploadBytes(sRef, comprobanteFile);
+                    comprobanteUrl = await getDownloadURL(snapshot.ref);
+                } catch (uploadErr) {
+                    console.error('Error subiendo comprobante:', uploadErr);
+                }
+            }
+
+            // 4. Crear pedido con URL del comprobante ya incluida
             const pedidoData = {
                 clienteId: clientId,
                 clienteCedula: cedula,
@@ -2806,6 +2900,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 clienteDireccion: direccion,
                 observaciones: observaciones || '',
                 metodoPagoSolicitado: pago,
+                tipoTransferencia: pago === 'Transferencia' ? selectedTransferType : '',
+                comprobanteUrl: comprobanteUrl,
                 items: cart.map(item => ({
                     productoId: item.id || '',
                     codigo: item.codigo || '',
@@ -2865,6 +2961,9 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCart();
             saveCart();
             document.getElementById('checkout-form').reset();
+            coResetTransferState();
+            document.getElementById('transfer-payment-section').style.display = 'none';
+            document.querySelectorAll('.co-pay-card').forEach(b => b.classList.remove('active'));
 
             // Al presionar "Listo" cerrar overlay y restaurar formulario
             if (continueBtn) {
