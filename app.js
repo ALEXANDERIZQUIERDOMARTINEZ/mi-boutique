@@ -2838,35 +2838,32 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             const fmt = n => n.toLocaleString('es-CO');
             const localRef = Date.now().toString(36).slice(-6).toUpperCase();
-            const sep = '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500';
 
-            let waMsg = '\uD83D\uDECD\uFE0F *PEDIDO #' + localRef + '* \u2014 Mishell\'ES\n';
-            waMsg += sep + '\n\n';
+            let waMsg = '\uD83D\uDECD\uFE0F *PEDIDO #' + localRef + '* \u2014 Mishell\'ES\n\n';
 
             waMsg += '\uD83D\uDC64 *' + nombre + '*\n';
-            waMsg += '\uD83D\uDCDE ' + whatsapp + '   \uD83C\uDD94 CC: ' + cedula + '\n';
+            waMsg += '\uD83D\uDCDE ' + whatsapp + '\n';
+            waMsg += '\uD83C\uDD94 CC: ' + cedula + '\n';
             waMsg += '\uD83D\uDCCD ' + ciudad;
             if (barrio) waMsg += ', ' + barrio;
             waMsg += '\n\uD83C\uDFE0 ' + direccion + '\n\n';
 
-            waMsg += sep + '\n';
-            waMsg += '\uD83D\uDED2 *Productos*\n';
+            waMsg += '\uD83D\uDED2 *Productos:*\n';
             cart.forEach(item => {
                 const talla = item.talla && item.talla !== 'unica' ? ' T:' + item.talla : '';
                 const color = item.color && item.color !== 'unico' ? ' C:' + item.color : '';
                 waMsg += '\u2022 ' + item.nombre + talla + color + ' \u00d7' + item.cantidad + ' \u2014 $' + fmt(item.total) + '\n';
             });
-            waMsg += '\n' + sep + '\n';
+            waMsg += '\n';
 
             waMsg += '\uD83D\uDCB3 *Pago:* ' + pago;
-            if (pago === 'Transferencia' && selectedTransferType) waMsg += ' \u2014 ' + selectedTransferType;
+            if (pago === 'Transferencia' && selectedTransferType) waMsg += ' / ' + selectedTransferType;
             waMsg += '\n';
             if (comprobanteId) {
                 const origin = window.location.origin;
-                waMsg += '\uD83E\uDDFE *Ver comprobante:*\n' + origin + '/comprobante.html?id=' + comprobanteId + '\n';
+                waMsg += '\uD83E\uDDFE ' + origin + '/comprobante.html?id=' + comprobanteId + '\n';
             }
-            waMsg += '\n\uD83D\uDCB0 *TOTAL: $' + fmt(subtotal) + '*\n';
-            waMsg += sep;
+            waMsg += '\n\uD83D\uDCB0 *Total: $' + fmt(subtotal) + '*';
             if (observaciones) waMsg += '\n\n\uD83D\uDCDD ' + observaciones;
 
             const waUrl = `https://wa.me/573046084971?text=${encodeURIComponent(waMsg)}`;
