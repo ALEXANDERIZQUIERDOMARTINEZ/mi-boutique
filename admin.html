@@ -120,6 +120,9 @@
             <!-- Config / Accesos -->
             <div class="rail-group">
                 <span class="rail-group-label">Config</span>
+                <a class="rail-link" href="#config-pagos" data-tooltip="Config. Pagos">
+                    <i class="bi bi-qr-code"></i><span>Config. Pagos</span>
+                </a>
                 <a class="rail-link" href="#backup" data-tooltip="Backup">
                     <i class="bi bi-cloud-arrow-down"></i><span>Backup</span>
                 </a>
@@ -1420,6 +1423,43 @@
             <!-- ═══════════════════════════════════════════════════════════════════
                  SECCIÓN CHATBOT
                  ═══════════════════════════════════════════════════════════════════ -->
+
+            <!-- ═══════════════════════════════════════════════════════════════════
+                 SECCIÓN CONFIGURACIÓN DE PAGOS (QR Nequi)
+                 ═══════════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="config-pagos">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h2 mb-0"><i class="bi bi-qr-code me-2"></i>Configuración de Pagos</h1>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-white border-0 pt-3">
+                                <h3 class="h5 mb-0"><i class="bi bi-phone me-2"></i>QR de Nequi</h3>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small mb-3">Sube la imagen del QR de Nequi que aparecerá en el checkout para que los clientes puedan pagar.</p>
+                                <div id="admin-qr-preview-wrap" class="mb-3 text-center" style="display:none">
+                                    <img id="admin-qr-preview" src="" alt="QR actual" style="max-width:200px;border-radius:10px;border:1px solid #eee;">
+                                    <p class="text-success small mt-2 mb-0"><i class="bi bi-check-circle me-1"></i>QR configurado</p>
+                                </div>
+                                <div id="admin-qr-empty" class="mb-3 text-center text-muted small">
+                                    <i class="bi bi-qr-code" style="font-size:48px;opacity:.3;"></i>
+                                    <p class="mt-1 mb-0">Sin QR configurado</p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Seleccionar imagen del QR:</label>
+                                    <input type="file" class="form-control" id="admin-qr-input" accept="image/*">
+                                </div>
+                                <button class="btn btn-primary" id="admin-qr-save-btn" onclick="adminSaveNequiQr()">
+                                    <i class="bi bi-cloud-upload me-1"></i>Guardar QR
+                                </button>
+                                <div id="admin-qr-status" class="mt-2" style="display:none"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- ═══════════════════════════════════════════════════════════════════
                  SECCIÓN BACKUP/EXPORTACIÓN

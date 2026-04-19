@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, query, where, onSnapshot, updateDoc, doc } = require('firebase/firestore');
@@ -84,6 +84,22 @@ client.on('ready', async () => {
                     (pedido.comprobanteUrl ? `\n\n🧾 *Comprobante:*\n${pedido.comprobanteUrl}` : '');
 
                 await client.sendMessage(`${OWNER_PHONE}@c.us`, mensaje);
+
+                // Enviar comprobante como imagen si está disponible
+                if (pedido.comprobanteBase64) {
+                    try {
+                        const parts = pedido.comprobanteBase64.split(',');
+                        const mimeType = parts[0].match(/:(.*?);/)[1];
+                        const base64Data = parts[1];
+                        const media = new MessageMedia(mimeType, base64Data, 'comprobante.jpg');
+                        await client.sendMessage(`${OWNER_PHONE}@c.us`, media, {
+                            caption: `🧾 Comprobante de pago — Pedido #${pedidoId.slice(-6).toUpperCase()}`
+                        });
+                    } catch (mediaErr) {
+                        console.error('Error enviando comprobante:', mediaErr.message);
+                    }
+                }
+
                 console.log(`✅ Pedido #${pedidoId.slice(-6).toUpperCase()} notificado al dueño`);
 
             } catch (err) {
