@@ -2711,39 +2711,24 @@ document.addEventListener('DOMContentLoaded', () => {
         try { _waWindow = window.open('about:blank', '_blank'); } catch (_) {}
 
         // Construir y enviar mensaje WhatsApp AHORA (sin esperar Firebase)
-        // Emojis via String.fromCodePoint para evitar problemas de encoding del archivo
         {
-            const em = String.fromCodePoint;
-            const E = {
-                bag:   em(0x1F6CD) + '\uFE0F',  // 🛍️
-                clip:  em(0x1F4CB),              // 📋
-                user:  em(0x1F464),              // 👤
-                phone: em(0x1F4DE),              // 📞
-                id:    em(0x1F194),              // 🆔
-                pin:   em(0x1F4CD),              // 📍
-                cart:  em(0x1F6D2),              // 🛒
-                card:  em(0x1F4B3),              // 💳
-                money: em(0x1F4B0),              // 💰
-                box:   em(0x1F4E6),              // 📦
-                note:  em(0x1F4DD),              // 📝
-            };
             const fmt = n => n.toLocaleString('es-CO');
             const localRef = Date.now().toString(36).slice(-6).toUpperCase();
-            let waMsg = `${E.bag} Hola! Acabo de hacer un pedido\n\n`;
-            waMsg += `${E.clip} *Pedido #${localRef}*\n`;
-            waMsg += `${E.user} ${nombre}\n`;
-            waMsg += `${E.phone} ${whatsapp}\n`;
-            waMsg += `${E.id} Cedula: ${cedula}\n`;
-            waMsg += `${E.pin} ${ciudad}`;
-            if (barrio) waMsg += `, ${barrio}`;
-            waMsg += `\n   ${direccion}\n\n`;
-            waMsg += `${E.cart} *Productos:*\n`;
+            let waMsg = '\uD83D\uDECD\uFE0F Hola! Acabo de hacer un pedido\n\n';
+            waMsg += '\uD83D\uDCCB *Pedido #' + localRef + '*\n';
+            waMsg += '\uD83D\uDC64 ' + nombre + '\n';
+            waMsg += '\uD83D\uDCDE ' + whatsapp + '\n';
+            waMsg += '\uD83C\uDD94 Cedula: ' + cedula + '\n';
+            waMsg += '\uD83D\uDCCD ' + ciudad;
+            if (barrio) waMsg += ', ' + barrio;
+            waMsg += '\n   ' + direccion + '\n\n';
+            waMsg += '\uD83D\uDED2 *Productos:*\n';
             cart.forEach(item => {
-                waMsg += `\u2022 ${item.nombre} T:${item.talla} C:${item.color} x${item.cantidad} \u2014 $${fmt(item.total)}\n`;
+                waMsg += '\u2022 ' + item.nombre + ' T:' + item.talla + ' C:' + item.color + ' x' + item.cantidad + ' \u2014 $' + fmt(item.total) + '\n';
             });
-            waMsg += `\n${E.card} *Pago:* ${pago}\n`;
-            waMsg += `${E.money} *Total: $${fmt(subtotal)}*`;
-            if (observaciones) waMsg += `\n\n${E.note} ${observaciones}`;
+            waMsg += '\n\uD83D\uDCB3 *Pago:* ' + pago + '\n';
+            waMsg += '\uD83D\uDCB0 *Total: $' + fmt(subtotal) + '*';
+            if (observaciones) waMsg += '\n\n\uD83D\uDCDD ' + observaciones;
 
             const waUrl = `https://wa.me/573046084971?text=${encodeURIComponent(waMsg)}`;
             if (_waWindow) {
