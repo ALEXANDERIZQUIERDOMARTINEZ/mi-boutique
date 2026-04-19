@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comprobante de Pago</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,sans-serif;background:#f4f4f4;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:#fff;border-radius:18px;box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:480px;width:100%;overflow:hidden}
+    .card-header{background:linear-gradient(135deg,#D988B9,#C273A2);padding:20px 24px;text-align:center;color:#fff}
+    .card-header h1{font-size:18px;font-weight:700;margin-top:6px}
+    .card-header p{font-size:13px;opacity:.85;margin-top:4px}
+    .card-body{padding:20px}
+    #comp-img{width:100%;border-radius:10px;display:block;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+    #status{text-align:center;padding:40px 20px;color:#888;font-size:15px}
+    .spinner{width:36px;height:36px;border:3px solid #eee;border-top-color:#D988B9;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .btn-download{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;background:#D988B9;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;width:100%}
+    .btn-download:hover{background:#C273A2}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header">
+      <div style="font-size:28px">🧾</div>
+      <h1>Comprobante de Pago</h1>
+      <p>Mi Boutique</p>
+    </div>
+    <div class="card-body">
+      <div id="status"><div class="spinner"></div>Cargando comprobante...</div>
+      <img id="comp-img" style="display:none" alt="Comprobante de pago">
+      <a id="btn-download" href="#" download="comprobante.jpg" class="btn-download" style="display:none">
+        ⬇ Descargar imagen
+      </a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
+      authDomain: "mishell-boutique-admin.firebaseapp.com",
+      projectId: "mishell-boutique-admin",
+      storageBucket: "mishell-boutique-admin.firebasestorage.app",
+      messagingSenderId: "399662956877",
+      appId: "1:399662956877:web:084236f5bb3cf6f0a8f704"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const statusEl = document.getElementById('status');
+    const imgEl = document.getElementById('comp-img');
+    const dlBtn = document.getElementById('btn-download');
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+
+    if (!id) {
+      statusEl.innerHTML = '❌ Link inválido';
+    } else {
+      try {
+        const snap = await getDoc(doc(db, 'comprobantes', id));
+        if (snap.exists() && snap.data().imageBase64) {
+          const base64 = snap.data().imageBase64;
+          imgEl.src = base64;
+          imgEl.style.display = 'block';
+          dlBtn.href = base64;
+          dlBtn.style.display = 'flex';
+          statusEl.style.display = 'none';
+        } else {
+          statusEl.innerHTML = '🔍 Comprobante no encontrado';
+        }
+      } catch (e) {
+        statusEl.innerHTML = '⚠️ Error al cargar el comprobante';
+      }
+    }
+  </script>
+</body>
+</html>
