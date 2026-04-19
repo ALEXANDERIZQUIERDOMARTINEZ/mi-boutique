@@ -1,7 +1,6 @@
 // --- IMPORTACIONES DE FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
@@ -19,7 +18,6 @@ const firebaseConfig = {
 // --- INICIALIZACIÓN Y GLOBALES ---
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
 const productsCollection = collection(db, 'productos');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const promocionesCollection = collection(db, 'promociones');
@@ -43,6 +41,25 @@ function openWhatsApp(url) {
     document.body.removeChild(a);
 }
 
+
+// --- Comprime imagen con Canvas y devuelve data URL JPEG ---
+function compressImage(file, maxWidth = 1200, quality = 0.7) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            let { width, height } = img;
+            if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            URL.revokeObjectURL(url);
+            resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+        img.src = url;
+    });
+}
 
 let bsToast = null;
 let cart = [];
@@ -2608,13 +2625,37 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Seleccionar tipo de transferencia (Nequi / Bancolombia)
-    window.coSelectTransferType = function(type, btn) {
+    window.coSelectTransferType = async function(type, btn) {
         document.querySelectorAll('.co-transfer-card').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
         selectedTransferType = type;
         document.getElementById('nequi-panel').style.display = type === 'Nequi' ? 'flex' : 'none';
         document.getElementById('bancolombia-panel').style.display = type === 'Bancolombia' ? 'flex' : 'none';
         document.getElementById('comprobante-section').style.display = 'flex';
+
+        // Cargar QR de Nequi desde Firestore si aún no está cargado
+        if (type === 'Nequi') {
+            const qrImg = document.getElementById('nequi-qr-img');
+            if (qrImg && !qrImg.dataset.loaded) {
+                try {
+                    const snap = await getDoc(doc(db, 'config', 'pagos'));
+                    const qrBase64 = snap.exists() ? snap.data().nequiQrBase64 : null;
+                    if (qrBase64) {
+                        qrImg.src = qrBase64;
+                        qrImg.style.display = 'block';
+                        const dlBtn = document.getElementById('nequi-qr-download');
+                        if (dlBtn) { dlBtn.href = qrBase64; dlBtn.style.display = 'inline-flex'; }
+                        qrImg.dataset.loaded = '1';
+                    } else {
+                        qrImg.style.display = 'none';
+                        document.getElementById('nequi-qr-placeholder').style.display = 'block';
+                    }
+                } catch (_) {
+                    qrImg.style.display = 'none';
+                    document.getElementById('nequi-qr-placeholder').style.display = 'block';
+                }
+            }
+        }
     };
 
     function coResetTransferState() {
@@ -2876,20 +2917,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 clientId = newClientRef.id;
             }
 
-            // 3. Subir comprobante ANTES de crear el pedido para que el bot ya tenga la URL
-            let comprobanteUrl = '';
+            // 3. Comprimir comprobante con Canvas y obtener base64 (sin Firebase Storage)
+            let comprobanteBase64 = '';
             if (pago === 'Transferencia' && comprobanteFile) {
                 try {
-                    const ext = comprobanteFile.name.split('.').pop() || 'jpg';
-                    const sRef = storageRef(storage, `comprobantes/${Date.now()}.${ext}`);
-                    const snapshot = await uploadBytes(sRef, comprobanteFile);
-                    comprobanteUrl = await getDownloadURL(snapshot.ref);
-                } catch (uploadErr) {
-                    console.error('Error subiendo comprobante:', uploadErr);
+                    comprobanteBase64 = await compressImage(comprobanteFile) || '';
+                } catch (compressErr) {
+                    console.error('Error comprimiendo comprobante:', compressErr);
                 }
             }
 
-            // 4. Crear pedido con URL del comprobante ya incluida
+            // 4. Crear pedido con el comprobante ya incluido
             const pedidoData = {
                 clienteId: clientId,
                 clienteCedula: cedula,
@@ -2901,7 +2939,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 observaciones: observaciones || '',
                 metodoPagoSolicitado: pago,
                 tipoTransferencia: pago === 'Transferencia' ? selectedTransferType : '',
-                comprobanteUrl: comprobanteUrl,
+                comprobanteBase64: comprobanteBase64,
                 items: cart.map(item => ({
                     productoId: item.id || '',
                     codigo: item.codigo || '',

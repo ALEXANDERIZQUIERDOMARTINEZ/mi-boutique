@@ -1,6 +1,6 @@
 // Import Firebase core and Firestore modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 // Import Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
@@ -11225,5 +11225,74 @@ console.log("✅ Módulo de Promociones Globales inicializado");
 // ========================================================================
 // NOTA: El manejo del sidebar toggle se hace en admin.html mediante script inline
 // para evitar conflictos con event listeners duplicados
+
+// ========================================================================
+// --- CONFIGURACIÓN DE PAGOS: QR Nequi ---
+// ========================================================================
+
+async function loadNequiQrPreview() {
+    try {
+        const snap = await getDoc(doc(db, 'config', 'pagos'));
+        const emptyEl = document.getElementById('admin-qr-empty');
+        const previewWrap = document.getElementById('admin-qr-preview-wrap');
+        const previewImg = document.getElementById('admin-qr-preview');
+        if (!emptyEl || !previewWrap || !previewImg) return;
+        if (snap.exists() && snap.data().nequiQrBase64) {
+            previewImg.src = snap.data().nequiQrBase64;
+            previewWrap.style.display = 'block';
+            emptyEl.style.display = 'none';
+        } else {
+            previewWrap.style.display = 'none';
+            emptyEl.style.display = 'block';
+        }
+    } catch (_) {}
+}
+
+window.adminSaveNequiQr = async function() {
+    const input = document.getElementById('admin-qr-input');
+    const statusEl = document.getElementById('admin-qr-status');
+    const btn = document.getElementById('admin-qr-save-btn');
+    if (!input || !input.files || !input.files[0]) {
+        showToast('Selecciona una imagen primero', 'error'); return;
+    }
+    const file = input.files[0];
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+    try {
+        const base64 = await new Promise((resolve) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                let { width, height } = img;
+                const maxW = 400;
+                if (width > maxW) { height = Math.round((height * maxW) / width); width = maxW; }
+                const canvas = document.createElement('canvas');
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                URL.revokeObjectURL(url);
+                resolve(canvas.toDataURL('image/png', 1.0));
+            };
+            img.src = url;
+        });
+        await setDoc(doc(db, 'config', 'pagos'), { nequiQrBase64: base64 }, { merge: true });
+        showToast('✅ QR de Nequi guardado correctamente', 'success');
+        statusEl.style.display = 'none';
+        input.value = '';
+        await loadNequiQrPreview();
+    } catch (err) {
+        console.error('Error guardando QR:', err);
+        showToast('Error al guardar el QR: ' + err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-cloud-upload me-1"></i>Guardar QR';
+    }
+};
+
+// Cargar preview del QR cuando se navega a la sección
+document.addEventListener('click', (e) => {
+    if (e.target.closest('a[href="#config-pagos"]')) {
+        setTimeout(loadNequiQrPreview, 100);
+    }
+});
 
 });

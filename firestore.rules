@@ -438,6 +438,18 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // REGLAS CONFIG - QR y configuración pública de la tienda
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /config/{docId} {
+      // Lectura pública (catálogo necesita leer el QR de Nequi)
+      allow read: if true;
+      // Solo usuarios admin autenticados pueden escribir
+      allow create, update: if isActiveUser();
+      allow delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // DENEGAR ACCESO A CUALQUIER OTRA COLECCIÓN NO ESPECIFICADA
     // ═══════════════════════════════════════════════════════════════════
 
