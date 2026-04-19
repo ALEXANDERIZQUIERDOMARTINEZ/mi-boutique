@@ -1,6 +1,6 @@
 // --- IMPORTACIONES DE FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
@@ -2825,6 +2825,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return; // Cancelar la compra
         }
 
+        // Generar ID de comprobante antes de abrir WhatsApp (para incluir el link en el mensaje)
+        const comprobanteId = (pago === 'Transferencia' && comprobanteFile)
+            ? (Date.now().toString(36) + Math.random().toString(36).substring(2, 8))
+            : null;
+
         // Abrir ventana en blanco ANTES del primer await para evitar bloqueo de popups en móvil
         let _waWindow = null;
         try { _waWindow = window.open('about:blank', '_blank'); } catch (_) {}
@@ -2848,7 +2853,10 @@ document.addEventListener('DOMContentLoaded', () => {
             waMsg += '\n\uD83D\uDCB3 *Pago:* ' + pago;
             if (pago === 'Transferencia' && selectedTransferType) waMsg += ' (' + selectedTransferType + ')';
             waMsg += '\n';
-            if (pago === 'Transferencia' && comprobanteFile) waMsg += '\uD83E\uDDFE Comprobante adjunto en el sistema\n';
+            if (comprobanteId) {
+                const origin = window.location.origin;
+                waMsg += '\uD83E\uDDFE *Comprobante:* ' + origin + '/comprobante.html?id=' + comprobanteId + '\n';
+            }
             waMsg += '\uD83D\uDCB0 *Total: $' + fmt(subtotal) + '*';
             if (observaciones) waMsg += '\n\n\uD83D\uDCDD ' + observaciones;
 
@@ -2863,6 +2871,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            // 0. Comprimir y guardar comprobante en colección pública (con ID pre-generado)
+            let comprobanteBase64 = '';
+            if (comprobanteId && comprobanteFile) {
+                try {
+                    comprobanteBase64 = await compressImage(comprobanteFile) || '';
+                    if (comprobanteBase64) {
+                        await setDoc(doc(db, 'comprobantes', comprobanteId), {
+                            imageBase64: comprobanteBase64,
+                            timestamp: serverTimestamp()
+                        });
+                    }
+                } catch (compErr) {
+                    console.error('Error guardando comprobante:', compErr);
+                }
+            }
+
             // 1. Guardar barrio personalizado si es nuevo
             if (barrio && ciudad && neighborhoodsByCity[ciudad]) {
                 const isPredefined = neighborhoodsByCity[ciudad].includes(barrio);
@@ -2917,17 +2941,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 clientId = newClientRef.id;
             }
 
-            // 3. Comprimir comprobante con Canvas y obtener base64 (sin Firebase Storage)
-            let comprobanteBase64 = '';
-            if (pago === 'Transferencia' && comprobanteFile) {
-                try {
-                    comprobanteBase64 = await compressImage(comprobanteFile) || '';
-                } catch (compressErr) {
-                    console.error('Error comprimiendo comprobante:', compressErr);
-                }
-            }
-
-            // 4. Crear pedido con el comprobante ya incluido
+            // 3. Crear pedido (comprobanteBase64 ya fue guardado en colección pública)
             const pedidoData = {
                 clienteId: clientId,
                 clienteCedula: cedula,
@@ -2939,6 +2953,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 observaciones: observaciones || '',
                 metodoPagoSolicitado: pago,
                 tipoTransferencia: pago === 'Transferencia' ? selectedTransferType : '',
+                comprobanteId: comprobanteId || '',
                 comprobanteBase64: comprobanteBase64,
                 items: cart.map(item => ({
                     productoId: item.id || '',

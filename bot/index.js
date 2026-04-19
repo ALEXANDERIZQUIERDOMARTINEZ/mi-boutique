@@ -81,7 +81,7 @@ client.on('ready', async () => {
                     `💳 Pago: ${pagoStr}\n` +
                     `📦 Envío: ${formatPrecio(pedido.costoEnvio || 0)}\n` +
                     `💰 *Total: ${formatPrecio(pedido.totalPedido)}*` +
-                    (pedido.comprobanteUrl ? `\n\n🧾 *Comprobante:*\n${pedido.comprobanteUrl}` : '');
+                    (pedido.comprobanteId ? `\n\n🧾 *Ver comprobante:*\nhttps://mi-boutique.vercel.app/comprobante.html?id=${pedido.comprobanteId}` : '');
 
                 await client.sendMessage(`${OWNER_PHONE}@c.us`, mensaje);
 

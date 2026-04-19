@@ -438,6 +438,18 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // REGLAS COMPROBANTES - Imágenes de pago (acceso público de solo lectura)
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /comprobantes/{comprobanteId} {
+      // Cualquiera puede leer (el admin ve la imagen desde el link en WhatsApp)
+      allow read: if true;
+      // Solo crear, nunca modificar ni borrar
+      allow create: if true;
+      allow update, delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // REGLAS CONFIG - QR y configuración pública de la tienda
     // ═══════════════════════════════════════════════════════════════════
 
