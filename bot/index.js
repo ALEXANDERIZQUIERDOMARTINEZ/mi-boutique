@@ -68,25 +68,21 @@ client.on('ready', async () => {
                     .join('\n');
 
                 const tipo = pedido.tipoVenta === 'Mayorista' ? '🏪 MAYORISTA' : '🛍️ DETAL';
-                const sep = '────────────────────';
                 const pagoStr = pedido.metodoPagoSolicitado +
-                    (pedido.tipoTransferencia ? ' — ' + pedido.tipoTransferencia : '');
+                    (pedido.tipoTransferencia ? ' / ' + pedido.tipoTransferencia : '');
 
                 const mensaje =
-                    `🔔 *NUEVO PEDIDO #${pedidoId.slice(-6).toUpperCase()}* (${tipo})\n` +
-                    `${sep}\n\n` +
+                    `🔔 *NUEVO PEDIDO #${pedidoId.slice(-6).toUpperCase()}* (${tipo})\n\n` +
                     `👤 *${pedido.clienteNombre}*\n` +
-                    `📞 ${pedido.clienteCelular}   🪪 CC: ${pedido.clienteCedula}\n` +
+                    `📞 ${pedido.clienteCelular}\n` +
+                    `🪪 CC: ${pedido.clienteCedula}\n` +
                     `📍 ${pedido.clienteCiudad}${pedido.clienteBarrio ? ', ' + pedido.clienteBarrio : ''}\n` +
                     `🏠 ${pedido.clienteDireccion}\n\n` +
-                    `${sep}\n` +
-                    `🛒 *Productos*\n${items}\n\n` +
-                    `${sep}\n` +
+                    `🛒 *Productos:*\n${items}\n\n` +
                     `💳 *Pago:* ${pagoStr}\n` +
                     `📦 Envío: ${formatPrecio(pedido.costoEnvio || 0)}\n` +
-                    (pedido.comprobanteId ? `🧾 *Comprobante:*\nhttps://mi-boutique.vercel.app/comprobante.html?id=${pedido.comprobanteId}\n` : '') +
-                    `\n💰 *TOTAL: ${formatPrecio(pedido.totalPedido)}*\n` +
-                    sep +
+                    (pedido.comprobanteId ? `🧾 https://mi-boutique.vercel.app/comprobante.html?id=${pedido.comprobanteId}\n` : '') +
+                    `\n💰 *Total: ${formatPrecio(pedido.totalPedido)}*` +
                     (pedido.observaciones ? `\n\n📝 ${pedido.observaciones}` : '');
 
                 await client.sendMessage(`${OWNER_PHONE}@c.us`, mensaje);
