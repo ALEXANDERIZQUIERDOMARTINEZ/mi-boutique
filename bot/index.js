@@ -60,28 +60,34 @@ client.on('ready', async () => {
                 await updateDoc(doc(db, 'pedidosWeb', pedidoId), { notificadoBot: true });
 
                 const items = (pedido.items || [])
-                    .map(i => `  • ${i.nombre}${i.talla ? ' T:' + i.talla : ''}${i.color ? ' C:' + i.color : ''} x${i.cantidad} — ${formatPrecio(i.total || i.precio * i.cantidad)}`)
+                    .map(i => {
+                        const t = i.talla && i.talla !== 'unica' ? ' T:' + i.talla : '';
+                        const c = i.color && i.color !== 'unico' ? ' C:' + i.color : '';
+                        return `  • ${i.nombre}${t}${c} ×${i.cantidad} — ${formatPrecio(i.total || i.precio * i.cantidad)}`;
+                    })
                     .join('\n');
 
-                const tipo = pedido.tipoVenta === 'Mayorista' ? '🏪 *MAYORISTA*' : '🛍️ *DETAL*';
-
+                const tipo = pedido.tipoVenta === 'Mayorista' ? '🏪 MAYORISTA' : '🛍️ DETAL';
+                const sep = '────────────────────';
                 const pagoStr = pedido.metodoPagoSolicitado +
-                    (pedido.tipoTransferencia ? ` (${pedido.tipoTransferencia})` : '');
+                    (pedido.tipoTransferencia ? ' — ' + pedido.tipoTransferencia : '');
 
                 const mensaje =
-                    `🔔 *NUEVO PEDIDO* #${pedidoId.slice(-6).toUpperCase()}\n` +
-                    `${tipo}\n\n` +
-                    `👤 ${pedido.clienteNombre}\n` +
-                    `📞 ${pedido.clienteCelular}\n` +
-                    `🪪 CC: ${pedido.clienteCedula}\n` +
+                    `🔔 *NUEVO PEDIDO #${pedidoId.slice(-6).toUpperCase()}* (${tipo})\n` +
+                    `${sep}\n\n` +
+                    `👤 *${pedido.clienteNombre}*\n` +
+                    `📞 ${pedido.clienteCelular}   🪪 CC: ${pedido.clienteCedula}\n` +
                     `📍 ${pedido.clienteCiudad}${pedido.clienteBarrio ? ', ' + pedido.clienteBarrio : ''}\n` +
-                    `   ${pedido.clienteDireccion}\n` +
-                    (pedido.observaciones ? `📝 ${pedido.observaciones}\n` : '') +
-                    `\n*Productos:*\n${items}\n\n` +
-                    `💳 Pago: ${pagoStr}\n` +
+                    `🏠 ${pedido.clienteDireccion}\n\n` +
+                    `${sep}\n` +
+                    `🛒 *Productos*\n${items}\n\n` +
+                    `${sep}\n` +
+                    `💳 *Pago:* ${pagoStr}\n` +
                     `📦 Envío: ${formatPrecio(pedido.costoEnvio || 0)}\n` +
-                    `💰 *Total: ${formatPrecio(pedido.totalPedido)}*` +
-                    (pedido.comprobanteId ? `\n\n🧾 *Ver comprobante:*\nhttps://mi-boutique.vercel.app/comprobante.html?id=${pedido.comprobanteId}` : '');
+                    (pedido.comprobanteId ? `🧾 *Comprobante:*\nhttps://mi-boutique.vercel.app/comprobante.html?id=${pedido.comprobanteId}\n` : '') +
+                    `\n💰 *TOTAL: ${formatPrecio(pedido.totalPedido)}*\n` +
+                    sep +
+                    (pedido.observaciones ? `\n\n📝 ${pedido.observaciones}` : '');
 
                 await client.sendMessage(`${OWNER_PHONE}@c.us`, mensaje);
 
