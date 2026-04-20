@@ -2167,7 +2167,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             batch.update(productoRef, {
                                 variaciones: variacionesConStockCero,
                                 updatedAt: new Date(),
-                                actualizadoPor: auth.currentUser?.uid || 'unknown'
+                                actualizadoPor: window.appContext?.userId || 'unknown'
                             });
 
                             contadorActualizados++;
