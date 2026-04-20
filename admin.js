@@ -1588,6 +1588,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderColorPreview(previewEl, stateItem.imagenes, stateItem.newFiles);
                 fileInput.value = ''; // resetear para permitir re-selección
                 bindPreviewEvents(previewEl, stateItem);
+                updateMiniPreview();
             });
 
             // Delegar eventos en el preview (eliminar / cambiar ángulo)
@@ -1998,6 +1999,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         productData.imagenUrl = existingDoc?.imagenUrl || null;
                     }
                     await updateDoc(doc(db, "productos", productId), productData);
+                    imagenInput.value = '';
                     showToast("Producto actualizado!");
 
                     // ✅ AUTO-SCROLL: Cambiar a vista de inventario y hacer scroll
@@ -2077,6 +2079,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const mostrarFotoCheckbox = document.getElementById('mostrar-foto-principal');
                         if (mostrarFotoCheckbox) mostrarFotoCheckbox.checked = product.mostrarFotoPrincipal !== false;
                         imagenInput.required = false;
+                        imagenInput.value = '';
                         document.getElementById('product-form-title').textContent = `Editando: ${product.nombre}`;
                         
                         variationsContainer.innerHTML = '';
