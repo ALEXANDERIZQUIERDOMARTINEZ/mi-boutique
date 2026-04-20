@@ -1419,9 +1419,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button class="btn btn-action btn-action-edit btn-edit-product">
                                         <i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span>
                                     </button>
-                                    <button class="btn btn-action btn-action-warning btn-reset-stock-product" title="Poner stock en 0">
-                                        <i class="bi bi-dash-circle"></i><span class="btn-action-text">Reset Stock</span>
-                                    </button>
                                     <button class="btn btn-action btn-action-delete btn-delete-product">
                                         <i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span>
                                     </button>
@@ -2046,22 +2043,6 @@ document.addEventListener('DOMContentLoaded', () => {
                  const producto = localProductsMap.get(id);
                  if (producto && window.mostrarBarcodeModal) {
                      window.mostrarBarcodeModal(producto);
-                 }
-             } else if (target.classList.contains('btn-reset-stock-product')) {
-                 if (!checkPermission('productos_editar', 'modificar el inventario')) return;
-                 const producto = localProductsMap.get(id);
-                 if (!producto) { showToast('Producto no encontrado.', 'error'); return; }
-                 const nombreProducto = nameTd.firstChild.textContent;
-                 const confirmar = confirm(`¿Poner el stock de "${nombreProducto}" en 0?\n\nTodas las variaciones quedarán sin stock.`);
-                 if (!confirmar) return;
-                 try {
-                     const variacionesReset = (producto.variaciones || []).map(v => ({ ...v, stock: 0 }));
-                     const productRef = doc(db, 'productos', id);
-                     await updateDoc(productRef, { variaciones: variacionesReset });
-                     showToast(`Stock de "${nombreProducto}" puesto en 0.`, 'success');
-                 } catch (err) {
-                     console.error('Error al resetear stock:', err);
-                     showToast(`Error al resetear stock: ${err.message}`, 'error');
                  }
              } else if (target.classList.contains('btn-delete-product')) {
                  const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'productos'; deleteItemNameEl.textContent = `Producto: ${nameTd.firstChild.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
