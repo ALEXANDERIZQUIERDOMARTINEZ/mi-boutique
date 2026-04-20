@@ -2113,11 +2113,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnResetAllInventory = document.getElementById('btn-reset-all-inventory');
         if (btnResetAllInventory) {
             btnResetAllInventory.addEventListener('click', async () => {
-                // ✅ VALIDACIÓN DE PERMISOS
-                if (!checkPermission('productos_editar', 'modificar el inventario')) {
-                    return;
-                }
-
                 // Confirmación con advertencia
                 const confirmacion = confirm(
                     '⚠️ ADVERTENCIA: Esta acción pondrá el stock de TODOS los productos en 0.\n\n' +
