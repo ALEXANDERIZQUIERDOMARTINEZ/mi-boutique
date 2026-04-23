@@ -2839,32 +2839,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const fmt = n => n.toLocaleString('es-CO');
             const localRef = Date.now().toString(36).slice(-6).toUpperCase();
 
-            let waMsg = '\uD83D\uDECD\uFE0F *PEDIDO #' + localRef + '* \u2014 Mishell\'ES\n\n';
+            let waMsg = `🛍️ *PEDIDO #${localRef}* — Mishell'ES\n\n`;
 
-            waMsg += '\uD83D\uDC64 *' + nombre + '*\n';
-            waMsg += '\uD83D\uDCDE ' + whatsapp + '\n';
-            waMsg += '\uD83C\uDD94 CC: ' + cedula + '\n';
-            waMsg += '\uD83D\uDCCD ' + ciudad;
+            waMsg += `👤 *${nombre}*\n`;
+            waMsg += `📞 ${whatsapp}\n`;
+            waMsg += `🪪 CC: ${cedula}\n`;
+            waMsg += `📍 ${ciudad}`;
             if (barrio) waMsg += ', ' + barrio;
-            waMsg += '\n\uD83C\uDFE0 ' + direccion + '\n\n';
+            waMsg += `\n🏠 ${direccion}\n\n`;
 
-            waMsg += '\uD83D\uDED2 *Productos:*\n';
+            waMsg += `🛒 *Productos:*\n`;
             cart.forEach(item => {
                 const talla = item.talla && item.talla !== 'unica' ? ' T:' + item.talla : '';
                 const color = item.color && item.color !== 'unico' ? ' C:' + item.color : '';
-                waMsg += '\u2022 ' + item.nombre + talla + color + ' \u00d7' + item.cantidad + ' \u2014 $' + fmt(item.total) + '\n';
+                waMsg += `• ${item.nombre}${talla}${color} ×${item.cantidad} — $${fmt(item.total)}\n`;
             });
             waMsg += '\n';
 
-            waMsg += '\uD83D\uDCB3 *Pago:* ' + pago;
+            waMsg += `💳 *Pago:* ${pago}`;
             if (pago === 'Transferencia' && selectedTransferType) waMsg += ' / ' + selectedTransferType;
             waMsg += '\n';
             if (comprobanteId) {
                 const origin = window.location.origin;
-                waMsg += '\uD83E\uDDFE ' + origin + '/comprobante.html?id=' + comprobanteId + '\n';
+                waMsg += `🧾 ${origin}/comprobante.html?id=${comprobanteId}\n`;
             }
-            waMsg += '\n\uD83D\uDCB0 *Total: $' + fmt(subtotal) + '*';
-            if (observaciones) waMsg += '\n\n\uD83D\uDCDD ' + observaciones;
+            waMsg += `\n💰 *Total: $${fmt(subtotal)}*`;
+            if (observaciones) waMsg += `\n\n📝 ${observaciones}`;
 
             const waUrl = `https://wa.me/573046084971?text=${encodeURIComponent(waMsg)}`;
             if (_waWindow) {
