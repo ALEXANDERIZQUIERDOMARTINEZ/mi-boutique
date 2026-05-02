@@ -2342,17 +2342,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Tarifas cargadas desde Firestore (o defaults si falla)
+    let _tarifasDomicilio = {
+        centro: ZONAS_MONTERIA.centro.tarifa,
+        margenIzquierda: ZONAS_MONTERIA.margenIzquierda.tarifa,
+        norte: ZONAS_MONTERIA.norte.tarifa
+    };
+
+    // Cargar tarifas desde Firestore al iniciar
+    (async () => {
+        try {
+            const snap = await getDoc(doc(db, 'config', 'domicilioTarifas'));
+            if (snap.exists()) {
+                const d = snap.data();
+                if (d.centro != null) _tarifasDomicilio.centro = d.centro;
+                if (d.margenIzquierda != null) _tarifasDomicilio.margenIzquierda = d.margenIzquierda;
+                if (d.norte != null) _tarifasDomicilio.norte = d.norte;
+            }
+        } catch (_) { /* usar defaults */ }
+    })();
+
     function calcularCostoEnvio(ciudad, barrio) {
         if (!ciudad || ciudad !== 'Montería') return 0;
         if (!barrio) return 0;
         const barrioNorm = barrio.trim().toLowerCase();
-        for (const zona of Object.values(ZONAS_MONTERIA)) {
+        const zonas = [
+            { barrios: ZONAS_MONTERIA.margenIzquierda.barrios, tarifa: _tarifasDomicilio.margenIzquierda },
+            { barrios: ZONAS_MONTERIA.norte.barrios, tarifa: _tarifasDomicilio.norte },
+            { barrios: ZONAS_MONTERIA.centro.barrios, tarifa: _tarifasDomicilio.centro }
+        ];
+        for (const zona of zonas) {
             if (zona.barrios.some(b => b.toLowerCase() === barrioNorm)) {
                 return zona.tarifa;
             }
         }
         // Barrio no clasificado en Montería → tarifa centro por defecto
-        return ZONAS_MONTERIA.centro.tarifa;
+        return _tarifasDomicilio.centro;
     }
 
     // Definir barrios por ciudad

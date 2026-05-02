@@ -11186,4 +11186,132 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// TARIFAS DE DOMICILIO — Montería
+// ═══════════════════════════════════════════════════════════════════
+
+const ZONAS_DOMICILIO_DEFAULT = {
+    centro: {
+        tarifa: 5000,
+        label: 'Centro / Este del río',
+        barrios: [
+            'Cantaclaro', 'Centro', 'El Dorado', 'El Poblado', 'La Granja',
+            'La Ribera', 'Los Colores', 'Mogambo', 'Pastrana', 'Policarpa',
+            'Villa Cielo', 'Villa Margarita', 'Villa Melissa', 'Boston',
+            'Buenavista', 'La Castellana', 'Las Palmas', 'La Pradera',
+            'Los Alpes', 'Los Cerezos', 'Madre Bernarda', 'Panamericano',
+            'Santa Lucía', 'Santa Rosa', 'Sierra Chiquita', 'Sor Teresa Demjanovich',
+            'Unidad Deportiva', 'Urbanización 7 de Agosto', 'Villa Country',
+            'Villa Gabriela', 'Villa del Río', 'Alamedas del Sinú',
+            'El Carmelo', 'La Candelaria', 'La Estancia', 'Los Búcaros',
+            'Los Manguitos', 'Nuevo Horizonte', 'Patio Bonito', 'Ranchos del INAT',
+            'Tres Piedras', 'Villa Caribe', 'Villa Rosa'
+        ]
+    },
+    margenIzquierda: {
+        tarifa: 6000,
+        label: 'Margen Izquierda',
+        barrios: [
+            'P5', 'Barrio P5', 'Edmundo López', 'La Campiña', 'Los Araujos',
+            'Panzenú', 'Cantarranas', 'El Níspero', 'Villa Paz', 'Los Nogales',
+            'Minuto de Dios', 'Betania', 'El Paraíso', 'La Florida',
+            'Nuevo Milenio', 'Rancho Grande', 'Villa del Mar'
+        ]
+    },
+    norte: {
+        tarifa: 6000,
+        label: 'Norte',
+        barrios: [
+            'Mocarí', 'Robinson Pitalúa', 'Los Laureles', 'Villa del Rosario',
+            'La Granja Norte', 'El Recreo', 'Villa Natalia', 'Los Nogales Norte',
+            'Urbanización el Norte', 'Villa del Norte', 'El Alivio',
+            'Furatena', 'Los Cedros', 'Villa Orieta'
+        ]
+    }
+};
+
+async function loadDomicilioTarifas() {
+    try {
+        const snap = await getDoc(doc(db, 'config', 'domicilioTarifas'));
+        const data = snap.exists() ? snap.data() : {};
+
+        document.getElementById('tarifa-centro').value = data.centro ?? ZONAS_DOMICILIO_DEFAULT.centro.tarifa;
+        document.getElementById('tarifa-margen').value = data.margenIzquierda ?? ZONAS_DOMICILIO_DEFAULT.margenIzquierda.tarifa;
+        document.getElementById('tarifa-norte').value = data.norte ?? ZONAS_DOMICILIO_DEFAULT.norte.tarifa;
+
+        // Mostrar última actualización
+        if (data.updatedAt) {
+            const d = data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt);
+            document.getElementById('tarifas-last-update').textContent =
+                'Última actualización: ' + d.toLocaleString('es-CO');
+        } else {
+            document.getElementById('tarifas-last-update').textContent = 'Usando valores predeterminados.';
+        }
+
+        // Renderizar listas de barrios
+        renderBarriosList('barrios-centro-list', ZONAS_DOMICILIO_DEFAULT.centro.barrios);
+        renderBarriosList('barrios-margen-list', ZONAS_DOMICILIO_DEFAULT.margenIzquierda.barrios);
+        renderBarriosList('barrios-norte-list', ZONAS_DOMICILIO_DEFAULT.norte.barrios);
+    } catch (err) {
+        console.error('Error cargando tarifas:', err);
+        // Cargar defaults aunque falle Firestore
+        document.getElementById('tarifa-centro').value = ZONAS_DOMICILIO_DEFAULT.centro.tarifa;
+        document.getElementById('tarifa-margen').value = ZONAS_DOMICILIO_DEFAULT.margenIzquierda.tarifa;
+        document.getElementById('tarifa-norte').value = ZONAS_DOMICILIO_DEFAULT.norte.tarifa;
+        renderBarriosList('barrios-centro-list', ZONAS_DOMICILIO_DEFAULT.centro.barrios);
+        renderBarriosList('barrios-margen-list', ZONAS_DOMICILIO_DEFAULT.margenIzquierda.barrios);
+        renderBarriosList('barrios-norte-list', ZONAS_DOMICILIO_DEFAULT.norte.barrios);
+    }
+}
+
+function renderBarriosList(elId, barrios) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = barrios.sort().map(b => `<span style="display:inline-block;background:#f0f0f0;border-radius:20px;padding:1px 10px;margin:2px;">${b}</span>`).join('');
+}
+
+window.saveDomicilioTarifas = async function() {
+    const btn = document.getElementById('btn-save-tarifas');
+    const statusEl = document.getElementById('tarifas-save-status');
+
+    const centro = parseInt(document.getElementById('tarifa-centro').value, 10);
+    const margen = parseInt(document.getElementById('tarifa-margen').value, 10);
+    const norte = parseInt(document.getElementById('tarifa-norte').value, 10);
+
+    if (isNaN(centro) || isNaN(margen) || isNaN(norte) || centro < 0 || margen < 0 || norte < 0) {
+        showToast('Ingresa valores válidos para todas las tarifas', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+    statusEl.style.display = 'none';
+
+    try {
+        await setDoc(doc(db, 'config', 'domicilioTarifas'), {
+            centro,
+            margenIzquierda: margen,
+            norte,
+            updatedAt: serverTimestamp()
+        });
+        showToast('✅ Tarifas guardadas correctamente', 'success');
+        statusEl.style.display = 'inline';
+        setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
+        document.getElementById('tarifas-last-update').textContent = 'Última actualización: ' + new Date().toLocaleString('es-CO');
+    } catch (err) {
+        console.error('Error guardando tarifas:', err);
+        showToast('Error al guardar: ' + err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-cloud-check me-1"></i> Guardar tarifas';
+    }
+};
+
+// Cargar tarifas al navegar a la sección
+document.addEventListener('click', (e) => {
+    if (e.target.closest('a[href="#config-domicilio"]')) {
+        setTimeout(loadDomicilioTarifas, 100);
+    }
+});
+
 });
