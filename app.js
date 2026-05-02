@@ -67,6 +67,9 @@ let productsMap = new Map();
 let selectedTransferType = '';
 let comprobanteFile = null;
 let allProducts = [];
+const PRODUCTS_PER_PAGE = 20;
+let currentPage = 1;
+let currentFilteredProducts = [];
 let activePromotions = new Map();
 let globalPromotion = null; // Promoción global activa (ej: Black Friday)
 let itemToDelete = null;
@@ -476,6 +479,7 @@ function getPromoPrice(product) {
 // ✅ FUNCIÓN DE FILTRO MEJORADA CON FILTROS AVANZADOS
 function applyFiltersAndRender() {
     promoPriceCache.clear();
+    currentPage = 1;
     const activeFilterEl = document.querySelector('.filter-group.active');
 
     // Si no hay filtro activo, mostrar productos disponibles por defecto
@@ -629,7 +633,7 @@ function sortProducts(products, sortBy) {
     return [...disponiblesPromo, ...disponiblesNormal];
 }
 
-// ✅ RENDERIZAR PRODUCTOS CON COLORES REALES
+// ✅ RENDERIZAR PRODUCTOS CON COLORES REALES Y PAGINACIÓN
 function renderProducts(products) {
     const container = document.getElementById('products-container');
     const loading = document.getElementById('loading-products');
@@ -637,6 +641,9 @@ function renderProducts(products) {
 
     if (loading) loading.style.display = 'none';
     container.innerHTML = '';
+
+    // Guardar lista completa filtrada para paginación
+    currentFilteredProducts = products;
 
     // Actualizar contador
     if (productsCountEl) {
@@ -649,11 +656,16 @@ function renderProducts(products) {
 
     if (products.length === 0) {
         container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">No se encontraron productos</p></div>';
+        renderPagination(0);
         return;
     }
 
+    // Paginar: mostrar solo los productos de la página actual
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    const pageProducts = products.slice(start, start + PRODUCTS_PER_PAGE);
+
     const fragment = document.createDocumentFragment();
-    products.forEach((product, index) => {
+    pageProducts.forEach((product, index) => {
         const stockTotal = (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
         const isAgotado = stockTotal <= 0;
         const { precioFinal, tienePromo, precioOriginal } = getPromoPrice(product);
@@ -752,6 +764,34 @@ function renderProducts(products) {
         fragment.appendChild(col);
     });
     container.appendChild(fragment);
+    renderPagination(products.length);
+}
+
+function renderPagination(totalProducts) {
+    const container = document.getElementById('pagination-container');
+    if (!container) return;
+    const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+    let html = '<div class="pagination-wrap">';
+    if (currentPage > 1) {
+        html += `<button class="page-btn" onclick="goToPage(${currentPage - 1})"><i class="bi bi-chevron-left"></i></button>`;
+    }
+    for (let i = 1; i <= totalPages; i++) {
+        html += `<button class="page-btn${i === currentPage ? ' page-btn-active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+    }
+    if (currentPage < totalPages) {
+        html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})"><i class="bi bi-chevron-right"></i></button>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function goToPage(page) {
+    currentPage = page;
+    renderProducts(currentFilteredProducts);
+    const section = document.getElementById('collection-header-anchor') || document.getElementById('products-section');
+    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // --- FUNCIONES AUXILIARES PARA BOTONES DE TALLA Y COLOR ---

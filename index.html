@@ -83,40 +83,6 @@
 
 <main class="container-fluid px-0" id="main-content">
 
-<!-- Hero Banner -->
-<div class="hero-banner" id="hero-banner">
-  <div class="hero-decoration hero-dec-1"></div>
-  <div class="hero-decoration hero-dec-2"></div>
-  <div class="hero-content">
-    <span class="hero-tag">Nueva Colección</span>
-    <h1 class="hero-title">Moda que<br>te enamora</h1>
-    <p class="hero-subtitle">Looks únicos para mujeres únicas. Envíos a toda Colombia.</p>
-    <button class="hero-cta" onclick="document.getElementById('products-section').scrollIntoView({behavior:'smooth'})">
-      Ver colección <i class="bi bi-arrow-down-short"></i>
-    </button>
-  </div>
-</div>
-
-<!-- Trust Strip -->
-<div class="trust-strip">
-  <div class="trust-item">
-    <i class="bi bi-truck"></i>
-    <span>Envíos a<br>Colombia</span>
-  </div>
-  <div class="trust-item">
-    <i class="bi bi-shield-check"></i>
-    <span>Pago<br>seguro</span>
-  </div>
-  <div class="trust-item">
-    <i class="bi bi-award"></i>
-    <span>Calidad<br>garantizada</span>
-  </div>
-  <div class="trust-item">
-    <i class="bi bi-whatsapp"></i>
-    <span>Atención<br>directa</span>
-  </div>
-</div>
-
 <!-- Promociones -->
 <div class="promotions-section mb-3" id="promotions-section" style="display: none;">
     <h2 class="promotions-title">Promociones Imperdibles</h2>
@@ -125,6 +91,7 @@
 
 <!-- Encabezado de colección -->
 <div class="collection-header" id="products-section">
+  <span id="collection-header-anchor" style="position:relative;top:-60px;display:block;visibility:hidden;"></span>
   <h2 class="collection-title">Nuestra Colección</h2>
 </div>
 
@@ -137,10 +104,36 @@
         </div>
     </div>
 </div>
+
+<!-- Paginación -->
+<div id="pagination-container"></div>
+
 </main>
 
 <footer class="footer-minimal">
 <div class="container text-center">
+
+  <!-- Trust Strip en el footer -->
+  <div class="trust-strip-footer">
+    <div class="trust-item-footer">
+      <i class="bi bi-truck"></i>
+      <span>Envíos a toda Colombia</span>
+    </div>
+    <div class="trust-item-footer">
+      <i class="bi bi-shield-check"></i>
+      <span>Pago seguro</span>
+    </div>
+    <div class="trust-item-footer">
+      <i class="bi bi-award"></i>
+      <span>Calidad garantizada</span>
+    </div>
+    <div class="trust-item-footer">
+      <i class="bi bi-whatsapp"></i>
+      <span>Atención directa</span>
+    </div>
+  </div>
+
+  <div class="footer-divider"></div>
   <div class="footer-brand-name">MISHELL</div>
   <p class="footer-tagline">Moda que te enamora</p>
   <div class="footer-divider"></div>
