@@ -354,19 +354,8 @@ Finalizar Pedido
         </button>
       </div>
 
-      <!-- Hidden real select (needed for existing JS event handlers) -->
-      <select id="checkout-city" style="display:none" required>
-        <option value="">Selecciona tu ciudad</option>
-        <option value="Montería">Montería</option>
-        <option value="Cereté">Cereté</option>
-        <option value="Lorica">Lorica</option>
-        <option value="Sahagún">Sahagún</option>
-        <option value="Planeta Rica">Planeta Rica</option>
-        <option value="Montelíbano">Montelíbano</option>
-        <option value="Tierralta">Tierralta</option>
-        <option value="Ayapel">Ayapel</option>
-        <option value="Otra">Otra ciudad</option>
-      </select>
+      <!-- Hidden input for city value (accepts any free-text city) -->
+      <input type="hidden" id="checkout-city" value="">
 
       <!-- Campo libre para "otra ciudad" -->
       <div class="co-field" id="co-other-city-field" style="display:none">
