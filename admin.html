@@ -1027,31 +1027,27 @@
 
                 <!-- Barra de búsqueda + estado -->
                 <div class="d-flex gap-2 mb-3 align-items-center">
-                    <div class="input-group" style="max-width:320px;">
+                    <div class="input-group">
                         <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
                         <input type="text" class="form-control" id="barrio-search" placeholder="Buscar barrio..." oninput="domicilioFiltrar(this.value)">
+                        <span class="input-group-text bg-white text-muted small" id="barrios-count" style="min-width:70px;justify-content:center;"></span>
                     </div>
-                    <span class="text-muted small" id="barrios-count"></span>
-                    <span id="tarifas-save-status" class="text-success small ms-2" style="display:none;">
-                        <i class="bi bi-check-circle me-1"></i>Guardado
+                    <span id="tarifas-save-status" class="text-success small flex-shrink-0" style="display:none;">
+                        <i class="bi bi-check-circle"></i>
                     </span>
                 </div>
 
-                <!-- Tabla -->
+                <!-- Lista de barrios -->
                 <div class="card" style="border-radius:12px;overflow:hidden;">
-                    <div style="max-height:65vh;overflow-y:auto;">
-                        <table class="table table-hover align-middle mb-0" id="barrios-table">
-                            <thead style="position:sticky;top:0;z-index:1;background:#f8f9fa;">
-                                <tr>
-                                    <th style="width:60%;padding:10px 16px;font-size:13px;">Barrio</th>
-                                    <th style="width:30%;padding:10px 16px;font-size:13px;">Domicilio ($)</th>
-                                    <th style="width:10%;padding:10px 8px;"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="barrios-tbody">
-                                <tr><td colspan="3" class="text-center text-muted py-4">Cargando...</td></tr>
-                            </tbody>
-                        </table>
+                    <!-- Cabecera fija -->
+                    <div style="display:flex;align-items:center;padding:8px 14px;background:#f8f9fa;border-bottom:1px solid #e9ecef;position:sticky;top:0;z-index:1;">
+                        <span style="flex:1;font-size:12px;font-weight:600;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;">Barrio</span>
+                        <span style="width:115px;font-size:12px;font-weight:600;color:#6c757d;text-transform:uppercase;letter-spacing:.05em;text-align:center;">Domicilio</span>
+                        <span style="width:32px;"></span>
+                    </div>
+                    <!-- Filas (scroll) -->
+                    <div id="barrios-tbody" style="max-height:62vh;overflow-y:auto;">
+                        <div class="text-center text-muted py-4">Cargando...</div>
                     </div>
                 </div>
 

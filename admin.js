@@ -11346,31 +11346,28 @@ function domicilioRenderTabla() {
     countEl.textContent = visible.length + ' barrios';
 
     if (visible.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-4">
-            ${filtro ? 'No se encontró "' + _dominicilioFiltro + '"' : 'Sin barrios registrados'}
-        </td></tr>`;
+        tbody.innerHTML = `<div class="text-center text-muted py-4">
+            ${filtro ? 'No se encontró "' + escHtml(_dominicilioFiltro) + '"' : 'Sin barrios registrados'}
+        </div>`;
         return;
     }
 
-    tbody.innerHTML = visible.map((b, _i) => {
+    tbody.innerHTML = visible.map((b) => {
         const idx = _domicilioBarrios.indexOf(b);
-        return `<tr data-idx="${idx}">
-            <td style="padding:8px 16px;font-size:14px;">${escHtml(b.nombre)}</td>
-            <td style="padding:6px 16px;">
-                <div class="input-group input-group-sm" style="max-width:130px;">
-                    <span class="input-group-text">$</span>
-                    <input type="number" class="form-control" min="0" step="500"
-                           value="${b.tarifa}"
-                           onchange="domicilioSetTarifa(${idx}, this.value)"
-                           style="font-weight:600;">
-                </div>
-            </td>
-            <td style="padding:6px 8px;text-align:center;">
-                <button class="btn btn-sm btn-link text-danger p-0" onclick="domicilioEliminar(${idx})" title="Eliminar barrio">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        </tr>`;
+        return `<div data-idx="${idx}" style="display:flex;align-items:center;padding:7px 14px;border-bottom:1px solid #f0f0f0;min-height:46px;">
+            <span style="flex:1;font-size:14px;padding-right:8px;word-break:break-word;">${escHtml(b.nombre)}</span>
+            <div style="display:flex;align-items:center;width:115px;flex-shrink:0;border:1px solid #dee2e6;border-radius:6px;overflow:hidden;background:#fff;">
+                <span style="padding:0 6px;font-size:13px;color:#6c757d;background:#f8f9fa;border-right:1px solid #dee2e6;line-height:36px;height:36px;">$</span>
+                <input type="number" min="0" step="500"
+                       value="${b.tarifa}"
+                       onchange="domicilioSetTarifa(${idx}, this.value)"
+                       style="width:0;flex:1;border:none;outline:none;padding:0 6px;font-size:14px;font-weight:600;height:36px;background:transparent;">
+            </div>
+            <button onclick="domicilioEliminar(${idx})" title="Eliminar"
+                    style="margin-left:8px;width:32px;height:32px;flex-shrink:0;border:none;background:none;color:#dc3545;font-size:16px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:6px;cursor:pointer;">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>`;
     }).join('');
 }
 
@@ -11420,7 +11417,7 @@ window.saveDomicilioBarrios = async function() {
     statusEl.style.display = 'none';
     try {
         // Leer valores actuales de inputs visibles antes de guardar
-        document.querySelectorAll('#barrios-tbody tr[data-idx]').forEach(tr => {
+        document.querySelectorAll('#barrios-tbody div[data-idx]').forEach(tr => {
             const idx = parseInt(tr.dataset.idx, 10);
             const input = tr.querySelector('input[type=number]');
             if (input && !isNaN(idx) && _domicilioBarrios[idx]) {
