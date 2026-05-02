@@ -11187,131 +11187,270 @@ document.addEventListener('click', (e) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════
-// TARIFAS DE DOMICILIO — Montería
+// TARIFAS DE DOMICILIO — Montería (tabla por barrio)
 // ═══════════════════════════════════════════════════════════════════
 
-const ZONAS_DOMICILIO_DEFAULT = {
-    centro: {
-        tarifa: 5000,
-        label: 'Centro / Este del río',
-        barrios: [
-            'Cantaclaro', 'Centro', 'El Dorado', 'El Poblado', 'La Granja',
-            'La Ribera', 'Los Colores', 'Mogambo', 'Pastrana', 'Policarpa',
-            'Villa Cielo', 'Villa Margarita', 'Villa Melissa', 'Boston',
-            'Buenavista', 'La Castellana', 'Las Palmas', 'La Pradera',
-            'Los Alpes', 'Los Cerezos', 'Madre Bernarda', 'Panamericano',
-            'Santa Lucía', 'Santa Rosa', 'Sierra Chiquita', 'Sor Teresa Demjanovich',
-            'Unidad Deportiva', 'Urbanización 7 de Agosto', 'Villa Country',
-            'Villa Gabriela', 'Villa del Río', 'Alamedas del Sinú',
-            'El Carmelo', 'La Candelaria', 'La Estancia', 'Los Búcaros',
-            'Los Manguitos', 'Nuevo Horizonte', 'Patio Bonito', 'Ranchos del INAT',
-            'Tres Piedras', 'Villa Caribe', 'Villa Rosa'
-        ]
-    },
-    margenIzquierda: {
-        tarifa: 6000,
-        label: 'Margen Izquierda',
-        barrios: [
-            'P5', 'Barrio P5', 'Edmundo López', 'La Campiña', 'Los Araujos',
-            'Panzenú', 'Cantarranas', 'El Níspero', 'Villa Paz', 'Los Nogales',
-            'Minuto de Dios', 'Betania', 'El Paraíso', 'La Florida',
-            'Nuevo Milenio', 'Rancho Grande', 'Villa del Mar'
-        ]
-    },
-    norte: {
-        tarifa: 6000,
-        label: 'Norte',
-        barrios: [
-            'Mocarí', 'Robinson Pitalúa', 'Los Laureles', 'Villa del Rosario',
-            'La Granja Norte', 'El Recreo', 'Villa Natalia', 'Los Nogales Norte',
-            'Urbanización el Norte', 'Villa del Norte', 'El Alivio',
-            'Furatena', 'Los Cedros', 'Villa Orieta'
-        ]
-    }
-};
+// Lista inicial con TODOS los barrios conocidos de Montería y su tarifa por defecto.
+// Si el admin guarda cambios en Firestore, esos valores sobreescriben estos.
+const BARRIOS_MONTERIA_DEFAULT = [
+    // ── Este lado del río / Centro ($5.000) ──────────────────────────
+    { nombre: '7 de Agosto',              tarifa: 5000 },
+    { nombre: 'Alamedas del Sinú',        tarifa: 5000 },
+    { nombre: 'Alfonso López',            tarifa: 5000 },
+    { nombre: 'Bosques de la Pradera',    tarifa: 5000 },
+    { nombre: 'Boston',                   tarifa: 5000 },
+    { nombre: 'Buenavista',               tarifa: 5000 },
+    { nombre: 'Cantaclaro',               tarifa: 5000 },
+    { nombre: 'Centro',                   tarifa: 5000 },
+    { nombre: 'Ceiba 2',                  tarifa: 5000 },
+    { nombre: 'Ceibal',                   tarifa: 5000 },
+    { nombre: 'Chuchurubí',               tarifa: 5000 },
+    { nombre: 'El Carmelo',               tarifa: 5000 },
+    { nombre: 'El Dorado',                tarifa: 5000 },
+    { nombre: 'El Poblado',               tarifa: 5000 },
+    { nombre: 'El Prado',                 tarifa: 5000 },
+    { nombre: 'El Progreso',              tarifa: 5000 },
+    { nombre: 'Gonzalo Zuleta',           tarifa: 5000 },
+    { nombre: 'La Candelaria',            tarifa: 5000 },
+    { nombre: 'La Castellana',            tarifa: 5000 },
+    { nombre: 'La Estancia',              tarifa: 5000 },
+    { nombre: 'La Granja',                tarifa: 5000 },
+    { nombre: 'La Pradera',               tarifa: 5000 },
+    { nombre: 'La Quinta',                tarifa: 5000 },
+    { nombre: 'La Ribera',                tarifa: 5000 },
+    { nombre: 'Las Américas',             tarifa: 5000 },
+    { nombre: 'Las Colinas',              tarifa: 5000 },
+    { nombre: 'Las Delicias',             tarifa: 5000 },
+    { nombre: 'Las Mercedes',             tarifa: 5000 },
+    { nombre: 'Las Palmas',               tarifa: 5000 },
+    { nombre: 'Los Alpes',                tarifa: 5000 },
+    { nombre: 'Los Búcaros',              tarifa: 5000 },
+    { nombre: 'Los Cerezos',              tarifa: 5000 },
+    { nombre: 'Los Colores',              tarifa: 5000 },
+    { nombre: 'Los Manguitos',            tarifa: 5000 },
+    { nombre: 'Madre Bernarda',           tarifa: 5000 },
+    { nombre: 'Mogambo',                  tarifa: 5000 },
+    { nombre: 'Montería 2000',            tarifa: 5000 },
+    { nombre: 'Nariño',                   tarifa: 5000 },
+    { nombre: 'Nuevo Horizonte',          tarifa: 5000 },
+    { nombre: 'Ospina Pérez',             tarifa: 5000 },
+    { nombre: 'Panamericano',             tarifa: 5000 },
+    { nombre: 'Pastrana',                 tarifa: 5000 },
+    { nombre: 'Patio Bonito',             tarifa: 5000 },
+    { nombre: 'Policarpa',                tarifa: 5000 },
+    { nombre: 'Ranchos del INAT',         tarifa: 5000 },
+    { nombre: 'Ronda del Sinú',           tarifa: 5000 },
+    { nombre: 'San Martín',               tarifa: 5000 },
+    { nombre: 'Santa Lucía',              tarifa: 5000 },
+    { nombre: 'Santa Rosa',               tarifa: 5000 },
+    { nombre: 'Sierra Chiquita',          tarifa: 5000 },
+    { nombre: 'Sor Teresa Demjanovich',   tarifa: 5000 },
+    { nombre: 'Tres Piedras',             tarifa: 5000 },
+    { nombre: 'Unidad Deportiva',         tarifa: 5000 },
+    { nombre: 'Urquijo',                  tarifa: 5000 },
+    { nombre: 'Venezuela',                tarifa: 5000 },
+    { nombre: 'Villa Caribe',             tarifa: 5000 },
+    { nombre: 'Villa Cielo',              tarifa: 5000 },
+    { nombre: 'Villa Country',            tarifa: 5000 },
+    { nombre: 'Villa del Río',            tarifa: 5000 },
+    { nombre: 'Villa Gabriela',           tarifa: 5000 },
+    { nombre: 'Villa Hermosa',            tarifa: 5000 },
+    { nombre: 'Villa Jiménez',            tarifa: 5000 },
+    { nombre: 'Villa Margarita',          tarifa: 5000 },
+    { nombre: 'Villa Melissa',            tarifa: 5000 },
+    { nombre: 'Villa Rosa',               tarifa: 5000 },
+    // ── Margen izquierda ($6.000) ────────────────────────────────────
+    { nombre: '2 de Septiembre',          tarifa: 6000 },
+    { nombre: 'Betania',                  tarifa: 6000 },
+    { nombre: 'Camilo Torres',            tarifa: 6000 },
+    { nombre: 'Cantarranas',              tarifa: 6000 },
+    { nombre: 'Ceiba I (La Ceiba)',       tarifa: 6000 },
+    { nombre: 'Edmundo López',            tarifa: 6000 },
+    { nombre: 'El Cerrito',               tarifa: 6000 },
+    { nombre: 'El Níspero',              tarifa: 6000 },
+    { nombre: 'El Paraíso',              tarifa: 6000 },
+    { nombre: 'La Campiña',              tarifa: 6000 },
+    { nombre: 'La Florida',               tarifa: 6000 },
+    { nombre: 'La Independencia',         tarifa: 6000 },
+    { nombre: 'Los Araujos',              tarifa: 6000 },
+    { nombre: 'Los Nogales',              tarifa: 6000 },
+    { nombre: 'Minuto de Dios',           tarifa: 6000 },
+    { nombre: 'Mochileros',               tarifa: 6000 },
+    { nombre: 'Nueva Belén',              tarifa: 6000 },
+    { nombre: 'Nuevo Milenio',            tarifa: 6000 },
+    { nombre: 'P5',                       tarifa: 6000 },
+    { nombre: 'Panzenú',                  tarifa: 6000 },
+    { nombre: 'Rancho Grande',            tarifa: 6000 },
+    { nombre: 'San Francisco',            tarifa: 6000 },
+    { nombre: 'San Judas',                tarifa: 6000 },
+    { nombre: 'Santander',                tarifa: 6000 },
+    { nombre: 'Sinuflor',                 tarifa: 6000 },
+    { nombre: 'Valeria',                  tarifa: 6000 },
+    { nombre: 'Villa del Mar',            tarifa: 6000 },
+    { nombre: 'Villa Emilia',             tarifa: 6000 },
+    { nombre: 'Villa Paz',                tarifa: 6000 },
+    { nombre: 'Villanueva',               tarifa: 6000 },
+    // ── Norte ($6.000) ───────────────────────────────────────────────
+    { nombre: '12 de Octubre',            tarifa: 6000 },
+    { nombre: 'El Alivio',                tarifa: 6000 },
+    { nombre: 'El Recreo',                tarifa: 6000 },
+    { nombre: 'Furatena',                 tarifa: 6000 },
+    { nombre: 'La Granja Norte',          tarifa: 6000 },
+    { nombre: 'Los Cedros',               tarifa: 6000 },
+    { nombre: 'Los Laureles',             tarifa: 6000 },
+    { nombre: 'Mocarí',                   tarifa: 6000 },
+    { nombre: 'Robinson Pitalúa',         tarifa: 6000 },
+    { nombre: 'Urbanización el Norte',    tarifa: 6000 },
+    { nombre: 'Villa del Norte',          tarifa: 6000 },
+    { nombre: 'Villa del Rosario',        tarifa: 6000 },
+    { nombre: 'Villa Natalia',            tarifa: 6000 },
+    { nombre: 'Villa Orieta',             tarifa: 6000 },
+];
 
-async function loadDomicilioTarifas() {
+// Estado en memoria de la tabla
+let _domicilioBarrios = [];   // [{nombre, tarifa}, ...]
+let _dominicilioFiltro = '';  // texto de búsqueda activo
+
+async function loadDomicilioBarrios() {
     try {
-        const snap = await getDoc(doc(db, 'config', 'domicilioTarifas'));
-        const data = snap.exists() ? snap.data() : {};
-
-        document.getElementById('tarifa-centro').value = data.centro ?? ZONAS_DOMICILIO_DEFAULT.centro.tarifa;
-        document.getElementById('tarifa-margen').value = data.margenIzquierda ?? ZONAS_DOMICILIO_DEFAULT.margenIzquierda.tarifa;
-        document.getElementById('tarifa-norte').value = data.norte ?? ZONAS_DOMICILIO_DEFAULT.norte.tarifa;
-
-        // Mostrar última actualización
-        if (data.updatedAt) {
-            const d = data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt);
+        const snap = await getDoc(doc(db, 'config', 'domicilioBarrios'));
+        if (snap.exists() && snap.data().barrios) {
+            _domicilioBarrios = snap.data().barrios;
+        } else {
+            // Primera vez: cargar defaults
+            _domicilioBarrios = BARRIOS_MONTERIA_DEFAULT.map(b => ({ ...b }));
+        }
+        if (snap.exists() && snap.data().updatedAt) {
+            const d = snap.data().updatedAt.toDate();
             document.getElementById('tarifas-last-update').textContent =
                 'Última actualización: ' + d.toLocaleString('es-CO');
-        } else {
-            document.getElementById('tarifas-last-update').textContent = 'Usando valores predeterminados.';
         }
-
-        // Renderizar listas de barrios
-        renderBarriosList('barrios-centro-list', ZONAS_DOMICILIO_DEFAULT.centro.barrios);
-        renderBarriosList('barrios-margen-list', ZONAS_DOMICILIO_DEFAULT.margenIzquierda.barrios);
-        renderBarriosList('barrios-norte-list', ZONAS_DOMICILIO_DEFAULT.norte.barrios);
     } catch (err) {
-        console.error('Error cargando tarifas:', err);
-        // Cargar defaults aunque falle Firestore
-        document.getElementById('tarifa-centro').value = ZONAS_DOMICILIO_DEFAULT.centro.tarifa;
-        document.getElementById('tarifa-margen').value = ZONAS_DOMICILIO_DEFAULT.margenIzquierda.tarifa;
-        document.getElementById('tarifa-norte').value = ZONAS_DOMICILIO_DEFAULT.norte.tarifa;
-        renderBarriosList('barrios-centro-list', ZONAS_DOMICILIO_DEFAULT.centro.barrios);
-        renderBarriosList('barrios-margen-list', ZONAS_DOMICILIO_DEFAULT.margenIzquierda.barrios);
-        renderBarriosList('barrios-norte-list', ZONAS_DOMICILIO_DEFAULT.norte.barrios);
+        console.error('Error cargando barrios:', err);
+        _domicilioBarrios = BARRIOS_MONTERIA_DEFAULT.map(b => ({ ...b }));
     }
+    _domicilioBarrios.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    domicilioRenderTabla();
 }
 
-function renderBarriosList(elId, barrios) {
-    const el = document.getElementById(elId);
-    if (!el) return;
-    el.innerHTML = barrios.sort().map(b => `<span style="display:inline-block;background:#f0f0f0;border-radius:20px;padding:1px 10px;margin:2px;">${b}</span>`).join('');
-}
+function domicilioRenderTabla() {
+    const tbody = document.getElementById('barrios-tbody');
+    const countEl = document.getElementById('barrios-count');
+    if (!tbody) return;
 
-window.saveDomicilioTarifas = async function() {
-    const btn = document.getElementById('btn-save-tarifas');
-    const statusEl = document.getElementById('tarifas-save-status');
+    const filtro = _dominicilioFiltro.toLowerCase();
+    const visible = filtro
+        ? _domicilioBarrios.filter(b => b.nombre.toLowerCase().includes(filtro))
+        : _domicilioBarrios;
 
-    const centro = parseInt(document.getElementById('tarifa-centro').value, 10);
-    const margen = parseInt(document.getElementById('tarifa-margen').value, 10);
-    const norte = parseInt(document.getElementById('tarifa-norte').value, 10);
+    countEl.textContent = visible.length + ' barrios';
 
-    if (isNaN(centro) || isNaN(margen) || isNaN(norte) || centro < 0 || margen < 0 || norte < 0) {
-        showToast('Ingresa valores válidos para todas las tarifas', 'error');
+    if (visible.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-4">
+            ${filtro ? 'No se encontró "' + _dominicilioFiltro + '"' : 'Sin barrios registrados'}
+        </td></tr>`;
         return;
     }
 
+    tbody.innerHTML = visible.map((b, _i) => {
+        const idx = _domicilioBarrios.indexOf(b);
+        return `<tr data-idx="${idx}">
+            <td style="padding:8px 16px;font-size:14px;">${escHtml(b.nombre)}</td>
+            <td style="padding:6px 16px;">
+                <div class="input-group input-group-sm" style="max-width:130px;">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" min="0" step="500"
+                           value="${b.tarifa}"
+                           onchange="domicilioSetTarifa(${idx}, this.value)"
+                           style="font-weight:600;">
+                </div>
+            </td>
+            <td style="padding:6px 8px;text-align:center;">
+                <button class="btn btn-sm btn-link text-danger p-0" onclick="domicilioEliminar(${idx})" title="Eliminar barrio">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+window.domicilioFiltrar = function(texto) {
+    _dominicilioFiltro = texto;
+    domicilioRenderTabla();
+};
+
+window.domicilioSetTarifa = function(idx, valor) {
+    const v = parseInt(valor, 10);
+    if (!isNaN(v) && v >= 0) _domicilioBarrios[idx].tarifa = v;
+};
+
+window.domicilioEliminar = function(idx) {
+    const nombre = _domicilioBarrios[idx]?.nombre || '';
+    if (!confirm(`¿Eliminar "${nombre}" de la lista?`)) return;
+    _domicilioBarrios.splice(idx, 1);
+    domicilioRenderTabla();
+};
+
+window.domicilioAgregarFila = function() {
+    const nombre = prompt('Nombre del barrio:');
+    if (!nombre || !nombre.trim()) return;
+    const nombreTrim = nombre.trim();
+    if (_domicilioBarrios.some(b => b.nombre.toLowerCase() === nombreTrim.toLowerCase())) {
+        alert('Ese barrio ya está en la lista.');
+        return;
+    }
+    const tarifa = parseInt(prompt('Costo de domicilio ($):', '5000'), 10);
+    if (isNaN(tarifa) || tarifa < 0) { alert('Tarifa no válida.'); return; }
+    _domicilioBarrios.push({ nombre: nombreTrim, tarifa });
+    _domicilioBarrios.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    document.getElementById('barrio-search').value = '';
+    _dominicilioFiltro = '';
+    domicilioRenderTabla();
+};
+
+window.saveDomicilioBarrios = async function() {
+    const btn = document.getElementById('btn-save-tarifas');
+    const statusEl = document.getElementById('tarifas-save-status');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
     statusEl.style.display = 'none';
-
     try {
-        await setDoc(doc(db, 'config', 'domicilioTarifas'), {
-            centro,
-            margenIzquierda: margen,
-            norte,
+        // Leer valores actuales de inputs visibles antes de guardar
+        document.querySelectorAll('#barrios-tbody tr[data-idx]').forEach(tr => {
+            const idx = parseInt(tr.dataset.idx, 10);
+            const input = tr.querySelector('input[type=number]');
+            if (input && !isNaN(idx) && _domicilioBarrios[idx]) {
+                const v = parseInt(input.value, 10);
+                if (!isNaN(v) && v >= 0) _domicilioBarrios[idx].tarifa = v;
+            }
+        });
+        await setDoc(doc(db, 'config', 'domicilioBarrios'), {
+            barrios: _domicilioBarrios,
             updatedAt: serverTimestamp()
         });
         showToast('✅ Tarifas guardadas correctamente', 'success');
         statusEl.style.display = 'inline';
-        setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
         document.getElementById('tarifas-last-update').textContent = 'Última actualización: ' + new Date().toLocaleString('es-CO');
+        setTimeout(() => { statusEl.style.display = 'none'; }, 4000);
     } catch (err) {
-        console.error('Error guardando tarifas:', err);
+        console.error('Error guardando:', err);
         showToast('Error al guardar: ' + err.message, 'error');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-cloud-check me-1"></i> Guardar tarifas';
+        btn.innerHTML = '<i class="bi bi-cloud-check me-1"></i> Guardar cambios';
     }
 };
 
-// Cargar tarifas al navegar a la sección
+// Cargar al navegar a la sección
 document.addEventListener('click', (e) => {
     if (e.target.closest('a[href="#config-domicilio"]')) {
-        setTimeout(loadDomicilioTarifas, 100);
+        setTimeout(loadDomicilioBarrios, 100);
     }
 });
+
 
 });

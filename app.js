@@ -2302,62 +2302,89 @@ document.addEventListener('DOMContentLoaded', () => {
     // margenIzquierda: oeste del río Sinú  → $6.000
     // norte: zona norte de la ciudad        → $6.000
     // centro: este del río / centro         → $5.000  (default Montería)
-    const ZONAS_MONTERIA = {
-        margenIzquierda: {
-            tarifa: 6000,
-            label: 'Margen izquierda',
-            barrios: [
-                'P5', 'Barrio P5', 'Edmundo López', 'La Campiña', 'Los Araujos',
-                'Panzenú', 'Cantarranas', 'El Níspero', 'Villa Paz', 'Los Nogales',
-                'Minuto de Dios', 'Betania', 'El Paraíso', 'La Florida',
-                'Nuevo Milenio', 'Rancho Grande', 'Villa del Mar'
-            ]
-        },
-        norte: {
-            tarifa: 6000,
-            label: 'Norte',
-            barrios: [
-                'Mocarí', 'Robinson Pitalúa', 'Los Laureles', 'Villa del Rosario',
-                'La Granja Norte', 'El Recreo', 'Villa Natalia', 'Los Nogales Norte',
-                'Urbanización el Norte', 'Villa del Norte', 'El Alivio',
-                'Furatena', 'Los Cedros', 'Villa Orieta'
-            ]
-        },
-        centro: {
-            tarifa: 5000,
-            label: 'Centro / Este del río',
-            barrios: [
-                'Cantaclaro', 'Centro', 'El Dorado', 'El Poblado', 'La Granja',
-                'La Ribera', 'Los Colores', 'Mogambo', 'Pastrana', 'Policarpa',
-                'Villa Cielo', 'Villa Margarita', 'Villa Melissa', 'Boston',
-                'Buenavista', 'La Castellana', 'Las Palmas', 'La Pradera',
-                'Los Alpes', 'Los Cerezos', 'Madre Bernarda', 'Panamericano',
-                'Santa Lucía', 'Santa Rosa', 'Sierra Chiquita', 'Sor Teresa Demjanovich',
-                'Unidad Deportiva', 'Urbanización 7 de Agosto', 'Villa Country',
-                'Villa Gabriela', 'Villa del Río', 'Alamedas del Sinú',
-                'El Carmelo', 'La Candelaria', 'La Estancia', 'Los Búcaros',
-                'Los Manguitos', 'Nuevo Horizonte', 'Patio Bonito', 'Ranchos del INAT',
-                'Tres Piedras', 'Villa Caribe', 'Villa Cielo', 'Villa Rosa'
-            ]
-        }
-    };
+    // Mapa barrio→tarifa cargado desde Firestore. Clave: nombre en minúsculas.
+    let _barrioTarifaMap = {};   // { 'cantaclaro': 5000, 'mocarí': 6000, ... }
+    let _barriosMonteriaLista = []; // nombres para el datalist del checkout
 
-    // Tarifas cargadas desde Firestore (o defaults si falla)
-    let _tarifasDomicilio = {
-        centro: ZONAS_MONTERIA.centro.tarifa,
-        margenIzquierda: ZONAS_MONTERIA.margenIzquierda.tarifa,
-        norte: ZONAS_MONTERIA.norte.tarifa
-    };
+    // Defaults mientras carga Firestore (o si falla)
+    const _BARRIOS_DEFAULT = [
+        { nombre: '7 de Agosto', tarifa: 5000 }, { nombre: 'Alamedas del Sinú', tarifa: 5000 },
+        { nombre: 'Alfonso López', tarifa: 5000 }, { nombre: 'Bosques de la Pradera', tarifa: 5000 },
+        { nombre: 'Boston', tarifa: 5000 }, { nombre: 'Buenavista', tarifa: 5000 },
+        { nombre: 'Cantaclaro', tarifa: 5000 }, { nombre: 'Centro', tarifa: 5000 },
+        { nombre: 'Ceiba 2', tarifa: 5000 }, { nombre: 'Ceibal', tarifa: 5000 },
+        { nombre: 'Chuchurubí', tarifa: 5000 }, { nombre: 'El Carmelo', tarifa: 5000 },
+        { nombre: 'El Dorado', tarifa: 5000 }, { nombre: 'El Poblado', tarifa: 5000 },
+        { nombre: 'El Prado', tarifa: 5000 }, { nombre: 'El Progreso', tarifa: 5000 },
+        { nombre: 'Gonzalo Zuleta', tarifa: 5000 }, { nombre: 'La Candelaria', tarifa: 5000 },
+        { nombre: 'La Castellana', tarifa: 5000 }, { nombre: 'La Estancia', tarifa: 5000 },
+        { nombre: 'La Granja', tarifa: 5000 }, { nombre: 'La Pradera', tarifa: 5000 },
+        { nombre: 'La Quinta', tarifa: 5000 }, { nombre: 'La Ribera', tarifa: 5000 },
+        { nombre: 'Las Américas', tarifa: 5000 }, { nombre: 'Las Colinas', tarifa: 5000 },
+        { nombre: 'Las Delicias', tarifa: 5000 }, { nombre: 'Las Mercedes', tarifa: 5000 },
+        { nombre: 'Las Palmas', tarifa: 5000 }, { nombre: 'Los Alpes', tarifa: 5000 },
+        { nombre: 'Los Búcaros', tarifa: 5000 }, { nombre: 'Los Cerezos', tarifa: 5000 },
+        { nombre: 'Los Colores', tarifa: 5000 }, { nombre: 'Los Manguitos', tarifa: 5000 },
+        { nombre: 'Madre Bernarda', tarifa: 5000 }, { nombre: 'Mogambo', tarifa: 5000 },
+        { nombre: 'Montería 2000', tarifa: 5000 }, { nombre: 'Nariño', tarifa: 5000 },
+        { nombre: 'Nuevo Horizonte', tarifa: 5000 }, { nombre: 'Ospina Pérez', tarifa: 5000 },
+        { nombre: 'Panamericano', tarifa: 5000 }, { nombre: 'Pastrana', tarifa: 5000 },
+        { nombre: 'Patio Bonito', tarifa: 5000 }, { nombre: 'Policarpa', tarifa: 5000 },
+        { nombre: 'Ranchos del INAT', tarifa: 5000 }, { nombre: 'Ronda del Sinú', tarifa: 5000 },
+        { nombre: 'San Martín', tarifa: 5000 }, { nombre: 'Santa Lucía', tarifa: 5000 },
+        { nombre: 'Santa Rosa', tarifa: 5000 }, { nombre: 'Sierra Chiquita', tarifa: 5000 },
+        { nombre: 'Sor Teresa Demjanovich', tarifa: 5000 }, { nombre: 'Tres Piedras', tarifa: 5000 },
+        { nombre: 'Unidad Deportiva', tarifa: 5000 }, { nombre: 'Urquijo', tarifa: 5000 },
+        { nombre: 'Venezuela', tarifa: 5000 }, { nombre: 'Villa Caribe', tarifa: 5000 },
+        { nombre: 'Villa Cielo', tarifa: 5000 }, { nombre: 'Villa Country', tarifa: 5000 },
+        { nombre: 'Villa del Río', tarifa: 5000 }, { nombre: 'Villa Gabriela', tarifa: 5000 },
+        { nombre: 'Villa Hermosa', tarifa: 5000 }, { nombre: 'Villa Jiménez', tarifa: 5000 },
+        { nombre: 'Villa Margarita', tarifa: 5000 }, { nombre: 'Villa Melissa', tarifa: 5000 },
+        { nombre: 'Villa Rosa', tarifa: 5000 },
+        { nombre: '2 de Septiembre', tarifa: 6000 }, { nombre: 'Betania', tarifa: 6000 },
+        { nombre: 'Camilo Torres', tarifa: 6000 }, { nombre: 'Cantarranas', tarifa: 6000 },
+        { nombre: 'Ceiba I (La Ceiba)', tarifa: 6000 }, { nombre: 'Edmundo López', tarifa: 6000 },
+        { nombre: 'El Cerrito', tarifa: 6000 }, { nombre: 'El Níspero', tarifa: 6000 },
+        { nombre: 'El Paraíso', tarifa: 6000 }, { nombre: 'La Campiña', tarifa: 6000 },
+        { nombre: 'La Florida', tarifa: 6000 }, { nombre: 'La Independencia', tarifa: 6000 },
+        { nombre: 'Los Araujos', tarifa: 6000 }, { nombre: 'Los Nogales', tarifa: 6000 },
+        { nombre: 'Minuto de Dios', tarifa: 6000 }, { nombre: 'Mochileros', tarifa: 6000 },
+        { nombre: 'Nueva Belén', tarifa: 6000 }, { nombre: 'Nuevo Milenio', tarifa: 6000 },
+        { nombre: 'P5', tarifa: 6000 }, { nombre: 'Panzenú', tarifa: 6000 },
+        { nombre: 'Rancho Grande', tarifa: 6000 }, { nombre: 'San Francisco', tarifa: 6000 },
+        { nombre: 'San Judas', tarifa: 6000 }, { nombre: 'Santander', tarifa: 6000 },
+        { nombre: 'Sinuflor', tarifa: 6000 }, { nombre: 'Valeria', tarifa: 6000 },
+        { nombre: 'Villa del Mar', tarifa: 6000 }, { nombre: 'Villa Emilia', tarifa: 6000 },
+        { nombre: 'Villa Paz', tarifa: 6000 }, { nombre: 'Villanueva', tarifa: 6000 },
+        { nombre: '12 de Octubre', tarifa: 6000 }, { nombre: 'El Alivio', tarifa: 6000 },
+        { nombre: 'El Recreo', tarifa: 6000 }, { nombre: 'Furatena', tarifa: 6000 },
+        { nombre: 'La Granja Norte', tarifa: 6000 }, { nombre: 'Los Cedros', tarifa: 6000 },
+        { nombre: 'Los Laureles', tarifa: 6000 }, { nombre: 'Mocarí', tarifa: 6000 },
+        { nombre: 'Robinson Pitalúa', tarifa: 6000 }, { nombre: 'Urbanización el Norte', tarifa: 6000 },
+        { nombre: 'Villa del Norte', tarifa: 6000 }, { nombre: 'Villa del Rosario', tarifa: 6000 },
+        { nombre: 'Villa Natalia', tarifa: 6000 }, { nombre: 'Villa Orieta', tarifa: 6000 },
+    ];
 
-    // Cargar tarifas desde Firestore al iniciar
+    function _buildBarrioMap(lista) {
+        _barrioTarifaMap = {};
+        _barriosMonteriaLista = lista.map(b => b.nombre);
+        lista.forEach(b => { _barrioTarifaMap[b.nombre.toLowerCase()] = b.tarifa; });
+    }
+    _buildBarrioMap(_BARRIOS_DEFAULT);
+
+    // Cargar barrios desde Firestore al iniciar
     (async () => {
         try {
-            const snap = await getDoc(doc(db, 'config', 'domicilioTarifas'));
-            if (snap.exists()) {
-                const d = snap.data();
-                if (d.centro != null) _tarifasDomicilio.centro = d.centro;
-                if (d.margenIzquierda != null) _tarifasDomicilio.margenIzquierda = d.margenIzquierda;
-                if (d.norte != null) _tarifasDomicilio.norte = d.norte;
+            const snap = await getDoc(doc(db, 'config', 'domicilioBarrios'));
+            if (snap.exists() && snap.data().barrios?.length) {
+                _buildBarrioMap(snap.data().barrios);
+                // Actualizar el datalist si ya estaba montado
+                const dl = document.getElementById('neighborhood-list');
+                if (dl && dl.childElementCount === 0) {
+                    _barriosMonteriaLista.sort().forEach(n => {
+                        const o = document.createElement('option'); o.value = n; dl.appendChild(o);
+                    });
+                }
             }
         } catch (_) { /* usar defaults */ }
     })();
@@ -2365,28 +2392,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function calcularCostoEnvio(ciudad, barrio) {
         if (!ciudad || ciudad !== 'Montería') return 0;
         if (!barrio) return 0;
-        const barrioNorm = barrio.trim().toLowerCase();
-        const zonas = [
-            { barrios: ZONAS_MONTERIA.margenIzquierda.barrios, tarifa: _tarifasDomicilio.margenIzquierda },
-            { barrios: ZONAS_MONTERIA.norte.barrios, tarifa: _tarifasDomicilio.norte },
-            { barrios: ZONAS_MONTERIA.centro.barrios, tarifa: _tarifasDomicilio.centro }
-        ];
-        for (const zona of zonas) {
-            if (zona.barrios.some(b => b.toLowerCase() === barrioNorm)) {
-                return zona.tarifa;
-            }
+        const key = barrio.trim().toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(_barrioTarifaMap, key)) {
+            return _barrioTarifaMap[key];
         }
-        // Barrio no clasificado en Montería → tarifa centro por defecto
-        return _tarifasDomicilio.centro;
+        // Barrio no encontrado → 5.000 por defecto
+        return 5000;
     }
 
     // Definir barrios por ciudad
     const neighborhoodsByCity = {
-        'Montería': [
-            ...ZONAS_MONTERIA.centro.barrios,
-            ...ZONAS_MONTERIA.norte.barrios,
-            ...ZONAS_MONTERIA.margenIzquierda.barrios
-        ],
+        'Montería': _barriosMonteriaLista,
         'Cereté': ['Centro', 'Norte', 'Sur'],
         'Lorica': ['Centro', 'Norte', 'Sur'],
         'Sahagún': ['Centro', 'Norte', 'Sur'],
