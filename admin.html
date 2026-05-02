@@ -101,6 +101,9 @@
                 <a class="rail-link" href="#repartidores" data-tooltip="Repartidores">
                     <i class="bi bi-bicycle"></i><span>Repartidores</span>
                 </a>
+                <a class="rail-link" href="#config-domicilio" data-tooltip="Tarifas Domicilio">
+                    <i class="bi bi-geo-alt"></i><span>Tarifas Domicilio</span>
+                </a>
                 <a class="rail-link" href="#promociones" data-tooltip="Promociones">
                     <i class="bi bi-megaphone"></i><span>Promociones</span>
                 </a>
@@ -995,6 +998,113 @@
                 </div> 
             </div>
             
+
+            <!-- ═══════════════════════════════════════════════════════════════════
+                 SECCIÓN: TARIFAS DOMICILIO
+                 ═══════════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="config-domicilio">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="h2 mb-0"><i class="bi bi-geo-alt me-2"></i>Tarifas de Domicilio</h1>
+                        <p class="text-muted small mb-0 mt-1">Ajusta el costo de envío para cada zona de Montería. Los cambios se aplican de inmediato en la tienda.</p>
+                    </div>
+                </div>
+
+                <!-- Aviso otras ciudades -->
+                <div class="alert alert-info d-flex align-items-center gap-2 mb-4" style="border-radius:12px;">
+                    <i class="bi bi-info-circle-fill fs-5"></i>
+                    <span><strong>Otras ciudades:</strong> Los envíos fuera de Montería van por <strong>Interrapidísimo</strong> y <strong>no se cobran</strong> en la tienda — el cliente coordina directamente con la tienda.</span>
+                </div>
+
+                <!-- Tarjetas de zonas -->
+                <div class="row g-3 mb-4">
+
+                    <!-- Zona Centro / Este del río -->
+                    <div class="col-md-4">
+                        <div class="card h-100" style="border-radius:14px;">
+                            <div class="card-header bg-white border-0 pt-3 pb-0">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span style="width:14px;height:14px;border-radius:50%;background:#0d6efd;display:inline-block;flex-shrink:0;"></span>
+                                    <h5 class="mb-0">Centro / Este del río</h5>
+                                </div>
+                                <p class="text-muted small mb-0">Barrios en la margen derecha del río Sinú y el centro de la ciudad.</p>
+                            </div>
+                            <div class="card-body">
+                                <label class="form-label fw-semibold">Tarifa de domicilio</label>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="tarifa-centro" min="0" step="500" placeholder="5000">
+                                </div>
+                                <details class="mt-2">
+                                    <summary class="text-muted small" style="cursor:pointer;">Ver barrios de esta zona</summary>
+                                    <div id="barrios-centro-list" class="mt-2" style="max-height:180px;overflow-y:auto;font-size:13px;color:#555;line-height:1.8;"></div>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Zona Margen Izquierda -->
+                    <div class="col-md-4">
+                        <div class="card h-100" style="border-radius:14px;">
+                            <div class="card-header bg-white border-0 pt-3 pb-0">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span style="width:14px;height:14px;border-radius:50%;background:#fd7e14;display:inline-block;flex-shrink:0;"></span>
+                                    <h5 class="mb-0">Margen Izquierda</h5>
+                                </div>
+                                <p class="text-muted small mb-0">Barrios al otro lado del río Sinú (margen occidental).</p>
+                            </div>
+                            <div class="card-body">
+                                <label class="form-label fw-semibold">Tarifa de domicilio</label>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="tarifa-margen" min="0" step="500" placeholder="6000">
+                                </div>
+                                <details class="mt-2">
+                                    <summary class="text-muted small" style="cursor:pointer;">Ver barrios de esta zona</summary>
+                                    <div id="barrios-margen-list" class="mt-2" style="max-height:180px;overflow-y:auto;font-size:13px;color:#555;line-height:1.8;"></div>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Zona Norte -->
+                    <div class="col-md-4">
+                        <div class="card h-100" style="border-radius:14px;">
+                            <div class="card-header bg-white border-0 pt-3 pb-0">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span style="width:14px;height:14px;border-radius:50%;background:#198754;display:inline-block;flex-shrink:0;"></span>
+                                    <h5 class="mb-0">Norte</h5>
+                                </div>
+                                <p class="text-muted small mb-0">Barrios en la zona norte de la ciudad.</p>
+                            </div>
+                            <div class="card-body">
+                                <label class="form-label fw-semibold">Tarifa de domicilio</label>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="tarifa-norte" min="0" step="500" placeholder="6000">
+                                </div>
+                                <details class="mt-2">
+                                    <summary class="text-muted small" style="cursor:pointer;">Ver barrios de esta zona</summary>
+                                    <div id="barrios-norte-list" class="mt-2" style="max-height:180px;overflow-y:auto;font-size:13px;color:#555;line-height:1.8;"></div>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón guardar -->
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-primary px-4" id="btn-save-tarifas" onclick="saveDomicilioTarifas()">
+                        <i class="bi bi-cloud-check me-1"></i> Guardar tarifas
+                    </button>
+                    <span id="tarifas-save-status" class="text-success small" style="display:none;">
+                        <i class="bi bi-check-circle me-1"></i>Guardado correctamente
+                    </span>
+                </div>
+
+                <!-- Info última actualización -->
+                <p class="text-muted small mt-3" id="tarifas-last-update"></p>
+            </div>
 
             <!-- ═══════════════════════════════════════════════════════════════════
                  SECCIÓN: FINANZAS
