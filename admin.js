@@ -723,8 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (window.adminShowSection) { window.adminShowSection('#ventas'); window.adminMarkActive('#ventas'); }
                         const btn = document.getElementById('toggle-sales-form-view-btn');
                         if (btn) btn.click();
-                        confirmBtn.innerHTML = '<i class="bi bi-whatsapp me-1"></i>Enviar WhatsApp';
-                        await notificarRepartidor(dp, orderData, dc, total);
+                        confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Aceptar Pedido';
                     } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
                 };
             } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
