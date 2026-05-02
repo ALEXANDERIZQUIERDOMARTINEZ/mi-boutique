@@ -5303,3 +5303,255 @@ input[type="datetime-local"] {
         opacity: 1;
     }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   MEJORAS DE DISEÑO PROFESIONAL — v2.0
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Tarjetas de producto: bordes redondeados y hover elevado ── */
+.product-card {
+    border-radius: 14px !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07) !important;
+    transition: transform 0.28s cubic-bezier(.4,0,.2,1), box-shadow 0.28s cubic-bezier(.4,0,.2,1) !important;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 28px rgba(217, 136, 185, 0.22) !important;
+}
+
+.product-image-wrapper {
+    border-radius: 14px 14px 0 0;
+    overflow: hidden;
+}
+
+/* Badge de descuento: con porcentaje visible */
+.badge-promo {
+    border-radius: 6px !important;
+    font-size: 0.68rem !important;
+    padding: 4px 9px !important;
+    letter-spacing: 0.5px !important;
+    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+}
+
+/* Precio de venta: más prominente */
+.price-detal-card {
+    font-size: 0.9rem !important;
+    font-weight: 700 !important;
+    color: #1a1a1a !important;
+}
+
+.price-detal-old-card {
+    font-size: 0.7rem !important;
+    color: #bbb !important;
+    display: block;
+}
+
+/* ── Hero Banner ── */
+.hero-banner {
+    position: relative;
+    overflow: hidden;
+    padding: 44px 20px 52px;
+    background: linear-gradient(145deg, #fff8fc 0%, #fce7f3 55%, #f4c8e8 100%);
+    text-align: center;
+}
+
+.hero-decoration {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.hero-dec-1 {
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(255,255,255,0.7) 0%, transparent 65%);
+    top: -120px;
+    right: -80px;
+}
+
+.hero-dec-2 {
+    width: 220px;
+    height: 220px;
+    background: radial-gradient(circle, rgba(217,136,185,0.18) 0%, transparent 70%);
+    bottom: -60px;
+    left: -50px;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+}
+
+.hero-tag {
+    display: inline-block;
+    background: var(--color-primario);
+    color: white;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    padding: 5px 15px;
+    border-radius: 50px;
+    margin-bottom: 14px;
+    box-shadow: 0 3px 12px rgba(217, 136, 185, 0.4);
+}
+
+.hero-title {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: #1a1a1a;
+    line-height: 1.12;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+}
+
+.hero-subtitle {
+    font-size: 0.88rem;
+    color: #666;
+    max-width: 290px;
+    margin: 0 auto 22px;
+    line-height: 1.55;
+    font-weight: 400;
+}
+
+.hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--color-primario);
+    color: white;
+    border: none;
+    padding: 13px 30px;
+    border-radius: 50px;
+    font-family: var(--fuente-principal);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 5px 18px rgba(217, 136, 185, 0.42);
+}
+
+.hero-cta:hover {
+    background: var(--color-primario-oscuro);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(217, 136, 185, 0.5);
+}
+
+.hero-cta i {
+    font-size: 1.1rem;
+}
+
+@media (min-width: 768px) {
+    .hero-banner {
+        padding: 80px 40px 90px;
+    }
+    .hero-title {
+        font-size: 3.4rem;
+    }
+    .hero-subtitle {
+        font-size: 1rem;
+        max-width: 400px;
+    }
+}
+
+/* ── Trust Strip ── */
+.trust-strip {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0;
+    background: #fff;
+    border-bottom: 1px solid var(--color-borde);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 0;
+}
+
+.trust-strip::-webkit-scrollbar {
+    display: none;
+}
+
+.trust-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 14px;
+    flex-shrink: 0;
+    border-right: 1px solid #eee;
+}
+
+.trust-item:last-child {
+    border-right: none;
+}
+
+.trust-item i {
+    font-size: 1.05rem;
+    color: var(--color-primario);
+    flex-shrink: 0;
+}
+
+.trust-item span {
+    font-size: 0.62rem;
+    color: #555;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+/* ── Encabezado de Colección ── */
+.collection-header {
+    padding: 22px 16px 4px;
+    text-align: center;
+}
+
+.collection-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--color-texto);
+    margin-bottom: 0;
+    position: relative;
+    display: inline-block;
+}
+
+.collection-title::after {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 2px;
+    background: var(--color-primario);
+    margin: 7px auto 0;
+    border-radius: 2px;
+}
+
+/* ── Footer mejorado ── */
+.footer-brand-name {
+    font-family: var(--fuente-principal);
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--color-texto);
+    margin-bottom: 4px;
+}
+
+.footer-tagline {
+    font-size: 0.72rem;
+    color: var(--color-primario);
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    margin-bottom: 14px;
+    font-style: italic;
+}
+
+.footer-divider {
+    width: 40px;
+    height: 1px;
+    background: var(--color-borde);
+    margin: 0 auto 14px;
+}

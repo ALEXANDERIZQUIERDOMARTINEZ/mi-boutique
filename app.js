@@ -658,6 +658,7 @@ function renderProducts(products) {
         const isAgotado = stockTotal <= 0;
         const { precioFinal, tienePromo, precioOriginal } = getPromoPrice(product);
         const precioMostrado = isWholesaleActive ? (parseFloat(product.precioMayor) || 0) : precioFinal;
+        const descuentoPct = (tienePromo && precioOriginal > 0) ? Math.round((1 - precioFinal / precioOriginal) * 100) : 0;
 
         // Colores y tallas CON STOCK (disponibles para comprar)
         const variacionesConStock = (product.variaciones || []).filter(v => parseInt(v.stock, 10) > 0);
@@ -728,7 +729,7 @@ function renderProducts(products) {
                 <div class="product-image-wrapper">
                     <img src="${imgUrl}" alt="${product.nombre}" loading="lazy">
                     ${isAgotado ? '<span class="badge-agotado">AGOTADO</span>' : ''}
-                    ${tienePromo ? '<span class="badge-promo">DESCUENTO</span>' : ''}
+                    ${tienePromo ? `<span class="badge-promo">${descuentoPct > 0 ? `−${descuentoPct}%` : 'OFERTA'}</span>` : ''}
                 </div>
                 <div class="product-card-body">
                     <h3 class="product-title">${product.nombre}</h3>
