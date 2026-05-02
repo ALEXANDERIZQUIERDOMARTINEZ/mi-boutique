@@ -2755,15 +2755,20 @@ document.addEventListener('DOMContentLoaded', () => {
             container.innerHTML = '<p class="co-empty-cart">Tu carrito está vacío</p>';
             return;
         }
-        container.innerHTML = cart.map(item => `
+        container.innerHTML = cart.map(item => {
+            const img = item.imagenUrl
+                ? `<img src="${item.imagenUrl}" alt="${item.nombre}" class="co-item-img" loading="lazy" onerror="this.style.display='none'">`
+                : `<div class="co-item-img co-item-img-placeholder"><i class="bi bi-bag"></i></div>`;
+            return `
             <div class="co-item">
+                ${img}
                 <div class="co-item-info">
                     <span class="co-item-name">${item.nombre || ''}</span>
                     <span class="co-item-detail">${item.talla ? item.talla + ' · ' : ''}${item.color ? item.color + ' · ' : ''}×${item.cantidad}</span>
                 </div>
                 <span class="co-item-price">${formatoMoneda.format(item.total)}</span>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     }
 
     // Exponer para los onclick del HTML
