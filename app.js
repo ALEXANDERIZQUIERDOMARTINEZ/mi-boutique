@@ -2307,34 +2307,48 @@ document.addEventListener('DOMContentLoaded', () => {
         const cedulaDisplay = document.getElementById('cedula-display');
         const cedulaInput = document.getElementById('checkout-cedula');
 
+        const payGrid = document.getElementById('co-pay-grid-wrap');
+        const onlyTransferNotice = document.getElementById('co-only-transfer-notice');
+
         if (ciudad && ciudad !== 'Montería') {
             efectivoOption.disabled = true;
-            efectivoOption.textContent = 'Efectivo (No disponible fuera de Montería)';
-            paymentInfo.textContent = '⚠️ Solo transferencia disponible para envíos fuera de Montería';
-            paymentInfo.classList.add('text-warning');
+            paymentInfo.textContent = '';
+            paymentInfo.classList.remove('text-warning', 'text-success');
+
+            // Ocultar grilla de pago, mostrar tarjeta "solo transferencia"
+            if (payGrid) payGrid.style.display = 'none';
+            if (onlyTransferNotice) onlyTransferNotice.style.display = 'flex';
 
             // Mostrar info de envío fuera de Montería
             deliveryInfo.style.display = 'block';
             cedulaDisplay.textContent = cedulaInput.value || '-';
 
-            // Si tenía efectivo seleccionado, resetear
-            if (paymentSelect.value === 'Efectivo') {
-                paymentSelect.value = '';
+            // Auto-seleccionar transferencia
+            const transferBtn = document.getElementById('co-pay-transferencia');
+            if (transferBtn && !transferBtn.classList.contains('active')) {
+                transferBtn.click();
+            } else if (paymentSelect.value !== 'Transferencia') {
+                paymentSelect.value = 'Transferencia';
+                paymentSelect.dispatchEvent(new Event('change'));
             }
         } else if (ciudad === 'Montería') {
             efectivoOption.disabled = false;
-            efectivoOption.textContent = 'Efectivo (Pago contra entrega)';
-            paymentInfo.textContent = '✅ Efectivo y transferencia disponibles';
-            paymentInfo.classList.remove('text-warning');
-            paymentInfo.classList.add('text-success');
+            paymentInfo.textContent = '';
+            paymentInfo.classList.remove('text-warning', 'text-success');
+
+            // Mostrar grilla normal, ocultar aviso
+            if (payGrid) payGrid.style.display = '';
+            if (onlyTransferNotice) onlyTransferNotice.style.display = 'none';
 
             // Ocultar info de envío
             deliveryInfo.style.display = 'none';
         } else {
             efectivoOption.disabled = false;
-            efectivoOption.textContent = 'Efectivo (Pago contra entrega)';
             paymentInfo.textContent = '';
             paymentInfo.classList.remove('text-warning', 'text-success');
+
+            if (payGrid) payGrid.style.display = '';
+            if (onlyTransferNotice) onlyTransferNotice.style.display = 'none';
 
             // Ocultar info de envío
             deliveryInfo.style.display = 'none';
@@ -2697,6 +2711,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (txt) txt.textContent = 'Toca para seleccionar imagen';
         }
     }
+
+    // Zoom del QR al hacer tap
+    window.coZoomQR = function(img) {
+        const overlay = document.getElementById('qr-zoom-overlay');
+        const zoomImg = document.getElementById('qr-zoom-img');
+        if (!overlay || !zoomImg) return;
+        zoomImg.src = img.src;
+        overlay.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    };
+    window.coCloseQRZoom = function() {
+        const overlay = document.getElementById('qr-zoom-overlay');
+        if (overlay) overlay.style.display = 'none';
+        document.body.style.overflow = '';
+    };
 
     // Previsualizar comprobante al seleccionar archivo
     document.getElementById('checkout-comprobante').addEventListener('change', function() {

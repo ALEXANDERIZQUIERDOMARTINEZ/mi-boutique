@@ -400,8 +400,9 @@ Finalizar Pedido
       <div class="co-order-items" id="co-order-items"></div>
 
       <!-- Métodos de pago -->
-      <div class="co-pay-grid">
-        <button type="button" class="co-pay-card" id="co-pay-efectivo" onclick="coSelectPayment('Efectivo',this)">
+      <div id="co-pay-grid-wrap">
+        <div class="co-pay-grid">
+          <button type="button" class="co-pay-card" id="co-pay-efectivo" onclick="coSelectPayment('Efectivo',this)">
           <i class="bi bi-cash-coin co-pay-ico"></i>
           <div class="co-pay-name">Efectivo</div>
           <div class="co-pay-sub">Contra entrega</div>
@@ -413,6 +414,25 @@ Finalizar Pedido
           <div class="co-pay-sub">Nequi · Bancolombia</div>
           <i class="bi bi-check-circle-fill co-pay-chk"></i>
         </button>
+        </div>
+      </div>
+
+      <!-- Tarjeta "solo transferencia" para ciudades fuera de Montería -->
+      <div id="co-only-transfer-notice" style="display:none" class="co-only-transfer-notice">
+        <div class="co-only-transfer-why">
+          <i class="bi bi-geo-alt-fill"></i>
+          <span>Envíos fuera de Montería requieren pago anticipado por transferencia. El efectivo solo está disponible para domicilios en Montería.</span>
+        </div>
+        <div class="co-only-transfer-card">
+          <div class="co-only-transfer-left">
+            <i class="bi bi-phone co-pay-ico"></i>
+            <div>
+              <div class="co-pay-name">Transferencia</div>
+              <div class="co-pay-sub">Nequi · Bancolombia</div>
+            </div>
+          </div>
+          <i class="bi bi-check-circle-fill co-only-transfer-chk"></i>
+        </div>
       </div>
 
       <!-- Hidden select (needed for existing JS handlers) -->
@@ -455,7 +475,7 @@ Finalizar Pedido
 
         <!-- Panel Nequi: QR + número -->
         <div id="nequi-panel" style="display:none" class="co-qr-panel">
-          <img id="nequi-qr-img" src="" alt="QR Nequi" class="co-qr-img" style="display:none">
+          <img id="nequi-qr-img" src="" alt="QR Nequi" class="co-qr-img" style="display:none" onclick="coZoomQR(this)" title="Toca para ampliar">
           <p id="nequi-qr-placeholder" style="display:none;font-size:12px;color:#999;text-align:center;margin:0">QR no configurado.<br>Transfiere al número de abajo.</p>
           <a id="nequi-qr-download" href="#" download="QR-Nequi-AndreaEspitia.png" class="co-btn-download" style="display:none">
             <i class="bi bi-download"></i> Descargar QR
@@ -581,6 +601,14 @@ Finalizar Pedido
 <script type="module" src="analytics.js?v=1.0.0"></script>
 <script type="module" src="app.js?v=1.9.2"></script>
 
+<!-- QR Zoom overlay -->
+<div id="qr-zoom-overlay" class="qr-zoom-overlay" style="display:none" onclick="coCloseQRZoom()">
+  <button class="qr-zoom-close" onclick="coCloseQRZoom()" aria-label="Cerrar">
+    <i class="bi bi-x-lg"></i>
+  </button>
+  <img id="qr-zoom-img" class="qr-zoom-img" src="" alt="QR amplificado">
+  <p class="qr-zoom-hint">Toca para cerrar · Toma captura de pantalla</p>
+</div>
 
 </body>
 </html>
