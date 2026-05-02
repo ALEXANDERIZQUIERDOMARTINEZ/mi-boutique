@@ -520,6 +520,16 @@ Finalizar Pedido
         </div>
       </div>
 
+      <!-- Subtotal y domicilio (visibles cuando hay costo de envío) -->
+      <div id="subtotal-row" style="display:none; padding:8px 14px; justify-content:space-between; align-items:center;">
+        <span style="font-size:13px;color:var(--color-texto-secundario,#666);">Subtotal productos</span>
+        <span style="font-size:14px;font-weight:600;" id="subtotal-display">$0</span>
+      </div>
+      <div id="delivery-fee-row" style="display:none; padding:6px 14px; justify-content:space-between; align-items:center;">
+        <span style="font-size:13px;color:var(--color-texto-secundario,#666);">🛵 Domicilio</span>
+        <span style="font-size:14px;font-weight:600;color:#2d9a4e;" id="delivery-fee-display">$0</span>
+      </div>
+
       <!-- Total -->
       <div class="co-total-bar">
         <span class="co-total-lbl">Total del pedido</span>
