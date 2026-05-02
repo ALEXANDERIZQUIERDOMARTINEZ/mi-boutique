@@ -618,7 +618,14 @@ function sortProducts(products, sortBy) {
             ordered = sorted.sort((a, b) => b.nombre.localeCompare(a.nombre));
             break;
         case 'bestseller':
-            ordered = sorted.sort((a, b) => (b.ventas || 0) - (a.ventas || 0));
+            ordered = sorted.sort((a, b) => {
+                const diff = (b.ventas || 0) - (a.ventas || 0);
+                if (diff !== 0) return diff;
+                // Tiebreaker: productos nuevos (sin ventas) ordenados por más reciente
+                const tsA = a.timestamp?.seconds || 0;
+                const tsB = b.timestamp?.seconds || 0;
+                return tsB - tsA;
+            });
             break;
         case 'newest':
         default:
@@ -626,11 +633,8 @@ function sortProducts(products, sortBy) {
             break;
     }
 
-    // Separar: disponibles en promo → disponibles normales (agotados se ocultan del catálogo)
-    const disponiblesPromo = ordered.filter(p => getStock(p) > 0 && getPromoPrice(p).tienePromo);
-    const disponiblesNormal = ordered.filter(p => getStock(p) > 0 && !getPromoPrice(p).tienePromo);
-
-    return [...disponiblesPromo, ...disponiblesNormal];
+    // Mostrar en el orden definido — sin priorizar promociones artificialmente
+    return ordered;
 }
 
 // ✅ RENDERIZAR PRODUCTOS CON COLORES REALES Y PAGINACIÓN
@@ -1995,9 +1999,17 @@ document.addEventListener('DOMContentLoaded', () => {
             categoryDropdownMenu.appendChild(li);
         });
 
-        // Populate mobile dropdown
+        // Populate mobile dropdown — incluye "Descuentos" destacado al inicio
         if (categoryDropdownMenuMobile) {
-            categoryDropdownMenuMobile.innerHTML = categoryDropdownMenu.innerHTML;
+            const promoHeader = `<li>
+                <a class="dropdown-item filter-group dropdown-promo-item" href="#" data-filter="promocion">
+                    <i class="bi bi-tag-fill"></i>
+                    <span>Descuentos</span>
+                    <span class="badge-sale-menu">% OFERTA</span>
+                </a>
+            </li>
+            <li><hr class="dropdown-divider my-1"></li>`;
+            categoryDropdownMenuMobile.innerHTML = promoHeader + categoryDropdownMenu.innerHTML;
         }
 
         console.log(`✅ ${categories.length} categorías cargadas correctamente`);
