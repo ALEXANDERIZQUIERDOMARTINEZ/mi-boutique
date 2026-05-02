@@ -767,31 +767,53 @@ function renderProducts(products) {
     renderPagination(products.length);
 }
 
+function buildPageList(current, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = [1];
+    if (current > 3) pages.push('...');
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
+}
+
 function renderPagination(totalProducts) {
     const container = document.getElementById('pagination-container');
     if (!container) return;
     const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
     if (totalPages <= 1) { container.innerHTML = ''; return; }
 
+    const pages = buildPageList(currentPage, totalPages);
+
     let html = '<div class="pagination-wrap">';
-    if (currentPage > 1) {
-        html += `<button class="page-btn" onclick="goToPage(${currentPage - 1})"><i class="bi bi-chevron-left"></i></button>`;
+    html += `<button class="page-btn page-btn-nav" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}><i class="bi bi-chevron-left"></i></button>`;
+    for (const p of pages) {
+        if (p === '...') {
+            html += `<span class="page-ellipsis">…</span>`;
+        } else {
+            html += `<button class="page-btn${p === currentPage ? ' page-btn-active' : ''}" data-page="${p}">${p}</button>`;
+        }
     }
-    for (let i = 1; i <= totalPages; i++) {
-        html += `<button class="page-btn${i === currentPage ? ' page-btn-active' : ''}" onclick="goToPage(${i})">${i}</button>`;
-    }
-    if (currentPage < totalPages) {
-        html += `<button class="page-btn" onclick="goToPage(${currentPage + 1})"><i class="bi bi-chevron-right"></i></button>`;
-    }
+    html += `<button class="page-btn page-btn-nav" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}><i class="bi bi-chevron-right"></i></button>`;
     html += '</div>';
     container.innerHTML = html;
+
+    // Event delegation — evita el problema de scope de módulos ES6
+    container.querySelectorAll('[data-page]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const page = parseInt(btn.dataset.page);
+            if (!isNaN(page) && page >= 1 && page <= totalPages && !btn.disabled) {
+                goToPage(page);
+            }
+        });
+    });
 }
 
 function goToPage(page) {
     currentPage = page;
     renderProducts(currentFilteredProducts);
-    const section = document.getElementById('collection-header-anchor') || document.getElementById('products-section');
-    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const anchor = document.getElementById('collection-header-anchor');
+    if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // --- FUNCIONES AUXILIARES PARA BOTONES DE TALLA Y COLOR ---

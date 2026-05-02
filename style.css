@@ -889,11 +889,19 @@ h1, h2, h3, h4, h5, h6 {
    9. FOOTER
    ──────────────────────────────────────────────────────────────────── */
 .footer-minimal {
-    padding: 1.5rem 0;
+    padding: 28px 20px 20px;
     background-color: #fafafa;
     border-top: 1px solid var(--color-borde);
     text-align: center;
     margin-top: auto;
+}
+
+.footer-link {
+    color: var(--color-primario);
+    text-decoration: none;
+}
+.footer-link:hover {
+    text-decoration: underline;
 }
 
 /* ────────────────────────────────────────────────────────────────────
@@ -5911,4 +5919,113 @@ img, video, iframe, embed, object {
     .site-header {
         position: relative !important;
     }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   FOOTER LIMPIO v3 + PAGINACIÓN INTELIGENTE v2
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Footer: minimalista y centrado ── */
+.footer-minimal {
+    padding: 24px 20px 20px !important;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.footer-brand-name {
+    font-family: var(--fuente-principal) !important;
+    font-weight: 800 !important;
+    font-size: 1rem !important;
+    letter-spacing: 5px !important;
+    text-transform: uppercase !important;
+    color: var(--color-texto) !important;
+    margin-bottom: 8px !important;
+}
+
+.footer-divider {
+    width: 32px !important;
+    height: 1.5px !important;
+    background: var(--color-primario) !important;
+    border-radius: 2px;
+    margin: 8px auto !important;
+    display: block;
+}
+
+/* Ocultar estilos viejos del trust strip en footer */
+.trust-strip-footer,
+.trust-item-footer,
+.footer-tagline {
+    display: none !important;
+}
+
+/* ── Paginación inteligente ── */
+#pagination-container {
+    padding: 16px 16px 12px !important;
+    width: 100%;
+}
+
+.pagination-wrap {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: nowrap;
+    width: 100%;
+}
+
+.page-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    padding: 0 10px !important;
+    border: 1.5px solid #e5e5e5 !important;
+    background: white !important;
+    border-radius: 10px !important;
+    font-family: var(--fuente-principal) !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: var(--color-texto) !important;
+    cursor: pointer !important;
+    transition: all 0.18s ease !important;
+    flex-shrink: 0 !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: none !important;
+}
+
+.page-btn:hover:not(.page-btn-active):not(:disabled) {
+    border-color: var(--color-primario) !important;
+    color: var(--color-primario) !important;
+    background: #fdf0f7 !important;
+}
+
+.page-btn-active {
+    background: var(--color-primario) !important;
+    border-color: var(--color-primario) !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(217, 136, 185, 0.35) !important;
+}
+
+.page-btn-nav {
+    min-width: 38px !important;
+    padding: 0 !important;
+    color: var(--color-texto-secundario) !important;
+    font-size: 0.9rem !important;
+}
+
+.page-btn:disabled {
+    opacity: 0.3 !important;
+    cursor: not-allowed !important;
+}
+
+.page-ellipsis {
+    font-size: 0.85rem;
+    color: #aaa;
+    padding: 0 2px;
+    line-height: 38px;
+    flex-shrink: 0;
 }
