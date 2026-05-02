@@ -2298,24 +2298,69 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ── Zonas de domicilio para Montería ──
+    // margenIzquierda: oeste del río Sinú  → $6.000
+    // norte: zona norte de la ciudad        → $6.000
+    // centro: este del río / centro         → $5.000  (default Montería)
+    const ZONAS_MONTERIA = {
+        margenIzquierda: {
+            tarifa: 6000,
+            label: 'Margen izquierda',
+            barrios: [
+                'P5', 'Barrio P5', 'Edmundo López', 'La Campiña', 'Los Araujos',
+                'Panzenú', 'Cantarranas', 'El Níspero', 'Villa Paz', 'Los Nogales',
+                'Minuto de Dios', 'Betania', 'El Paraíso', 'La Florida',
+                'Nuevo Milenio', 'Rancho Grande', 'Villa del Mar'
+            ]
+        },
+        norte: {
+            tarifa: 6000,
+            label: 'Norte',
+            barrios: [
+                'Mocarí', 'Robinson Pitalúa', 'Los Laureles', 'Villa del Rosario',
+                'La Granja Norte', 'El Recreo', 'Villa Natalia', 'Los Nogales Norte',
+                'Urbanización el Norte', 'Villa del Norte', 'El Alivio',
+                'Furatena', 'Los Cedros', 'Villa Orieta'
+            ]
+        },
+        centro: {
+            tarifa: 5000,
+            label: 'Centro / Este del río',
+            barrios: [
+                'Cantaclaro', 'Centro', 'El Dorado', 'El Poblado', 'La Granja',
+                'La Ribera', 'Los Colores', 'Mogambo', 'Pastrana', 'Policarpa',
+                'Villa Cielo', 'Villa Margarita', 'Villa Melissa', 'Boston',
+                'Buenavista', 'La Castellana', 'Las Palmas', 'La Pradera',
+                'Los Alpes', 'Los Cerezos', 'Madre Bernarda', 'Panamericano',
+                'Santa Lucía', 'Santa Rosa', 'Sierra Chiquita', 'Sor Teresa Demjanovich',
+                'Unidad Deportiva', 'Urbanización 7 de Agosto', 'Villa Country',
+                'Villa Gabriela', 'Villa del Río', 'Alamedas del Sinú',
+                'El Carmelo', 'La Candelaria', 'La Estancia', 'Los Búcaros',
+                'Los Manguitos', 'Nuevo Horizonte', 'Patio Bonito', 'Ranchos del INAT',
+                'Tres Piedras', 'Villa Caribe', 'Villa Cielo', 'Villa Rosa'
+            ]
+        }
+    };
+
+    function calcularCostoEnvio(ciudad, barrio) {
+        if (!ciudad || ciudad !== 'Montería') return 0;
+        if (!barrio) return 0;
+        const barrioNorm = barrio.trim().toLowerCase();
+        for (const zona of Object.values(ZONAS_MONTERIA)) {
+            if (zona.barrios.some(b => b.toLowerCase() === barrioNorm)) {
+                return zona.tarifa;
+            }
+        }
+        // Barrio no clasificado en Montería → tarifa centro por defecto
+        return ZONAS_MONTERIA.centro.tarifa;
+    }
+
     // Definir barrios por ciudad
     const neighborhoodsByCity = {
         'Montería': [
-            'Cantaclaro',
-            'Centro',
-            'El Dorado',
-            'El Poblado',
-            'La Granja',
-            'La Ribera',
-            'Los Colores',
-            'Mogambo',
-            'Mocarí',
-            'P5',
-            'Pastrana',
-            'Policarpa',
-            'Villa Cielo',
-            'Villa Margarita',
-            'Villa Melissa'
+            ...ZONAS_MONTERIA.centro.barrios,
+            ...ZONAS_MONTERIA.norte.barrios,
+            ...ZONAS_MONTERIA.margenIzquierda.barrios
         ],
         'Cereté': ['Centro', 'Norte', 'Sur'],
         'Lorica': ['Centro', 'Norte', 'Sur'],
@@ -2417,6 +2462,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Ocultar info de envío
             deliveryInfo.style.display = 'none';
+            updateOrderTotals();
         } else {
             efectivoOption.disabled = false;
             paymentInfo.textContent = '';
@@ -2427,6 +2473,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Ocultar info de envío
             deliveryInfo.style.display = 'none';
+            updateOrderTotals();
         }
     });
 
@@ -2453,6 +2500,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Recalcular domicilio cuando cambia el barrio
+    document.getElementById('checkout-neighborhood').addEventListener('input', function() {
+        updateOrderTotals();
+    });
+    document.getElementById('checkout-neighborhood').addEventListener('change', function() {
+        updateOrderTotals();
+    });
+
     // Calcular vuelto automáticamente
     document.getElementById('checkout-cash-amount').addEventListener('input', function() {
         const cashAmount = parseFloat(this.value) || 0;
@@ -2468,7 +2523,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Calcular y mostrar totales del pedido
     function updateOrderTotals() {
-        const total = cart.reduce((sum, item) => sum + item.total, 0);
+        const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
+
+        const ciudad = (document.getElementById('checkout-city')?.value || '').trim();
+        const barrio = (document.getElementById('checkout-neighborhood')?.value || '').trim();
+        const envio = calcularCostoEnvio(ciudad, barrio);
+        const total = subtotal + envio;
+
+        // Mostrar/ocultar fila de subtotal y domicilio
+        const subtotalRow = document.getElementById('subtotal-row');
+        const deliveryRow = document.getElementById('delivery-fee-row');
+        if (envio > 0) {
+            if (subtotalRow) { subtotalRow.style.display = 'flex'; document.getElementById('subtotal-display').textContent = formatoMoneda.format(subtotal); }
+            if (deliveryRow) { deliveryRow.style.display = 'flex'; document.getElementById('delivery-fee-display').textContent = formatoMoneda.format(envio); }
+        } else {
+            if (subtotalRow) subtotalRow.style.display = 'none';
+            if (deliveryRow) deliveryRow.style.display = 'none';
+        }
 
         document.getElementById('order-total').textContent = formatoMoneda.format(total);
 
@@ -2888,8 +2959,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-        const costoEnvio = 0; // El costo de envío se agrega desde admin.html
-        const total = subtotal;
+        const costoEnvio = calcularCostoEnvio(ciudad, barrio);
+        const total = subtotal + costoEnvio;
 
         // 📊 Tracking: Inicio de checkout
         analytics.trackBeginCheckout(cart, total);
@@ -2988,7 +3059,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const origin = window.location.origin;
                 waMsg += `🧾 ${origin}/comprobante.html?id=${comprobanteId}\n`;
             }
-            waMsg += `\n💰 *Total: $${fmt(subtotal)}*`;
+            if (costoEnvio > 0) {
+                waMsg += `\n📦 Subtotal: $${fmt(subtotal)}`;
+                waMsg += `\n🛵 Domicilio: $${fmt(costoEnvio)}`;
+                waMsg += `\n💰 *Total: $${fmt(total)}*`;
+            } else {
+                waMsg += `\n💰 *Total: $${fmt(total)}*`;
+                if (ciudad !== 'Montería') waMsg += '\n🚚 Envío por Interrapidísimo (coordinar con la tienda)';
+            }
             if (observaciones) waMsg += `\n\n📝 ${observaciones}`;
 
             const waUrl = `https://wa.me/573046084971?text=${encodeURIComponent(waMsg)}`;
