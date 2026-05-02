@@ -693,43 +693,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!orderSnap.exists()) { showToast('Pedido no encontrado', 'error'); return; }
                 const orderData = orderSnap.data();
                 const subtotal = orderData.subtotalProductos || orderData.totalPedido || 0;
-
-                await loadRepartidores();
-                const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('deliveryCostModal'));
-                const costInput = document.getElementById('delivery-cost-input');
-                const preview  = document.getElementById('order-summary-preview');
-                const confirmBtn = document.getElementById('confirm-whatsapp-btn');
-                const sel = document.getElementById('delivery-person-select');
-
-                confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Aceptar Pedido';
-                costInput.value = orderData.costoEnvio || 0;
-                sel.value = orderData.repartidor || sel.options[0]?.value || '';
-
-                const onInput = () => { preview.innerHTML = buildPreviewHtml(subtotal, parseFloat(costInput.value) || 0); };
-                costInput.removeEventListener('input', onInput);
-                costInput.addEventListener('input', onInput);
-                onInput();
-                modal.show();
-
-                confirmBtn.onclick = async () => {
-                    try {
-                        const dc = parseFloat(costInput.value) || 0;
-                        const dp = sel.value;
-                        const total = subtotal + dc;
-                        await updateDoc(orderRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp(), costoEnvio: dc, repartidor: dp, totalPedido: total });
-                        modal.hide();
-                        await preFillSalesForm(orderData, orderId, dc, total, dp);
-                        showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
-                        if (window.adminShowSection) { window.adminShowSection('#ventas'); window.adminMarkActive('#ventas'); }
-                        const btn = document.getElementById('toggle-sales-form-view-btn');
-                        if (btn) btn.click();
-                        confirmBtn.innerHTML = '<i class="bi bi-check-circle me-1"></i>Aceptar Pedido';
-                    } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
-                };
+                await updateDoc(orderRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp(), totalPedido: subtotal });
+                await preFillSalesForm(orderData, orderId, 0, subtotal);
+                showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
+                if (window.adminShowSection) { window.adminShowSection('#ventas'); window.adminMarkActive('#ventas'); }
+                const btn = document.getElementById('toggle-sales-form-view-btn');
+                if (btn) btn.click();
             } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
         }
 
-        async function preFillSalesForm(orderData, orderId, deliveryCost = 0, total = 0, deliveryPerson = 'Papi') {
+        async function preFillSalesForm(orderData, orderId, deliveryCost = 0, total = 0) {
             window.ventaItems = [];
             const vc = document.getElementById('venta-cliente');
             const vcel = document.getElementById('venta-cliente-celular');
@@ -740,14 +713,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const tvs = document.getElementById('tipo-venta-select'); if (tvs) tvs.value = 'detal';
             const tes = document.getElementById('tipo-entrega-select');
             if (tes) { tes.value = 'domicilio'; tes.dispatchEvent(new Event('change')); }
-            const cdi = document.getElementById('costo-domicilio');
-            if (cdi && deliveryCost > 0) { cdi.value = deliveryCost; cdi.dispatchEvent(new Event('input')); }
             const vwc = document.getElementById('venta-whatsapp'); if (vwc) vwc.checked = false;
             const vobs = document.getElementById('venta-observaciones');
             if (vobs) {
-                let obs = `Pedido Web #${orderId.substring(0,8).toUpperCase()}\nRepartidor: ${deliveryPerson}\n`;
-                if (orderData.observaciones) obs += `${orderData.observaciones}\n`;
-                if (deliveryCost > 0) obs += `Costo Domicilio: ${formatoMoneda.format(deliveryCost)}`;
+                let obs = `Pedido Web #${orderId.substring(0,8).toUpperCase()}`;
+                if (orderData.observaciones) obs += `\n${orderData.observaciones}`;
                 vobs.value = obs;
             }
             (orderData.items || []).forEach(item => {
