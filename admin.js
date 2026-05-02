@@ -711,8 +711,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (vcel) vcel.value = orderData.clienteCelular;
             if (vdir) vdir.value = orderData.clienteDireccion;
             const tvs = document.getElementById('tipo-venta-select'); if (tvs) tvs.value = 'detal';
-            const tes = document.getElementById('tipo-entrega-select');
-            if (tes) { tes.value = 'domicilio'; tes.dispatchEvent(new Event('change')); }
             const vwc = document.getElementById('venta-whatsapp'); if (vwc) vwc.checked = false;
             const vobs = document.getElementById('venta-observaciones');
             if (vobs) {
@@ -2716,18 +2714,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (existingItem) { 
                 existingItem.cantidad += cantidad; 
                 existingItem.total = existingItem.cantidad * existingItem.precio; 
-            } else { 
-                const totalItem = cantidad * precio; 
-                window.ventaItems.push({ 
-                    productoId, 
-                    nombre: nombre, 
-                    nombreCompleto: nombreCompleto || `${nombre} (${talla}/${color})`, 
-                    cantidad, 
-                    precio, 
-                    total: totalItem, 
-                    talla, 
-                    color 
-                }); 
+            } else {
+                const totalItem = cantidad * precio;
+                const prod = localProductsMap.get(productoId);
+                window.ventaItems.push({
+                    productoId,
+                    nombre: nombre,
+                    nombreCompleto: nombreCompleto || `${nombre} (${talla}/${color})`,
+                    cantidad,
+                    precio,
+                    total: totalItem,
+                    talla,
+                    color,
+                    imagenUrl: prod?.imagenUrl || ''
+                });
             } 
             renderCarrito(); 
             window.calcularTotalVentaGeneral(); 
@@ -2754,7 +2754,11 @@ document.addEventListener('DOMContentLoaded', () => {
             window.ventaItems.forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = 'vf-cart-item';
+                const imgHtml = item.imagenUrl
+                    ? `<img src="${item.imagenUrl}" alt="${item.nombre}" class="vf-cart-item-img" onerror="this.style.display='none'">`
+                    : `<div class="vf-cart-item-img-placeholder"><i class="bi bi-image"></i></div>`;
                 card.innerHTML = `
+                    ${imgHtml}
                     <div class="vf-cart-item-info">
                         <div class="vf-cart-item-name">${item.nombreCompleto}</div>
                         <div class="vf-cart-item-unit">${formatoMoneda.format(item.precio)} c/u</div>

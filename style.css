@@ -3912,6 +3912,28 @@ textarea.form-control-modern {
     background: #fdf9fe;
 }
 
+.vf-cart-item-img {
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+    border: 1px solid #f0e6f6;
+}
+
+.vf-cart-item-img-placeholder {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #aaa;
+    font-size: 1.1rem;
+}
+
 .vf-cart-item-info {
     flex: 1;
     min-width: 0;
