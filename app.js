@@ -2444,6 +2444,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (form) form.style.display = '';
             if (success) success.style.display = 'none';
 
+            // Reset city to default (Montería button is visually active by default)
+            const cityInput = document.getElementById('checkout-city');
+            if (cityInput) {
+                cityInput.value = 'Montería';
+                cityInput.dispatchEvent(new Event('change'));
+            }
+
+            // Reset "otra ciudad" UI
+            const otherCityField = document.getElementById('co-other-city-field');
+            if (otherCityField) otherCityField.style.display = 'none';
+            const cityVisible = document.getElementById('co-city-visible');
+            if (cityVisible) cityVisible.value = '';
+            document.querySelectorAll('.co-city-opt').forEach(b => b.classList.remove('active'));
+            const monteriaBtn = document.querySelector('.co-city-opt[data-city="Montería"]');
+            if (monteriaBtn) monteriaBtn.classList.add('active');
+
             renderCoOrderItems();
             updateOrderTotals();
 
