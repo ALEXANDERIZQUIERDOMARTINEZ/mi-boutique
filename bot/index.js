@@ -75,13 +75,13 @@ client.on('ready', async () => {
                     `🔔 *NUEVO PEDIDO #${pedidoId.slice(-6).toUpperCase()}* (${tipo})\n\n` +
                     `👤 *${pedido.clienteNombre}*\n` +
                     `📞 ${pedido.clienteCelular}\n` +
-                    `🪪 CC: ${pedido.clienteCedula}\n` +
+                    `🆔 CC: ${pedido.clienteCedula}\n` +
                     `📍 ${pedido.clienteCiudad}${pedido.clienteBarrio ? ', ' + pedido.clienteBarrio : ''}\n` +
                     `🏠 ${pedido.clienteDireccion}\n\n` +
                     `🛒 *Productos:*\n${items}\n\n` +
                     `💳 *Pago:* ${pagoStr}\n` +
                     `📦 Envío: ${formatPrecio(pedido.costoEnvio || 0)}\n` +
-                    (pedido.comprobanteId ? `🧾 https://mi-boutique.vercel.app/comprobante.html?id=${pedido.comprobanteId}\n` : '') +
+                    (pedido.comprobanteId ? `📋 https://mi-boutique.vercel.app/comprobante.html?id=${pedido.comprobanteId}\n` : '') +
                     `\n💰 *Total: ${formatPrecio(pedido.totalPedido)}*` +
                     (pedido.observaciones ? `\n\n📝 ${pedido.observaciones}` : '');
 

@@ -72,10 +72,10 @@
           dlBtn.style.display = 'flex';
           statusEl.style.display = 'none';
         } else {
-          statusEl.innerHTML = '🔍 Comprobante no encontrado';
+          statusEl.innerHTML = '🔍 Comprobante no encontrado.<br><small style="font-size:13px;color:#aaa">Es posible que no se haya podido guardar. Pide al cliente que envíe la foto directamente por WhatsApp.</small>';
         }
       } catch (e) {
-        statusEl.innerHTML = '⚠️ Error al cargar el comprobante';
+        statusEl.innerHTML = '⚠️ Error al cargar el comprobante.<br><small style="font-size:13px;color:#aaa">Verifica tu conexión e intenta de nuevo.</small>';
       }
     }
   </script>
