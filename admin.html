@@ -118,6 +118,9 @@
                 <a class="rail-link" href="#proveedores" data-tooltip="Proveedores">
                     <i class="bi bi-building"></i><span>Proveedores</span>
                 </a>
+                <a class="rail-link" href="#comprobantes" data-tooltip="Comprobantes">
+                    <i class="bi bi-receipt"></i><span>Comprobantes</span>
+                </a>
             </div>
 
             <!-- Config / Accesos -->
@@ -1477,6 +1480,36 @@
             <div class="tab-pane fade" id="categorias"> <h1 class="h2">Categorías</h1> <div class="row"><div class="col-md-6"><div class="card"><div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Agregar</h3> </div><div class="card-body"><form id="form-categoria"><div class="mb-3"> <label for="nombre-categoria" class="form-label">Nombre:</label> <input type="text" id="nombre-categoria" class="form-control" required> </div><button type="submit" class="btn btn-primary">Guardar</button></form></div></div></div><div class="col-md-6"><div class="card"><div class="card-header bg-white border-0 pt-3"> <h3 class="h5 mb-0">Existentes</h3> </div><div class="card-body p-0"><ul class="list-group list-group-flush" id="lista-categorias"><li class="list-group-item text-muted" id="loading-categories">Cargando...</li></ul></div></div></div></div> </div>
             
             <div class="tab-pane fade" id="proveedores"> <h1 class="h2">Proveedores</h1> <div class="card"><div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center"><h3 class="h5 mb-0">Lista</h3><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addSupplierModal"><i class="bi bi-plus-lg"></i> Nuevo</button></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Nombre</th><th>Contacto</th><th>Teléfono</th><th>Acciones</th></tr></thead><tbody id="lista-proveedores-tabla"><tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr></tbody></table></div></div></div> </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════════
+                 SECCIÓN COMPROBANTES
+                 ═══════════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="comprobantes">
+                <h1 class="h2">Comprobantes de Pago</h1>
+                <div class="card">
+                    <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                        <h3 class="h5 mb-0">Historial</h3>
+                        <span class="text-muted small" id="comprobantes-count"></span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width:60px">Imagen</th>
+                                        <th>ID</th>
+                                        <th>Fecha</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="lista-comprobantes">
+                                    <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- ═══════════════════════════════════════════════════════════════════
                  SECCIÓN CHATBOT

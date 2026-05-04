@@ -65,6 +65,7 @@ const chatConversationsCollection = collection(db, 'chatConversations');
 const metasCollection = collection(db, 'metas');
 const recepcionesCollection = collection(db, 'ordenesRecepcion');
 const promocionesGlobalesCollection = collection(db, 'promocionesGlobales');
+const comprobantesCollection = collection(db, 'comprobantes');
 
 // --- Global map for product sales count ---
 if (!window.productSalesCount) {
@@ -861,6 +862,67 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         if (searchInput) searchInput.addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); const items = searchModalList.querySelectorAll('.supplier-search-item'); items.forEach(item => { item.style.display = item.textContent.toLowerCase().includes(searchTerm) ? '' : 'none'; }); });
         if (searchModalList && searchSupplierModalInstance) searchModalList.addEventListener('click', (e) => { const target = e.target.closest('.supplier-search-item'); if (target) { productFormInput.value = target.dataset.name; searchSupplierModalInstance.hide(); } });
+    })();
+
+    // ========================================================================
+    // --- LÓGICA COMPROBANTES ---
+    // ========================================================================
+    (() => {
+        const listBody = document.getElementById('lista-comprobantes');
+        const countEl = document.getElementById('comprobantes-count');
+        if (!listBody) return;
+
+        const renderComprobantes = (snapshot) => {
+            listBody.innerHTML = '';
+            if (countEl) countEl.textContent = snapshot.empty ? '' : `${snapshot.size} comprobante${snapshot.size !== 1 ? 's' : ''}`;
+            if (snapshot.empty) {
+                listBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay comprobantes guardados.</td></tr>';
+                return;
+            }
+            const origin = window.location.origin;
+            snapshot.forEach(docSnap => {
+                const d = docSnap.data();
+                const id = docSnap.id;
+                const fecha = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin fecha';
+                const tr = document.createElement('tr');
+                tr.dataset.id = id;
+                tr.innerHTML = `
+                    <td><img src="${d.imageBase64}" alt="comprobante" style="width:48px;height:48px;object-fit:cover;border-radius:6px;cursor:pointer;" class="comp-thumb"></td>
+                    <td><code style="font-size:12px">${id}</code></td>
+                    <td>${fecha}</td>
+                    <td class="action-buttons">
+                        <a href="${origin}/comprobante.html?id=${id}" target="_blank" class="btn btn-action btn-action-view"><i class="bi bi-eye"></i><span class="btn-action-text">Ver</span></a>
+                        <button class="btn btn-action btn-action-delete btn-delete-comp"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button>
+                    </td>`;
+                listBody.appendChild(tr);
+            });
+        };
+
+        onSnapshot(query(comprobantesCollection, orderBy('timestamp', 'desc')), renderComprobantes, (e) => {
+            console.error('Error comprobantes:', e);
+            listBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al cargar.</td></tr>';
+        });
+
+        listBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-delete-comp');
+            const thumb = e.target.closest('.comp-thumb');
+            if (thumb) {
+                const id = thumb.closest('tr').dataset.id;
+                const origin = window.location.origin;
+                window.open(`${origin}/comprobante.html?id=${id}`, '_blank');
+                return;
+            }
+            if (!btn) return;
+            const id = btn.closest('tr').dataset.id;
+            const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+            const deleteItemNameEl = document.getElementById('delete-item-name');
+            if (confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl) {
+                confirmDeleteBtn.dataset.deleteId = id;
+                confirmDeleteBtn.dataset.deleteCollection = 'comprobantes';
+                deleteItemNameEl.textContent = `Comprobante: ${id}`;
+                deleteConfirmModalInstance.show();
+            }
+        });
     })();
 
     // ========================================================================
