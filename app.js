@@ -3076,11 +3076,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const fmt = n => n.toLocaleString('es-CO');
             const localRef = Date.now().toString(36).slice(-6).toUpperCase();
 
-            let waMsg = `🛍️ *PEDIDO #${localRef}* — Mishell'ES\n\n`;
+            let waMsg = `🛍 *PEDIDO #${localRef}* — Mishell'ES\n\n`;
 
             waMsg += `👤 *${nombre}*\n`;
             waMsg += `📞 ${whatsapp}\n`;
-            waMsg += `🪪 CC: ${cedula}\n`;
+            waMsg += `🆔 CC: ${cedula}\n`;
             waMsg += `📍 ${ciudad}`;
             if (barrio) waMsg += ', ' + barrio;
             waMsg += `\n🏠 ${direccion}\n\n`;
@@ -3098,11 +3098,11 @@ document.addEventListener('DOMContentLoaded', () => {
             waMsg += '\n';
             if (comprobanteId) {
                 const origin = window.location.origin;
-                waMsg += `🧾 ${origin}/comprobante.html?id=${comprobanteId}\n`;
+                waMsg += `📋 ${origin}/comprobante.html?id=${comprobanteId}\n`;
             }
             if (costoEnvio > 0) {
                 waMsg += `\n📦 Subtotal: $${fmt(subtotal)}`;
-                waMsg += `\n🛵 Domicilio: $${fmt(costoEnvio)}`;
+                waMsg += `\n🚗 Domicilio: $${fmt(costoEnvio)}`;
                 waMsg += `\n💰 *Total: $${fmt(total)}*`;
             } else {
                 waMsg += `\n💰 *Total: $${fmt(total)}*`;
@@ -3127,13 +3127,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     comprobanteBase64 = await compressImage(comprobanteFile) || '';
                     if (comprobanteBase64) {
-                        await setDoc(doc(db, 'comprobantes', comprobanteId), {
-                            imageBase64: comprobanteBase64,
-                            timestamp: serverTimestamp()
-                        });
+                        let saved = false;
+                        for (let attempt = 1; attempt <= 3 && !saved; attempt++) {
+                            try {
+                                await setDoc(doc(db, 'comprobantes', comprobanteId), {
+                                    imageBase64: comprobanteBase64,
+                                    timestamp: serverTimestamp()
+                                });
+                                saved = true;
+                            } catch (writeErr) {
+                                if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 1000));
+                            }
+                        }
+                        if (!saved) {
+                            showToast('⚠️ No se pudo guardar el comprobante. Envíalo directamente por WhatsApp.', 'error');
+                        }
                     }
                 } catch (compErr) {
-                    console.error('Error guardando comprobante:', compErr);
+                    console.error('Error procesando comprobante:', compErr);
+                    showToast('⚠️ No se pudo procesar el comprobante. Envíalo directamente por WhatsApp.', 'error');
                 }
             }
 
