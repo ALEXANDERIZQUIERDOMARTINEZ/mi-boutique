@@ -57,7 +57,6 @@
 }
 
 html {
-    overflow-x: hidden;
     scroll-behavior: smooth;
 }
 
@@ -72,6 +71,7 @@ body {
     flex-direction: column;
     padding-bottom: calc(88px + env(safe-area-inset-bottom));
     overflow-x: hidden;
+    overflow-y: auto;
 
     /* Prevenir bounce scroll en iOS */
     -webkit-overflow-scrolling: touch;
