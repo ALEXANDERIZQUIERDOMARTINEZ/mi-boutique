@@ -4700,7 +4700,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Crear mensaje
             const mensaje = `Hola *${apartadoData.clienteNombre}*! 👋
 
-Te escribo de *Mishell Boutique* para recordarte sobre tu apartado:
+Te escribo de *MISHELL'ES BOUTIQUE* para recordarte sobre tu apartado:
 
 📦 *Productos:* ${apartadoData.items?.length || 0} item(s)
 💰 *Total:* ${formatoMoneda.format(apartadoData.total || 0)}
