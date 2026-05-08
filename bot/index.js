@@ -42,7 +42,7 @@ client.on('auth_failure', msg => {
 
 // ─── Al conectar: escuchar pedidos nuevos ─────────────────────────────────────
 client.on('ready', async () => {
-    console.log('✅ Bot de Mishell Boutique conectado y listo!');
+    console.log('✅ Bot de MISHELL\'ES BOUTIQUE conectado y listo!');
 
     const pedidosQuery = query(
         collection(db, 'pedidosWeb'),

@@ -475,7 +475,7 @@ async function generarCatalogoPDF() {
         pdf.setFontSize(7);
         pdf.setTextColor(150, 150, 150);
         pdf.setFont('helvetica', 'normal');
-        pdf.text(`© ${new Date().getFullYear()} Mishell Boutique - Todos los derechos reservados`, pageWidth / 2, yPos, { align: 'center' });
+        pdf.text(`© ${new Date().getFullYear()} MISHELL'ES BOUTIQUE - Todos los derechos reservados`, pageWidth / 2, yPos, { align: 'center' });
 
         // Guardar
         progressText.textContent = 'Descargando PDF...';
