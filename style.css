@@ -4706,6 +4706,41 @@ input[type="datetime-local"] {
 }
 .co-field { display: flex; flex-direction: column; }
 
+/* ─── Autocomplete de barrios ─── */
+.neighborhood-autocomplete { position: relative; }
+.neighborhood-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1.5px solid var(--color-primario, #D988B9);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 200;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.10);
+}
+.neighborhood-suggestion-item {
+    padding: 11px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #374151;
+    border-bottom: 1px solid #fce7f3;
+}
+.neighborhood-suggestion-item:last-child { border-bottom: none; }
+.neighborhood-suggestion-item:hover,
+.neighborhood-suggestion-item.ns-active { background: #fdf2f8; color: #be185d; }
+.neighborhood-autocomplete .co-input:focus,
+.neighborhood-autocomplete .form-control-modern:focus { border-radius: 10px 10px 0 0; }
+.neighborhood-new-badge {
+    font-size: 11px;
+    color: #9ca3af;
+    float: right;
+    margin-top: 1px;
+}
+
 /* ─── Botón Continuar ─── */
 .co-btn-next {
     width: 100%;

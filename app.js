@@ -2304,7 +2304,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // centro: este del río / centro         → $5.000  (default Montería)
     // Mapa barrio→tarifa cargado desde Firestore. Clave: nombre en minúsculas.
     let _barrioTarifaMap = {};   // { 'cantaclaro': 5000, 'mocarí': 6000, ... }
-    let _barriosMonteriaLista = []; // nombres para el datalist del checkout
+    let _barriosMonteriaLista = []; // nombres para el autocomplete del checkout
+    let _currentNeighborhoodList = []; // lista activa según ciudad seleccionada
 
     // Defaults mientras carga Firestore (o si falla)
     const _BARRIOS_DEFAULT = [
@@ -2378,12 +2379,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const snap = await getDoc(doc(db, 'config', 'domicilioBarrios'));
             if (snap.exists() && snap.data().barrios?.length) {
                 _buildBarrioMap(snap.data().barrios);
-                // Actualizar el datalist si ya estaba montado
-                const dl = document.getElementById('neighborhood-list');
-                if (dl && dl.childElementCount === 0) {
+                // Si ya hay una ciudad seleccionada con Montería, actualizar la lista activa
+                const cityInput = document.getElementById('checkout-city');
+                if (cityInput && cityInput.value === 'Montería' && _currentNeighborhoodList.length > 0) {
                     _barriosMonteriaLista.sort().forEach(n => {
-                        const o = document.createElement('option'); o.value = n; dl.appendChild(o);
+                        if (!_currentNeighborhoodList.includes(n)) _currentNeighborhoodList.push(n);
                     });
+                    _currentNeighborhoodList.sort();
                 }
             }
         } catch (_) { /* usar defaults */ }
@@ -2420,15 +2422,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const paymentSelect = document.getElementById('checkout-payment');
         const neighborhoodSection = document.getElementById('neighborhood-section');
         const neighborhoodInput = document.getElementById('checkout-neighborhood');
-        const neighborhoodDatalist = document.getElementById('neighborhood-list');
 
         // Manejar barrios
         if (ciudad && neighborhoodsByCity[ciudad]) {
             // Mostrar sección de barrio
             neighborhoodSection.style.display = 'block';
-
-            // Limpiar opciones actuales del datalist
-            neighborhoodDatalist.innerHTML = '';
 
             // Combinar barrios predefinidos con personalizados
             const allNeighborhoods = [...neighborhoodsByCity[ciudad]];
@@ -2439,28 +2437,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const snapshot = await getDocs(q);
                 snapshot.forEach(doc => {
                     const customNeighborhood = doc.data().nombre;
-                    // Solo agregar si no está ya en la lista
                     if (!allNeighborhoods.includes(customNeighborhood)) {
                         allNeighborhoods.push(customNeighborhood);
                     }
                 });
-
-                // Ordenar alfabéticamente
                 allNeighborhoods.sort();
             } catch (err) {
                 console.error('Error cargando barrios personalizados:', err);
             }
 
-            // Agregar todos los barrios al datalist
-            allNeighborhoods.forEach(barrio => {
-                const option = document.createElement('option');
-                option.value = barrio;
-                neighborhoodDatalist.appendChild(option);
-            });
+            _currentNeighborhoodList = allNeighborhoods;
         } else {
             // Ocultar sección de barrio si la ciudad no tiene barrios definidos o no se seleccionó ciudad
             neighborhoodSection.style.display = 'none';
             neighborhoodInput.value = '';
+            _currentNeighborhoodList = [];
+            _hideNeighborhoodSuggestions();
         }
 
         // Validación de método de pago y mostrar info de envío
@@ -2541,11 +2533,81 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Recalcular domicilio cuando cambia el barrio
-    document.getElementById('checkout-neighborhood').addEventListener('input', function() {
+    // ─── Autocomplete de barrios ───
+    function _hideNeighborhoodSuggestions() {
+        const box = document.getElementById('neighborhood-suggestions');
+        if (box) box.style.display = 'none';
+    }
+
+    function _showNeighborhoodSuggestions(filtered, typedValue) {
+        const box = document.getElementById('neighborhood-suggestions');
+        if (!box) return;
+        box.innerHTML = '';
+        if (filtered.length === 0) {
+            box.style.display = 'none';
+            return;
+        }
+        filtered.forEach(name => {
+            const item = document.createElement('div');
+            item.className = 'neighborhood-suggestion-item';
+            item.textContent = name;
+            item.addEventListener('mousedown', function(e) {
+                e.preventDefault(); // evitar que el input pierda foco antes del click
+                const input = document.getElementById('checkout-neighborhood');
+                input.value = name;
+                _hideNeighborhoodSuggestions();
+                updateOrderTotals();
+            });
+            box.appendChild(item);
+        });
+        // Si el texto escrito no coincide exactamente con ninguno, ofrecer guardarlo
+        const exactMatch = _currentNeighborhoodList.some(n => n.toLowerCase() === typedValue.toLowerCase());
+        if (typedValue.trim().length > 1 && !exactMatch) {
+            const newItem = document.createElement('div');
+            newItem.className = 'neighborhood-suggestion-item';
+            newItem.innerHTML = `${typedValue.trim()} <span class="neighborhood-new-badge">nuevo</span>`;
+            newItem.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                const input = document.getElementById('checkout-neighborhood');
+                input.value = typedValue.trim();
+                _hideNeighborhoodSuggestions();
+                updateOrderTotals();
+            });
+            box.appendChild(newItem);
+        }
+        box.style.display = 'block';
+    }
+
+    const _neighborhoodInput = document.getElementById('checkout-neighborhood');
+    _neighborhoodInput.addEventListener('input', function() {
+        const val = this.value;
         updateOrderTotals();
+        if (val.trim().length === 0) {
+            // Sin texto: mostrar todos
+            const all = _currentNeighborhoodList.slice(0, 60);
+            _showNeighborhoodSuggestions(all, val);
+            return;
+        }
+        const q = val.trim().toLowerCase();
+        const filtered = _currentNeighborhoodList.filter(n => n.toLowerCase().includes(q));
+        _showNeighborhoodSuggestions(filtered, val);
     });
-    document.getElementById('checkout-neighborhood').addEventListener('change', function() {
+    _neighborhoodInput.addEventListener('focus', function() {
+        if (_currentNeighborhoodList.length === 0) return;
+        const val = this.value.trim();
+        if (val.length === 0) {
+            _showNeighborhoodSuggestions(_currentNeighborhoodList.slice(0, 60), val);
+        } else {
+            const q = val.toLowerCase();
+            const filtered = _currentNeighborhoodList.filter(n => n.toLowerCase().includes(q));
+            _showNeighborhoodSuggestions(filtered, val);
+        }
+    });
+    _neighborhoodInput.addEventListener('blur', function() {
+        // Pequeño delay para que el click en sugerencia pueda ejecutarse
+        setTimeout(_hideNeighborhoodSuggestions, 150);
+    });
+    _neighborhoodInput.addEventListener('change', function() {
         updateOrderTotals();
     });
 

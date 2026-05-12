@@ -392,8 +392,10 @@ Finalizar Pedido
 
       <div class="co-field" id="neighborhood-section" style="display:none">
         <label class="co-label">Barrio</label>
-        <input type="text" class="co-input" id="checkout-neighborhood" list="neighborhood-list" placeholder="Escribe o selecciona tu barrio">
-        <datalist id="neighborhood-list"></datalist>
+        <div class="neighborhood-autocomplete">
+          <input type="text" class="co-input" id="checkout-neighborhood" placeholder="Escribe tu barrio" autocomplete="off">
+          <div id="neighborhood-suggestions" class="neighborhood-suggestions" style="display:none"></div>
+        </div>
       </div>
 
       <div class="co-field">
