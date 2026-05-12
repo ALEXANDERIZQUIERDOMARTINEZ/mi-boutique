@@ -346,8 +346,10 @@ Finalizar Pedido
 </div>
 <div class="form-group-modern" id="neighborhood-section" style="display: none;">
 <label class="selector-label">Barrio</label>
-<input type="text" class="form-control form-control-modern" id="checkout-neighborhood" list="neighborhood-list" placeholder="Escribe o selecciona">
-<datalist id="neighborhood-list"></datalist>
+<div class="neighborhood-autocomplete">
+<input type="text" class="form-control form-control-modern" id="checkout-neighborhood" placeholder="Escribe tu barrio" autocomplete="off">
+<div id="neighborhood-suggestions" class="neighborhood-suggestions" style="display:none"></div>
+</div>
 </div>
 <div class="form-group-modern">
 <label class="selector-label">Direccion completa</label>
