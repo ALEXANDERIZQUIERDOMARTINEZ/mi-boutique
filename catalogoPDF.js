@@ -253,99 +253,162 @@ async function drawCard(pdf, producto, x, y) {
 // ─── Selection modal ─────────────────────────────────────────────────────────
 function mostrarModalSeleccion(categorias) {
     return new Promise(resolve => {
+        // Inject responsive styles once
+        if (!document.getElementById('cat-modal-styles')) {
+            const st = document.createElement('style');
+            st.id = 'cat-modal-styles';
+            st.textContent = `
+                #cat-modal-overlay {
+                    position: fixed; inset: 0; z-index: 999999;
+                    background: rgba(20,10,25,.75);
+                    display: flex; align-items: flex-end; justify-content: center;
+                    font-family: 'Inter', Arial, sans-serif;
+                    backdrop-filter: blur(5px);
+                    padding: 0;
+                }
+                @media (min-height: 600px) {
+                    #cat-modal-overlay { align-items: center; padding: 16px; }
+                }
+                #cat-modal-card {
+                    background: #fff;
+                    border-radius: 24px 24px 0 0;
+                    width: 100%;
+                    max-width: 440px;
+                    max-height: 92vh;
+                    display: flex; flex-direction: column;
+                    box-shadow: 0 -8px 40px rgba(0,0,0,.25);
+                    overflow: hidden;
+                }
+                @media (min-height: 600px) {
+                    #cat-modal-card {
+                        border-radius: 20px;
+                        max-height: 88vh;
+                        box-shadow: 0 24px 60px rgba(0,0,0,.3);
+                    }
+                }
+                #cat-modal-header {
+                    padding: 20px 24px 12px;
+                    text-align: center;
+                    border-bottom: 1px solid #f0e8f0;
+                    flex-shrink: 0;
+                }
+                #cat-modal-header .brand {
+                    font-size: 22px; font-weight: 800;
+                    color: #D988B9; letter-spacing: 3px; margin-bottom: 3px;
+                }
+                #cat-modal-header .subtitle {
+                    font-size: 13px; color: #888; font-weight: 500;
+                }
+                #cat-modal-scroll {
+                    flex: 1 1 auto;
+                    overflow-y: auto;
+                    -webkit-overflow-scrolling: touch;
+                    padding: 14px 20px;
+                    display: flex; flex-direction: column; gap: 8px;
+                }
+                #cat-modal-scroll::-webkit-scrollbar { width: 4px; }
+                #cat-modal-scroll::-webkit-scrollbar-track { background: transparent; }
+                #cat-modal-scroll::-webkit-scrollbar-thumb { background: #e8c8e0; border-radius: 4px; }
+                .cat-opt {
+                    display: flex; align-items: center; gap: 14px;
+                    padding: 12px 14px; border-radius: 12px; cursor: pointer;
+                    border: 2px solid #eee; background: #fafafa;
+                    transition: border-color .15s, background .15s;
+                    user-select: none; -webkit-tap-highlight-color: transparent;
+                }
+                .cat-opt.selected {
+                    border-color: #D988B9; background: #fdf4f9;
+                }
+                .cat-opt input[type=radio] {
+                    accent-color: #D988B9; width: 17px; height: 17px;
+                    cursor: pointer; flex-shrink: 0;
+                }
+                .cat-opt span {
+                    font-weight: 600; font-size: 13px; color: #222;
+                    line-height: 1.3;
+                }
+                #cat-modal-footer {
+                    padding: 14px 20px 20px;
+                    border-top: 1px solid #f0e8f0;
+                    flex-shrink: 0;
+                    /* Safe area for iPhone home bar */
+                    padding-bottom: max(20px, env(safe-area-inset-bottom));
+                }
+                #btn-generar-pdf {
+                    width: 100%; padding: 15px; border: none; border-radius: 13px;
+                    background: linear-gradient(135deg, #D988B9, #c96ea0);
+                    color: #fff; font-size: 15px; font-weight: 700;
+                    cursor: pointer; letter-spacing: .3px;
+                    box-shadow: 0 6px 20px rgba(217,136,185,.4);
+                    transition: opacity .15s, transform .15s;
+                    display: flex; align-items: center; justify-content: center; gap: 8px;
+                }
+                #btn-generar-pdf:active { opacity: .85; transform: scale(.98); }
+                #btn-cancelar-pdf {
+                    display: block; width: 100%; margin-top: 10px;
+                    background: none; border: none;
+                    color: #aaa; font-size: 13px; cursor: pointer; padding: 4px;
+                }
+            `;
+            document.head.appendChild(st);
+        }
+
         const overlay = document.createElement('div');
-        overlay.style.cssText = `
-            position:fixed;inset:0;z-index:999999;
-            background:rgba(20,10,25,.72);
-            display:flex;align-items:center;justify-content:center;
-            font-family:'Inter',Arial,sans-serif;
-            backdrop-filter:blur(6px);
-        `;
+        overlay.id = 'cat-modal-overlay';
 
-        const card = document.createElement('div');
-        card.style.cssText = `
-            background:#fff;border-radius:20px;padding:36px 32px;
-            max-width:420px;width:92%;
-            box-shadow:0 24px 60px rgba(0,0,0,.28);
-        `;
+        const opciones = [{ id: '', label: 'Todo el catálogo' }];
+        categorias.forEach(c => opciones.push({ id: c.id, label: c.nombre }));
 
-        const opciones = [
-            { id: '', label: 'Todo el catálogo', sub: `${categorias.reduce((a,_) => a, 0)} categorías` }
-        ];
-        categorias.forEach(c => opciones.push({ id: c.id, label: c.nombre, sub: '' }));
-
-        card.innerHTML = `
-            <div style="text-align:center;margin-bottom:24px;">
-                <div style="font-size:28px;font-weight:800;color:#D988B9;letter-spacing:3px;margin-bottom:4px;">MISHELL</div>
-                <div style="font-size:13px;color:#888;font-weight:500;">¿Qué catálogo deseas generar?</div>
-            </div>
-            <div id="cat-options" style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
-                ${opciones.map((o, i) => `
-                    <label style="
-                        display:flex;align-items:center;gap:14px;
-                        padding:13px 16px;border-radius:12px;cursor:pointer;
-                        border:2px solid ${i === 0 ? '#D988B9' : '#eee'};
-                        background:${i === 0 ? '#fdf4f9' : '#fafafa'};
-                        transition:all .18s ease;
-                    " class="cat-opt-label" data-idx="${i}">
-                        <input type="radio" name="cat-sel" value="${o.id}"
-                            ${i === 0 ? 'checked' : ''}
-                            style="accent-color:#D988B9;width:17px;height:17px;cursor:pointer;">
-                        <span style="font-weight:600;font-size:13.5px;color:#222;">${o.label}</span>
-                    </label>
-                `).join('')}
-            </div>
-            <button id="btn-generar-pdf" style="
-                width:100%;padding:14px;border:none;border-radius:12px;
-                background:linear-gradient(135deg,#D988B9,#c96ea0);
-                color:#fff;font-size:14px;font-weight:700;letter-spacing:.5px;
-                cursor:pointer;box-shadow:0 6px 20px rgba(217,136,185,.4);
-                transition:transform .15s ease,box-shadow .15s ease;
-            ">
-                <i class="bi bi-download" style="margin-right:8px;"></i>Generar PDF
-            </button>
-            <div style="text-align:center;margin-top:14px;">
-                <button id="btn-cancelar-pdf" style="background:none;border:none;color:#aaa;font-size:12px;cursor:pointer;">
-                    Cancelar
-                </button>
+        overlay.innerHTML = `
+            <div id="cat-modal-card">
+                <div id="cat-modal-header">
+                    <div class="brand">MISHELL</div>
+                    <div class="subtitle">¿Qué catálogo deseas generar?</div>
+                </div>
+                <div id="cat-modal-scroll">
+                    ${opciones.map((o, i) => `
+                        <label class="cat-opt${i === 0 ? ' selected' : ''}">
+                            <input type="radio" name="cat-sel" value="${o.id}" ${i === 0 ? 'checked' : ''}>
+                            <span>${o.label}</span>
+                        </label>
+                    `).join('')}
+                </div>
+                <div id="cat-modal-footer">
+                    <button id="btn-generar-pdf">
+                        <i class="bi bi-download"></i> Generar PDF
+                    </button>
+                    <button id="btn-cancelar-pdf">Cancelar</button>
+                </div>
             </div>
         `;
 
-        overlay.appendChild(card);
         document.body.appendChild(overlay);
 
-        // Highlight selected option
-        const labels = card.querySelectorAll('.cat-opt-label');
-        card.querySelectorAll('input[name="cat-sel"]').forEach((radio, idx) => {
-            radio.addEventListener('change', () => {
-                labels.forEach(l => {
-                    l.style.borderColor = '#eee';
-                    l.style.background  = '#fafafa';
-                });
-                labels[idx].style.borderColor = '#D988B9';
-                labels[idx].style.background  = '#fdf4f9';
+        // Highlight on change
+        overlay.querySelectorAll('.cat-opt').forEach(label => {
+            label.addEventListener('change', () => {
+                overlay.querySelectorAll('.cat-opt').forEach(l => l.classList.remove('selected'));
+                label.classList.add('selected');
             });
         });
 
-        const btnGen = card.querySelector('#btn-generar-pdf');
-        btnGen.addEventListener('mouseenter', () => {
-            btnGen.style.transform   = 'translateY(-1px)';
-            btnGen.style.boxShadow   = '0 10px 28px rgba(217,136,185,.5)';
-        });
-        btnGen.addEventListener('mouseleave', () => {
-            btnGen.style.transform   = '';
-            btnGen.style.boxShadow   = '0 6px 20px rgba(217,136,185,.4)';
+        // Close on backdrop tap
+        overlay.addEventListener('click', e => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+                resolve(null);
+            }
         });
 
-        btnGen.addEventListener('click', () => {
-            const sel = card.querySelector('input[name="cat-sel"]:checked');
+        overlay.querySelector('#btn-generar-pdf').addEventListener('click', () => {
+            const sel = overlay.querySelector('input[name="cat-sel"]:checked');
             document.body.removeChild(overlay);
             resolve(sel ? sel.value : '');
         });
 
-        card.querySelector('#btn-cancelar-pdf').addEventListener('click', () => {
+        overlay.querySelector('#btn-cancelar-pdf').addEventListener('click', () => {
             document.body.removeChild(overlay);
-            resolve(null); // null = cancelled
+            resolve(null);
         });
     });
 }
