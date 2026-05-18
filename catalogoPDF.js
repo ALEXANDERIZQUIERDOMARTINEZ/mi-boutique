@@ -42,18 +42,41 @@ async function cargarProductos(categoriaId = null) {
         });
 }
 
-async function imagenABase64(url) {
+// Carga la imagen y la recorta (object-fit: cover) al ratio targetW:targetH.
+// Así jsPDF nunca estira la imagen — lo que entra ya tiene el tamaño exacto.
+async function imagenABase64(url, targetW, targetH) {
     if (!url || !url.startsWith('http')) return PLACEHOLDER_SVG;
     return new Promise(resolve => {
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
             try {
+                const targetRatio = targetW / targetH;
+                const imgRatio    = img.naturalWidth / img.naturalHeight;
+
+                let sx, sy, sw, sh;
+                if (imgRatio > targetRatio) {
+                    // Imagen más ancha que el target → recortar los lados
+                    sh = img.naturalHeight;
+                    sw = sh * targetRatio;
+                    sx = (img.naturalWidth - sw) / 2;
+                    sy = 0;
+                } else {
+                    // Imagen más alta que el target → recortar arriba/abajo
+                    // Anclamos en el tercio superior para mantener rostros/cabeza visible
+                    sw = img.naturalWidth;
+                    sh = sw / targetRatio;
+                    sx = 0;
+                    sy = img.naturalHeight * 0.05; // 5% desde arriba
+                    if (sy + sh > img.naturalHeight) sy = img.naturalHeight - sh;
+                }
+
                 const c = document.createElement('canvas');
-                c.width  = img.naturalWidth;
-                c.height = img.naturalHeight;
-                c.getContext('2d').drawImage(img, 0, 0);
-                resolve(c.toDataURL('image/jpeg', 0.78));
+                // Salida a resolución razonable para PDF (~150 dpi)
+                c.width  = Math.round(targetW * 6);
+                c.height = Math.round(targetH * 6);
+                c.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+                resolve(c.toDataURL('image/jpeg', 0.80));
             } catch { resolve(PLACEHOLDER_SVG); }
         };
         img.onerror = () => resolve(PLACEHOLDER_SVG);
@@ -156,9 +179,9 @@ async function drawCard(pdf, producto, x, y) {
     pdf.setFillColor(...WHITE);
     pdf.roundedRect(x, y, CARD_W, CARD_H, 3, 3, 'F');
 
-    // ── Image ─────────────────────────────────────────────────────────────────
+    // ── Image (pre-cropped to exact card ratio → sin distorsión) ─────────────
     const imgUrl = producto.imagenUrl || producto.imagen;
-    const b64    = await imagenABase64(imgUrl);
+    const b64    = await imagenABase64(imgUrl, CARD_W, CARD_IMG_H);
     try {
         pdf.addImage(b64, 'JPEG', x, y, CARD_W, CARD_IMG_H, undefined, 'FAST');
     } catch {
@@ -507,9 +530,8 @@ async function generarCatalogoPDF() {
             const pct = Math.floor(8 + ((i + 1) / productos.length) * 86);
             progreso.set(pct, `Procesando ${i + 1} / ${productos.length}: ${productos[i].nombre}`);
 
-            // Reserve space for footer (36mm) at bottom of page
-            const footerReserve = 40;
-            if (yPos + CARD_H > PH - M - footerReserve) {
+            // Nueva página solo cuando la tarjeta no cabe en el margen inferior
+            if (yPos + CARD_H > PH - M) {
                 pdf.addPage();
                 yPos = M;
                 col  = 0;
