@@ -4,7 +4,7 @@ import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, se
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
-import { WHOLESALE_TIER_GROUPS, getTierPrice, getBaseTierPrice, resolveWholesaleGroup } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getTierPrice, getBaseTierPrice, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
 
 // *** CONFIGURACIÓN DE FIREBASE ***
 const firebaseConfig = {
@@ -1991,6 +1991,17 @@ function resetAllFilters() {
 
 // --- DOMCONTENTLOADED ---
 document.addEventListener('DOMContentLoaded', () => {
+
+    // Tabla de precios por cantidad (solo existe en mayor.html)
+    const tiersToggleBtn = document.getElementById('btn-toggle-tiers');
+    const tiersTablesEl = document.getElementById('tiers-tables');
+    if (tiersToggleBtn && tiersTablesEl) {
+        tiersTablesEl.innerHTML = buildTiersTablesHtml();
+        tiersToggleBtn.addEventListener('click', () => {
+            const isOpen = tiersTablesEl.classList.toggle('is-open');
+            tiersToggleBtn.textContent = isOpen ? 'Ocultar tabla de precios' : 'Ver tabla de precios por cantidad';
+        });
+    }
 
     loadCart();
     loadGlobalPromotions(); // ✅ Cargar promociones globales (Black Friday, etc.)
