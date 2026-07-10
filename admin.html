@@ -548,8 +548,13 @@
                                             <label class="form-check-label ms-2" for="visibilidad" style="font-size: 1.1rem; font-weight: 500;">Visible</label>
                                         </div>
                                         <small class="text-muted d-block mt-1">Activa para mostrar en catálogo público</small>
+                                        <div class="form-check form-switch mt-3">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="bajo-encargo" style="width: 3em; height: 1.5em;">
+                                            <label class="form-check-label ms-2" for="bajo-encargo" style="font-size: 1.1rem; font-weight: 500;">Bajo Encargo</label>
+                                        </div>
+                                        <small class="text-muted d-block mt-1">Activa para mostrar en <a href="encargo.html" target="_blank">encargo.html</a></small>
                                     </div>
-                                </div> 
+                                </div>
                                 <hr class="my-4"> 
                                 <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> 
                                 <button type="button" id="btn-clear-product-form" class="btn btn-outline-secondary ms-2">Limpiar</button> 
@@ -607,6 +612,7 @@
                                         <th>Barras</th>
                                         <th>Promo</th>
                                         <th>Estado</th>
+                                        <th>Encargo</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>

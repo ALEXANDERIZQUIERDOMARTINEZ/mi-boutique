@@ -4,6 +4,7 @@ import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, se
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
+import { WHOLESALE_CODE } from './wholesale-config.js';
 
 // *** CONFIGURACIÓN DE FIREBASE ***
 const firebaseConfig = {
@@ -74,7 +75,6 @@ let activePromotions = new Map();
 let globalPromotion = null; // Promoción global activa (ej: Black Friday)
 let itemToDelete = null;
 let isWholesaleActive = window.location.pathname.includes('mayor');
-const WHOLESALE_CODE = "MISHELLMAYOR";
 
 let categoriesMap = new Map();
 
