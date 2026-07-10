@@ -4,7 +4,6 @@ import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, se
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
-import { WHOLESALE_CODE } from './wholesale-config.js';
 import { WHOLESALE_TIER_GROUPS, getTierPrice, getBaseTierPrice } from './wholesale-tiers.js';
 
 // *** CONFIGURACIÓN DE FIREBASE ***
@@ -77,31 +76,8 @@ let globalPromotion = null; // Promoción global activa (ej: Black Friday)
 let itemToDelete = null;
 const isMayorPage = window.location.pathname.includes('mayor');
 
-function checkWholesaleUnlock() {
-    if (!isMayorPage) return false;
-    const params = new URLSearchParams(window.location.search);
-    const codeParam = (params.get('code') || '').trim().toUpperCase();
-    if (codeParam && codeParam === WHOLESALE_CODE) {
-        localStorage.setItem('wholesaleUnlocked', 'true');
-        return true;
-    }
-    return localStorage.getItem('wholesaleUnlocked') === 'true';
-}
-
-let isWholesaleActive = checkWholesaleUnlock();
-
-if (isMayorPage && isWholesaleActive) {
-    document.body.classList.remove('mayor-locked');
-}
-
-function unlockWholesale() {
-    isWholesaleActive = true;
-    localStorage.setItem('wholesaleUnlocked', 'true');
-    document.body.classList.add('wholesale-active');
-    document.body.classList.remove('mayor-locked');
-    recalculateWholesaleTierPricing();
-    if (typeof applyFiltersAndRender === 'function') applyFiltersAndRender();
-}
+// mayor.html es de acceso libre (igual que encargo.html): no exige código.
+let isWholesaleActive = isMayorPage;
 
 // Devuelve el precio de mostrador (vitrina) al por mayor: si el producto pertenece
 // a un grupo con tabla de precios por volumen, usa el precio base (1 unidad);
@@ -3547,28 +3523,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (disponibleBtn) disponibleBtn.click();
         setActiveNavItem(document.getElementById('mobile-home-btn'));
     });
-
-    const wholesaleForm = document.getElementById('wholesale-form');
-    if (wholesaleForm) {
-        wholesaleForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const input = document.getElementById('wholesale-code');
-            const errorEl = document.getElementById('wholesale-gate-error');
-            const code = input.value.trim().toUpperCase();
-
-            if (code === WHOLESALE_CODE) {
-                if (errorEl) errorEl.style.display = 'none';
-                unlockWholesale();
-                showToast('¡Código correcto! Bienvenida al catálogo mayorista', 'success');
-
-                // 📊 Tracking: Modo mayorista activado
-                analytics.trackWholesaleActivation();
-            } else {
-                if (errorEl) errorEl.style.display = 'block';
-                showToast('Código incorrecto', 'error');
-            }
-        });
-    }
 
     // ═══════════════════════════════════════════════════════════════════
     // VISOR DE PANTALLA COMPLETA ESTILO SHEIN

@@ -161,7 +161,7 @@ function updateProgress() {
 
     const unlocked = total >= META_TOTAL;
     if (codeValueEl) codeValueEl.textContent = WHOLESALE_CODE;
-    if (linkMayorEl) linkMayorEl.href = `mayor.html?code=${encodeURIComponent(WHOLESALE_CODE)}`;
+    if (linkMayorEl) linkMayorEl.href = 'mayor.html';
     if (codeBlockEl) {
         const wasUnlocked = codeBlockEl.classList.contains('is-unlocked');
         codeBlockEl.classList.toggle('is-unlocked', unlocked);
