@@ -1303,6 +1303,48 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   font-weight: 500;
 }
 
+/* ── Tarjeta combinada: Ventas hoy (Detal / Mayorista) ── */
+.db2-met-split {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+.db2-met-split-title {
+  margin-bottom: -0.15rem;
+}
+.db2-met-split-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.db2-met-split-row + .db2-met-split-row {
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--border-subtle);
+}
+.db2-met-split-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.db2-met-split-body { flex: 1; min-width: 0; }
+.db2-met-split-val {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.7px;
+  line-height: 1.15;
+}
+.db2-met-split-sub {
+  font-size: 0.71rem;
+  color: var(--text-disabled);
+  font-weight: 500;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    QUICK ACCESS — Inline stats
    ───────────────────────────────────────────────────────────────────────── */
