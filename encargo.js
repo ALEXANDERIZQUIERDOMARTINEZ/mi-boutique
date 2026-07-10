@@ -30,6 +30,7 @@ const emptyEl = document.getElementById('encargo-empty');
 const progressHintEl = document.getElementById('progress-hint');
 const groupProgressListEl = document.getElementById('group-progress-list');
 const finalizePanelEl = document.getElementById('finalize-panel');
+const finalizeToggleBtn = document.getElementById('btn-toggle-finalize');
 const codeBlockEl = document.getElementById('code-block');
 const codeValueEl = document.getElementById('code-value');
 const copyBtn = document.getElementById('btn-copy-code');
@@ -296,6 +297,12 @@ if (tiersToggleBtn) {
     tiersToggleBtn.addEventListener('click', () => {
         const isOpen = tiersTablesEl.classList.toggle('is-open');
         tiersToggleBtn.textContent = isOpen ? 'Ocultar tabla de precios' : 'Ver tabla de precios por cantidad';
+    });
+}
+
+if (finalizeToggleBtn) {
+    finalizeToggleBtn.addEventListener('click', () => {
+        finalizePanelEl.classList.toggle('is-collapsed');
     });
 }
 
