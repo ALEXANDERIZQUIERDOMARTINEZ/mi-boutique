@@ -1278,7 +1278,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LÓGICA PRODUCTOS (NUEVA LÓGICA DE BÚSQUEDA) ---
     // ========================================================================
     (() => {
-        const productForm = document.getElementById('form-producto'); const productIdInput = document.getElementById('producto-id'); const nombreInput = document.getElementById('nombre'); const codigoInput = document.getElementById('codigo'); const codigoBarrasInput = document.getElementById('codigo-barras'); const proveedorInput = document.getElementById('proveedor-producto'); const descripcionInput = document.getElementById('descripcion'); const categoriaSelect = document.getElementById('categoria-producto'); const costoInput = document.getElementById('costo-compra'); const detalInput = document.getElementById('precio-detal'); const mayorInput = document.getElementById('precio-mayor'); const variationsContainer = document.getElementById('variaciones-container'); const imagenInput = document.getElementById('imagen'); const visibleCheckbox = document.getElementById('visibilidad'); const productListTableBody = document.getElementById('lista-inventario-productos'); const clearFormBtn = document.getElementById('btn-clear-product-form');
+        const productForm = document.getElementById('form-producto'); const productIdInput = document.getElementById('producto-id'); const nombreInput = document.getElementById('nombre'); const codigoInput = document.getElementById('codigo'); const codigoBarrasInput = document.getElementById('codigo-barras'); const proveedorInput = document.getElementById('proveedor-producto'); const descripcionInput = document.getElementById('descripcion'); const categoriaSelect = document.getElementById('categoria-producto'); const costoInput = document.getElementById('costo-compra'); const detalInput = document.getElementById('precio-detal'); const mayorInput = document.getElementById('precio-mayor'); const variationsContainer = document.getElementById('variaciones-container'); const imagenInput = document.getElementById('imagen'); const visibleCheckbox = document.getElementById('visibilidad'); const bajoEncargoCheckbox = document.getElementById('bajo-encargo'); const productListTableBody = document.getElementById('lista-inventario-productos'); const clearFormBtn = document.getElementById('btn-clear-product-form');
         const saveProductBtn = document.getElementById('btn-save-product');
         const saveProductBtnText = saveProductBtn ? saveProductBtn.querySelector('.save-text') : null;
         const saveProductBtnSpinner = saveProductBtn ? saveProductBtn.querySelector('.spinner-border') : null;
@@ -1382,6 +1382,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <td>${barcodeHtml}</td>
                                 <td>${promoHtml}</td>
                                 <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
+                                <td><span class="badge ${d.bajoEncargo ? 'bg-info text-dark' : 'bg-light text-muted border'} btn-toggle-encargo" role="button" style="cursor:pointer;" title="Clic para activar/desactivar en encargo.html">${d.bajoEncargo ? 'Sí' : 'No'}</span></td>
                                 <td class="action-buttons">
                                     <button class="btn btn-action btn-action-edit btn-edit-product">
                                         <i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span>
@@ -1925,7 +1926,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const mostrarFotoPrincipalCheckbox = document.getElementById('mostrar-foto-principal');
-            let productData = { nombre: nombreProducto, codigo: codigoInput ? codigoInput.value.trim() : '', codigoBarras: codigoBarrasInput ? codigoBarrasInput.value.trim() : '', proveedor: proveedorInput.value.trim(), descripcion: descripcionInput.value.trim(), categoriaId: categoriaSelect.value, costoCompra: parseFloat(costoInput.value) || 0, precioDetal: parseFloat(detalInput.value) || 0, precioMayor: parseFloat(mayorInput.value) || 0, visible: visibleCheckbox.checked, mostrarFotoPrincipal: mostrarFotoPrincipalCheckbox ? mostrarFotoPrincipalCheckbox.checked : true, timestamp: serverTimestamp(), variaciones: [], imagenUrl: null };
+            let productData = { nombre: nombreProducto, codigo: codigoInput ? codigoInput.value.trim() : '', codigoBarras: codigoBarrasInput ? codigoBarrasInput.value.trim() : '', proveedor: proveedorInput.value.trim(), descripcion: descripcionInput.value.trim(), categoriaId: categoriaSelect.value, costoCompra: parseFloat(costoInput.value) || 0, precioDetal: parseFloat(detalInput.value) || 0, precioMayor: parseFloat(mayorInput.value) || 0, visible: visibleCheckbox.checked, bajoEncargo: bajoEncargoCheckbox ? bajoEncargoCheckbox.checked : false, mostrarFotoPrincipal: mostrarFotoPrincipalCheckbox ? mostrarFotoPrincipalCheckbox.checked : true, timestamp: serverTimestamp(), variaciones: [], imagenUrl: null };
 
             const variationRows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)');
             variationRows.forEach(row => { const talla = row.querySelector('[name="variation_talla[]"]').value.trim(); const color = row.querySelector('[name="variation_color[]"]').value.trim(); const stock = parseInt(row.querySelector('[name="variation_stock[]"]').value, 10) || 0; if (talla || color || stock > 0) { productData.variaciones.push({ talla, color, stock }); } });
@@ -2005,6 +2006,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         if (productListTableBody) productListTableBody.addEventListener('click', async (e) => {
+            const encargoBadge = e.target.closest('.btn-toggle-encargo');
+            if (encargoBadge) {
+                const tr = encargoBadge.closest('tr'); const id = tr?.dataset.id;
+                const producto = id ? localProductsMap.get(id) : null;
+                if (!id || !producto) return;
+                const nuevoValor = !producto.bajoEncargo;
+                try {
+                    await updateDoc(doc(db, "productos", id), { bajoEncargo: nuevoValor });
+                    showToast(nuevoValor ? "Producto agregado a Bajo Encargo" : "Producto quitado de Bajo Encargo", 'success');
+                } catch (err) {
+                    console.error("Error actualizando bajoEncargo:", err);
+                    showToast("Error al actualizar Bajo Encargo", 'error');
+                }
+                return;
+            }
             const target = e.target.closest('button'); if (!target) return; e.preventDefault();
             const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.product-name'); if (!id || !nameTd) return;
 
@@ -2043,6 +2059,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         detalInput.value = Math.round(product.precioDetal || 0);
                         mayorInput.value = Math.round(product.precioMayor || 0);
                         visibleCheckbox.checked = product.visible;
+                        if (bajoEncargoCheckbox) bajoEncargoCheckbox.checked = !!product.bajoEncargo;
                         const mostrarFotoCheckbox = document.getElementById('mostrar-foto-principal');
                         if (mostrarFotoCheckbox) mostrarFotoCheckbox.checked = product.mostrarFotoPrincipal !== false;
                         imagenInput.required = false;
