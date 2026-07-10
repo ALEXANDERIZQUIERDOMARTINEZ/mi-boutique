@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Migración de Cache de Imágenes - Mi Boutique</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .log-container {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-warning { color: #ffc107; }
+        .log-info { color: #17a2b8; }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mb-4">
+            🖼️ Migración de Cache de Imágenes
+        </h1>
+
+        <div class="alert alert-info">
+            <strong>ℹ️ Información:</strong> Esta herramienta recorre todas las imágenes ya subidas a Firebase Storage
+            y les agrega la cabecera <code>Cache-Control: public, max-age=31536000, immutable</code>, para que los
+            navegadores dejen de volver a descargarlas en cada visita (esto es lo que está generando el consumo/costo
+            de descargas de Storage). Las subidas nuevas ya incluyen este cache automáticamente.
+        </div>
+
+        <div class="alert alert-warning">
+            <strong>⚠️ Requisito:</strong> Debes tener sesión iniciada como administrador (abre primero
+            <code>admin.html</code> e inicia sesión en esta misma pestaña/navegador) para que las reglas de Storage
+            permitan actualizar los metadatos.
+        </div>
+
+        <div class="stats-card" id="stats-card" style="display: none;">
+            <div class="row">
+                <div class="col-4 stat-item">
+                    <div class="stat-number" id="stat-total">0</div>
+                    <div class="stat-label">Total Imágenes</div>
+                </div>
+                <div class="col-4 stat-item">
+                    <div class="stat-number" id="stat-without">0</div>
+                    <div class="stat-label">Sin Cache</div>
+                </div>
+                <div class="col-4 stat-item">
+                    <div class="stat-number" id="stat-updated">0</div>
+                    <div class="stat-label">Actualizadas</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2">
+            <button id="btn-analyze" class="btn btn-primary btn-lg">
+                📊 Analizar Imágenes
+            </button>
+            <button id="btn-migrate" class="btn btn-success btn-lg" style="display: none;">
+                🚀 Aplicar Cache a Todas
+            </button>
+        </div>
+
+        <div class="log-container" id="log-container"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getStorage, ref, listAll, getMetadata, updateMetadata } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+
+        // Configuración de Firebase (misma que el resto del proyecto)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
+            authDomain: "mishell-boutique-admin.firebaseapp.com",
+            projectId: "mishell-boutique-admin",
+            storageBucket: "mishell-boutique-admin.firebasestorage.app",
+            messagingSenderId: "399662956877",
+            appId: "1:399662956877:web:084236f5bb3cf6f0a8f704"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+
+        const CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
+        // ========================================================================
+        // FUNCIONES DE LOGGING
+        // ========================================================================
+
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('log-container');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+
+            const timestamp = new Date().toLocaleTimeString('es-MX');
+            logEntry.textContent = `[${timestamp}] ${message}`;
+
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateStats(total, without, updated) {
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-without').textContent = without;
+            document.getElementById('stat-updated').textContent = updated;
+            document.getElementById('stats-card').style.display = 'block';
+        }
+
+        // ========================================================================
+        // RECORRIDO RECURSIVO DEL BUCKET
+        // ========================================================================
+
+        async function listarTodosLosArchivos(folderRef) {
+            const archivos = [];
+            const resultado = await listAll(folderRef);
+
+            archivos.push(...resultado.items);
+
+            for (const prefix of resultado.prefixes) {
+                const subArchivos = await listarTodosLosArchivos(prefix);
+                archivos.push(...subArchivos);
+            }
+
+            return archivos;
+        }
+
+        // ========================================================================
+        // ANÁLISIS DE IMÁGENES
+        // ========================================================================
+
+        let itemsSinCache = [];
+
+        async function analizarImagenes() {
+            try {
+                addLog('🔍 Escaneando bucket de Storage (puede tardar según la cantidad de imágenes)...', 'info');
+
+                const btnAnalyze = document.getElementById('btn-analyze');
+                btnAnalyze.disabled = true;
+                btnAnalyze.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analizando...';
+
+                const rootRef = ref(storage);
+                const todosLosArchivos = await listarTodosLosArchivos(rootRef);
+
+                addLog(`📦 Total de archivos encontrados: ${todosLosArchivos.length}`, 'info');
+
+                itemsSinCache = [];
+                let conCache = 0;
+
+                for (const itemRef of todosLosArchivos) {
+                    try {
+                        const metadata = await getMetadata(itemRef);
+                        if (metadata.cacheControl && metadata.cacheControl.includes('max-age')) {
+                            conCache++;
+                        } else {
+                            itemsSinCache.push(itemRef);
+                        }
+                    } catch (error) {
+                        addLog(`⚠️  No se pudo leer metadata de "${itemRef.fullPath}": ${error.message}`, 'warning');
+                    }
+                }
+
+                addLog(`✅ Imágenes que ya tienen cache: ${conCache}`, 'success');
+                addLog(`⚠️  Imágenes sin cache: ${itemsSinCache.length}`, 'warning');
+
+                updateStats(todosLosArchivos.length, itemsSinCache.length, 0);
+
+                if (itemsSinCache.length > 0) {
+                    document.getElementById('btn-migrate').style.display = 'block';
+                    addLog('\n✨ Presiona "Aplicar Cache a Todas" para actualizar los metadatos', 'success');
+                } else {
+                    addLog('\n🎉 ¡Todas las imágenes ya tienen cache configurado!', 'success');
+                }
+
+                btnAnalyze.disabled = false;
+                btnAnalyze.innerHTML = '🔄 Re-analizar Imágenes';
+
+            } catch (error) {
+                console.error('Error en análisis:', error);
+                addLog(`❌ Error: ${error.message}`, 'error');
+                const btnAnalyze = document.getElementById('btn-analyze');
+                btnAnalyze.disabled = false;
+                btnAnalyze.innerHTML = '📊 Analizar Imágenes';
+            }
+        }
+
+        // ========================================================================
+        // MIGRACIÓN
+        // ========================================================================
+
+        async function ejecutarMigracion() {
+            if (itemsSinCache.length === 0) {
+                addLog('⚠️  No hay imágenes para migrar', 'warning');
+                return;
+            }
+
+            const confirmacion = confirm(
+                `¿Aplicar Cache-Control a ${itemsSinCache.length} imágenes?\n\n` +
+                'Esta acción solo actualiza metadatos, no modifica el contenido de las imágenes.'
+            );
+
+            if (!confirmacion) {
+                addLog('❌ Migración cancelada por el usuario', 'warning');
+                return;
+            }
+
+            try {
+                const btnMigrate = document.getElementById('btn-migrate');
+                btnMigrate.disabled = true;
+                btnMigrate.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Migrando...';
+
+                addLog('\n🚀 Iniciando migración...', 'info');
+
+                let actualizados = 0;
+                let errores = 0;
+
+                for (let i = 0; i < itemsSinCache.length; i++) {
+                    const itemRef = itemsSinCache[i];
+
+                    try {
+                        await updateMetadata(itemRef, { cacheControl: CACHE_CONTROL });
+
+                        actualizados++;
+                        updateStats(
+                            document.getElementById('stat-total').textContent,
+                            itemsSinCache.length - actualizados,
+                            actualizados
+                        );
+
+                        addLog(`✅ [${actualizados}/${itemsSinCache.length}] ${itemRef.fullPath}`, 'success');
+
+                    } catch (error) {
+                        errores++;
+                        addLog(`❌ Error en "${itemRef.fullPath}": ${error.message}`, 'error');
+                    }
+                }
+
+                addLog(`\n🎉 Migración completada!`, 'success');
+                addLog(`   ✅ Actualizadas: ${actualizados}`, 'success');
+                if (errores > 0) {
+                    addLog(`   ❌ Errores: ${errores}`, 'error');
+                }
+
+                btnMigrate.style.display = 'none';
+                itemsSinCache = [];
+
+            } catch (error) {
+                console.error('Error en migración:', error);
+                addLog(`❌ Error crítico: ${error.message}`, 'error');
+
+                const btnMigrate = document.getElementById('btn-migrate');
+                btnMigrate.disabled = false;
+                btnMigrate.innerHTML = '🚀 Aplicar Cache a Todas';
+            }
+        }
+
+        // ========================================================================
+        // EVENT LISTENERS
+        // ========================================================================
+
+        document.getElementById('btn-analyze').addEventListener('click', analizarImagenes);
+        document.getElementById('btn-migrate').addEventListener('click', ejecutarMigracion);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                addLog(`✅ Sesión iniciada como: ${user.email}`, 'success');
+            } else {
+                addLog('⚠️  No hay sesión iniciada. Abre admin.html en esta misma pestaña e inicia sesión antes de continuar.', 'warning');
+            }
+        });
+
+        addLog('✨ Sistema de migración de cache de imágenes cargado', 'success');
+        addLog('👉 Presiona "Analizar Imágenes" para comenzar', 'info');
+    </script>
+</body>
+</html>
