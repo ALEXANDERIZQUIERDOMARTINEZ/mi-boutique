@@ -553,6 +553,16 @@
                                             <label class="form-check-label ms-2" for="bajo-encargo" style="font-size: 1.1rem; font-weight: 500;">Bajo Encargo</label>
                                         </div>
                                         <small class="text-muted d-block mt-1">Activa para mostrar en <a href="encargo.html" target="_blank">encargo.html</a></small>
+                                        <div class="mt-3">
+                                            <label for="grupo-mayorista" class="form-label mb-1">Grupo de precio mayorista:</label>
+                                            <select class="form-select form-select-sm" id="grupo-mayorista">
+                                                <option value="">Ninguno (usa Precio Mayor fijo)</option>
+                                                <option value="bodys">Bodys básicos</option>
+                                                <option value="vestidosLargos">Vestidos largos / Conjuntos</option>
+                                                <option value="vestidosCortos">Vestidos cortos básicos</option>
+                                            </select>
+                                            <small class="text-muted d-block mt-1">El precio por unidad baja según cuántas prendas de este grupo lleve el cliente en mayor.html</small>
+                                        </div>
                                     </div>
                                 </div>
                                 <hr class="my-4"> 

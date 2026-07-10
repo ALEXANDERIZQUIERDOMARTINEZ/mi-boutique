@@ -39,15 +39,79 @@
   .wholesale-banner i {
     margin-right: 6px;
   }
+  .mayor-locked .mayor-content {
+    display: none !important;
+  }
+  .wholesale-gate {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: linear-gradient(135deg, #7B4FA6, #C273A2);
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .mayor-locked .wholesale-gate {
+    display: flex;
+  }
+  .wholesale-gate-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 24px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+  .wholesale-gate-card i.bi-shop {
+    font-size: 2.2rem;
+    color: #D988B9;
+  }
+  .wholesale-gate-card h1 {
+    font-family: var(--fuente-principal);
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--color-texto);
+    margin: 10px 0 6px;
+  }
+  .wholesale-gate-card p {
+    font-size: 0.85rem;
+    color: var(--color-texto-secundario);
+    margin-bottom: 18px;
+  }
+  .wholesale-gate-card input {
+    text-transform: uppercase;
+  }
+  .wholesale-gate-error {
+    color: #c62828;
+    font-size: 0.82rem;
+    margin-top: 8px;
+    display: none;
+  }
 </style>
 </head>
-<body class="wholesale-active">
+<body class="wholesale-active mayor-locked">
 
-<div class="wholesale-banner">
-  <i class="bi bi-shop"></i> CATÁLOGO MAYORISTAS — Solo se muestran prendas con precio al por mayor
+<div class="wholesale-gate" id="wholesale-gate">
+  <div class="wholesale-gate-card">
+    <i class="bi bi-shop"></i>
+    <h1>Ventas al por mayor de prendas disponibles</h1>
+    <p>Ingresa tu código mayorista para ver los precios y comprar. Si aún no lo tienes, consíguelo eligiendo prendas bajo encargo.</p>
+    <form id="wholesale-form">
+      <input type="text" class="form-control text-center mb-2" id="wholesale-code" placeholder="Código mayorista" required>
+      <button type="submit" class="btn w-100" style="background:var(--color-primario); color:#fff;">Ingresar</button>
+      <div class="wholesale-gate-error" id="wholesale-gate-error">Código incorrecto</div>
+    </form>
+    <a href="encargo.html" class="d-block mt-3 small">¿No tienes el código? Elige prendas bajo encargo</a>
+  </div>
 </div>
 
-<header class="site-header sticky-top">
+<div class="wholesale-banner mayor-content">
+  <i class="bi bi-shop"></i> VENTAS AL POR MAYOR DE PRENDAS DISPONIBLES
+</div>
+
+<header class="site-header sticky-top mayor-content">
 <div class="header-gradient"></div>
 <nav class="header-nav">
     <div class="container">
@@ -99,7 +163,7 @@
 </nav>
 </header>
 
-<main class="container-fluid px-0" id="main-content">
+<main class="container-fluid px-0 mayor-content" id="main-content">
 
 <!-- Grid de productos -->
 <div class="container-fluid px-2 px-md-4">
@@ -112,7 +176,7 @@
 </div>
 </main>
 
-<footer class="footer-minimal">
+<footer class="footer-minimal mayor-content">
 <div class="container text-center">
 <p class="text-muted small m-0">© 2026 MISHELL'ES BOUTIQUE. Todos los derechos reservados.</p>
 <p class="text-muted small m-0 mt-1">Desarrollado por <a href="https://www.instagram.com/amei_group/" target="_blank" rel="noopener noreferrer" style="color: #D988B9; text-decoration: none;">amei_group</a></p>
@@ -121,7 +185,7 @@
 
 <div class="nav-search-suggestions d-lg-none" id="nav-search-suggestions"></div>
 
-<nav class="mobile-bottom-nav d-lg-none">
+<nav class="mobile-bottom-nav d-lg-none mayor-content">
 <button class="nav-item active" id="mobile-home-btn">
 <i class="bi bi-house"></i>
 </button>
