@@ -28,34 +28,49 @@
     font-weight: 600;
     letter-spacing: 0.5px;
   }
-  .encargo-intro {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 24px 16px 8px;
+  .encargo-hero {
+    max-width: 620px;
+    margin: 16px auto 0;
+    padding: 0 16px;
     text-align: center;
   }
-  .encargo-intro h1 {
+  .encargo-hero h1 {
     font-family: var(--fuente-principal);
     font-weight: 800;
-    font-size: 1.5rem;
+    font-size: 1.15rem;
     color: var(--color-texto);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
-  .encargo-intro p {
+  .encargo-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  .encargo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--color-fondo-secundario);
     color: var(--color-texto-secundario);
-    font-size: 0.92rem;
-    margin-bottom: 0;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .encargo-chip i {
+    font-size: 0.85rem;
+    color: var(--color-primario-oscuro);
+  }
+  .encargo-chip-delivery {
+    background: var(--color-primario-claro);
+    color: var(--color-primario-oscuro);
   }
   .encargo-progress-wrap {
     max-width: 520px;
-    margin: 18px auto;
+    margin: 14px auto 0;
     padding: 0 16px;
-  }
-  .encargo-progress-hint {
-    text-align: center;
-    font-size: 0.82rem;
-    color: var(--color-texto-secundario);
-    margin-bottom: 10px;
   }
   .encargo-group-progress {
     margin-bottom: 10px;
@@ -429,13 +444,17 @@
 
 <main>
 
-  <div class="encargo-intro">
+  <div class="encargo-hero">
     <h1>Prendas Bajo Encargo</h1>
-    <p>Estas prendas se mandan a fabricar (no son de stock inmediato). Elige mínimo <strong>2 unidades</strong> de cada prenda y reparte los colores como quieras. El precio baja según la tabla al llegar a <strong>6 unidades de un mismo tipo</strong> (bodys, vestidos largos/conjuntos o vestidos cortos), y ahí también desbloqueas tu código mayorista.</p>
+    <div class="encargo-chips">
+      <span class="encargo-chip"><i class="bi bi-123"></i> Mín. 2 por prenda</span>
+      <span class="encargo-chip"><i class="bi bi-palette"></i> Tú eliges el color</span>
+      <span class="encargo-chip"><i class="bi bi-graph-down-arrow"></i> Precio baja x cantidad</span>
+      <span class="encargo-chip encargo-chip-delivery"><i class="bi bi-truck"></i> Entrega aprox. <strong id="delivery-date">…</strong></span>
+    </div>
   </div>
 
   <div class="encargo-progress-wrap">
-    <div class="encargo-progress-hint" id="progress-hint">Elige prendas abajo para ver tu progreso hacia el precio mayorista.</div>
     <div id="group-progress-list"></div>
     <div class="encargo-tiers-toggle">
       <button type="button" id="btn-toggle-tiers">Ver tabla de precios por cantidad</button>
