@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { WHOLESALE_CODE } from './wholesale-config.js';
-import { WHOLESALE_TIER_GROUPS, getTierPrice, resolveWholesaleGroup, buildTiersTablesHtml, getPrimerEscalonMayorista } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml, getPrimerEscalonMayorista } from './wholesale-tiers.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -89,8 +89,8 @@ function getCantidadValida(id) {
 }
 
 // Total SURTIDO: suma de todas las prendas con tabla de precios (sin importar el
-// tipo/grupo específico). El nivel de descuento no exige 6 del mismo tipo — también
-// cuenta mezclar bodys + vestidos largos + vestidos cortos hasta llegar a 6, 12, 24...
+// tipo/grupo específico). Mezclar categorías solo alcanza para desbloquear el
+// primer escalón real (ej. 6X); no sirve para subir a 12X, 24X...
 function totalGeneralMayorista() {
     let total = 0;
     productsData.forEach(p => {
@@ -100,16 +100,42 @@ function totalGeneralMayorista() {
     return total;
 }
 
-// Misma lógica de precios por volumen que mayor.html: si la prenda pertenece a un
-// grupo con tabla de precios (asignado a mano o detectado por su categoría), el
-// precio por unidad depende del total SURTIDO (todas las prendas con tabla,
-// mezcladas); si no, se usa el precio de venta normal.
-function getPrecioUnitario(p) {
+// Cuántas prendas hay de UNA MISMA categoría (sin mezclar con otras).
+function totalPorGrupo(grupo) {
+    let total = 0;
+    productsData.forEach(p => {
+        if (resolveWholesaleGroup(p, categoriesMap) === grupo) total += getCantidadValida(p.id);
+    });
+    return total;
+}
+
+// Info de precio de una prenda: combina cuántas hay de su propia categoría con
+// cuántas hay surtidas en total. El surtido solo desbloquea el primer escalón
+// (ej. 6X); superarlo (12X, 24X...) exige esa cantidad dentro de la misma
+// categoría, sin mezclar. Devuelve null si la prenda no tiene tabla de precios.
+function getPrecioInfo(p) {
     const grupo = resolveWholesaleGroup(p, categoriesMap);
-    if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-        return getTierPrice(grupo, Math.max(totalGeneralMayorista(), 1));
-    }
-    return p.precioDetal || 0;
+    if (!grupo || !WHOLESALE_TIER_GROUPS[grupo]) return null;
+    const totalPropio = totalPorGrupo(grupo);
+    const totalMixto = totalGeneralMayorista();
+    return getHybridTierInfo(grupo, totalPropio, totalMixto);
+}
+
+function getPrecioUnitario(p) {
+    const info = getPrecioInfo(p);
+    return info ? info.precio : (p.precioDetal || 0);
+}
+
+// Texto explicando de dónde sale el precio: si vino de acumular cantidad dentro
+// de la misma categoría, o del mínimo surtido (mezclando categorías).
+function buildTierHint(p) {
+    const info = getPrecioInfo(p);
+    if (!info) return '';
+    if (info.idx === 0) return 'Baja según cantidad surtida';
+    const grupo = resolveWholesaleGroup(p, categoriesMap);
+    return info.porPropio
+        ? `Nivel ${info.nivel}X — ${totalPorGrupo(grupo)} und. de esta prenda`
+        : `Nivel ${info.nivel}X — ${totalGeneralMayorista()} und. surtidas`;
 }
 
 function calcularTotalEstimado() {
@@ -168,6 +194,10 @@ function renderTiersTables() {
 // juntas, sin importar el tipo, y muestra en qué escalón vas y cuánto falta para el
 // siguiente (1X, 6X, 12X, 24X...). Usa como referencia de escalones la tabla más
 // larga (bodys) ya que todas comparten los mismos umbrales tempranos (6, 12, 24, 50).
+// El surtido (mezclar categorías) solo alcanza para desbloquear el primer
+// escalón real (ej. 6X). Por eso la barra general solo mide el avance hacia
+// ese primer escalón; superarlo (12X, 24X...) depende de cada categoría por
+// separado y se refleja en el precio de cada prenda, no acá.
 function renderGroupProgress() {
     if (!groupProgressListEl) return;
     const total = totalGeneralMayorista();
@@ -177,29 +207,32 @@ function renderGroupProgress() {
         return;
     }
 
-    const tablaReferencia = Object.values(WHOLESALE_TIER_GROUPS).reduce((a, b) => a.tiers.length >= b.tiers.length ? a : b);
-    const tiers = tablaReferencia.tiers;
-    let idx = 0;
-    for (let i = 0; i < tiers.length; i++) { if (total >= tiers[i].min) idx = i; }
-    const nextTier = tiers[idx + 1];
-    const unlocked = idx >= 1;
-    let pct, nextLabel;
-    if (nextTier) {
-        const base = tiers[idx].min;
-        pct = Math.min(100, Math.round(((total - base) / (nextTier.min - base)) * 100));
-        nextLabel = `Faltan ${nextTier.min - total} para ${nextTier.min}X`;
-    } else {
-        pct = 100;
-        nextLabel = '¡Nivel máximo!';
+    const primerEscalon = getPrimerEscalonMayorista();
+
+    if (total < primerEscalon) {
+        const pct = Math.min(100, Math.round((total / primerEscalon) * 100));
+        groupProgressListEl.innerHTML = `
+            <div class="encargo-progress-card">
+                <div class="encargo-progress-top">
+                    <span class="encargo-progress-level">Nivel 1X</span>
+                    <span class="encargo-progress-next">Faltan ${primerEscalon - total} para ${primerEscalon}X</span>
+                </div>
+                <div class="encargo-progress-track"><div class="encargo-progress-fill" style="width:${pct}%"></div></div>
+                <div class="encargo-progress-count">${total} unidades surtidas</div>
+            </div>
+        `;
+        return;
     }
+
+    const tablaReferencia = Object.values(WHOLESALE_TIER_GROUPS).reduce((a, b) => a.tiers.length >= b.tiers.length ? a : b);
+    const siguientesEscalones = tablaReferencia.tiers.slice(2, 4).map(t => `${t.min}X`).join(', ');
     groupProgressListEl.innerHTML = `
         <div class="encargo-progress-card">
             <div class="encargo-progress-top">
-                <span class="encargo-progress-level">Nivel ${tiers[idx].min}X</span>
-                <span class="encargo-progress-next">${nextLabel}</span>
+                <span class="encargo-progress-level">Nivel ${primerEscalon}X activo</span>
             </div>
-            <div class="encargo-progress-track"><div class="encargo-progress-fill${unlocked ? ' is-unlocked' : ''}" style="width:${pct}%"></div></div>
-            <div class="encargo-progress-count">${total} unidades surtidas</div>
+            <div class="encargo-progress-track"><div class="encargo-progress-fill is-unlocked" style="width:100%"></div></div>
+            <div class="encargo-progress-count">${total} unidades surtidas — para bajar más el precio, junta ${siguientesEscalones}... de una misma prenda</div>
         </div>
     `;
 }
@@ -224,8 +257,7 @@ function renderProducts() {
         const precioUnitario = getPrecioUnitario(p);
         let precioHtml = formatoMoneda.format(precioUnitario);
         if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-            const totalSurtido = totalGeneralMayorista();
-            precioHtml = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${totalSurtido > 0 ? `Precio con ${totalSurtido} und. surtidas` : 'Baja según cantidad surtida'}</span>`;
+            precioHtml = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${buildTierHint(p)}</span>`;
         }
 
         let bodyExtra;
@@ -282,8 +314,7 @@ function actualizarPreciosEnVivo() {
         if (priceEl) {
             const grupo = resolveWholesaleGroup(p, categoriesMap);
             if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-                const totalSurtido = totalGeneralMayorista();
-                priceEl.innerHTML = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${totalSurtido > 0 ? `Precio con ${totalSurtido} und. surtidas` : 'Baja según cantidad surtida'}</span>`;
+                priceEl.innerHTML = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${buildTierHint(p)}</span>`;
             } else {
                 priceEl.textContent = formatoMoneda.format(precioUnitario);
             }
