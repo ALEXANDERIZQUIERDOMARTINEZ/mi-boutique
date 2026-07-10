@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { WHOLESALE_CODE } from './wholesale-config.js';
-import { WHOLESALE_TIER_GROUPS, getTierPrice } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getTierPrice, resolveWholesaleGroup } from './wholesale-tiers.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -15,6 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const productsCollection = collection(db, 'productos');
+const categoriesCollection = collection(db, 'categorias');
 
 const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const WHATSAPP_NUMBER = '573046084971';
@@ -25,6 +26,7 @@ const detalleColores = new Map();
 // productId -> true si la tarjeta está colapsada (oculta su lista de colores)
 const tarjetasColapsadas = new Set();
 let productsData = [];
+const categoriesMap = new Map(); // categoriaId -> nombre
 let bsToast = null;
 
 const gridEl = document.getElementById('encargo-grid');
@@ -78,17 +80,17 @@ function totalSeleccionado() {
 function totalPorGrupo(grupo) {
     let total = 0;
     productsData.forEach(p => {
-        if (p.grupoMayorista === grupo) total += getCantidadValida(p.id);
+        if (resolveWholesaleGroup(p, categoriesMap) === grupo) total += getCantidadValida(p.id);
     });
     return total;
 }
 
 // Misma lógica de precios por volumen que mayor.html: si la prenda pertenece a un
-// grupo con tabla de precios, el precio por unidad depende del total elegido de ese
-// grupo (sumando todas las referencias y colores de ese grupo); si no, se usa el
-// precio de venta normal.
+// grupo con tabla de precios (asignado a mano o detectado por su categoría), el
+// precio por unidad depende del total elegido de ese grupo (sumando todas las
+// referencias y colores de ese grupo); si no, se usa el precio de venta normal.
 function getPrecioUnitario(p) {
-    const grupo = p.grupoMayorista;
+    const grupo = resolveWholesaleGroup(p, categoriesMap);
     if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
         return getTierPrice(grupo, Math.max(totalPorGrupo(grupo), 1));
     }
@@ -183,7 +185,7 @@ function renderProducts() {
         const totalProducto = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
         const img = p.imagenUrl || 'https://placehold.co/300x400/f5e8ed/D988B9?text=Mishell';
 
-        const grupo = p.grupoMayorista;
+        const grupo = resolveWholesaleGroup(p, categoriesMap);
         const precioUnitario = getPrecioUnitario(p);
         let precioHtml = formatoMoneda.format(precioUnitario);
         if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
@@ -243,8 +245,9 @@ function actualizarPreciosEnVivo() {
 
         const priceEl = card.querySelector('.encargo-card-price');
         if (priceEl) {
-            if (p.grupoMayorista && WHOLESALE_TIER_GROUPS[p.grupoMayorista]) {
-                const totalGrupo = totalPorGrupo(p.grupoMayorista);
+            const grupo = resolveWholesaleGroup(p, categoriesMap);
+            if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
+                const totalGrupo = totalPorGrupo(grupo);
                 priceEl.innerHTML = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${totalGrupo > 0 ? `Precio con ${totalGrupo} und. del grupo` : 'Baja según cantidad del grupo'}</span>`;
             } else {
                 priceEl.textContent = formatoMoneda.format(precioUnitario);
@@ -428,6 +431,25 @@ if (waBtn) {
 }
 
 renderTiersTables();
+
+// Se necesita el nombre de la categoría para detectar el grupo de precio mayorista
+// cuando el producto no tiene un grupo asignado a mano. Al llegar, se vuelve a
+// renderizar por si los productos ya se habían cargado antes que las categorías.
+onSnapshot(categoriesCollection, (snapshot) => {
+    categoriesMap.clear();
+    snapshot.forEach(docSnap => {
+        categoriesMap.set(docSnap.id, docSnap.data().nombre || '');
+    });
+    // Si los productos ya se cargaron antes que las categorías, re-renderizar para
+    // aplicar la detección de grupo por categoría. Si aún no llegan, no hay nada
+    // que mostrar todavía (su propio onSnapshot se encarga cuando lleguen).
+    if (productsData.length > 0) {
+        renderProducts();
+        updateProgress();
+    }
+}, (err) => {
+    console.error('Error cargando categorías:', err);
+});
 
 const q = query(productsCollection, where('bajoEncargo', '==', true));
 onSnapshot(q, (snapshot) => {
