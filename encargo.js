@@ -37,6 +37,7 @@ const linkMayorEl = document.getElementById('link-mayor');
 const copyBtn = document.getElementById('btn-copy-code');
 const waBtn = document.getElementById('btn-send-whatsapp');
 const obsEl = document.getElementById('encargo-observaciones');
+const totalEstimadoEl = document.getElementById('total-estimado');
 const tiersToggleBtn = document.getElementById('btn-toggle-tiers');
 const tiersTablesEl = document.getElementById('tiers-tables');
 
@@ -55,14 +56,6 @@ function showToast(message, type = 'success') {
     bsToast.show();
 }
 
-function getProductColors(p) {
-    if (Array.isArray(p.variantes_color) && p.variantes_color.length > 0) {
-        return p.variantes_color.map(vc => ({ nombre: vc.nombre, hex: vc.hex, img: (vc.imagenes || [])[0]?.url || '' })).filter(c => c.nombre);
-    }
-    const unicos = [...new Set((p.variaciones || []).map(v => v.color).filter(Boolean))];
-    return unicos.map(nombre => ({ nombre, hex: '', img: '' }));
-}
-
 function totalSeleccionado() {
     let total = 0;
     selections.forEach(qty => { total += qty; });
@@ -75,6 +68,26 @@ function totalPorGrupo(grupo) {
         if (p.grupoMayorista === grupo) {
             total += selections.get(p.id) || 0;
         }
+    });
+    return total;
+}
+
+// Misma lógica de precios por volumen que mayor.html: si la prenda pertenece a un
+// grupo con tabla de precios, el precio por unidad depende del total elegido de ese
+// grupo en esta selección; si no, se usa el precio de venta normal.
+function getPrecioUnitario(p) {
+    const grupo = p.grupoMayorista;
+    if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
+        return getTierPrice(grupo, Math.max(totalPorGrupo(grupo), 1));
+    }
+    return p.precioDetal || 0;
+}
+
+function calcularTotalEstimado() {
+    let total = 0;
+    productsData.forEach(p => {
+        const qty = selections.get(p.id) || 0;
+        if (qty > 0) total += getPrecioUnitario(p) * qty;
     });
     return total;
 }
@@ -105,27 +118,20 @@ function renderProducts() {
     productsData.forEach(p => {
         const qty = selections.get(p.id) || 0;
         const img = p.imagenUrl || 'https://placehold.co/300x400/f5e8ed/D988B9?text=Mishell';
-        const colores = getProductColors(p);
-        const colorElegido = coloresElegidos.get(p.id);
+        const colorTexto = coloresElegidos.get(p.id) || '';
 
         const grupo = p.grupoMayorista;
-        let precioHtml = formatoMoneda.format(p.precioDetal || 0);
+        const precioUnitario = getPrecioUnitario(p);
+        let precioHtml = formatoMoneda.format(precioUnitario);
         if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
             const totalGrupo = totalPorGrupo(grupo);
-            const precioTier = getTierPrice(grupo, Math.max(totalGrupo, 1));
-            precioHtml = `${formatoMoneda.format(precioTier)} c/u<span class="tier-hint">${totalGrupo > 0 ? `Precio con ${totalGrupo} und. del grupo` : 'Baja según cantidad del grupo'}</span>`;
+            precioHtml = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${totalGrupo > 0 ? `Precio con ${totalGrupo} und. del grupo` : 'Baja según cantidad del grupo'}</span>`;
         }
 
-        const colorsHtml = (qty > 0 && colores.length > 0) ? `
-            <div class="encargo-colors" data-id="${p.id}">
-                ${colores.map(c => `
-                    <span class="encargo-color-swatch ${c.nombre === colorElegido ? 'is-active' : ''}"
-                          data-id="${p.id}" data-color="${c.nombre}"
-                          title="${c.nombre}"
-                          style="background:${c.img ? `url('${c.img}')` : (c.hex || '#e5e5e5')};"></span>
-                `).join('')}
+        const colorFieldHtml = qty > 0 ? `
+            <div class="encargo-color-field">
+                <input type="text" class="encargo-color-input" data-id="${p.id}" placeholder="Escribe el color que quieres" value="${colorTexto.replace(/"/g, '&quot;')}">
             </div>
-            <div class="encargo-color-label">${colorElegido ? `Color: ${colorElegido}` : 'Elige un color'}</div>
         ` : '';
 
         const card = document.createElement('div');
@@ -140,7 +146,7 @@ function renderProducts() {
                     <span class="encargo-step-qty">${qty}</span>
                     <button type="button" class="encargo-step-btn encargo-step-plus" data-id="${p.id}" aria-label="Agregar">+</button>
                 </div>
-                ${colorsHtml}
+                ${colorFieldHtml}
             </div>
         `;
         gridEl.appendChild(card);
@@ -161,17 +167,12 @@ function updateProgress() {
         codeBlockEl.classList.toggle('is-unlocked', unlocked);
         if (unlocked && !wasUnlocked) showToast('¡Código mayorista desbloqueado!', 'success');
     }
+    if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
     if (finalizePanelEl) finalizePanelEl.classList.toggle('is-visible', total > 0);
 }
 
 if (gridEl) {
     gridEl.addEventListener('click', (e) => {
-        const swatch = e.target.closest('.encargo-color-swatch');
-        if (swatch) {
-            coloresElegidos.set(swatch.dataset.id, swatch.dataset.color);
-            renderProducts();
-            return;
-        }
         const btn = e.target.closest('.encargo-step-btn');
         if (!btn) return;
         const id = btn.dataset.id;
@@ -183,17 +184,19 @@ if (gridEl) {
         }
         if (qty > 0) {
             selections.set(id, qty);
-            if (!coloresElegidos.has(id)) {
-                const producto = productsData.find(p => p.id === id);
-                const colores = producto ? getProductColors(producto) : [];
-                if (colores.length > 0) coloresElegidos.set(id, colores[0].nombre);
-            }
         } else {
             selections.delete(id);
             coloresElegidos.delete(id);
         }
         renderProducts();
         updateProgress();
+    });
+
+    // No re-renderizamos en cada tecla para no perder el foco del input
+    gridEl.addEventListener('input', (e) => {
+        const input = e.target.closest('.encargo-color-input');
+        if (!input) return;
+        coloresElegidos.set(input.dataset.id, input.value);
     });
 }
 
@@ -225,12 +228,14 @@ if (waBtn) {
         productsData.forEach(p => {
             const qty = selections.get(p.id);
             if (!qty) return;
-            const color = coloresElegidos.get(p.id);
-            lineas.push(`• ${p.nombre}${color ? ` (${color})` : ''} x${qty}`);
+            const color = (coloresElegidos.get(p.id) || '').trim();
+            const precioUnitario = getPrecioUnitario(p);
+            lineas.push(`• ${p.nombre}${color ? ` (color: ${color})` : ''} x${qty} — ${formatoMoneda.format(precioUnitario)} c/u = ${formatoMoneda.format(precioUnitario * qty)}`);
         });
         const observaciones = (obsEl?.value || '').trim();
         const total = totalSeleccionado();
-        let mensaje = `Hola! Quiero hacer un pedido bajo encargo:\n${lineas.join('\n')}`;
+        const totalEstimado = calcularTotalEstimado();
+        let mensaje = `Hola! Quiero hacer un pedido bajo encargo:\n${lineas.join('\n')}\n\nTotal estimado: ${formatoMoneda.format(totalEstimado)}`;
         if (observaciones) mensaje += `\n\nObservaciones: ${observaciones}`;
         if (total >= META_TOTAL) mensaje += `\n\nMi código mayorista: ${WHOLESALE_CODE}`;
         const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`;
