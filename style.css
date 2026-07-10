@@ -6194,3 +6194,78 @@ img, video, iframe, embed, object {
     font-weight: 700;
     color: var(--color-primario-oscuro);
 }
+
+.wtiers-sep {
+    color: var(--color-borde);
+    margin: 0 8px;
+}
+
+/* ────────────────────────────────────────────────────────────────────
+   CONDICIONES DE PEDIDO AL POR MAYOR
+   Compartido entre encargo.html y mayor.html
+   ──────────────────────────────────────────────────────────────────── */
+.wpolicy-panel {
+    display: none;
+    max-width: 640px;
+    margin: 14px auto 0;
+    padding: 0 16px;
+}
+
+.wpolicy-panel.is-open {
+    display: block;
+}
+
+.wpolicy-card {
+    background: #fff;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-md);
+    box-shadow: var(--sombra-sm);
+    overflow: hidden;
+}
+
+.wpolicy-card-header {
+    background: linear-gradient(135deg, var(--color-primario), var(--color-primario-oscuro));
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 12px;
+}
+
+.wpolicy-card-body {
+    padding: 16px 18px;
+    font-size: 0.85rem;
+    color: var(--color-texto);
+    line-height: 1.5;
+}
+
+.wpolicy-section {
+    margin-bottom: 14px;
+}
+
+.wpolicy-section:last-child {
+    margin-bottom: 0;
+}
+
+.wpolicy-section h5 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-primario-oscuro);
+    margin-bottom: 6px;
+}
+
+.wpolicy-section ul {
+    margin: 0 0 6px;
+    padding-left: 20px;
+}
+
+.wpolicy-section li {
+    margin-bottom: 3px;
+}
+
+.wpolicy-example {
+    font-size: 0.8rem;
+    color: var(--color-texto-secundario);
+    font-style: italic;
+    margin: 0;
+}
