@@ -183,19 +183,23 @@ function renderGroupProgress() {
     for (let i = 0; i < tiers.length; i++) { if (total >= tiers[i].min) idx = i; }
     const nextTier = tiers[idx + 1];
     const unlocked = idx >= 1;
-    let pct, label;
+    let pct, nextLabel;
     if (nextTier) {
         const base = tiers[idx].min;
         pct = Math.min(100, Math.round(((total - base) / (nextTier.min - base)) * 100));
-        label = `${total} unidades surtidas (nivel ${tiers[idx].min}X) — faltan ${nextTier.min - total} para el nivel ${nextTier.min}X`;
+        nextLabel = `Faltan ${nextTier.min - total} para ${nextTier.min}X`;
     } else {
         pct = 100;
-        label = `${total} unidades surtidas — ¡nivel máximo de descuento!`;
+        nextLabel = '¡Nivel máximo!';
     }
     groupProgressListEl.innerHTML = `
-        <div class="encargo-group-progress">
-            <div class="encargo-group-progress-label"><span>${label}</span></div>
+        <div class="encargo-progress-card">
+            <div class="encargo-progress-top">
+                <span class="encargo-progress-level">Nivel ${tiers[idx].min}X</span>
+                <span class="encargo-progress-next">${nextLabel}</span>
+            </div>
             <div class="encargo-progress-track"><div class="encargo-progress-fill${unlocked ? ' is-unlocked' : ''}" style="width:${pct}%"></div></div>
+            <div class="encargo-progress-count">${total} unidades surtidas</div>
         </div>
     `;
 }
@@ -408,14 +412,16 @@ if (gridEl) {
 if (tiersToggleBtn) {
     tiersToggleBtn.addEventListener('click', () => {
         const isOpen = tiersTablesEl.classList.toggle('is-open');
-        tiersToggleBtn.textContent = isOpen ? 'Ocultar tabla de precios' : 'Ver tabla de precios por cantidad';
+        const label = tiersToggleBtn.querySelector('.wtiers-btn-label');
+        if (label) label.textContent = isOpen ? 'Ocultar tabla' : 'Tabla de precios';
     });
 }
 
 if (policyToggleBtn) {
     policyToggleBtn.addEventListener('click', () => {
         const isOpen = policyPanelEl.classList.toggle('is-open');
-        policyToggleBtn.textContent = isOpen ? 'Ocultar condiciones' : 'Ver condiciones del pedido';
+        const label = policyToggleBtn.querySelector('.wtiers-btn-label');
+        if (label) label.textContent = isOpen ? 'Ocultar condiciones' : 'Condiciones';
     });
 }
 
