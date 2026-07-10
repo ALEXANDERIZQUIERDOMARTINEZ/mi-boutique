@@ -6029,6 +6029,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     
     // Referencias a elementos DOM
     const dbVentasHoyEl = document.getElementById('db-ventas-hoy');
+    const dbVentasMayoristaHoyEl = document.getElementById('db-ventas-mayoristas-hoy');
     const dbBajoStockEl = document.getElementById('db-bajo-stock');
     const dbApartadosVencerEl = document.getElementById('db-apartados-vencer');
     
@@ -6070,6 +6071,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 async (snapshot) => {
                     let totalDineroRecibido = 0;
                     let ventasContadas = 0;
+                    let totalMayorista = 0;
+                    let ventasMayoristaContadas = 0;
 
                     snapshot.forEach(doc => {
                         const venta = doc.data();
@@ -6081,8 +6084,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             // NO el total de la venta
                             const efectivo = venta.pagoEfectivo || 0;
                             const transferencia = venta.pagoTransferencia || 0;
-                            totalDineroRecibido += efectivo + transferencia;
-                            ventasContadas++;
+                            const recibido = efectivo + transferencia;
+
+                            // 🏷️ Las ventas mayoristas se contabilizan aparte,
+                            // no se suman al total de "Ventas hoy" (detal)
+                            if (venta.tipoVenta === 'mayorista') {
+                                totalMayorista += recibido;
+                                ventasMayoristaContadas++;
+                            } else {
+                                totalDineroRecibido += recibido;
+                                ventasContadas++;
+                            }
                         }
                     });
 
@@ -6115,7 +6127,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         dbVentasCountEl.textContent = `${ventasContadas} ${ventasContadas === 1 ? 'venta' : 'ventas'}`;
                     }
 
-                    console.log(`✅ Ventas hoy (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas)`);
+                    // 🏷️ Ventas mayoristas del día (aparte del total de "Ventas hoy")
+                    if (dbVentasMayoristaHoyEl) {
+                        dbVentasMayoristaHoyEl.textContent = formatoMoneda.format(totalMayorista);
+                        dbVentasMayoristaHoyEl.classList.add('text-success');
+                    }
+                    const dbVentasMayoristaCountEl = document.getElementById('db-ventas-mayoristas-count');
+                    if (dbVentasMayoristaCountEl) {
+                        dbVentasMayoristaCountEl.textContent = `${ventasMayoristaContadas} ${ventasMayoristaContadas === 1 ? 'venta' : 'ventas'}`;
+                    }
+
+                    console.log(`✅ Ventas hoy detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas)`);
                 },
                 (error) => {
                     console.error("❌ Error al calcular ventas del día:", error);
@@ -8278,6 +8300,39 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             .sort((a, b) => b.utilidadTotal - a.utilidadTotal);
     }
 
+    // ── Ganancia real dividida por tipo de venta (detal vs mayorista) ──
+    function calcularUtilidadPorTipo(ventas, productCostMap) {
+        let utilidadDetal = 0;
+        let utilidadMayorista = 0;
+
+        ventas.forEach(({ venta }) => {
+            if (!venta.items || !venta.items.length) return;
+
+            const ratio = discountRatio(venta);
+            const esMayorista = venta.tipoVenta === 'mayorista';
+
+            venta.items.forEach(item => {
+                const costo = parseFloat(
+                    item.precioCosto ||
+                    item.costo ||
+                    (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
+                    0
+                );
+                const precioEfectivo = parseFloat(item.precio || item.precioUnitario || 0) * ratio;
+                const cant = parseInt(item.cantidad || 1, 10);
+                const utilidad = (precioEfectivo - costo) * cant;
+
+                if (esMayorista) {
+                    utilidadMayorista += utilidad;
+                } else {
+                    utilidadDetal += utilidad;
+                }
+            });
+        });
+
+        return { utilidadDetal, utilidadMayorista };
+    }
+
     // ── Construir datos de gráfica por día ──
     function buildChartData(ventas, desde, hasta, productCostMap) {
         const dayMap = new Map();
@@ -8449,6 +8504,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             document.getElementById('fin2-ingresos').textContent   = fmt.format(ingresosTotal);
             document.getElementById('fin2-costos').textContent     = fmt.format(costosTotal);
             document.getElementById('fin2-margen').textContent     = `${margen}%`;
+
+            // ── Ganancia dividida: detal vs mayorista ──
+            const { utilidadDetal, utilidadMayorista } = calcularUtilidadPorTipo(ventas, productCostMap);
+            document.getElementById('fin2-utilidad-detal').textContent     = fmt.format(utilidadDetal);
+            document.getElementById('fin2-utilidad-mayorista').textContent = fmt.format(utilidadMayorista);
 
             // ── Gráfica ──
             const { labels, data } = buildChartData(ventas, desde, hasta, productCostMap);
