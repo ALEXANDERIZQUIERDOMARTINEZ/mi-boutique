@@ -210,6 +210,7 @@ function renderProducts() {
 
         const card = document.createElement('div');
         card.className = 'encargo-card' + (filas.length > 0 ? ' is-selected' : '');
+        card.dataset.productId = p.id;
         card.innerHTML = `
             <div class="encargo-card-img"><img src="${img}" alt="${p.nombre}" loading="lazy"></div>
             <div class="encargo-card-body">
@@ -220,6 +221,44 @@ function renderProducts() {
         `;
         gridEl.appendChild(card);
     });
+}
+
+// Actualiza precios/totales en pantalla sin reconstruir la grilla, para que el
+// precio por cantidad se refleje mientras se escribe (sin perder el foco del campo).
+function actualizarPreciosEnVivo() {
+    productsData.forEach(p => {
+        const card = gridEl.querySelector(`.encargo-card[data-product-id="${p.id}"]`);
+        if (!card) return;
+        const filas = detalleColores.get(p.id) || [];
+        const totalProducto = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
+        const precioUnitario = getPrecioUnitario(p);
+
+        const priceEl = card.querySelector('.encargo-card-price');
+        if (priceEl) {
+            if (p.grupoMayorista && WHOLESALE_TIER_GROUPS[p.grupoMayorista]) {
+                const totalGrupo = totalPorGrupo(p.grupoMayorista);
+                priceEl.innerHTML = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${totalGrupo > 0 ? `Precio con ${totalGrupo} und. del grupo` : 'Baja según cantidad del grupo'}</span>`;
+            } else {
+                priceEl.textContent = formatoMoneda.format(precioUnitario);
+            }
+        }
+
+        const totalEl = card.querySelector('.encargo-color-total');
+        if (totalEl) {
+            const esValida = totalProducto >= MIN_POR_PRENDA;
+            totalEl.textContent = esValida ? `Total: ${totalProducto} unidades` : `Mínimo ${MIN_POR_PRENDA} unidades en total`;
+            totalEl.classList.toggle('is-warning', !esValida);
+        }
+    });
+
+    renderGroupProgress();
+    if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
+    const unlocked = isAnyGroupUnlocked();
+    if (codeBlockEl) {
+        const wasUnlocked = codeBlockEl.classList.contains('is-unlocked');
+        codeBlockEl.classList.toggle('is-unlocked', unlocked);
+        if (unlocked && !wasUnlocked) showToast('¡Código mayorista desbloqueado!', 'success');
+    }
 }
 
 function updateProgress() {
@@ -269,17 +308,30 @@ if (gridEl) {
         }
     });
 
-    // El color no afecta totales/precio: solo actualizamos el dato, sin re-render,
-    // para no perder el foco del campo mientras se escribe.
+    // Ninguno de los dos reconstruye la grilla en 'input' (perdería el foco del
+    // campo mientras se escribe); el precio sí se recalcula en vivo con cada tecla.
     gridEl.addEventListener('input', (e) => {
         const colorInput = e.target.closest('.encargo-color-input');
-        if (!colorInput) return;
-        const filas = detalleColores.get(colorInput.dataset.id);
-        const idx = parseInt(colorInput.dataset.idx, 10);
-        if (filas && filas[idx]) filas[idx].color = colorInput.value;
+        if (colorInput) {
+            const filas = detalleColores.get(colorInput.dataset.id);
+            const idx = parseInt(colorInput.dataset.idx, 10);
+            if (filas && filas[idx]) filas[idx].color = colorInput.value;
+            return;
+        }
+        const qtyInput = e.target.closest('.encargo-color-qty');
+        if (qtyInput) {
+            const filas = detalleColores.get(qtyInput.dataset.id);
+            const idx = parseInt(qtyInput.dataset.idx, 10);
+            if (filas && filas[idx]) {
+                const raw = parseInt(qtyInput.value, 10);
+                filas[idx].cantidad = isNaN(raw) ? 0 : raw;
+                actualizarPreciosEnVivo();
+            }
+        }
     });
 
-    // La cantidad sí afecta precios/totales: recalculamos al salir del campo (change).
+    // Al salir del campo de cantidad, normalizamos el valor (mínimo 1) y sí
+    // reconstruimos la grilla completa (ya no hay foco que perder).
     gridEl.addEventListener('change', (e) => {
         const qtyInput = e.target.closest('.encargo-color-qty');
         if (!qtyInput) return;
