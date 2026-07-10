@@ -204,6 +204,35 @@
     border-radius: var(--radio-sm);
     cursor: pointer;
   }
+  .encargo-card-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: var(--color-fondo-secundario);
+    border: none;
+    border-radius: var(--radio-sm);
+    padding: 6px 8px;
+    cursor: pointer;
+  }
+  .encargo-card-toggle-label {
+    font-size: 0.72rem;
+    color: var(--color-texto-secundario);
+    font-weight: 600;
+    text-align: left;
+  }
+  .encargo-card-toggle-label.is-warning {
+    color: #c62828;
+  }
+  .encargo-card-toggle-icon {
+    color: var(--color-primario-oscuro);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  .encargo-colors-wrap {
+    margin-top: 8px;
+  }
   .encargo-colors-list {
     display: flex;
     flex-direction: column;
@@ -258,15 +287,6 @@
     cursor: pointer;
     text-align: left;
   }
-  .encargo-color-total {
-    font-size: 0.72rem;
-    color: var(--color-texto-secundario);
-    margin-top: 4px;
-  }
-  .encargo-color-total.is-warning {
-    color: #c62828;
-    font-weight: 600;
-  }
   .encargo-empty {
     max-width: 480px;
     margin: 40px auto;
@@ -319,7 +339,7 @@
     font-size: 1rem;
     transition: transform 0.25s ease;
   }
-  .encargo-finalize-panel.is-collapsed #finalize-toggle-icon {
+  .encargo-finalize-panel:not(.is-collapsed) #finalize-toggle-icon {
     transform: rotate(180deg);
   }
   .encargo-finalize-inner {
