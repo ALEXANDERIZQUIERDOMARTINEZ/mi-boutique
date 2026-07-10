@@ -56,6 +56,8 @@ const obsEl = document.getElementById('encargo-observaciones');
 const totalEstimadoEl = document.getElementById('total-estimado');
 const tiersToggleBtn = document.getElementById('btn-toggle-tiers');
 const tiersTablesEl = document.getElementById('tiers-tables');
+const policyToggleBtn = document.getElementById('btn-toggle-policy');
+const policyPanelEl = document.getElementById('policy-panel');
 const deliveryDateEl = document.getElementById('delivery-date');
 
 function showToast(message, type = 'success') {
@@ -372,6 +374,13 @@ if (tiersToggleBtn) {
     tiersToggleBtn.addEventListener('click', () => {
         const isOpen = tiersTablesEl.classList.toggle('is-open');
         tiersToggleBtn.textContent = isOpen ? 'Ocultar tabla de precios' : 'Ver tabla de precios por cantidad';
+    });
+}
+
+if (policyToggleBtn) {
+    policyToggleBtn.addEventListener('click', () => {
+        const isOpen = policyPanelEl.classList.toggle('is-open');
+        policyToggleBtn.textContent = isOpen ? 'Ocultar condiciones' : 'Ver condiciones del pedido';
     });
 }
 

@@ -1993,7 +1993,7 @@ function resetAllFilters() {
 // --- DOMCONTENTLOADED ---
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Tabla de precios por cantidad (solo existe en mayor.html)
+    // Tabla de precios y condiciones de pedido (solo existen en mayor.html)
     const tiersToggleBtn = document.getElementById('btn-toggle-tiers');
     const tiersTablesEl = document.getElementById('tiers-tables');
     if (tiersToggleBtn && tiersTablesEl) {
@@ -2001,6 +2001,14 @@ document.addEventListener('DOMContentLoaded', () => {
         tiersToggleBtn.addEventListener('click', () => {
             const isOpen = tiersTablesEl.classList.toggle('is-open');
             tiersToggleBtn.textContent = isOpen ? 'Ocultar tabla de precios' : 'Ver tabla de precios por cantidad';
+        });
+    }
+    const policyToggleBtn = document.getElementById('btn-toggle-policy');
+    const policyPanelEl = document.getElementById('policy-panel');
+    if (policyToggleBtn && policyPanelEl) {
+        policyToggleBtn.addEventListener('click', () => {
+            const isOpen = policyPanelEl.classList.toggle('is-open');
+            policyToggleBtn.textContent = isOpen ? 'Ocultar condiciones' : 'Ver condiciones del pedido';
         });
     }
 
