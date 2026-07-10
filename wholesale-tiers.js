@@ -79,3 +79,17 @@ export function resolveWholesaleGroup(product, categoriesMap) {
     const nombreCategoria = categoriesMap?.get(product?.categoriaId) || '';
     return detectGroupFromCategoryName(nombreCategoria);
 }
+
+// HTML de las tarjetas de tablas de precios por cantidad, compartido entre
+// encargo.html y mayor.html (estilos .wtiers-* definidos en style.css).
+export function buildTiersTablesHtml() {
+    const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return Object.values(WHOLESALE_TIER_GROUPS).map(group => `
+        <div class="wtiers-card">
+            <div class="wtiers-card-header">${group.label}</div>
+            <table class="wtiers-table">
+                ${group.tiers.map(t => `<tr><td>${t.min}X</td><td>${formatoMoneda.format(t.precio)}</td></tr>`).join('')}
+            </table>
+        </div>
+    `).join('');
+}

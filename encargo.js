@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { WHOLESALE_CODE } from './wholesale-config.js';
-import { WHOLESALE_TIER_GROUPS, getTierPrice, resolveWholesaleGroup } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getTierPrice, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -135,14 +135,7 @@ function isAnyGroupUnlocked() {
 
 function renderTiersTables() {
     if (!tiersTablesEl) return;
-    tiersTablesEl.innerHTML = Object.entries(WHOLESALE_TIER_GROUPS).map(([key, group]) => `
-        <div class="encargo-tier-card">
-            <h4>${group.label}</h4>
-            <table>
-                ${group.tiers.map(t => `<tr><td>${t.min}X</td><td>${formatoMoneda.format(t.precio)}</td></tr>`).join('')}
-            </table>
-        </div>
-    `).join('');
+    tiersTablesEl.innerHTML = buildTiersTablesHtml();
 }
 
 // Barra de progreso por grupo: muestra en qué escalón de la tabla vas y cuánto

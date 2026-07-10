@@ -99,67 +99,22 @@
   .encargo-progress-fill.is-unlocked {
     background: linear-gradient(90deg, #2e7d32, #66bb6a);
   }
-  .encargo-tiers-toggle {
-    text-align: center;
-    margin: 4px 0 0;
-  }
-  .encargo-tiers-toggle button {
-    background: none;
-    border: none;
-    color: var(--color-primario-oscuro);
-    font-size: 0.78rem;
-    font-weight: 600;
-    text-decoration: underline;
-    cursor: pointer;
-  }
-  .encargo-tiers-tables {
-    display: none;
-    max-width: 720px;
-    margin: 10px auto 0;
-    padding: 0 16px;
-    gap: 12px;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  }
-  .encargo-tiers-tables.is-open {
-    display: grid;
-  }
-  .encargo-tier-card {
-    background: var(--color-fondo-secundario);
-    border-radius: var(--radio-md);
-    padding: 10px 12px;
-  }
-  .encargo-tier-card h4 {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: var(--color-texto);
-    margin-bottom: 6px;
-  }
-  .encargo-tier-card table {
-    width: 100%;
-    font-size: 0.74rem;
-    color: var(--color-texto-secundario);
-  }
-  .encargo-tier-card td {
-    padding: 1px 0;
-  }
-  .encargo-tier-card td:last-child {
-    text-align: right;
-    font-weight: 600;
-    color: var(--color-texto);
-  }
   .encargo-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 14px;
-    max-width: 1100px;
+    max-width: 1900px;
     margin: 0 auto;
-    padding: 8px 16px 32px;
+    padding: 8px 24px 32px;
   }
-  @media (min-width: 576px) {
-    .encargo-grid { grid-template-columns: repeat(3, 1fr); }
+  @media (min-width: 480px) {
+    .encargo-grid {
+      grid-template-columns: repeat(auto-fit, minmax(190px, 240px));
+      justify-content: center;
+    }
   }
-  @media (min-width: 992px) {
-    .encargo-grid { grid-template-columns: repeat(4, 1fr); }
+  @media (min-width: 1200px) {
+    .encargo-grid { padding-left: 40px; padding-right: 40px; }
   }
   .encargo-card {
     background: #fff;
@@ -456,11 +411,12 @@
 
   <div class="encargo-progress-wrap">
     <div id="group-progress-list"></div>
-    <div class="encargo-tiers-toggle">
-      <button type="button" id="btn-toggle-tiers">Ver tabla de precios por cantidad</button>
-    </div>
-    <div class="encargo-tiers-tables" id="tiers-tables"></div>
   </div>
+
+  <div class="wtiers-toggle">
+    <button type="button" id="btn-toggle-tiers">Ver tabla de precios por cantidad</button>
+  </div>
+  <div class="wtiers-tables" id="tiers-tables"></div>
 
   <div class="encargo-empty" id="encargo-empty" style="display:none;">
     <i class="bi bi-hourglass-split" style="font-size: 2.2rem; opacity: 0.4;"></i>
