@@ -6180,12 +6180,14 @@ img, video, iframe, embed, object {
 }
 
 .wtiers-card-header {
-    background: linear-gradient(135deg, var(--color-primario), var(--color-primario-oscuro));
-    color: #fff;
+    background: #fff;
+    color: var(--color-texto);
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.2px;
     text-align: center;
-    padding: 10px 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--color-borde);
 }
 
 .wtiers-table {
@@ -6195,22 +6197,23 @@ img, video, iframe, embed, object {
 }
 
 .wtiers-table tr:nth-child(even) {
-    background: var(--color-primario-claro);
+    background: var(--color-fondo-secundario);
 }
 
 .wtiers-table td {
     padding: 8px 16px;
+    color: var(--color-texto-secundario);
 }
 
 .wtiers-table td:first-child {
-    font-weight: 700;
+    font-weight: 600;
     color: var(--color-texto);
 }
 
 .wtiers-table td:last-child {
     text-align: right;
     font-weight: 700;
-    color: var(--color-primario-oscuro);
+    color: var(--color-texto);
 }
 
 /* ────────────────────────────────────────────────────────────────────
@@ -6237,12 +6240,14 @@ img, video, iframe, embed, object {
 }
 
 .wpolicy-card-header {
-    background: linear-gradient(135deg, var(--color-primario), var(--color-primario-oscuro));
-    color: #fff;
+    background: #fff;
+    color: var(--color-texto);
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
+    letter-spacing: 0.2px;
     text-align: center;
-    padding: 12px;
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--color-borde);
 }
 
 .wpolicy-card-body {
@@ -6263,8 +6268,10 @@ img, video, iframe, embed, object {
 .wpolicy-section h5 {
     font-size: 0.85rem;
     font-weight: 700;
-    color: var(--color-primario-oscuro);
-    margin-bottom: 6px;
+    color: var(--color-texto);
+    border-left: 3px solid var(--color-primario);
+    padding-left: 8px;
+    margin-bottom: 8px;
 }
 
 .wpolicy-section ul {
