@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { WHOLESALE_CODE } from './wholesale-config.js';
-import { WHOLESALE_TIER_GROUPS, getTierPrice, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getTierPrice, resolveWholesaleGroup, buildTiersTablesHtml, getPrimerEscalonMayorista } from './wholesale-tiers.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -85,28 +85,26 @@ function getCantidadValida(id) {
     return total >= MIN_POR_PRENDA ? total : 0;
 }
 
-function totalSeleccionado() {
-    let total = 0;
-    productsData.forEach(p => { total += getCantidadValida(p.id); });
-    return total;
-}
-
-function totalPorGrupo(grupo) {
+// Total SURTIDO: suma de todas las prendas con tabla de precios (sin importar el
+// tipo/grupo específico). El nivel de descuento no exige 6 del mismo tipo — también
+// cuenta mezclar bodys + vestidos largos + vestidos cortos hasta llegar a 6, 12, 24...
+function totalGeneralMayorista() {
     let total = 0;
     productsData.forEach(p => {
-        if (resolveWholesaleGroup(p, categoriesMap) === grupo) total += getCantidadValida(p.id);
+        const grupo = resolveWholesaleGroup(p, categoriesMap);
+        if (grupo && WHOLESALE_TIER_GROUPS[grupo]) total += getCantidadValida(p.id);
     });
     return total;
 }
 
 // Misma lógica de precios por volumen que mayor.html: si la prenda pertenece a un
 // grupo con tabla de precios (asignado a mano o detectado por su categoría), el
-// precio por unidad depende del total elegido de ese grupo (sumando todas las
-// referencias y colores de ese grupo); si no, se usa el precio de venta normal.
+// precio por unidad depende del total SURTIDO (todas las prendas con tabla,
+// mezcladas); si no, se usa el precio de venta normal.
 function getPrecioUnitario(p) {
     const grupo = resolveWholesaleGroup(p, categoriesMap);
     if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-        return getTierPrice(grupo, Math.max(totalPorGrupo(grupo), 1));
+        return getTierPrice(grupo, Math.max(totalGeneralMayorista(), 1));
     }
     return p.precioDetal || 0;
 }
@@ -120,17 +118,10 @@ function calcularTotalEstimado() {
     return total;
 }
 
-// El código se desbloquea en cuanto CUALQUIER grupo alcanza su primer escalón real
-// de mayoreo (el segundo renglón de la tabla, ej. 6X), sin importar entre cuántas
-// referencias/colores esté repartida esa cantidad.
-function grupoDesbloqueado(grupo) {
-    const group = WHOLESALE_TIER_GROUPS[grupo];
-    if (!group || !group.tiers[1]) return false;
-    return totalPorGrupo(grupo) >= group.tiers[1].min;
-}
-
-function isAnyGroupUnlocked() {
-    return Object.keys(WHOLESALE_TIER_GROUPS).some(grupoDesbloqueado);
+// El código se desbloquea al llegar al primer escalón real de mayoreo (ej. 6X)
+// sumando TODAS las prendas con tabla de precios, sin importar el tipo.
+function isSurtidoUnlocked() {
+    return totalGeneralMayorista() >= getPrimerEscalonMayorista();
 }
 
 function renderTiersTables() {
@@ -138,40 +129,40 @@ function renderTiersTables() {
     tiersTablesEl.innerHTML = buildTiersTablesHtml();
 }
 
-// Barra de progreso por grupo: muestra en qué escalón de la tabla vas y cuánto
-// falta para el siguiente, siguiendo la lógica completa (1X, 6X, 12X, 24X...).
+// Barra de progreso ÚNICA (surtida): cuenta todas las prendas con tabla de precios
+// juntas, sin importar el tipo, y muestra en qué escalón vas y cuánto falta para el
+// siguiente (1X, 6X, 12X, 24X...). Usa como referencia de escalones la tabla más
+// larga (bodys) ya que todas comparten los mismos umbrales tempranos (6, 12, 24, 50).
 function renderGroupProgress() {
     if (!groupProgressListEl) return;
-    const gruposConSeleccion = Object.entries(WHOLESALE_TIER_GROUPS).filter(([key]) => totalPorGrupo(key) > 0);
+    const total = totalGeneralMayorista();
 
-    if (gruposConSeleccion.length === 0) {
+    if (total === 0) {
         groupProgressListEl.innerHTML = '';
         return;
     }
 
-    groupProgressListEl.innerHTML = gruposConSeleccion.map(([key, group]) => {
-        const total = totalPorGrupo(key);
-        const tiers = group.tiers;
-        let idx = 0;
-        for (let i = 0; i < tiers.length; i++) { if (total >= tiers[i].min) idx = i; }
-        const nextTier = tiers[idx + 1];
-        const unlocked = idx >= 1;
-        let pct, label;
-        if (nextTier) {
-            const base = tiers[idx].min;
-            pct = Math.min(100, Math.round(((total - base) / (nextTier.min - base)) * 100));
-            label = `${group.label}: ${total} und. — ${formatoMoneda.format(tiers[idx].precio)} c/u (faltan ${nextTier.min - total} para ${formatoMoneda.format(nextTier.precio)} c/u)`;
-        } else {
-            pct = 100;
-            label = `${group.label}: ${total} und. — ¡precio más bajo! ${formatoMoneda.format(tiers[idx].precio)} c/u`;
-        }
-        return `
-            <div class="encargo-group-progress">
-                <div class="encargo-group-progress-label"><span>${label}</span></div>
-                <div class="encargo-progress-track"><div class="encargo-progress-fill${unlocked ? ' is-unlocked' : ''}" style="width:${pct}%"></div></div>
-            </div>
-        `;
-    }).join('');
+    const tablaReferencia = Object.values(WHOLESALE_TIER_GROUPS).reduce((a, b) => a.tiers.length >= b.tiers.length ? a : b);
+    const tiers = tablaReferencia.tiers;
+    let idx = 0;
+    for (let i = 0; i < tiers.length; i++) { if (total >= tiers[i].min) idx = i; }
+    const nextTier = tiers[idx + 1];
+    const unlocked = idx >= 1;
+    let pct, label;
+    if (nextTier) {
+        const base = tiers[idx].min;
+        pct = Math.min(100, Math.round(((total - base) / (nextTier.min - base)) * 100));
+        label = `${total} unidades surtidas (nivel ${tiers[idx].min}X) — faltan ${nextTier.min - total} para el nivel ${nextTier.min}X`;
+    } else {
+        pct = 100;
+        label = `${total} unidades surtidas — ¡nivel máximo de descuento!`;
+    }
+    groupProgressListEl.innerHTML = `
+        <div class="encargo-group-progress">
+            <div class="encargo-group-progress-label"><span>${label}</span></div>
+            <div class="encargo-progress-track"><div class="encargo-progress-fill${unlocked ? ' is-unlocked' : ''}" style="width:${pct}%"></div></div>
+        </div>
+    `;
 }
 
 function renderProducts() {
@@ -194,8 +185,8 @@ function renderProducts() {
         const precioUnitario = getPrecioUnitario(p);
         let precioHtml = formatoMoneda.format(precioUnitario);
         if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-            const totalGrupo = totalPorGrupo(grupo);
-            precioHtml = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${totalGrupo > 0 ? `Precio con ${totalGrupo} und. del grupo` : 'Baja según cantidad del grupo'}</span>`;
+            const totalSurtido = totalGeneralMayorista();
+            precioHtml = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${totalSurtido > 0 ? `Precio con ${totalSurtido} und. surtidas` : 'Baja según cantidad surtida'}</span>`;
         }
 
         let bodyExtra;
@@ -252,8 +243,8 @@ function actualizarPreciosEnVivo() {
         if (priceEl) {
             const grupo = resolveWholesaleGroup(p, categoriesMap);
             if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-                const totalGrupo = totalPorGrupo(grupo);
-                priceEl.innerHTML = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${totalGrupo > 0 ? `Precio con ${totalGrupo} und. del grupo` : 'Baja según cantidad del grupo'}</span>`;
+                const totalSurtido = totalGeneralMayorista();
+                priceEl.innerHTML = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${totalSurtido > 0 ? `Precio con ${totalSurtido} und. surtidas` : 'Baja según cantidad surtida'}</span>`;
             } else {
                 priceEl.textContent = formatoMoneda.format(precioUnitario);
             }
@@ -269,7 +260,7 @@ function actualizarPreciosEnVivo() {
 
     renderGroupProgress();
     if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
-    const unlocked = isAnyGroupUnlocked();
+    const unlocked = isSurtidoUnlocked();
     if (codeBlockEl) {
         const wasUnlocked = codeBlockEl.classList.contains('is-unlocked');
         codeBlockEl.classList.toggle('is-unlocked', unlocked);
@@ -280,7 +271,7 @@ function actualizarPreciosEnVivo() {
 function updateProgress() {
     renderGroupProgress();
 
-    const unlocked = isAnyGroupUnlocked();
+    const unlocked = isSurtidoUnlocked();
     if (codeValueEl) codeValueEl.textContent = WHOLESALE_CODE;
     if (codeBlockEl) {
         const wasUnlocked = codeBlockEl.classList.contains('is-unlocked');
@@ -424,7 +415,7 @@ if (waBtn) {
         const fechaEntrega = formatearFechaEntrega(calcularFechaEntrega());
         let mensaje = `Hola! Quiero hacer un pedido bajo encargo:\n${lineas.join('\n')}\n\nTotal estimado: ${formatoMoneda.format(totalEstimado)}\nEntrega aproximada (si confirmo el pago hoy): ${fechaEntrega} (~${DIAS_ENTREGA} días después del pago)`;
         if (observaciones) mensaje += `\n\nObservaciones: ${observaciones}`;
-        if (isAnyGroupUnlocked()) mensaje += `\n\nMi código mayorista: ${WHOLESALE_CODE}`;
+        if (isSurtidoUnlocked()) mensaje += `\n\nMi código mayorista: ${WHOLESALE_CODE}`;
         const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`;
         const a = document.createElement('a');
         a.href = url;
