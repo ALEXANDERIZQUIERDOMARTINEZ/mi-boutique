@@ -18,8 +18,22 @@ const productsCollection = collection(db, 'productos');
 const categoriesCollection = collection(db, 'categorias');
 
 const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const formatoFechaEntrega = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
 const WHATSAPP_NUMBER = '573046084971';
 const MIN_POR_PRENDA = 2;
+const DIAS_ENTREGA = 8;
+
+// Fecha estimada de entrega: ~8 días después de confirmar el pago. Como el pago se
+// hace por WhatsApp después de elegir, se calcula desde hoy como aproximación.
+function calcularFechaEntrega() {
+    const fecha = new Date();
+    fecha.setDate(fecha.getDate() + DIAS_ENTREGA);
+    return fecha;
+}
+
+function formatearFechaEntrega(fecha) {
+    return formatoFechaEntrega.format(fecha);
+}
 
 // productId -> [{ color, cantidad }]  (permite varios colores de la misma referencia)
 const detalleColores = new Map();
@@ -43,6 +57,7 @@ const obsEl = document.getElementById('encargo-observaciones');
 const totalEstimadoEl = document.getElementById('total-estimado');
 const tiersToggleBtn = document.getElementById('btn-toggle-tiers');
 const tiersTablesEl = document.getElementById('tiers-tables');
+const deliveryDateEl = document.getElementById('delivery-date');
 
 function showToast(message, type = 'success') {
     const liveToastEl = document.getElementById('liveToast');
@@ -416,7 +431,8 @@ if (waBtn) {
         });
         const observaciones = (obsEl?.value || '').trim();
         const totalEstimado = calcularTotalEstimado();
-        let mensaje = `Hola! Quiero hacer un pedido bajo encargo:\n${lineas.join('\n')}\n\nTotal estimado: ${formatoMoneda.format(totalEstimado)}`;
+        const fechaEntrega = formatearFechaEntrega(calcularFechaEntrega());
+        let mensaje = `Hola! Quiero hacer un pedido bajo encargo:\n${lineas.join('\n')}\n\nTotal estimado: ${formatoMoneda.format(totalEstimado)}\nEntrega aproximada (si confirmo el pago hoy): ${fechaEntrega} (~${DIAS_ENTREGA} días después del pago)`;
         if (observaciones) mensaje += `\n\nObservaciones: ${observaciones}`;
         if (isAnyGroupUnlocked()) mensaje += `\n\nMi código mayorista: ${WHOLESALE_CODE}`;
         const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`;
@@ -431,6 +447,7 @@ if (waBtn) {
 }
 
 renderTiersTables();
+if (deliveryDateEl) deliveryDateEl.textContent = formatearFechaEntrega(calcularFechaEntrega());
 
 // Se necesita el nombre de la categoría para detectar el grupo de precio mayorista
 // cuando el producto no tiene un grupo asignado a mano. Al llegar, se vuelve a

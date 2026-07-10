@@ -28,27 +28,60 @@
     font-weight: 600;
     letter-spacing: 0.5px;
   }
-  .encargo-intro {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 24px 16px 8px;
+  .encargo-hero {
+    max-width: 760px;
+    margin: 16px auto 0;
+    padding: 0 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px 20px;
     text-align: center;
   }
-  .encargo-intro h1 {
+  .encargo-hero-text {
+    flex: 1 1 380px;
+    min-width: 260px;
+  }
+  .encargo-hero-text h1 {
     font-family: var(--fuente-principal);
     font-weight: 800;
-    font-size: 1.5rem;
+    font-size: 1.28rem;
     color: var(--color-texto);
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
-  .encargo-intro p {
+  .encargo-hero-text p {
     color: var(--color-texto-secundario);
-    font-size: 0.92rem;
+    font-size: 0.84rem;
+    line-height: 1.4;
     margin-bottom: 0;
+  }
+  .encargo-delivery-chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-primario-claro);
+    color: var(--color-primario-oscuro);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: left;
+  }
+  .encargo-delivery-chip i {
+    font-size: 1.05rem;
+    flex-shrink: 0;
+  }
+  .encargo-delivery-chip strong {
+    display: block;
+    font-size: 0.85rem;
+    text-transform: capitalize;
   }
   .encargo-progress-wrap {
     max-width: 520px;
-    margin: 18px auto;
+    margin: 14px auto 0;
     padding: 0 16px;
   }
   .encargo-progress-hint {
@@ -429,9 +462,15 @@
 
 <main>
 
-  <div class="encargo-intro">
-    <h1>Prendas Bajo Encargo</h1>
-    <p>Estas prendas se mandan a fabricar (no son de stock inmediato). Elige mínimo <strong>2 unidades</strong> de cada prenda y reparte los colores como quieras. El precio baja según la tabla al llegar a <strong>6 unidades de un mismo tipo</strong> (bodys, vestidos largos/conjuntos o vestidos cortos), y ahí también desbloqueas tu código mayorista.</p>
+  <div class="encargo-hero">
+    <div class="encargo-hero-text">
+      <h1>Prendas Bajo Encargo</h1>
+      <p>Se mandan a fabricar (no hay stock inmediato). Mínimo <strong>2 unidades</strong> por prenda, tú eliges los colores. El precio baja al llegar a <strong>6 unidades de un mismo tipo</strong> (bodys, vestidos largos/conjuntos o vestidos cortos), y ahí desbloqueas tu código mayorista.</p>
+    </div>
+    <div class="encargo-delivery-chip">
+      <i class="bi bi-truck"></i>
+      <span>Si pagas hoy, entrega aprox.<strong id="delivery-date">calculando…</strong></span>
+    </div>
   </div>
 
   <div class="encargo-progress-wrap">
