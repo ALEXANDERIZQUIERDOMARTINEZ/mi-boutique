@@ -22,6 +22,8 @@ const MIN_POR_PRENDA = 2;
 
 // productId -> [{ color, cantidad }]  (permite varios colores de la misma referencia)
 const detalleColores = new Map();
+// productId -> true si la tarjeta está colapsada (oculta su lista de colores)
+const tarjetasColapsadas = new Set();
 let productsData = [];
 let bsToast = null;
 
@@ -193,6 +195,8 @@ function renderProducts() {
         if (filas.length === 0) {
             bodyExtra = `<button type="button" class="encargo-add-btn" data-id="${p.id}"><i class="bi bi-plus-circle"></i> Elegir esta prenda</button>`;
         } else {
+            const colapsada = tarjetasColapsadas.has(p.id);
+            const esValida = totalProducto >= MIN_POR_PRENDA;
             const filasHtml = filas.map((f, idx) => `
                 <div class="encargo-color-row">
                     <input type="text" class="encargo-color-input" data-id="${p.id}" data-idx="${idx}" placeholder="Color" value="${(f.color || '').replace(/"/g, '&quot;')}">
@@ -200,11 +204,15 @@ function renderProducts() {
                     <button type="button" class="encargo-color-remove" data-id="${p.id}" data-idx="${idx}" aria-label="Quitar color">×</button>
                 </div>
             `).join('');
-            const esValida = totalProducto >= MIN_POR_PRENDA;
             bodyExtra = `
-                <div class="encargo-colors-list">${filasHtml}</div>
-                <button type="button" class="encargo-add-color" data-id="${p.id}">+ Agregar otro color</button>
-                <div class="encargo-color-total${esValida ? '' : ' is-warning'}">${esValida ? `Total: ${totalProducto} unidades` : `Mínimo ${MIN_POR_PRENDA} unidades en total`}</div>
+                <button type="button" class="encargo-card-toggle" data-id="${p.id}">
+                    <span class="encargo-card-toggle-label${esValida ? '' : ' is-warning'}">${esValida ? `Total: ${totalProducto} unidades` : `Mínimo ${MIN_POR_PRENDA} unidades en total`}</span>
+                    <i class="bi bi-chevron-${colapsada ? 'down' : 'up'} encargo-card-toggle-icon"></i>
+                </button>
+                <div class="encargo-colors-wrap"${colapsada ? ' style="display:none;"' : ''}>
+                    <div class="encargo-colors-list">${filasHtml}</div>
+                    <button type="button" class="encargo-add-color" data-id="${p.id}">+ Agregar otro color</button>
+                </div>
             `;
         }
 
@@ -243,7 +251,7 @@ function actualizarPreciosEnVivo() {
             }
         }
 
-        const totalEl = card.querySelector('.encargo-color-total');
+        const totalEl = card.querySelector('.encargo-card-toggle-label');
         if (totalEl) {
             const esValida = totalProducto >= MIN_POR_PRENDA;
             totalEl.textContent = esValida ? `Total: ${totalProducto} unidades` : `Mínimo ${MIN_POR_PRENDA} unidades en total`;
@@ -301,10 +309,22 @@ if (gridEl) {
             const idx = parseInt(removeBtn.dataset.idx, 10);
             const filas = detalleColores.get(id) || [];
             filas.splice(idx, 1);
-            if (filas.length === 0) detalleColores.delete(id);
-            else detalleColores.set(id, filas);
+            if (filas.length === 0) {
+                detalleColores.delete(id);
+                tarjetasColapsadas.delete(id);
+            } else {
+                detalleColores.set(id, filas);
+            }
             renderProducts();
             updateProgress();
+            return;
+        }
+        const toggleBtn = e.target.closest('.encargo-card-toggle');
+        if (toggleBtn) {
+            const id = toggleBtn.dataset.id;
+            if (tarjetasColapsadas.has(id)) tarjetasColapsadas.delete(id);
+            else tarjetasColapsadas.add(id);
+            renderProducts();
         }
     });
 
@@ -330,17 +350,21 @@ if (gridEl) {
         }
     });
 
-    // Al salir del campo de cantidad, normalizamos el valor (mínimo 1) y sí
-    // reconstruimos la grilla completa (ya no hay foco que perder).
-    gridEl.addEventListener('change', (e) => {
-        const qtyInput = e.target.closest('.encargo-color-qty');
+    // Al salir del campo de cantidad, solo normalizamos el valor (mínimo 1) en el
+    // propio input, SIN reconstruir la grilla: si otro botón (quitar color, +color,
+    // la flecha de la tarjeta) se clickea mientras el campo aún tenía foco, un
+    // renderProducts() aquí lo desprendería del DOM a mitad del clic y el clic se
+    // perdería en silencio. 'focusout' (a diferencia de 'blur') sí burbujea.
+    gridEl.addEventListener('focusout', (e) => {
+        const qtyInput = e.target.closest && e.target.closest('.encargo-color-qty');
         if (!qtyInput) return;
         const filas = detalleColores.get(qtyInput.dataset.id);
         const idx = parseInt(qtyInput.dataset.idx, 10);
         if (filas && filas[idx]) {
-            filas[idx].cantidad = Math.max(1, parseInt(qtyInput.value, 10) || 1);
-            renderProducts();
-            updateProgress();
+            const val = Math.max(1, parseInt(qtyInput.value, 10) || 1);
+            filas[idx].cantidad = val;
+            qtyInput.value = val;
+            actualizarPreciosEnVivo();
         }
     });
 }
