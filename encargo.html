@@ -51,10 +51,27 @@
     margin: 18px auto;
     padding: 0 16px;
   }
+  .encargo-progress-hint {
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--color-texto-secundario);
+    margin-bottom: 10px;
+  }
+  .encargo-group-progress {
+    margin-bottom: 10px;
+  }
+  .encargo-group-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-texto);
+    margin-bottom: 4px;
+  }
   .encargo-progress-track {
     background: var(--color-primario-claro);
     border-radius: 999px;
-    height: 14px;
+    height: 12px;
     overflow: hidden;
   }
   .encargo-progress-fill {
@@ -64,12 +81,8 @@
     border-radius: 999px;
     transition: width 0.35s ease;
   }
-  .encargo-progress-text {
-    text-align: center;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--color-texto);
-    margin-top: 8px;
+  .encargo-progress-fill.is-unlocked {
+    background: linear-gradient(90deg, #2e7d32, #66bb6a);
   }
   .encargo-tiers-toggle {
     text-align: center;
@@ -180,52 +193,79 @@
     color: var(--color-primario-oscuro);
     font-weight: 600;
   }
-  .encargo-stepper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--color-fondo-secundario);
-    border-radius: var(--radio-sm);
-    padding: 4px;
-  }
-  .encargo-step-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    border: none;
-    background: #fff;
+  .encargo-add-btn {
+    width: 100%;
+    padding: 8px;
+    border: 1px dashed var(--color-primario);
+    background: var(--color-primario-claro);
     color: var(--color-primario-oscuro);
-    font-size: 1.1rem;
-    font-weight: 700;
-    line-height: 1;
-    box-shadow: var(--sombra-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: var(--radio-sm);
     cursor: pointer;
   }
-  .encargo-step-btn:active {
-    transform: scale(0.94);
+  .encargo-colors-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
-  .encargo-step-qty {
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: var(--color-texto);
-    min-width: 24px;
-    text-align: center;
-  }
-  .encargo-color-field {
-    margin-top: 8px;
+  .encargo-color-row {
+    display: grid;
+    grid-template-columns: 1fr 52px 26px;
+    gap: 5px;
+    align-items: center;
   }
   .encargo-color-input {
     width: 100%;
-    font-size: 0.76rem;
-    padding: 5px 8px;
+    font-size: 0.74rem;
+    padding: 5px 7px;
     border: 1px solid var(--color-borde);
     border-radius: var(--radio-sm);
     background: var(--color-fondo-secundario);
   }
-  .encargo-color-input:focus {
+  .encargo-color-qty {
+    width: 100%;
+    font-size: 0.74rem;
+    padding: 5px 4px;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-sm);
+    background: var(--color-fondo-secundario);
+    text-align: center;
+  }
+  .encargo-color-input:focus, .encargo-color-qty:focus {
     outline: none;
     border-color: var(--color-primario);
     background: #fff;
+  }
+  .encargo-color-remove {
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 6px;
+    background: var(--color-fondo-secundario);
+    color: #c62828;
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .encargo-add-color {
+    background: none;
+    border: none;
+    color: var(--color-primario-oscuro);
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 4px 0 0;
+    cursor: pointer;
+    text-align: left;
+  }
+  .encargo-color-total {
+    font-size: 0.72rem;
+    color: var(--color-texto-secundario);
+    margin-top: 4px;
+  }
+  .encargo-color-total.is-warning {
+    color: #c62828;
+    font-weight: 600;
   }
   .encargo-empty {
     max-width: 480px;
@@ -353,14 +393,12 @@
 
   <div class="encargo-intro">
     <h1>Prendas Bajo Encargo</h1>
-    <p>Estas prendas se mandan a fabricar (no son de stock inmediato). Elige mínimo <strong>2 unidades</strong> de cada prenda que quieras. Al llegar a <strong>6 prendas en total</strong> desbloqueas tu código mayorista.</p>
+    <p>Estas prendas se mandan a fabricar (no son de stock inmediato). Elige mínimo <strong>2 unidades</strong> de cada prenda y reparte los colores como quieras. El precio baja según la tabla al llegar a <strong>6 unidades de un mismo tipo</strong> (bodys, vestidos largos/conjuntos o vestidos cortos), y ahí también desbloqueas tu código mayorista.</p>
   </div>
 
   <div class="encargo-progress-wrap">
-    <div class="encargo-progress-track">
-      <div class="encargo-progress-fill" id="progress-fill"></div>
-    </div>
-    <div class="encargo-progress-text" id="progress-text">0/6 prendas seleccionadas</div>
+    <div class="encargo-progress-hint" id="progress-hint">Elige prendas abajo para ver tu progreso hacia el precio mayorista.</div>
+    <div id="group-progress-list"></div>
     <div class="encargo-tiers-toggle">
       <button type="button" id="btn-toggle-tiers">Ver tabla de precios por cantidad</button>
     </div>
@@ -391,15 +429,12 @@
   <div class="encargo-finalize-inner">
     <div class="encargo-code-block" id="code-block">
       <h2><i class="bi bi-unlock-fill"></i> ¡Código mayorista desbloqueado!</h2>
-      <p>Úsalo en el catálogo mayorista para ver y comprar a esos precios.</p>
+      <p>Lo ganaste por llegar a 6 unidades de un mismo tipo de prenda.</p>
       <div class="encargo-code-value" id="code-value">MISHELLMAYOR</div>
       <div class="encargo-code-actions">
         <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-copy-code">
           <i class="bi bi-clipboard"></i> Copiar código
         </button>
-        <a href="mayor.html" class="btn btn-sm btn-outline-dark" id="link-mayor">
-          <i class="bi bi-shop"></i> Ir a ventas al por mayor
-        </a>
       </div>
     </div>
     <div class="encargo-total-row">
