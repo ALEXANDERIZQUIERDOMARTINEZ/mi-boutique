@@ -24,65 +24,61 @@
     font-family: 'Playfair Display', var(--fuente-principal);
   }
 
-  /* ── Hero ─────────────────────────────────────────────────────── */
+  /* ── Hero (compacto) ─────────────────────────────────────────────── */
   .encargo-hero {
     background: linear-gradient(180deg, #FBF0F5 0%, #FAF8F6 100%);
     border-bottom: 1px solid var(--color-borde);
-    padding: 46px 20px 56px;
+    padding: 22px 20px 20px;
   }
   .encargo-hero-inner {
-    max-width: 620px;
+    max-width: 480px;
     margin: 0 auto;
     text-align: center;
   }
   .encargo-hero-eyebrow {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 7px;
-    font-size: 0.68rem;
+    justify-content: center;
+    gap: 5px;
+    font-size: 0.66rem;
     font-weight: 700;
-    letter-spacing: 1.6px;
+    letter-spacing: 1.4px;
     text-transform: uppercase;
     color: var(--color-primario-oscuro);
-    background: #fff;
-    border: 1px solid var(--color-primario-hover);
-    padding: 7px 16px;
-    border-radius: 999px;
-    margin-bottom: 20px;
-    box-shadow: var(--sombra-sm);
+    margin: 0 0 5px;
   }
   .encargo-hero h1 {
     font-family: 'Playfair Display', var(--fuente-principal);
     font-weight: 700;
-    font-size: clamp(1.6rem, 4.2vw, 2.5rem);
-    line-height: 1.22;
+    font-size: clamp(1.2rem, 3.2vw, 1.5rem);
+    line-height: 1.25;
     color: var(--color-texto);
-    margin: 0 0 14px;
+    margin: 0 0 6px;
   }
   .encargo-hero-sub {
-    font-size: 0.94rem;
+    font-size: 0.8rem;
     color: var(--color-texto-secundario);
-    max-width: 440px;
+    max-width: 380px;
     margin: 0 auto;
-    line-height: 1.65;
+    line-height: 1.5;
   }
   .encargo-hero-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    margin-top: 26px;
+    gap: 8px 14px;
+    margin-top: 12px;
   }
   .encargo-delivery-badge {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
+    gap: 7px;
     background: var(--color-texto);
     color: #fff;
     border-radius: 999px;
-    padding: 10px 18px;
-    font-size: 0.8rem;
+    padding: 6px 13px;
+    font-size: 0.72rem;
     font-weight: 500;
   }
   .encargo-delivery-badge strong {
@@ -90,13 +86,13 @@
   }
   .encargo-delivery-badge i {
     color: var(--color-primario-hover);
-    font-size: 0.95rem;
+    font-size: 0.85rem;
   }
   .encargo-hero-rule {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.8rem;
+    gap: 5px;
+    font-size: 0.72rem;
     color: var(--color-texto-secundario);
     font-weight: 500;
   }
@@ -107,7 +103,7 @@
   /* ── Panel de control (progreso + tablas/condiciones) ────────────── */
   .encargo-control {
     max-width: 640px;
-    margin: -26px auto 0;
+    margin: -12px auto 0;
     padding: 0 20px;
     position: relative;
     z-index: 2;
