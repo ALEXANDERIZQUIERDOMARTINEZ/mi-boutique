@@ -4,7 +4,7 @@ import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, se
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
-import { WHOLESALE_TIER_GROUPS, getTierPrice, getBaseTierPrice } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getTierPrice, getBaseTierPrice, resolveWholesaleGroup } from './wholesale-tiers.js';
 
 // *** CONFIGURACIÓN DE FIREBASE ***
 const firebaseConfig = {
@@ -80,10 +80,10 @@ const isMayorPage = window.location.pathname.includes('mayor');
 let isWholesaleActive = isMayorPage;
 
 // Devuelve el precio de mostrador (vitrina) al por mayor: si el producto pertenece
-// a un grupo con tabla de precios por volumen, usa el precio base (1 unidad);
-// si no, usa el campo precioMayor fijo del producto.
+// a un grupo con tabla de precios por volumen (asignado a mano o detectado por su
+// categoría), usa el precio base (1 unidad); si no, usa el precioMayor fijo.
 function getEffectiveWholesalePrice(product) {
-    const grupo = product?.grupoMayorista;
+    const grupo = resolveWholesaleGroup(product, categoriesMap);
     if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
         return getBaseTierPrice(grupo) || 0;
     }
@@ -99,14 +99,14 @@ function recalculateWholesaleTierPricing() {
     const totalesPorGrupo = new Map();
     itemsMayoristas.forEach(item => {
         const product = productsMap.get(item.id);
-        const grupo = product?.grupoMayorista;
+        const grupo = resolveWholesaleGroup(product, categoriesMap);
         if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
             totalesPorGrupo.set(grupo, (totalesPorGrupo.get(grupo) || 0) + item.cantidad);
         }
     });
     itemsMayoristas.forEach(item => {
         const product = productsMap.get(item.id);
-        const grupo = product?.grupoMayorista;
+        const grupo = resolveWholesaleGroup(product, categoriesMap);
         if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
             const totalGrupo = totalesPorGrupo.get(grupo) || item.cantidad;
             const nuevoPrecio = getTierPrice(grupo, totalGrupo);
@@ -798,7 +798,7 @@ function renderProducts(products) {
                     <div class="card-bottom">
                         <div class="price-detal-card">
                             ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
-                            ${(isWholesaleActive && product.grupoMayorista) ? `<small class="d-block text-muted" style="font-size:0.68rem;">Desde, baja por cantidad</small>` : ''}
+                            ${(isWholesaleActive && resolveWholesaleGroup(product, categoriesMap)) ? `<small class="d-block text-muted" style="font-size:0.68rem;">Desde, baja por cantidad</small>` : ''}
                             ${formatoMoneda.format(precioMostrado)}
                         </div>
                         ${!isAgotado ? '<button class="btn-add-card" type="button">Agregar</button>' : ''}

@@ -53,3 +53,29 @@ export function getBaseTierPrice(grupo) {
     const group = WHOLESALE_TIER_GROUPS[grupo];
     return group ? group.tiers[0].precio : null;
 }
+
+// Detecta el grupo de precio mayorista a partir del NOMBRE de la categoría del
+// producto (ej: "Vestidos cortos", "Conjuntos"), para que la tabla aplique
+// automáticamente sin depender de que alguien la asigne a mano por producto.
+export function detectGroupFromCategoryName(nombreCategoria) {
+    if (!nombreCategoria) return '';
+    const norm = nombreCategoria
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (norm.includes('body')) return 'bodys';
+    if (norm.includes('conjunto')) return 'vestidosLargos';
+    if (norm.includes('vestido') && norm.includes('corto')) return 'vestidosCortos';
+    if (norm.includes('vestido') && norm.includes('largo')) return 'vestidosLargos';
+    return '';
+}
+
+// Resuelve el grupo de precio mayorista de un producto: si tiene el campo
+// grupoMayorista asignado a mano (desde el admin) lo respeta como override;
+// si no, lo detecta automáticamente por el nombre de su categoría.
+export function resolveWholesaleGroup(product, categoriesMap) {
+    if (product?.grupoMayorista && WHOLESALE_TIER_GROUPS[product.grupoMayorista]) {
+        return product.grupoMayorista;
+    }
+    const nombreCategoria = categoriesMap?.get(product?.categoriaId) || '';
+    return detectGroupFromCategoryName(nombreCategoria);
+}
