@@ -4,7 +4,7 @@ import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, se
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
-import { WHOLESALE_TIER_GROUPS, getTierPrice, getBaseTierPrice, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getHybridTierPrice, getBaseTierPrice, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
 
 // *** CONFIGURACIÓN DE FIREBASE ***
 const firebaseConfig = {
@@ -91,18 +91,21 @@ function getEffectiveWholesalePrice(product) {
 }
 
 // Recalcula el precio por unidad de cada ítem del carrito que pertenezca a algún
-// grupo con precio por volumen, según el total SURTIDO (sumando todos los grupos
-// juntos): no hace falta llevar 6 del mismo tipo, también cuenta mezclar bodys +
-// vestidos largos + vestidos cortos hasta llegar a 6, 12, 24...
+// grupo con precio por volumen. Mezclar categorías (bodys + vestidos largos +
+// vestidos cortos) solo alcanza para desbloquear el primer escalón real (ej. 6X);
+// para subir a escalones más altos (12X, 24X...) hace falta esa cantidad DENTRO de
+// la misma categoría, sin mezclar.
 function recalculateWholesaleTierPricing() {
     if (!isWholesaleActive || cart.length === 0) return;
     // Solo ítems agregados en modo mayorista (el carrito se comparte con index.html vía localStorage)
     const itemsMayoristas = cart.filter(item => (item.cartItemId || '').endsWith('-MAYOR'));
+    const totalesPorGrupo = new Map();
     let totalSurtido = 0;
     itemsMayoristas.forEach(item => {
         const product = productsMap.get(item.id);
         const grupo = resolveWholesaleGroup(product, categoriesMap);
         if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
+            totalesPorGrupo.set(grupo, (totalesPorGrupo.get(grupo) || 0) + item.cantidad);
             totalSurtido += item.cantidad;
         }
     });
@@ -110,7 +113,8 @@ function recalculateWholesaleTierPricing() {
         const product = productsMap.get(item.id);
         const grupo = resolveWholesaleGroup(product, categoriesMap);
         if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-            const nuevoPrecio = getTierPrice(grupo, totalSurtido);
+            const totalPropio = totalesPorGrupo.get(grupo) || item.cantidad;
+            const nuevoPrecio = getHybridTierPrice(grupo, totalPropio, totalSurtido);
             item.precio = nuevoPrecio;
             item.total = item.cantidad * nuevoPrecio;
         }

@@ -64,6 +64,35 @@ export function getPrimerEscalonMayorista() {
     return minimos.length ? Math.min(...minimos) : Infinity;
 }
 
+// Precio/escalón real de un grupo combinando dos totales:
+// - totalPropio: cuántas prendas de ESA MISMA categoría hay en el pedido.
+// - totalMixto: cuántas prendas hay en total sumando TODAS las categorías (surtido).
+// Mezclar categorías solo alcanza para desbloquear el primer escalón real (ej. 6X).
+// Para subir a escalones más altos (12X, 24X...) hace falta esa cantidad DENTRO de
+// la misma categoría, sin mezclar.
+export function getHybridTierInfo(grupo, totalPropio, totalMixto) {
+    const group = WHOLESALE_TIER_GROUPS[grupo];
+    if (!group) return null;
+    let idxPropio = 0;
+    for (let i = 0; i < group.tiers.length; i++) {
+        if (totalPropio >= group.tiers[i].min) idxPropio = i;
+    }
+    let idxMixto = 0;
+    if (group.tiers[1] && totalMixto >= group.tiers[1].min) idxMixto = 1;
+    const idx = Math.max(idxPropio, idxMixto);
+    return {
+        precio: group.tiers[idx].precio,
+        nivel: group.tiers[idx].min,
+        idx,
+        porPropio: idxPropio >= idxMixto
+    };
+}
+
+export function getHybridTierPrice(grupo, totalPropio, totalMixto) {
+    const info = getHybridTierInfo(grupo, totalPropio, totalMixto);
+    return info ? info.precio : null;
+}
+
 // Detecta el grupo de precio mayorista a partir del NOMBRE de la categoría del
 // producto (ej: "Vestidos cortos", "Conjuntos"), para que la tabla aplique
 // automáticamente sin depender de que alguien la asigne a mano por producto.
