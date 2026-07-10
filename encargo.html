@@ -282,7 +282,7 @@
     background: #fff;
     border-top: 1px solid var(--color-borde);
     box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
-    padding: 16px;
+    padding: 10px 16px;
     display: none;
     z-index: 20;
   }
@@ -294,9 +294,41 @@
     from { transform: translateY(16px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
+  .encargo-finalize-handle {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: none;
+    border: none;
+    padding: 4px 0;
+    cursor: pointer;
+  }
+  .encargo-finalize-handle-label {
+    font-size: 0.85rem;
+    color: var(--color-texto);
+  }
+  .encargo-finalize-handle-label strong {
+    font-size: 0.98rem;
+    color: var(--color-primario-oscuro);
+  }
+  #finalize-toggle-icon {
+    color: var(--color-primario-oscuro);
+    font-size: 1rem;
+    transition: transform 0.25s ease;
+  }
+  .encargo-finalize-panel.is-collapsed #finalize-toggle-icon {
+    transform: rotate(180deg);
+  }
   .encargo-finalize-inner {
     max-width: 520px;
     margin: 0 auto;
+    padding-top: 10px;
+  }
+  .encargo-finalize-panel.is-collapsed .encargo-finalize-inner {
+    display: none;
   }
   .encargo-code-block {
     text-align: center;
@@ -337,20 +369,6 @@
   }
   .encargo-code-actions .btn {
     font-size: 0.82rem;
-  }
-  .encargo-total-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.9rem;
-    color: var(--color-texto);
-    padding: 6px 0 10px;
-    border-bottom: 1px solid var(--color-borde);
-    margin-bottom: 10px;
-  }
-  .encargo-total-row strong {
-    font-size: 1rem;
-    color: var(--color-primario-oscuro);
   }
   .encargo-obs-label {
     font-size: 0.82rem;
@@ -425,7 +443,11 @@
   </div>
 </footer>
 
-<div class="encargo-finalize-panel" id="finalize-panel">
+<div class="encargo-finalize-panel is-collapsed" id="finalize-panel">
+  <button type="button" class="encargo-finalize-handle" id="btn-toggle-finalize">
+    <span class="encargo-finalize-handle-label">Total estimado: <strong id="total-estimado">$0</strong></span>
+    <i class="bi bi-chevron-up" id="finalize-toggle-icon"></i>
+  </button>
   <div class="encargo-finalize-inner">
     <div class="encargo-code-block" id="code-block">
       <h2><i class="bi bi-unlock-fill"></i> ¡Código mayorista desbloqueado!</h2>
@@ -436,10 +458,6 @@
           <i class="bi bi-clipboard"></i> Copiar código
         </button>
       </div>
-    </div>
-    <div class="encargo-total-row">
-      <span>Total estimado</span>
-      <strong id="total-estimado">$0</strong>
     </div>
     <label class="encargo-obs-label" for="encargo-observaciones">Observaciones (opcional)</label>
     <textarea class="form-control form-control-sm" id="encargo-observaciones" rows="2" placeholder="Ej: Para evento el 20, entrega en Montería..."></textarea>
