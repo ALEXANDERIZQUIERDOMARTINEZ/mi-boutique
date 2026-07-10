@@ -444,7 +444,7 @@ if (tiersToggleBtn) {
     tiersToggleBtn.addEventListener('click', () => {
         const isOpen = tiersTablesEl.classList.toggle('is-open');
         const label = tiersToggleBtn.querySelector('.wtiers-btn-label');
-        if (label) label.textContent = isOpen ? 'Ocultar tabla' : 'Tabla de precios';
+        if (label) label.textContent = isOpen ? 'Ocultar tabla' : 'Ver tabla de precios';
     });
 }
 
@@ -452,7 +452,7 @@ if (policyToggleBtn) {
     policyToggleBtn.addEventListener('click', () => {
         const isOpen = policyPanelEl.classList.toggle('is-open');
         const label = policyToggleBtn.querySelector('.wtiers-btn-label');
-        if (label) label.textContent = isOpen ? 'Ocultar condiciones' : 'Condiciones';
+        if (label) label.textContent = isOpen ? 'Ocultar condiciones' : 'Ver condiciones completas';
     });
 }
 
