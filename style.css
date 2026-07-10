@@ -6126,18 +6126,36 @@ img, video, iframe, embed, object {
    Compartido entre encargo.html y mayor.html
    ──────────────────────────────────────────────────────────────────── */
 .wtiers-toggle {
-    text-align: center;
-    margin: 6px 0 0;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0 0;
 }
 
 .wtiers-toggle button {
-    background: none;
-    border: none;
-    color: var(--color-primario-oscuro);
-    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #fff;
+    border: 1px solid var(--color-borde);
+    color: var(--color-texto);
+    font-size: 0.78rem;
     font-weight: 600;
-    text-decoration: underline;
+    padding: 8px 16px;
+    border-radius: 999px;
     cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.wtiers-toggle button i {
+    color: var(--color-primario-oscuro);
+    font-size: 0.88rem;
+}
+
+.wtiers-toggle button:hover {
+    border-color: var(--color-primario);
+    background: var(--color-primario-claro);
 }
 
 .wtiers-tables {
@@ -6193,11 +6211,6 @@ img, video, iframe, embed, object {
     text-align: right;
     font-weight: 700;
     color: var(--color-primario-oscuro);
-}
-
-.wtiers-sep {
-    color: var(--color-borde);
-    margin: 0 8px;
 }
 
 /* ────────────────────────────────────────────────────────────────────
