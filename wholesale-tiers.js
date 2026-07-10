@@ -54,6 +54,16 @@ export function getBaseTierPrice(grupo) {
     return group ? group.tiers[0].precio : null;
 }
 
+// Umbral del primer escalón real de mayoreo (ej. 6X), compartido entre todas las
+// tablas: no hace falta comprar 6 del MISMO tipo, cuenta el total surtido entre
+// bodys, vestidos largos/conjuntos y vestidos cortos combinados.
+export function getPrimerEscalonMayorista() {
+    const minimos = Object.values(WHOLESALE_TIER_GROUPS)
+        .map(g => g.tiers[1]?.min)
+        .filter(v => typeof v === 'number');
+    return minimos.length ? Math.min(...minimos) : Infinity;
+}
+
 // Detecta el grupo de precio mayorista a partir del NOMBRE de la categoría del
 // producto (ej: "Vestidos cortos", "Conjuntos"), para que la tabla aplique
 // automáticamente sin depender de que alguien la asigne a mano por producto.

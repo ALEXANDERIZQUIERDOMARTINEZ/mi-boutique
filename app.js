@@ -90,26 +90,27 @@ function getEffectiveWholesalePrice(product) {
     return parseFloat(product?.precioMayor) || 0;
 }
 
-// Recalcula el precio por unidad de cada ítem del carrito que pertenezca a un
-// grupo con precio por volumen, según la cantidad total acumulada de ese grupo.
+// Recalcula el precio por unidad de cada ítem del carrito que pertenezca a algún
+// grupo con precio por volumen, según el total SURTIDO (sumando todos los grupos
+// juntos): no hace falta llevar 6 del mismo tipo, también cuenta mezclar bodys +
+// vestidos largos + vestidos cortos hasta llegar a 6, 12, 24...
 function recalculateWholesaleTierPricing() {
     if (!isWholesaleActive || cart.length === 0) return;
     // Solo ítems agregados en modo mayorista (el carrito se comparte con index.html vía localStorage)
     const itemsMayoristas = cart.filter(item => (item.cartItemId || '').endsWith('-MAYOR'));
-    const totalesPorGrupo = new Map();
+    let totalSurtido = 0;
     itemsMayoristas.forEach(item => {
         const product = productsMap.get(item.id);
         const grupo = resolveWholesaleGroup(product, categoriesMap);
         if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-            totalesPorGrupo.set(grupo, (totalesPorGrupo.get(grupo) || 0) + item.cantidad);
+            totalSurtido += item.cantidad;
         }
     });
     itemsMayoristas.forEach(item => {
         const product = productsMap.get(item.id);
         const grupo = resolveWholesaleGroup(product, categoriesMap);
         if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-            const totalGrupo = totalesPorGrupo.get(grupo) || item.cantidad;
-            const nuevoPrecio = getTierPrice(grupo, totalGrupo);
+            const nuevoPrecio = getTierPrice(grupo, totalSurtido);
             item.precio = nuevoPrecio;
             item.total = item.cantidad * nuevoPrecio;
         }
