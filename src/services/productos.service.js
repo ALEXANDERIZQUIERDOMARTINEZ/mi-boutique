@@ -257,8 +257,9 @@ class ProductosService {
       const path = `${tenantId}/productos/${productoId}/${file.name}`;
       const storageRef = this.storage.ref(path);
 
-      // Subir archivo
-      const snapshot = await storageRef.put(file);
+      // Subir archivo (cacheControl largo: el token de descarga cambia en cada subida,
+      // así que es seguro cachear de forma agresiva sin servir imágenes desactualizadas)
+      const snapshot = await storageRef.put(file, { cacheControl: 'public, max-age=31536000, immutable' });
 
       // Obtener URL de descarga
       const downloadURL = await snapshot.ref.getDownloadURL();

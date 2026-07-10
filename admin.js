@@ -1662,7 +1662,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const angulo = cv.newFileAngles[i] || 'frente';
                     const fileName = `${tenantId || 'tenant'}/productos/${productId}/color_${cv.id}_${Date.now()}_${i}_${file.name}`;
                     const storageRef = ref(storage, fileName);
-                    const snapshot = await uploadBytes(storageRef, file);
+                    const snapshot = await uploadBytes(storageRef, file, { cacheControl: 'public, max-age=31536000, immutable' });
                     const url = await getDownloadURL(snapshot.ref);
                     nuevasImgs.push({ url, angulo, orden: cv.imagenes.length + i });
                 }
@@ -1939,7 +1939,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fileName = `product_images/${Date.now()}-${firstFile.name}`;
                     const storageRef = ref(storage, fileName);
 
-                    const uploadResult = await uploadBytes(storageRef, firstFile);
+                    const uploadResult = await uploadBytes(storageRef, firstFile, { cacheControl: 'public, max-age=31536000, immutable' });
                     productData.imagenUrl = await getDownloadURL(uploadResult.ref);
                     console.log("Imagen subida:", productData.imagenUrl);
                 }
