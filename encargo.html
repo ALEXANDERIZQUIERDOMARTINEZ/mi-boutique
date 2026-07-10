@@ -211,30 +211,21 @@
     min-width: 24px;
     text-align: center;
   }
-  .encargo-colors {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+  .encargo-color-field {
     margin-top: 8px;
   }
-  .encargo-color-swatch {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    cursor: pointer;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.12);
-    background-size: cover;
-    background-position: center;
+  .encargo-color-input {
+    width: 100%;
+    font-size: 0.76rem;
+    padding: 5px 8px;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-sm);
+    background: var(--color-fondo-secundario);
   }
-  .encargo-color-swatch.is-active {
+  .encargo-color-input:focus {
+    outline: none;
     border-color: var(--color-primario);
-    box-shadow: 0 0 0 1px var(--color-primario);
-  }
-  .encargo-color-label {
-    font-size: 0.68rem;
-    color: var(--color-texto-secundario);
-    margin-top: 3px;
+    background: #fff;
   }
   .encargo-empty {
     max-width: 480px;
@@ -307,6 +298,20 @@
   .encargo-code-actions .btn {
     font-size: 0.82rem;
   }
+  .encargo-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--color-texto);
+    padding: 6px 0 10px;
+    border-bottom: 1px solid var(--color-borde);
+    margin-bottom: 10px;
+  }
+  .encargo-total-row strong {
+    font-size: 1rem;
+    color: var(--color-primario-oscuro);
+  }
   .encargo-obs-label {
     font-size: 0.82rem;
     font-weight: 600;
@@ -348,7 +353,7 @@
 
   <div class="encargo-intro">
     <h1>Prendas Bajo Encargo</h1>
-    <p>Elige mínimo <strong>2 unidades</strong> de cada prenda que quieras. Al llegar a <strong>6 prendas en total</strong> desbloqueas tu código mayorista.</p>
+    <p>Estas prendas se mandan a fabricar (no son de stock inmediato). Elige mínimo <strong>2 unidades</strong> de cada prenda que quieras. Al llegar a <strong>6 prendas en total</strong> desbloqueas tu código mayorista.</p>
   </div>
 
   <div class="encargo-progress-wrap">
@@ -396,6 +401,10 @@
           <i class="bi bi-shop"></i> Ir a ventas al por mayor
         </a>
       </div>
+    </div>
+    <div class="encargo-total-row">
+      <span>Total estimado</span>
+      <strong id="total-estimado">$0</strong>
     </div>
     <label class="encargo-obs-label" for="encargo-observaciones">Observaciones (opcional)</label>
     <textarea class="form-control form-control-sm" id="encargo-observaciones" rows="2" placeholder="Ej: Para evento el 20, entrega en Montería..."></textarea>
