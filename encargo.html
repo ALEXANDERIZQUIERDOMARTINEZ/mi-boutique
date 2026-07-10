@@ -320,6 +320,68 @@
   .encargo-finalize-panel.is-collapsed .encargo-finalize-inner {
     display: none;
   }
+  .encargo-summary {
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-md);
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .encargo-summary-empty {
+    font-size: 0.8rem;
+    color: var(--color-texto-secundario);
+    text-align: center;
+    padding: 6px 0;
+  }
+  .encargo-summary-group {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-fondo-secundario);
+  }
+  .encargo-summary-group:last-of-type {
+    border-bottom: none;
+  }
+  .encargo-summary-group-name {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--color-texto);
+    margin-bottom: 4px;
+  }
+  .encargo-summary-group-unit {
+    font-weight: 600;
+    color: var(--color-primario-oscuro);
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+  .encargo-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--color-texto-secundario);
+    padding: 2px 0 2px 10px;
+  }
+  .encargo-summary-row strong {
+    color: var(--color-texto);
+    font-weight: 600;
+  }
+  .encargo-summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-texto);
+    padding-top: 8px;
+    margin-top: 6px;
+    border-top: 1px solid var(--color-borde);
+  }
+  .encargo-summary-total strong {
+    color: var(--color-primario-oscuro);
+    font-size: 1rem;
+  }
   .encargo-code-block {
     text-align: center;
     display: none;
@@ -467,6 +529,7 @@
     <i class="bi bi-chevron-up" id="finalize-toggle-icon"></i>
   </button>
   <div class="encargo-finalize-inner">
+    <div class="encargo-summary" id="order-summary"></div>
     <div class="encargo-code-block" id="code-block">
       <h2><i class="bi bi-unlock-fill"></i> ¡Código mayorista desbloqueado!</h2>
       <p>Lo ganaste por llegar a 6 unidades de un mismo tipo de prenda.</p>

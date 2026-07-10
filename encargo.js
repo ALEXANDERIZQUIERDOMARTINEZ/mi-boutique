@@ -54,6 +54,7 @@ const copyBtn = document.getElementById('btn-copy-code');
 const waBtn = document.getElementById('btn-send-whatsapp');
 const obsEl = document.getElementById('encargo-observaciones');
 const totalEstimadoEl = document.getElementById('total-estimado');
+const orderSummaryEl = document.getElementById('order-summary');
 const tiersToggleBtn = document.getElementById('btn-toggle-tiers');
 const tiersTablesEl = document.getElementById('tiers-tables');
 const policyToggleBtn = document.getElementById('btn-toggle-policy');
@@ -118,6 +119,38 @@ function calcularTotalEstimado() {
         if (qty > 0) total += getPrecioUnitario(p) * qty;
     });
     return total;
+}
+
+// Desglose detallado del pedido: por prenda, por color, cantidad, precio unitario
+// y subtotal — lo que se ve en el panel inferior antes de enviar por WhatsApp.
+function renderOrderSummary() {
+    if (!orderSummaryEl) return;
+    const productosConSeleccion = productsData.filter(p => getCantidadValida(p.id) > 0);
+    if (productosConSeleccion.length === 0) {
+        orderSummaryEl.innerHTML = '<div class="encargo-summary-empty">Aún no has elegido ninguna prenda.</div>';
+        return;
+    }
+    let total = 0;
+    let totalUnidades = 0;
+    const gruposHtml = productosConSeleccion.map(p => {
+        const filas = (detalleColores.get(p.id) || []).filter(f => (parseInt(f.cantidad, 10) || 0) > 0);
+        const precioUnitario = getPrecioUnitario(p);
+        const filasHtml = filas.map(f => {
+            const cantidad = parseInt(f.cantidad, 10) || 0;
+            const subtotal = precioUnitario * cantidad;
+            total += subtotal;
+            totalUnidades += cantidad;
+            const color = (f.color || '').trim() || 'sin especificar';
+            return `<div class="encargo-summary-row"><span>${color} × ${cantidad}</span><strong>${formatoMoneda.format(subtotal)}</strong></div>`;
+        }).join('');
+        return `
+            <div class="encargo-summary-group">
+                <div class="encargo-summary-group-name"><span>${p.nombre}</span><span class="encargo-summary-group-unit">${formatoMoneda.format(precioUnitario)} c/u</span></div>
+                ${filasHtml}
+            </div>
+        `;
+    }).join('');
+    orderSummaryEl.innerHTML = `${gruposHtml}<div class="encargo-summary-total"><span>Total (${totalUnidades} und.)</span><strong>${formatoMoneda.format(total)}</strong></div>`;
 }
 
 // El código se desbloquea al llegar al primer escalón real de mayoreo (ej. 6X)
@@ -261,6 +294,7 @@ function actualizarPreciosEnVivo() {
     });
 
     renderGroupProgress();
+    renderOrderSummary();
     if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
     const unlocked = isSurtidoUnlocked();
     if (codeBlockEl) {
@@ -272,6 +306,7 @@ function actualizarPreciosEnVivo() {
 
 function updateProgress() {
     renderGroupProgress();
+    renderOrderSummary();
 
     const unlocked = isSurtidoUnlocked();
     if (codeValueEl) codeValueEl.textContent = WHOLESALE_CODE;
