@@ -29,66 +29,48 @@
     letter-spacing: 0.5px;
   }
   .encargo-hero {
-    max-width: 760px;
+    max-width: 620px;
     margin: 16px auto 0;
     padding: 0 16px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 12px 20px;
     text-align: center;
   }
-  .encargo-hero-text {
-    flex: 1 1 380px;
-    min-width: 260px;
-  }
-  .encargo-hero-text h1 {
+  .encargo-hero h1 {
     font-family: var(--fuente-principal);
     font-weight: 800;
-    font-size: 1.28rem;
+    font-size: 1.15rem;
     color: var(--color-texto);
-    margin-bottom: 4px;
+    margin-bottom: 10px;
   }
-  .encargo-hero-text p {
-    color: var(--color-texto-secundario);
-    font-size: 0.84rem;
-    line-height: 1.4;
-    margin-bottom: 0;
+  .encargo-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
   }
-  .encargo-delivery-chip {
-    flex: 0 0 auto;
+  .encargo-chip {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
+    background: var(--color-fondo-secundario);
+    color: var(--color-texto-secundario);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .encargo-chip i {
+    font-size: 0.85rem;
+    color: var(--color-primario-oscuro);
+  }
+  .encargo-chip-delivery {
     background: var(--color-primario-claro);
     color: var(--color-primario-oscuro);
-    border-radius: 999px;
-    padding: 8px 16px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    line-height: 1.3;
-    text-align: left;
-  }
-  .encargo-delivery-chip i {
-    font-size: 1.05rem;
-    flex-shrink: 0;
-  }
-  .encargo-delivery-chip strong {
-    display: block;
-    font-size: 0.85rem;
-    text-transform: capitalize;
   }
   .encargo-progress-wrap {
     max-width: 520px;
     margin: 14px auto 0;
     padding: 0 16px;
-  }
-  .encargo-progress-hint {
-    text-align: center;
-    font-size: 0.82rem;
-    color: var(--color-texto-secundario);
-    margin-bottom: 10px;
   }
   .encargo-group-progress {
     margin-bottom: 10px;
@@ -463,18 +445,16 @@
 <main>
 
   <div class="encargo-hero">
-    <div class="encargo-hero-text">
-      <h1>Prendas Bajo Encargo</h1>
-      <p>Se mandan a fabricar (no hay stock inmediato). Mínimo <strong>2 unidades</strong> por prenda, tú eliges los colores. El precio baja al llegar a <strong>6 unidades de un mismo tipo</strong> (bodys, vestidos largos/conjuntos o vestidos cortos), y ahí desbloqueas tu código mayorista.</p>
-    </div>
-    <div class="encargo-delivery-chip">
-      <i class="bi bi-truck"></i>
-      <span>Si pagas hoy, entrega aprox.<strong id="delivery-date">calculando…</strong></span>
+    <h1>Prendas Bajo Encargo</h1>
+    <div class="encargo-chips">
+      <span class="encargo-chip"><i class="bi bi-123"></i> Mín. 2 por prenda</span>
+      <span class="encargo-chip"><i class="bi bi-palette"></i> Tú eliges el color</span>
+      <span class="encargo-chip"><i class="bi bi-graph-down-arrow"></i> Precio baja x cantidad</span>
+      <span class="encargo-chip encargo-chip-delivery"><i class="bi bi-truck"></i> Entrega aprox. <strong id="delivery-date">…</strong></span>
     </div>
   </div>
 
   <div class="encargo-progress-wrap">
-    <div class="encargo-progress-hint" id="progress-hint">Elige prendas abajo para ver tu progreso hacia el precio mayorista.</div>
     <div id="group-progress-list"></div>
     <div class="encargo-tiers-toggle">
       <button type="button" id="btn-toggle-tiers">Ver tabla de precios por cantidad</button>

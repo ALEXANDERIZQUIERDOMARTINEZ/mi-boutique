@@ -18,7 +18,7 @@ const productsCollection = collection(db, 'productos');
 const categoriesCollection = collection(db, 'categorias');
 
 const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
-const formatoFechaEntrega = new Intl.DateTimeFormat('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+const formatoFechaEntrega = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long' });
 const WHATSAPP_NUMBER = '573046084971';
 const MIN_POR_PRENDA = 2;
 const DIAS_ENTREGA = 8;
@@ -45,7 +45,6 @@ let bsToast = null;
 
 const gridEl = document.getElementById('encargo-grid');
 const emptyEl = document.getElementById('encargo-empty');
-const progressHintEl = document.getElementById('progress-hint');
 const groupProgressListEl = document.getElementById('group-progress-list');
 const finalizePanelEl = document.getElementById('finalize-panel');
 const finalizeToggleBtn = document.getElementById('btn-toggle-finalize');
@@ -154,10 +153,8 @@ function renderGroupProgress() {
 
     if (gruposConSeleccion.length === 0) {
         groupProgressListEl.innerHTML = '';
-        if (progressHintEl) progressHintEl.style.display = 'block';
         return;
     }
-    if (progressHintEl) progressHintEl.style.display = 'none';
 
     groupProgressListEl.innerHTML = gruposConSeleccion.map(([key, group]) => {
         const total = totalPorGrupo(key);
