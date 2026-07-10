@@ -5,6 +5,7 @@ import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, se
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
 import { WHOLESALE_CODE } from './wholesale-config.js';
+import { WHOLESALE_TIER_GROUPS, getTierPrice, getBaseTierPrice } from './wholesale-tiers.js';
 
 // *** CONFIGURACIÓN DE FIREBASE ***
 const firebaseConfig = {
@@ -74,7 +75,70 @@ let currentFilteredProducts = [];
 let activePromotions = new Map();
 let globalPromotion = null; // Promoción global activa (ej: Black Friday)
 let itemToDelete = null;
-let isWholesaleActive = window.location.pathname.includes('mayor');
+const isMayorPage = window.location.pathname.includes('mayor');
+
+function checkWholesaleUnlock() {
+    if (!isMayorPage) return false;
+    const params = new URLSearchParams(window.location.search);
+    const codeParam = (params.get('code') || '').trim().toUpperCase();
+    if (codeParam && codeParam === WHOLESALE_CODE) {
+        localStorage.setItem('wholesaleUnlocked', 'true');
+        return true;
+    }
+    return localStorage.getItem('wholesaleUnlocked') === 'true';
+}
+
+let isWholesaleActive = checkWholesaleUnlock();
+
+if (isMayorPage && isWholesaleActive) {
+    document.body.classList.remove('mayor-locked');
+}
+
+function unlockWholesale() {
+    isWholesaleActive = true;
+    localStorage.setItem('wholesaleUnlocked', 'true');
+    document.body.classList.add('wholesale-active');
+    document.body.classList.remove('mayor-locked');
+    recalculateWholesaleTierPricing();
+    if (typeof applyFiltersAndRender === 'function') applyFiltersAndRender();
+}
+
+// Devuelve el precio de mostrador (vitrina) al por mayor: si el producto pertenece
+// a un grupo con tabla de precios por volumen, usa el precio base (1 unidad);
+// si no, usa el campo precioMayor fijo del producto.
+function getEffectiveWholesalePrice(product) {
+    const grupo = product?.grupoMayorista;
+    if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
+        return getBaseTierPrice(grupo) || 0;
+    }
+    return parseFloat(product?.precioMayor) || 0;
+}
+
+// Recalcula el precio por unidad de cada ítem del carrito que pertenezca a un
+// grupo con precio por volumen, según la cantidad total acumulada de ese grupo.
+function recalculateWholesaleTierPricing() {
+    if (!isWholesaleActive || cart.length === 0) return;
+    // Solo ítems agregados en modo mayorista (el carrito se comparte con index.html vía localStorage)
+    const itemsMayoristas = cart.filter(item => (item.cartItemId || '').endsWith('-MAYOR'));
+    const totalesPorGrupo = new Map();
+    itemsMayoristas.forEach(item => {
+        const product = productsMap.get(item.id);
+        const grupo = product?.grupoMayorista;
+        if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
+            totalesPorGrupo.set(grupo, (totalesPorGrupo.get(grupo) || 0) + item.cantidad);
+        }
+    });
+    itemsMayoristas.forEach(item => {
+        const product = productsMap.get(item.id);
+        const grupo = product?.grupoMayorista;
+        if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
+            const totalGrupo = totalesPorGrupo.get(grupo) || item.cantidad;
+            const nuevoPrecio = getTierPrice(grupo, totalGrupo);
+            item.precio = nuevoPrecio;
+            item.total = item.cantidad * nuevoPrecio;
+        }
+    });
+}
 
 let categoriesMap = new Map();
 
@@ -493,7 +557,7 @@ function applyFiltersAndRender() {
 
     // En modo mayorista, excluir productos sin precio al por mayor
     if (isWholesaleActive) {
-        filtered = filtered.filter(p => parseFloat(p.precioMayor) > 0);
+        filtered = filtered.filter(p => getEffectiveWholesalePrice(p) > 0);
     }
 
     // 1. En la tienda pública solo se muestran productos con stock disponible
@@ -544,7 +608,7 @@ function applyFiltersAndRender() {
     // 3.1 Filtro por Rango de Precio
     filtered = filtered.filter(p => {
         const { precioFinal } = getPromoPrice(p);
-        const price = isWholesaleActive ? (parseFloat(p.precioMayor) || 0) : precioFinal;
+        const price = isWholesaleActive ? getEffectiveWholesalePrice(p) : precioFinal;
         return price >= advancedFilters.priceMin && price <= advancedFilters.priceMax;
     });
 
@@ -599,15 +663,15 @@ function sortProducts(products, sortBy) {
     switch (sortBy) {
         case 'price-asc':
             ordered = sorted.sort((a, b) => {
-                const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : getPromoPrice(a).precioFinal;
-                const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : getPromoPrice(b).precioFinal;
+                const priceA = isWholesaleActive ? getEffectiveWholesalePrice(a) : getPromoPrice(a).precioFinal;
+                const priceB = isWholesaleActive ? getEffectiveWholesalePrice(b) : getPromoPrice(b).precioFinal;
                 return priceA - priceB;
             });
             break;
         case 'price-desc':
             ordered = sorted.sort((a, b) => {
-                const priceA = isWholesaleActive ? (parseFloat(a.precioMayor) || 0) : getPromoPrice(a).precioFinal;
-                const priceB = isWholesaleActive ? (parseFloat(b.precioMayor) || 0) : getPromoPrice(b).precioFinal;
+                const priceA = isWholesaleActive ? getEffectiveWholesalePrice(a) : getPromoPrice(a).precioFinal;
+                const priceB = isWholesaleActive ? getEffectiveWholesalePrice(b) : getPromoPrice(b).precioFinal;
                 return priceB - priceA;
             });
             break;
@@ -673,7 +737,7 @@ function renderProducts(products) {
         const stockTotal = (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
         const isAgotado = stockTotal <= 0;
         const { precioFinal, tienePromo, precioOriginal } = getPromoPrice(product);
-        const precioMostrado = isWholesaleActive ? (parseFloat(product.precioMayor) || 0) : precioFinal;
+        const precioMostrado = isWholesaleActive ? getEffectiveWholesalePrice(product) : precioFinal;
         const descuentoPct = (tienePromo && precioOriginal > 0) ? Math.round((1 - precioFinal / precioOriginal) * 100) : 0;
 
         // Colores y tallas CON STOCK (disponibles para comprar)
@@ -758,6 +822,7 @@ function renderProducts(products) {
                     <div class="card-bottom">
                         <div class="price-detal-card">
                             ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
+                            ${(isWholesaleActive && product.grupoMayorista) ? `<small class="d-block text-muted" style="font-size:0.68rem;">Desde, baja por cantidad</small>` : ''}
                             ${formatoMoneda.format(precioMostrado)}
                         </div>
                         ${!isAgotado ? '<button class="btn-add-card" type="button">Agregar</button>' : ''}
@@ -1554,9 +1619,9 @@ function openProductModal(productId) {
     const product = productsMap.get(productId);
     if (!product) return;
 
-    const precioMayorNum = parseFloat(product.precioMayor) || 0;
+    const precioMayorNum = getEffectiveWholesalePrice(product);
     const isSoloDetal = isWholesaleActive && precioMayorNum === 0;
-    
+
     if (isSoloDetal) {
         showToast('Este producto solo está disponible para venta al detal', 'warning');
         return;
@@ -2095,6 +2160,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`✅ ${allProducts.length} productos cargados correctamente`);
         loadAvailableColors();
         applyFiltersAndRender();
+        recalculateWholesaleTierPricing(); // productos ya disponibles: recalcular precios por volumen
         renderCart(); // re-validate cart stock when products change
     }, (error) => {
         console.error("❌ Error al cargar productos:", error);
@@ -2178,7 +2244,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const precioMayorNum = parseFloat(product.precioMayor) || 0;
+        const precioMayorNum = getEffectiveWholesalePrice(product);
         if (isWholesaleActive && precioMayorNum === 0) {
             showToast('Este producto es solo para venta al detal', 'warning');
             return;
@@ -2217,9 +2283,11 @@ document.addEventListener('DOMContentLoaded', () => {
             analytics.trackAddToCart(newCartItem);
         }
 
+        recalculateWholesaleTierPricing();
+
         showToast(`${product.nombre} agregado al carrito`, 'success');
         renderCart();
-        saveCart(); 
+        saveCart();
         
         const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
         modal.hide();
@@ -2235,6 +2303,7 @@ document.addEventListener('DOMContentLoaded', () => {
             analytics.trackRemoveFromCart(deletedItem);
 
             cart.splice(itemIndex, 1);
+            recalculateWholesaleTierPricing();
             saveCart(); // Guardar ANTES de renderizar
             renderCart();
             showToast('Producto eliminado del carrito', 'success');
@@ -3484,26 +3553,18 @@ document.addEventListener('DOMContentLoaded', () => {
         wholesaleForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const input = document.getElementById('wholesale-code');
+            const errorEl = document.getElementById('wholesale-gate-error');
             const code = input.value.trim().toUpperCase();
 
             if (code === WHOLESALE_CODE) {
-                isWholesaleActive = true;
-                document.body.classList.add('wholesale-active');
-                showToast('¡Modo mayorista activado!', 'success');
-                input.value = 'MODO MAYORISTA ACTIVO';
-                input.disabled = true;
-                e.target.querySelector('button').disabled = true;
+                if (errorEl) errorEl.style.display = 'none';
+                unlockWholesale();
+                showToast('¡Código correcto! Bienvenida al catálogo mayorista', 'success');
 
                 // 📊 Tracking: Modo mayorista activado
                 analytics.trackWholesaleActivation();
-
-                applyFiltersAndRender();
-
-                if (cart.length > 0) {
-                    showToast('Vacía tu carrito para agregar productos con precio mayorista', 'warning');
-                }
-
             } else {
+                if (errorEl) errorEl.style.display = 'block';
                 showToast('Código incorrecto', 'error');
             }
         });
