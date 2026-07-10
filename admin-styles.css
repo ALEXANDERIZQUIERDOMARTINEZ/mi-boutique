@@ -3042,6 +3042,7 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
 .fin2-skpi-icon--purple { background: rgba(168,85,247,0.1);  color: #a855f7; }
 .fin2-skpi-icon--amber  { background: rgba(245,158,11,0.1);  color: #f59e0b; }
 .fin2-skpi-icon--green  { background: rgba(16,185,129,0.1);  color: #10b981; }
+.fin2-skpi-icon--pink   { background: rgba(219,39,119,0.1);  color: #db2777; }
 .fin2-skpi-label {
   font-size: 0.73rem;
   color: var(--text-tertiary);
