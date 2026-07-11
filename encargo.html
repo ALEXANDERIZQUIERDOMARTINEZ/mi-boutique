@@ -94,59 +94,6 @@
   .encargo-topbar .wtiers-toggle {
     margin-bottom: 0;
   }
-  /* ── Progreso hacia precio mayorista ─────────────────────────────── */
-  .encargo-progress-wrap {
-    max-width: 900px;
-    margin: 14px auto 0;
-    padding: 0 20px;
-  }
-  .encargo-progress-card {
-    background: #fff;
-    border: 1px solid var(--color-borde);
-    border-radius: var(--radio-md);
-    padding: 14px 16px;
-    box-shadow: var(--sombra-sm);
-  }
-  .encargo-progress-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 10px;
-    gap: 10px;
-  }
-  .encargo-progress-level {
-    font-size: 0.92rem;
-    font-weight: 800;
-    color: var(--color-texto);
-  }
-  .encargo-progress-next {
-    font-size: 0.74rem;
-    color: var(--color-texto-secundario);
-    font-weight: 500;
-    white-space: nowrap;
-  }
-  .encargo-progress-track {
-    background: var(--color-fondo-secundario);
-    border-radius: 999px;
-    height: 8px;
-    overflow: hidden;
-  }
-  .encargo-progress-fill {
-    background: linear-gradient(90deg, var(--color-primario), var(--color-primario-oscuro));
-    height: 100%;
-    width: 0%;
-    border-radius: 999px;
-    transition: width 0.4s ease;
-  }
-  .encargo-progress-fill.is-unlocked {
-    background: linear-gradient(90deg, #2e7d32, #66bb6a);
-  }
-  .encargo-progress-count {
-    margin-top: 10px;
-    font-size: 0.74rem;
-    color: var(--color-texto-secundario);
-    text-align: center;
-  }
 
   /* ── Grilla de prendas ────────────────────────────────────────── */
   .encargo-grid {
@@ -489,51 +436,6 @@
     color: var(--color-primario-oscuro);
     font-size: 1.1rem;
   }
-  .encargo-code-block {
-    text-align: center;
-    display: none;
-    margin-bottom: 16px;
-    background: linear-gradient(135deg, #fff, var(--color-primario-claro));
-    border: 1.5px dashed var(--color-primario-hover);
-    border-radius: var(--radio-md);
-    padding: 16px;
-  }
-  .encargo-code-block.is-unlocked {
-    display: block;
-  }
-  .encargo-code-block h2 {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--color-texto);
-    margin-bottom: 4px;
-  }
-  .encargo-code-block p {
-    font-size: 0.78rem;
-    color: var(--color-texto-secundario);
-    margin-bottom: 12px;
-  }
-  .encargo-code-value {
-    display: inline-block;
-    background: #fff;
-    color: var(--color-primario-oscuro);
-    font-weight: 800;
-    letter-spacing: 2px;
-    font-size: 1.05rem;
-    padding: 8px 18px;
-    border-radius: var(--radio-sm);
-    margin-bottom: 10px;
-    box-shadow: var(--sombra-sm);
-  }
-  .encargo-code-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 2px;
-  }
-  .encargo-code-actions .btn {
-    font-size: 0.82rem;
-  }
   .encargo-obs-label {
     font-size: 0.82rem;
     font-weight: 600;
@@ -586,13 +488,13 @@
         <h1>Prendas Bajo Encargo</h1>
         <div class="encargo-topbar-facts">
           <span class="encargo-fact"><i class="bi bi-truck"></i> Entrega aprox. <strong id="delivery-date">…</strong></span>
-          <span class="encargo-fact"><i class="bi bi-tag"></i> Mínimo 2 por referencia</span>
+          <span class="encargo-fact"><i class="bi bi-tag"></i> Mínimo 6 por referencia</span>
           <span class="encargo-fact"><i class="bi bi-graph-down-arrow"></i> Precio baja por cantidad</span>
         </div>
       </div>
       <div class="encargo-topbar-rule">
         <i class="bi bi-info-circle-fill"></i>
-        <span>Pide mínimo <strong>2 unidades por referencia</strong>. Al llegar a <strong>6 unidades en total</strong> (puedes mezclar referencias) desbloqueas el precio al por mayor.</span>
+        <span>El pedido mínimo es de <strong>6 unidades por cada referencia</strong> (puedes combinar varios colores). Mientras más compres de una misma prenda, más baja el precio por unidad.</span>
       </div>
       <div class="wtiers-toggle">
         <button type="button" id="btn-toggle-tiers"><i class="bi bi-graph-down-arrow"></i><span class="wtiers-btn-label">Ver tabla de precios</span></button>
@@ -606,20 +508,17 @@
             <div class="wpolicy-section">
               <h5>💖 Prendas bajo pedido</h5>
               <ul>
-                <li>El pedido mínimo es de 2 prendas por cada referencia.</li>
-                <li>Para acceder al precio al por mayor, el pedido total debe ser de mínimo 6 prendas.</li>
+                <li>El pedido mínimo es de 6 prendas por cada referencia.</li>
+                <li>Puedes combinar varios colores de esa misma referencia para completar las 6.</li>
+                <li>Si compras 12, 24 o más de una misma prenda, el precio por unidad baja aún más.</li>
               </ul>
-              <p class="wpolicy-example">Ejemplo: puedes pedir 2 prendas de una referencia, 2 de otra y 2 de otra, para completar las 6 prendas mínimas.</p>
+              <p class="wpolicy-example">Ejemplo: 6 unidades de "Body Fresita" — puedes combinar colores (2 blancas, 2 rosadas, 2 amarillas) y ya tienen precio al por mayor.</p>
             </div>
           </div>
         </div>
       </div>
     </div>
   </section>
-
-  <div class="encargo-progress-wrap">
-    <div id="group-progress-list"></div>
-  </div>
 
   <div class="encargo-empty" id="encargo-empty" style="display:none;">
     <i class="bi bi-hourglass-split" style="font-size: 2.2rem; opacity: 0.4;"></i>
@@ -648,16 +547,6 @@
   </button>
   <div class="encargo-finalize-inner">
     <div class="encargo-summary" id="order-summary"></div>
-    <div class="encargo-code-block" id="code-block">
-      <h2><i class="bi bi-unlock-fill"></i> ¡Código mayorista desbloqueado!</h2>
-      <p>Lo ganaste por llegar a 6 unidades de un mismo tipo de prenda.</p>
-      <div class="encargo-code-value" id="code-value">MISHELLMAYOR</div>
-      <div class="encargo-code-actions">
-        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-copy-code">
-          <i class="bi bi-clipboard"></i> Copiar código
-        </button>
-      </div>
-    </div>
     <label class="encargo-obs-label" for="encargo-observaciones">Observaciones (opcional)</label>
     <textarea class="form-control form-control-sm" id="encargo-observaciones" rows="2" placeholder="Ej: Para evento el 20, entrega en Montería..."></textarea>
     <button type="button" class="btn btn-encargo-send" id="btn-send-whatsapp">
@@ -679,7 +568,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
-<script type="module" src="encargo.js?v=2.1.0"></script>
+<script type="module" src="encargo.js?v=2.2.0"></script>
 
 </body>
 </html>
