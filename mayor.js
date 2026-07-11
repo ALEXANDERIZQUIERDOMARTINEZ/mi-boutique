@@ -143,7 +143,11 @@ function getPrecioInfo(p) {
 }
 
 // Precio de mostrador: si no tiene tabla de escalones, usa el precio fijo al por mayor.
+// precioMayor en 0 (o sin configurar) desde el admin significa "no se vende al por
+// mayor" — aunque su categoría tenga una tabla de escalones detectada automáticamente,
+// esa prenda no debe aparecer ni cotizarse al por mayor.
 function getPrecioUnitario(p) {
+    if ((parseFloat(p.precioMayor) || 0) <= 0) return 0;
     const info = getPrecioInfo(p);
     if (info) return info.precio;
     return parseFloat(p.precioMayor) || 0;
