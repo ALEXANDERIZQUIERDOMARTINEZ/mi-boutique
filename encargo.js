@@ -325,7 +325,10 @@ if (gridEl) {
         if (colorInput) {
             const filas = detalleColores.get(colorInput.dataset.id);
             const idx = parseInt(colorInput.dataset.idx, 10);
-            if (filas && filas[idx]) filas[idx].color = colorInput.value;
+            if (filas && filas[idx]) {
+                filas[idx].color = colorInput.value;
+                renderOrderSummary();
+            }
             return;
         }
         const qtyInput = e.target.closest('.encargo-color-qty');
