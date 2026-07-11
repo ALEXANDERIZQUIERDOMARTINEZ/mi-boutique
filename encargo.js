@@ -168,7 +168,11 @@ function renderOrderSummary() {
         }).join('');
         return `
             <div class="encargo-summary-group">
-                <div class="encargo-summary-group-name"><span>${p.nombre}</span><span class="encargo-summary-group-unit">${formatoMoneda.format(precioUnitario)} c/u</span></div>
+                <div class="encargo-summary-group-name">
+                    <span>${p.nombre}</span>
+                    <span class="encargo-summary-group-unit">${formatoMoneda.format(precioUnitario)} c/u</span>
+                    <button type="button" class="encargo-summary-remove" data-id="${p.id}" aria-label="Quitar ${p.nombre} del pedido"><i class="bi bi-trash"></i></button>
+                </div>
                 ${filasHtml}
             </div>
         `;
@@ -459,6 +463,18 @@ if (gridEl) {
             qtyInput.value = val;
             actualizarPreciosEnVivo();
         }
+    });
+}
+
+if (orderSummaryEl) {
+    orderSummaryEl.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.encargo-summary-remove');
+        if (!removeBtn) return;
+        const id = removeBtn.dataset.id;
+        detalleColores.delete(id);
+        tarjetasColapsadas.delete(id);
+        renderProducts();
+        updateProgress();
     });
 }
 
