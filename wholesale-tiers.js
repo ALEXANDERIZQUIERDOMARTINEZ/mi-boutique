@@ -66,6 +66,16 @@ export const WHOLESALE_TIER_GROUPS = {
             { min: 50, precio: 30000 },
             { min: 100, precio: 29000 }
         ]
+    },
+    vestidosLargosElaborados: {
+        label: 'Vestidos largos Elaborados',
+        tiers: [
+            { min: 1, precio: 75000 },
+            { min: 6, precio: 38000 },
+            { min: 12, precio: 37000 },
+            { min: 24, precio: 36000 },
+            { min: 50, precio: 35000 }
+        ]
     }
 };
 
@@ -139,6 +149,7 @@ export function detectGroupFromCategoryName(nombreCategoria) {
     if (norm.includes('conjunto')) return 'vestidosLargos';
     if (norm.includes('vestido') && norm.includes('corto') && norm.includes('elabora')) return 'vestidosCortosElaborados';
     if (norm.includes('vestido') && norm.includes('corto')) return 'vestidosCortos';
+    if (norm.includes('vestido') && norm.includes('largo') && norm.includes('elabora')) return 'vestidosLargosElaborados';
     if (norm.includes('vestido') && norm.includes('largo')) return 'vestidosLargos';
     return '';
 }
