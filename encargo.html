@@ -397,6 +397,7 @@
   }
   .encargo-summary-group-name {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 8px;
     font-size: 0.86rem;
@@ -404,11 +405,34 @@
     color: var(--color-texto);
     margin-bottom: 4px;
   }
+  .encargo-summary-group-name > span:first-child {
+    flex: 1;
+  }
   .encargo-summary-group-unit {
     font-weight: 600;
     color: var(--color-primario-oscuro);
     font-size: 0.8rem;
     white-space: nowrap;
+  }
+  .encargo-summary-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-texto-secundario);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .encargo-summary-remove:hover {
+    background: #fdeaea;
+    color: #d33;
   }
   .encargo-summary-row {
     display: flex;
