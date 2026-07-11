@@ -45,6 +45,7 @@ const tiersToggleBtn = document.getElementById('btn-toggle-tiers');
 const tiersTablesEl = document.getElementById('tiers-tables');
 const policyToggleBtn = document.getElementById('btn-toggle-policy');
 const policyPanelEl = document.getElementById('policy-panel');
+const orderProgressEl = document.getElementById('mayor-order-progress');
 
 function showToast(message, type = 'success') {
     const liveToastEl = document.getElementById('liveToast');
@@ -115,31 +116,48 @@ function getStockCombo(p, talla, color) {
     }, 0);
 }
 
-// ── Cantidades / precios (misma lógica de escalones que encargo.html) ──
+// ── Cantidades / precios ─────────────────────────────────────────────────
+// Política de entrega inmediata: el mínimo es de 6 PRENDAS SURTIDAS en total,
+// sin necesidad de que sean de la misma referencia — a diferencia de
+// encargo.html, aquí no existe un mínimo por referencia individual.
 function getCantidadProducto(id) {
     const filas = detalleFilas.get(id) || [];
     return filas.reduce((sum, f) => sum + (parseInt(f.cantidad, 10) || 0), 0);
 }
 
-// Solo cuenta hacia totales/precio/pedido si cumple el mínimo de 6 por prenda.
-function getCantidadValida(id) {
-    const total = getCantidadProducto(id);
-    return total >= MIN_POR_PRENDA ? total : 0;
+// Cuánto se ha elegido en TODO el pedido, sumando todas las prendas/categorías.
+function getTotalGeneral() {
+    let total = 0;
+    allProducts.forEach(p => { total += getCantidadProducto(p.id); });
+    return total;
+}
+
+// El pedido cumple el mínimo cuando el total combinado llega a 6, sin importar
+// cuántas referencias distintas lo componen.
+function ordenAlcanzaMinimo() {
+    return getTotalGeneral() >= MIN_POR_PRENDA;
 }
 
 function totalPorGrupo(grupo) {
     let total = 0;
     allProducts.forEach(p => {
-        if (resolveWholesaleGroup(p, categoriesMap) === grupo) total += getCantidadValida(p.id);
+        if (resolveWholesaleGroup(p, categoriesMap) === grupo) total += getCantidadProducto(p.id);
     });
     return total;
 }
 
+// Info de precio de una prenda según cuántas hay de su categoría (totalPropio) y
+// cuántas hay en TODO el pedido mezclando categorías (totalMixto). Mezclar
+// referencias solo alcanza para desbloquear el primer escalón (6X); para subir a
+// escalones más altos (12X, 24X...) hace falta esa cantidad dentro de la misma
+// categoría. Antes de elegir nada se asume el mínimo (vitrina), para mostrar de
+// una vez el precio al que se puede llegar surtiendo 6 prendas.
 function getPrecioInfo(p) {
     const grupo = resolveWholesaleGroup(p, categoriesMap);
     if (!grupo || !WHOLESALE_TIER_GROUPS[grupo]) return null;
-    const totalPropio = Math.max(MIN_POR_PRENDA, totalPorGrupo(grupo));
-    return getHybridTierInfo(grupo, totalPropio, totalPropio);
+    const totalPropio = totalPorGrupo(grupo);
+    const totalMixto = Math.max(MIN_POR_PRENDA, getTotalGeneral());
+    return getHybridTierInfo(grupo, totalPropio, totalMixto);
 }
 
 // Precio de mostrador: si no tiene tabla de escalones, usa el precio fijo al por mayor.
@@ -169,7 +187,7 @@ function buildTierHint(p) {
 function calcularTotalEstimado() {
     let total = 0;
     allProducts.forEach(p => {
-        const qty = getCantidadValida(p.id);
+        const qty = getCantidadProducto(p.id);
         if (qty > 0) total += getPrecioUnitario(p) * qty;
     });
     return total;
@@ -177,7 +195,7 @@ function calcularTotalEstimado() {
 
 function renderOrderSummary() {
     if (!orderSummaryEl) return;
-    const productosConSeleccion = allProducts.filter(p => getCantidadValida(p.id) > 0);
+    const productosConSeleccion = allProducts.filter(p => getCantidadProducto(p.id) > 0);
     if (productosConSeleccion.length === 0) {
         orderSummaryEl.innerHTML = '<div class="mayor-summary-empty">Aún no has elegido ninguna prenda.</div>';
         return;
@@ -345,12 +363,11 @@ function renderProducts() {
             bodyExtra = `<button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-circle"></i> Elegir esta prenda</button>`;
         } else {
             const colapsada = tarjetasColapsadas.has(p.id);
-            const esValida = totalProducto >= MIN_POR_PRENDA;
             const tallas = getTallasConStock(p);
             const filasHtml = filas.map((f, idx) => renderFilaHtml(p, f, idx, tallas)).join('');
             bodyExtra = `
                 <button type="button" class="mayor-card-toggle" data-id="${p.id}">
-                    <span class="mayor-card-toggle-label${esValida ? '' : ' is-warning'}">${esValida ? `Total: ${totalProducto} unidades` : `Mínimo ${MIN_POR_PRENDA} unidades en total`}</span>
+                    <span class="mayor-card-toggle-label">${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}</span>
                     <i class="bi bi-chevron-${colapsada ? 'down' : 'up'} mayor-card-toggle-icon"></i>
                 </button>
                 <div class="mayor-colors-wrap"${colapsada ? ' style="display:none;"' : ''}>
@@ -397,19 +414,39 @@ function actualizarPreciosEnVivo() {
 
         const totalEl = card.querySelector('.mayor-card-toggle-label');
         if (totalEl) {
-            const esValida = totalProducto >= MIN_POR_PRENDA;
-            totalEl.textContent = esValida ? `Total: ${totalProducto} unidades` : `Mínimo ${MIN_POR_PRENDA} unidades en total`;
-            totalEl.classList.toggle('is-warning', !esValida);
+            totalEl.textContent = `${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}`;
         }
     });
 
     renderOrderSummary();
     if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
+    renderOrderProgress();
+}
+
+// Mensaje de avance hacia el mínimo de 6 prendas surtidas del pedido completo.
+function renderOrderProgress() {
+    if (!orderProgressEl) return;
+    const total = getTotalGeneral();
+    if (total === 0) {
+        orderProgressEl.style.display = 'none';
+        orderProgressEl.textContent = '';
+        return;
+    }
+    orderProgressEl.style.display = 'flex';
+    if (total >= MIN_POR_PRENDA) {
+        orderProgressEl.classList.add('is-complete');
+        orderProgressEl.innerHTML = `<i class="bi bi-check-circle-fill"></i> Mínimo alcanzado: llevas ${total} prendas surtidas.`;
+    } else {
+        orderProgressEl.classList.remove('is-complete');
+        const faltan = MIN_POR_PRENDA - total;
+        orderProgressEl.innerHTML = `<i class="bi bi-info-circle-fill"></i> Llevas ${total} de ${MIN_POR_PRENDA} prendas mínimas — te faltan ${faltan} (pueden ser de cualquier referencia).`;
+    }
 }
 
 function updateProgress() {
     renderOrderSummary();
     if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
+    renderOrderProgress();
     const hayAlgoSeleccionado = [...detalleFilas.values()].some(filas => filas.length > 0);
     if (finalizePanelEl) finalizePanelEl.classList.toggle('is-visible', hayAlgoSeleccionado);
 }
@@ -428,8 +465,7 @@ if (gridEl) {
                 showToast('Sin stock disponible para esta prenda', 'warning');
                 return;
             }
-            const cantidad = Math.min(MIN_POR_PRENDA, colores[0].stock);
-            detalleFilas.set(p.id, [{ talla, color: colores[0].color, cantidad }]);
+            detalleFilas.set(p.id, [{ talla, color: colores[0].color, cantidad: 1 }]);
             renderProducts();
             updateProgress();
             return;
@@ -573,11 +609,17 @@ if (finalizeToggleBtn) {
 
 if (waBtn) {
     waBtn.addEventListener('click', () => {
-        const productosConSeleccion = allProducts.filter(p => getCantidadValida(p.id) > 0);
-        if (productosConSeleccion.length === 0) {
-            showToast(`Elige al menos ${MIN_POR_PRENDA} unidades de una prenda primero`, 'warning');
+        if (!ordenAlcanzaMinimo()) {
+            const faltan = MIN_POR_PRENDA - getTotalGeneral();
+            showToast(
+                faltan >= MIN_POR_PRENDA
+                    ? `Elige al menos ${MIN_POR_PRENDA} prendas surtidas (pueden ser de referencias distintas)`
+                    : `Te faltan ${faltan} prenda${faltan === 1 ? '' : 's'} para el mínimo de ${MIN_POR_PRENDA} surtidas`,
+                'warning'
+            );
             return;
         }
+        const productosConSeleccion = allProducts.filter(p => getCantidadProducto(p.id) > 0);
         const lineas = [];
         productosConSeleccion.forEach(p => {
             const filas = detalleFilas.get(p.id) || [];

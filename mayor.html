@@ -392,6 +392,27 @@
   .mayor-finalize-panel.is-collapsed .mayor-finalize-inner {
     display: none;
   }
+  .mayor-order-progress {
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #9a6400;
+    background: #fff7e6;
+    border: 1px solid #f3dca3;
+    border-radius: var(--radio-sm);
+    padding: 9px 12px;
+    margin-bottom: 12px;
+    line-height: 1.4;
+  }
+  .mayor-order-progress i {
+    flex-shrink: 0;
+  }
+  .mayor-order-progress.is-complete {
+    color: #1e7e34;
+    background: #eaf7ed;
+    border-color: #b9e4c4;
+  }
   .mayor-summary {
     border: 1px solid var(--color-borde);
     border-radius: var(--radio-md);
@@ -548,16 +569,16 @@
   <section class="mayor-topbar">
     <div class="mayor-topbar-inner">
       <div class="mayor-topbar-head">
-        <h1>Prendas Disponibles al Por Mayor</h1>
+        <h1>Prendas de Entrega Inmediata</h1>
         <div class="mayor-topbar-facts">
           <span class="mayor-fact"><i class="bi bi-box-seam"></i> Stock real disponible</span>
-          <span class="mayor-fact"><i class="bi bi-tag"></i> Mínimo 6 por referencia</span>
+          <span class="mayor-fact"><i class="bi bi-tag"></i> 6 prendas surtidas</span>
           <span class="mayor-fact"><i class="bi bi-graph-down-arrow"></i> Precio baja por cantidad</span>
         </div>
       </div>
       <div class="mayor-topbar-rule">
         <i class="bi bi-info-circle-fill"></i>
-        <span>El pedido mínimo es de <strong>6 unidades por cada referencia</strong> (puedes combinar varias tallas y colores disponibles). Mientras más compres de una misma prenda, más baja el precio por unidad.</span>
+        <span>💖 Puedes llevar <strong>6 prendas surtidas</strong>, sin necesidad de que sean de la misma referencia. ¡Quedamos atentos a sus pedidos! 🛍️💕</span>
       </div>
       <div class="wtiers-toggle">
         <button type="button" id="btn-toggle-tiers"><i class="bi bi-graph-down-arrow"></i><span class="wtiers-btn-label">Tabla de precios</span></button>
@@ -569,14 +590,13 @@
           <div class="wpolicy-card-header">📌 Condiciones para pedidos al por mayor</div>
           <div class="wpolicy-card-body">
             <div class="wpolicy-section">
-              <h5>💖 Prendas disponibles en stock</h5>
+              <h5>💖 Prendas de entrega inmediata</h5>
               <ul>
-                <li>El pedido mínimo es de 6 prendas por cada referencia.</li>
-                <li>Puedes combinar varias tallas y colores de esa misma referencia para completar las 6.</li>
+                <li>Puedes llevar 6 prendas surtidas, sin necesidad de que sean de la misma referencia.</li>
                 <li>Solo puedes pedir hasta el stock real disponible de cada talla/color.</li>
                 <li>Si compras 12, 24 o más de una misma prenda, el precio por unidad baja aún más.</li>
               </ul>
-              <p class="wpolicy-example">Ejemplo: 6 unidades de "Body Fresita" — puedes combinar tallas y colores (2 S blancas, 2 M rosadas, 2 L amarillas) y ya tienen precio al por mayor.</p>
+              <p class="wpolicy-example">¡Quedamos atentos a sus pedidos! 🛍️💕</p>
             </div>
           </div>
         </div>
@@ -613,6 +633,7 @@
     <i class="bi bi-chevron-up" id="mayor-finalize-toggle-icon"></i>
   </button>
   <div class="mayor-finalize-inner">
+    <div class="mayor-order-progress" id="mayor-order-progress" style="display:none;"></div>
     <div class="mayor-summary" id="mayor-order-summary"></div>
     <label class="mayor-obs-label" for="mayor-observaciones">Observaciones (opcional)</label>
     <textarea class="form-control form-control-sm" id="mayor-observaciones" rows="2" placeholder="Ej: Recoger en tienda, entrega en Montería..."></textarea>
@@ -665,7 +686,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.1.0"></script>
+<script type="module" src="mayor.js?v=1.2.0"></script>
 
 </body>
 </html>
