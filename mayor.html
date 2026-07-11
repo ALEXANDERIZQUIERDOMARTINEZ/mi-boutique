@@ -39,6 +39,454 @@
   .wholesale-banner i {
     margin-right: 6px;
   }
+
+  /* ── Barra superior de información (políticas y facts) ─────────────── */
+  .mayor-topbar {
+    background: #fff;
+    border-bottom: 1px solid var(--color-borde);
+    padding: 16px 20px;
+  }
+  .mayor-topbar-inner {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .mayor-topbar-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px 20px;
+    margin-bottom: 10px;
+  }
+  .mayor-topbar-head h1 {
+    font-family: var(--fuente-principal);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-texto);
+    margin: 0;
+  }
+  .mayor-topbar-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+  }
+  .mayor-fact {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.84rem;
+    color: var(--color-texto);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .mayor-fact i {
+    color: var(--color-primario-oscuro);
+    font-size: 0.92rem;
+  }
+  .mayor-topbar-rule {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    background: #fff;
+    border: 1px solid var(--color-borde);
+    border-left: 4px solid var(--color-primario);
+    color: var(--color-texto);
+    border-radius: var(--radio-sm);
+    padding: 10px 13px;
+    font-size: 0.86rem;
+    font-weight: 500;
+    line-height: 1.55;
+    margin-bottom: 12px;
+  }
+  .mayor-topbar-rule i {
+    margin-top: 2px;
+    flex-shrink: 0;
+    color: var(--color-primario-oscuro);
+    font-size: 1rem;
+  }
+  .mayor-topbar-rule strong {
+    font-weight: 700;
+    color: var(--color-primario-oscuro);
+  }
+  .mayor-topbar .wtiers-toggle {
+    margin-bottom: 0;
+  }
+
+  /* ── Grilla de prendas ────────────────────────────────────────── */
+  .mayor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    max-width: 1900px;
+    margin: 0 auto;
+    padding: 24px 24px 44px;
+  }
+  @media (min-width: 480px) {
+    .mayor-grid {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 250px));
+      justify-content: center;
+    }
+  }
+  @media (min-width: 1200px) {
+    .mayor-grid { padding-left: 48px; padding-right: 48px; }
+  }
+  .mayor-card {
+    background: #fff;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  }
+  .mayor-card:hover {
+    box-shadow: var(--sombra-lg);
+    transform: translateY(-3px);
+  }
+  .mayor-card.is-selected {
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 1px var(--color-primario), var(--sombra-md);
+  }
+  .mayor-card-img {
+    aspect-ratio: 3/4;
+    background: var(--color-fondo-secundario);
+    overflow: hidden;
+    position: relative;
+  }
+  .mayor-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.45s ease;
+  }
+  .mayor-card:hover .mayor-card-img img {
+    transform: scale(1.045);
+  }
+  .mayor-card.is-selected .mayor-card-img::after {
+    content: "✓ Elegida";
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: var(--color-primario);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    border-radius: 999px;
+    box-shadow: var(--sombra-sm);
+  }
+  .mayor-card-body {
+    padding: 12px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .mayor-card-name {
+    font-size: 0.94rem;
+    font-weight: 600;
+    color: var(--color-texto);
+    margin: 0 0 5px;
+    line-height: 1.32;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .mayor-card-price {
+    font-size: 0.94rem;
+    font-weight: 700;
+    color: var(--color-texto);
+    margin-bottom: 10px;
+  }
+  .mayor-card-price .tier-hint {
+    display: block;
+    font-size: 0.76rem;
+    line-height: 1.35;
+    font-weight: 600;
+    color: var(--color-primario-oscuro);
+    margin-top: 3px;
+  }
+  .mayor-add-btn {
+    margin-top: auto;
+    width: 100%;
+    padding: 10px;
+    border: 1.5px solid var(--color-primario);
+    background: #fff;
+    color: var(--color-primario-oscuro);
+    font-size: 0.84rem;
+    font-weight: 600;
+    border-radius: var(--radio-sm);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .mayor-add-btn:hover {
+    background: var(--color-primario);
+    color: #fff;
+  }
+  .mayor-card-toggle {
+    margin-top: auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: var(--color-fondo-secundario);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-sm);
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .mayor-card-toggle:hover {
+    background: #f0eeee;
+  }
+  .mayor-card-toggle-label {
+    font-size: 0.8rem;
+    color: var(--color-texto-secundario);
+    font-weight: 600;
+    text-align: left;
+  }
+  .mayor-card-toggle-label.is-warning {
+    color: #c62828;
+  }
+  .mayor-card-toggle-icon {
+    color: var(--color-primario-oscuro);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+  .mayor-colors-wrap {
+    margin-top: 10px;
+  }
+  .mayor-colors-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .mayor-color-row {
+    display: grid;
+    grid-template-columns: 1fr 50px 26px;
+    gap: 5px;
+    align-items: center;
+  }
+  .mayor-color-row.has-talla {
+    grid-template-columns: 64px 1fr 50px 26px;
+  }
+  .mayor-talla-select,
+  .mayor-color-select,
+  .mayor-color-qty {
+    width: 100%;
+    font-size: 0.82rem;
+    padding: 7px 6px;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-sm);
+    background: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .mayor-color-qty {
+    padding: 6px 4px;
+    text-align: center;
+  }
+  .mayor-talla-select:focus,
+  .mayor-color-select:focus,
+  .mayor-color-qty:focus {
+    outline: none;
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 3px var(--color-primario-claro);
+  }
+  .mayor-color-remove {
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--color-borde);
+    border-radius: 6px;
+    background: #fff;
+    color: #c62828;
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .mayor-color-remove:hover {
+    background: #fdecea;
+  }
+  .mayor-add-color {
+    background: none;
+    border: none;
+    color: var(--color-primario-oscuro);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 6px 0 0;
+    cursor: pointer;
+    text-align: left;
+  }
+  .mayor-add-color:hover {
+    text-decoration: underline;
+  }
+  .mayor-empty {
+    max-width: 480px;
+    margin: 56px auto;
+    text-align: center;
+    padding: 0 16px;
+    color: var(--color-texto-secundario);
+  }
+
+  /* ── Panel inferior de cierre de pedido ──────────────────────────── */
+  .mayor-finalize-panel {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid var(--color-borde);
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.08);
+    padding: 12px 16px;
+    display: none;
+    z-index: 20;
+  }
+  .mayor-finalize-panel.is-visible {
+    display: block;
+    animation: mayorSlideUp 0.35s ease;
+  }
+  @keyframes mayorSlideUp {
+    from { transform: translateY(16px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .mayor-finalize-handle {
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: none;
+    border: none;
+    padding: 6px 2px;
+    cursor: pointer;
+  }
+  .mayor-finalize-handle-label {
+    font-size: 0.85rem;
+    color: var(--color-texto-secundario);
+    font-weight: 500;
+  }
+  .mayor-finalize-handle-label strong {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-texto);
+    margin-left: 5px;
+  }
+  #mayor-finalize-toggle-icon {
+    color: var(--color-primario-oscuro);
+    font-size: 1rem;
+    transition: transform 0.25s ease;
+  }
+  .mayor-finalize-panel:not(.is-collapsed) #mayor-finalize-toggle-icon {
+    transform: rotate(180deg);
+  }
+  .mayor-finalize-inner {
+    max-width: 560px;
+    margin: 0 auto;
+    padding-top: 14px;
+  }
+  .mayor-finalize-panel.is-collapsed .mayor-finalize-inner {
+    display: none;
+  }
+  .mayor-summary {
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-md);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    max-height: 260px;
+    overflow-y: auto;
+    background: var(--color-fondo-secundario);
+  }
+  .mayor-summary-empty {
+    font-size: 0.8rem;
+    color: var(--color-texto-secundario);
+    text-align: center;
+    padding: 8px 0;
+  }
+  .mayor-summary-group {
+    padding: 9px 0;
+    border-bottom: 1px solid var(--color-borde);
+  }
+  .mayor-summary-group:first-of-type {
+    padding-top: 2px;
+  }
+  .mayor-summary-group:last-of-type {
+    border-bottom: none;
+  }
+  .mayor-summary-group-name {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: var(--color-texto);
+    margin-bottom: 4px;
+  }
+  .mayor-summary-group-unit {
+    font-weight: 600;
+    color: var(--color-primario-oscuro);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .mayor-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: var(--color-texto-secundario);
+    padding: 2px 0 2px 10px;
+  }
+  .mayor-summary-row strong {
+    color: var(--color-texto);
+    font-weight: 600;
+  }
+  .mayor-summary-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--color-texto);
+    padding-top: 10px;
+    margin-top: 8px;
+    border-top: 1.5px solid var(--color-texto);
+  }
+  .mayor-summary-total strong {
+    color: var(--color-primario-oscuro);
+    font-size: 1.1rem;
+  }
+  .mayor-obs-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-texto);
+    margin-bottom: 6px;
+    display: block;
+  }
+  #mayor-observaciones {
+    resize: none;
+    font-size: 0.85rem;
+  }
+  .btn-mayor-send {
+    width: 100%;
+    margin-top: 14px;
+    padding: 11px;
+    background: var(--color-texto);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radio-sm);
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .btn-mayor-send:hover {
+    background: #000;
+    color: #fff;
+  }
+  .btn-mayor-send:active {
+    transform: scale(0.98);
+  }
 </style>
 </head>
 <body class="wholesale-active">
@@ -80,16 +528,12 @@
             <!-- Centro: Marca -->
             <a class="header-brand" href="mayor.html">MISHELL'ES BOUTIQUE</a>
 
-            <!-- Derecha: Buscador + Carrito -->
+            <!-- Derecha: Buscador -->
             <div class="header-right d-none d-lg-flex">
                 <div class="search-box">
                     <input type="text" class="form-control" id="search-input" placeholder="Buscar...">
                     <i class="bi bi-search search-icon"></i>
                 </div>
-                <a href="#" class="header-icon" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
-                    <i class="bi bi-bag"></i>
-                    <span class="cart-counter" id="cart-badge-desktop">0</span>
-                </a>
             </div>
 
             <!-- Mobile: placeholder derecho para centrar marca -->
@@ -99,38 +543,59 @@
 </nav>
 </header>
 
-<div class="wtiers-toggle mt-2">
-  <button type="button" id="btn-toggle-tiers"><i class="bi bi-graph-down-arrow"></i><span class="wtiers-btn-label">Tabla de precios</span></button>
-  <button type="button" id="btn-toggle-policy"><i class="bi bi-info-circle"></i><span class="wtiers-btn-label">Condiciones</span></button>
-</div>
-<div class="wtiers-tables" id="tiers-tables"></div>
-<div class="wpolicy-panel" id="policy-panel">
-  <div class="wpolicy-card">
-    <div class="wpolicy-card-header">📌 Condiciones para pedidos al por mayor</div>
-    <div class="wpolicy-card-body">
-      <div class="wpolicy-section">
-        <h5>💖 Prendas bajo pedido</h5>
-        <ul>
-          <li>El pedido mínimo es de 2 prendas por cada referencia.</li>
-          <li>Para acceder al precio al por mayor, el pedido total debe ser de mínimo 6 prendas.</li>
-        </ul>
-        <p class="wpolicy-example">Ejemplo: puedes pedir 2 prendas de una referencia, 2 de otra y 2 de otra, para completar las 6 prendas mínimas.</p>
+<main>
+
+  <section class="mayor-topbar">
+    <div class="mayor-topbar-inner">
+      <div class="mayor-topbar-head">
+        <h1>Prendas Disponibles al Por Mayor</h1>
+        <div class="mayor-topbar-facts">
+          <span class="mayor-fact"><i class="bi bi-box-seam"></i> Stock real disponible</span>
+          <span class="mayor-fact"><i class="bi bi-tag"></i> Mínimo 6 por referencia</span>
+          <span class="mayor-fact"><i class="bi bi-graph-down-arrow"></i> Precio baja por cantidad</span>
+        </div>
+      </div>
+      <div class="mayor-topbar-rule">
+        <i class="bi bi-info-circle-fill"></i>
+        <span>El pedido mínimo es de <strong>6 unidades por cada referencia</strong> (puedes combinar varias tallas y colores disponibles). Mientras más compres de una misma prenda, más baja el precio por unidad.</span>
+      </div>
+      <div class="wtiers-toggle">
+        <button type="button" id="btn-toggle-tiers"><i class="bi bi-graph-down-arrow"></i><span class="wtiers-btn-label">Tabla de precios</span></button>
+        <button type="button" id="btn-toggle-policy"><i class="bi bi-info-circle"></i><span class="wtiers-btn-label">Condiciones</span></button>
+      </div>
+      <div class="wtiers-tables" id="tiers-tables"></div>
+      <div class="wpolicy-panel" id="policy-panel">
+        <div class="wpolicy-card">
+          <div class="wpolicy-card-header">📌 Condiciones para pedidos al por mayor</div>
+          <div class="wpolicy-card-body">
+            <div class="wpolicy-section">
+              <h5>💖 Prendas disponibles en stock</h5>
+              <ul>
+                <li>El pedido mínimo es de 6 prendas por cada referencia.</li>
+                <li>Puedes combinar varias tallas y colores de esa misma referencia para completar las 6.</li>
+                <li>Solo puedes pedir hasta el stock real disponible de cada talla/color.</li>
+                <li>Si compras 12, 24 o más de una misma prenda, el precio por unidad baja aún más.</li>
+              </ul>
+              <p class="wpolicy-example">Ejemplo: 6 unidades de "Body Fresita" — puedes combinar tallas y colores (2 S blancas, 2 M rosadas, 2 L amarillas) y ya tienen precio al por mayor.</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+  </section>
+
+  <div class="mayor-empty" id="mayor-empty" style="display:none;">
+    <i class="bi bi-hourglass-split" style="font-size: 2.2rem; opacity: 0.4;"></i>
+    <p class="mt-3">Por ahora no hay prendas disponibles al por mayor. Vuelve pronto.</p>
   </div>
-</div>
 
-<main class="container-fluid px-0" id="main-content">
-
-<!-- Grid de productos -->
-<div class="container-fluid px-2 px-md-4">
-    <div class="row g-2 g-md-3" id="products-container">
-        <div class="col-12 text-center py-5" id="loading-products">
-            <div class="loading-spinner"></div>
-            <p class="mt-3 text-muted">Cargando productos</p>
-        </div>
+  <div class="mayor-grid" id="mayor-grid">
+    <div class="col-12 text-center py-5" style="grid-column: 1 / -1;">
+      <div class="loading-spinner"></div>
+      <p class="mt-3 text-muted">Cargando productos</p>
     </div>
-</div>
+  </div>
+
 </main>
 
 <footer class="footer-minimal">
@@ -140,6 +605,21 @@
 </div>
 </footer>
 
+<div class="mayor-finalize-panel is-collapsed" id="mayor-finalize-panel">
+  <button type="button" class="mayor-finalize-handle" id="btn-toggle-mayor-finalize">
+    <span class="mayor-finalize-handle-label">Total estimado: <strong id="mayor-total-estimado">$0</strong></span>
+    <i class="bi bi-chevron-up" id="mayor-finalize-toggle-icon"></i>
+  </button>
+  <div class="mayor-finalize-inner">
+    <div class="mayor-summary" id="mayor-order-summary"></div>
+    <label class="mayor-obs-label" for="mayor-observaciones">Observaciones (opcional)</label>
+    <textarea class="form-control form-control-sm" id="mayor-observaciones" rows="2" placeholder="Ej: Recoger en tienda, entrega en Montería..."></textarea>
+    <button type="button" class="btn btn-mayor-send" id="btn-send-mayor-whatsapp">
+      <i class="bi bi-whatsapp"></i> Enviar mi pedido al por mayor
+    </button>
+  </div>
+</div>
+
 <div class="nav-search-suggestions d-lg-none" id="nav-search-suggestions"></div>
 
 <nav class="mobile-bottom-nav d-lg-none">
@@ -148,10 +628,6 @@
 </button>
 <button class="nav-item" id="mobile-search-btn">
 <i class="bi bi-search"></i>
-</button>
-<button class="nav-item" id="mobile-cart-btn" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
-<i class="bi bi-bag"></i>
-<span class="cart-badge" id="cart-badge-mobile" style="display: none;">0</span>
 </button>
 <!-- Búsqueda inline (oculta por defecto) -->
 <div class="nav-inline-search" id="nav-inline-search">
@@ -183,302 +659,11 @@
   </div>
 </div>
 
-<div class="modal fade" id="productModal" tabindex="-1">
-<div class="modal-dialog modal-dialog-centered mpd">
-<div class="modal-content mpc">
-
-  <!-- Cerrar (flotante) -->
-  <button type="button" class="mp-close" data-bs-dismiss="modal" aria-label="Cerrar">
-    <i class="bi bi-x-lg"></i>
-  </button>
-
-  <div class="mp-grid">
-
-    <!-- Imagen + Galería -->
-    <div class="mp-img-col">
-      <div class="mp-gallery-wrapper">
-        <!-- Thumbnails verticales (izquierda) -->
-        <div class="mp-thumbs" id="modal-gallery-thumbs"></div>
-        <!-- Imagen principal -->
-        <div class="mp-main-img-wrapper">
-          <img src="" id="modal-product-image" class="modal-product-image" alt="Producto" loading="lazy">
-          <button class="mp-nav-arrow mp-nav-prev" id="swipe-prev" aria-label="Foto anterior" style="display:none">&#8249;</button>
-          <button class="mp-nav-arrow mp-nav-next" id="swipe-next" aria-label="Foto siguiente" style="display:none">&#8250;</button>
-          <div class="mp-color-dots" id="swipe-color-dots" style="display:none"></div>
-          <div class="mp-swipe-counter" id="swipe-counter" style="display:none"></div>
-          <button class="mp-zoom-btn" id="modal-zoom-btn" aria-label="Ver foto completa">
-            <i class="bi bi-arrows-fullscreen"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Info -->
-    <div class="mp-info-col">
-
-      <h2 class="mp-name" id="modal-product-name">Producto</h2>
-      <p id="modal-product-desc" class="mp-desc"></p>
-
-      <!-- Precio -->
-      <div class="mp-price-block">
-        <div class="price-detal-modal">
-          <span class="price-detal-old" id="modal-price-old" style="display:none;"></span>
-          <span class="price-detal" id="modal-price-detal">$0</span>
-        </div>
-      </div>
-
-      <div class="mp-divider"></div>
-
-      <input type="hidden" id="modal-product-id">
-      <input type="hidden" id="selected-talla">
-      <input type="hidden" id="selected-color">
-
-      <!-- Talla -->
-      <div class="mp-group" id="tallas-container">
-        <span class="mp-label">Talla</span>
-        <div id="tallas-buttons" class="size-color-buttons"></div>
-      </div>
-
-      <!-- Color -->
-      <div class="mp-group" id="colores-container">
-        <span class="mp-label">Color</span>
-        <div id="color-help-message" class="mp-color-help" style="display:none;">
-          Selecciona una talla primero
-        </div>
-        <div id="color-select-hint" class="color-select-hint">Selecciona un color para continuar</div>
-        <div id="colores-buttons" class="size-color-buttons"></div>
-      </div>
-
-      <!-- Cantidad + Stock inline -->
-      <div class="mp-qty-row">
-        <div class="mp-group mp-group--qty">
-          <span class="mp-label">Cantidad</span>
-          <div class="mp-qty">
-            <button class="mp-qty-btn" id="quantity-minus" type="button">−</button>
-            <input type="number" id="select-cantidad" value="1" min="1" readonly>
-            <button class="mp-qty-btn" id="quantity-plus" type="button">+</button>
-          </div>
-        </div>
-        <div class="mp-stock" id="stock-display">
-          <span id="stock-text">Selecciona talla y color</span>
-        </div>
-      </div>
-
-      <!-- Agregar al carrito -->
-      <button class="mp-btn-add" id="btn-add-cart" disabled>
-        Agregar al carrito
-      </button>
-
-      <!-- Observación -->
-      <div class="mp-group mp-group--obs">
-        <span class="mp-label">Observación <span class="mp-optional">(opcional)</span></span>
-        <textarea class="mp-obs" id="product-observation" rows="2" placeholder="Ej: Sin etiqueta, empaque especial..."></textarea>
-      </div>
-
-    </div>
-  </div>
-
-</div>
-</div>
-</div>
-
-<div class="offcanvas offcanvas-end" tabindex="-1" id="cartOffcanvas" style="width: 420px;">
-<div class="offcanvas-header">
-<h5 class="offcanvas-title">Tu Carrito</h5>
-<button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-</div>
-<div class="offcanvas-body p-0">
-<div id="cart-items-container">
-<div class="text-center py-5" id="cart-empty">
-<i class="bi bi-cart-x" style="font-size: 3rem; opacity: 0.3;"></i>
-<p class="mt-3 text-muted">Tu carrito está vacío</p>
-</div>
-</div>
-</div>
-<div class="cart-total" id="cart-footer" style="display: none;">
-<div class="d-flex justify-content-between align-items-center mb-3">
-<span class="total-label">Total</span>
-<span class="total-amount" id="cart-total">$0</span>
-</div>
-<button class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#checkoutModal">
-Finalizar Pedido
-</button>
-</div>
-</div>
-
-<div class="modal fade" id="checkoutModal" tabindex="-1">
-<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-<div class="modal-content checkout-premium">
-<div class="modal-header checkout-header">
-<div class="header-content">
-<div class="pulse-dot"></div>
-<h5 class="modal-title">Finalizar Pedido</h5>
-<p class="header-subtitle">Completa tus datos para confirmar la compra</p>
-</div>
-<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-</div>
-<div class="modal-body">
-<form id="checkout-form">
-
-<div class="form-card" data-card="1">
-<div class="card-header-mini">
-<span class="card-icon"><i class="bi bi-person"></i></span>
-<span class="card-title">Datos personales</span>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Cedula</label>
-<input type="text" class="form-control form-control-modern" id="checkout-cedula" placeholder="1234567890" required>
-<small class="text-muted">Si ya compraste antes, tus datos se cargan al ingresar la cedula</small>
-</div>
-<div class="delivery-info" id="delivery-info" style="display: none;">
-<div class="info-title">Informacion de envio</div>
-<div class="info-content">Pedido fuera de Monteria</div>
-<div class="cedula-display">Cedula: <span id="cedula-display">-</span></div>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Nombre completo</label>
-<input type="text" class="form-control form-control-modern" id="checkout-name" placeholder="Maria Garcia" required>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">WhatsApp</label>
-<input type="tel" class="form-control form-control-modern" id="checkout-phone" placeholder="300 123 4567" required>
-</div>
-</div>
-
-<div class="form-card" data-card="2">
-<div class="card-header-mini">
-<span class="card-icon"><i class="bi bi-geo-alt"></i></span>
-<span class="card-title">Direccion de envio</span>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Ciudad</label>
-<select class="form-select form-control-modern" id="checkout-city" required>
-<option value="">Selecciona tu ciudad</option>
-<option value="Montería">Montería</option>
-<option value="Cereté">Cereté</option>
-<option value="Lorica">Lorica</option>
-<option value="Sahagún">Sahagún</option>
-<option value="Planeta Rica">Planeta Rica</option>
-<option value="Montelíbano">Montelíbano</option>
-<option value="Tierralta">Tierralta</option>
-<option value="Ayapel">Ayapel</option>
-<option value="Otra">Otra ciudad</option>
-</select>
-</div>
-<div class="form-group-modern" id="neighborhood-section" style="display: none;">
-<label class="selector-label">Barrio</label>
-<div class="neighborhood-autocomplete">
-<input type="text" class="form-control form-control-modern" id="checkout-neighborhood" placeholder="Escribe tu barrio" autocomplete="off">
-<div id="neighborhood-suggestions" class="neighborhood-suggestions" style="display:none"></div>
-</div>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Direccion completa</label>
-<input type="text" class="form-control form-control-modern" id="checkout-address" placeholder="Calle 123 #45-67" required>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Observaciones</label>
-<textarea class="form-control form-control-modern" id="checkout-notes" rows="2" placeholder="Instrucciones especiales, referencias..."></textarea>
-</div>
-</div>
-
-<div class="form-card" data-card="3">
-<div class="card-header-mini">
-<span class="card-icon"><i class="bi bi-credit-card"></i></span>
-<span class="card-title">Metodo de pago</span>
-</div>
-<div class="form-group-modern">
-<label class="selector-label">Forma de pago</label>
-<select class="form-select form-control-modern" id="checkout-payment" required>
-<option value="">Selecciona una opcion</option>
-<option value="Efectivo" id="payment-efectivo">Efectivo (Pago contra entrega)</option>
-<option value="Transferencia">Transferencia Bancaria</option>
-</select>
-<small class="text-muted" id="payment-info"></small>
-</div>
-<div class="form-group-modern" id="cash-payment-section" style="display: none;">
-<label class="selector-label">Monto con el que pagas</label>
-<input type="number" class="form-control form-control-modern" id="checkout-cash-amount" placeholder="50000" min="0">
-<div class="mt-2" id="change-display" style="display: none;">
-<div class="change-card">
-<div class="change-item">
-<span class="change-label">Total del pedido:</span>
-<span class="change-value" id="change-total">$0</span>
-</div>
-<div class="change-item highlight">
-<span class="change-label">Vuelto a entregar:</span>
-<span class="change-value" id="change-amount">$0</span>
-</div>
-</div>
-</div>
-</div>
-</div>
-
-<div class="form-card" data-card="4">
-<div class="card-header-mini">
-<span class="card-icon"><i class="bi bi-receipt"></i></span>
-<span class="card-title">Resumen</span>
-</div>
-<div class="order-summary">
-<div class="summary-row total-row">
-<span class="summary-label-total">Total</span>
-<span class="summary-value-total" id="order-total">$0</span>
-</div>
-</div>
-</div>
-
-<button type="submit" class="btn-submit-premium">
-<span class="btn-text">Confirmar Pedido</span>
-<span class="btn-icon"><i class="bi bi-arrow-right"></i></span>
-</button>
-
-</form>
-</div>
-</div>
-</div>
-</div>
-
-<div class="modal fade" id="deleteCartModal" tabindex="-1">
-<div class="modal-dialog modal-dialog-centered dcm-dialog">
-<div class="modal-content dcm-content">
-  <button type="button" class="mp-close" data-bs-dismiss="modal" aria-label="Cerrar">
-    <i class="bi bi-x-lg"></i>
-  </button>
-  <div class="dcm-body">
-    <p class="dcm-title">¿Eliminar producto?</p>
-    <p class="dcm-text">El producto se quitará del carrito.</p>
-    <div class="dcm-actions">
-      <button type="button" class="dcm-btn-cancel" data-bs-dismiss="modal">Cancelar</button>
-      <button type="button" class="dcm-btn-delete" id="confirm-delete-cart-item">Eliminar</button>
-    </div>
-  </div>
-</div>
-</div>
-</div>
-
-<!-- Visor de pantalla completa estilo SHEIN -->
-<div id="imageZoomOverlay" class="image-zoom-overlay">
-  <div class="izoom-topbar">
-    <button class="izoom-icon-btn" id="closeZoomBtn" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
-    <span class="izoom-counter" id="zoomCounter">1/1</span>
-    <button class="izoom-icon-btn izoom-expand" id="zoomExpandBtn" aria-label="Ver detalle"><i class="bi bi-fullscreen"></i></button>
-  </div>
-  <div class="izoom-img-area" id="zoomImgArea">
-    <img src="" id="zoomedImage" class="zoomed-image" alt="Producto ampliado">
-  </div>
-  <div class="izoom-bottombar" id="zoomBottomBar">
-    <div class="izoom-color-label" id="zoomColorLabel"></div>
-    <div class="izoom-swatches" id="zoomColorSwatches"></div>
-    <button class="izoom-add-btn" id="zoomAddToCart">AÑADIR A LA BOLSA</button>
-  </div>
-</div>
-
 <!-- Scripts optimizados con carga diferida -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="analytics.js?v=1.0.0"></script>
-<script type="module" src="app.js?v=1.9.2"></script>
+<script type="module" src="mayor.js?v=1.0.0"></script>
 
 </body>
 </html>
