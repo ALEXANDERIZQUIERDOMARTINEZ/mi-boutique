@@ -19,6 +19,7 @@ const categoriesCollection = collection(db, 'categorias');
 const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const WHATSAPP_NUMBER = '573046084971';
 const MIN_POR_PRENDA = 6;
+const PRODUCTS_PER_PAGE = 30;
 
 // productId -> [{ talla, color, cantidad }] (talla es null cuando la prenda es de talla única)
 const detalleFilas = new Map();
@@ -29,6 +30,7 @@ let productsData = []; // productos ya filtrados (categoría/búsqueda) que se e
 const categoriesMap = new Map(); // categoriaId <-> nombre (bidireccional, igual que app.js)
 let activeFilter = 'disponible';
 let searchTerm = '';
+let currentPage = 1;
 let bsToast = null;
 
 const gridEl = document.getElementById('mayor-grid');
@@ -233,6 +235,51 @@ function computeVisibleProducts() {
     return list;
 }
 
+function buildPageList(current, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = [1];
+    if (current > 3) pages.push('...');
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
+}
+
+function renderPagination(totalFiltrado) {
+    const container = document.getElementById('pagination-container');
+    if (!container) return;
+    const totalPages = Math.ceil(totalFiltrado / PRODUCTS_PER_PAGE);
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+    const pages = buildPageList(currentPage, totalPages);
+    let html = '<div class="pagination-wrap">';
+    html += `<button class="page-btn page-btn-nav" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}><i class="bi bi-chevron-left"></i></button>`;
+    for (const p of pages) {
+        if (p === '...') {
+            html += `<span class="page-ellipsis">…</span>`;
+        } else {
+            html += `<button class="page-btn${p === currentPage ? ' page-btn-active' : ''}" data-page="${p}">${p}</button>`;
+        }
+    }
+    html += `<button class="page-btn page-btn-nav" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}><i class="bi bi-chevron-right"></i></button>`;
+    html += '</div>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-page]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const page = parseInt(btn.dataset.page, 10);
+            if (!isNaN(page) && page >= 1 && page <= totalPages && !btn.disabled) goToPage(page);
+        });
+    });
+}
+
+function goToPage(page) {
+    currentPage = page;
+    renderProducts();
+    const section = document.querySelector('.mayor-topbar');
+    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 // ── Render de tarjetas ───────────────────────────────────────────────────
 function renderFilaHtml(p, fila, idx, tallas) {
     const hasTallas = tallas.length > 0;
@@ -261,11 +308,16 @@ function renderFilaHtml(p, fila, idx, tallas) {
 
 function renderProducts() {
     if (!gridEl) return;
-    productsData = computeVisibleProducts();
+    const filtered = computeVisibleProducts();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PRODUCTS_PER_PAGE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    productsData = filtered.slice(start, start + PRODUCTS_PER_PAGE);
 
-    if (productsData.length === 0) {
+    if (filtered.length === 0) {
         gridEl.style.display = 'none';
         if (emptyEl) emptyEl.style.display = 'block';
+        renderPagination(0);
         return;
     }
     if (emptyEl) emptyEl.style.display = 'none';
@@ -317,6 +369,8 @@ function renderProducts() {
         `;
         gridEl.appendChild(card);
     });
+
+    renderPagination(filtered.length);
 }
 
 function actualizarPreciosEnVivo() {
@@ -572,6 +626,7 @@ function handleFilterClick(e) {
         categoryDropdownButton.innerHTML = `Categorías <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
     }
 
+    currentPage = 1;
     renderProducts();
     updateProgress();
 }
@@ -623,7 +678,7 @@ const searchInputEl = document.getElementById('search-input');
 let searchTimeout;
 function applyFiltersAndRedraw() {
     clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => { renderProducts(); updateProgress(); }, 200);
+    searchTimeout = setTimeout(() => { currentPage = 1; renderProducts(); updateProgress(); }, 200);
 }
 if (searchInputEl) {
     searchInputEl.addEventListener('input', (e) => {
@@ -677,6 +732,7 @@ function updateSearchSuggestions(term) {
             activeFilter = catName;
             categoryDropdownButton.innerHTML = `${catName} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
             closeInlineSearch();
+            currentPage = 1;
             renderProducts();
             updateProgress();
         });
@@ -698,6 +754,7 @@ function closeInlineSearch() {
     searchTerm = '';
     if (nisClearBtn) nisClearBtn.style.display = 'none';
     hideSearchSuggestions();
+    currentPage = 1;
     renderProducts();
     updateProgress();
 }
@@ -728,6 +785,7 @@ if (nisClearBtn) {
         searchTerm = '';
         nisClearBtn.style.display = 'none';
         hideSearchSuggestions();
+        currentPage = 1;
         renderProducts();
         updateProgress();
         navSearchInput?.focus();

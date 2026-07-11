@@ -473,8 +473,45 @@
   <div class="header-gradient"></div>
   <nav class="header-nav">
     <div class="container">
-      <div class="header-layout" style="grid-template-columns: 1fr;">
-        <a class="header-brand" href="index.html">MISHELL'ES FÁBRICA</a>
+      <div class="header-layout">
+        <!-- Desktop: Nav links -->
+        <div class="header-left d-none d-lg-flex">
+          <button class="nav-link-header filter-group active" data-filter="disponible">Disponibles</button>
+          <div class="dropdown">
+            <button class="nav-link-header filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="category-dropdown-button">
+              Categorías <i class="bi bi-chevron-down" style="font-size: 0.65em; margin-left: 3px;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-enhanced" id="category-dropdown-menu">
+              <li><a class="dropdown-item" href="#">Cargando...</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Mobile: Menu hamburguesa -->
+        <div class="header-left-mobile d-lg-none">
+          <div class="dropdown">
+            <button class="nav-link-header filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-list"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-enhanced" id="category-dropdown-menu-mobile">
+              <li><a class="dropdown-item" href="#">Cargando...</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Centro: Marca -->
+        <a class="header-brand" href="encargo.html">MISHELL'ES FÁBRICA</a>
+
+        <!-- Derecha: Buscador -->
+        <div class="header-right d-none d-lg-flex">
+          <div class="search-box">
+            <input type="text" class="form-control" id="search-input" placeholder="Buscar...">
+            <i class="bi bi-search search-icon"></i>
+          </div>
+        </div>
+
+        <!-- Mobile: placeholder derecho para centrar marca -->
+        <div class="d-lg-none" style="width: 40px;"></div>
       </div>
     </div>
   </nav>
@@ -532,6 +569,8 @@
     </div>
   </div>
 
+  <div id="pagination-container"></div>
+
 </main>
 
 <footer class="footer-minimal">
@@ -555,6 +594,33 @@
   </div>
 </div>
 
+<div class="nav-search-suggestions d-lg-none" id="nav-search-suggestions"></div>
+
+<nav class="mobile-bottom-nav d-lg-none">
+<button class="nav-item active" id="mobile-home-btn">
+<i class="bi bi-house"></i>
+</button>
+<button class="nav-item" id="mobile-search-btn">
+<i class="bi bi-search"></i>
+</button>
+<!-- Búsqueda inline (oculta por defecto) -->
+<div class="nav-inline-search" id="nav-inline-search">
+  <button class="nis-back" id="nis-back" aria-label="Cerrar búsqueda">
+    <i class="bi bi-arrow-left"></i>
+  </button>
+  <input type="text"
+         class="nis-input"
+         id="nav-search-input"
+         placeholder="Prendas o categorías..."
+         autocomplete="off"
+         autocorrect="off"
+         spellcheck="false">
+  <button class="nis-clear" id="nis-clear" aria-label="Limpiar" style="display:none">
+    <i class="bi bi-x"></i>
+  </button>
+</div>
+</nav>
+
 <div class="toast-container">
   <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
     <div class="toast-inner">
@@ -568,7 +634,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
-<script type="module" src="encargo.js?v=2.2.0"></script>
+<script type="module" src="encargo.js?v=2.3.0"></script>
 
 </body>
 </html>
