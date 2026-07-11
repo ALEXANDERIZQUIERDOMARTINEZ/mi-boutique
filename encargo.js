@@ -126,16 +126,21 @@ function getPrecioUnitario(p) {
     return info ? info.precio : (p.precioDetal || 0);
 }
 
-// Texto explicando de dónde sale el precio: si vino de acumular cantidad dentro
-// de la misma categoría, o del mínimo surtido (mezclando categorías).
+// Siempre muestra en lenguaje simple cuál es el PRÓXIMO precio al que se puede
+// llegar (sin jerga de "Nivel NX"): a partir de cuántas unidades se consigue,
+// y a cuánto queda cada una. El primer escalón se consigue mezclando
+// referencias; los siguientes exigen esa cantidad dentro de la misma prenda.
 function buildTierHint(p) {
-    const info = getPrecioInfo(p);
-    if (!info) return '';
-    if (info.idx === 0) return 'Baja según cantidad surtida';
     const grupo = resolveWholesaleGroup(p, categoriesMap);
-    return info.porPropio
-        ? `Nivel ${info.nivel}X — ${totalPorGrupo(grupo)} und. de esta prenda`
-        : `Nivel ${info.nivel}X — ${totalGeneralMayorista()} und. surtidas`;
+    const group = WHOLESALE_TIER_GROUPS[grupo];
+    if (!grupo || !group) return '';
+    const info = getPrecioInfo(p);
+    const nextTier = group.tiers[info.idx + 1];
+    if (!nextTier) return info.idx > 0 ? 'Ya tienes el mejor precio' : '';
+    const precioSiguiente = formatoMoneda.format(nextTier.precio);
+    return info.idx === 0
+        ? `Desde ${nextTier.min} unidades: ${precioSiguiente} c/u`
+        : `Con ${nextTier.min} de esta prenda: ${precioSiguiente} c/u`;
 }
 
 function calcularTotalEstimado() {
@@ -214,25 +219,23 @@ function renderGroupProgress() {
         groupProgressListEl.innerHTML = `
             <div class="encargo-progress-card">
                 <div class="encargo-progress-top">
-                    <span class="encargo-progress-level">Nivel 1X</span>
-                    <span class="encargo-progress-next">Faltan ${primerEscalon - total} para ${primerEscalon}X</span>
+                    <span class="encargo-progress-level">${total} de ${primerEscalon} unidades</span>
+                    <span class="encargo-progress-next">Faltan ${primerEscalon - total} para precio mayorista</span>
                 </div>
                 <div class="encargo-progress-track"><div class="encargo-progress-fill" style="width:${pct}%"></div></div>
-                <div class="encargo-progress-count">${total} unidades surtidas</div>
+                <div class="encargo-progress-count">Puedes mezclar referencias para llegar a las ${primerEscalon}</div>
             </div>
         `;
         return;
     }
 
-    const tablaReferencia = Object.values(WHOLESALE_TIER_GROUPS).reduce((a, b) => a.tiers.length >= b.tiers.length ? a : b);
-    const siguientesEscalones = tablaReferencia.tiers.slice(2, 4).map(t => `${t.min}X`).join(', ');
     groupProgressListEl.innerHTML = `
         <div class="encargo-progress-card">
             <div class="encargo-progress-top">
-                <span class="encargo-progress-level">Nivel ${primerEscalon}X activo</span>
+                <span class="encargo-progress-level">¡Precio mayorista activado!</span>
             </div>
             <div class="encargo-progress-track"><div class="encargo-progress-fill is-unlocked" style="width:100%"></div></div>
-            <div class="encargo-progress-count">${total} unidades surtidas — para bajar más el precio, junta ${siguientesEscalones}... de una misma prenda</div>
+            <div class="encargo-progress-count">${total} unidades en tu pedido — junta más de una misma prenda para bajar aún más el precio (revisa el aviso debajo del precio de cada prenda)</div>
         </div>
     `;
 }
