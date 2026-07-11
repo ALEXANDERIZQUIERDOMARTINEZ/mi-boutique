@@ -34,6 +34,38 @@ export const WHOLESALE_TIER_GROUPS = {
             { min: 24, precio: 21000 },
             { min: 50, precio: 20000 }
         ]
+    },
+    bodyMallatex: {
+        label: 'Body en mallatex',
+        tiers: [
+            { min: 6, precio: 22000 },
+            { min: 50, precio: 21000 },
+            { min: 100, precio: 20000 }
+        ]
+    },
+    bodyElaborados: {
+        label: 'Body Elaborados',
+        tiers: [
+            { min: 1, precio: 29000 },
+            { min: 6, precio: 18000 },
+            { min: 12, precio: 17000 },
+            { min: 24, precio: 16000 },
+            { min: 50, precio: 15000 },
+            { min: 100, precio: 14000 },
+            { min: 500, precio: 13000 },
+            { min: 1000, precio: 12000 }
+        ]
+    },
+    vestidosCortosElaborados: {
+        label: 'Vestidos cortos elaborados',
+        tiers: [
+            { min: 1, precio: 58000 },
+            { min: 6, precio: 33000 },
+            { min: 12, precio: 32000 },
+            { min: 24, precio: 31000 },
+            { min: 50, precio: 30000 },
+            { min: 100, precio: 29000 }
+        ]
     }
 };
 
@@ -101,8 +133,11 @@ export function detectGroupFromCategoryName(nombreCategoria) {
     const norm = nombreCategoria
         .toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (norm.includes('mallatex')) return 'bodyMallatex';
+    if (norm.includes('body') && norm.includes('elabora')) return 'bodyElaborados';
     if (norm.includes('body')) return 'bodys';
     if (norm.includes('conjunto')) return 'vestidosLargos';
+    if (norm.includes('vestido') && norm.includes('corto') && norm.includes('elabora')) return 'vestidosCortosElaborados';
     if (norm.includes('vestido') && norm.includes('corto')) return 'vestidosCortos';
     if (norm.includes('vestido') && norm.includes('largo')) return 'vestidosLargos';
     return '';

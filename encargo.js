@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { WHOLESALE_CODE } from './wholesale-config.js';
-import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml, getPrimerEscalonMayorista } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -20,7 +19,7 @@ const categoriesCollection = collection(db, 'categorias');
 const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const formatoFechaEntrega = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long' });
 const WHATSAPP_NUMBER = '573046084971';
-const MIN_POR_PRENDA = 2;
+const MIN_POR_PRENDA = 6;
 const DIAS_ENTREGA = 8;
 
 // Fecha estimada de entrega: ~8 días después de confirmar el pago. Como el pago se
@@ -45,12 +44,8 @@ let bsToast = null;
 
 const gridEl = document.getElementById('encargo-grid');
 const emptyEl = document.getElementById('encargo-empty');
-const groupProgressListEl = document.getElementById('group-progress-list');
 const finalizePanelEl = document.getElementById('finalize-panel');
 const finalizeToggleBtn = document.getElementById('btn-toggle-finalize');
-const codeBlockEl = document.getElementById('code-block');
-const codeValueEl = document.getElementById('code-value');
-const copyBtn = document.getElementById('btn-copy-code');
 const waBtn = document.getElementById('btn-send-whatsapp');
 const obsEl = document.getElementById('encargo-observaciones');
 const totalEstimadoEl = document.getElementById('total-estimado');
@@ -82,25 +77,15 @@ function getCantidadProducto(id) {
     return filas.reduce((sum, f) => sum + (parseInt(f.cantidad, 10) || 0), 0);
 }
 
-// Solo cuenta hacia totales/precio/pedido si cumple el mínimo de 2 por prenda.
+// Solo cuenta hacia totales/precio/pedido si cumple el mínimo de 6 por prenda:
+// aquí no se puede comprar por debajo de 6 unidades de una misma referencia.
 function getCantidadValida(id) {
     const total = getCantidadProducto(id);
     return total >= MIN_POR_PRENDA ? total : 0;
 }
 
-// Total SURTIDO: suma de todas las prendas con tabla de precios (sin importar el
-// tipo/grupo específico). Mezclar categorías solo alcanza para desbloquear el
-// primer escalón real (ej. 6X); no sirve para subir a 12X, 24X...
-function totalGeneralMayorista() {
-    let total = 0;
-    productsData.forEach(p => {
-        const grupo = resolveWholesaleGroup(p, categoriesMap);
-        if (grupo && WHOLESALE_TIER_GROUPS[grupo]) total += getCantidadValida(p.id);
-    });
-    return total;
-}
-
-// Cuántas prendas hay de UNA MISMA categoría (sin mezclar con otras).
+// Cuántas prendas hay de UNA MISMA categoría (sin importar la referencia exacta:
+// varias prendas distintas del mismo grupo suman juntas para subir de escalón).
 function totalPorGrupo(grupo) {
     let total = 0;
     productsData.forEach(p => {
@@ -109,16 +94,15 @@ function totalPorGrupo(grupo) {
     return total;
 }
 
-// Info de precio de una prenda: combina cuántas hay de su propia categoría con
-// cuántas hay surtidas en total. El surtido solo desbloquea el primer escalón
-// (ej. 6X); superarlo (12X, 24X...) exige esa cantidad dentro de la misma
-// categoría, sin mezclar. Devuelve null si la prenda no tiene tabla de precios.
+// Info de precio de una prenda según cuántas hay de su categoría. Como el pedido
+// mínimo ya es de 6 por referencia, el precio mostrado siempre parte del escalón
+// de 6 unidades (nunca del precio "por unidad suelta"), aunque todavía no se haya
+// elegido cantidad. Devuelve null si la prenda no tiene tabla de precios.
 function getPrecioInfo(p) {
     const grupo = resolveWholesaleGroup(p, categoriesMap);
     if (!grupo || !WHOLESALE_TIER_GROUPS[grupo]) return null;
-    const totalPropio = totalPorGrupo(grupo);
-    const totalMixto = totalGeneralMayorista();
-    return getHybridTierInfo(grupo, totalPropio, totalMixto);
+    const totalPropio = Math.max(MIN_POR_PRENDA, totalPorGrupo(grupo));
+    return getHybridTierInfo(grupo, totalPropio, totalPropio);
 }
 
 function getPrecioUnitario(p) {
@@ -128,8 +112,7 @@ function getPrecioUnitario(p) {
 
 // Siempre muestra en lenguaje simple cuál es el PRÓXIMO precio al que se puede
 // llegar (sin jerga de "Nivel NX"): a partir de cuántas unidades se consigue,
-// y a cuánto queda cada una. El primer escalón se consigue mezclando
-// referencias; los siguientes exigen esa cantidad dentro de la misma prenda.
+// y a cuánto queda cada una.
 function buildTierHint(p) {
     const grupo = resolveWholesaleGroup(p, categoriesMap);
     const group = WHOLESALE_TIER_GROUPS[grupo];
@@ -184,60 +167,9 @@ function renderOrderSummary() {
     orderSummaryEl.innerHTML = `${gruposHtml}<div class="encargo-summary-total"><span>Total (${totalUnidades} und.)</span><strong>${formatoMoneda.format(total)}</strong></div>`;
 }
 
-// El código se desbloquea al llegar al primer escalón real de mayoreo (ej. 6X)
-// sumando TODAS las prendas con tabla de precios, sin importar el tipo.
-function isSurtidoUnlocked() {
-    return totalGeneralMayorista() >= getPrimerEscalonMayorista();
-}
-
 function renderTiersTables() {
     if (!tiersTablesEl) return;
     tiersTablesEl.innerHTML = buildTiersTablesHtml();
-}
-
-// Barra de progreso ÚNICA (surtida): cuenta todas las prendas con tabla de precios
-// juntas, sin importar el tipo, y muestra en qué escalón vas y cuánto falta para el
-// siguiente (1X, 6X, 12X, 24X...). Usa como referencia de escalones la tabla más
-// larga (bodys) ya que todas comparten los mismos umbrales tempranos (6, 12, 24, 50).
-// El surtido (mezclar categorías) solo alcanza para desbloquear el primer
-// escalón real (ej. 6X). Por eso la barra general solo mide el avance hacia
-// ese primer escalón; superarlo (12X, 24X...) depende de cada categoría por
-// separado y se refleja en el precio de cada prenda, no acá.
-function renderGroupProgress() {
-    if (!groupProgressListEl) return;
-    const total = totalGeneralMayorista();
-
-    if (total === 0) {
-        groupProgressListEl.innerHTML = '';
-        return;
-    }
-
-    const primerEscalon = getPrimerEscalonMayorista();
-
-    if (total < primerEscalon) {
-        const pct = Math.min(100, Math.round((total / primerEscalon) * 100));
-        groupProgressListEl.innerHTML = `
-            <div class="encargo-progress-card">
-                <div class="encargo-progress-top">
-                    <span class="encargo-progress-level">${total} de ${primerEscalon} unidades</span>
-                    <span class="encargo-progress-next">Faltan ${primerEscalon - total} para precio mayorista</span>
-                </div>
-                <div class="encargo-progress-track"><div class="encargo-progress-fill" style="width:${pct}%"></div></div>
-                <div class="encargo-progress-count">Puedes mezclar referencias para llegar a las ${primerEscalon}</div>
-            </div>
-        `;
-        return;
-    }
-
-    groupProgressListEl.innerHTML = `
-        <div class="encargo-progress-card">
-            <div class="encargo-progress-top">
-                <span class="encargo-progress-level">¡Precio mayorista activado!</span>
-            </div>
-            <div class="encargo-progress-track"><div class="encargo-progress-fill is-unlocked" style="width:100%"></div></div>
-            <div class="encargo-progress-count">${total} unidades en tu pedido — junta más de una misma prenda para bajar aún más el precio (revisa el aviso debajo del precio de cada prenda)</div>
-        </div>
-    `;
 }
 
 function renderProducts() {
@@ -331,28 +263,12 @@ function actualizarPreciosEnVivo() {
         }
     });
 
-    renderGroupProgress();
     renderOrderSummary();
     if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
-    const unlocked = isSurtidoUnlocked();
-    if (codeBlockEl) {
-        const wasUnlocked = codeBlockEl.classList.contains('is-unlocked');
-        codeBlockEl.classList.toggle('is-unlocked', unlocked);
-        if (unlocked && !wasUnlocked) showToast('¡Código mayorista desbloqueado!', 'success');
-    }
 }
 
 function updateProgress() {
-    renderGroupProgress();
     renderOrderSummary();
-
-    const unlocked = isSurtidoUnlocked();
-    if (codeValueEl) codeValueEl.textContent = WHOLESALE_CODE;
-    if (codeBlockEl) {
-        const wasUnlocked = codeBlockEl.classList.contains('is-unlocked');
-        codeBlockEl.classList.toggle('is-unlocked', unlocked);
-        if (unlocked && !wasUnlocked) showToast('¡Código mayorista desbloqueado!', 'success');
-    }
     if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
     const hayAlgoSeleccionado = [...detalleColores.values()].some(filas => filas.length > 0);
     if (finalizePanelEl) finalizePanelEl.classList.toggle('is-visible', hayAlgoSeleccionado);
@@ -465,22 +381,11 @@ if (finalizeToggleBtn) {
     });
 }
 
-if (copyBtn) {
-    copyBtn.addEventListener('click', async () => {
-        try {
-            await navigator.clipboard.writeText(WHOLESALE_CODE);
-            showToast('Código copiado', 'success');
-        } catch {
-            showToast('No se pudo copiar, cópialo manualmente', 'warning');
-        }
-    });
-}
-
 if (waBtn) {
     waBtn.addEventListener('click', () => {
         const productosConSeleccion = productsData.filter(p => getCantidadValida(p.id) > 0);
         if (productosConSeleccion.length === 0) {
-            showToast('Elige al menos 2 unidades de una prenda primero', 'warning');
+            showToast(`Elige al menos ${MIN_POR_PRENDA} unidades de una prenda primero`, 'warning');
             return;
         }
         const lineas = [];
@@ -499,7 +404,6 @@ if (waBtn) {
         const fechaEntrega = formatearFechaEntrega(calcularFechaEntrega());
         let mensaje = `Hola! Quiero hacer un pedido bajo encargo:\n${lineas.join('\n')}\n\nTotal estimado: ${formatoMoneda.format(totalEstimado)}\nEntrega aproximada (si confirmo el pago hoy): ${fechaEntrega} (~${DIAS_ENTREGA} días después del pago)`;
         if (observaciones) mensaje += `\n\nObservaciones: ${observaciones}`;
-        if (isSurtidoUnlocked()) mensaje += `\n\nMi código mayorista: ${WHOLESALE_CODE}`;
         const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`;
         const a = document.createElement('a');
         a.href = url;
