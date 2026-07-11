@@ -21,6 +21,7 @@ const formatoFechaEntrega = new Intl.DateTimeFormat('es-CO', { day: 'numeric', m
 const WHATSAPP_NUMBER = '573046084971';
 const MIN_POR_PRENDA = 6;
 const DIAS_ENTREGA = 8;
+const PRODUCTS_PER_PAGE = 30;
 
 // Fecha estimada de entrega: ~8 días después de confirmar el pago. Como el pago se
 // hace por WhatsApp después de elegir, se calcula desde hoy como aproximación.
@@ -38,8 +39,12 @@ function formatearFechaEntrega(fecha) {
 const detalleColores = new Map();
 // productId -> true si la tarjeta está colapsada (oculta su lista de colores)
 const tarjetasColapsadas = new Set();
-let productsData = [];
-const categoriesMap = new Map(); // categoriaId -> nombre
+let allProducts = []; // todas las prendas bajo encargo (sin filtrar)
+let productsData = []; // subconjunto filtrado (categoría/búsqueda) + paginado que se muestra
+const categoriesMap = new Map(); // categoriaId <-> nombre (bidireccional)
+let activeFilter = 'disponible';
+let searchTerm = '';
+let currentPage = 1;
 let bsToast = null;
 
 const gridEl = document.getElementById('encargo-grid');
@@ -86,9 +91,11 @@ function getCantidadValida(id) {
 
 // Cuántas prendas hay de UNA MISMA categoría (sin importar la referencia exacta:
 // varias prendas distintas del mismo grupo suman juntas para subir de escalón).
+// Recorre TODAS las prendas (no solo las de la página/filtro actual), porque una
+// selección hecha en otra página o categoría también debe contar para el escalón.
 function totalPorGrupo(grupo) {
     let total = 0;
-    productsData.forEach(p => {
+    allProducts.forEach(p => {
         if (resolveWholesaleGroup(p, categoriesMap) === grupo) total += getCantidadValida(p.id);
     });
     return total;
@@ -126,9 +133,11 @@ function buildTierHint(p) {
         : `Con ${nextTier.min} de esta prenda: ${precioSiguiente} c/u`;
 }
 
+// Recorre TODAS las prendas (no solo la página actual), para que el total y el
+// resumen del pedido reflejen selecciones hechas en cualquier página/filtro.
 function calcularTotalEstimado() {
     let total = 0;
-    productsData.forEach(p => {
+    allProducts.forEach(p => {
         const qty = getCantidadValida(p.id);
         if (qty > 0) total += getPrecioUnitario(p) * qty;
     });
@@ -139,7 +148,7 @@ function calcularTotalEstimado() {
 // y subtotal — lo que se ve en el panel inferior antes de enviar por WhatsApp.
 function renderOrderSummary() {
     if (!orderSummaryEl) return;
-    const productosConSeleccion = productsData.filter(p => getCantidadValida(p.id) > 0);
+    const productosConSeleccion = allProducts.filter(p => getCantidadValida(p.id) > 0);
     if (productosConSeleccion.length === 0) {
         orderSummaryEl.innerHTML = '<div class="encargo-summary-empty">Aún no has elegido ninguna prenda.</div>';
         return;
@@ -172,11 +181,100 @@ function renderTiersTables() {
     tiersTablesEl.innerHTML = buildTiersTablesHtml();
 }
 
+// Filtra por categoría activa y término de búsqueda (sin paginar todavía).
+function computeFilteredProducts() {
+    let list = allProducts;
+
+    if (activeFilter && activeFilter !== 'disponible' && activeFilter !== 'all') {
+        list = list.filter(p => {
+            const categoryValue = p.categoriaId || p.categoria;
+            if (!categoryValue) return false;
+            const nameFromId = categoriesMap.get(categoryValue);
+            if (nameFromId === activeFilter) return true;
+            if (categoryValue === activeFilter) return true;
+            const idFromName = categoriesMap.get(activeFilter);
+            if (categoryValue === idFromName) return true;
+            return false;
+        });
+    }
+
+    if (searchTerm) {
+        const t = searchTerm.toLowerCase();
+        list = list.filter(p =>
+            (p.nombre || '').toLowerCase().includes(t) ||
+            (p.descripcion || '').toLowerCase().includes(t) ||
+            (p.codigo || '').toLowerCase().includes(t)
+        );
+    }
+
+    return list;
+}
+
+function buildPageList(current, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = [1];
+    if (current > 3) pages.push('...');
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i);
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
+}
+
+function renderPagination(totalFiltrado) {
+    const container = document.getElementById('pagination-container');
+    if (!container) return;
+    const totalPages = Math.ceil(totalFiltrado / PRODUCTS_PER_PAGE);
+    if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+    const pages = buildPageList(currentPage, totalPages);
+    let html = '<div class="pagination-wrap">';
+    html += `<button class="page-btn page-btn-nav" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}><i class="bi bi-chevron-left"></i></button>`;
+    for (const p of pages) {
+        if (p === '...') {
+            html += `<span class="page-ellipsis">…</span>`;
+        } else {
+            html += `<button class="page-btn${p === currentPage ? ' page-btn-active' : ''}" data-page="${p}">${p}</button>`;
+        }
+    }
+    html += `<button class="page-btn page-btn-nav" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}><i class="bi bi-chevron-right"></i></button>`;
+    html += '</div>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-page]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const page = parseInt(btn.dataset.page, 10);
+            if (!isNaN(page) && page >= 1 && page <= totalPages && !btn.disabled) goToPage(page);
+        });
+    });
+}
+
+function goToPage(page) {
+    currentPage = page;
+    renderProducts();
+    const section = document.querySelector('.encargo-topbar');
+    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function renderProducts() {
     if (!gridEl) return;
-    if (productsData.length === 0) {
+    const filtered = computeFilteredProducts();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PRODUCTS_PER_PAGE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    productsData = filtered.slice(start, start + PRODUCTS_PER_PAGE);
+
+    if (filtered.length === 0) {
         gridEl.style.display = 'none';
-        if (emptyEl) emptyEl.style.display = 'block';
+        if (emptyEl) {
+            emptyEl.style.display = 'block';
+            const msg = emptyEl.querySelector('p');
+            if (msg) {
+                msg.textContent = allProducts.length === 0
+                    ? 'Por ahora no hay prendas bajo encargo disponibles. Vuelve pronto.'
+                    : 'No encontramos prendas con ese filtro o búsqueda.';
+            }
+        }
+        renderPagination(0);
         return;
     }
     if (emptyEl) emptyEl.style.display = 'none';
@@ -233,6 +331,8 @@ function renderProducts() {
         `;
         gridEl.appendChild(card);
     });
+
+    renderPagination(filtered.length);
 }
 
 // Actualiza precios/totales en pantalla sin reconstruir la grilla, para que el
@@ -383,7 +483,7 @@ if (finalizeToggleBtn) {
 
 if (waBtn) {
     waBtn.addEventListener('click', () => {
-        const productosConSeleccion = productsData.filter(p => getCantidadValida(p.id) > 0);
+        const productosConSeleccion = allProducts.filter(p => getCantidadValida(p.id) > 0);
         if (productosConSeleccion.length === 0) {
             showToast(`Elige al menos ${MIN_POR_PRENDA} unidades de una prenda primero`, 'warning');
             return;
@@ -418,18 +518,76 @@ if (waBtn) {
 renderTiersTables();
 if (deliveryDateEl) deliveryDateEl.textContent = formatearFechaEntrega(calcularFechaEntrega());
 
+// ── Categorías (dropdown desktop + menú móvil) ───────────────────────────
+const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
+const categoryDropdownMenuMobile = document.getElementById('category-dropdown-menu-mobile');
+const categoryDropdownButton = document.getElementById('category-dropdown-button');
+
+function handleFilterClick(e) {
+    e.preventDefault();
+    const clickedFilter = e.target.closest('.filter-group') || e.currentTarget;
+    if (clickedFilter.dataset.bsToggle === 'dropdown' && !clickedFilter.dataset.filter) return;
+
+    document.querySelectorAll('.header-left .filter-group.active, .header-left-mobile .filter-group.active').forEach(b => b.classList.remove('active'));
+
+    if (clickedFilter.classList.contains('dropdown-item')) {
+        categoryDropdownButton.classList.add('active');
+        activeFilter = clickedFilter.dataset.filter;
+        categoryDropdownButton.innerHTML = `${clickedFilter.textContent.trim()} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
+    } else {
+        clickedFilter.classList.add('active');
+        activeFilter = clickedFilter.dataset.filter || 'disponible';
+        categoryDropdownButton.classList.remove('active');
+        categoryDropdownButton.removeAttribute('data-filter');
+        categoryDropdownButton.innerHTML = `Categorías <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
+    }
+
+    currentPage = 1;
+    renderProducts();
+    updateProgress();
+}
+
+if (categoryDropdownMenu) {
+    categoryDropdownMenu.addEventListener('click', (e) => {
+        if (e.target.closest('.filter-group')) handleFilterClick(e);
+    });
+}
+if (categoryDropdownMenuMobile) {
+    categoryDropdownMenuMobile.addEventListener('click', (e) => {
+        if (e.target.closest('.filter-group')) handleFilterClick(e);
+    });
+}
+document.querySelectorAll('.header-left .filter-group, .header-left-mobile .filter-group').forEach(btn => {
+    btn.addEventListener('click', handleFilterClick);
+});
+
 // Se necesita el nombre de la categoría para detectar el grupo de precio mayorista
-// cuando el producto no tiene un grupo asignado a mano. Al llegar, se vuelve a
-// renderizar por si los productos ya se habían cargado antes que las categorías.
+// cuando el producto no tiene un grupo asignado a mano, y para poblar el filtro de
+// categorías del header. Al llegar, se vuelve a renderizar por si los productos ya
+// se habían cargado antes que las categorías.
 onSnapshot(categoriesCollection, (snapshot) => {
     categoriesMap.clear();
-    snapshot.forEach(docSnap => {
-        categoriesMap.set(docSnap.id, docSnap.data().nombre || '');
+    const categories = [];
+    snapshot.forEach(docSnap => categories.push({ id: docSnap.id, ...docSnap.data() }));
+    categories.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+    categories.forEach(cat => {
+        categoriesMap.set(cat.id, cat.nombre);
+        categoriesMap.set(cat.nombre, cat.id);
     });
-    // Si los productos ya se cargaron antes que las categorías, re-renderizar para
-    // aplicar la detección de grupo por categoría. Si aún no llegan, no hay nada
-    // que mostrar todavía (su propio onSnapshot se encarga cuando lleguen).
-    if (productsData.length > 0) {
+
+    if (categoryDropdownMenu) {
+        categoryDropdownMenu.innerHTML = categories.map(cat =>
+            `<li><a class="dropdown-item filter-group" href="#" data-filter="${cat.nombre}"><span>${cat.nombre}</span></a></li>`
+        ).join('');
+    }
+    if (categoryDropdownMenuMobile) {
+        categoryDropdownMenuMobile.innerHTML = categories.map(cat =>
+            `<li><a class="dropdown-item filter-group" href="#" data-filter="${cat.nombre}"><span>${cat.nombre}</span></a></li>`
+        ).join('');
+    }
+
+    if (allProducts.length > 0) {
         renderProducts();
         updateProgress();
     }
@@ -437,13 +595,143 @@ onSnapshot(categoriesCollection, (snapshot) => {
     console.error('Error cargando categorías:', err);
 });
 
+// ── Búsqueda (barra desktop + búsqueda inline móvil) ─────────────────────
+const searchInputEl = document.getElementById('search-input');
+let searchTimeout;
+function applyFiltersAndRedraw() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => { currentPage = 1; renderProducts(); updateProgress(); }, 200);
+}
+if (searchInputEl) {
+    searchInputEl.addEventListener('input', (e) => {
+        searchTerm = e.target.value;
+        applyFiltersAndRedraw();
+    });
+}
+
+const mobileNav = document.querySelector('.mobile-bottom-nav');
+const mobileNavItems = document.querySelectorAll('.nav-item');
+const navSearchInput = document.getElementById('nav-search-input');
+const nisClearBtn = document.getElementById('nis-clear');
+const navSearchSuggestions = document.getElementById('nav-search-suggestions');
+
+function setActiveNavItem(selectedItem) {
+    mobileNavItems.forEach(item => item.classList.remove('active'));
+    if (selectedItem) selectedItem.classList.add('active');
+}
+
+function hideSearchSuggestions() {
+    if (!navSearchSuggestions) return;
+    navSearchSuggestions.classList.remove('visible');
+    navSearchSuggestions.innerHTML = '';
+}
+
+function updateSearchSuggestions(term) {
+    if (!navSearchSuggestions) return;
+    if (!term) { hideSearchSuggestions(); return; }
+    const lowerTerm = term.toLowerCase();
+    const matchingCategories = [];
+    categoriesMap.forEach((value, key) => {
+        if (typeof key === 'string' && key.toLowerCase().includes(lowerTerm) && categoriesMap.get(value) === key) {
+            matchingCategories.push(key);
+        }
+    });
+    if (matchingCategories.length === 0) { hideSearchSuggestions(); return; }
+
+    let html = `<span class="nss-label">Categorías</span><div class="nss-categories">`;
+    matchingCategories.slice(0, 8).forEach(catName => {
+        html += `<button class="nss-cat-chip" data-cat="${catName}">${catName}</button>`;
+    });
+    html += `</div>`;
+    navSearchSuggestions.innerHTML = html;
+    navSearchSuggestions.classList.add('visible');
+
+    navSearchSuggestions.querySelectorAll('.nss-cat-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            const catName = chip.dataset.cat;
+            document.querySelectorAll('.header-left .filter-group.active, .header-left-mobile .filter-group.active').forEach(b => b.classList.remove('active'));
+            categoryDropdownButton.classList.add('active');
+            activeFilter = catName;
+            categoryDropdownButton.innerHTML = `${catName} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
+            closeInlineSearch();
+            currentPage = 1;
+            renderProducts();
+            updateProgress();
+        });
+    });
+}
+
+function openInlineSearch() {
+    if (!mobileNav) return;
+    mobileNav.classList.add('search-active');
+    setTimeout(() => navSearchInput?.focus(), 80);
+    setActiveNavItem(document.getElementById('mobile-search-btn'));
+}
+
+function closeInlineSearch() {
+    if (!mobileNav) return;
+    mobileNav.classList.remove('search-active');
+    if (navSearchInput) navSearchInput.value = '';
+    if (searchInputEl) searchInputEl.value = '';
+    searchTerm = '';
+    if (nisClearBtn) nisClearBtn.style.display = 'none';
+    hideSearchSuggestions();
+    currentPage = 1;
+    renderProducts();
+    updateProgress();
+}
+
+const mobileSearchBtn = document.getElementById('mobile-search-btn');
+if (mobileSearchBtn) mobileSearchBtn.addEventListener('click', openInlineSearch);
+const nisBackBtn = document.getElementById('nis-back');
+if (nisBackBtn) nisBackBtn.addEventListener('click', closeInlineSearch);
+
+if (navSearchInput) {
+    navSearchInput.addEventListener('input', (e) => {
+        const term = e.target.value;
+        searchTerm = term;
+        if (searchInputEl) searchInputEl.value = term;
+        if (nisClearBtn) nisClearBtn.style.display = term ? 'flex' : 'none';
+        updateSearchSuggestions(term);
+        applyFiltersAndRedraw();
+    });
+    navSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { e.preventDefault(); closeInlineSearch(); }
+    });
+}
+
+if (nisClearBtn) {
+    nisClearBtn.addEventListener('click', () => {
+        if (navSearchInput) navSearchInput.value = '';
+        if (searchInputEl) searchInputEl.value = '';
+        searchTerm = '';
+        nisClearBtn.style.display = 'none';
+        hideSearchSuggestions();
+        currentPage = 1;
+        renderProducts();
+        updateProgress();
+        navSearchInput?.focus();
+    });
+}
+
+const mobileHomeBtn = document.getElementById('mobile-home-btn');
+if (mobileHomeBtn) {
+    mobileHomeBtn.addEventListener('click', () => {
+        if (mobileNav?.classList.contains('search-active')) closeInlineSearch();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const disponibleBtn = document.querySelector('.filter-group[data-filter="disponible"]');
+        if (disponibleBtn) disponibleBtn.click();
+        setActiveNavItem(mobileHomeBtn);
+    });
+}
+
 const q = query(productsCollection, where('bajoEncargo', '==', true));
 onSnapshot(q, (snapshot) => {
-    productsData = [];
+    allProducts = [];
     snapshot.forEach(docSnap => {
         const data = docSnap.data();
         if (data.visible === false) return;
-        productsData.push({ id: docSnap.id, ...data });
+        allProducts.push({ id: docSnap.id, ...data });
     });
     renderProducts();
     updateProgress();
