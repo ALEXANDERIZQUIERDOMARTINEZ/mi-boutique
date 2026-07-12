@@ -45,6 +45,7 @@ const tiersToggleBtn = document.getElementById('btn-toggle-tiers');
 const tiersTablesEl = document.getElementById('tiers-tables');
 const policyToggleBtn = document.getElementById('btn-toggle-policy');
 const policyPanelEl = document.getElementById('policy-panel');
+const orderProgressEl = document.getElementById('mayor-order-progress');
 
 function showToast(message, type = 'success') {
     const liveToastEl = document.getElementById('liveToast');
@@ -115,31 +116,126 @@ function getStockCombo(p, talla, color) {
     }, 0);
 }
 
-// ── Cantidades / precios (misma lógica de escalones que encargo.html) ──
+// Solo vendemos lo que hay disponible: si una prenda tiene varias filas (colores)
+// pidiendo la MISMA talla+color, entre todas no pueden superar el stock real de esa
+// combinación. Esto suma lo que ya reservaron las DEMÁS filas del mismo producto
+// (excluye la fila "excludeIdx", que es la que se está evaluando/editando).
+function getCantidadReservadaOtrasFilas(id, talla, color, excludeIdx) {
+    const filas = detalleFilas.get(id) || [];
+    return filas.reduce((sum, f, idx) => {
+        if (idx === excludeIdx || f.color !== color || f.talla !== talla) return sum;
+        return sum + (parseInt(f.cantidad, 10) || 0);
+    }, 0);
+}
+
+// Stock que le queda disponible a ESTA fila para una combinación talla+color: el
+// stock real menos lo que ya reservaron las demás filas del mismo producto.
+function getStockDisponibleFila(p, talla, color, excludeIdx) {
+    const stockTotal = getStockCombo(p, talla, color);
+    return Math.max(0, stockTotal - getCantidadReservadaOtrasFilas(p.id, talla, color, excludeIdx));
+}
+
+// Colores que le quedan disponibles a ESTA fila para elegir (descontando lo que
+// ya reservaron las demás filas del mismo producto), con su stock restante.
+function getColoresDisponiblesFila(p, talla, excludeIdx) {
+    return getColoresParaTalla(p, talla)
+        .map(c => ({ color: c.color, stock: getStockDisponibleFila(p, talla, c.color, excludeIdx) }))
+        .filter(c => c.stock > 0);
+}
+
+// Corrige/depura las filas de una prenda para que nunca superen el stock real:
+// quita filas cuya talla o color ya no tengan stock, y recorta cantidades que
+// entre varias filas del mismo talla+color se pasen del stock disponible.
+// Devuelve true si tuvo que corregir algo (para poder avisarle al usuario).
+function reconciliarFilas(p) {
+    const filas = detalleFilas.get(p.id);
+    if (!filas || filas.length === 0) return false;
+    const tallas = getTallasConStock(p);
+    const hasTallas = tallas.length > 0;
+    let huboCambios = false;
+
+    for (let i = filas.length - 1; i >= 0; i--) {
+        const f = filas[i];
+        const talla = hasTallas ? f.talla : null;
+        if (hasTallas && !tallas.includes(talla)) {
+            filas.splice(i, 1);
+            huboCambios = true;
+            continue;
+        }
+        const disponible = getStockDisponibleFila(p, talla, f.color, i);
+        if (disponible <= 0) {
+            filas.splice(i, 1);
+            huboCambios = true;
+            continue;
+        }
+        const cantidadActual = parseInt(f.cantidad, 10) || 0;
+        if (cantidadActual > disponible) {
+            f.cantidad = disponible;
+            huboCambios = true;
+        } else if (cantidadActual < 1) {
+            f.cantidad = 1;
+            huboCambios = true;
+        }
+    }
+
+    if (filas.length === 0) detalleFilas.delete(p.id);
+    else detalleFilas.set(p.id, filas);
+    return huboCambios;
+}
+
+// Reconcilia TODAS las prendas con selección — se corre antes de renderizar, al
+// llegar stock nuevo del servidor, y otra vez justo antes de enviar el pedido
+// (el "informe" final debe verificar de nuevo que nada se pasó del stock real).
+function reconciliarTodo() {
+    let huboCambios = false;
+    allProducts.forEach(p => {
+        if (detalleFilas.has(p.id) && reconciliarFilas(p)) huboCambios = true;
+    });
+    return huboCambios;
+}
+
+// ── Cantidades / precios ─────────────────────────────────────────────────
+// Política de entrega inmediata: el mínimo es de 6 PRENDAS SURTIDAS en total,
+// sin necesidad de que sean de la misma referencia — a diferencia de
+// encargo.html, aquí no existe un mínimo por referencia individual.
 function getCantidadProducto(id) {
     const filas = detalleFilas.get(id) || [];
     return filas.reduce((sum, f) => sum + (parseInt(f.cantidad, 10) || 0), 0);
 }
 
-// Solo cuenta hacia totales/precio/pedido si cumple el mínimo de 6 por prenda.
-function getCantidadValida(id) {
-    const total = getCantidadProducto(id);
-    return total >= MIN_POR_PRENDA ? total : 0;
+// Cuánto se ha elegido en TODO el pedido, sumando todas las prendas/categorías.
+function getTotalGeneral() {
+    let total = 0;
+    allProducts.forEach(p => { total += getCantidadProducto(p.id); });
+    return total;
+}
+
+// El pedido cumple el mínimo cuando el total combinado llega a 6, sin importar
+// cuántas referencias distintas lo componen.
+function ordenAlcanzaMinimo() {
+    return getTotalGeneral() >= MIN_POR_PRENDA;
 }
 
 function totalPorGrupo(grupo) {
     let total = 0;
     allProducts.forEach(p => {
-        if (resolveWholesaleGroup(p, categoriesMap) === grupo) total += getCantidadValida(p.id);
+        if (resolveWholesaleGroup(p, categoriesMap) === grupo) total += getCantidadProducto(p.id);
     });
     return total;
 }
 
+// Info de precio de una prenda según cuántas hay de su categoría (totalPropio) y
+// cuántas hay en TODO el pedido mezclando categorías (totalMixto). Mezclar
+// referencias solo alcanza para desbloquear el primer escalón (6X); para subir a
+// escalones más altos (12X, 24X...) hace falta esa cantidad dentro de la misma
+// categoría. Antes de elegir nada se asume el mínimo (vitrina), para mostrar de
+// una vez el precio al que se puede llegar surtiendo 6 prendas.
 function getPrecioInfo(p) {
     const grupo = resolveWholesaleGroup(p, categoriesMap);
     if (!grupo || !WHOLESALE_TIER_GROUPS[grupo]) return null;
-    const totalPropio = Math.max(MIN_POR_PRENDA, totalPorGrupo(grupo));
-    return getHybridTierInfo(grupo, totalPropio, totalPropio);
+    const totalPropio = totalPorGrupo(grupo);
+    const totalMixto = Math.max(MIN_POR_PRENDA, getTotalGeneral());
+    return getHybridTierInfo(grupo, totalPropio, totalMixto);
 }
 
 // Precio de mostrador: si no tiene tabla de escalones, usa el precio fijo al por mayor.
@@ -169,7 +265,7 @@ function buildTierHint(p) {
 function calcularTotalEstimado() {
     let total = 0;
     allProducts.forEach(p => {
-        const qty = getCantidadValida(p.id);
+        const qty = getCantidadProducto(p.id);
         if (qty > 0) total += getPrecioUnitario(p) * qty;
     });
     return total;
@@ -177,7 +273,7 @@ function calcularTotalEstimado() {
 
 function renderOrderSummary() {
     if (!orderSummaryEl) return;
-    const productosConSeleccion = allProducts.filter(p => getCantidadValida(p.id) > 0);
+    const productosConSeleccion = allProducts.filter(p => getCantidadProducto(p.id) > 0);
     if (productosConSeleccion.length === 0) {
         orderSummaryEl.innerHTML = '<div class="mayor-summary-empty">Aún no has elegido ninguna prenda.</div>';
         return;
@@ -287,8 +383,17 @@ function goToPage(page) {
 // ── Render de tarjetas ───────────────────────────────────────────────────
 function renderFilaHtml(p, fila, idx, tallas) {
     const hasTallas = tallas.length > 0;
-    const colores = getColoresParaTalla(p, hasTallas ? fila.talla : null);
-    const stockCombo = getStockCombo(p, hasTallas ? fila.talla : null, fila.color);
+    const talla = hasTallas ? fila.talla : null;
+    // Colores que le quedan a ESTA fila (ya descontando lo que reservaron las demás
+    // filas del mismo producto); si el color actual de la fila ya no quedó en esa
+    // lista (otra fila se llevó todo lo que quedaba), igual se incluye para que el
+    // <select> no pierda su valor — reconciliarFilas() se encarga de quitar la fila
+    // por completo en ese caso, así que aquí solo es una salvaguarda de render.
+    const disponibles = getColoresDisponiblesFila(p, talla, idx);
+    const stockFila = getStockDisponibleFila(p, talla, fila.color, idx);
+    const colores = disponibles.some(c => c.color === fila.color)
+        ? disponibles
+        : [...disponibles, { color: fila.color, stock: stockFila }];
 
     const tallaSelectHtml = hasTallas ? `
         <select class="mayor-talla-select" data-id="${p.id}" data-idx="${idx}">
@@ -297,14 +402,14 @@ function renderFilaHtml(p, fila, idx, tallas) {
 
     const colorSelectHtml = `
         <select class="mayor-color-select" data-id="${p.id}" data-idx="${idx}">
-            ${colores.map(c => `<option value="${c.color.replace(/"/g, '&quot;')}" ${c.color === fila.color ? 'selected' : ''}>${c.color} (${c.stock})</option>`).join('')}
+            ${colores.map(c => `<option value="${c.color.replace(/"/g, '&quot;')}" ${c.color === fila.color ? 'selected' : ''}>${c.color} (${c.stock} disp.)</option>`).join('')}
         </select>`;
 
     return `
         <div class="mayor-color-row${hasTallas ? ' has-talla' : ''}">
             ${tallaSelectHtml}
             ${colorSelectHtml}
-            <input type="number" min="1" max="${stockCombo || 1}" class="mayor-color-qty" data-id="${p.id}" data-idx="${idx}" value="${fila.cantidad}">
+            <input type="number" min="1" max="${stockFila || 1}" class="mayor-color-qty" data-id="${p.id}" data-idx="${idx}" value="${fila.cantidad}">
             <button type="button" class="mayor-color-remove" data-id="${p.id}" data-idx="${idx}" aria-label="Quitar">×</button>
         </div>
     `;
@@ -312,6 +417,7 @@ function renderFilaHtml(p, fila, idx, tallas) {
 
 function renderProducts() {
     if (!gridEl) return;
+    reconciliarTodo();
     const filtered = computeVisibleProducts();
     const totalPages = Math.max(1, Math.ceil(filtered.length / PRODUCTS_PER_PAGE));
     if (currentPage > totalPages) currentPage = totalPages;
@@ -345,12 +451,11 @@ function renderProducts() {
             bodyExtra = `<button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-circle"></i> Elegir esta prenda</button>`;
         } else {
             const colapsada = tarjetasColapsadas.has(p.id);
-            const esValida = totalProducto >= MIN_POR_PRENDA;
             const tallas = getTallasConStock(p);
             const filasHtml = filas.map((f, idx) => renderFilaHtml(p, f, idx, tallas)).join('');
             bodyExtra = `
                 <button type="button" class="mayor-card-toggle" data-id="${p.id}">
-                    <span class="mayor-card-toggle-label${esValida ? '' : ' is-warning'}">${esValida ? `Total: ${totalProducto} unidades` : `Mínimo ${MIN_POR_PRENDA} unidades en total`}</span>
+                    <span class="mayor-card-toggle-label">${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}</span>
                     <i class="bi bi-chevron-${colapsada ? 'down' : 'up'} mayor-card-toggle-icon"></i>
                 </button>
                 <div class="mayor-colors-wrap"${colapsada ? ' style="display:none;"' : ''}>
@@ -397,19 +502,39 @@ function actualizarPreciosEnVivo() {
 
         const totalEl = card.querySelector('.mayor-card-toggle-label');
         if (totalEl) {
-            const esValida = totalProducto >= MIN_POR_PRENDA;
-            totalEl.textContent = esValida ? `Total: ${totalProducto} unidades` : `Mínimo ${MIN_POR_PRENDA} unidades en total`;
-            totalEl.classList.toggle('is-warning', !esValida);
+            totalEl.textContent = `${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}`;
         }
     });
 
     renderOrderSummary();
     if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
+    renderOrderProgress();
+}
+
+// Mensaje de avance hacia el mínimo de 6 prendas surtidas del pedido completo.
+function renderOrderProgress() {
+    if (!orderProgressEl) return;
+    const total = getTotalGeneral();
+    if (total === 0) {
+        orderProgressEl.style.display = 'none';
+        orderProgressEl.textContent = '';
+        return;
+    }
+    orderProgressEl.style.display = 'flex';
+    if (total >= MIN_POR_PRENDA) {
+        orderProgressEl.classList.add('is-complete');
+        orderProgressEl.innerHTML = `<i class="bi bi-check-circle-fill"></i> Mínimo alcanzado: llevas ${total} prendas surtidas.`;
+    } else {
+        orderProgressEl.classList.remove('is-complete');
+        const faltan = MIN_POR_PRENDA - total;
+        orderProgressEl.innerHTML = `<i class="bi bi-info-circle-fill"></i> Llevas ${total} de ${MIN_POR_PRENDA} prendas mínimas — te faltan ${faltan} (pueden ser de cualquier referencia).`;
+    }
 }
 
 function updateProgress() {
     renderOrderSummary();
     if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
+    renderOrderProgress();
     const hayAlgoSeleccionado = [...detalleFilas.values()].some(filas => filas.length > 0);
     if (finalizePanelEl) finalizePanelEl.classList.toggle('is-visible', hayAlgoSeleccionado);
 }
@@ -428,8 +553,7 @@ if (gridEl) {
                 showToast('Sin stock disponible para esta prenda', 'warning');
                 return;
             }
-            const cantidad = Math.min(MIN_POR_PRENDA, colores[0].stock);
-            detalleFilas.set(p.id, [{ talla, color: colores[0].color, cantidad }]);
+            detalleFilas.set(p.id, [{ talla, color: colores[0].color, cantidad: 1 }]);
             renderProducts();
             updateProgress();
             return;
@@ -439,12 +563,17 @@ if (gridEl) {
             const id = addColorBtn.dataset.id;
             const p = productsData.find(pp => pp.id === id);
             if (!p) return;
+            const filas = detalleFilas.get(id) || [];
             const tallas = getTallasConStock(p);
             const talla = tallas.length > 0 ? tallas[0] : null;
-            const colores = getColoresParaTalla(p, talla);
-            if (colores.length === 0) return;
-            const filas = detalleFilas.get(id) || [];
-            filas.push({ talla, color: colores[0].color, cantidad: Math.min(1, colores[0].stock) || 1 });
+            // Descuenta lo que ya reservaron las filas existentes de este producto,
+            // así no se puede volver a ofrecer un color que ya se agotó entre todas.
+            const colores = getColoresDisponiblesFila(p, talla, filas.length);
+            if (colores.length === 0) {
+                showToast('Ya no hay más colores disponibles de esta prenda', 'warning');
+                return;
+            }
+            filas.push({ talla, color: colores[0].color, cantidad: 1 });
             detalleFilas.set(id, filas);
             renderProducts();
             updateProgress();
@@ -486,7 +615,7 @@ if (gridEl) {
             const filas = detalleFilas.get(id);
             if (p && filas && filas[idx]) {
                 filas[idx].talla = tallaSel.value;
-                const colores = getColoresParaTalla(p, filas[idx].talla);
+                const colores = getColoresDisponiblesFila(p, filas[idx].talla, idx);
                 filas[idx].color = colores[0]?.color || '';
                 filas[idx].cantidad = Math.min(filas[idx].cantidad || 1, colores[0]?.stock || 1) || 1;
                 renderProducts();
@@ -504,8 +633,8 @@ if (gridEl) {
                 filas[idx].color = colorSel.value;
                 const tallas = getTallasConStock(p);
                 const hasTallas = tallas.length > 0;
-                const stockCombo = getStockCombo(p, hasTallas ? filas[idx].talla : null, filas[idx].color) || 1;
-                filas[idx].cantidad = Math.min(filas[idx].cantidad || 1, stockCombo);
+                const disponible = getStockDisponibleFila(p, hasTallas ? filas[idx].talla : null, filas[idx].color, idx) || 1;
+                filas[idx].cantidad = Math.min(filas[idx].cantidad || 1, disponible);
                 renderProducts();
                 updateProgress();
             }
@@ -539,8 +668,8 @@ if (gridEl) {
         if (filas && filas[idx] && p) {
             const tallas = getTallasConStock(p);
             const hasTallas = tallas.length > 0;
-            const stockCombo = getStockCombo(p, hasTallas ? filas[idx].talla : null, filas[idx].color) || 1;
-            const val = Math.min(stockCombo, Math.max(1, parseInt(qtyInput.value, 10) || 1));
+            const disponible = getStockDisponibleFila(p, hasTallas ? filas[idx].talla : null, filas[idx].color, idx) || 1;
+            const val = Math.min(disponible, Math.max(1, parseInt(qtyInput.value, 10) || 1));
             filas[idx].cantidad = val;
             qtyInput.value = val;
             actualizarPreciosEnVivo();
@@ -573,11 +702,27 @@ if (finalizeToggleBtn) {
 
 if (waBtn) {
     waBtn.addEventListener('click', () => {
-        const productosConSeleccion = allProducts.filter(p => getCantidadValida(p.id) > 0);
-        if (productosConSeleccion.length === 0) {
-            showToast(`Elige al menos ${MIN_POR_PRENDA} unidades de una prenda primero`, 'warning');
+        // Última verificación antes de armar el pedido: si el stock cambió mientras
+        // se elegía, o alguna combinación de filas se pasó del disponible, se
+        // corrige aquí y se le pide al cliente revisar el resumen actualizado antes
+        // de volver a intentar enviarlo (nunca se envía un pedido sin re-chequear).
+        if (reconciliarTodo()) {
+            renderProducts();
+            updateProgress();
+            showToast('Ajustamos tu pedido porque algo superaba el stock disponible. Revisa el resumen y toca enviar de nuevo.', 'warning');
             return;
         }
+        if (!ordenAlcanzaMinimo()) {
+            const faltan = MIN_POR_PRENDA - getTotalGeneral();
+            showToast(
+                faltan >= MIN_POR_PRENDA
+                    ? `Elige al menos ${MIN_POR_PRENDA} prendas surtidas (pueden ser de referencias distintas)`
+                    : `Te faltan ${faltan} prenda${faltan === 1 ? '' : 's'} para el mínimo de ${MIN_POR_PRENDA} surtidas`,
+                'warning'
+            );
+            return;
+        }
+        const productosConSeleccion = allProducts.filter(p => getCantidadProducto(p.id) > 0);
         const lineas = [];
         productosConSeleccion.forEach(p => {
             const filas = detalleFilas.get(p.id) || [];
