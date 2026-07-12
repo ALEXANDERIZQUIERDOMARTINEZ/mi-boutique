@@ -271,6 +271,9 @@ function calcularTotalEstimado() {
     return total;
 }
 
+// Resumen del pedido con botones para quitar una fila o toda la prenda sin
+// tener que volver a subir hasta su tarjeta en la grilla (útil si el cliente
+// se pasó del mínimo y quiere recortar algo directamente desde aquí).
 function renderOrderSummary() {
     if (!orderSummaryEl) return;
     const productosConSeleccion = allProducts.filter(p => getCantidadProducto(p.id) > 0);
@@ -281,24 +284,68 @@ function renderOrderSummary() {
     let total = 0;
     let totalUnidades = 0;
     const gruposHtml = productosConSeleccion.map(p => {
-        const filas = (detalleFilas.get(p.id) || []).filter(f => (parseInt(f.cantidad, 10) || 0) > 0);
+        const filasConIdx = (detalleFilas.get(p.id) || [])
+            .map((f, idx) => ({ f, idx }))
+            .filter(({ f }) => (parseInt(f.cantidad, 10) || 0) > 0);
         const precioUnitario = getPrecioUnitario(p);
-        const filasHtml = filas.map(f => {
+        const filasHtml = filasConIdx.map(({ f, idx }) => {
             const cantidad = parseInt(f.cantidad, 10) || 0;
             const subtotal = precioUnitario * cantidad;
             total += subtotal;
             totalUnidades += cantidad;
             const detalle = f.talla ? `${f.color} · talla ${f.talla}` : f.color;
-            return `<div class="mayor-summary-row"><span>${detalle} × ${cantidad}</span><strong>${formatoMoneda.format(subtotal)}</strong></div>`;
+            return `
+                <div class="mayor-summary-row">
+                    <span>${detalle} × ${cantidad}</span>
+                    <span class="mayor-summary-row-right">
+                        <strong>${formatoMoneda.format(subtotal)}</strong>
+                        <button type="button" class="mayor-summary-remove" data-id="${p.id}" data-idx="${idx}" aria-label="Quitar ${detalle} de ${p.nombre}"><i class="bi bi-x-lg"></i></button>
+                    </span>
+                </div>`;
         }).join('');
         return `
             <div class="mayor-summary-group">
-                <div class="mayor-summary-group-name"><span>${p.nombre}</span><span class="mayor-summary-group-unit">${formatoMoneda.format(precioUnitario)} c/u</span></div>
+                <div class="mayor-summary-group-name">
+                    <span>${p.nombre}</span>
+                    <span class="mayor-summary-group-actions">
+                        <span class="mayor-summary-group-unit">${formatoMoneda.format(precioUnitario)} c/u</span>
+                        <button type="button" class="mayor-summary-remove-all" data-id="${p.id}" aria-label="Quitar toda ${p.nombre}"><i class="bi bi-trash3"></i></button>
+                    </span>
+                </div>
                 ${filasHtml}
             </div>
         `;
     }).join('');
     orderSummaryEl.innerHTML = `${gruposHtml}<div class="mayor-summary-total"><span>Total (${totalUnidades} und.)</span><strong>${formatoMoneda.format(total)}</strong></div>`;
+}
+
+if (orderSummaryEl) {
+    orderSummaryEl.addEventListener('click', (e) => {
+        const removeAllBtn = e.target.closest('.mayor-summary-remove-all');
+        if (removeAllBtn) {
+            const id = removeAllBtn.dataset.id;
+            detalleFilas.delete(id);
+            tarjetasColapsadas.delete(id);
+            updateCardInPlace(id);
+            updateProgress();
+            return;
+        }
+        const removeBtn = e.target.closest('.mayor-summary-remove');
+        if (removeBtn) {
+            const id = removeBtn.dataset.id;
+            const idx = parseInt(removeBtn.dataset.idx, 10);
+            const filas = detalleFilas.get(id) || [];
+            filas.splice(idx, 1);
+            if (filas.length === 0) {
+                detalleFilas.delete(id);
+                tarjetasColapsadas.delete(id);
+            } else {
+                detalleFilas.set(id, filas);
+            }
+            updateCardInPlace(id);
+            updateProgress();
+        }
+    });
 }
 
 function renderTiersTables() {
@@ -415,6 +462,69 @@ function renderFilaHtml(p, fila, idx, tallas) {
     `;
 }
 
+// Construye el nodo de UNA tarjeta a partir del estado actual de detalleFilas.
+// Se usa tanto al pintar la grilla completa como al refrescar una sola tarjeta
+// (updateCardInPlace) sin tocar el resto de la página — así elegir/quitar un
+// color no reconstruye tarjetas ajenas ni hace que la página "salte" al
+// desplazarse, porque el resto del DOM ni se toca.
+function buildCardElement(p) {
+    const filas = detalleFilas.get(p.id) || [];
+    const totalProducto = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
+    const img = p.imagenUrl || 'https://placehold.co/300x400/f5e8ed/D988B9?text=Mishell';
+
+    const grupo = resolveWholesaleGroup(p, categoriesMap);
+    const precioUnitario = getPrecioUnitario(p);
+    let precioHtml = formatoMoneda.format(precioUnitario);
+    if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
+        precioHtml = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${buildTierHint(p)}</span>`;
+    }
+
+    let bodyExtra;
+    if (filas.length === 0) {
+        bodyExtra = `<button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-circle"></i> Elegir esta prenda</button>`;
+    } else {
+        const colapsada = tarjetasColapsadas.has(p.id);
+        const tallas = getTallasConStock(p);
+        const filasHtml = filas.map((f, idx) => renderFilaHtml(p, f, idx, tallas)).join('');
+        const talla = tallas.length > 0 ? tallas[0] : null;
+        const usados = new Set(filas.map(f => f.color));
+        const quedanColores = getColoresDisponiblesFila(p, talla, filas.length).some(c => !usados.has(c.color));
+        bodyExtra = `
+            <button type="button" class="mayor-card-toggle" data-id="${p.id}">
+                <span class="mayor-card-toggle-label">${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}</span>
+                <i class="bi bi-chevron-${colapsada ? 'down' : 'up'} mayor-card-toggle-icon"></i>
+            </button>
+            <div class="mayor-colors-wrap"${colapsada ? ' style="display:none;"' : ''}>
+                <div class="mayor-colors-list">${filasHtml}</div>
+                ${quedanColores ? `<button type="button" class="mayor-add-color" data-id="${p.id}">+ Agregar otro color</button>` : ''}
+            </div>
+        `;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'mayor-card' + (filas.length > 0 ? ' is-selected' : '');
+    card.dataset.productId = p.id;
+    card.innerHTML = `
+        <div class="mayor-card-img"><img src="${img}" alt="${p.nombre}" loading="lazy"></div>
+        <div class="mayor-card-body">
+            <h3 class="mayor-card-name">${p.nombre}</h3>
+            <div class="mayor-card-price">${precioHtml}</div>
+            ${bodyExtra}
+        </div>
+    `;
+    return card;
+}
+
+// Reemplaza solo el nodo de una tarjeta ya pintada (tras elegir/quitar color,
+// cambiar talla o colapsar). Si por alguna razón esa tarjeta ya no está en el
+// DOM (cambió de página, se filtró, etc.) se cae de vuelta al render completo.
+function updateCardInPlace(id) {
+    const p = productsData.find(pp => pp.id === id);
+    const oldCard = gridEl && gridEl.querySelector(`.mayor-card[data-product-id="${id}"]`);
+    if (!p || !oldCard) { renderProducts(); return; }
+    oldCard.replaceWith(buildCardElement(p));
+}
+
 function renderProducts() {
     if (!gridEl) return;
     reconciliarTodo();
@@ -435,51 +545,7 @@ function renderProducts() {
     gridEl.innerHTML = '';
 
     productsData.forEach(p => {
-        const filas = detalleFilas.get(p.id) || [];
-        const totalProducto = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
-        const img = p.imagenUrl || 'https://placehold.co/300x400/f5e8ed/D988B9?text=Mishell';
-
-        const grupo = resolveWholesaleGroup(p, categoriesMap);
-        const precioUnitario = getPrecioUnitario(p);
-        let precioHtml = formatoMoneda.format(precioUnitario);
-        if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-            precioHtml = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${buildTierHint(p)}</span>`;
-        }
-
-        let bodyExtra;
-        if (filas.length === 0) {
-            bodyExtra = `<button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-circle"></i> Elegir esta prenda</button>`;
-        } else {
-            const colapsada = tarjetasColapsadas.has(p.id);
-            const tallas = getTallasConStock(p);
-            const filasHtml = filas.map((f, idx) => renderFilaHtml(p, f, idx, tallas)).join('');
-            const talla = tallas.length > 0 ? tallas[0] : null;
-            const usados = new Set(filas.map(f => f.color));
-            const quedanColores = getColoresDisponiblesFila(p, talla, filas.length).some(c => !usados.has(c.color));
-            bodyExtra = `
-                <button type="button" class="mayor-card-toggle" data-id="${p.id}">
-                    <span class="mayor-card-toggle-label">${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}</span>
-                    <i class="bi bi-chevron-${colapsada ? 'down' : 'up'} mayor-card-toggle-icon"></i>
-                </button>
-                <div class="mayor-colors-wrap"${colapsada ? ' style="display:none;"' : ''}>
-                    <div class="mayor-colors-list">${filasHtml}</div>
-                    ${quedanColores ? `<button type="button" class="mayor-add-color" data-id="${p.id}">+ Agregar otro color</button>` : ''}
-                </div>
-            `;
-        }
-
-        const card = document.createElement('div');
-        card.className = 'mayor-card' + (filas.length > 0 ? ' is-selected' : '');
-        card.dataset.productId = p.id;
-        card.innerHTML = `
-            <div class="mayor-card-img"><img src="${img}" alt="${p.nombre}" loading="lazy"></div>
-            <div class="mayor-card-body">
-                <h3 class="mayor-card-name">${p.nombre}</h3>
-                <div class="mayor-card-price">${precioHtml}</div>
-                ${bodyExtra}
-            </div>
-        `;
-        gridEl.appendChild(card);
+        gridEl.appendChild(buildCardElement(p));
     });
 
     renderPagination(filtered.length);
@@ -557,7 +623,7 @@ if (gridEl) {
                 return;
             }
             detalleFilas.set(p.id, [{ talla, color: colores[0].color, cantidad: 1 }]);
-            renderProducts();
+            updateCardInPlace(p.id);
             updateProgress();
             return;
         }
@@ -585,7 +651,7 @@ if (gridEl) {
             }
             filas.push({ talla, color: colores[0].color, cantidad: 1 });
             detalleFilas.set(id, filas);
-            renderProducts();
+            updateCardInPlace(id);
             updateProgress();
             return;
         }
@@ -601,7 +667,7 @@ if (gridEl) {
             } else {
                 detalleFilas.set(id, filas);
             }
-            renderProducts();
+            updateCardInPlace(id);
             updateProgress();
             return;
         }
@@ -610,12 +676,12 @@ if (gridEl) {
             const id = toggleBtn.dataset.id;
             if (tarjetasColapsadas.has(id)) tarjetasColapsadas.delete(id);
             else tarjetasColapsadas.add(id);
-            renderProducts();
+            updateCardInPlace(id);
         }
     });
 
     // Cambiar talla o color reconstruye la fila (las opciones disponibles cambian),
-    // así que aquí sí se permite volver a renderizar la grilla completa.
+    // pero ya no hace falta repintar toda la grilla: solo se actualiza esta tarjeta.
     gridEl.addEventListener('change', (e) => {
         const tallaSel = e.target.closest('.mayor-talla-select');
         if (tallaSel) {
@@ -628,7 +694,7 @@ if (gridEl) {
                 const colores = getColoresDisponiblesFila(p, filas[idx].talla, idx);
                 filas[idx].color = colores[0]?.color || '';
                 filas[idx].cantidad = Math.min(filas[idx].cantidad || 1, colores[0]?.stock || 1) || 1;
-                renderProducts();
+                updateCardInPlace(id);
                 updateProgress();
             }
             return;
@@ -645,7 +711,7 @@ if (gridEl) {
                 const hasTallas = tallas.length > 0;
                 const disponible = getStockDisponibleFila(p, hasTallas ? filas[idx].talla : null, filas[idx].color, idx) || 1;
                 filas[idx].cantidad = Math.min(filas[idx].cantidad || 1, disponible);
-                renderProducts();
+                updateCardInPlace(id);
                 updateProgress();
             }
         }
@@ -732,22 +798,25 @@ if (waBtn) {
             );
             return;
         }
+        // Un bloque por prenda (nombre + precio/u una sola vez) y debajo sus colores/
+        // tallas, en vez de una lista plana repitiendo el nombre en cada línea —
+        // así se lee de un vistazo cuánto va de cada referencia.
         const productosConSeleccion = allProducts.filter(p => getCantidadProducto(p.id) > 0);
-        const lineas = [];
-        productosConSeleccion.forEach(p => {
-            const filas = detalleFilas.get(p.id) || [];
+        const bloques = productosConSeleccion.map(p => {
+            const filas = (detalleFilas.get(p.id) || []).filter(f => (parseInt(f.cantidad, 10) || 0) > 0);
             const precioUnitario = getPrecioUnitario(p);
-            filas.forEach(f => {
+            const detalleLineas = filas.map(f => {
                 const cantidad = parseInt(f.cantidad, 10) || 0;
-                if (cantidad <= 0) return;
-                const detalle = f.talla ? `talla ${f.talla}, color ${f.color}` : `color ${f.color}`;
-                lineas.push(`• ${p.nombre} (${detalle}) x${cantidad} — ${formatoMoneda.format(precioUnitario)} c/u = ${formatoMoneda.format(precioUnitario * cantidad)}`);
-            });
+                const detalle = f.talla ? `${f.color} (talla ${f.talla})` : f.color;
+                return `   • ${detalle} x${cantidad} = ${formatoMoneda.format(precioUnitario * cantidad)}`;
+            }).join('\n');
+            return `🛍️ *${p.nombre}* — ${formatoMoneda.format(precioUnitario)} c/u\n${detalleLineas}`;
         });
         const observaciones = (obsEl?.value || '').trim();
         const totalEstimado = calcularTotalEstimado();
-        let mensaje = `Hola! Quiero hacer un pedido al por mayor:\n${lineas.join('\n')}\n\nTotal estimado: ${formatoMoneda.format(totalEstimado)}`;
-        if (observaciones) mensaje += `\n\nObservaciones: ${observaciones}`;
+        const totalUnidades = getTotalGeneral();
+        let mensaje = `¡Hola! 👋 Quiero hacer este pedido al por mayor:\n\n${bloques.join('\n\n')}\n\n———————————————\nTotal: ${totalUnidades} prenda${totalUnidades === 1 ? '' : 's'} — ${formatoMoneda.format(totalEstimado)}`;
+        if (observaciones) mensaje += `\n\n📝 Observaciones: ${observaciones}`;
         const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`;
         const a = document.createElement('a');
         a.href = url;
