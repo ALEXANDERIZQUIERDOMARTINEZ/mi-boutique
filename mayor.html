@@ -508,6 +508,50 @@
   .btn-mayor-send:active {
     transform: scale(0.98);
   }
+
+  /* ── Densidad compacta en móvil: más prendas visibles por pantalla ── */
+  @media (max-width: 991.98px) {
+    .mayor-topbar {
+      padding: 10px 14px;
+    }
+    .mayor-topbar-head h1 {
+      font-size: 1.05rem;
+    }
+    .mayor-fact {
+      font-size: 0.74rem;
+    }
+    .mayor-topbar-rule {
+      font-size: 0.78rem;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+    }
+    .mayor-grid {
+      gap: 10px;
+      padding: 14px 12px 24px;
+    }
+    .mayor-card-img {
+      aspect-ratio: 1 / 1;
+    }
+    .mayor-card-body {
+      padding: 8px 10px 10px;
+    }
+    .mayor-card-name {
+      font-size: 0.78rem;
+      margin-bottom: 3px;
+    }
+    .mayor-card-price {
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+    }
+    .mayor-card-price .tier-hint {
+      font-size: 0.66rem;
+      margin-top: 2px;
+    }
+    .mayor-add-btn {
+      padding: 8px;
+      font-size: 0.74rem;
+    }
+  }
 </style>
 </head>
 <body class="wholesale-active">
@@ -643,31 +687,10 @@
   </div>
 </div>
 
-<div class="nav-search-suggestions d-lg-none" id="nav-search-suggestions"></div>
-
 <nav class="mobile-bottom-nav d-lg-none">
 <button class="nav-item active" id="mobile-home-btn">
 <i class="bi bi-house"></i>
 </button>
-<button class="nav-item" id="mobile-search-btn">
-<i class="bi bi-search"></i>
-</button>
-<!-- Búsqueda inline (oculta por defecto) -->
-<div class="nav-inline-search" id="nav-inline-search">
-  <button class="nis-back" id="nis-back" aria-label="Cerrar búsqueda">
-    <i class="bi bi-arrow-left"></i>
-  </button>
-  <input type="text"
-         class="nis-input"
-         id="nav-search-input"
-         placeholder="Productos o categorías..."
-         autocomplete="off"
-         autocorrect="off"
-         spellcheck="false">
-  <button class="nis-clear" id="nis-clear" aria-label="Limpiar" style="display:none">
-    <i class="bi bi-x"></i>
-  </button>
-</div>
 </nav>
 
 <div class="toast-container">
