@@ -453,6 +453,9 @@ function renderProducts() {
             const colapsada = tarjetasColapsadas.has(p.id);
             const tallas = getTallasConStock(p);
             const filasHtml = filas.map((f, idx) => renderFilaHtml(p, f, idx, tallas)).join('');
+            const talla = tallas.length > 0 ? tallas[0] : null;
+            const usados = new Set(filas.map(f => f.color));
+            const quedanColores = getColoresDisponiblesFila(p, talla, filas.length).some(c => !usados.has(c.color));
             bodyExtra = `
                 <button type="button" class="mayor-card-toggle" data-id="${p.id}">
                     <span class="mayor-card-toggle-label">${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}</span>
@@ -460,7 +463,7 @@ function renderProducts() {
                 </button>
                 <div class="mayor-colors-wrap"${colapsada ? ' style="display:none;"' : ''}>
                     <div class="mayor-colors-list">${filasHtml}</div>
-                    <button type="button" class="mayor-add-color" data-id="${p.id}">+ Agregar otro color</button>
+                    ${quedanColores ? `<button type="button" class="mayor-add-color" data-id="${p.id}">+ Agregar otro color</button>` : ''}
                 </div>
             `;
         }
@@ -568,9 +571,16 @@ if (gridEl) {
             const talla = tallas.length > 0 ? tallas[0] : null;
             // Descuenta lo que ya reservaron las filas existentes de este producto,
             // así no se puede volver a ofrecer un color que ya se agotó entre todas.
-            const colores = getColoresDisponiblesFila(p, talla, filas.length);
+            const disponibles = getColoresDisponiblesFila(p, talla, filas.length);
+            // Cada fila debe representar un color distinto: si ya hay una fila con
+            // ese color, no lo vuelvas a ofrecer aunque le quede stock (para eso está
+            // el campo de cantidad de esa misma fila, no una fila duplicada).
+            const usados = new Set(filas.map(f => f.color));
+            const colores = disponibles.filter(c => !usados.has(c.color));
             if (colores.length === 0) {
-                showToast('Ya no hay más colores disponibles de esta prenda', 'warning');
+                showToast(disponibles.length === 0
+                    ? 'Ya no hay más colores disponibles de esta prenda'
+                    : 'Ya agregaste todos los colores disponibles de esta prenda', 'warning');
                 return;
             }
             filas.push({ talla, color: colores[0].color, cantidad: 1 });
