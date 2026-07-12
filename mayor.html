@@ -142,11 +142,19 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
   }
-  .mayor-card:hover {
-    box-shadow: var(--sombra-lg);
-    transform: translateY(-3px);
+  /* Solo levantar la tarjeta en dispositivos con hover real (mouse). En
+     táctil, :hover se activa con el toque y el salto se sentía como una
+     animación no deseada cada vez que se elegía un color o cantidad. */
+  @media (hover: hover) and (pointer: fine) {
+    .mayor-card {
+      transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+    }
+    .mayor-card:hover {
+      box-shadow: var(--sombra-lg);
+      transform: translateY(-3px);
+    }
   }
   .mayor-card.is-selected {
     border-color: var(--color-primario);
