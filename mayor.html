@@ -27,6 +27,11 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 <style>
+  /* Ya no hay barra flotante inferior en esta página: no reservar espacio para ella */
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   .wholesale-banner {
     background: linear-gradient(135deg, #7B4FA6, #C273A2);
     color: #fff;
@@ -512,44 +517,44 @@
   /* ── Densidad compacta en móvil: más prendas visibles por pantalla ── */
   @media (max-width: 991.98px) {
     .mayor-topbar {
-      padding: 10px 14px;
+      padding: 8px 12px;
     }
     .mayor-topbar-head h1 {
-      font-size: 1.05rem;
+      font-size: 0.98rem;
     }
     .mayor-fact {
-      font-size: 0.74rem;
+      font-size: 0.7rem;
     }
     .mayor-topbar-rule {
-      font-size: 0.78rem;
-      padding: 8px 10px;
+      font-size: 0.74rem;
+      padding: 7px 9px;
       margin-bottom: 8px;
     }
     .mayor-grid {
-      gap: 10px;
-      padding: 14px 12px 24px;
+      gap: 8px;
+      padding: 10px 8px 16px;
     }
     .mayor-card-img {
       aspect-ratio: 1 / 1;
     }
     .mayor-card-body {
-      padding: 8px 10px 10px;
+      padding: 6px 8px 8px;
     }
     .mayor-card-name {
-      font-size: 0.78rem;
-      margin-bottom: 3px;
+      font-size: 0.7rem;
+      margin-bottom: 2px;
     }
     .mayor-card-price {
-      font-size: 0.8rem;
-      margin-bottom: 6px;
+      font-size: 0.74rem;
+      margin-bottom: 4px;
     }
     .mayor-card-price .tier-hint {
-      font-size: 0.66rem;
-      margin-top: 2px;
+      font-size: 0.6rem;
+      margin-top: 1px;
     }
     .mayor-add-btn {
-      padding: 8px;
-      font-size: 0.74rem;
+      padding: 6px;
+      font-size: 0.68rem;
     }
   }
 </style>
@@ -686,12 +691,6 @@
     </button>
   </div>
 </div>
-
-<nav class="mobile-bottom-nav d-lg-none">
-<button class="nav-item active" id="mobile-home-btn">
-<i class="bi bi-house"></i>
-</button>
-</nav>
 
 <div class="toast-container">
   <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
