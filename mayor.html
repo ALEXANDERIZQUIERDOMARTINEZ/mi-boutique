@@ -346,21 +346,32 @@
   }
 
   /* ── Panel inferior de cierre de pedido ──────────────────────────── */
+  /* Colapsado: una barrita pegada abajo con el total. Expandido: cubre toda
+     la pantalla (fixed, top:0) para revisar/editar el pedido con espacio de
+     sobra, en vez de una franja angosta pegada al fondo. */
   .mayor-finalize-panel {
-    position: sticky;
-    bottom: 0;
+    position: fixed;
     left: 0;
     right: 0;
+    bottom: 0;
     background: #fff;
-    border-top: 1px solid var(--color-borde);
-    box-shadow: 0 -8px 24px rgba(0,0,0,0.08);
-    padding: 12px 16px;
     display: none;
-    z-index: 20;
+    flex-direction: column;
+    z-index: 1050;
   }
   .mayor-finalize-panel.is-visible {
-    display: block;
+    display: flex;
+  }
+  .mayor-finalize-panel.is-collapsed {
+    border-top: 1px solid var(--color-borde);
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.08);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
     animation: mayorSlideUp 0.35s ease;
+  }
+  .mayor-finalize-panel:not(.is-collapsed) {
+    top: 0;
+    padding: max(12px, env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom));
+    overflow: hidden;
   }
   @keyframes mayorSlideUp {
     from { transform: translateY(16px); opacity: 0; }
@@ -377,6 +388,7 @@
     border: none;
     padding: 6px 2px;
     cursor: pointer;
+    flex-shrink: 0;
   }
   .mayor-finalize-handle-label {
     font-size: 0.85rem;
@@ -399,8 +411,13 @@
   }
   .mayor-finalize-inner {
     max-width: 560px;
+    width: 100%;
     margin: 0 auto;
     padding-top: 14px;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
   .mayor-finalize-panel.is-collapsed .mayor-finalize-inner {
     display: none;
@@ -417,6 +434,7 @@
     padding: 9px 12px;
     margin-bottom: 12px;
     line-height: 1.4;
+    flex-shrink: 0;
   }
   .mayor-order-progress i {
     flex-shrink: 0;
@@ -431,7 +449,8 @@
     border-radius: var(--radio-md);
     padding: 12px 14px;
     margin-bottom: 16px;
-    max-height: 260px;
+    flex: 1;
+    min-height: 80px;
     overflow-y: auto;
     background: var(--color-fondo-secundario);
   }
@@ -536,10 +555,12 @@
     color: var(--color-texto);
     margin-bottom: 6px;
     display: block;
+    flex-shrink: 0;
   }
   #mayor-observaciones {
     resize: none;
     font-size: 0.85rem;
+    flex-shrink: 0;
   }
   .btn-mayor-send {
     width: 100%;
@@ -548,6 +569,7 @@
     background: var(--color-texto);
     color: #fff;
     font-weight: 600;
+    flex-shrink: 0;
     border: none;
     border-radius: var(--radio-sm);
     transition: background 0.2s ease, transform 0.15s ease;

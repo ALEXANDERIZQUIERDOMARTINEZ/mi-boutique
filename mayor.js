@@ -462,44 +462,45 @@ function renderFilaHtml(p, fila, idx, tallas) {
     `;
 }
 
-// Construye el nodo de UNA tarjeta a partir del estado actual de detalleFilas.
-// Se usa tanto al pintar la grilla completa como al refrescar una sola tarjeta
-// (updateCardInPlace) sin tocar el resto de la página — así elegir/quitar un
-// color no reconstruye tarjetas ajenas ni hace que la página "salte" al
-// desplazarse, porque el resto del DOM ni se toca.
-function buildCardElement(p) {
-    const filas = detalleFilas.get(p.id) || [];
-    const totalProducto = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
-    const img = p.imagenUrl || 'https://placehold.co/300x400/f5e8ed/D988B9?text=Mishell';
-
+function buildCardPriceHtml(p) {
     const grupo = resolveWholesaleGroup(p, categoriesMap);
     const precioUnitario = getPrecioUnitario(p);
-    let precioHtml = formatoMoneda.format(precioUnitario);
     if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-        precioHtml = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${buildTierHint(p)}</span>`;
+        return `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${buildTierHint(p)}</span>`;
     }
+    return formatoMoneda.format(precioUnitario);
+}
 
-    let bodyExtra;
+// HTML de la parte interactiva de la tarjeta (botón "Elegir"/filas de color):
+// lo único que cambia al elegir/quitar un color, cambiar talla o colapsar.
+function buildCardExtraHtml(p) {
+    const filas = detalleFilas.get(p.id) || [];
     if (filas.length === 0) {
-        bodyExtra = `<button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-circle"></i> Elegir esta prenda</button>`;
-    } else {
-        const colapsada = tarjetasColapsadas.has(p.id);
-        const tallas = getTallasConStock(p);
-        const filasHtml = filas.map((f, idx) => renderFilaHtml(p, f, idx, tallas)).join('');
-        const talla = tallas.length > 0 ? tallas[0] : null;
-        const usados = new Set(filas.map(f => f.color));
-        const quedanColores = getColoresDisponiblesFila(p, talla, filas.length).some(c => !usados.has(c.color));
-        bodyExtra = `
-            <button type="button" class="mayor-card-toggle" data-id="${p.id}">
-                <span class="mayor-card-toggle-label">${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}</span>
-                <i class="bi bi-chevron-${colapsada ? 'down' : 'up'} mayor-card-toggle-icon"></i>
-            </button>
-            <div class="mayor-colors-wrap"${colapsada ? ' style="display:none;"' : ''}>
-                <div class="mayor-colors-list">${filasHtml}</div>
-                ${quedanColores ? `<button type="button" class="mayor-add-color" data-id="${p.id}">+ Agregar otro color</button>` : ''}
-            </div>
-        `;
+        return `<button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-circle"></i> Elegir esta prenda</button>`;
     }
+    const totalProducto = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
+    const colapsada = tarjetasColapsadas.has(p.id);
+    const tallas = getTallasConStock(p);
+    const filasHtml = filas.map((f, idx) => renderFilaHtml(p, f, idx, tallas)).join('');
+    const talla = tallas.length > 0 ? tallas[0] : null;
+    const usados = new Set(filas.map(f => f.color));
+    const quedanColores = getColoresDisponiblesFila(p, talla, filas.length).some(c => !usados.has(c.color));
+    return `
+        <button type="button" class="mayor-card-toggle" data-id="${p.id}">
+            <span class="mayor-card-toggle-label">${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}</span>
+            <i class="bi bi-chevron-${colapsada ? 'down' : 'up'} mayor-card-toggle-icon"></i>
+        </button>
+        <div class="mayor-colors-wrap"${colapsada ? ' style="display:none;"' : ''}>
+            <div class="mayor-colors-list">${filasHtml}</div>
+            ${quedanColores ? `<button type="button" class="mayor-add-color" data-id="${p.id}">+ Agregar otro color</button>` : ''}
+        </div>
+    `;
+}
+
+// Construye el nodo de UNA tarjeta completa (se usa al pintar la grilla).
+function buildCardElement(p) {
+    const filas = detalleFilas.get(p.id) || [];
+    const img = p.imagenUrl || 'https://placehold.co/300x400/f5e8ed/D988B9?text=Mishell';
 
     const card = document.createElement('div');
     card.className = 'mayor-card' + (filas.length > 0 ? ' is-selected' : '');
@@ -508,21 +509,28 @@ function buildCardElement(p) {
         <div class="mayor-card-img"><img src="${img}" alt="${p.nombre}" loading="lazy"></div>
         <div class="mayor-card-body">
             <h3 class="mayor-card-name">${p.nombre}</h3>
-            <div class="mayor-card-price">${precioHtml}</div>
-            ${bodyExtra}
+            <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
+            <div class="mayor-card-extra">${buildCardExtraHtml(p)}</div>
         </div>
     `;
     return card;
 }
 
-// Reemplaza solo el nodo de una tarjeta ya pintada (tras elegir/quitar color,
-// cambiar talla o colapsar). Si por alguna razón esa tarjeta ya no está en el
-// DOM (cambió de página, se filtró, etc.) se cae de vuelta al render completo.
+// Refresca solo el precio y la parte interactiva de una tarjeta ya pintada
+// (tras elegir/quitar color, cambiar talla o colapsar), sin tocar la imagen
+// ni recrear el nodo de la tarjeta — así no hay parpadeo ni recarga de
+// imagen en cada selección. Si la tarjeta ya no está en el DOM (cambió de
+// página, se filtró, etc.) se cae de vuelta al render completo.
 function updateCardInPlace(id) {
     const p = productsData.find(pp => pp.id === id);
-    const oldCard = gridEl && gridEl.querySelector(`.mayor-card[data-product-id="${id}"]`);
-    if (!p || !oldCard) { renderProducts(); return; }
-    oldCard.replaceWith(buildCardElement(p));
+    const cardEl = gridEl && gridEl.querySelector(`.mayor-card[data-product-id="${id}"]`);
+    if (!p || !cardEl) { renderProducts(); return; }
+    const filas = detalleFilas.get(id) || [];
+    cardEl.classList.toggle('is-selected', filas.length > 0);
+    const priceEl = cardEl.querySelector('.mayor-card-price');
+    if (priceEl) priceEl.innerHTML = buildCardPriceHtml(p);
+    const extraEl = cardEl.querySelector('.mayor-card-extra');
+    if (extraEl) extraEl.innerHTML = buildCardExtraHtml(p);
 }
 
 function renderProducts() {
@@ -557,17 +565,9 @@ function actualizarPreciosEnVivo() {
         if (!card) return;
         const filas = detalleFilas.get(p.id) || [];
         const totalProducto = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
-        const precioUnitario = getPrecioUnitario(p);
 
         const priceEl = card.querySelector('.mayor-card-price');
-        if (priceEl) {
-            const grupo = resolveWholesaleGroup(p, categoriesMap);
-            if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-                priceEl.innerHTML = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${buildTierHint(p)}</span>`;
-            } else {
-                priceEl.textContent = formatoMoneda.format(precioUnitario);
-            }
-        }
+        if (priceEl) priceEl.innerHTML = buildCardPriceHtml(p);
 
         const totalEl = card.querySelector('.mayor-card-toggle-label');
         if (totalEl) {
