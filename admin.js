@@ -6084,30 +6084,63 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
     
     // ================================================================
-    // 1️⃣ VENTAS DEL DÍA
+    // 1️⃣ VENTAS DEL PERÍODO (Hoy / Semana / Mes / Año)
     // ================================================================
-    function calcularVentasHoy() {
-        console.log("📊 Calculando ventas del día...");
-        
+    let unsubscribeVentasRango = null;
+
+    function obtenerRangoFechas(rango) {
+        const inicio = new Date();
+        inicio.setHours(0, 0, 0, 0);
+
+        if (rango === 'week') {
+            const diaSemana = inicio.getDay(); // 0 = domingo
+            const desplazamiento = diaSemana === 0 ? 6 : diaSemana - 1; // semana inicia lunes
+            inicio.setDate(inicio.getDate() - desplazamiento);
+        } else if (rango === 'month') {
+            inicio.setDate(1);
+        } else if (rango === 'year') {
+            inicio.setMonth(0, 1);
+        }
+
+        const fin = new Date();
+        fin.setDate(fin.getDate() + 1);
+        fin.setHours(0, 0, 0, 0);
+
+        return { inicio, fin };
+    }
+
+    const ETIQUETAS_RANGO_VENTAS = {
+        today: 'Ventas hoy',
+        week: 'Ventas esta semana',
+        month: 'Ventas este mes',
+        year: 'Ventas este año'
+    };
+
+    function calcularVentasRango(rango = 'today') {
+        console.log(`📊 Calculando ventas del período: ${rango}...`);
+
+        if (unsubscribeVentasRango) {
+            unsubscribeVentasRango();
+            unsubscribeVentasRango = null;
+        }
+
+        const tituloEl = document.getElementById('db-ventas-periodo-title');
+        if (tituloEl) tituloEl.textContent = ETIQUETAS_RANGO_VENTAS[rango] || 'Ventas hoy';
+
         try {
-            // Obtener rango de hoy (00:00 a 23:59)
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            
-            const manana = new Date(hoy);
-            manana.setDate(manana.getDate() + 1);
-            
+            const { inicio, fin } = obtenerRangoFechas(rango);
+
             // ⚠️ IMPORTANTE: Solo filtrar por UN campo con desigualdad
             // NO podemos filtrar por timestamp Y estado al mismo tiempo
             const q = query(
                 salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(hoy)),
-                where('timestamp', '<', Timestamp.fromDate(manana)),
+                where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                where('timestamp', '<', Timestamp.fromDate(fin)),
                 orderBy('timestamp', 'desc')
             );
-            
+
             // Escuchar cambios en tiempo real
-            onSnapshot(q,
+            unsubscribeVentasRango = onSnapshot(q,
                 async (snapshot) => {
                     let totalDineroRecibido = 0;
                     let ventasContadas = 0;
@@ -6138,12 +6171,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         }
                     });
 
-                    // 💰 SUMAR ABONOS DEL DÍA desde la colección 'abonos'
+                    // 💰 SUMAR ABONOS DEL PERÍODO desde la colección 'abonos'
                     try {
                         const qAbonos = query(
                             collection(db, 'abonos'),
-                            where('timestamp', '>=', Timestamp.fromDate(hoy)),
-                            where('timestamp', '<', Timestamp.fromDate(manana))
+                            where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                            where('timestamp', '<', Timestamp.fromDate(fin))
                         );
                         const abonosSnap = await getDocs(qAbonos);
 
@@ -6152,9 +6185,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             totalDineroRecibido += (abono.monto || 0);
                         });
 
-                        console.log(`✅ Abonos del día sumados: ${abonosSnap.size} abonos`);
+                        console.log(`✅ Abonos del período sumados: ${abonosSnap.size} abonos`);
                     } catch (err) {
-                        console.error('Error sumando abonos del día:', err);
+                        console.error('Error sumando abonos del período:', err);
                     }
 
                     // Actualizar UI
@@ -6177,17 +6210,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         dbVentasMayoristaCountEl.textContent = `${ventasMayoristaContadas} ${ventasMayoristaContadas === 1 ? 'venta' : 'ventas'}`;
                     }
 
-                    console.log(`✅ Ventas hoy detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas)`);
+                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas)`);
                 },
                 (error) => {
-                    console.error("❌ Error al calcular ventas del día:", error);
+                    console.error("❌ Error al calcular ventas del período:", error);
                     dbVentasHoyEl.textContent = "Error";
                     dbVentasHoyEl.classList.add('text-danger');
                 }
             );
-            
+
         } catch (error) {
-            console.error("❌ Error fatal al configurar ventas del día:", error);
+            console.error("❌ Error fatal al configurar ventas del período:", error);
             dbVentasHoyEl.textContent = "Error";
             dbVentasHoyEl.classList.add('text-danger');
         }
@@ -6281,6 +6314,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 (snapshot) => {
                     let countActivos = 0;
                     let saldoTotal = 0;
+                    let countVencidos = 0;
+                    const hoy = new Date();
 
                     snapshot.forEach(doc => {
                         const apartado = doc.data();
@@ -6289,26 +6324,38 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         if (apartado.estado === 'Pendiente') {
                             countActivos++;
                             saldoTotal += apartado.saldo || 0;
+
+                            // Mismo criterio de "vencido" que usa la tabla de Apartados
+                            const fechaVenc = apartado.fechaVencimiento?.toDate?.();
+                            if (fechaVenc && fechaVenc < hoy) {
+                                countVencidos++;
+                            }
                         }
                     });
 
                     // Actualizar UI
                     dbApartadosVencerEl.textContent = countActivos;
-                    dbApartadosVencerEl.classList.remove('text-danger', 'text-success');
+                    dbApartadosVencerEl.classList.remove('text-danger', 'text-success', 'text-warning');
 
-                    // Actualizar saldo total
+                    // Actualizar saldo total / alerta de vencidos
                     const saldoEl = document.getElementById('db-apartados-total-saldo');
                     if (saldoEl) {
-                        saldoEl.textContent = formatoMoneda.format(saldoTotal) + ' pendiente';
+                        saldoEl.textContent = countVencidos > 0
+                            ? `${formatoMoneda.format(saldoTotal)} pendiente · ${countVencidos} vencido${countVencidos === 1 ? '' : 's'}`
+                            : `${formatoMoneda.format(saldoTotal)} pendiente`;
+                        saldoEl.classList.toggle('text-danger', countVencidos > 0);
+                        saldoEl.classList.toggle('fw-bold', countVencidos > 0);
                     }
 
-                    if (countActivos > 0) {
+                    if (countVencidos > 0) {
+                        dbApartadosVencerEl.classList.add('text-danger');
+                    } else if (countActivos > 0) {
                         dbApartadosVencerEl.classList.add('text-warning');
                     } else {
                         dbApartadosVencerEl.classList.add('text-success');
                     }
 
-                    console.log(`✅ Apartados activos: ${countActivos}`);
+                    console.log(`✅ Apartados activos: ${countActivos} (vencidos: ${countVencidos})`);
                 },
                 (error) => {
                     console.error("❌ Error al calcular apartados activos:", error);
@@ -6463,12 +6510,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         console.log("🎁 Calculando promociones activas...");
 
         try {
-            onSnapshot(productsCollection, (snapshot) => {
+            // Mismo criterio de "Activa" que usa la pestaña Promociones:
+            // activa === true y la fecha actual cae dentro de fechaInicio/fechaFin.
+            onSnapshot(promocionesGlobalesCollection, (snapshot) => {
                 let promocionesActivas = 0;
+                const ahora = new Date();
 
                 snapshot.forEach(doc => {
-                    const producto = doc.data();
-                    if (producto.promocion && producto.promocion.activa) {
+                    const promo = doc.data();
+                    const fechaInicio = promo.fechaInicio?.toDate?.();
+                    const fechaFin = promo.fechaFin?.toDate?.();
+                    if (promo.activa && fechaInicio && fechaFin && ahora >= fechaInicio && ahora <= fechaFin) {
                         promocionesActivas++;
                     }
                 });
@@ -6977,7 +7029,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ================================================================
     // 🚀 INICIALIZAR TODAS LAS FUNCIONES
     // ================================================================
-    calcularVentasHoy();
+    calcularVentasRango('today');
+    document.querySelectorAll('.db2-range-btn').forEach(btn => {
+        btn.addEventListener('click', () => calcularVentasRango(btn.dataset.range));
+    });
     calcularBajoStock();
     calcularApartadosVencer();
     calcularProductosTotales();
