@@ -475,6 +475,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadingWebOrders = document.getElementById('loading-web-orders');
         const pedidosWebCountBadge = document.getElementById('pedidos-web-count');
         const mbnBadge = document.getElementById('mbn-pedidos-count');
+        const topbarNotifBadge = document.getElementById('topbar-notif-count');
+        const topbarNotifList = document.getElementById('topbar-notif-list');
 
         if (!webOrdersContainer) { console.warn("Contenedor de pedidos web no encontrado"); return; }
 
@@ -515,11 +517,44 @@ document.addEventListener('DOMContentLoaded', () => {
             return ts.toDate().toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
         }
 
+        // ── Dropdown de notificaciones (topbar) ─────────────────────────────────
+        function renderNotifDropdown() {
+            if (!topbarNotifList) return;
+            const pending = allOrders.pendiente.slice(0, 5);
+
+            if (pending.length === 0) {
+                topbarNotifList.innerHTML = '<div class="admin-topbar-notif-empty">No tienes notificaciones nuevas</div>';
+                return;
+            }
+
+            topbarNotifList.innerHTML = pending.map(({ id, order }) => `
+                <button type="button" class="admin-topbar-notif-item" data-order-id="${id}">
+                    <div class="admin-topbar-notif-item-icon"><i class="bi bi-bag-check"></i></div>
+                    <div class="admin-topbar-notif-item-body">
+                        <div class="admin-topbar-notif-item-title">${order.clienteNombre || 'Cliente'}</div>
+                        <div class="admin-topbar-notif-item-sub">${formatoMoneda.format(order.totalPedido || 0)} · ${formatFecha(order.timestamp)}</div>
+                    </div>
+                </button>
+            `).join('');
+
+            topbarNotifList.querySelectorAll('.admin-topbar-notif-item').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (window.closeTopbarDropdowns) window.closeTopbarDropdowns();
+                    if (window.adminShowSection) window.adminShowSection('#pedidos-web');
+                    if (window.adminMarkActive) window.adminMarkActive('#pedidos-web');
+                    const tabBtn = document.querySelector('.pw-tab[data-tab="pendiente"]');
+                    if (tabBtn) tabBtn.click();
+                });
+            });
+        }
+
         // ── Stats ────────────────────────────────────────────────────────────
         function updateStats() {
             const count = allOrders.pendiente.length;
             if (pedidosWebCountBadge) { pedidosWebCountBadge.textContent = count; pedidosWebCountBadge.style.display = count > 0 ? 'inline' : 'none'; }
             if (mbnBadge) { mbnBadge.textContent = count; mbnBadge.style.display = count > 0 ? 'inline-flex' : 'none'; }
+            if (topbarNotifBadge) { topbarNotifBadge.textContent = count > 9 ? '9+' : count; topbarNotifBadge.style.display = count > 0 ? 'flex' : 'none'; }
+            renderNotifDropdown();
             const pill = document.getElementById('pedidos-pending-pill');
             const pillCount = document.getElementById('pedidos-pending-count');
             if (pill && pillCount) { pillCount.textContent = count; pill.style.display = count > 0 ? 'inline-flex' : 'none'; }

@@ -389,17 +389,20 @@ export class AuthManager {
         if (!this.currentUser) return;
         const roleName = ROLES[this.currentUser.rol]?.nombre || this.currentUser.rol;
 
-        const nameTargets = ['currentUserInfo', 'rail-admin-name', 'topbar-admin-name'];
+        const nameTargets = ['currentUserInfo', 'rail-admin-name', 'topbar-admin-name', 'topbar-dropdown-name'];
         nameTargets.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.textContent = this.currentUser.nombre;
         });
 
-        const roleTargets = ['currentUserRole', 'rail-profile-role'];
+        const roleTargets = ['currentUserRole', 'rail-profile-role', 'topbar-dropdown-role'];
         roleTargets.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.textContent = roleName;
         });
+
+        const emailEl = document.getElementById('topbar-dropdown-email');
+        if (emailEl) emailEl.textContent = this.currentUser.email || '';
     }
 
     /**
