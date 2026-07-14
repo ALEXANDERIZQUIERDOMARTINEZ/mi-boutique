@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
+import { getColorHex, getColorSwatchStyle } from './color-utils.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -98,6 +99,19 @@ function getColoresParaTalla(p, talla) {
         } else if (!esTallaUnica(v.talla)) {
             return;
         }
+        map.set(v.color, (map.get(v.color) || 0) + stock);
+    });
+    return [...map.entries()].map(([color, stock]) => ({ color, stock }));
+}
+
+// Todos los colores con stock disponible de la prenda, sumando todas las
+// tallas (a diferencia de getColoresParaTalla, que filtra por una talla).
+// Se usa para mostrar en la tarjeta qué colores hay antes de elegir.
+function getColoresDelProducto(p) {
+    const map = new Map();
+    (p.variaciones || []).forEach(v => {
+        const stock = parseInt(v.stock, 10) || 0;
+        if (stock <= 0 || !v.color) return;
         map.set(v.color, (map.get(v.color) || 0) + stock);
     });
     return [...map.entries()].map(([color, stock]) => ({ color, stock }));
@@ -471,6 +485,26 @@ function buildCardPriceHtml(p) {
     return formatoMoneda.format(precioUnitario);
 }
 
+// Lista de bolitas de color con el nombre de cada una, para que se vea de una
+// vez qué colores hay disponibles de la prenda (se compra por color, así que
+// esto es lo primero que preguntan las mayoristas antes de elegir).
+function buildCardColorsHtml(p) {
+    const colores = getColoresDelProducto(p);
+    if (colores.length === 0) return '';
+    const variantesColor = p.variantes_color || [];
+    const itemsHtml = colores.map(({ color }) => {
+        const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
+        const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
+        return `
+            <span class="mayor-card-color-item" title="${color}">
+                <span class="color-swatch-circle mayor-card-color-swatch" style="${swatchStyle}"></span>
+                <span class="color-swatch-name">${color}</span>
+            </span>
+        `;
+    }).join('');
+    return `<div class="mayor-card-colors">${itemsHtml}</div>`;
+}
+
 // HTML de la parte interactiva de la tarjeta (botón "Elegir"/filas de color):
 // lo único que cambia al elegir/quitar un color, cambiar talla o colapsar.
 function buildCardExtraHtml(p) {
@@ -510,6 +544,7 @@ function buildCardElement(p) {
         <div class="mayor-card-body">
             <h3 class="mayor-card-name">${p.nombre}</h3>
             <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
+            ${buildCardColorsHtml(p)}
             <div class="mayor-card-extra">${buildCardExtraHtml(p)}</div>
         </div>
     `;
