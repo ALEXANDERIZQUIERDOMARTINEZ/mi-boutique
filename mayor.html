@@ -222,6 +222,27 @@
     color: var(--color-primario-oscuro);
     margin-top: 3px;
   }
+  .mayor-card-colors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 6px;
+    margin-bottom: 10px;
+  }
+  .mayor-card-color-item {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 40px;
+  }
+  .mayor-card-color-swatch {
+    width: 24px;
+    height: 24px;
+  }
+  .mayor-card-color-item .color-swatch-name {
+    font-size: 0.5rem;
+    max-width: 40px;
+  }
   .mayor-add-btn {
     margin-top: auto;
     width: 100%;
@@ -619,6 +640,21 @@
     .mayor-card-price .tier-hint {
       font-size: 0.6rem;
       margin-top: 1px;
+    }
+    .mayor-card-colors {
+      gap: 6px 4px;
+      margin-bottom: 6px;
+    }
+    .mayor-card-color-item {
+      width: 30px;
+    }
+    .mayor-card-color-swatch {
+      width: 18px;
+      height: 18px;
+    }
+    .mayor-card-color-item .color-swatch-name {
+      font-size: 0.42rem;
+      max-width: 30px;
     }
     .mayor-add-btn {
       padding: 6px;
