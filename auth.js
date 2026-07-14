@@ -4,7 +4,13 @@
  */
 
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+// Clave de localStorage (no sessionStorage: debe sobrevivir a pestañas nuevas
+// y reinicios del navegador) con el momento exacto en que este dispositivo
+// inició sesión por última vez — se compara contra config/seguridad para
+// saber si un "cerrar todas las sesiones" lo dejó fuera.
+const LOGIN_TIMESTAMP_KEY = 'mishellLoginEn';
 
 // Definición de permisos del sistema
 // IMPORTANTE: estas claves deben coincidir exactamente con los permisos
@@ -58,34 +64,43 @@ export const PERMISOS = {
     // Usuarios
     USUARIOS_VER: 'usuarios_ver',
     USUARIOS_CREAR: 'usuarios_crear',
-    USUARIOS_EDITAR: 'usuarios_editar'
+    USUARIOS_EDITAR: 'usuarios_editar',
+
+    // Configuración (no está en firestore.rules — solo controla si el enlace
+    // "Config. Pagos" aparece en el menú, la escritura ya la permiten las
+    // reglas a cualquier usuario activo)
+    CONFIG_GESTIONAR: 'config_gestionar'
 };
 
-// Grupos de permisos para mostrar los checkboxes agrupados en el panel de Usuarios
-export const GRUPOS_PERMISOS = [
-    { id: 'dashboard', nombre: 'Dashboard', permisos: [PERMISOS.DASHBOARD_VER] },
-    { id: 'ventas', nombre: 'Ventas y pedidos', permisos: [
-        PERMISOS.VENTAS_VER, PERMISOS.VENTAS_CREAR, PERMISOS.VENTAS_EDITAR, PERMISOS.VENTAS_ANULAR, PERMISOS.VENTAS_ELIMINAR,
-        PERMISOS.PEDIDOS_WEB_VER, PERMISOS.PEDIDOS_WEB_GESTIONAR,
+// Un módulo = un enlace del menú lateral de admin.html. Se usa para que el
+// panel de Usuarios pueda "segmentar por módulos/links": marcar qué enlaces
+// ve cada usuario, en vez de permisos sueltos difíciles de interpretar.
+// El id coincide con el data-permiso puesto en cada <a class="rail-link">.
+export const MODULOS_PERMISOS = [
+    { id: 'dashboard_ver', nombre: 'Dashboard', permisos: [PERMISOS.DASHBOARD_VER] },
+    { id: 'ventas_crear', nombre: 'Registrar Venta', permisos: [
+        PERMISOS.VENTAS_VER, PERMISOS.VENTAS_CREAR, PERMISOS.VENTAS_EDITAR, PERMISOS.VENTAS_ANULAR, PERMISOS.VENTAS_ELIMINAR
+    ] },
+    { id: 'pedidos_web_ver', nombre: 'Pedidos Web', permisos: [PERMISOS.PEDIDOS_WEB_VER, PERMISOS.PEDIDOS_WEB_GESTIONAR] },
+    { id: 'apartados_ver', nombre: 'Apartados', permisos: [
         PERMISOS.APARTADOS_VER, PERMISOS.APARTADOS_CREAR, PERMISOS.APARTADOS_EDITAR, PERMISOS.APARTADOS_ELIMINAR, PERMISOS.APARTADOS_GESTIONAR
     ] },
-    { id: 'inventario', nombre: 'Inventario', permisos: [
-        PERMISOS.PRODUCTOS_VER, PERMISOS.PRODUCTOS_CREAR, PERMISOS.PRODUCTOS_EDITAR, PERMISOS.PRODUCTOS_ELIMINAR, PERMISOS.PRODUCTOS_IMPORTAR,
-        PERMISOS.CATEGORIAS_GESTIONAR
+    { id: 'productos_ver', nombre: 'Productos', permisos: [
+        PERMISOS.PRODUCTOS_VER, PERMISOS.PRODUCTOS_CREAR, PERMISOS.PRODUCTOS_EDITAR, PERMISOS.PRODUCTOS_ELIMINAR
     ] },
-    { id: 'clientes', nombre: 'Clientes', permisos: [
+    { id: 'productos_importar', nombre: 'Cargue Masivo', permisos: [PERMISOS.PRODUCTOS_IMPORTAR] },
+    { id: 'categorias_gestionar', nombre: 'Categorías', permisos: [PERMISOS.CATEGORIAS_GESTIONAR] },
+    { id: 'clientes_ver', nombre: 'Clientes', permisos: [
         PERMISOS.CLIENTES_VER, PERMISOS.CLIENTES_CREAR, PERMISOS.CLIENTES_EDITAR, PERMISOS.CLIENTES_ELIMINAR
     ] },
-    { id: 'logistica', nombre: 'Logística', permisos: [
-        PERMISOS.REPARTIDORES_GESTIONAR, PERMISOS.PROMOCIONES_GESTIONAR, PERMISOS.PROVEEDORES_GESTIONAR
-    ] },
-    { id: 'finanzas', nombre: 'Finanzas', permisos: [
-        PERMISOS.FINANZAS_VER, PERMISOS.FINANZAS_GESTIONAR, PERMISOS.CIERRES_CAJA
-    ] },
-    { id: 'soporte', nombre: 'Chat / Soporte', permisos: [PERMISOS.CHAT_RESPONDER] },
-    { id: 'usuarios', nombre: 'Usuarios', permisos: [
-        PERMISOS.USUARIOS_VER, PERMISOS.USUARIOS_CREAR, PERMISOS.USUARIOS_EDITAR
-    ] }
+    { id: 'repartidores_gestionar', nombre: 'Repartidores y Tarifas', permisos: [PERMISOS.REPARTIDORES_GESTIONAR] },
+    { id: 'promociones_gestionar', nombre: 'Promociones', permisos: [PERMISOS.PROMOCIONES_GESTIONAR] },
+    { id: 'finanzas_ver', nombre: 'Finanzas', permisos: [PERMISOS.FINANZAS_VER, PERMISOS.FINANZAS_GESTIONAR, PERMISOS.CIERRES_CAJA] },
+    { id: 'proveedores_gestionar', nombre: 'Proveedores', permisos: [PERMISOS.PROVEEDORES_GESTIONAR] },
+    { id: 'config_gestionar', nombre: 'Config. Pagos', permisos: [PERMISOS.CONFIG_GESTIONAR] },
+    { id: 'usuarios_ver', nombre: 'Usuarios', permisos: [PERMISOS.USUARIOS_VER, PERMISOS.USUARIOS_CREAR, PERMISOS.USUARIOS_EDITAR] }
+    // "Backup" no aparece aquí a propósito: exporta todos los datos de la
+    // tienda, así que se queda reservado solo para Sistema (Super Admin).
 ];
 
 // Roles predefinidos con sus permisos.
@@ -209,6 +224,16 @@ export class AuthManager {
                         return;
                     }
 
+                    // Verificar que nadie haya cerrado todas las sesiones después
+                    // de que este dispositivo inició sesión
+                    const sesionVigente = await this.verificarSesionVigente();
+                    if (!sesionVigente) {
+                        await this.logout();
+                        alert('Tu sesión fue cerrada por un administrador. Vuelve a iniciar sesión.');
+                        reject('Session invalidated');
+                        return;
+                    }
+
                     // Guardar datos del usuario
                     this.currentUser = {
                         uid: user.uid,
@@ -244,6 +269,56 @@ export class AuthManager {
         if (!window.location.pathname.includes('login.html')) {
             window.location.href = 'login.html';
         }
+    }
+
+    /**
+     * Compara el momento en que este dispositivo inició sesión (guardado en
+     * localStorage por login.html) contra config/seguridad.invalidarSesionesEn.
+     * Si un administrador cerró todas las sesiones después de ese login, o si
+     * este dispositivo no tiene registro de cuándo inició sesión (sesión
+     * persistida de antes de que existiera este control), la sesión ya no es
+     * válida y hay que volver a pedir la contraseña.
+     */
+    async verificarSesionVigente() {
+        try {
+            const cfgDoc = await getDoc(doc(this.db, 'config', 'seguridad'));
+            const invalidarEn = cfgDoc.exists() ? cfgDoc.data().invalidarSesionesEn : null;
+            if (!invalidarEn) return true; // nunca se ha usado "cerrar todas las sesiones"
+
+            const loginEn = parseInt(localStorage.getItem(LOGIN_TIMESTAMP_KEY) || '0', 10);
+            if (!loginEn) return false;
+            return invalidarEn.toMillis() <= loginEn;
+        } catch (error) {
+            console.warn('No se pudo verificar el estado de la sesión:', error);
+            return true; // si falla la verificación, no bloquear el acceso por eso
+        }
+    }
+
+    /**
+     * Escucha en vivo config/seguridad: si un administrador cierra todas las
+     * sesiones mientras esta pestaña sigue abierta, la cierra de inmediato
+     * sin esperar a que alguien recargue la página.
+     */
+    escucharInvalidacionSesiones() {
+        onSnapshot(doc(this.db, 'config', 'seguridad'), (snap) => {
+            const invalidarEn = snap.exists() ? snap.data().invalidarSesionesEn : null;
+            if (!invalidarEn) return;
+            const loginEn = parseInt(localStorage.getItem(LOGIN_TIMESTAMP_KEY) || '0', 10);
+            if (!loginEn || invalidarEn.toMillis() > loginEn) {
+                alert('Un administrador cerró todas las sesiones. Vuelve a iniciar sesión.');
+                this.logout();
+            }
+        });
+    }
+
+    /**
+     * Cierra de golpe todas las sesiones abiertas (incluida la propia): marca
+     * en Firestore el momento actual, y cada dispositivo (pestaña abierta o
+     * próxima carga) se compara contra esa marca y se desloguea si su login
+     * es anterior.
+     */
+    async invalidarTodasLasSesiones() {
+        await setDoc(doc(this.db, 'config', 'seguridad'), { invalidarSesionesEn: serverTimestamp() }, { merge: true });
     }
 
     /**

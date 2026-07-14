@@ -6,7 +6,7 @@
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { ROLES, PERMISOS, GRUPOS_PERMISOS } from './auth.js';
+import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js';
 
 // Referencias globales
 let usuariosCollection;
@@ -44,28 +44,19 @@ export function initUsuariosManager(firebaseDb, authManager) {
 }
 
 /**
- * Genera dinámicamente los checkboxes de permisos agrupados en el modal,
- * a partir de GRUPOS_PERMISOS (auth.js), para que coincidan siempre con
- * los permisos reales validados por Firestore.
+ * Genera un checkbox por cada módulo/enlace del menú (MODULOS_PERMISOS en
+ * auth.js), para "segmentar por módulos": activar o desactivar Ventas,
+ * Productos, Clientes, etc. uno por uno para un usuario. Cada checkbox
+ * guarda en data-permisos todos los permisos reales que ese módulo otorga.
  */
 function renderPermisosCheckboxes() {
     const container = document.getElementById('permisos-personalizados-lista');
     if (!container) return;
 
-    container.innerHTML = GRUPOS_PERMISOS.map(grupo => `
-        <div class="permiso-grupo-bloque mb-3">
-            <div class="form-check">
-                <input class="form-check-input permiso-grupo" type="checkbox" data-grupo="${grupo.id}" id="grupo-${grupo.id}">
-                <label class="form-check-label fw-bold" for="grupo-${grupo.id}">${grupo.nombre}</label>
-            </div>
-            <div class="ms-4">
-                ${grupo.permisos.map(p => `
-                    <div class="form-check">
-                        <input class="form-check-input permiso-item" type="checkbox" value="${p}" data-grupo="${grupo.id}" id="permiso-${p}">
-                        <label class="form-check-label" for="permiso-${p}">${p}</label>
-                    </div>
-                `).join('')}
-            </div>
+    container.innerHTML = MODULOS_PERMISOS.map(modulo => `
+        <div class="form-check">
+            <input class="form-check-input modulo-item" type="checkbox" id="modulo-${modulo.id}" data-permisos="${modulo.permisos.join(',')}">
+            <label class="form-check-label" for="modulo-${modulo.id}">${modulo.nombre}</label>
         </div>
     `).join('');
 }
@@ -85,16 +76,6 @@ function setupEventListeners() {
 
     // Toggle contraseña
     document.getElementById('toggle-password')?.addEventListener('click', togglePasswordVisibility);
-
-    // Checkboxes de grupo de permisos
-    document.querySelectorAll('.permiso-grupo').forEach(checkbox => {
-        checkbox.addEventListener('change', handleGrupoPermisoChange);
-    });
-
-    // Checkboxes individuales de permisos
-    document.querySelectorAll('.permiso-item').forEach(checkbox => {
-        checkbox.addEventListener('change', updateGrupoCheckbox);
-    });
 
     // Búsqueda de usuarios
     document.getElementById('search-usuarios')?.addEventListener('input', handleUsuarioSearch);
@@ -244,9 +225,8 @@ function showAddUsuarioModal() {
     document.getElementById('usuario-password').required = true;
     document.getElementById('permisos-personalizados').style.display = 'none';
 
-    // Limpiar todos los checkboxes de permisos
-    document.querySelectorAll('.permiso-item').forEach(cb => cb.checked = false);
-    document.querySelectorAll('.permiso-grupo').forEach(cb => cb.checked = false);
+    // Limpiar todos los checkboxes de módulos
+    document.querySelectorAll('.modulo-item').forEach(cb => cb.checked = false);
 
     const modal = new bootstrap.Modal(document.getElementById('usuarioModal'));
     modal.show();
@@ -276,17 +256,16 @@ window.editUsuario = async function(usuarioId) {
         document.getElementById('usuario-password').required = false;
         document.getElementById('usuario-password').value = '';
 
-        // Cargar permisos si es personalizado
+        // Cargar módulos si es personalizado
         if (usuario.rol === 'PERSONALIZADO') {
             document.getElementById('permisos-personalizados').style.display = 'block';
 
-            // Marcar permisos del usuario (permisos se guarda como mapa { permiso: true })
-            document.querySelectorAll('.permiso-item').forEach(cb => {
-                cb.checked = usuario.permisos?.[cb.value] === true;
+            // Un módulo queda marcado si el usuario tiene TODOS los permisos que otorga
+            // (permisos se guarda como mapa { permiso: true })
+            document.querySelectorAll('.modulo-item').forEach(cb => {
+                const permisosModulo = cb.dataset.permisos.split(',');
+                cb.checked = permisosModulo.every(p => usuario.permisos?.[p] === true);
             });
-
-            // Actualizar checkboxes de grupo
-            updateAllGrupoCheckboxes();
         } else {
             handleRolChange();
         }
@@ -327,10 +306,11 @@ async function handleUsuarioFormSubmit(e) {
     // Obtener permisos según el rol
     let permisos = [];
     if (rol === 'PERSONALIZADO') {
-        permisos = Array.from(document.querySelectorAll('.permiso-item:checked')).map(cb => cb.value);
+        permisos = Array.from(document.querySelectorAll('.modulo-item:checked'))
+            .flatMap(cb => cb.dataset.permisos.split(','));
 
         if (permisos.length === 0) {
-            alert('Debes seleccionar al menos un permiso para el rol personalizado');
+            alert('Debes seleccionar al menos un módulo para el usuario personalizado');
             return;
         }
     } else {
@@ -473,51 +453,6 @@ function handleRolChange() {
             descriptionList.innerHTML = '<li>Selecciona un rol para ver su descripción</li>';
         }
     }
-}
-
-/**
- * Manejar cambio en checkbox de grupo
- */
-function handleGrupoPermisoChange(e) {
-    const grupo = e.target.dataset.grupo;
-    const checked = e.target.checked;
-
-    // Marcar/desmarcar todos los permisos del grupo
-    document.querySelectorAll(`.permiso-item[data-grupo="${grupo}"]`).forEach(cb => {
-        cb.checked = checked;
-    });
-}
-
-/**
- * Actualizar checkbox de grupo según items
- */
-function updateGrupoCheckbox(e) {
-    const grupo = e.target.dataset.grupo;
-    const grupoCheckbox = document.querySelector(`.permiso-grupo[data-grupo="${grupo}"]`);
-    const items = document.querySelectorAll(`.permiso-item[data-grupo="${grupo}"]`);
-    const checkedItems = document.querySelectorAll(`.permiso-item[data-grupo="${grupo}"]:checked`);
-
-    if (grupoCheckbox) {
-        grupoCheckbox.checked = items.length === checkedItems.length;
-        grupoCheckbox.indeterminate = checkedItems.length > 0 && checkedItems.length < items.length;
-    }
-}
-
-/**
- * Actualizar todos los checkboxes de grupo
- */
-function updateAllGrupoCheckboxes() {
-    const grupos = GRUPOS_PERMISOS.map(g => g.id);
-    grupos.forEach(grupo => {
-        const grupoCheckbox = document.querySelector(`.permiso-grupo[data-grupo="${grupo}"]`);
-        const items = document.querySelectorAll(`.permiso-item[data-grupo="${grupo}"]`);
-        const checkedItems = document.querySelectorAll(`.permiso-item[data-grupo="${grupo}"]:checked`);
-
-        if (grupoCheckbox) {
-            grupoCheckbox.checked = items.length === checkedItems.length;
-            grupoCheckbox.indeterminate = checkedItems.length > 0 && checkedItems.length < items.length;
-        }
-    });
 }
 
 /**

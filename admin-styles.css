@@ -4494,13 +4494,32 @@ body.dark-mode .db-fin-item {
 
 .db-trend-bar {
   height: 100%;
-  background: linear-gradient(90deg, rgba(99,102,241,0.65), rgba(139,92,246,0.85));
+  display: flex;
   border-radius: var(--radius-full);
   transition: width 0.7s var(--ease-out);
   min-width: 2px;
+  overflow: hidden;
 }
-.db-trend-row--today .db-trend-bar {
+
+.db-trend-bar-seg {
+  height: 100%;
+  transition: flex-grow 0.7s var(--ease-out);
+}
+.db-trend-bar-seg--detal {
+  background: linear-gradient(90deg, rgba(99,102,241,0.65), rgba(139,92,246,0.85));
+}
+.db-trend-bar-seg--mayor {
+  background: linear-gradient(90deg, #DB2777, #EC4899);
+}
+.db-trend-row--today .db-trend-bar-seg--detal {
   background: linear-gradient(90deg, #6366f1, #8b5cf6);
+}
+
+.db-trend-legend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1.25rem 0.25rem;
 }
 
 .db-trend-val {
