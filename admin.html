@@ -395,8 +395,16 @@
                         <div class="db-chart-card h-100">
                             <div class="db-chart-header">
                                 <span class="db-chart-title">Top 15 productos</span>
-                                <small class="text-muted" style="font-size:0.72rem;">Últimos 30 días</small>
+                                <div class="db-period-tabs">
+                                    <input type="radio" class="btn-check" name="tp-tipo" id="tp-todos" autocomplete="off" checked>
+                                    <label class="db-period-tab" for="tp-todos">Todos</label>
+                                    <input type="radio" class="btn-check" name="tp-tipo" id="tp-detal" autocomplete="off">
+                                    <label class="db-period-tab" for="tp-detal">Detal</label>
+                                    <input type="radio" class="btn-check" name="tp-tipo" id="tp-mayor" autocomplete="off">
+                                    <label class="db-period-tab" for="tp-mayor">Mayor</label>
+                                </div>
                             </div>
+                            <small class="text-muted d-block" style="font-size:0.72rem;padding:0 1.25rem;">Últimos 30 días</small>
                             <div id="db-top-table" style="max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
                                 <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
                             </div>
