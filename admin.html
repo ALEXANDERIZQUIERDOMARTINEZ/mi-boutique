@@ -24,6 +24,12 @@
     </head>
 <body class="admin-page">
 
+    <!-- ══ AUTH GATE — bloquea la vista hasta verificar sesión/permisos ══ -->
+    <div id="admin-auth-gate" style="position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+        <div class="spinner-border" style="color:#D988B9;" role="status"></div>
+        <span style="color:#6c757d;font-size:.9rem;">Verificando sesión…</span>
+    </div>
+
     <!-- ══ RAIL NAV — Sidebar plano, minimalista, sin dropdowns ══ -->
 
     <!-- Topbar mínima (visible solo en móvil) -->
@@ -54,7 +60,7 @@
 
             <!-- Principal -->
             <div class="rail-group">
-                <a class="rail-link" href="#dashboard" data-tooltip="Dashboard">
+                <a class="rail-link" href="#dashboard" data-tooltip="Dashboard" data-permiso="dashboard_ver">
                     <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
                 </a>
             </div>
@@ -62,14 +68,14 @@
             <!-- Ventas -->
             <div class="rail-group">
                 <span class="rail-group-label">Ventas</span>
-                <a class="rail-link" href="#ventas" data-tooltip="Registrar Venta">
+                <a class="rail-link" href="#ventas" data-tooltip="Registrar Venta" data-permiso="ventas_crear">
                     <i class="bi bi-plus-circle"></i><span>Registrar Venta</span>
                 </a>
-                <a class="rail-link" href="#pedidos-web" data-tooltip="Pedidos Web">
+                <a class="rail-link" href="#pedidos-web" data-tooltip="Pedidos Web" data-permiso="pedidos_web_ver">
                     <i class="bi bi-bag-check"></i><span>Pedidos Web</span>
                     <span class="badge bg-danger ms-auto badge-new-order" id="pedidos-web-count" style="display:none;">0</span>
                 </a>
-                <a class="rail-link" href="#apartados" data-tooltip="Apartados">
+                <a class="rail-link" href="#apartados" data-tooltip="Apartados" data-permiso="apartados_ver">
                     <i class="bi bi-bookmark-star"></i><span>Apartados</span>
                 </a>
             </div>
@@ -77,20 +83,20 @@
             <!-- Inventario -->
             <div class="rail-group">
                 <span class="rail-group-label">Inventario</span>
-                <a class="rail-link" href="#productos" data-tooltip="Productos">
+                <a class="rail-link" href="#productos" data-tooltip="Productos" data-permiso="productos_ver">
                     <i class="bi bi-grid"></i><span>Productos</span>
                 </a>
-                <a class="rail-link" href="#cargue-masivo" data-tooltip="Cargue Masivo">
+                <a class="rail-link" href="#cargue-masivo" data-tooltip="Cargue Masivo" data-permiso="productos_importar">
                     <i class="bi bi-file-earmark-excel"></i><span>Cargue Masivo</span>
                 </a>
-                <a class="rail-link" href="#categorias" data-tooltip="Categorías">
+                <a class="rail-link" href="#categorias" data-tooltip="Categorías" data-permiso="categorias_gestionar">
                     <i class="bi bi-tags"></i><span>Categorías</span>
                 </a>
             </div>
 
             <!-- Clientes -->
             <div class="rail-group">
-                <a class="rail-link" href="#clientes" data-tooltip="Clientes">
+                <a class="rail-link" href="#clientes" data-tooltip="Clientes" data-permiso="clientes_ver">
                     <i class="bi bi-people"></i><span>Clientes</span>
                 </a>
             </div>
@@ -98,13 +104,13 @@
             <!-- Logística -->
             <div class="rail-group">
                 <span class="rail-group-label">Logística</span>
-                <a class="rail-link" href="#repartidores" data-tooltip="Repartidores">
+                <a class="rail-link" href="#repartidores" data-tooltip="Repartidores" data-permiso="repartidores_gestionar">
                     <i class="bi bi-bicycle"></i><span>Repartidores</span>
                 </a>
-                <a class="rail-link" href="#config-domicilio" data-tooltip="Tarifas Domicilio">
+                <a class="rail-link" href="#config-domicilio" data-tooltip="Tarifas Domicilio" data-permiso="repartidores_gestionar">
                     <i class="bi bi-geo-alt"></i><span>Tarifas Domicilio</span>
                 </a>
-                <a class="rail-link" href="#promociones" data-tooltip="Promociones">
+                <a class="rail-link" href="#promociones" data-tooltip="Promociones" data-permiso="promociones_gestionar">
                     <i class="bi bi-megaphone"></i><span>Promociones</span>
                 </a>
             </div>
@@ -112,21 +118,29 @@
             <!-- Finanzas -->
             <div class="rail-group">
                 <span class="rail-group-label">Finanzas</span>
-                <a class="rail-link" href="#finanzas" data-tooltip="Finanzas">
+                <a class="rail-link" href="#finanzas" data-tooltip="Finanzas" data-permiso="finanzas_ver">
                     <i class="bi bi-graph-up-arrow"></i><span>Finanzas</span>
                 </a>
-                <a class="rail-link" href="#proveedores" data-tooltip="Proveedores">
+                <a class="rail-link" href="#proveedores" data-tooltip="Proveedores" data-permiso="proveedores_gestionar">
                     <i class="bi bi-building"></i><span>Proveedores</span>
+                </a>
+            </div>
+
+            <!-- Sistema -->
+            <div class="rail-group">
+                <span class="rail-group-label">Sistema</span>
+                <a class="rail-link" href="#usuarios" data-tooltip="Usuarios" data-permiso="usuarios_ver">
+                    <i class="bi bi-person-badge"></i><span>Usuarios</span>
                 </a>
             </div>
 
             <!-- Config / Accesos -->
             <div class="rail-group">
                 <span class="rail-group-label">Config</span>
-                <a class="rail-link" href="#config-pagos" data-tooltip="Config. Pagos">
+                <a class="rail-link" href="#config-pagos" data-tooltip="Config. Pagos" data-roles="ADMIN,SUPER_ADMIN">
                     <i class="bi bi-qr-code"></i><span>Config. Pagos</span>
                 </a>
-                <a class="rail-link" href="#backup" data-tooltip="Backup">
+                <a class="rail-link" href="#backup" data-tooltip="Backup" data-roles="SUPER_ADMIN">
                     <i class="bi bi-cloud-arrow-down"></i><span>Backup</span>
                 </a>
                 <a class="rail-link" href="index.html" target="_blank" data-tooltip="Ver Catálogo">
@@ -153,7 +167,7 @@
                 </div>
                 <div class="rail-profile-info">
                     <span class="rail-profile-name" id="rail-admin-name">Administrador</span>
-                    <span class="rail-profile-role">Admin</span>
+                    <span class="rail-profile-role" id="rail-profile-role">Admin</span>
                 </div>
                 <button class="rail-profile-logout" id="rail-logout-btn" title="Cerrar sesión">
                     <i class="bi bi-box-arrow-right"></i>
@@ -1771,25 +1785,60 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ══ USUARIOS ══ -->
+            <div class="tab-pane fade" id="usuarios">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h2 mb-0"><i class="bi bi-person-badge me-2"></i>Usuarios</h1>
+                    <button class="btn btn-primary" id="btn-add-usuario">
+                        <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header bg-white border-0 pt-3">
+                        <input type="search" class="form-control" id="search-usuarios" placeholder="Buscar por nombre, correo o rol...">
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="px-4">Nombre</th>
+                                        <th>Correo</th>
+                                        <th>Rol</th>
+                                        <th>Estado</th>
+                                        <th>Último acceso</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usuarios-table-body">
+                                    <tr><td colspan="6" class="text-center text-muted py-5">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
     </div><!-- /.admin-content-wrapper -->
 
     <!-- ══ BOTTOM NAVIGATION — solo móvil ══ -->
     <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Navegación principal">
-        <a class="mbn-item active" href="#dashboard" data-section="#dashboard">
+        <a class="mbn-item active" href="#dashboard" data-section="#dashboard" data-permiso="dashboard_ver">
             <i class="bi bi-grid-1x2"></i>
             <span>Inicio</span>
         </a>
-        <a class="mbn-item" href="#ventas" data-section="#ventas">
+        <a class="mbn-item" href="#ventas" data-section="#ventas" data-permiso="ventas_crear">
             <i class="bi bi-plus-circle"></i>
             <span>Venta</span>
         </a>
-        <a class="mbn-item" href="#productos" data-section="#productos">
+        <a class="mbn-item" href="#productos" data-section="#productos" data-permiso="productos_ver">
             <i class="bi bi-grid"></i>
             <span>Productos</span>
         </a>
-        <a class="mbn-item mbn-pedidos" href="#pedidos-web" data-section="#pedidos-web">
+        <a class="mbn-item mbn-pedidos" href="#pedidos-web" data-section="#pedidos-web" data-permiso="pedidos_web_ver">
             <i class="bi bi-bag-check"></i>
             <span>Pedidos</span>
             <span class="mbn-badge badge-new-order" id="mbn-pedidos-count" style="display:none;"></span>
@@ -1799,6 +1848,101 @@
             <span>Más</span>
         </button>
     </nav>
+
+    <div class="modal fade" id="usuarioModal" tabindex="-1" aria-labelledby="usuarioModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="usuarioModalTitle"><i class="bi bi-person-plus me-2"></i>Nuevo Usuario</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-usuario">
+                        <input type="hidden" id="usuario-mode" value="add">
+                        <input type="hidden" id="usuario-id" value="">
+
+                        <div class="mb-3">
+                            <label for="usuario-nombre" class="form-label">Nombre:</label>
+                            <input type="text" class="form-control" id="usuario-nombre" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="usuario-email" class="form-label">Correo electrónico:</label>
+                            <input type="email" class="form-control" id="usuario-email" required>
+                        </div>
+
+                        <div class="mb-3" id="password-group">
+                            <label for="usuario-password" class="form-label">Contraseña:</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="usuario-password" minlength="6">
+                                <button class="btn btn-outline-secondary" type="button" id="toggle-password"><i class="bi bi-eye"></i></button>
+                            </div>
+                            <small class="text-muted">Mínimo 6 caracteres.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="usuario-rol" class="form-label">Rol:</label>
+                            <select class="form-select" id="usuario-rol" required>
+                                <option value="">Selecciona un rol...</option>
+                                <option value="SUPER_ADMIN">Sistema (Super Administrador)</option>
+                                <option value="ADMIN">Administrador</option>
+                                <option value="VENDEDOR">Vendedor (registra ventas)</option>
+                                <option value="INVENTARIO">Inventario (registra productos)</option>
+                                <option value="CONTADOR">Contador</option>
+                                <option value="REPARTIDOR">Repartidor</option>
+                                <option value="VISUALIZADOR">Visualizador (solo lectura)</option>
+                                <option value="PERSONALIZADO">Personalizado</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3" id="rol-description" style="display:none;">
+                            <div class="alert alert-secondary mb-0">
+                                <ul class="mb-0 small" id="rol-description-list">
+                                    <li>Selecciona un rol para ver su descripción</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="permisos-personalizados" style="display:none;">
+                            <label class="form-label">Permisos:</label>
+                            <div id="permisos-personalizados-lista" class="border rounded p-3" style="max-height:320px; overflow-y:auto;"></div>
+                        </div>
+
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="usuario-activo" checked>
+                            <label class="form-check-label" for="usuario-activo">Usuario activo</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-usuario" class="btn btn-primary" id="btn-save-usuario">
+                        <i class="bi bi-save me-2"></i>Guardar Usuario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteUsuarioModal" tabindex="-1" aria-labelledby="deleteUsuarioModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5 text-danger" id="deleteUsuarioModalTitle"><i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar Usuario</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar a:</p>
+                    <p><strong id="delete-usuario-name"></strong></p>
+                    <small class="text-muted">Esta acción no se puede deshacer. El usuario perderá acceso al panel de inmediato.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-usuario">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="modal fade" id="addClientModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Cliente</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-client"> <div class="mb-3"> <label for="new-client-cedula" class="form-label">Cédula:</label> <input type="text" class="form-control" id="new-client-cedula"> </div> <div class="mb-3"> <label for="new-client-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-client-nombre" required> </div> <div class="mb-3"> <label for="new-client-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-client-celular" required> </div> <div class="mb-3"> <label for="new-client-direccion" class="form-label">Dirección:</label> <input type="text" class="form-control" id="new-client-direccion"> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-client" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
     <div class="modal fade" id="addRepartidorModal" tabindex="-1"> <div class="modal-dialog"> <div class="modal-content"> <div class="modal-header"> <h1 class="modal-title fs-5">Agregar Repartidor</h1> <button type="button" class="btn-close" data-bs-dismiss="modal"></button> </div> <div class="modal-body"> <form id="form-add-repartidor"> <div class="mb-3"> <label for="new-repartidor-nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="new-repartidor-nombre" required> </div> <div class="mb-3"> <label for="new-repartidor-celular" class="form-label">Celular:</label> <input type="tel" class="form-control" id="new-repartidor-celular" required> </div> </form> </div> <div class="modal-footer"> <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button> <button type="submit" form="form-add-repartidor" class="btn btn-primary">Guardar</button> </div> </div> </div> </div>
@@ -2835,6 +2979,7 @@
     </script>
 
     <script type="module" src="admin.js?v=3.3.1"></script>
+    <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
 
     <!-- Script para generar catálogo en PDF -->
     <script type="module" src="catalogoPDF.js?v=1.0.0"></script>
@@ -3023,22 +3168,14 @@
                 });
             }
 
-            /* ─── RAIL PROFILE: mostrar nombre del usuario auth ─── */
-            var nameEl = document.getElementById('rail-admin-name');
-            if (nameEl && window.firebase && firebase.auth) {
-                firebase.auth().onAuthStateChanged(function(user) {
-                    if (user) nameEl.textContent = user.displayName || user.email || 'Administrador';
-                });
-            }
+            /* ─── RAIL PROFILE: el nombre/rol se completan en admin-auth-init.js (AuthManager.updateUserInfo) ─── */
 
             /* ─── RAIL LOGOUT ─── */
             var logoutBtn = document.getElementById('rail-logout-btn');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', function() {
-                    if (window.firebase && firebase.auth) {
-                        firebase.auth().signOut().then(function() {
-                            window.location.href = 'login.html';
-                        });
+                    if (window.authManager) {
+                        window.authManager.logout();
                     } else {
                         window.location.href = 'login.html';
                     }

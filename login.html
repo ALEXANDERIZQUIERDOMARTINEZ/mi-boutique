@@ -330,7 +330,8 @@
                     email: user.email,
                     nombre: userData.nombre,
                     rol: userData.rol,
-                    permisos: userData.permisos
+                    permisos: userData.permisos || {},
+                    tenantId: userData.tenantId ?? null
                 }));
 
                 // Redirect to admin panel
