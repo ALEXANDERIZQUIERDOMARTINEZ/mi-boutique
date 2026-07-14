@@ -12,6 +12,34 @@ function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
 }
 
+/**
+ * Conecta el botón "Cerrar todas las sesiones" (visible solo para
+ * Administrador/Sistema vía data-roles) con AuthManager.invalidarTodasLasSesiones.
+ */
+function configurarCierreSesionesGlobal(authManager) {
+    const btn = document.getElementById('btn-cerrar-todas-sesiones');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+        const confirmado = confirm(
+            'Esto cerrará la sesión de TODOS los usuarios en TODOS los dispositivos ' +
+            '(incluida la tuya) y tendrán que volver a iniciar sesión con su contraseña. ¿Continuar?'
+        );
+        if (!confirmado) return;
+
+        btn.disabled = true;
+        try {
+            await authManager.invalidarTodasLasSesiones();
+            if (typeof window.showToast === 'function') {
+                window.showToast('Todas las sesiones se están cerrando...', 'success');
+            }
+        } catch (error) {
+            console.error('Error al cerrar todas las sesiones:', error);
+            alert('No se pudo cerrar las sesiones: ' + error.message);
+            btn.disabled = false;
+        }
+    });
+}
+
 // Debe coincidir con DIRECTORIO_KEY en login.html / usuarios.js
 const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
 
@@ -96,6 +124,8 @@ function aplicarPermisosNav() {
         recordarUsuarioEnDirectorio(usuario);
         aplicarPermisosNav();
         initUsuariosManager(window.db, authManager);
+        configurarCierreSesionesGlobal(authManager);
+        authManager.escucharInvalidacionSesiones();
         ocultarGate();
 
         window.dispatchEvent(new CustomEvent('adminAuthReady', { detail: window.appContext }));

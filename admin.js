@@ -7422,6 +7422,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             const snapshot = await getDocs(q);
 
+            // Cada día se separa en detal y mayorista (mismo criterio que usa
+            // la métrica "Ventas hoy" del dashboard: tipoVenta === 'mayorista').
             const ventasPorDia = {};
             const labels = [];
 
@@ -7429,7 +7431,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const fecha = new Date(fechaInicio);
                 fecha.setDate(fecha.getDate() + i);
                 const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
-                ventasPorDia[key] = 0;
+                ventasPorDia[key] = { detal: 0, mayorista: 0 };
                 labels.push(key);
             }
 
@@ -7441,25 +7443,39 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
                         if (ventasPorDia.hasOwnProperty(key)) {
                             const monto = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
-                            ventasPorDia[key] += monto;
+                            if (venta.tipoVenta === 'mayorista') {
+                                ventasPorDia[key].mayorista += monto;
+                            } else {
+                                ventasPorDia[key].detal += monto;
+                            }
                         }
                     }
                 }
             });
 
-            const data = labels.map(l => ventasPorDia[l] || 0);
-            const maxVal = Math.max(...data, 1);
+            const data = labels.map(l => ventasPorDia[l]);
+            const maxVal = Math.max(...data.map(d => d.detal + d.mayorista), 1);
 
-            let html = '<div class="db-trend-list">';
+            let html = `
+                <div class="db-trend-legend">
+                    <span class="db-legend-item"><span class="db-legend-dot" style="background:#8b5cf6;"></span><span class="db-legend-label">Detal</span></span>
+                    <span class="db-legend-item"><span class="db-legend-dot" style="background:#DB2777;"></span><span class="db-legend-label">Mayorista</span></span>
+                </div>
+                <div class="db-trend-list">`;
             labels.forEach((label, i) => {
-                const val = data[i];
-                const pct = Math.round((val / maxVal) * 100);
+                const { detal, mayorista } = data[i];
+                const val = detal + mayorista;
+                const pctTotal = Math.round((val / maxVal) * 100);
                 const isToday = i === labels.length - 1;
+                const tituloDetalle = `Detal: $${detal.toLocaleString('es-CO')} · Mayorista: $${mayorista.toLocaleString('es-CO')}`;
                 html += `
                     <div class="db-trend-row${isToday ? ' db-trend-row--today' : ''}">
                         <span class="db-trend-label">${label}</span>
-                        <div class="db-trend-bar-wrap">
-                            <div class="db-trend-bar" style="width:${pct}%"></div>
+                        <div class="db-trend-bar-wrap" title="${tituloDetalle}">
+                            <div class="db-trend-bar" style="width:${pctTotal}%">
+                                <span class="db-trend-bar-seg db-trend-bar-seg--detal" style="flex:${detal || 0} ${detal || 0} 0"></span>
+                                <span class="db-trend-bar-seg db-trend-bar-seg--mayor" style="flex:${mayorista || 0} ${mayorista || 0} 0"></span>
+                            </div>
                         </div>
                         <span class="db-trend-val">${val > 0 ? '$' + val.toLocaleString('es-CO') : '—'}</span>
                     </div>`;

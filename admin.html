@@ -137,7 +137,7 @@
             <!-- Config / Accesos -->
             <div class="rail-group">
                 <span class="rail-group-label">Config</span>
-                <a class="rail-link" href="#config-pagos" data-tooltip="Config. Pagos" data-roles="ADMIN,SUPER_ADMIN">
+                <a class="rail-link" href="#config-pagos" data-tooltip="Config. Pagos" data-permiso="config_gestionar">
                     <i class="bi bi-qr-code"></i><span>Config. Pagos</span>
                 </a>
                 <a class="rail-link" href="#backup" data-tooltip="Backup" data-roles="SUPER_ADMIN">
@@ -1788,11 +1788,16 @@
 
             <!-- ══ USUARIOS ══ -->
             <div class="tab-pane fade" id="usuarios">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                     <h1 class="h2 mb-0"><i class="bi bi-person-badge me-2"></i>Usuarios</h1>
-                    <button class="btn btn-primary" id="btn-add-usuario">
-                        <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-danger" id="btn-cerrar-todas-sesiones" data-roles="ADMIN,SUPER_ADMIN" title="Fuerza a todos los usuarios (incluido tú) a volver a iniciar sesión, incluso en dispositivos ya conectados">
+                            <i class="bi bi-shield-lock me-2"></i>Cerrar todas las sesiones
+                        </button>
+                        <button class="btn btn-primary" id="btn-add-usuario">
+                            <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
+                        </button>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -1904,7 +1909,7 @@
                         </div>
 
                         <div class="mb-3" id="permisos-personalizados" style="display:none;">
-                            <label class="form-label">Permisos:</label>
+                            <label class="form-label">Módulos a los que tiene acceso:</label>
                             <div id="permisos-personalizados-lista" class="border rounded p-3" style="max-height:320px; overflow-y:auto;"></div>
                         </div>
 

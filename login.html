@@ -453,6 +453,13 @@
                 // Recordar a este usuario en el directorio local del dispositivo
                 upsertDirectorio(user.uid, userData.nombre, user.email);
 
+                // Marca de cuándo inició sesión este dispositivo (en localStorage,
+                // no sessionStorage: debe sobrevivir a pestañas nuevas y reinicios
+                // del navegador) — admin-auth-init.js la compara contra
+                // config/seguridad para saber si un "cerrar todas las sesiones" lo
+                // dejó fuera.
+                localStorage.setItem('mishellLoginEn', String(Date.now()));
+
                 // Redirect to admin panel
                 window.location.href = 'admin.html';
 
