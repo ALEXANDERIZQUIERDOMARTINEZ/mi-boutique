@@ -4780,10 +4780,23 @@ body.dark-mode .db-fin-item {
 
 .db-top-bar {
   height: 100%;
+  display: flex;
   background: linear-gradient(90deg, rgba(16,185,129,0.7), rgba(5,150,105,0.9));
   border-radius: var(--radius-full);
   transition: width 0.7s var(--ease-out);
   min-width: 2px;
+  overflow: hidden;
+}
+
+.db-top-bar-seg {
+  height: 100%;
+  transition: flex-grow 0.7s var(--ease-out);
+}
+.db-top-bar-seg--detal {
+  background: linear-gradient(90deg, rgba(99,102,241,0.65), rgba(139,92,246,0.85));
+}
+.db-top-bar-seg--mayor {
+  background: linear-gradient(90deg, #DB2777, #EC4899);
 }
 
 .db-top-units {

@@ -7583,7 +7583,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ================================================================
     // TABLA MÓVIL 2: TOP PRODUCTOS
     // ================================================================
-    async function crearTablaTopProductosMobile() {
+    async function crearTablaTopProductosMobile(tipo = 'todos') {
         const container = document.getElementById('db-top-table');
         if (!container) return;
 
@@ -7601,21 +7601,33 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             const snapshot = await getDocs(q);
 
+            // Cada producto se acumula separado por detal y mayorista (mismo
+            // criterio que usa la tabla de tendencia: tipoVenta === 'mayorista').
             const productosVendidos = {};
             snapshot.forEach(doc => {
                 const venta = doc.data();
                 if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
+                    const esMayorista = venta.tipoVenta === 'mayorista';
                     const items = venta.items || [];
                     items.forEach(item => {
                         const nombre = item.nombre || 'Sin nombre';
-                        if (!productosVendidos[nombre]) productosVendidos[nombre] = 0;
-                        productosVendidos[nombre] += (item.cantidad || 0);
+                        if (!productosVendidos[nombre]) productosVendidos[nombre] = { detal: 0, mayorista: 0 };
+                        if (esMayorista) {
+                            productosVendidos[nombre].mayorista += (item.cantidad || 0);
+                        } else {
+                            productosVendidos[nombre].detal += (item.cantidad || 0);
+                        }
                     });
                 }
             });
 
+            const unidadesSegunTipo = ({ detal, mayorista }) =>
+                tipo === 'detal' ? detal : tipo === 'mayor' ? mayorista : detal + mayorista;
+
             const topProductos = Object.entries(productosVendidos)
-                .sort((a, b) => b[1] - a[1])
+                .map(([nombre, cantidades]) => [nombre, cantidades, unidadesSegunTipo(cantidades)])
+                .filter(([, , unidades]) => unidades > 0)
+                .sort((a, b) => b[2] - a[2])
                 .slice(0, 15);
 
             if (topProductos.length === 0) {
@@ -7623,19 +7635,26 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 return;
             }
 
-            const maxUnits = topProductos[0][1];
+            const maxUnits = topProductos[0][2];
 
             let html = '<div class="db-top-list">';
-            topProductos.forEach(([nombre, unidades], i) => {
+            topProductos.forEach(([nombre, { detal, mayorista }, unidades], i) => {
                 const pct = Math.round((unidades / maxUnits) * 100);
                 const rankClass = i === 0 ? 'db-top-rank--gold' : i === 1 ? 'db-top-rank--silver' : i === 2 ? 'db-top-rank--bronze' : '';
+                const tituloDetalle = `Detal: ${detal} u. · Mayorista: ${mayorista} u.`;
+                const barra = tipo === 'todos'
+                    ? `<div class="db-top-bar" style="width:${pct}%">
+                            <span class="db-top-bar-seg db-top-bar-seg--detal" style="flex:${detal || 0} ${detal || 0} 0"></span>
+                            <span class="db-top-bar-seg db-top-bar-seg--mayor" style="flex:${mayorista || 0} ${mayorista || 0} 0"></span>
+                        </div>`
+                    : `<div class="db-top-bar" style="width:${pct}%"></div>`;
                 html += `
                     <div class="db-top-row">
                         <span class="db-top-rank ${rankClass}">${i + 1}</span>
                         <div class="db-top-info">
                             <span class="db-top-name">${nombre}</span>
-                            <div class="db-top-bar-wrap">
-                                <div class="db-top-bar" style="width:${pct}%"></div>
+                            <div class="db-top-bar-wrap" title="${tituloDetalle}">
+                                ${barra}
                             </div>
                         </div>
                         <span class="db-top-units">${unidades} u.</span>
@@ -7663,6 +7682,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         e.target.id === 'mt-30days' ? 30 :
                         180;
             crearTablaTendenciaMobile(dias);
+        });
+    });
+
+    // Cambiar tipo de venta (detal/mayor) de la tabla de top productos
+    const tpTipoBtns = document.querySelectorAll('input[name="tp-tipo"]');
+    tpTipoBtns.forEach(btn => {
+        btn.addEventListener('change', (e) => {
+            const tipo = e.target.id === 'tp-detal' ? 'detal' :
+                        e.target.id === 'tp-mayor' ? 'mayor' :
+                        'todos';
+            crearTablaTopProductosMobile(tipo);
         });
     });
 
