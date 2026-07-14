@@ -42,8 +42,11 @@ console.log("Firebase Initialized!");
     }
 })();
 
-// Exponer funciones de Firebase globalmente para barcode-system.js
+// Exponer funciones de Firebase globalmente para barcode-system.js y para
+// el guard de autenticación (auth.js / usuarios.js / admin-auth-init.js)
 window.db = db;
+window.firebaseApp = app;
+window.firebaseConfig = firebaseConfig;
 window.collection = collection;
 window.getDocs = getDocs;
 window.query = query;
@@ -237,6 +240,7 @@ function showToast(message, type = 'success', title = 'Notificación') {
         bsToast.show();
     } else { console.warn("Toast elements not found:", message); alert(`${type.toUpperCase()}: ${message}`); }
 }
+window.showToast = showToast;
 
 // --- Global Modal Instances ---
 let addClientModalInstance = null; let addRepartidorModalInstance = null; let addSupplierModalInstance = null; let addIncomeModalInstance = null; let addExpenseModalInstance = null; let editCategoryModalInstance = null; let deleteConfirmModalInstance = null;

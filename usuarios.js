@@ -3,9 +3,10 @@
  * Maneja CRUD de usuarios y asignación de permisos
  */
 
-import { getAuth, createUserWithEmailAndPassword, deleteUser as deleteAuthUser } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { ROLES, PERMISOS } from './auth.js';
+import { ROLES, PERMISOS, GRUPOS_PERMISOS } from './auth.js';
 
 // Referencias globales
 let usuariosCollection;
@@ -13,6 +14,16 @@ let db;
 let auth;
 let currentAuthManager;
 let allUsuarios = [];
+
+/**
+ * Convierte un arreglo de permisos ['ventas_ver', ...] al mapa
+ * { ventas_ver: true, ... } que exigen las Security Rules de Firestore.
+ */
+function permisosArrayAMapa(permisosArray) {
+    const mapa = {};
+    (permisosArray || []).forEach(p => { mapa[p] = true; });
+    return mapa;
+}
 
 /**
  * Inicializa el módulo de gestión de usuarios
@@ -23,11 +34,40 @@ export function initUsuariosManager(firebaseDb, authManager) {
     currentAuthManager = authManager;
     usuariosCollection = collection(db, 'usuarios');
 
+    renderPermisosCheckboxes();
+
     // Event Listeners
     setupEventListeners();
 
     // Cargar usuarios
     loadUsuarios();
+}
+
+/**
+ * Genera dinámicamente los checkboxes de permisos agrupados en el modal,
+ * a partir de GRUPOS_PERMISOS (auth.js), para que coincidan siempre con
+ * los permisos reales validados por Firestore.
+ */
+function renderPermisosCheckboxes() {
+    const container = document.getElementById('permisos-personalizados-lista');
+    if (!container) return;
+
+    container.innerHTML = GRUPOS_PERMISOS.map(grupo => `
+        <div class="permiso-grupo-bloque mb-3">
+            <div class="form-check">
+                <input class="form-check-input permiso-grupo" type="checkbox" data-grupo="${grupo.id}" id="grupo-${grupo.id}">
+                <label class="form-check-label fw-bold" for="grupo-${grupo.id}">${grupo.nombre}</label>
+            </div>
+            <div class="ms-4">
+                ${grupo.permisos.map(p => `
+                    <div class="form-check">
+                        <input class="form-check-input permiso-item" type="checkbox" value="${p}" data-grupo="${grupo.id}" id="permiso-${p}">
+                        <label class="form-check-label" for="permiso-${p}">${p}</label>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
 }
 
 /**
@@ -117,7 +157,10 @@ function renderUsuarioRow(usuario, tbody) {
 
     // Verificar si es el usuario actual
     const isCurrentUser = currentAuthManager?.getCurrentUser()?.uid === usuario.id;
-    const canEdit = currentAuthManager?.hasPermission(PERMISOS.USUARIOS_GESTIONAR);
+    // Editar: requiere permiso usuarios_editar (o usuarios_crear si aún no tiene ninguno)
+    const canEdit = currentAuthManager?.hasPermission(PERMISOS.USUARIOS_EDITAR);
+    // Eliminar: según firestore.rules, solo el Super Admin puede eliminar usuarios
+    const canDelete = currentAuthManager?.isSuperAdmin();
 
     tr.innerHTML = `
         <td class="px-4">
@@ -144,8 +187,8 @@ function renderUsuarioRow(usuario, tbody) {
                     <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-outline-danger" onclick="window.deleteUsuarioConfirm('${usuario.id}', '${usuario.nombre}')"
-                    ${!canEdit || isCurrentUser ? 'disabled' : ''}
-                    title="${isCurrentUser ? 'No puedes eliminarte a ti mismo' : 'Eliminar'}">
+                    ${!canDelete || isCurrentUser ? 'disabled' : ''}
+                    title="${isCurrentUser ? 'No puedes eliminarte a ti mismo' : (canDelete ? 'Eliminar' : 'Solo el Super Administrador puede eliminar usuarios')}">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
@@ -160,7 +203,7 @@ function renderUsuarioRow(usuario, tbody) {
  */
 function showAddUsuarioModal() {
     // Verificar permiso
-    if (!currentAuthManager?.hasPermission(PERMISOS.USUARIOS_GESTIONAR)) {
+    if (!currentAuthManager?.hasPermission(PERMISOS.USUARIOS_CREAR)) {
         alert('No tienes permiso para crear usuarios');
         return;
     }
@@ -210,9 +253,9 @@ window.editUsuario = async function(usuarioId) {
         if (usuario.rol === 'PERSONALIZADO') {
             document.getElementById('permisos-personalizados').style.display = 'block';
 
-            // Marcar permisos del usuario
+            // Marcar permisos del usuario (permisos se guarda como mapa { permiso: true })
             document.querySelectorAll('.permiso-item').forEach(cb => {
-                cb.checked = usuario.permisos.includes(cb.value);
+                cb.checked = usuario.permisos?.[cb.value] === true;
             });
 
             // Actualizar checkboxes de grupo
@@ -296,12 +339,19 @@ async function handleUsuarioFormSubmit(e) {
 }
 
 /**
- * Crear nuevo usuario
+ * Crear nuevo usuario.
+ *
+ * IMPORTANTE: createUserWithEmailAndPassword inicia sesión automáticamente
+ * como el usuario recién creado en la instancia de Auth usada, lo que
+ * cerraría la sesión del administrador que está creando la cuenta. Para
+ * evitarlo, se usa una app secundaria de Firebase solo para este alta,
+ * y se cierra su sesión inmediatamente sin tocar la sesión principal.
  */
-async function createUsuario(email, password, nombre, rol, permisos, activo) {
+async function createUsuario(email, password, nombre, rol, permisosArray, activo) {
+    const secondaryApp = initializeApp(window.firebaseConfig, 'usuarios-secondary-' + Date.now());
     try {
-        // Crear usuario en Firebase Authentication
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const secondaryAuth = getAuth(secondaryApp);
+        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
         const user = userCredential.user;
 
         // Guardar datos en Firestore con el mismo UID
@@ -309,23 +359,27 @@ async function createUsuario(email, password, nombre, rol, permisos, activo) {
             nombre,
             email,
             rol,
-            permisos,
+            permisos: permisosArrayAMapa(permisosArray),
+            tenantId: currentAuthManager?.getCurrentUser()?.tenantId ?? null,
             activo,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         });
 
+        await signOutSecondary(secondaryAuth);
         console.log('Usuario creado exitosamente:', user.uid);
     } catch (error) {
         console.error('Error al crear usuario:', error);
         throw new Error(getAuthErrorMessage(error.code));
+    } finally {
+        await deleteApp(secondaryApp);
     }
 }
 
 /**
  * Actualizar usuario existente
  */
-async function updateUsuario(usuarioId, nombre, email, rol, permisos, activo) {
+async function updateUsuario(usuarioId, nombre, email, rol, permisosArray, activo) {
     try {
         const usuarioRef = doc(db, 'usuarios', usuarioId);
 
@@ -333,7 +387,7 @@ async function updateUsuario(usuarioId, nombre, email, rol, permisos, activo) {
             nombre,
             email, // Nota: cambiar email en Authentication requiere reautenticación
             rol,
-            permisos,
+            permisos: permisosArrayAMapa(permisosArray),
             activo,
             updatedAt: serverTimestamp()
         });
@@ -426,7 +480,7 @@ function updateGrupoCheckbox(e) {
  * Actualizar todos los checkboxes de grupo
  */
 function updateAllGrupoCheckboxes() {
-    const grupos = ['dashboard', 'ventas', 'inventario', 'clientes', 'logistica', 'finanzas', 'config', 'usuarios'];
+    const grupos = GRUPOS_PERMISOS.map(g => g.id);
     grupos.forEach(grupo => {
         const grupoCheckbox = document.querySelector(`.permiso-grupo[data-grupo="${grupo}"]`);
         const items = document.querySelectorAll(`.permiso-item[data-grupo="${grupo}"]`);
@@ -519,9 +573,9 @@ function getAuthErrorMessage(errorCode) {
  * Mostrar toast de notificación
  */
 function showToast(message, type = 'success') {
-    // Usar el sistema de toast existente del admin
-    if (typeof showNotification === 'function') {
-        showNotification(message, type);
+    // Usar el sistema de toast existente del admin (admin.js expone window.showToast)
+    if (typeof window.showToast === 'function') {
+        window.showToast(message, type);
     } else {
         alert(message);
     }

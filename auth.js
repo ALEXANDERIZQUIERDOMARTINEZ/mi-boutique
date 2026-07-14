@@ -7,18 +7,25 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 // Definición de permisos del sistema
+// IMPORTANTE: estas claves deben coincidir exactamente con los permisos
+// evaluados en firestore.rules (función hasPermission), ya que las Security
+// Rules son la autoridad real — la UI solo debe reflejarlas.
 export const PERMISOS = {
     // Dashboard
     DASHBOARD_VER: 'dashboard_ver',
 
     // Ventas
-    VENTAS_REGISTRAR: 'ventas_registrar',
     VENTAS_VER: 'ventas_ver',
+    VENTAS_CREAR: 'ventas_crear',
     VENTAS_EDITAR: 'ventas_editar',
+    VENTAS_ANULAR: 'ventas_anular',
     VENTAS_ELIMINAR: 'ventas_eliminar',
     PEDIDOS_WEB_VER: 'pedidos_web_ver',
     PEDIDOS_WEB_GESTIONAR: 'pedidos_web_gestionar',
     APARTADOS_VER: 'apartados_ver',
+    APARTADOS_CREAR: 'apartados_crear',
+    APARTADOS_EDITAR: 'apartados_editar',
+    APARTADOS_ELIMINAR: 'apartados_eliminar',
     APARTADOS_GESTIONAR: 'apartados_gestionar',
 
     // Inventario
@@ -26,96 +33,129 @@ export const PERMISOS = {
     PRODUCTOS_CREAR: 'productos_crear',
     PRODUCTOS_EDITAR: 'productos_editar',
     PRODUCTOS_ELIMINAR: 'productos_eliminar',
-    PRODUCTOS_CARGUE_MASIVO: 'productos_cargue_masivo',
-    CATEGORIAS_VER: 'categorias_ver',
+    PRODUCTOS_IMPORTAR: 'productos_importar',
     CATEGORIAS_GESTIONAR: 'categorias_gestionar',
 
     // Clientes
     CLIENTES_VER: 'clientes_ver',
-    CLIENTES_GESTIONAR: 'clientes_gestionar',
+    CLIENTES_CREAR: 'clientes_crear',
+    CLIENTES_EDITAR: 'clientes_editar',
+    CLIENTES_ELIMINAR: 'clientes_eliminar',
 
     // Logística
-    REPARTIDORES_VER: 'repartidores_ver',
     REPARTIDORES_GESTIONAR: 'repartidores_gestionar',
-    PROMOCIONES_VER: 'promociones_ver',
     PROMOCIONES_GESTIONAR: 'promociones_gestionar',
+    PROVEEDORES_GESTIONAR: 'proveedores_gestionar',
 
     // Finanzas
     FINANZAS_VER: 'finanzas_ver',
     FINANZAS_GESTIONAR: 'finanzas_gestionar',
-    CIERRES_CAJA_VER: 'cierres_caja_ver',
-    CIERRES_CAJA_GESTIONAR: 'cierres_caja_gestionar',
+    CIERRES_CAJA: 'cierres_caja',
 
-    // Configuración
-    CONFIG_VER: 'config_ver',
-    CONFIG_BACKUP: 'config_backup',
+    // Soporte
+    CHAT_RESPONDER: 'chat_responder',
 
-    // Usuarios (solo super-admin)
+    // Usuarios
     USUARIOS_VER: 'usuarios_ver',
-    USUARIOS_GESTIONAR: 'usuarios_gestionar'
+    USUARIOS_CREAR: 'usuarios_crear',
+    USUARIOS_EDITAR: 'usuarios_editar'
 };
 
-// Roles predefinidos con sus permisos
+// Grupos de permisos para mostrar los checkboxes agrupados en el panel de Usuarios
+export const GRUPOS_PERMISOS = [
+    { id: 'dashboard', nombre: 'Dashboard', permisos: [PERMISOS.DASHBOARD_VER] },
+    { id: 'ventas', nombre: 'Ventas y pedidos', permisos: [
+        PERMISOS.VENTAS_VER, PERMISOS.VENTAS_CREAR, PERMISOS.VENTAS_EDITAR, PERMISOS.VENTAS_ANULAR, PERMISOS.VENTAS_ELIMINAR,
+        PERMISOS.PEDIDOS_WEB_VER, PERMISOS.PEDIDOS_WEB_GESTIONAR,
+        PERMISOS.APARTADOS_VER, PERMISOS.APARTADOS_CREAR, PERMISOS.APARTADOS_EDITAR, PERMISOS.APARTADOS_ELIMINAR, PERMISOS.APARTADOS_GESTIONAR
+    ] },
+    { id: 'inventario', nombre: 'Inventario', permisos: [
+        PERMISOS.PRODUCTOS_VER, PERMISOS.PRODUCTOS_CREAR, PERMISOS.PRODUCTOS_EDITAR, PERMISOS.PRODUCTOS_ELIMINAR, PERMISOS.PRODUCTOS_IMPORTAR,
+        PERMISOS.CATEGORIAS_GESTIONAR
+    ] },
+    { id: 'clientes', nombre: 'Clientes', permisos: [
+        PERMISOS.CLIENTES_VER, PERMISOS.CLIENTES_CREAR, PERMISOS.CLIENTES_EDITAR, PERMISOS.CLIENTES_ELIMINAR
+    ] },
+    { id: 'logistica', nombre: 'Logística', permisos: [
+        PERMISOS.REPARTIDORES_GESTIONAR, PERMISOS.PROMOCIONES_GESTIONAR, PERMISOS.PROVEEDORES_GESTIONAR
+    ] },
+    { id: 'finanzas', nombre: 'Finanzas', permisos: [
+        PERMISOS.FINANZAS_VER, PERMISOS.FINANZAS_GESTIONAR, PERMISOS.CIERRES_CAJA
+    ] },
+    { id: 'soporte', nombre: 'Chat / Soporte', permisos: [PERMISOS.CHAT_RESPONDER] },
+    { id: 'usuarios', nombre: 'Usuarios', permisos: [
+        PERMISOS.USUARIOS_VER, PERMISOS.USUARIOS_CREAR, PERMISOS.USUARIOS_EDITAR
+    ] }
+];
+
+// Roles predefinidos con sus permisos.
+// NOTA: aquí los permisos se definen como arreglo por comodidad de lectura;
+// usuarios.js los convierte al formato de mapa { permiso: true } que exigen
+// las Security Rules antes de guardarlos en Firestore.
 export const ROLES = {
     SUPER_ADMIN: {
-        nombre: 'Super Administrador',
+        nombre: 'Sistema (Super Administrador)',
         descripcion: 'Acceso total al sistema',
         permisos: Object.values(PERMISOS) // Todos los permisos
     },
     ADMIN: {
         nombre: 'Administrador',
-        descripcion: 'Acceso completo excepto gestión de usuarios',
+        descripcion: 'Acceso completo a la tienda, excepto gestión de usuarios',
         permisos: Object.values(PERMISOS).filter(p => !p.startsWith('usuarios_'))
     },
     VENDEDOR: {
         nombre: 'Vendedor',
-        descripcion: 'Registrar ventas, ver inventario y clientes',
+        descripcion: 'Registra ventas, ve inventario y gestiona clientes y apartados',
         permisos: [
             PERMISOS.DASHBOARD_VER,
-            PERMISOS.VENTAS_REGISTRAR,
             PERMISOS.VENTAS_VER,
+            PERMISOS.VENTAS_CREAR,
+            PERMISOS.VENTAS_EDITAR,
             PERMISOS.PRODUCTOS_VER,
             PERMISOS.CLIENTES_VER,
+            PERMISOS.CLIENTES_CREAR,
             PERMISOS.APARTADOS_VER,
-            PERMISOS.APARTADOS_GESTIONAR
+            PERMISOS.APARTADOS_CREAR,
+            PERMISOS.APARTADOS_EDITAR,
+            PERMISOS.APARTADOS_GESTIONAR,
+            PERMISOS.PEDIDOS_WEB_VER
         ]
     },
     INVENTARIO: {
-        nombre: 'Gestión de Inventario',
-        descripcion: 'Gestionar productos y categorías',
+        nombre: 'Inventario',
+        descripcion: 'Registra y gestiona productos y categorías',
         permisos: [
             PERMISOS.DASHBOARD_VER,
             PERMISOS.PRODUCTOS_VER,
             PERMISOS.PRODUCTOS_CREAR,
             PERMISOS.PRODUCTOS_EDITAR,
-            PERMISOS.PRODUCTOS_CARGUE_MASIVO,
-            PERMISOS.CATEGORIAS_VER,
+            PERMISOS.PRODUCTOS_IMPORTAR,
             PERMISOS.CATEGORIAS_GESTIONAR
         ]
     },
     CONTADOR: {
         nombre: 'Contador',
-        descripcion: 'Ver y gestionar finanzas',
+        descripcion: 'Ver ventas y gestionar finanzas y cierres de caja',
         permisos: [
             PERMISOS.DASHBOARD_VER,
             PERMISOS.VENTAS_VER,
             PERMISOS.FINANZAS_VER,
             PERMISOS.FINANZAS_GESTIONAR,
-            PERMISOS.CIERRES_CAJA_VER,
-            PERMISOS.CIERRES_CAJA_GESTIONAR
+            PERMISOS.CIERRES_CAJA
         ]
     },
     REPARTIDOR: {
         nombre: 'Repartidor',
         descripcion: 'Ver pedidos web y gestionar entregas',
         permisos: [
+            PERMISOS.DASHBOARD_VER,
             PERMISOS.PEDIDOS_WEB_VER,
             PERMISOS.PEDIDOS_WEB_GESTIONAR
         ]
     },
     VISUALIZADOR: {
         nombre: 'Visualizador',
-        descripcion: 'Solo lectura de dashboard y reportes',
+        descripcion: 'Solo lectura de dashboard, ventas, productos y clientes',
         permisos: [
             PERMISOS.DASHBOARD_VER,
             PERMISOS.VENTAS_VER,
@@ -175,7 +215,8 @@ export class AuthManager {
                         email: user.email,
                         nombre: userData.nombre,
                         rol: userData.rol,
-                        permisos: userData.permisos || []
+                        tenantId: userData.tenantId ?? null,
+                        permisos: userData.permisos || {}
                     };
 
                     this.userPermissions = this.currentUser.permisos;
@@ -223,10 +264,12 @@ export class AuthManager {
 
     /**
      * Verifica si el usuario tiene un permiso específico
+     * (permisos se guarda como mapa { permiso: true }, igual que en firestore.rules)
      */
     hasPermission(permission) {
         if (!this.currentUser) return false;
-        return this.userPermissions.includes(permission);
+        if (this.isSuperAdmin()) return true;
+        return this.userPermissions?.[permission] === true;
     }
 
     /**
@@ -234,7 +277,8 @@ export class AuthManager {
      */
     hasAnyPermission(permissions) {
         if (!this.currentUser) return false;
-        return permissions.some(p => this.userPermissions.includes(p));
+        if (this.isSuperAdmin()) return true;
+        return permissions.some(p => this.userPermissions?.[p] === true);
     }
 
     /**
@@ -242,7 +286,8 @@ export class AuthManager {
      */
     hasAllPermissions(permissions) {
         if (!this.currentUser) return false;
-        return permissions.every(p => this.userPermissions.includes(p));
+        if (this.isSuperAdmin()) return true;
+        return permissions.every(p => this.userPermissions?.[p] === true);
     }
 
     /**
@@ -253,173 +298,33 @@ export class AuthManager {
     }
 
     /**
-     * Aplica restricciones de UI según permisos del usuario
+     * Aplica restricciones de UI según permisos del usuario.
+     * El ocultamiento del menú (rail nav) se hace en admin-auth-init.js
+     * mediante atributos data-permiso/data-roles, ya que depende del
+     * layout específico de cada panel (admin.html usa un rail, no navbar).
      */
     applyUIRestrictions() {
-        // Mapeo de permisos a elementos de navegación
-        const navPermissions = {
-            // Dashboard
-            'a[href="#dashboard"]': [PERMISOS.DASHBOARD_VER],
-
-            // Ventas
-            'a[href="#ventas"]': [PERMISOS.VENTAS_REGISTRAR],
-            'a[href="#pedidos-web"]': [PERMISOS.PEDIDOS_WEB_VER],
-            'a[href="#apartados"]': [PERMISOS.APARTADOS_VER],
-
-            // Inventario
-            'a[href="#productos"]': [PERMISOS.PRODUCTOS_VER],
-            'a[href="#cargue-masivo"]': [PERMISOS.PRODUCTOS_CARGUE_MASIVO],
-            'a[href="#categorias"]': [PERMISOS.CATEGORIAS_VER],
-
-            // Clientes
-            'a[href="#clientes"]': [PERMISOS.CLIENTES_VER],
-
-            // Logística
-            'a[href="#repartidores"]': [PERMISOS.REPARTIDORES_VER],
-            'a[href="#promociones"]': [PERMISOS.PROMOCIONES_VER],
-
-            // Finanzas (dropdown)
-            'a[href="#finanzas"]': [PERMISOS.FINANZAS_VER],
-            'a[href="#reportes"]': [PERMISOS.FINANZAS_VER], // Los reportes requieren finanzas
-            'a[href="#proveedores"]': [PERMISOS.PRODUCTOS_VER], // Los proveedores están relacionados con productos
-
-            // Configuración (dropdown)
-            'a[href="#configuracion"]': [PERMISOS.CONFIG_VER],
-            'a[href="#backup"]': [PERMISOS.CONFIG_BACKUP],
-
-            // Usuarios
-            'a[href="#usuarios"]': [PERMISOS.USUARIOS_VER]
-        };
-
-        // Ocultar elementos de navegación sin permisos
-        Object.entries(navPermissions).forEach(([selector, requiredPermissions]) => {
-            const element = document.querySelector(selector);
-            if (element) {
-                const hasPermission = this.hasAnyPermission(requiredPermissions);
-                const listItem = element.closest('li');
-
-                if (!hasPermission) {
-                    if (listItem) {
-                        listItem.style.display = 'none';
-                    } else {
-                        element.style.display = 'none';
-                    }
-                }
-            }
-        });
-
-        // Ocultar dropdowns vacíos
-        document.querySelectorAll('.nav-item.dropdown').forEach(dropdown => {
-            // Contar items visibles (excluyendo separadores <hr>)
-            const dropdownItems = Array.from(dropdown.querySelectorAll('.dropdown-menu li'));
-            const visibleItems = dropdownItems.filter(li => {
-                // Verificar si el li contiene un link visible o es un separador
-                const link = li.querySelector('a.dropdown-item');
-                const separator = li.querySelector('hr');
-
-                // Si es separador, ignorar
-                if (separator) return false;
-
-                // Si tiene un link, verificar si está visible
-                if (link) {
-                    return li.style.display !== 'none';
-                }
-
-                return false;
-            });
-
-            console.log('🔍 Dropdown:', dropdown.querySelector('.nav-link')?.textContent.trim(), 'Items visibles:', visibleItems.length);
-
-            if (visibleItems.length === 0) {
-                console.log('❌ Ocultando dropdown vacío:', dropdown.querySelector('.nav-link')?.textContent.trim());
-                dropdown.style.display = 'none';
-            }
-        });
-
-        // ✅ Ocultar elementos del dashboard según permisos
-        this.applyDashboardRestrictions();
-
-        // Mostrar nombre del usuario en la UI
         this.updateUserInfo();
     }
 
     /**
-     * Aplica restricciones en el dashboard según permisos
-     * NOTA: El dashboard se muestra COMPLETO para todos los usuarios con permiso dashboard_ver
-     * Solo se ocultan los accesos rápidos a módulos para los que no tienen permiso
-     */
-    applyDashboardRestrictions() {
-        console.log('🔒 Aplicando restricciones de accesos rápidos del dashboard...');
-        console.log('📋 Permisos del usuario:', this.userPermissions);
-
-        // El dashboard muestra todas sus tarjetas y secciones informativas
-        // Solo ocultamos los botones de acceso rápido a módulos sin permiso
-        this.applyQuickAccessRestrictions();
-    }
-
-    /**
-     * Aplica restricciones en la sección de Accesos Rápidos
-     */
-    applyQuickAccessRestrictions() {
-        // Pedidos Web
-        if (!this.hasPermission(PERMISOS.PEDIDOS_WEB_VER)) {
-            const cards = document.querySelectorAll('.hover-card');
-            cards.forEach(card => {
-                if (card.innerHTML.includes('Pedidos Web')) {
-                    card.closest('.col-sm-6, .col-lg-3')?.remove();
-                }
-            });
-        }
-
-        // Clientes
-        if (!this.hasPermission(PERMISOS.CLIENTES_VER)) {
-            const cards = document.querySelectorAll('.hover-card');
-            cards.forEach(card => {
-                if (card.innerHTML.includes('Gestionar clientes')) {
-                    card.closest('.col-sm-6, .col-lg-3')?.remove();
-                }
-            });
-        }
-
-        // Promociones
-        if (!this.hasPermission(PERMISOS.PROMOCIONES_VER)) {
-            const cards = document.querySelectorAll('.hover-card');
-            cards.forEach(card => {
-                if (card.innerHTML.includes('Promociones')) {
-                    card.closest('.col-sm-6, .col-lg-3')?.remove();
-                }
-            });
-        }
-
-        // Repartidores
-        if (!this.hasPermission(PERMISOS.REPARTIDORES_VER)) {
-            const cards = document.querySelectorAll('.hover-card');
-            cards.forEach(card => {
-                if (card.innerHTML.includes('Repartidores')) {
-                    card.closest('.col-sm-6, .col-lg-3')?.remove();
-                }
-            });
-        }
-    }
-
-    /**
-     * Actualiza la información del usuario en la UI
+     * Actualiza la información del usuario en la UI (nombre y rol)
      */
     updateUserInfo() {
-        const userInfoElement = document.getElementById('currentUserInfo');
-        const userRoleElement = document.getElementById('currentUserRole');
+        if (!this.currentUser) return;
+        const roleName = ROLES[this.currentUser.rol]?.nombre || this.currentUser.rol;
 
-        if (userInfoElement && this.currentUser) {
-            const roleName = ROLES[this.currentUser.rol]?.nombre || this.currentUser.rol;
+        const nameTargets = ['currentUserInfo', 'rail-admin-name', 'topbar-admin-name'];
+        nameTargets.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = this.currentUser.nombre;
+        });
 
-            // Actualizar nombre del usuario
-            userInfoElement.textContent = this.currentUser.nombre;
-
-            // Actualizar rol del usuario si existe el elemento
-            if (userRoleElement) {
-                userRoleElement.textContent = roleName;
-            }
-        }
+        const roleTargets = ['currentUserRole', 'rail-profile-role'];
+        roleTargets.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = roleName;
+        });
     }
 
     /**
