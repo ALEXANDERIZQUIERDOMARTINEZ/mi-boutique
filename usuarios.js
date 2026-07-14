@@ -91,19 +91,32 @@ function setupEventListeners() {
 const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
 
 /**
- * Refresca el directorio local (nombre + correo de usuarios activos) que usa
- * login.html para mostrar el selector de usuario sin escribir el correo.
- * Solo se ejecuta si el usuario actual pudo leer la colección 'usuarios'
- * (ya filtrado por las Security Rules).
+ * Refresca el directorio de usuarios (nombre + correo, sin rol ni permisos)
+ * que usa login.html para mostrar el selector de usuario sin escribir el
+ * correo. Se guarda en config/directorio_usuarios (lectura pública ya
+ * permitida por las Security Rules) para que aparezca en CUALQUIER
+ * dispositivo, no solo en el que lo generó, y también en localStorage como
+ * caché rápida. Solo se ejecuta si el usuario actual pudo leer la colección
+ * 'usuarios' (ya filtrado por las Security Rules).
  */
-function actualizarDirectorioLocal(usuarios) {
+async function actualizarDirectorioLocal(usuarios) {
+    const directorio = usuarios
+        .filter(u => u.activo)
+        .map(u => ({ uid: u.id, nombre: u.nombre, email: u.email }));
+
     try {
-        const directorio = usuarios
-            .filter(u => u.activo)
-            .map(u => ({ uid: u.id, nombre: u.nombre, email: u.email }));
         localStorage.setItem(DIRECTORIO_KEY, JSON.stringify(directorio));
     } catch (e) {
-        console.warn('No se pudo actualizar el directorio local de usuarios:', e);
+        console.warn('No se pudo actualizar la caché local del directorio de usuarios:', e);
+    }
+
+    try {
+        await setDoc(doc(db, 'config', 'directorio_usuarios'), {
+            usuarios: directorio,
+            updatedAt: serverTimestamp()
+        });
+    } catch (e) {
+        console.warn('No se pudo actualizar el directorio público de usuarios:', e);
     }
 }
 

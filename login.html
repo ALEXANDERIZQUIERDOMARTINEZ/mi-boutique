@@ -278,14 +278,18 @@
         const manualEmailInput = document.getElementById('email');
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
 
-        // ─── Directorio local de usuarios (solo nombre + correo, guardado en
-        // este dispositivo). No se lee de Firestore aquí porque las Security
-        // Rules no permiten listar 'usuarios' sin sesión; el directorio se va
-        // completando solo con cada login exitoso y cuando un usuario con
-        // permiso de ver usuarios abre el panel de Usuarios en admin.html. ───
+        // ─── Directorio de usuarios (solo nombre + correo, sin rol ni
+        // permisos) para el selector. Se guarda en Firestore en
+        // config/directorio_usuarios — esa colección ya es de lectura
+        // pública en las Security Rules (la usa el QR de pagos), así que
+        // login.html puede leerlo sin sesión y mostrar la lista completa en
+        // cualquier dispositivo, no solo en los que ya iniciaron sesión ahí.
+        // localStorage se usa solo como caché para pintar algo de inmediato
+        // mientras se confirma la lista real contra Firestore.
         const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
+        const DIRECTORIO_DOC = doc(db, 'config', 'directorio_usuarios');
 
-        function getDirectorio() {
+        function getDirectorioCache() {
             try {
                 return JSON.parse(localStorage.getItem(DIRECTORIO_KEY)) || [];
             } catch (e) {
@@ -293,31 +297,52 @@
             }
         }
 
-        function upsertDirectorio(uid, nombre, email) {
-            const directorio = getDirectorio();
+        function upsertDirectorioCache(uid, nombre, email) {
+            const directorio = getDirectorioCache();
             const idx = directorio.findIndex(u => u.uid === uid);
             const entry = { uid, nombre, email };
             if (idx >= 0) directorio[idx] = entry; else directorio.push(entry);
             localStorage.setItem(DIRECTORIO_KEY, JSON.stringify(directorio));
         }
 
-        function poblarUserSelect() {
-            const directorio = getDirectorio().sort((a, b) => a.nombre.localeCompare(b.nombre));
-            directorio.forEach(u => {
+        function poblarUserSelect(directorio, { esDefinitivo } = {}) {
+            // Quitar las opciones de usuario pintadas antes (deja el placeholder y "otro")
+            userSelect.querySelectorAll('option[data-email]').forEach(opt => opt.remove());
+
+            const valorPrevio = userSelect.value;
+            const ordenado = [...directorio].sort((a, b) => a.nombre.localeCompare(b.nombre));
+            ordenado.forEach(u => {
                 const opt = document.createElement('option');
                 opt.value = u.uid;
                 opt.textContent = u.nombre;
                 opt.dataset.email = u.email;
                 userSelect.insertBefore(opt, userSelect.querySelector('option[value="__other__"]'));
             });
-            // Si no hay nadie en el directorio, ir directo al modo "otro correo"
-            if (directorio.length === 0) {
+
+            // Si ya había algo elegido (o escrito en modo manual), no lo pisamos
+            if (ordenado.some(u => u.uid === valorPrevio)) {
+                userSelect.value = valorPrevio;
+            } else if (esDefinitivo && ordenado.length === 0) {
+                // Solo tras confirmar contra Firestore: si de verdad no hay nadie, usar correo
                 userSelect.value = '__other__';
                 manualEmailGroup.style.display = 'block';
                 manualEmailInput.required = true;
             }
         }
-        poblarUserSelect();
+
+        // 1) Pintar de inmediato con lo que haya en caché (puede estar vacío o desactualizado)
+        poblarUserSelect(getDirectorioCache());
+
+        // 2) Confirmar contra Firestore (fuente real, funciona en cualquier dispositivo)
+        getDoc(DIRECTORIO_DOC).then(snap => {
+            const usuarios = snap.exists() ? (snap.data().usuarios || []) : [];
+            localStorage.setItem(DIRECTORIO_KEY, JSON.stringify(usuarios));
+            poblarUserSelect(usuarios, { esDefinitivo: true });
+        }).catch(error => {
+            console.warn('No se pudo cargar el directorio de usuarios desde Firestore:', error);
+            // Si ya había algo en caché se deja tal cual; si no, no forzamos "otro"
+            // porque puede ser un problema de conexión, no que no haya usuarios.
+        });
 
         userSelect.addEventListener('change', () => {
             const esOtro = userSelect.value === '__other__';
@@ -451,7 +476,7 @@
                 }));
 
                 // Recordar a este usuario en el directorio local del dispositivo
-                upsertDirectorio(user.uid, userData.nombre, user.email);
+                upsertDirectorioCache(user.uid, userData.nombre, user.email);
 
                 // Marca de cuándo inició sesión este dispositivo (en localStorage,
                 // no sessionStorage: debe sobrevivir a pestañas nuevas y reinicios
