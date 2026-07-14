@@ -270,7 +270,7 @@
                 <!-- MÉTRICAS -->
                 <div class="db2-metrics">
                     <div class="db2-met db2-met-split">
-                        <div class="db2-met-name db2-met-split-title">Ventas hoy</div>
+                        <div class="db2-met-name db2-met-split-title" id="db-ventas-periodo-title">Ventas hoy</div>
                         <div class="db2-met-split-row">
                             <div class="db2-met-split-icon" style="background:#F0FDF4;color:#16A34A;"><i class="bi bi-cash-stack"></i></div>
                             <div class="db2-met-split-body">
@@ -302,7 +302,7 @@
                             <div class="db2-met-sub">2 unidades o menos</div>
                         </div>
                     </div>
-                    <div class="db2-met">
+                    <div class="db2-met" style="cursor:pointer;" onclick="document.querySelector('a[href=\'#apartados\']').click()">
                         <div class="db2-met-icon" style="background:#FDF4FF;color:#9333EA;"><i class="bi bi-bookmark-check-fill"></i></div>
                         <div class="db2-met-body">
                             <div class="db2-met-val" id="db-apartados-vencer">0</div>
@@ -404,6 +404,18 @@
                     </div>
                 </div>
 
+                <div class="db2-sep"></div>
+
+                <!-- ACTIVIDAD RECIENTE -->
+                <div class="db-chart-card db-activity-feed">
+                    <div class="db-chart-header">
+                        <span class="db-chart-title">Actividad reciente</span>
+                        <small class="text-muted" style="font-size:0.72rem;">Últimas 5 ventas</small>
+                    </div>
+                    <div id="db-actividad-reciente">
+                        <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
+                    </div>
+                </div>
 
             </div>
 

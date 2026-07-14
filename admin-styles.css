@@ -4802,6 +4802,17 @@ body.dark-mode .db-top-bar-wrap {
 body.dark-mode .db-trend-row--today {
   background: rgba(99,102,241,0.1);
 }
+
+/* ── Actividad reciente (feed de últimas ventas) ── */
+.db-activity-feed .activity-item {
+  border-color: var(--border-subtle) !important;
+}
+.db-activity-feed .activity-item:last-child {
+  border-bottom: none !important;
+}
+.db-activity-feed .activity-item .text-dark {
+  color: var(--text-primary) !important;
+}
 body.dark-mode .db-top-rank--gold   { background: rgba(254,243,199,0.12); }
 body.dark-mode .db-top-rank--silver { background: rgba(241,245,249,0.08); }
 body.dark-mode .db-top-rank--bronze { background: rgba(253,242,233,0.08); }
