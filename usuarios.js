@@ -106,6 +106,26 @@ function setupEventListeners() {
     document.getElementById('logoutBtnHeader')?.addEventListener('click', handleLogout);
 }
 
+// Debe coincidir con DIRECTORIO_KEY en login.html
+const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
+
+/**
+ * Refresca el directorio local (nombre + correo de usuarios activos) que usa
+ * login.html para mostrar el selector de usuario sin escribir el correo.
+ * Solo se ejecuta si el usuario actual pudo leer la colección 'usuarios'
+ * (ya filtrado por las Security Rules).
+ */
+function actualizarDirectorioLocal(usuarios) {
+    try {
+        const directorio = usuarios
+            .filter(u => u.activo)
+            .map(u => ({ uid: u.id, nombre: u.nombre, email: u.email }));
+        localStorage.setItem(DIRECTORIO_KEY, JSON.stringify(directorio));
+    } catch (e) {
+        console.warn('No se pudo actualizar el directorio local de usuarios:', e);
+    }
+}
+
 /**
  * Cargar lista de usuarios
  */
@@ -129,6 +149,7 @@ function loadUsuarios() {
                     </td>
                 </tr>
             `;
+            actualizarDirectorioLocal(allUsuarios);
             return;
         }
 
@@ -137,6 +158,12 @@ function loadUsuarios() {
             allUsuarios.push(usuario);
             renderUsuarioRow(usuario, tbody);
         });
+
+        actualizarDirectorioLocal(allUsuarios);
+    }, (error) => {
+        // Permission-denied esperado para roles sin usuarios_ver: no hacemos nada,
+        // el enlace "Usuarios" del menú ya está oculto para ellos.
+        console.warn('No se pudo cargar la lista de usuarios:', error.code || error.message);
     });
 }
 

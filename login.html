@@ -170,6 +170,19 @@
 
             <form id="loginForm">
                 <div class="mb-3">
+                    <label for="user-select" class="form-label">Usuario</label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-person"></i>
+                        </span>
+                        <select class="form-select" id="user-select" required>
+                            <option value="" selected disabled>Selecciona tu usuario...</option>
+                            <option value="__other__">No aparezco en la lista / usar correo</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3" id="manual-email-group" style="display:none;">
                     <label for="email" class="form-label">Correo Electrónico</label>
                     <div class="input-group">
                         <span class="input-group-text">
@@ -180,7 +193,6 @@
                             class="form-control"
                             id="email"
                             placeholder="correo@ejemplo.com"
-                            required
                             autocomplete="email"
                         >
                     </div>
@@ -204,6 +216,9 @@
                         </div>
                         <i class="bi bi-eye password-toggle" id="togglePassword"></i>
                     </div>
+                    <div class="text-end mt-2">
+                        <a href="#" id="forgotPasswordLink" class="small">¿Olvidaste tu contraseña?</a>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-login" id="loginBtn">
@@ -218,13 +233,17 @@
                     <i class="bi bi-exclamation-circle me-2"></i>
                     <span id="errorMessage"></span>
                 </div>
+                <div class="alert alert-success" id="successAlert" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <span id="successMessage"></span>
+                </div>
             </form>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
         // Firebase configuration
@@ -250,8 +269,70 @@
         const loginSpinner = document.getElementById('loginSpinner');
         const errorAlert = document.getElementById('errorAlert');
         const errorMessage = document.getElementById('errorMessage');
+        const successAlert = document.getElementById('successAlert');
+        const successMessage = document.getElementById('successMessage');
         const togglePassword = document.getElementById('togglePassword');
         const passwordInput = document.getElementById('password');
+        const userSelect = document.getElementById('user-select');
+        const manualEmailGroup = document.getElementById('manual-email-group');
+        const manualEmailInput = document.getElementById('email');
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+
+        // ─── Directorio local de usuarios (solo nombre + correo, guardado en
+        // este dispositivo). No se lee de Firestore aquí porque las Security
+        // Rules no permiten listar 'usuarios' sin sesión; el directorio se va
+        // completando solo con cada login exitoso y cuando un usuario con
+        // permiso de ver usuarios abre el panel de Usuarios en admin.html. ───
+        const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
+
+        function getDirectorio() {
+            try {
+                return JSON.parse(localStorage.getItem(DIRECTORIO_KEY)) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function upsertDirectorio(uid, nombre, email) {
+            const directorio = getDirectorio();
+            const idx = directorio.findIndex(u => u.uid === uid);
+            const entry = { uid, nombre, email };
+            if (idx >= 0) directorio[idx] = entry; else directorio.push(entry);
+            localStorage.setItem(DIRECTORIO_KEY, JSON.stringify(directorio));
+        }
+
+        function poblarUserSelect() {
+            const directorio = getDirectorio().sort((a, b) => a.nombre.localeCompare(b.nombre));
+            directorio.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.uid;
+                opt.textContent = u.nombre;
+                opt.dataset.email = u.email;
+                userSelect.insertBefore(opt, userSelect.querySelector('option[value="__other__"]'));
+            });
+            // Si no hay nadie en el directorio, ir directo al modo "otro correo"
+            if (directorio.length === 0) {
+                userSelect.value = '__other__';
+                manualEmailGroup.style.display = 'block';
+                manualEmailInput.required = true;
+            }
+        }
+        poblarUserSelect();
+
+        userSelect.addEventListener('change', () => {
+            const esOtro = userSelect.value === '__other__';
+            manualEmailGroup.style.display = esOtro ? 'block' : 'none';
+            manualEmailInput.required = esOtro;
+            if (!esOtro) manualEmailInput.value = '';
+        });
+
+        function resolveEmail() {
+            if (userSelect.value === '__other__') {
+                return manualEmailInput.value.trim();
+            }
+            const selected = userSelect.selectedOptions[0];
+            return selected ? (selected.dataset.email || '') : '';
+        }
 
         // Toggle password visibility
         togglePassword.addEventListener('click', () => {
@@ -275,17 +356,52 @@
             errorAlert.style.display = 'none';
         }
 
+        // Show success
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successAlert.style.display = 'block';
+            setTimeout(() => {
+                successAlert.style.display = 'none';
+            }, 6000);
+        }
+
+        // ¿Olvidaste tu contraseña?
+        forgotPasswordLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            hideError();
+
+            const email = resolveEmail();
+            if (!email) {
+                showError('Primero selecciona tu usuario (o escribe tu correo) para poder enviarte el enlace');
+                return;
+            }
+
+            if (!confirm(`Se enviará un enlace para restablecer la contraseña a:\n${email}\n\n¿Continuar?`)) {
+                return;
+            }
+
+            try {
+                await sendPasswordResetEmail(auth, email);
+                showSuccess('Te enviamos un correo con el enlace para restablecer tu contraseña. Revisa tu bandeja de entrada (y spam).');
+            } catch (error) {
+                console.error('Reset password error:', error);
+                showError(error.code === 'auth/user-not-found'
+                    ? 'No existe una cuenta con ese correo'
+                    : 'No se pudo enviar el correo de restablecimiento. Intenta de nuevo.');
+            }
+        });
+
         // Handle form submission
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             hideError();
 
-            const email = document.getElementById('email').value.trim();
+            const email = resolveEmail();
             const password = document.getElementById('password').value;
 
             // Validate fields
             if (!email || !password) {
-                showError('Por favor, completa todos los campos');
+                showError(userSelect.value === '' ? 'Selecciona tu usuario' : 'Por favor, completa todos los campos');
                 return;
             }
 
@@ -333,6 +449,9 @@
                     permisos: userData.permisos || {},
                     tenantId: userData.tenantId ?? null
                 }));
+
+                // Recordar a este usuario en el directorio local del dispositivo
+                upsertDirectorio(user.uid, userData.nombre, user.email);
 
                 // Redirect to admin panel
                 window.location.href = 'admin.html';
