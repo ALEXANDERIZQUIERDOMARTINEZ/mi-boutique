@@ -12,6 +12,27 @@ function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
 }
 
+// Debe coincidir con DIRECTORIO_KEY en login.html / usuarios.js
+const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
+
+/**
+ * Asegura que el usuario que acaba de entrar quede en el directorio local
+ * del dispositivo (para el selector de usuario de login.html), incluso si
+ * llegó con una sesión de Firebase ya persistida (sin pasar por el submit
+ * de login.html) o no tiene permiso para ver la lista completa de usuarios.
+ */
+function recordarUsuarioEnDirectorio(usuario) {
+    try {
+        const directorio = JSON.parse(localStorage.getItem(DIRECTORIO_KEY)) || [];
+        const idx = directorio.findIndex(u => u.uid === usuario.uid);
+        const entry = { uid: usuario.uid, nombre: usuario.nombre, email: usuario.email };
+        if (idx >= 0) directorio[idx] = entry; else directorio.push(entry);
+        localStorage.setItem(DIRECTORIO_KEY, JSON.stringify(directorio));
+    } catch (e) {
+        console.warn('No se pudo actualizar el directorio local de usuarios:', e);
+    }
+}
+
 function aplicarPermisosNav() {
     const ctx = window.appContext;
     if (!ctx) return;
@@ -72,6 +93,7 @@ function aplicarPermisosNav() {
             isSuperAdmin: usuario.rol === 'SUPER_ADMIN'
         };
 
+        recordarUsuarioEnDirectorio(usuario);
         aplicarPermisosNav();
         initUsuariosManager(window.db, authManager);
         ocultarGate();
