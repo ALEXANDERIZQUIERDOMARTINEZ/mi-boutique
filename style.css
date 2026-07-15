@@ -4,9 +4,12 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ────────────────────────────────────────────────────────────────────
-   1. IMPORTACIONES DE FUENTES (Optimizado con font-display)
+   1. FUENTES: la carga de Poppins vive en un <link> en el <head> del
+   HTML (en paralelo con este CSS), no aquí. @import bloquea el
+   renderizado porque obliga al navegador a descargar y parsear todo
+   este archivo antes de enterarse de que necesita la fuente, en vez de
+   pedirla al mismo tiempo que el resto de los estilos.
    ──────────────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 /* ────────────────────────────────────────────────────────────────────
    2. VARIABLES DEL SISTEMA DE DISEÑO
