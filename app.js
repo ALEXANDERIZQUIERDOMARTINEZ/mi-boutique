@@ -1,6 +1,6 @@
 // --- IMPORTACIONES DE FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { initializeFirestore, enableMultiTabIndexedDbPersistence, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
@@ -18,7 +18,18 @@ const firebaseConfig = {
 
 // --- INICIALIZACIÓN Y GLOBALES ---
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// experimentalAutoDetectLongPolling evita que la conexión en tiempo real se
+// quede colgada en redes móviles o navegadores in-app (Instagram/WhatsApp)
+// que bloquean WebSockets: sin esto, algunos celulares se quedan cargando
+// indefinidamente hasta que el usuario cierra y vuelve a abrir la página.
+const db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true
+});
+// Caché offline: permite mostrar productos ya vistos al instante mientras
+// se sincroniza con el servidor, en vez de una pantalla en blanco.
+enableMultiTabIndexedDbPersistence(db).catch((err) => {
+    console.warn('⚠️ Persistencia offline no disponible:', err.code);
+});
 const productsCollection = collection(db, 'productos');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const promocionesCollection = collection(db, 'promociones');
@@ -2134,7 +2145,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ✅ Carga inicial de productos (sin índice compuesto)
     // Cargar todos los productos y filtrar por visible en memoria
+
+    // Salvavidas: si la primera respuesta tarda demasiado (red inestable en
+    // el celular), reemplazar el spinner infinito por un botón de reintento.
+    let productsFirstLoadDone = false;
+    setTimeout(() => {
+        if (productsFirstLoadDone) return;
+        const loadingEl = document.getElementById('loading-products');
+        if (loadingEl) {
+            loadingEl.innerHTML = `
+                <p class="text-muted mb-2">La conexión está tardando más de lo normal.</p>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="location.reload()">Reintentar</button>
+            `;
+        }
+    }, 12000);
+
     onSnapshot(productsCollection, (snapshot) => {
+        productsFirstLoadDone = true;
         allProducts = [];
         productsMap.clear();
 
@@ -2165,6 +2192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         recalculateWholesaleTierPricing(); // productos ya disponibles: recalcular precios por volumen
         renderCart(); // re-validate cart stock when products change
     }, (error) => {
+        productsFirstLoadDone = true;
         console.error("❌ Error al cargar productos:", error);
         const container = document.getElementById('products-container');
         if (container) {
