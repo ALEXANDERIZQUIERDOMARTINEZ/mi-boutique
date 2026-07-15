@@ -8818,19 +8818,19 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ── Ventas mayoristas (desde 2026) traducidas a "ingreso" de Fábrica ──
+    // Nota: no se filtra por tenantId aquí porque ninguna otra consulta a
+    // "ventas" en este archivo lo hace (muchas ventas no traen ese campo),
+    // así que filtrar por él dejaba las ventas mayoristas reales fuera.
     async function fetchVentasMayoristasComoIngresos() {
         try {
-            const tenantId = window.appContext?.tenantId || null;
-            const clauses = [
+            const snapshot = await getDocs(query(
+                salesCollection,
                 where('tipoVenta', '==', 'mayorista'),
                 where('timestamp', '>=', Timestamp.fromDate(FECHA_CORTE_MAYORISTA)),
                 orderBy('timestamp', 'desc')
-            ];
-            if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
+            ));
 
-            const snapshot = await getDocs(query(salesCollection, ...clauses));
-
-            return snapshot.docs
+            const resultado = snapshot.docs
                 .map(d => ({ id: d.id, ...d.data() }))
                 .filter(v => v.estado !== 'Anulada' && v.estado !== 'Cancelada')
                 .map(v => ({
@@ -8841,8 +8841,14 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     fecha: v.timestamp,
                     origenVenta: true
                 }));
+
+            console.log(`🏭 Fábrica: ${resultado.length} venta(s) mayorista(s) desde ${FECHA_CORTE_MAYORISTA.toLocaleDateString('es-CO')}`);
+            return resultado;
         } catch (error) {
             console.error('Error al cargar ventas mayoristas para Fábrica:', error);
+            if (typeof showToast === 'function') {
+                showToast('No se pudieron cargar las ventas mayoristas: ' + error.message, 'error');
+            }
             return [];
         }
     }
