@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { initializeFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
 import { getColorHex, getColorSwatchStyle } from './color-utils.js';
 
@@ -13,7 +13,11 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Evita que el listener en tiempo real se quede colgado en redes móviles
+// o navegadores in-app que bloquean WebSockets (ver mismo fix en app.js).
+const db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true
+});
 const productsCollection = collection(db, 'productos');
 const categoriesCollection = collection(db, 'categorias');
 
