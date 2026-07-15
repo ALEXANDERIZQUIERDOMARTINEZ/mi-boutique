@@ -207,8 +207,13 @@ export class AuthManager {
                 }
 
                 try {
-                    // Verificar que el usuario existe en la colección 'usuarios'
-                    const userDoc = await getDoc(doc(this.db, 'usuarios', user.uid));
+                    // El doc de 'usuarios' y la verificación de sesión vigente son
+                    // lecturas independientes: se piden en paralelo para no pagar
+                    // dos idas y vueltas de red seguidas en conexiones lentas.
+                    const [userDoc, sesionVigente] = await Promise.all([
+                        getDoc(doc(this.db, 'usuarios', user.uid)),
+                        this.verificarSesionVigente()
+                    ]);
 
                     if (!userDoc.exists()) {
                         // Usuario no autorizado
@@ -230,7 +235,6 @@ export class AuthManager {
 
                     // Verificar que nadie haya cerrado todas las sesiones después
                     // de que este dispositivo inició sesión
-                    const sesionVigente = await this.verificarSesionVigente();
                     if (!sesionVigente) {
                         await this.logout();
                         alert('Tu sesión fue cerrada por un administrador. Vuelve a iniciar sesión.');

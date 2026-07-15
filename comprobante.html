@@ -38,7 +38,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { initializeFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -50,7 +50,11 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // Este enlace se abre casi siempre desde el navegador in-app de WhatsApp,
+    // que suele bloquear WebSockets (mismo fix que app.js).
+    const db = initializeFirestore(app, {
+        experimentalAutoDetectLongPolling: true
+    });
 
     const statusEl = document.getElementById('status');
     const imgEl = document.getElementById('comp-img');
