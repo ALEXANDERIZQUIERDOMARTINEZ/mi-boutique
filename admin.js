@@ -9226,12 +9226,25 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ── Auto-calcular al entrar a la sección ──
+    // Cubre tanto el clic en el link del rail como llegar directo a #fabrica
+    // (recarga de página, botón atrás/adelante, o redirección automática de
+    // aplicarPermisosNav cuando la sección activa no estaba permitida), casos
+    // en los que nunca se dispara un evento "click" sobre el link del rail.
+    let fabricaYaCargada = false;
+    function cargarFabricaSiCorresponde() {
+        if ((window.location.hash || '') !== '#fabrica') return;
+        fabricaYaCargada = true;
+        calcularFabrica(null, null, 'Todo el historial');
+    }
+
     const tabLink = document.querySelector('a[href="#fabrica"]');
     if (tabLink) {
         tabLink.addEventListener('click', () => {
             calcularFabrica(null, null, 'Todo el historial');
         });
     }
+    window.addEventListener('hashchange', cargarFabricaSiCorresponde);
+    if (!fabricaYaCargada) cargarFabricaSiCorresponde();
 
     // ── Abrir modal: Nuevo Ingreso / Nuevo Gasto ──
     function abrirModalNuevo(tipo) {
