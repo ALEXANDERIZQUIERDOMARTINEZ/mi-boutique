@@ -335,7 +335,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { initializeFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
         // Firebase configuration
         const firebaseConfig = {
@@ -351,7 +351,11 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
+        // Evita que la conexión se quede colgada en redes móviles o
+        // navegadores in-app que bloquean WebSockets (mismo fix que app.js).
+        const db = initializeFirestore(app, {
+            experimentalAutoDetectLongPolling: true
+        });
 
         // Elements
         const loginForm = document.getElementById('loginForm');

@@ -1,6 +1,6 @@
 // Import Firebase core and Firestore modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 // Import Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
@@ -17,7 +17,13 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Evita que la conexión en tiempo real se quede colgada en redes móviles o
+// navegadores in-app que bloquean WebSockets (ver mismo fix en app.js).
+// auth.js / admin-auth-init.js / catalogoPDF.js reutilizan esta misma
+// instancia (mismo `app`), así que heredan esta configuración sin repetirla.
+const db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true
+});
 const storage = getStorage(app);
 console.log("Firebase Initialized!");
 
