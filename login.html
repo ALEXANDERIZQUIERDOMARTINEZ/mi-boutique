@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <title>Login - MISHELL'ES BOUTIQUE Admin</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -15,37 +15,50 @@
         :root {
             --primary-color: #D988B9;
             --primary-dark: #c76fa5;
-            --bg-gradient-start: #f8f9fa;
-            --bg-gradient-end: #e9ecef;
+            --primary-darker: #b35d92;
+            --bg-gradient-start: #f7d9e9;
+            --bg-gradient-end: #f4e3ee;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
         }
 
         body {
-            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            background: linear-gradient(160deg, var(--primary-color) 0%, var(--bg-gradient-start) 45%, var(--bg-gradient-end) 100%);
+            background-attachment: fixed;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
         .login-container {
-            max-width: 450px;
+            max-width: 420px;
             width: 100%;
-            padding: 20px;
+            padding: 24px 16px;
         }
 
         .login-card {
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(90, 30, 60, 0.25);
+            padding: 36px 28px;
             animation: slideIn 0.5s ease-out;
         }
 
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateY(-20px);
+                transform: translateY(-16px);
             }
             to {
                 opacity: 1;
@@ -55,83 +68,118 @@
 
         .logo-section {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
+        }
+
+        .logo-badge {
+            width: 68px;
+            height: 68px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-darker));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            box-shadow: 0 8px 20px rgba(217, 136, 185, 0.4);
+        }
+
+        .logo-badge i {
+            font-size: 1.9rem;
+            color: white;
         }
 
         .logo-section h1 {
-            color: var(--primary-color);
+            color: #2d1b26;
             font-weight: 700;
-            font-size: 2.5rem;
+            font-size: 1.6rem;
             margin: 0;
         }
 
         .logo-section p {
-            color: #6c757d;
-            font-size: 0.95rem;
-            margin-top: 5px;
+            color: #8a7a85;
+            font-size: 0.9rem;
+            margin-top: 4px;
         }
 
         .form-label {
             font-weight: 600;
             color: #495057;
             margin-bottom: 8px;
+            font-size: 0.9rem;
         }
 
-        .form-control {
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            padding: 12px 15px;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
+        .form-control,
+        .form-select {
+            border: 2px solid #eee0e8;
+            border-radius: 12px;
+            padding: 13px 15px;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            background-color: #fdfbfc;
         }
 
-        .form-control:focus {
+        .form-control:focus,
+        .form-select:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(217, 136, 185, 0.25);
+            box-shadow: 0 0 0 0.2rem rgba(217, 136, 185, 0.2);
+            background-color: white;
         }
 
         .input-group-text {
-            background: transparent;
-            border: 2px solid #e9ecef;
+            background: #fdfbfc;
+            border: 2px solid #eee0e8;
             border-right: none;
-            border-radius: 10px 0 0 10px;
+            border-radius: 12px 0 0 12px;
+            color: var(--primary-dark);
         }
 
-        .input-group .form-control {
+        .input-group:focus-within .input-group-text {
+            border-color: var(--primary-color);
+        }
+
+        .input-group .form-control,
+        .input-group .form-select {
             border-left: none;
-            border-radius: 0 10px 10px 0;
+            border-radius: 0 12px 12px 0;
         }
 
         .btn-login {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-darker));
             border: none;
-            border-radius: 10px;
-            padding: 12px;
+            border-radius: 12px;
+            padding: 15px;
             font-weight: 600;
             font-size: 1rem;
             color: white;
             width: 100%;
-            margin-top: 20px;
-            transition: all 0.3s ease;
+            min-height: 52px;
+            margin-top: 24px;
+            transition: all 0.25s ease;
+            touch-action: manipulation;
         }
 
-        .btn-login:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(217, 136, 185, 0.3);
+        .btn-login:hover,
+        .btn-login:focus-visible {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-darker));
+            box-shadow: 0 8px 20px rgba(217, 136, 185, 0.4);
+        }
+
+        .btn-login:active {
+            transform: scale(0.98);
         }
 
         .btn-login:disabled {
-            background: #c8c8c8;
+            background: #d9c9d3;
             cursor: not-allowed;
             transform: none;
+            box-shadow: none;
         }
 
         .alert {
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 12px 15px;
-            font-size: 0.9rem;
-            margin-top: 15px;
+            font-size: 0.88rem;
+            margin-top: 16px;
             display: none;
         }
 
@@ -147,8 +195,11 @@
             right: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: #6c757d;
+            color: #a08a99;
             z-index: 10;
+            padding: 8px;
+            margin: -8px;
+            touch-action: manipulation;
         }
 
         .password-toggle:hover {
@@ -158,13 +209,53 @@
         .form-floating-custom {
             position: relative;
         }
+
+        a#forgotPasswordLink {
+            color: var(--primary-dark);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a#forgotPasswordLink:hover {
+            text-decoration: underline;
+        }
+
+        /* Pantallas pequeñas de celular: la tarjeta ocupa el ancho completo
+           y baja el padding para no sentirse apretada */
+        @media (max-width: 380px) {
+            .login-container {
+                padding: 16px 12px;
+            }
+
+            .login-card {
+                padding: 28px 20px;
+                border-radius: 20px;
+            }
+        }
+
+        /* En pantallas muy bajas (celular en horizontal) evitamos que la
+           tarjeta se corte: dejamos de centrar verticalmente y permitimos
+           scroll natural del body */
+        @media (max-height: 640px) {
+            body {
+                align-items: flex-start;
+            }
+
+            .login-container {
+                padding-top: max(24px, env(safe-area-inset-top));
+                padding-bottom: max(24px, env(safe-area-inset-bottom));
+            }
+        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="login-card">
             <div class="logo-section">
-                <h1><i class="bi bi-shop"></i> Mishell</h1>
+                <div class="logo-badge">
+                    <i class="bi bi-shop"></i>
+                </div>
+                <h1>Mishell's Boutique</h1>
                 <p>Panel de Administración</p>
             </div>
 
