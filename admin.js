@@ -8808,6 +8808,185 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
     let idPendienteEliminar = null;
     let ultimoRango = { desde: null, hasta: null, label: 'Todo el historial' };
+    let lineChartInstance = null;
+
+    // ── Colores validados (ver skill dataviz): verde ingresos, rojo gastos ──
+    function coloresGrafica() {
+        const dark = document.body.classList.contains('dark-mode');
+        return {
+            ingresos: '#008300',
+            gastos: dark ? '#e66767' : '#e34948',
+            tick: dark ? '#c3c2b7' : '#898781',
+            grid: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            surface: dark ? '#1a1a19' : '#fcfcfb'
+        };
+    }
+
+    // ── Plugin: etiqueta directa con el último valor de cada línea ──
+    const fabEndLabelsPlugin = {
+        id: 'fabEndLabels',
+        afterDatasetsDraw(chart) {
+            const { ctx } = chart;
+            const { tick } = coloresGrafica();
+            chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i);
+                if (meta.hidden || !meta.data.length) return;
+                const lastPoint = meta.data[meta.data.length - 1];
+                const value = dataset.data[dataset.data.length - 1];
+                ctx.save();
+                ctx.font = '600 11px system-ui, -apple-system, "Segoe UI", sans-serif';
+                ctx.fillStyle = tick;
+                ctx.textBaseline = 'middle';
+                const alignRight = lastPoint.x > chart.chartArea.right - 60;
+                ctx.textAlign = alignRight ? 'right' : 'left';
+                ctx.fillText(fmt.format(value), lastPoint.x + (alignRight ? -8 : 8), lastPoint.y - 10);
+                ctx.restore();
+            });
+        }
+    };
+
+    // ── Agrupar ingresos/gastos por día (o por mes en rangos largos) ──
+    function buildLineChartData(movimientos, desde, hasta) {
+        const diffDays = Math.max(1, Math.round((hasta - desde) / (1000 * 60 * 60 * 24)));
+        const porMes = diffDays > 60;
+
+        const keyFor = fecha => porMes
+            ? `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`
+            : fecha.toISOString().slice(0, 10);
+
+        const buckets = new Map();
+        if (porMes) {
+            const cur = new Date(desde.getFullYear(), desde.getMonth(), 1);
+            const end = new Date(hasta.getFullYear(), hasta.getMonth(), 1);
+            while (cur <= end) {
+                buckets.set(keyFor(cur), { ingresos: 0, gastos: 0 });
+                cur.setMonth(cur.getMonth() + 1);
+            }
+        } else {
+            const cur = new Date(desde); cur.setHours(0, 0, 0, 0);
+            const end = new Date(hasta); end.setHours(0, 0, 0, 0);
+            while (cur <= end) {
+                buckets.set(keyFor(cur), { ingresos: 0, gastos: 0 });
+                cur.setDate(cur.getDate() + 1);
+            }
+        }
+
+        movimientos.forEach(m => {
+            const fecha = m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : new Date());
+            const key = keyFor(fecha);
+            if (!buckets.has(key)) buckets.set(key, { ingresos: 0, gastos: 0 });
+            const bucket = buckets.get(key);
+            const monto = parseFloat(m.monto) || 0;
+            if (m.tipo === 'ingreso') bucket.ingresos += monto; else bucket.gastos += monto;
+        });
+
+        const keys = Array.from(buckets.keys()).sort();
+        const labels = keys.map(key => {
+            if (porMes) {
+                const [y, mm] = key.split('-').map(Number);
+                return new Date(y, mm - 1, 1).toLocaleDateString('es-CO', { month: 'short', year: '2-digit' });
+            }
+            return new Date(key + 'T00:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+        });
+
+        return {
+            labels,
+            ingresosData: keys.map(k => Math.round(buckets.get(k).ingresos)),
+            gastosData: keys.map(k => Math.round(buckets.get(k).gastos)),
+            porMes
+        };
+    }
+
+    // ── Renderizar la gráfica de dos líneas ──
+    function renderLineChart(labels, ingresosData, gastosData) {
+        const canvas = document.getElementById('fab-lineas-chart');
+        if (!canvas) return;
+
+        const { ingresos: colorIngresos, gastos: colorGastos, tick, grid, surface } = coloresGrafica();
+
+        if (lineChartInstance) {
+            lineChartInstance.destroy();
+            lineChartInstance = null;
+        }
+
+        lineChartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Ingresos',
+                        data: ingresosData,
+                        borderColor: colorIngresos,
+                        backgroundColor: colorIngresos + '1A',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: colorIngresos,
+                        pointBorderColor: surface,
+                        pointBorderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Gastos',
+                        data: gastosData,
+                        borderColor: colorGastos,
+                        backgroundColor: colorGastos + '1A',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: colorGastos,
+                        pointBorderColor: surface,
+                        pointBorderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        align: 'end',
+                        labels: {
+                            color: tick,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            boxWidth: 8,
+                            boxHeight: 8,
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: ctx => ` ${ctx.dataset.label}: ${fmt.format(ctx.parsed.y)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: tick, font: { size: 11 } }
+                    },
+                    y: {
+                        grid: { color: grid },
+                        ticks: {
+                            color: tick,
+                            font: { size: 11 },
+                            callback: v => fmt.format(v)
+                        }
+                    }
+                }
+            },
+            plugins: [fabEndLabelsPlugin]
+        });
+    }
 
     function getModal(id) {
         const el = document.getElementById(id);
@@ -8900,6 +9079,24 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             document.getElementById('fab-ingresos').textContent = fmt.format(totalIngresos);
             document.getElementById('fab-gastos').textContent   = fmt.format(totalGastos);
+
+            // ── Gráfica: ingresos vs. gastos en el tiempo ──
+            let desdeGrafica = desde;
+            let hastaGrafica = hasta;
+            if (!desdeGrafica || !hastaGrafica) {
+                if (movimientos.length) {
+                    const fechas = movimientos.map(m => (m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : new Date())));
+                    desdeGrafica = new Date(Math.min(...fechas));
+                    hastaGrafica = new Date(Math.max(...fechas));
+                } else {
+                    desdeGrafica = new Date();
+                    hastaGrafica = new Date();
+                }
+            }
+            const { labels: chartLabels, ingresosData, gastosData, porMes } = buildLineChartData(movimientos, desdeGrafica, hastaGrafica);
+            renderLineChart(chartLabels, ingresosData, gastosData);
+            const chartSubtitle = document.getElementById('fab-chart-subtitle');
+            if (chartSubtitle) chartSubtitle.textContent = porMes ? 'por mes' : 'por día';
 
             // ── Tabla ──
             document.getElementById('fab-movs-count').textContent =
