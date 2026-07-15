@@ -146,8 +146,11 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════
 
     match /ventas/{saleId} {
-      // Leer: Solo del mismo tenant
-      allow read: if (hasPermission('ventas_ver') || hasPermission('dashboard_ver')) &&
+      // Leer: Solo del mismo tenant. Fábrica también puede leer, pero SOLO
+      // ventas mayoristas (las usa para sumar sus ingresos), nunca las
+      // ventas al detal de la boutique.
+      allow read: if (hasPermission('ventas_ver') || hasPermission('dashboard_ver') ||
+                       (hasPermission('fabrica_gestionar') && resource.data.tipoVenta == 'mayorista')) &&
                     belongsToTenant(resource.data.tenantId);
 
       // Crear: Con tenantId correcto
