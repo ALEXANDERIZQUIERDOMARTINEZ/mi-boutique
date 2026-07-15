@@ -8810,6 +8810,43 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     let ultimoRango = { desde: null, hasta: null, label: 'Todo el historial' };
     let lineChartInstance = null;
 
+    // Las ventas mayoristas solo cuentan como ingreso de Fábrica desde esta fecha
+    const FECHA_CORTE_MAYORISTA = new Date(2026, 0, 1, 0, 0, 0, 0);
+
+    function fechaDeMovimiento(m) {
+        return m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : new Date(0));
+    }
+
+    // ── Ventas mayoristas (desde 2026) traducidas a "ingreso" de Fábrica ──
+    async function fetchVentasMayoristasComoIngresos() {
+        try {
+            const tenantId = window.appContext?.tenantId || null;
+            const clauses = [
+                where('tipoVenta', '==', 'mayorista'),
+                where('timestamp', '>=', Timestamp.fromDate(FECHA_CORTE_MAYORISTA)),
+                orderBy('timestamp', 'desc')
+            ];
+            if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
+
+            const snapshot = await getDocs(query(salesCollection, ...clauses));
+
+            return snapshot.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .filter(v => v.estado !== 'Anulada' && v.estado !== 'Cancelada')
+                .map(v => ({
+                    id: `venta_${v.id}`,
+                    tipo: 'ingreso',
+                    concepto: `Venta mayorista${v.clienteNombre ? ' — ' + v.clienteNombre : ''}`,
+                    monto: parseFloat(v.totalVenta) || 0,
+                    fecha: v.timestamp,
+                    origenVenta: true
+                }));
+        } catch (error) {
+            console.error('Error al cargar ventas mayoristas para Fábrica:', error);
+            return [];
+        }
+    }
+
     // ── Colores validados (ver skill dataviz): verde ingresos, rojo gastos ──
     function coloresGrafica() {
         const dark = document.body.classList.contains('dark-mode');
@@ -9041,14 +9078,19 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const clauses = [orderBy('timestamp', 'desc')];
             if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
 
-            const snapshot = await getDocs(query(fabricaCollection, ...clauses));
+            const [snapshot, ventasMayoristas] = await Promise.all([
+                getDocs(query(fabricaCollection, ...clauses)),
+                fetchVentasMayoristasComoIngresos()
+            ]);
 
-            let movimientos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            let movimientos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+                .concat(ventasMayoristas)
+                .sort((a, b) => fechaDeMovimiento(b) - fechaDeMovimiento(a));
 
             if (desde && hasta) {
                 movimientos = movimientos.filter(m => {
-                    const fecha = m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : null);
-                    return fecha && fecha >= desde && fecha <= hasta;
+                    const fecha = fechaDeMovimiento(m);
+                    return fecha >= desde && fecha <= hasta;
                 });
             }
 
@@ -9085,7 +9127,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             let hastaGrafica = hasta;
             if (!desdeGrafica || !hastaGrafica) {
                 if (movimientos.length) {
-                    const fechas = movimientos.map(m => (m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : new Date())));
+                    const fechas = movimientos.map(fechaDeMovimiento);
                     desdeGrafica = new Date(Math.min(...fechas));
                     hastaGrafica = new Date(Math.max(...fechas));
                 } else {
@@ -9111,21 +9153,22 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 </tr>`;
             } else {
                 tbody.innerHTML = movimientos.map(m => {
-                    const fecha = m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : new Date());
+                    const fecha = fechaDeMovimiento(m);
                     const esIngreso = m.tipo === 'ingreso';
                     const badgeCls  = esIngreso ? 'bg-success' : 'bg-danger';
                     const badgeTxt  = esIngreso ? 'Ingreso' : 'Gasto';
                     const colorCls  = esIngreso ? 'fin2-positive-text' : 'fin2-negative-text';
                     const signo     = esIngreso ? '+' : '−';
+                    const acciones  = m.origenVenta
+                        ? '<span class="text-muted small">Venta mayorista</span>'
+                        : `<button class="btn btn-sm btn-outline-secondary fab-btn-editar" data-id="${m.id}"><i class="bi bi-pencil"></i></button>
+                           <button class="btn btn-sm btn-outline-danger fab-btn-eliminar" data-id="${m.id}"><i class="bi bi-trash"></i></button>`;
                     return `<tr>
                         <td>${fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                         <td><span class="badge ${badgeCls}">${badgeTxt}</span></td>
                         <td>${m.concepto || ''}</td>
                         <td class="text-end ${colorCls} fw-semibold">${signo}${fmt.format(parseFloat(m.monto) || 0)}</td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-secondary fab-btn-editar" data-id="${m.id}"><i class="bi bi-pencil"></i></button>
-                            <button class="btn btn-sm btn-outline-danger fab-btn-eliminar" data-id="${m.id}"><i class="bi bi-trash"></i></button>
-                        </td>
+                        <td class="text-end">${acciones}</td>
                     </tr>`;
                 }).join('');
             }

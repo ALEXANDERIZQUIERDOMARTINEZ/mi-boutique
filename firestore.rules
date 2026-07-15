@@ -146,10 +146,13 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════
 
     match /ventas/{saleId} {
-      // Leer: Usuario activo con permiso de ventas o dashboard
+      // Leer: Usuario activo con permiso de ventas o dashboard.
+      // Fábrica también puede leer, pero SOLO ventas mayoristas (las usa
+      // para sumar sus ingresos), nunca las ventas al detal de la boutique.
       // No requiere tenantId en el documento para compatibilidad con registros anteriores
       allow read: if isActiveUser() &&
-                    (hasPermission('ventas_ver') || hasPermission('dashboard_ver'));
+                    (hasPermission('ventas_ver') || hasPermission('dashboard_ver') ||
+                     (hasPermission('fabrica_gestionar') && resource.data.tipoVenta == 'mayorista'));
 
       // Crear: Con tenantId correcto
       allow create: if hasPermission('ventas_crear') &&
