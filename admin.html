@@ -126,6 +126,14 @@
                 </a>
             </div>
 
+            <!-- Fábrica (segmento propio de Mishell Fábrica) -->
+            <div class="rail-group">
+                <span class="rail-group-label">Fábrica</span>
+                <a class="rail-link" href="#fabrica" data-tooltip="Fábrica" data-permiso="fabrica_gestionar">
+                    <i class="bi bi-buildings"></i><span>Fábrica</span>
+                </a>
+            </div>
+
             <!-- Sistema -->
             <div class="rail-group">
                 <span class="rail-group-label">Sistema</span>
@@ -1333,6 +1341,140 @@
                     </div>
 
                 </div><!-- /fin2-resultados -->
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════════
+                 SECCIÓN: FÁBRICA — Gastos vs. Ingresos (segmento propio, exclusivo)
+                 ═══════════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="fabrica">
+
+                <!-- ── Encabezado ── -->
+                <div class="fin2-page-header">
+                    <div>
+                        <h1 class="fin2-page-title"><i class="bi bi-buildings"></i> Fábrica</h1>
+                        <p class="fin2-page-subtitle">Gastos vs. dinero que entra — utilidad de la fábrica</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success btn-sm" id="fab-btn-nuevo-ingreso">
+                            <i class="bi bi-plus-circle me-1"></i> Ingreso
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm" id="fab-btn-nuevo-gasto">
+                            <i class="bi bi-dash-circle me-1"></i> Gasto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── Filtros de periodo ── -->
+                <div class="fin2-filters-bar">
+                    <div class="fin2-filter-group">
+                        <button class="fin2-filter-btn active fab-filter-btn" data-range="todo">Todo</button>
+                        <button class="fin2-filter-btn fab-filter-btn" data-range="hoy">Hoy</button>
+                        <button class="fin2-filter-btn fab-filter-btn" data-range="ayer">Ayer</button>
+                        <button class="fin2-filter-btn fab-filter-btn" data-range="semana">Esta semana</button>
+                        <button class="fin2-filter-btn fab-filter-btn" data-range="mes">Este mes</button>
+                        <button class="fin2-filter-btn fab-filter-btn" data-range="personalizado">
+                            <i class="bi bi-calendar3"></i> Rango
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── Rango personalizado ── -->
+                <div id="fab-custom-range" class="fin2-custom-range-bar" style="display:none;">
+                    <div class="fin2-date-field">
+                        <label class="fin2-date-label"><i class="bi bi-calendar-event"></i> Desde</label>
+                        <input type="date" id="fab-desde" class="fin2-date-input">
+                    </div>
+                    <div class="fin2-date-arrow"><i class="bi bi-arrow-right"></i></div>
+                    <div class="fin2-date-field">
+                        <label class="fin2-date-label"><i class="bi bi-calendar-check"></i> Hasta</label>
+                        <input type="date" id="fab-hasta" class="fin2-date-input">
+                    </div>
+                    <button id="fab-btn-calc" class="fin2-btn-apply">
+                        <i class="bi bi-search"></i> Calcular
+                    </button>
+                </div>
+
+                <!-- ── Loading ── -->
+                <div id="fab-loading" class="fin2-loading" style="display:none;">
+                    <div class="fin2-spinner"></div>
+                    <span>Calculando utilidad de la fábrica…</span>
+                </div>
+
+                <!-- ── Resultados ── -->
+                <div id="fab-resultados">
+
+                    <!-- KPI PRINCIPAL: UTILIDAD -->
+                    <div class="fin2-hero-kpi">
+                        <div class="fin2-hero-kpi-inner">
+                            <div class="fin2-hero-icon">
+                                <i class="bi bi-cash-coin"></i>
+                            </div>
+                            <div class="fin2-hero-content">
+                                <div class="fin2-hero-label">UTILIDAD FÁBRICA</div>
+                                <div class="fin2-hero-value" id="fab-utilidad-total">$0</div>
+                                <div class="fin2-hero-trend" id="fab-trend-badge">
+                                    <i class="bi bi-dash"></i> Sin movimientos
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPIs secundarios -->
+                    <div class="fin2-secondary-kpis">
+                        <div class="fin2-skpi-card">
+                            <div class="fin2-skpi-icon fin2-skpi-icon--green">
+                                <i class="bi bi-arrow-down-circle"></i>
+                            </div>
+                            <div class="fin2-skpi-body">
+                                <div class="fin2-skpi-label">Total ingresos</div>
+                                <div class="fin2-skpi-val" id="fab-ingresos">$0</div>
+                            </div>
+                        </div>
+                        <div class="fin2-skpi-card">
+                            <div class="fin2-skpi-icon fin2-skpi-icon--amber">
+                                <i class="bi bi-arrow-up-circle"></i>
+                            </div>
+                            <div class="fin2-skpi-body">
+                                <div class="fin2-skpi-label">Total gastos</div>
+                                <div class="fin2-skpi-val" id="fab-gastos">$0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de movimientos -->
+                    <div class="fin2-table-card">
+                        <div class="fin2-table-header">
+                            <div>
+                                <span class="fin2-table-title">
+                                    <i class="bi bi-list-ul"></i> Movimientos
+                                </span>
+                                <span class="fin2-table-count" id="fab-movs-count">0 movimientos</span>
+                            </div>
+                        </div>
+                        <div class="fin2-table-wrapper">
+                            <table class="fin2-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tipo</th>
+                                        <th>Concepto</th>
+                                        <th class="text-end">Monto</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fab-tabla-body">
+                                    <tr>
+                                        <td colspan="5" class="fin2-empty-state">
+                                            <i class="bi bi-inbox"></i>
+                                            <span>Aún no hay movimientos registrados</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div><!-- /fab-resultados -->
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════════════
@@ -3101,6 +3243,60 @@
     <!-- ═══════════════════════════════════════════════════════════════════
          MODAL: AGREGAR/EDITAR PROMOCIÓN GLOBAL
          ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- Modal: Nuevo/Editar movimiento de Fábrica -->
+    <div class="modal fade" id="fabricaMovModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="fabricaMovForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="fabricaMovModalTitle">Nuevo Ingreso</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="fabricaMov-id" value="">
+                        <input type="hidden" id="fabricaMov-tipo" value="ingreso">
+                        <div class="mb-3">
+                            <label class="form-label">Concepto</label>
+                            <input type="text" class="form-control" id="fabricaMov-concepto" placeholder="Ej: Venta de tela, Pago de operarios..." required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Monto</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="fabricaMov-monto" placeholder="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" class="form-control" id="fabricaMov-fecha" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="fabricaMov-btn-guardar">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de movimiento de Fábrica -->
+    <div class="modal fade" id="fabricaDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar movimiento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Seguro que quieres eliminar este movimiento? Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="fabrica-confirm-delete-btn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="addPromocionGlobalModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">

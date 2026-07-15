@@ -62,6 +62,7 @@ const productsCollection = collection(db, 'productos');
 const salesCollection = collection(db, 'ventas');
 const apartadosCollection = collection(db, 'apartados');
 const financesCollection = collection(db, 'movimientosFinancieros');
+const fabricaCollection = collection(db, 'movimientosFabrica');
 const closingsCollection = collection(db, 'cierresCaja');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const chatConversationsCollection = collection(db, 'chatConversations');
@@ -8774,6 +8775,328 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     console.log("✅ Módulo Finanzas v2 inicializado (Utilidad Real por Producto)");
+})();
+
+// ========================================================================
+// ✅ SECCIÓN: FÁBRICA — Gastos vs. Ingresos (segmento propio, exclusivo)
+// Utilidad = total ingresos − total gastos, registrados manualmente
+// ========================================================================
+(() => {
+    // ── DOM refs ──
+    const filterBtns     = document.querySelectorAll('.fab-filter-btn');
+    const customRangeBar = document.getElementById('fab-custom-range');
+    const inputDesde      = document.getElementById('fab-desde');
+    const inputHasta      = document.getElementById('fab-hasta');
+    const btnCalc         = document.getElementById('fab-btn-calc');
+    const loadingDiv      = document.getElementById('fab-loading');
+    const resultadosDiv   = document.getElementById('fab-resultados');
+    const btnNuevoIngreso = document.getElementById('fab-btn-nuevo-ingreso');
+    const btnNuevoGasto   = document.getElementById('fab-btn-nuevo-gasto');
+    const movForm         = document.getElementById('fabricaMovForm');
+    const movModalTitle   = document.getElementById('fabricaMovModalTitle');
+    const movIdInput      = document.getElementById('fabricaMov-id');
+    const movTipoInput    = document.getElementById('fabricaMov-tipo');
+    const movConceptoInput = document.getElementById('fabricaMov-concepto');
+    const movMontoInput   = document.getElementById('fabricaMov-monto');
+    const movFechaInput   = document.getElementById('fabricaMov-fecha');
+    const tbody           = document.getElementById('fab-tabla-body');
+    const btnConfirmDelete = document.getElementById('fabrica-confirm-delete-btn');
+
+    if (!filterBtns.length || !movForm) return;
+
+    const fmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+
+    let idPendienteEliminar = null;
+    let ultimoRango = { desde: null, hasta: null, label: 'Todo el historial' };
+
+    function getModal(id) {
+        const el = document.getElementById(id);
+        return bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el);
+    }
+
+    // ── Parsear fecha "YYYY-MM-DD" como hora local (NO UTC) ──
+    function parseLocalDate(str) {
+        const [y, m, d] = str.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+
+    // ── Rangos de fecha ──
+    function getDateRange(range) {
+        const now = new Date();
+        const hoyInicio = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        const hoyFin    = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+        switch (range) {
+            case 'hoy':
+                return { desde: hoyInicio, hasta: hoyFin, label: 'Hoy' };
+            case 'ayer': {
+                const desde = new Date(hoyInicio);
+                desde.setDate(desde.getDate() - 1);
+                const hasta = new Date(desde);
+                hasta.setHours(23, 59, 59, 999);
+                return { desde, hasta, label: 'Ayer' };
+            }
+            case 'semana': {
+                const desde = new Date(hoyInicio);
+                desde.setDate(desde.getDate() - 6);
+                return { desde, hasta: hoyFin, label: 'Esta semana' };
+            }
+            case 'mes': {
+                const desde = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+                return { desde, hasta: hoyFin, label: 'Este mes' };
+            }
+            default: // 'todo'
+                return { desde: null, hasta: null, label: 'Todo el historial' };
+        }
+    }
+
+    // ── Consulta y renderizado principal ──
+    async function calcularFabrica(desde, hasta, label) {
+        ultimoRango = { desde, hasta, label };
+
+        if (loadingDiv)    loadingDiv.style.display    = 'flex';
+        if (resultadosDiv) resultadosDiv.style.display = 'none';
+
+        try {
+            const tenantId = window.appContext?.tenantId || null;
+            const clauses = [orderBy('timestamp', 'desc')];
+            if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
+
+            const snapshot = await getDocs(query(fabricaCollection, ...clauses));
+
+            let movimientos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            if (desde && hasta) {
+                movimientos = movimientos.filter(m => {
+                    const fecha = m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : null);
+                    return fecha && fecha >= desde && fecha <= hasta;
+                });
+            }
+
+            const totalIngresos = movimientos
+                .filter(m => m.tipo === 'ingreso')
+                .reduce((s, m) => s + (parseFloat(m.monto) || 0), 0);
+            const totalGastos = movimientos
+                .filter(m => m.tipo === 'gasto')
+                .reduce((s, m) => s + (parseFloat(m.monto) || 0), 0);
+            const utilidad = totalIngresos - totalGastos;
+
+            // ── KPI principal ──
+            const elUtilidad = document.getElementById('fab-utilidad-total');
+            elUtilidad.textContent = (utilidad >= 0 ? '+' : '−') + fmt.format(Math.abs(utilidad));
+            elUtilidad.className   = 'fin2-hero-value ' + (utilidad >= 0 ? 'fin2-positive' : 'fin2-negative');
+
+            const trendBadge = document.getElementById('fab-trend-badge');
+            if (utilidad > 0) {
+                trendBadge.innerHTML = '<i class="bi bi-arrow-up-right"></i> Utilidad positiva';
+                trendBadge.className = 'fin2-hero-trend fin2-trend-up';
+            } else if (utilidad < 0) {
+                trendBadge.innerHTML = '<i class="bi bi-arrow-down-right"></i> Utilidad negativa';
+                trendBadge.className = 'fin2-hero-trend fin2-trend-down';
+            } else {
+                trendBadge.innerHTML = '<i class="bi bi-dash"></i> Sin movimientos';
+                trendBadge.className = 'fin2-hero-trend';
+            }
+
+            document.getElementById('fab-ingresos').textContent = fmt.format(totalIngresos);
+            document.getElementById('fab-gastos').textContent   = fmt.format(totalGastos);
+
+            // ── Tabla ──
+            document.getElementById('fab-movs-count').textContent =
+                `${movimientos.length} movimiento${movimientos.length !== 1 ? 's' : ''}`;
+
+            if (movimientos.length === 0) {
+                tbody.innerHTML = `<tr>
+                    <td colspan="5" class="fin2-empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <span>No hay movimientos en este periodo</span>
+                    </td>
+                </tr>`;
+            } else {
+                tbody.innerHTML = movimientos.map(m => {
+                    const fecha = m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : new Date());
+                    const esIngreso = m.tipo === 'ingreso';
+                    const badgeCls  = esIngreso ? 'bg-success' : 'bg-danger';
+                    const badgeTxt  = esIngreso ? 'Ingreso' : 'Gasto';
+                    const colorCls  = esIngreso ? 'fin2-positive-text' : 'fin2-negative-text';
+                    const signo     = esIngreso ? '+' : '−';
+                    return `<tr>
+                        <td>${fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                        <td><span class="badge ${badgeCls}">${badgeTxt}</span></td>
+                        <td>${m.concepto || ''}</td>
+                        <td class="text-end ${colorCls} fw-semibold">${signo}${fmt.format(parseFloat(m.monto) || 0)}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-secondary fab-btn-editar" data-id="${m.id}"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-sm btn-outline-danger fab-btn-eliminar" data-id="${m.id}"><i class="bi bi-trash"></i></button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+
+            if (loadingDiv)    loadingDiv.style.display    = 'none';
+            if (resultadosDiv) resultadosDiv.style.display = 'block';
+
+        } catch (error) {
+            console.error("Error calculando Fábrica:", error);
+            if (loadingDiv)    loadingDiv.style.display    = 'none';
+            if (resultadosDiv) resultadosDiv.style.display = 'block';
+            tbody.innerHTML = `<tr><td colspan="5" class="fin2-empty-state fin2-negative-text">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>Error al cargar datos: ${error.message}</span>
+            </td></tr>`;
+        }
+    }
+
+    // ── Event: botones de filtro ──
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const range = btn.dataset.range;
+
+            if (range === 'personalizado') {
+                if (customRangeBar) customRangeBar.style.display = 'flex';
+                return;
+            }
+            if (customRangeBar) customRangeBar.style.display = 'none';
+            const { desde, hasta, label } = getDateRange(range);
+            calcularFabrica(desde, hasta, label);
+        });
+    });
+
+    // ── Event: rango personalizado ──
+    if (btnCalc) {
+        btnCalc.addEventListener('click', () => {
+            if (!inputDesde.value || !inputHasta.value) {
+                showToast('Selecciona ambas fechas', 'warning');
+                return;
+            }
+            const desde = parseLocalDate(inputDesde.value);
+            const hasta = parseLocalDate(inputHasta.value);
+            hasta.setHours(23, 59, 59, 999);
+            calcularFabrica(desde, hasta,
+                `${desde.toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'})} — ${hasta.toLocaleDateString('es-CO', {day:'2-digit',month:'short',year:'numeric'})}`);
+        });
+    }
+
+    // ── Auto-calcular al entrar a la sección ──
+    const tabLink = document.querySelector('a[href="#fabrica"]');
+    if (tabLink) {
+        tabLink.addEventListener('click', () => {
+            calcularFabrica(null, null, 'Todo el historial');
+        });
+    }
+
+    // ── Abrir modal: Nuevo Ingreso / Nuevo Gasto ──
+    function abrirModalNuevo(tipo) {
+        movForm.reset();
+        movIdInput.value = '';
+        movTipoInput.value = tipo;
+        movModalTitle.textContent = tipo === 'ingreso' ? 'Nuevo Ingreso' : 'Nuevo Gasto';
+        movFechaInput.value = new Date().toISOString().slice(0, 10);
+        getModal('fabricaMovModal').show();
+    }
+
+    if (btnNuevoIngreso) btnNuevoIngreso.addEventListener('click', () => abrirModalNuevo('ingreso'));
+    if (btnNuevoGasto)   btnNuevoGasto.addEventListener('click', () => abrirModalNuevo('gasto'));
+
+    // ── Editar movimiento ──
+    if (tbody) {
+        tbody.addEventListener('click', async (e) => {
+            const btnEditar = e.target.closest('.fab-btn-editar');
+            const btnEliminar = e.target.closest('.fab-btn-eliminar');
+
+            if (btnEditar) {
+                const id = btnEditar.dataset.id;
+                try {
+                    const docSnap = await getDoc(doc(db, 'movimientosFabrica', id));
+                    if (!docSnap.exists()) return;
+                    const data = docSnap.data();
+                    movForm.reset();
+                    movIdInput.value = id;
+                    movTipoInput.value = data.tipo;
+                    movConceptoInput.value = data.concepto || '';
+                    movMontoInput.value = data.monto || '';
+                    const fecha = data.fecha?.toDate ? data.fecha.toDate() : new Date();
+                    movFechaInput.value = fecha.toISOString().slice(0, 10);
+                    movModalTitle.textContent = data.tipo === 'ingreso' ? 'Editar Ingreso' : 'Editar Gasto';
+                    getModal('fabricaMovModal').show();
+                } catch (error) {
+                    console.error('Error al cargar movimiento:', error);
+                    showToast('Error al cargar el movimiento', 'error');
+                }
+            }
+
+            if (btnEliminar) {
+                idPendienteEliminar = btnEliminar.dataset.id;
+                getModal('fabricaDeleteModal').show();
+            }
+        });
+    }
+
+    if (btnConfirmDelete) {
+        btnConfirmDelete.addEventListener('click', async () => {
+            if (!idPendienteEliminar) return;
+            try {
+                await deleteDoc(doc(db, 'movimientosFabrica', idPendienteEliminar));
+                showToast('Movimiento eliminado', 'success');
+                getModal('fabricaDeleteModal').hide();
+                idPendienteEliminar = null;
+                calcularFabrica(ultimoRango.desde, ultimoRango.hasta, ultimoRango.label);
+            } catch (error) {
+                console.error('Error al eliminar movimiento:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        });
+    }
+
+    // ── Guardar (crear/editar) ──
+    movForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const id = movIdInput.value;
+        const tipo = movTipoInput.value;
+        const concepto = movConceptoInput.value.trim();
+        const monto = parseFloat(movMontoInput.value);
+        const fecha = movFechaInput.value ? parseLocalDate(movFechaInput.value) : new Date();
+
+        if (!concepto || !monto || monto <= 0) {
+            showToast('Concepto y monto son requeridos.', 'warning');
+            return;
+        }
+
+        const btnGuardar = document.getElementById('fabricaMov-btn-guardar');
+        btnGuardar.disabled = true;
+
+        try {
+            const datos = {
+                tipo,
+                concepto,
+                monto,
+                fecha: Timestamp.fromDate(fecha),
+                tenantId: window.appContext?.tenantId || null
+            };
+
+            if (id) {
+                await updateDoc(doc(db, 'movimientosFabrica', id), datos);
+                showToast('Movimiento actualizado', 'success');
+            } else {
+                await addDoc(fabricaCollection, { ...datos, timestamp: serverTimestamp() });
+                showToast(tipo === 'ingreso' ? 'Ingreso guardado' : 'Gasto guardado', 'success');
+            }
+
+            getModal('fabricaMovModal').hide();
+            movForm.reset();
+            calcularFabrica(ultimoRango.desde, ultimoRango.hasta, ultimoRango.label);
+        } catch (error) {
+            console.error('Error al guardar movimiento de fábrica:', error);
+            showToast(`Error: ${error.message}`, 'error');
+        } finally {
+            btnGuardar.disabled = false;
+        }
+    });
+
+    console.log("✅ Módulo Fábrica inicializado (Gastos vs. Ingresos)");
 })();
 
 // ========================================================================

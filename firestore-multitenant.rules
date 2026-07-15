@@ -300,6 +300,20 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE FÁBRICA - SEGMENTO APARTE (gastos vs. ingresos propios)
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /movimientosFabrica/{movimientoId} {
+      allow read: if hasPermission('fabrica_gestionar') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      allow create, update, delete: if hasPermission('fabrica_gestionar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // REGLAS DE CIERRES DE CAJA - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
 
