@@ -58,6 +58,9 @@ export const PERMISOS = {
     FINANZAS_GESTIONAR: 'finanzas_gestionar',
     CIERRES_CAJA: 'cierres_caja',
 
+    // Fábrica (segmento aparte para Mishell Fábrica: gastos vs. ingresos propios)
+    FABRICA_GESTIONAR: 'fabrica_gestionar',
+
     // Soporte
     CHAT_RESPONDER: 'chat_responder',
 
@@ -96,6 +99,7 @@ export const MODULOS_PERMISOS = [
     { id: 'repartidores_gestionar', nombre: 'Repartidores y Tarifas', permisos: [PERMISOS.REPARTIDORES_GESTIONAR] },
     { id: 'promociones_gestionar', nombre: 'Promociones', permisos: [PERMISOS.PROMOCIONES_GESTIONAR] },
     { id: 'finanzas_ver', nombre: 'Finanzas', permisos: [PERMISOS.FINANZAS_VER, PERMISOS.FINANZAS_GESTIONAR, PERMISOS.CIERRES_CAJA] },
+    { id: 'fabrica_gestionar', nombre: 'Fábrica (Gastos e Ingresos)', permisos: [PERMISOS.FABRICA_GESTIONAR] },
     { id: 'proveedores_gestionar', nombre: 'Proveedores', permisos: [PERMISOS.PROVEEDORES_GESTIONAR] },
     { id: 'config_gestionar', nombre: 'Config. Pagos', permisos: [PERMISOS.CONFIG_GESTIONAR] },
     { id: 'usuarios_ver', nombre: 'Usuarios', permisos: [PERMISOS.USUARIOS_VER, PERMISOS.USUARIOS_CREAR, PERMISOS.USUARIOS_EDITAR] }
