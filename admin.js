@@ -918,24 +918,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const clientListTable = document.getElementById('lista-clientes');
         const searchModalList = document.getElementById('client-modal-list');
         const searchInput = document.getElementById('client-modal-search');
-        const ventaClienteInput = document.getElementById('venta-cliente'); const ventaCelularInput = document.getElementById('venta-cliente-celular'); const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
+        const ventaClienteInput = document.getElementById('venta-cliente'); const ventaCelularInput = document.getElementById('venta-cliente-celular'); const ventaDireccionInput = document.getElementById('venta-cliente-direccion'); const ventaCedulaInput = document.getElementById('venta-cliente-cedula');
         if (!addForm || !editForm || !clientListTable || !searchModalList) { console.warn("Elementos de Clientes no encontrados."); return; }
-        
-        const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General"}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "", nombre: d.nombre || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-view btn-client-history" data-client-name="${d.nombre}" data-client-celular="${d.celular || ''}"><i class="bi bi-clock-history"></i><span class="btn-action-text">Historial</span></button> <button class="btn btn-action btn-action-edit btn-edit-client"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-client"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td>`; clientListTable.appendChild(tr); }
+
+        const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General", cedula: ""}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "", nombre: d.nombre || "", cedula: d.cedula || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-view btn-client-history" data-client-name="${d.nombre}" data-client-celular="${d.celular || ''}"><i class="bi bi-clock-history"></i><span class="btn-action-text">Historial</span></button> <button class="btn btn-action btn-action-edit btn-edit-client"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-client"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td>`; clientListTable.appendChild(tr); }
             const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action client-search-item'; li.dataset.name = dataListValue; li.dataset.id = id; li.textContent = dataListValue; searchModalList.appendChild(li);
         }); document.dispatchEvent(new CustomEvent('clientsLoaded', { detail: { clientsMap: localClientsMap } })); window.fillClientInfoSales(); };
-        
-        window.fillClientInfoSales = function() { 
-            if (!ventaClienteInput || !ventaCelularInput || !ventaDireccionInput) return; 
-            const selectedValue = ventaClienteInput.value; 
-            const clientInfo = localClientsMap.get(selectedValue); 
-            if (clientInfo) { 
-                ventaCelularInput.value = clientInfo.celular; 
-                ventaDireccionInput.value = clientInfo.direccion; 
-            } else { 
-                ventaCelularInput.value = ""; 
-                ventaDireccionInput.value = ""; 
-            } 
+
+        window.fillClientInfoSales = function() {
+            if (!ventaClienteInput || !ventaCelularInput || !ventaDireccionInput) return;
+            const selectedValue = ventaClienteInput.value;
+            const clientInfo = localClientsMap.get(selectedValue);
+            if (clientInfo) {
+                ventaCelularInput.value = clientInfo.celular;
+                ventaDireccionInput.value = clientInfo.direccion;
+                if (ventaCedulaInput) ventaCedulaInput.value = clientInfo.cedula || "";
+            } else {
+                ventaCelularInput.value = "";
+                ventaDireccionInput.value = "";
+                if (ventaCedulaInput) ventaCedulaInput.value = "";
+            }
         }
         
         onSnapshot(query(clientsCollection, orderBy('nombre')), renderClients, (e) => { console.error("Error clients:", e); if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';});
@@ -2891,12 +2893,14 @@ document.addEventListener('DOMContentLoaded', () => {
          const transferenciaMixtoRecibidaInput = document.getElementById('transferencia-mixto-recibida');
 
          // Mostrar/Ocultar campos según método y recalcular resumen
+         // Nota: el formulario actual es "siempre efectivo" (único radio oculto),
+         // por lo que transferenciaFields/mixtoFields ya no existen en el DOM.
          metodoPagoRadios.forEach(radio => {
              radio.addEventListener('change', (e) => {
                  const metodo = e.target.value;
-                 efectivoFields.style.display = metodo === 'efectivo' ? 'block' : 'none';
-                 transferenciaFields.style.display = metodo === 'transferencia' ? 'block' : 'none';
-                 mixtoFields.style.display = metodo === 'mixto' ? 'block' : 'none';
+                 if (efectivoFields) efectivoFields.style.display = metodo === 'efectivo' ? 'block' : 'none';
+                 if (transferenciaFields) transferenciaFields.style.display = metodo === 'transferencia' ? 'block' : 'none';
+                 if (mixtoFields) mixtoFields.style.display = metodo === 'mixto' ? 'block' : 'none';
 
                  // Recalcular el resumen del método seleccionado
                  if (metodo === 'efectivo') calcularResumenEfectivo();
@@ -3288,6 +3292,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Obtener referencias a los elementos del formulario
             const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
             const ventaCelularInput = document.getElementById('venta-cliente-celular');
+            const ventaCedulaInput = document.getElementById('venta-cliente-cedula');
 
             const totalCalculado = window.calcularTotalVentaGeneral();
             const esCatalogo = tipoVentaSelect.value === 'catalogo';
@@ -3317,6 +3322,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 clienteNombre: ventaClienteInput.value || "Cliente General",
                 clienteDireccion: ventaDireccionInput?.value || "",
                 clienteCelular: ventaCelularInput?.value || "",
+                clienteCedula: ventaCedulaInput?.value || "",
                 tipoVenta: tipoVentaSelect.value,
                 tipoEntrega: tipoEntregaSelect.value,
                 pedidoWhatsapp: !ventaWhatsappCheckbox.checked, // Invertido para corregir lógica
@@ -3833,6 +3839,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const clienteLines = [
                 `Cliente: ${ventaData.clienteNombre || 'Cliente General'}`,
+                ventaData.clienteCedula ? `C.C./NIT: ${ventaData.clienteCedula}` : null,
                 ventaData.clienteDireccion ? `Dirección: ${ventaData.clienteDireccion}` : null,
                 ventaData.clienteCelular ? `Teléfono: ${ventaData.clienteCelular}` : null,
                 `Tipo de venta: ${(ventaData.tipoVenta || 'detal').toUpperCase()}`,
