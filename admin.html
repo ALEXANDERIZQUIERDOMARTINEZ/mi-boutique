@@ -2299,6 +2299,21 @@
                         <button type="button" class="btn btn-success" id="btn-factura-whatsapp">
                             <i class="bi bi-whatsapp me-2"></i>Enviar por WhatsApp
                         </button>
+                        <button type="button" class="btn btn-outline-danger" id="btn-factura-correo">
+                            <i class="bi bi-envelope me-2"></i>Enviar por Correo
+                        </button>
+                        <form id="factura-email-form" style="display:none;">
+                            <div class="input-group input-group-sm mt-1">
+                                <input type="email" id="factura-email-input" class="form-control"
+                                       placeholder="correo@ejemplo.com" autocomplete="off" required>
+                                <button class="btn btn-danger" type="submit" id="btn-factura-email-enviar">
+                                    <i class="bi bi-send"></i> Enviar
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                Se descargará el PDF y se abrirá tu correo con el destinatario listo; adjunta el archivo antes de enviarlo.
+                            </small>
+                        </form>
                         <button type="button" class="btn btn-outline-secondary" id="btn-factura-descargar">
                             <i class="bi bi-download me-2"></i>Descargar PDF
                         </button>
@@ -3286,7 +3301,7 @@
         });
     </script>
 
-    <script type="module" src="admin.js?v=3.3.4"></script>
+    <script type="module" src="admin.js?v=3.3.5"></script>
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
 
     <!-- Script para generar catálogo en PDF -->

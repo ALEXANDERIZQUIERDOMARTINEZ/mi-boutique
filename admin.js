@@ -351,7 +351,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if(viewSaleModalEl) viewSaleModalInstance = new bootstrap.Modal(viewSaleModalEl);
 
         const facturaAccionesModalEl = document.getElementById('facturaAccionesModal');
-        if (facturaAccionesModalEl) facturaAccionesModalInstance = new bootstrap.Modal(facturaAccionesModalEl);
+        if (facturaAccionesModalEl) {
+            facturaAccionesModalInstance = new bootstrap.Modal(facturaAccionesModalEl);
+            facturaAccionesModalEl.addEventListener('hidden.bs.modal', () => {
+                const emailForm = document.getElementById('factura-email-form');
+                if (emailForm) { emailForm.style.display = 'none'; emailForm.reset(); }
+            });
+        }
 
         const selectVariationModalEl = document.getElementById('selectVariationModal');
         if (selectVariationModalEl) selectVariationModalInstance = new bootstrap.Modal(selectVariationModalEl);
@@ -4113,6 +4119,31 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Se descargó el PDF. Adjúntalo manualmente en el chat de WhatsApp que se abrió.', 'info');
         }
 
+        // mailto no admite adjuntos: se descarga el PDF y se abre el correo
+        // con destinatario/asunto/cuerpo listos para que se adjunte a mano.
+        function enviarFacturaCorreo(email, { blob, fileName, folioTxt, ventaData }) {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+            const asunto = encodeURIComponent(`Factura ${folioTxt} - ${NEGOCIO_INFO.marca}`);
+            const cuerpo = encodeURIComponent(
+                `Hola ${ventaData.clienteNombre || ''},\n\nAdjunto encontrarás tu factura ${folioTxt} de ${NEGOCIO_INFO.marca}.\n\n¡Gracias por tu compra!\n\n${NEGOCIO_INFO.marca}\nWhatsApp ${NEGOCIO_INFO.telefono}`
+            );
+            const mailtoUrl = `mailto:${encodeURIComponent(email)}?subject=${asunto}&body=${cuerpo}`;
+
+            const mailLink = document.createElement('a');
+            mailLink.href = mailtoUrl;
+            document.body.appendChild(mailLink);
+            mailLink.click();
+            mailLink.remove();
+
+            showToast('Se descargó el PDF y se abrió tu correo. Adjunta el archivo antes de enviarlo.', 'info');
+        }
+
         const btnFacturaImprimir = document.getElementById('btn-factura-imprimir');
         if (btnFacturaImprimir) {
             btnFacturaImprimir.addEventListener('click', () => {
@@ -4124,6 +4155,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnFacturaWhatsapp) {
             btnFacturaWhatsapp.addEventListener('click', () => {
                 if (facturaGenerada) compartirFacturaWhatsApp(facturaGenerada);
+            });
+        }
+
+        // --- Enviar por Correo: pide el email antes de enviar ---
+        const btnFacturaCorreo = document.getElementById('btn-factura-correo');
+        const facturaEmailForm = document.getElementById('factura-email-form');
+        const facturaEmailInput = document.getElementById('factura-email-input');
+        if (btnFacturaCorreo && facturaEmailForm) {
+            btnFacturaCorreo.addEventListener('click', () => {
+                const visible = facturaEmailForm.style.display !== 'none';
+                facturaEmailForm.style.display = visible ? 'none' : 'block';
+                if (!visible) facturaEmailInput?.focus();
+            });
+        }
+        if (facturaEmailForm) {
+            facturaEmailForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (!facturaGenerada) return;
+                const email = (facturaEmailInput?.value || '').trim();
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    showToast('Ingresa un correo válido', 'warning');
+                    return;
+                }
+                enviarFacturaCorreo(email, facturaGenerada);
+                facturaEmailForm.style.display = 'none';
+                facturaEmailForm.reset();
             });
         }
 
