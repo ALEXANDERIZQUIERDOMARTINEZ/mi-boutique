@@ -2299,6 +2299,21 @@
                         <button type="button" class="btn btn-success" id="btn-factura-whatsapp">
                             <i class="bi bi-whatsapp me-2"></i>Enviar por WhatsApp
                         </button>
+                        <button type="button" class="btn btn-outline-danger" id="btn-factura-correo">
+                            <i class="bi bi-envelope me-2"></i>Enviar por Correo
+                        </button>
+                        <form id="factura-email-form" style="display:none;">
+                            <div class="input-group input-group-sm mt-1">
+                                <input type="email" id="factura-email-input" class="form-control"
+                                       placeholder="correo@ejemplo.com" autocomplete="off" required>
+                                <button class="btn btn-danger" type="submit" id="btn-factura-email-enviar">
+                                    <i class="bi bi-send"></i> Enviar
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                Se descargará el PDF y se abrirá tu correo con el destinatario listo; adjunta el archivo antes de enviarlo.
+                            </small>
+                        </form>
                         <button type="button" class="btn btn-outline-secondary" id="btn-factura-descargar">
                             <i class="bi bi-download me-2"></i>Descargar PDF
                         </button>
@@ -2306,6 +2321,31 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MODAL: ¿GENERAR FACTURA AL REGISTRAR LA VENTA?
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="facturaPreguntaModal" tabindex="-1" aria-labelledby="facturaPreguntaModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="facturaPreguntaModalTitle">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>Venta registrada
+                    </h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">¿Deseas generar la factura de esta venta ahora?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, gracias</button>
+                    <button type="button" class="btn btn-success" id="btn-factura-pregunta-si">
+                        <i class="bi bi-file-earmark-text me-1"></i>Sí, generar factura
+                    </button>
                 </div>
             </div>
         </div>
@@ -3286,7 +3326,7 @@
         });
     </script>
 
-    <script type="module" src="admin.js?v=3.3.4"></script>
+    <script type="module" src="admin.js?v=3.3.6"></script>
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
 
     <!-- Script para generar catálogo en PDF -->
