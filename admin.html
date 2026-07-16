@@ -2279,6 +2279,39 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════
+         MODAL: ACCIONES TRAS GENERAR FACTURA
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="facturaAccionesModal" tabindex="-1" aria-labelledby="facturaAccionesModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="facturaAccionesModalTitle">
+                        <i class="bi bi-file-earmark-check-fill text-success me-2"></i>Factura <span id="factura-modal-folio"></span> generada
+                    </h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">¿Qué deseas hacer con esta factura?</p>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary" id="btn-factura-imprimir">
+                            <i class="bi bi-printer me-2"></i>Imprimir
+                        </button>
+                        <button type="button" class="btn btn-success" id="btn-factura-whatsapp">
+                            <i class="bi bi-whatsapp me-2"></i>Enviar por WhatsApp
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="btn-factura-descargar">
+                            <i class="bi bi-download me-2"></i>Descargar PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
          MODAL: EDITAR VENTA
          ═══════════════════════════════════════════════════════════════════ -->
     <div class="modal fade" id="editSaleModal" tabindex="-1" aria-labelledby="editSaleModalTitle" aria-hidden="true">
@@ -3253,7 +3286,7 @@
         });
     </script>
 
-    <script type="module" src="admin.js?v=3.3.3"></script>
+    <script type="module" src="admin.js?v=3.3.4"></script>
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
 
     <!-- Script para generar catálogo en PDF -->
