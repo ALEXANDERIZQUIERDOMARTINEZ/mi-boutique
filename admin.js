@@ -1,6 +1,6 @@
 // Import Firebase core and Firestore modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 // Import Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 
@@ -3712,6 +3712,292 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Contraseña administrativa (puedes cambiarla)
         const ADMIN_PASSWORD = 'mishell2025';
+
+        // ========================================================================
+        // --- GENERAR FACTURA DE VENTA (PDF) ---
+        // ========================================================================
+
+        const NEGOCIO_INFO = {
+            marca: "MISHELL'ES BOUTIQUE",
+            nombreLegal: 'Andrea Mishell Espitia Solano',
+            cedula: '1193211056',
+            direccion: 'Mz 35 Lote 14',
+            telefono: '3046084971'
+        };
+
+        function formatearNumeroFactura(numero) {
+            return `FAC-${String(numero).padStart(4, '0')}`;
+        }
+
+        // Obtiene (o crea) el número consecutivo de factura de una venta.
+        // Se guarda en 'facturas/{ventaId}' (idempotente) y el consecutivo
+        // en 'contadores/facturas_{tenantId}' vía transacción atómica.
+        async function obtenerNumeroFactura(ventaId, ventaData) {
+            if (ventaData.numeroFactura) return ventaData.numeroFactura;
+
+            const facturaRef = doc(db, 'facturas', ventaId);
+            const facturaSnap = await getDoc(facturaRef);
+            if (facturaSnap.exists()) {
+                ventaData.numeroFactura = facturaSnap.data().numero;
+                return ventaData.numeroFactura;
+            }
+
+            const tenantId = ventaData.tenantId ?? window.appContext?.tenantId ?? null;
+            const contadorRef = doc(db, 'contadores', `facturas_${tenantId || 'default'}`);
+
+            const numero = await runTransaction(db, async (tx) => {
+                const contadorSnap = await tx.get(contadorRef);
+                const ultimo = contadorSnap.exists() ? (contadorSnap.data().ultimoNumero || 0) : 0;
+                const nuevo = ultimo + 1;
+                tx.set(contadorRef, { ultimoNumero: nuevo }, { merge: true });
+                tx.set(facturaRef, {
+                    numero: nuevo,
+                    ventaId,
+                    tenantId,
+                    clienteNombre: ventaData.clienteNombre || 'Cliente General',
+                    totalVenta: ventaData.totalVenta || 0,
+                    creadoEn: serverTimestamp()
+                });
+                return nuevo;
+            });
+
+            ventaData.numeroFactura = numero;
+            return numero;
+        }
+
+        async function generarFacturaVentaPDF(ventaId, ventaData) {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            const PW = 210, PH = 297, M = 15;
+            const PINK = [217, 136, 185], DARK = [28, 28, 28], GREY = [120, 120, 120], LGREY = [250, 247, 250];
+
+            const numeroFactura = await obtenerNumeroFactura(ventaId, ventaData);
+            const folioTxt = formatearNumeroFactura(numeroFactura);
+            const fecha = ventaData.timestamp?.toDate ? ventaData.timestamp.toDate() : new Date();
+
+            function dibujarEncabezado() {
+                pdf.setFillColor(...LGREY);
+                pdf.rect(0, 0, PW, 38, 'F');
+                pdf.setDrawColor(...PINK);
+                pdf.setLineWidth(0.8);
+                pdf.line(0, 38, PW, 38);
+
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(20);
+                pdf.setTextColor(...PINK);
+                pdf.text(NEGOCIO_INFO.marca, M, 16);
+
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(9);
+                pdf.setTextColor(...DARK);
+                pdf.text(NEGOCIO_INFO.nombreLegal, M, 23);
+                pdf.setTextColor(...GREY);
+                pdf.text(
+                    `C.C. ${NEGOCIO_INFO.cedula}  ·  ${NEGOCIO_INFO.direccion}  ·  Tel/WhatsApp: ${NEGOCIO_INFO.telefono}`,
+                    M, 28.5
+                );
+
+                pdf.setFillColor(...PINK);
+                pdf.roundedRect(PW - M - 62, 9, 62, 22, 3, 3, 'F');
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(10.5);
+                pdf.setTextColor(255, 255, 255);
+                pdf.text('FACTURA DE VENTA', PW - M - 31, 15.5, { align: 'center' });
+                pdf.setFontSize(13);
+                pdf.text(folioTxt, PW - M - 31, 22.5, { align: 'center' });
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(8);
+                pdf.text(
+                    fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }),
+                    PW - M - 31, 28, { align: 'center' }
+                );
+            }
+
+            dibujarEncabezado();
+
+            // ── Datos del cliente ────────────────────────────────────────────
+            let y = 48;
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(10);
+            pdf.setTextColor(...DARK);
+            pdf.text('Datos del Cliente', M, y);
+            y += 6;
+
+            let repartidorNombre = 'N/A';
+            if (ventaData.repartidorId && repartidoresMap.has(ventaData.repartidorId)) {
+                repartidorNombre = repartidoresMap.get(ventaData.repartidorId).nombre;
+            } else if (ventaData.repartidorNombre) {
+                repartidorNombre = ventaData.repartidorNombre;
+            }
+
+            const clienteLines = [
+                `Cliente: ${ventaData.clienteNombre || 'Cliente General'}`,
+                ventaData.clienteDireccion ? `Dirección: ${ventaData.clienteDireccion}` : null,
+                ventaData.clienteCelular ? `Teléfono: ${ventaData.clienteCelular}` : null,
+                `Tipo de venta: ${(ventaData.tipoVenta || 'detal').toUpperCase()}`,
+                ventaData.tipoEntrega === 'domicilio'
+                    ? `Entrega a domicilio — Repartidor: ${repartidorNombre}`
+                    : 'Entrega: Recoge en tienda'
+            ].filter(Boolean);
+
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.setTextColor(60, 60, 60);
+            clienteLines.forEach(line => { pdf.text(line, M, y); y += 5; });
+            y += 3;
+
+            // ── Tabla de items ────────────────────────────────────────────────
+            const colCant = 130, colPrecio = 158, colTotal = 195;
+
+            function dibujarCabeceraTabla() {
+                pdf.setFillColor(...PINK);
+                pdf.rect(M, y, PW - M * 2, 8, 'F');
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(9);
+                pdf.setTextColor(255, 255, 255);
+                pdf.text('Producto', M + 2, y + 5.5);
+                pdf.text('Cant.', colCant, y + 5.5, { align: 'center' });
+                pdf.text('Precio Unit.', colPrecio, y + 5.5, { align: 'right' });
+                pdf.text('Total', colTotal, y + 5.5, { align: 'right' });
+                y += 8;
+            }
+
+            dibujarCabeceraTabla();
+
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(...DARK);
+            const items = ventaData.items || [];
+            items.forEach((item, idx) => {
+                if (y > PH - 65) {
+                    pdf.addPage();
+                    y = M;
+                    dibujarCabeceraTabla();
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setTextColor(...DARK);
+                }
+
+                const rowH = 7;
+                if (idx % 2 === 1) {
+                    pdf.setFillColor(...LGREY);
+                    pdf.rect(M, y, PW - M * 2, rowH, 'F');
+                }
+
+                const nombreCompleto = item.nombreCompleto || item.nombre || '';
+                const detalle = [item.talla, item.color].filter(Boolean).join(' / ');
+                const nombreLinea = detalle ? `${nombreCompleto} (${detalle})` : nombreCompleto;
+                const nombreCorto = nombreLinea.length > 50 ? nombreLinea.slice(0, 48) + '…' : nombreLinea;
+
+                pdf.setFontSize(8.5);
+                pdf.text(nombreCorto, M + 2, y + 5);
+                pdf.text(String(item.cantidad ?? ''), colCant, y + 5, { align: 'center' });
+                pdf.text(formatoMoneda.format(item.precio || 0), colPrecio, y + 5, { align: 'right' });
+                pdf.text(formatoMoneda.format(item.total || 0), colTotal, y + 5, { align: 'right' });
+
+                y += rowH;
+            });
+
+            pdf.setDrawColor(...PINK);
+            pdf.setLineWidth(0.3);
+            pdf.line(M, y, PW - M, y);
+            y += 8;
+
+            // ── Totales ───────────────────────────────────────────────────────
+            if (y > PH - 65) { pdf.addPage(); y = M; }
+
+            const subtotal = items.reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
+            const descuento = parseFloat(ventaData.descuento) || 0;
+            const costoRuta = ventaData.tipoEntrega === 'domicilio' ? (parseFloat(ventaData.costoRuta) || 0) : 0;
+            const totalVenta = parseFloat(ventaData.totalVenta) || 0;
+
+            const totalsLabelX = PW - M - 68;
+            function agregarLineaTotal(label, valor, resaltado = false) {
+                pdf.setFont('helvetica', resaltado ? 'bold' : 'normal');
+                pdf.setFontSize(resaltado ? 11 : 9.5);
+                pdf.setTextColor(...(resaltado ? PINK : [80, 80, 80]));
+                pdf.text(label, totalsLabelX, y);
+                pdf.text(formatoMoneda.format(valor), PW - M, y, { align: 'right' });
+                y += resaltado ? 7 : 6;
+            }
+
+            agregarLineaTotal('Subtotal', subtotal);
+            if (descuento > 0) agregarLineaTotal('Descuento', -descuento);
+            if (costoRuta > 0) agregarLineaTotal('Costo de envío', costoRuta);
+
+            if (ventaData.tipoVenta === 'apartado') {
+                const totalProducto = parseFloat(ventaData.montoTotalProducto) || totalVenta;
+                agregarLineaTotal('Total del producto', totalProducto);
+                agregarLineaTotal('Abonado', totalVenta, true);
+                agregarLineaTotal('Saldo pendiente', totalProducto - totalVenta);
+            } else {
+                agregarLineaTotal('TOTAL A PAGAR', totalVenta, true);
+            }
+
+            y += 3;
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.setTextColor(80, 80, 80);
+            pdf.text(
+                `Efectivo: ${formatoMoneda.format(ventaData.pagoEfectivo || 0)}   Transferencia: ${formatoMoneda.format(ventaData.pagoTransferencia || 0)}`,
+                M, y
+            );
+            y += 6;
+
+            if (ventaData.observaciones) {
+                if (y > PH - 40) { pdf.addPage(); y = M; }
+                const obsLines = pdf.splitTextToSize(`Observaciones: ${ventaData.observaciones}`, PW - M * 2);
+                pdf.text(obsLines, M, y);
+                y += obsLines.length * 5;
+            }
+
+            // ── Pie de página ─────────────────────────────────────────────────
+            const footY = PH - 22;
+            pdf.setDrawColor(...PINK);
+            pdf.setLineWidth(0.5);
+            pdf.line(M, footY, PW - M, footY);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(9);
+            pdf.setTextColor(...PINK);
+            pdf.text('¡Gracias por tu compra!', PW / 2, footY + 7, { align: 'center' });
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(7.5);
+            pdf.setTextColor(...GREY);
+            pdf.text(
+                `${NEGOCIO_INFO.marca} · WhatsApp ${NEGOCIO_INFO.telefono} · ${NEGOCIO_INFO.direccion}`,
+                PW / 2, footY + 12, { align: 'center' }
+            );
+
+            const nombreArchivo = `Factura_${folioTxt}_${(ventaData.clienteNombre || 'Cliente').replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
+            pdf.save(nombreArchivo);
+
+            return folioTxt;
+        }
+
+        // --- Botón Generar Factura ---
+        const btnGenerateInvoice = document.getElementById('btn-generate-invoice');
+        if (btnGenerateInvoice) {
+            btnGenerateInvoice.addEventListener('click', async () => {
+                if (!currentVentaId || !currentVentaData) {
+                    showToast('Error: No hay venta seleccionada', 'error');
+                    return;
+                }
+
+                const originalHtml = btnGenerateInvoice.innerHTML;
+                btnGenerateInvoice.disabled = true;
+                btnGenerateInvoice.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generando...';
+
+                try {
+                    const folio = await generarFacturaVentaPDF(currentVentaId, currentVentaData);
+                    showToast(`✅ Factura ${folio} generada`, 'success');
+                } catch (error) {
+                    console.error('Error al generar factura:', error);
+                    showToast('Error al generar la factura', 'error');
+                } finally {
+                    btnGenerateInvoice.disabled = false;
+                    btnGenerateInvoice.innerHTML = originalHtml;
+                }
+            });
+        }
 
         // --- Botón Eliminar Venta ---
         const btnDeleteSale = document.getElementById('btn-delete-sale');

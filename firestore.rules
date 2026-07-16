@@ -62,6 +62,11 @@ service cloud.firestore {
       return 'tenantId' in request.resource.data;
     }
 
+    // ID del contador de facturas del tenant del usuario actual
+    function tenantCounterId() {
+      return 'facturas_' + (getUserData().tenantId == null ? 'default' : getUserData().tenantId);
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     // REGLAS DE TENANTS - SOLO SUPER ADMINS
     // ═══════════════════════════════════════════════════════════════════
@@ -172,6 +177,37 @@ service cloud.firestore {
                       hasPermission('ventas_eliminar') &&
                       (!resource.data.keys().hasAny(['tenantId']) ||
                        belongsToTenant(resource.data.tenantId));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE FACTURAS - GENERADAS A PARTIR DE VENTAS (1 factura x venta)
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /facturas/{facturaId} {
+      // Leer: quien puede ver ventas. Permite docs sin tenantId (legacy)
+      allow read: if hasPermission('ventas_ver') &&
+                    (!resource.data.keys().hasAny(['tenantId']) ||
+                     belongsToTenant(resource.data.tenantId));
+
+      // Crear: quien puede registrar ventas, con tenantId correcto
+      allow create: if hasPermission('ventas_crear') &&
+                      hasRequiredTenantId() &&
+                      isCreatingWithCorrectTenant();
+
+      // No se edita ni elimina una factura ya generada
+      allow update, delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE CONTADORES - CONSECUTIVOS INTERNOS (p.ej. numeración factura)
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /contadores/{contadorId} {
+      allow read: if (hasPermission('ventas_ver') || hasPermission('ventas_crear')) &&
+                    (contadorId == tenantCounterId() || isSuperAdmin());
+
+      allow write: if hasPermission('ventas_crear') &&
+                     (contadorId == tenantCounterId() || isSuperAdmin());
     }
 
     // ═══════════════════════════════════════════════════════════════════
