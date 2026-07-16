@@ -878,6 +878,16 @@ function goToPage(page) {
 }
 
 // --- FUNCIONES AUXILIARES PARA BOTONES DE TALLA Y COLOR ---
+
+// Compara dos valores de talla considerando que '', 'unica' y 'única' (en cualquier mayúscula/tilde) son equivalentes
+function tallasEquivalentes(a, b) {
+    const norm = t => {
+        const n = (t || '').toLowerCase().trim();
+        return (n === '' || n === 'unica' || n === 'única') ? 'unica' : n;
+    };
+    return norm(a) === norm(b);
+}
+
 function renderSizeButtons(tallas, esTallaUnica, product) {
     const tallasButtons = document.getElementById('tallas-buttons');
     const tallasContainer = document.getElementById('tallas-container');
@@ -885,7 +895,7 @@ function renderSizeButtons(tallas, esTallaUnica, product) {
 
     if (tallas.length === 0 || esTallaUnica) {
         const tallaValue = tallas.length > 0 ? tallas[0] : 'unica';
-        const tallaText = tallas.length > 0 ? tallas[0] : 'Única';
+        const tallaText = 'Única';
 
         // Verificar si la talla única tiene stock
         const variaciones = product.variaciones || [];
@@ -1761,7 +1771,7 @@ function renderCart() {
         const product = productsMap.get(item.id);
         if (product) {
             const variacion = (product.variaciones || []).find(v =>
-                (v.talla || 'unica') === item.talla &&
+                tallasEquivalentes(v.talla, item.talla) &&
                 (v.color || 'unico') === item.color
             );
             if (!variacion || variacion.stock <= 0) {
@@ -2300,8 +2310,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 codigo: product.codigo || '',
                 nombre: product.nombre,
                 precio: precioUnitarioFinal,
-                talla: talla === 'unica' ? 'Única' : talla,
-                color: color === 'unico' ? 'Único' : color,
+                talla: talla.toLowerCase() === 'unica' ? 'Única' : talla,
+                color: color.toLowerCase() === 'unico' ? 'Único' : color,
                 cantidad,
                 total: cantidad * precioUnitarioFinal,
                 imagenUrl: product.imagenUrl || '',
@@ -2780,7 +2790,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const product = productsMap.get(item.id);
             if (!product) return true;
             const v = (product.variaciones || []).find(v =>
-                (v.talla || 'unica') === item.talla && (v.color || 'unico') === item.color
+                tallasEquivalentes(v.talla, item.talla) && (v.color || 'unico') === item.color
             );
             return !v || v.stock <= 0 || v.stock < item.cantidad;
         });
@@ -3180,7 +3190,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Buscar la variación específica (talla + color)
             const variacion = (product.variaciones || []).find(v =>
-                (v.talla || 'unica') === item.talla &&
+                tallasEquivalentes(v.talla, item.talla) &&
                 (v.color || 'unico') === item.color
             );
 
@@ -3248,7 +3258,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             waMsg += `🛒 *Productos:*\n`;
             cart.forEach(item => {
-                const talla = item.talla && item.talla !== 'unica' ? ' T:' + item.talla : '';
+                const talla = item.talla && item.talla.toLowerCase() !== 'unica' && item.talla.toLowerCase() !== 'única' ? ' T:' + item.talla : '';
                 const color = item.color && item.color !== 'unico' ? ' C:' + item.color : '';
                 waMsg += `• ${item.nombre}${talla}${color} ×${item.cantidad} — $${fmt(item.total)}\n`;
             });
