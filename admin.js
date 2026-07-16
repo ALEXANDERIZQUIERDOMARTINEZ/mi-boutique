@@ -255,6 +255,7 @@ let editSupplierModalInstance = null; let editClientModalInstance = null;
 let searchSupplierModalInstance = null; let searchClientModalInstance = null; let searchProductModalInstance = null; let liquidateConfirmModalInstance = null;
 let viewSaleModalInstance = null;
 let facturaAccionesModalInstance = null; // --- Modal de acciones tras generar factura ---
+let facturaPreguntaModalInstance = null; // --- Modal: ¿generar factura al registrar venta? ---
 let selectVariationModalInstance = null; // --- Modal de Variaciones ---
 let abonoApartadoModalInstance = null; // ✅ --- NUEVO: Modal de Abonos ---
 let verApartadoModalInstance = null; // ✅ --- NUEVO: Modal de Ver Apartado ---
@@ -358,6 +359,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (emailForm) { emailForm.style.display = 'none'; emailForm.reset(); }
             });
         }
+
+        const facturaPreguntaModalEl = document.getElementById('facturaPreguntaModal');
+        if (facturaPreguntaModalEl) facturaPreguntaModalInstance = new bootstrap.Modal(facturaPreguntaModalEl);
 
         const selectVariationModalEl = document.getElementById('selectVariationModal');
         if (selectVariationModalEl) selectVariationModalInstance = new bootstrap.Modal(selectVariationModalEl);
@@ -3495,6 +3499,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(mensaje, 'success');
                 }
 
+                // Solo para ventas nuevas (no ediciones): preguntar si desea facturar ya mismo
+                if (!isEditMode && facturaPreguntaModalInstance) {
+                    ventaRecienRegistrada = { ventaId, ventaData };
+                    facturaPreguntaModalInstance.show();
+                }
+
                 salesForm.reset();
                 window.ventaItems = [];
                 renderCarrito();
@@ -3785,61 +3795,56 @@ document.addEventListener('DOMContentLoaded', () => {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
 
-            const PW = 210, PH = 297, M = 15;
-            const PINK = [217, 136, 185], PINK_DARK = [178, 92, 143], DARK = [35, 32, 36],
-                  GREY = [130, 130, 130], LGREY = [250, 247, 250], LINE = [232, 222, 230], WHITE = [255, 255, 255];
+            const PW = 210, PH = 297, M = 16;
+            // Paleta sobria: el rosa se usa solo como acento puntual (texto/línea),
+            // nunca como relleno grande, para que la factura se vea profesional.
+            const INK = [32, 30, 32], MUTED = [120, 118, 122], SOFT = [150, 148, 152],
+                  LINE = [227, 225, 229], HAIRLINE = [238, 237, 240], PINK = [200, 108, 160],
+                  HEADER_BG = [42, 40, 44], WHITE = [255, 255, 255];
 
             const numeroFactura = await obtenerNumeroFactura(ventaId, ventaData);
             const folioTxt = formatearNumeroFactura(numeroFactura);
             const fecha = ventaData.timestamp?.toDate ? ventaData.timestamp.toDate() : new Date();
             const vendedor = window.appContext?.nombre || null;
 
-            // ── Encabezado tipo membrete ──────────────────────────────────────
-            function dibujarEncabezado() {
-                pdf.setFillColor(...PINK);
-                pdf.rect(0, 0, PW, 2.2, 'F');
+            // ── Encabezado tipo membrete (fondo blanco, un solo acento) ───────
+            pdf.setFillColor(...PINK);
+            pdf.rect(0, 0, PW, 1.4, 'F');
 
-                pdf.setFillColor(...LGREY);
-                pdf.rect(0, 2.2, PW, 37.8, 'F');
-                pdf.setDrawColor(...PINK);
-                pdf.setLineWidth(1);
-                pdf.line(0, 40, PW, 40);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(18);
+            pdf.setTextColor(...PINK);
+            pdf.text(NEGOCIO_INFO.marca, M, 15);
 
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(21);
-                pdf.setTextColor(...PINK_DARK);
-                pdf.text(NEGOCIO_INFO.marca, M, 17);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(8.5);
+            pdf.setTextColor(...INK);
+            pdf.text(NEGOCIO_INFO.nombreLegal, M, 21);
+            pdf.setTextColor(...MUTED);
+            pdf.text(`C.C./NIT ${NEGOCIO_INFO.cedula}  ·  ${NEGOCIO_INFO.direccion}`, M, 25.5);
+            pdf.text(`WhatsApp ${NEGOCIO_INFO.telefono}`, M, 29.5);
 
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(9);
-                pdf.setTextColor(...DARK);
-                pdf.text(NEGOCIO_INFO.nombreLegal, M, 24);
-                pdf.setTextColor(...GREY);
-                pdf.text(`C.C./NIT ${NEGOCIO_INFO.cedula}`, M, 29.5);
-                pdf.text(`${NEGOCIO_INFO.direccion}  ·  WhatsApp ${NEGOCIO_INFO.telefono}`, M, 34);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(8);
+            pdf.setTextColor(...SOFT);
+            pdf.text('FACTURA DE VENTA', PW - M, 12, { align: 'right' });
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(15);
+            pdf.setTextColor(...INK);
+            pdf.text(folioTxt, PW - M, 20, { align: 'right' });
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(8.5);
+            pdf.setTextColor(...MUTED);
+            pdf.text(
+                fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }),
+                PW - M, 26, { align: 'right' }
+            );
 
-                // Placa con sombra sutil para dar profundidad
-                pdf.setFillColor(210, 195, 208);
-                pdf.roundedRect(PW - M - 61, 8.7, 62, 24, 3, 3, 'F');
-                pdf.setFillColor(...PINK);
-                pdf.roundedRect(PW - M - 62, 8, 62, 24, 3, 3, 'F');
-                pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(10);
-                pdf.setTextColor(255, 255, 255);
-                pdf.text('FACTURA DE VENTA', PW - M - 31, 14.5, { align: 'center' });
-                pdf.setFontSize(14);
-                pdf.text(folioTxt, PW - M - 31, 22, { align: 'center' });
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(8);
-                pdf.text(
-                    fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }),
-                    PW - M - 31, 28, { align: 'center' }
-                );
-            }
+            pdf.setDrawColor(...LINE);
+            pdf.setLineWidth(0.4);
+            pdf.line(M, 35, PW - M, 35);
 
-            dibujarEncabezado();
-
-            // ── Datos del cliente (tarjeta con borde) ─────────────────────────
+            // ── Datos del cliente / detalles de la venta (dos columnas) ──────
             let repartidorNombre = 'N/A';
             if (ventaData.repartidorId && repartidoresMap.has(ventaData.repartidorId)) {
                 repartidorNombre = repartidoresMap.get(ventaData.repartidorId).nombre;
@@ -3847,66 +3852,74 @@ document.addEventListener('DOMContentLoaded', () => {
                 repartidorNombre = ventaData.repartidorNombre;
             }
 
-            const clienteLines = [
-                [`Cliente:`, ventaData.clienteNombre || 'Cliente General'],
-                ventaData.clienteCedula ? [`C.C./NIT:`, ventaData.clienteCedula] : null,
-                ventaData.clienteDireccion ? [`Dirección:`, ventaData.clienteDireccion] : null,
-                ventaData.clienteCelular ? [`Teléfono:`, ventaData.clienteCelular] : null,
-                [`Tipo de venta:`, (ventaData.tipoVenta || 'detal').toUpperCase()],
-                ventaData.tipoEntrega === 'domicilio'
-                    ? [`Entrega:`, `A domicilio — Repartidor: ${repartidorNombre}`]
-                    : [`Entrega:`, 'Recoge en tienda'],
-                vendedor ? [`Atendido por:`, vendedor] : null
-            ].filter(Boolean);
+            const colClienteX = M;
+            const colDetalleX = PW / 2 + 5;
+            let y = 43;
 
-            const boxTop = 47;
-            const boxH = 9 + clienteLines.length * 5.2;
-            pdf.setDrawColor(...LINE);
-            pdf.setLineWidth(0.3);
-            pdf.setFillColor(...WHITE);
-            pdf.roundedRect(M, boxTop, PW - M * 2, boxH, 2, 2, 'FD');
-
-            let y = boxTop + 7;
             pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(9.5);
-            pdf.setTextColor(...PINK_DARK);
-            pdf.text('DATOS DEL CLIENTE', M + 5, y);
+            pdf.setFontSize(8.5);
+            pdf.setTextColor(...SOFT);
+            pdf.text('FACTURAR A', colClienteX, y);
+            pdf.text('DETALLES DE LA VENTA', colDetalleX, y);
             y += 6;
 
-            pdf.setFontSize(9);
-            clienteLines.forEach(([label, value]) => {
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(90, 85, 90);
-                pdf.text(label, M + 5, y);
-                pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(...DARK);
-                pdf.text(String(value), M + 32, y);
-                y += 5.2;
-            });
+            const clienteInfo = [
+                ventaData.clienteNombre || 'Cliente General',
+                ventaData.clienteCedula ? `C.C./NIT: ${ventaData.clienteCedula}` : null,
+                ventaData.clienteDireccion || null,
+                ventaData.clienteCelular ? `Tel: ${ventaData.clienteCelular}` : null
+            ].filter(Boolean);
 
-            y = boxTop + boxH + 8;
+            const detalleInfo = [
+                `Tipo de venta: ${(ventaData.tipoVenta || 'detal').toUpperCase()}`,
+                ventaData.tipoEntrega === 'domicilio' ? `Domicilio — ${repartidorNombre}` : 'Recoge en tienda',
+                vendedor ? `Atendido por: ${vendedor}` : null
+            ].filter(Boolean);
+
+            const filas = Math.max(clienteInfo.length, detalleInfo.length);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            for (let i = 0; i < filas; i++) {
+                const yLinea = y + i * 5;
+                if (clienteInfo[i]) {
+                    pdf.setTextColor(...(i === 0 ? INK : [80, 78, 82]));
+                    pdf.setFont('helvetica', i === 0 ? 'bold' : 'normal');
+                    pdf.text(clienteInfo[i], colClienteX, yLinea);
+                }
+                if (detalleInfo[i]) {
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setTextColor(80, 78, 82);
+                    pdf.text(detalleInfo[i], colDetalleX, yLinea);
+                }
+            }
+            y += filas * 5 + 6;
+
+            pdf.setDrawColor(...LINE);
+            pdf.setLineWidth(0.4);
+            pdf.line(M, y, PW - M, y);
+            y += 8;
 
             // ── Tabla de items ────────────────────────────────────────────────
-            const colCant = 130, colPrecio = 158, colTotal = 195;
+            const colCant = 128, colPrecio = 157, colTotal = 194;
             const tableTopStart = y;
 
             function dibujarCabeceraTabla() {
-                pdf.setFillColor(...PINK);
+                pdf.setFillColor(...HEADER_BG);
                 pdf.rect(M, y, PW - M * 2, 8, 'F');
                 pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(9);
+                pdf.setFontSize(8.5);
                 pdf.setTextColor(255, 255, 255);
-                pdf.text('PRODUCTO', M + 3, y + 5.5);
-                pdf.text('CANT.', colCant, y + 5.5, { align: 'center' });
-                pdf.text('PRECIO UNIT.', colPrecio, y + 5.5, { align: 'right' });
-                pdf.text('TOTAL', colTotal, y + 5.5, { align: 'right' });
+                pdf.text('PRODUCTO', M + 3, y + 5.3);
+                pdf.text('CANT.', colCant, y + 5.3, { align: 'center' });
+                pdf.text('PRECIO UNIT.', colPrecio, y + 5.3, { align: 'right' });
+                pdf.text('TOTAL', colTotal, y + 5.3, { align: 'right' });
                 y += 8;
             }
 
             dibujarCabeceraTabla();
 
             pdf.setFont('helvetica', 'normal');
-            pdf.setTextColor(...DARK);
+            pdf.setTextColor(...INK);
             const items = ventaData.items || [];
             let tablaInicioPagina = tableTopStart;
             items.forEach((item, idx) => {
@@ -3919,12 +3932,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     tablaInicioPagina = M;
                     dibujarCabeceraTabla();
                     pdf.setFont('helvetica', 'normal');
-                    pdf.setTextColor(...DARK);
+                    pdf.setTextColor(...INK);
                 }
 
                 const rowH = 7;
                 if (idx % 2 === 1) {
-                    pdf.setFillColor(...LGREY);
+                    pdf.setFillColor(249, 248, 249);
                     pdf.rect(M, y, PW - M * 2, rowH, 'F');
                 }
 
@@ -3934,12 +3947,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nombreCorto = nombreLinea.length > 50 ? nombreLinea.slice(0, 48) + '…' : nombreLinea;
 
                 pdf.setFontSize(8.5);
+                pdf.setTextColor(...INK);
                 pdf.text(nombreCorto, M + 3, y + 5);
+                pdf.setTextColor(80, 78, 82);
                 pdf.text(String(item.cantidad ?? ''), colCant, y + 5, { align: 'center' });
                 pdf.text(formatoMoneda.format(item.precio || 0), colPrecio, y + 5, { align: 'right' });
+                pdf.setTextColor(...INK);
                 pdf.text(formatoMoneda.format(item.total || 0), colTotal, y + 5, { align: 'right' });
 
-                pdf.setDrawColor(...LINE);
+                pdf.setDrawColor(...HAIRLINE);
                 pdf.setLineWidth(0.15);
                 pdf.line(M, y + rowH, PW - M, y + rowH);
 
@@ -3947,12 +3963,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Borde exterior de la tabla (de esta página)
-            pdf.setDrawColor(...PINK);
+            pdf.setDrawColor(...LINE);
             pdf.setLineWidth(0.4);
             pdf.rect(M, tablaInicioPagina, PW - M * 2, y - tablaInicioPagina);
-            y += 8;
+            y += 9;
 
-            // ── Totales (tarjeta resumen) ────────────────────────────────────
+            // ── Totales ───────────────────────────────────────────────────────
             const subtotal = items.reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
             const descuento = parseFloat(ventaData.descuento) || 0;
             const costoRuta = ventaData.tipoEntrega === 'domicilio' ? (parseFloat(ventaData.costoRuta) || 0) : 0;
@@ -3968,89 +3984,97 @@ document.addEventListener('DOMContentLoaded', () => {
             if (esApartado) {
                 const totalProducto = parseFloat(ventaData.montoTotalProducto) || totalVenta;
                 filasTotales.push(['Total del producto', totalProducto, false]);
-                filasTotales.push(['Abonado', totalVenta, true]);
-                filasTotales.push(['Saldo pendiente', totalProducto - totalVenta, false]);
+                filasTotales.push(['Abonado', totalVenta, false]);
+                filasTotales.push(['SALDO PENDIENTE', totalProducto - totalVenta, true]);
             } else {
                 filasTotales.push(['TOTAL A PAGAR', totalVenta, true]);
             }
 
-            const cardW = 82, cardX = PW - M - cardW;
-            const cardH = 6 + filasTotales.length * 6.5 + 3;
+            const cardW = 84, cardX = PW - M - cardW;
+            const filasNormales = filasTotales.filter(f => !f[2]).length;
+            const cardH = filasNormales * 6.2 + 13;
             if (y + cardH > PH - 55) { pdf.addPage(); y = M; }
 
-            pdf.setDrawColor(...LINE);
-            pdf.setLineWidth(0.3);
-            pdf.setFillColor(...WHITE);
-            pdf.roundedRect(cardX, y, cardW, cardH, 2, 2, 'FD');
-
-            let ty = y + 8;
+            let ty = y + 4;
             filasTotales.forEach(([label, valor, resaltado]) => {
                 if (resaltado) {
-                    pdf.setFillColor(...PINK);
-                    pdf.rect(cardX, ty - 5, cardW, 8, 'F');
+                    ty += 2;
+                    pdf.setDrawColor(...INK);
+                    pdf.setLineWidth(0.6);
+                    pdf.line(cardX, ty - 4.5, cardX + cardW, ty - 4.5);
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.setFontSize(12);
+                    pdf.setTextColor(...INK);
+                    pdf.text(label, cardX, ty);
+                    pdf.setTextColor(...PINK);
+                    pdf.text(formatoMoneda.format(valor), cardX + cardW, ty, { align: 'right' });
+                    ty += 7;
+                } else {
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(...MUTED);
+                    pdf.text(label, cardX, ty);
+                    pdf.setTextColor(80, 78, 82);
+                    pdf.text(formatoMoneda.format(valor), cardX + cardW, ty, { align: 'right' });
+                    ty += 6.2;
                 }
-                pdf.setFont('helvetica', resaltado ? 'bold' : 'normal');
-                pdf.setFontSize(resaltado ? 10.5 : 9);
-                pdf.setTextColor(...(resaltado ? WHITE : [90, 85, 90]));
-                pdf.text(label, cardX + 4, ty);
-                pdf.text(formatoMoneda.format(valor), cardX + cardW - 4, ty, { align: 'right' });
-                ty += 6.5;
             });
 
-            y += cardH + 8;
+            y = ty + 6;
 
             // ── Forma de pago + observaciones ─────────────────────────────────
             if (y > PH - 45) { pdf.addPage(); y = M; }
             pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(9);
-            pdf.setTextColor(...PINK_DARK);
+            pdf.setFontSize(8.5);
+            pdf.setTextColor(...SOFT);
             pdf.text('FORMA DE PAGO', M, y);
             y += 5.5;
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(9);
-            pdf.setTextColor(80, 80, 80);
+            pdf.setTextColor(80, 78, 82);
             pdf.text(
                 `Efectivo: ${formatoMoneda.format(ventaData.pagoEfectivo || 0)}   ·   Transferencia: ${formatoMoneda.format(ventaData.pagoTransferencia || 0)}`,
                 M, y
             );
-            y += 7;
+            y += 8;
 
             if (ventaData.observaciones) {
                 if (y > PH - 40) { pdf.addPage(); y = M; }
                 pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(9);
-                pdf.setTextColor(...PINK_DARK);
+                pdf.setFontSize(8.5);
+                pdf.setTextColor(...SOFT);
                 pdf.text('OBSERVACIONES', M, y);
                 y += 5.5;
                 pdf.setFont('helvetica', 'normal');
                 pdf.setFontSize(9);
-                pdf.setTextColor(80, 80, 80);
+                pdf.setTextColor(80, 78, 82);
                 const obsLines = pdf.splitTextToSize(ventaData.observaciones, PW - M * 2);
                 pdf.text(obsLines, M, y);
                 y += obsLines.length * 5;
             }
 
-            // ── Pie de página (franja de marca) ───────────────────────────────
-            const footH = 24;
-            const footY = PH - footH;
-            pdf.setFillColor(...PINK);
-            pdf.rect(0, footY, PW, footH, 'F');
+            // ── Pie de página (discreto) ──────────────────────────────────────
+            const footY = PH - 20;
+            pdf.setDrawColor(...LINE);
+            pdf.setLineWidth(0.4);
+            pdf.line(M, footY, PW - M, footY);
+
             pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(11);
-            pdf.setTextColor(255, 255, 255);
-            pdf.text('¡Gracias por tu compra!', PW / 2, footY + 10, { align: 'center' });
+            pdf.setFontSize(9.5);
+            pdf.setTextColor(...INK);
+            pdf.text('¡Gracias por tu compra!', PW / 2, footY + 7, { align: 'center' });
             pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(8);
-            pdf.setTextColor(253, 240, 248);
+            pdf.setFontSize(7.5);
+            pdf.setTextColor(...MUTED);
             pdf.text(
                 `${NEGOCIO_INFO.marca}  ·  WhatsApp ${NEGOCIO_INFO.telefono}  ·  ${NEGOCIO_INFO.direccion}`,
-                PW / 2, footY + 16.5, { align: 'center' }
+                PW / 2, footY + 12, { align: 'center' }
             );
             pdf.setFontSize(6.5);
-            pdf.setTextColor(250, 225, 240);
+            pdf.setTextColor(...SOFT);
             pdf.text(
                 `Factura ${folioTxt} generada el ${new Date().toLocaleString('es-CO')}`,
-                PW / 2, footY + 21, { align: 'center' }
+                PW / 2, footY + 16.5, { align: 'center' }
             );
 
             const nombreArchivo = `Factura_${folioTxt}_${(ventaData.clienteNombre || 'Cliente').replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
@@ -4197,6 +4221,29 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Genera el PDF y abre el modal de acciones (imprimir/whatsapp/correo/descargar).
+        // Reutilizada tanto por el botón del detalle de venta como por la
+        // pregunta que aparece justo al registrar una venta nueva.
+        async function generarYMostrarFactura(ventaId, ventaData, modalAOcultar) {
+            try {
+                const resultado = await generarFacturaVentaPDF(ventaId, ventaData);
+
+                if (facturaGenerada?.blobUrl) URL.revokeObjectURL(facturaGenerada.blobUrl);
+                facturaGenerada = { ...resultado, ventaData };
+
+                const folioEl = document.getElementById('factura-modal-folio');
+                if (folioEl) folioEl.textContent = resultado.folioTxt;
+
+                modalAOcultar?.hide();
+                facturaAccionesModalInstance?.show();
+                return resultado;
+            } catch (error) {
+                console.error('Error al generar factura:', error);
+                showToast('Error al generar la factura', 'error');
+                return null;
+            }
+        }
+
         // --- Botón Generar Factura ---
         const btnGenerateInvoice = document.getElementById('btn-generate-invoice');
         if (btnGenerateInvoice) {
@@ -4210,24 +4257,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnGenerateInvoice.disabled = true;
                 btnGenerateInvoice.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generando...';
 
-                try {
-                    const resultado = await generarFacturaVentaPDF(currentVentaId, currentVentaData);
+                await generarYMostrarFactura(currentVentaId, currentVentaData, viewSaleModalInstance);
 
-                    if (facturaGenerada?.blobUrl) URL.revokeObjectURL(facturaGenerada.blobUrl);
-                    facturaGenerada = { ...resultado, ventaData: currentVentaData };
+                btnGenerateInvoice.disabled = false;
+                btnGenerateInvoice.innerHTML = originalHtml;
+            });
+        }
 
-                    const folioEl = document.getElementById('factura-modal-folio');
-                    if (folioEl) folioEl.textContent = resultado.folioTxt;
+        // --- Pregunta al registrar una venta nueva: ¿generar factura ahora? ---
+        let ventaRecienRegistrada = null; // { ventaId, ventaData }
+        const btnFacturaPreguntaSi = document.getElementById('btn-factura-pregunta-si');
+        if (btnFacturaPreguntaSi) {
+            btnFacturaPreguntaSi.addEventListener('click', async () => {
+                if (!ventaRecienRegistrada) return;
+                const originalHtml = btnFacturaPreguntaSi.innerHTML;
+                btnFacturaPreguntaSi.disabled = true;
+                btnFacturaPreguntaSi.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generando...';
 
-                    viewSaleModalInstance?.hide();
-                    facturaAccionesModalInstance?.show();
-                } catch (error) {
-                    console.error('Error al generar factura:', error);
-                    showToast('Error al generar la factura', 'error');
-                } finally {
-                    btnGenerateInvoice.disabled = false;
-                    btnGenerateInvoice.innerHTML = originalHtml;
-                }
+                await generarYMostrarFactura(ventaRecienRegistrada.ventaId, ventaRecienRegistrada.ventaData, facturaPreguntaModalInstance);
+
+                btnFacturaPreguntaSi.disabled = false;
+                btnFacturaPreguntaSi.innerHTML = originalHtml;
+                ventaRecienRegistrada = null;
             });
         }
 

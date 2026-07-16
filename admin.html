@@ -2327,6 +2327,31 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════
+         MODAL: ¿GENERAR FACTURA AL REGISTRAR LA VENTA?
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="facturaPreguntaModal" tabindex="-1" aria-labelledby="facturaPreguntaModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="facturaPreguntaModalTitle">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>Venta registrada
+                    </h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">¿Deseas generar la factura de esta venta ahora?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, gracias</button>
+                    <button type="button" class="btn btn-success" id="btn-factura-pregunta-si">
+                        <i class="bi bi-file-earmark-text me-1"></i>Sí, generar factura
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
          MODAL: EDITAR VENTA
          ═══════════════════════════════════════════════════════════════════ -->
     <div class="modal fade" id="editSaleModal" tabindex="-1" aria-labelledby="editSaleModalTitle" aria-hidden="true">
@@ -3301,7 +3326,7 @@
         });
     </script>
 
-    <script type="module" src="admin.js?v=3.3.5"></script>
+    <script type="module" src="admin.js?v=3.3.6"></script>
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
 
     <!-- Script para generar catálogo en PDF -->
