@@ -3795,54 +3795,50 @@ document.addEventListener('DOMContentLoaded', () => {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
 
-            const PW = 210, PH = 297, M = 16;
-            // Paleta sobria: el rosa se usa solo como acento puntual (texto/línea),
-            // nunca como relleno grande, para que la factura se vea profesional.
-            const INK = [32, 30, 32], MUTED = [120, 118, 122], SOFT = [150, 148, 152],
-                  LINE = [227, 225, 229], HAIRLINE = [238, 237, 240], PINK = [200, 108, 160],
-                  HEADER_BG = [42, 40, 44], WHITE = [255, 255, 255];
+            const PW = 210, PH = 297, M = 18;
+            // Paleta 100% en escala de grises — sin color, para un aspecto
+            // serio de factura real (nada de rellenos ni acentos de color).
+            const INK = [20, 20, 22], TEXT = [55, 54, 57], MUTED = [128, 127, 130],
+                  SOFT = [168, 167, 170], LINE = [220, 219, 222], HAIRLINE = [235, 234, 237],
+                  ROW_ALT = [247, 247, 248], WHITE = [255, 255, 255];
 
             const numeroFactura = await obtenerNumeroFactura(ventaId, ventaData);
             const folioTxt = formatearNumeroFactura(numeroFactura);
             const fecha = ventaData.timestamp?.toDate ? ventaData.timestamp.toDate() : new Date();
             const vendedor = window.appContext?.nombre || null;
 
-            // ── Encabezado tipo membrete (fondo blanco, un solo acento) ───────
-            pdf.setFillColor(...PINK);
-            pdf.rect(0, 0, PW, 1.4, 'F');
-
+            // ── Encabezado ──────────────────────────────────────────────────
             pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(18);
-            pdf.setTextColor(...PINK);
-            pdf.text(NEGOCIO_INFO.marca, M, 15);
+            pdf.setFontSize(19);
+            pdf.setTextColor(...INK);
+            pdf.text(NEGOCIO_INFO.marca, M, 16);
 
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(8.5);
-            pdf.setTextColor(...INK);
-            pdf.text(NEGOCIO_INFO.nombreLegal, M, 21);
+            pdf.setTextColor(...TEXT);
+            pdf.text(NEGOCIO_INFO.nombreLegal, M, 22.5);
             pdf.setTextColor(...MUTED);
-            pdf.text(`C.C./NIT ${NEGOCIO_INFO.cedula}  ·  ${NEGOCIO_INFO.direccion}`, M, 25.5);
-            pdf.text(`WhatsApp ${NEGOCIO_INFO.telefono}`, M, 29.5);
+            pdf.text(`C.C./NIT ${NEGOCIO_INFO.cedula}  ·  ${NEGOCIO_INFO.direccion}  ·  WhatsApp ${NEGOCIO_INFO.telefono}`, M, 27);
 
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(8);
             pdf.setTextColor(...SOFT);
-            pdf.text('FACTURA DE VENTA', PW - M, 12, { align: 'right' });
+            pdf.text('FACTURA DE VENTA', PW - M, 13, { align: 'right' });
             pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(15);
+            pdf.setFontSize(17);
             pdf.setTextColor(...INK);
-            pdf.text(folioTxt, PW - M, 20, { align: 'right' });
+            pdf.text(folioTxt, PW - M, 21.5, { align: 'right' });
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(8.5);
             pdf.setTextColor(...MUTED);
             pdf.text(
                 fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }),
-                PW - M, 26, { align: 'right' }
+                PW - M, 27, { align: 'right' }
             );
 
-            pdf.setDrawColor(...LINE);
-            pdf.setLineWidth(0.4);
-            pdf.line(M, 35, PW - M, 35);
+            pdf.setDrawColor(...INK);
+            pdf.setLineWidth(0.6);
+            pdf.line(M, 33, PW - M, 33);
 
             // ── Datos del cliente / detalles de la venta (dos columnas) ──────
             let repartidorNombre = 'N/A';
@@ -3853,67 +3849,79 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const colClienteX = M;
-            const colDetalleX = PW / 2 + 5;
-            let y = 43;
+            const colDetalleX = PW / 2 + 8;
+            let y = 42;
 
             pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(8.5);
+            pdf.setFontSize(8);
             pdf.setTextColor(...SOFT);
             pdf.text('FACTURAR A', colClienteX, y);
             pdf.text('DETALLES DE LA VENTA', colDetalleX, y);
-            y += 6;
+            y += 5.5;
+
+            pdf.setDrawColor(...LINE);
+            pdf.setLineWidth(0.3);
+            pdf.line(colClienteX, y - 3, colClienteX + (PW / 2 - M - 4), y - 3);
+            pdf.line(colDetalleX, y - 3, PW - M, y - 3);
+            // Separador vertical sutil entre columnas
+            pdf.line(PW / 2, 39, PW / 2, y + 20);
 
             const clienteInfo = [
-                ventaData.clienteNombre || 'Cliente General',
-                ventaData.clienteCedula ? `C.C./NIT: ${ventaData.clienteCedula}` : null,
-                ventaData.clienteDireccion || null,
-                ventaData.clienteCelular ? `Tel: ${ventaData.clienteCelular}` : null
+                [ventaData.clienteNombre || 'Cliente General', true],
+                ventaData.clienteCedula ? [`C.C./NIT: ${ventaData.clienteCedula}`, false] : null,
+                ventaData.clienteDireccion ? [ventaData.clienteDireccion, false] : null,
+                ventaData.clienteCelular ? [`Tel: ${ventaData.clienteCelular}`, false] : null
             ].filter(Boolean);
 
             const detalleInfo = [
-                `Tipo de venta: ${(ventaData.tipoVenta || 'detal').toUpperCase()}`,
-                ventaData.tipoEntrega === 'domicilio' ? `Domicilio — ${repartidorNombre}` : 'Recoge en tienda',
-                vendedor ? `Atendido por: ${vendedor}` : null
+                [`Tipo de venta:  ${(ventaData.tipoVenta || 'detal').toUpperCase()}`, false],
+                [ventaData.tipoEntrega === 'domicilio' ? `Domicilio — ${repartidorNombre}` : 'Recoge en tienda', false],
+                vendedor ? [`Atendido por:  ${vendedor}`, false] : null
             ].filter(Boolean);
 
             const filas = Math.max(clienteInfo.length, detalleInfo.length);
-            pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(9);
             for (let i = 0; i < filas; i++) {
-                const yLinea = y + i * 5;
+                const yLinea = y + i * 5.2;
                 if (clienteInfo[i]) {
-                    pdf.setTextColor(...(i === 0 ? INK : [80, 78, 82]));
-                    pdf.setFont('helvetica', i === 0 ? 'bold' : 'normal');
-                    pdf.text(clienteInfo[i], colClienteX, yLinea);
+                    const [texto, esNombre] = clienteInfo[i];
+                    pdf.setFont('helvetica', esNombre ? 'bold' : 'normal');
+                    pdf.setTextColor(...(esNombre ? INK : TEXT));
+                    pdf.text(texto, colClienteX, yLinea);
                 }
                 if (detalleInfo[i]) {
                     pdf.setFont('helvetica', 'normal');
-                    pdf.setTextColor(80, 78, 82);
-                    pdf.text(detalleInfo[i], colDetalleX, yLinea);
+                    pdf.setTextColor(...TEXT);
+                    pdf.text(detalleInfo[i][0], colDetalleX, yLinea);
                 }
             }
-            y += filas * 5 + 6;
+            y += filas * 5.2 + 8;
 
-            pdf.setDrawColor(...LINE);
-            pdf.setLineWidth(0.4);
+            pdf.setDrawColor(...INK);
+            pdf.setLineWidth(0.6);
             pdf.line(M, y, PW - M, y);
-            y += 8;
+            y += 9;
 
             // ── Tabla de items ────────────────────────────────────────────────
-            const colCant = 128, colPrecio = 157, colTotal = 194;
-            const tableTopStart = y;
+            const colCant = 126, colPrecio = 156, colTotal = PW - M;
 
             function dibujarCabeceraTabla() {
-                pdf.setFillColor(...HEADER_BG);
-                pdf.rect(M, y, PW - M * 2, 8, 'F');
+                pdf.setDrawColor(...INK);
+                pdf.setLineWidth(0.5);
+                pdf.line(M, y, PW - M, y);
+                y += 6;
                 pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(8.5);
-                pdf.setTextColor(255, 255, 255);
-                pdf.text('PRODUCTO', M + 3, y + 5.3);
-                pdf.text('CANT.', colCant, y + 5.3, { align: 'center' });
-                pdf.text('PRECIO UNIT.', colPrecio, y + 5.3, { align: 'right' });
-                pdf.text('TOTAL', colTotal, y + 5.3, { align: 'right' });
-                y += 8;
+                pdf.setFontSize(8);
+                pdf.setTextColor(...SOFT);
+                pdf.text('PRODUCTO', M, y);
+                pdf.text('CANT.', colCant, y, { align: 'center' });
+                pdf.text('PRECIO UNIT.', colPrecio, y, { align: 'right' });
+                pdf.text('TOTAL', colTotal, y, { align: 'right' });
+                y += 3;
+                pdf.setDrawColor(...INK);
+                pdf.setLineWidth(0.4);
+                pdf.line(M, y, PW - M, y);
+                y += 5.5;
             }
 
             dibujarCabeceraTabla();
@@ -3921,24 +3929,19 @@ document.addEventListener('DOMContentLoaded', () => {
             pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(...INK);
             const items = ventaData.items || [];
-            let tablaInicioPagina = tableTopStart;
             items.forEach((item, idx) => {
                 if (y > PH - 65) {
-                    pdf.setDrawColor(...LINE);
-                    pdf.setLineWidth(0.3);
-                    pdf.rect(M, tablaInicioPagina, PW - M * 2, y - tablaInicioPagina);
                     pdf.addPage();
                     y = M;
-                    tablaInicioPagina = M;
                     dibujarCabeceraTabla();
                     pdf.setFont('helvetica', 'normal');
                     pdf.setTextColor(...INK);
                 }
 
-                const rowH = 7;
+                const rowH = 8;
                 if (idx % 2 === 1) {
-                    pdf.setFillColor(249, 248, 249);
-                    pdf.rect(M, y, PW - M * 2, rowH, 'F');
+                    pdf.setFillColor(...ROW_ALT);
+                    pdf.rect(M, y - 5, PW - M * 2, rowH, 'F');
                 }
 
                 const nombreCompleto = item.nombreCompleto || item.nombre || '';
@@ -3948,25 +3951,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 pdf.setFontSize(8.5);
                 pdf.setTextColor(...INK);
-                pdf.text(nombreCorto, M + 3, y + 5);
-                pdf.setTextColor(80, 78, 82);
-                pdf.text(String(item.cantidad ?? ''), colCant, y + 5, { align: 'center' });
-                pdf.text(formatoMoneda.format(item.precio || 0), colPrecio, y + 5, { align: 'right' });
+                pdf.text(nombreCorto, M, y);
+                pdf.setTextColor(...TEXT);
+                pdf.text(String(item.cantidad ?? ''), colCant, y, { align: 'center' });
+                pdf.text(formatoMoneda.format(item.precio || 0), colPrecio, y, { align: 'right' });
                 pdf.setTextColor(...INK);
-                pdf.text(formatoMoneda.format(item.total || 0), colTotal, y + 5, { align: 'right' });
+                pdf.text(formatoMoneda.format(item.total || 0), colTotal, y, { align: 'right' });
 
                 pdf.setDrawColor(...HAIRLINE);
                 pdf.setLineWidth(0.15);
-                pdf.line(M, y + rowH, PW - M, y + rowH);
+                pdf.line(M, y + 3, PW - M, y + 3);
 
                 y += rowH;
             });
 
-            // Borde exterior de la tabla (de esta página)
-            pdf.setDrawColor(...LINE);
-            pdf.setLineWidth(0.4);
-            pdf.rect(M, tablaInicioPagina, PW - M * 2, y - tablaInicioPagina);
-            y += 9;
+            pdf.setDrawColor(...INK);
+            pdf.setLineWidth(0.5);
+            pdf.line(M, y - 5, PW - M, y - 5);
+            y += 8;
 
             // ── Totales ───────────────────────────────────────────────────────
             const subtotal = items.reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
@@ -3992,29 +3994,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const cardW = 84, cardX = PW - M - cardW;
             const filasNormales = filasTotales.filter(f => !f[2]).length;
-            const cardH = filasNormales * 6.2 + 13;
+            const cardH = filasNormales * 6.2 + 14;
             if (y + cardH > PH - 55) { pdf.addPage(); y = M; }
 
-            let ty = y + 4;
+            let ty = y + 2;
             filasTotales.forEach(([label, valor, resaltado]) => {
                 if (resaltado) {
-                    ty += 2;
+                    ty += 2.5;
+                    pdf.setDrawColor(...LINE);
+                    pdf.setLineWidth(0.3);
+                    pdf.line(cardX, ty - 5, cardX + cardW, ty - 5);
                     pdf.setDrawColor(...INK);
-                    pdf.setLineWidth(0.6);
-                    pdf.line(cardX, ty - 4.5, cardX + cardW, ty - 4.5);
+                    pdf.setLineWidth(0.7);
+                    pdf.line(cardX, ty - 4.3, cardX + cardW, ty - 4.3);
                     pdf.setFont('helvetica', 'bold');
-                    pdf.setFontSize(12);
+                    pdf.setFontSize(12.5);
                     pdf.setTextColor(...INK);
-                    pdf.text(label, cardX, ty);
-                    pdf.setTextColor(...PINK);
-                    pdf.text(formatoMoneda.format(valor), cardX + cardW, ty, { align: 'right' });
-                    ty += 7;
+                    pdf.text(label, cardX, ty + 1.5);
+                    pdf.text(formatoMoneda.format(valor), cardX + cardW, ty + 1.5, { align: 'right' });
+                    ty += 8;
                 } else {
                     pdf.setFont('helvetica', 'normal');
                     pdf.setFontSize(9);
                     pdf.setTextColor(...MUTED);
                     pdf.text(label, cardX, ty);
-                    pdf.setTextColor(80, 78, 82);
+                    pdf.setTextColor(...TEXT);
                     pdf.text(formatoMoneda.format(valor), cardX + cardW, ty, { align: 'right' });
                     ty += 6.2;
                 }
@@ -4025,13 +4029,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // ── Forma de pago + observaciones ─────────────────────────────────
             if (y > PH - 45) { pdf.addPage(); y = M; }
             pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(8.5);
+            pdf.setFontSize(8);
             pdf.setTextColor(...SOFT);
             pdf.text('FORMA DE PAGO', M, y);
             y += 5.5;
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(9);
-            pdf.setTextColor(80, 78, 82);
+            pdf.setTextColor(...TEXT);
             pdf.text(
                 `Efectivo: ${formatoMoneda.format(ventaData.pagoEfectivo || 0)}   ·   Transferencia: ${formatoMoneda.format(ventaData.pagoTransferencia || 0)}`,
                 M, y
@@ -4041,19 +4045,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (ventaData.observaciones) {
                 if (y > PH - 40) { pdf.addPage(); y = M; }
                 pdf.setFont('helvetica', 'bold');
-                pdf.setFontSize(8.5);
+                pdf.setFontSize(8);
                 pdf.setTextColor(...SOFT);
                 pdf.text('OBSERVACIONES', M, y);
                 y += 5.5;
                 pdf.setFont('helvetica', 'normal');
                 pdf.setFontSize(9);
-                pdf.setTextColor(80, 78, 82);
+                pdf.setTextColor(...TEXT);
                 const obsLines = pdf.splitTextToSize(ventaData.observaciones, PW - M * 2);
                 pdf.text(obsLines, M, y);
                 y += obsLines.length * 5;
             }
 
-            // ── Pie de página (discreto) ──────────────────────────────────────
+            // ── Pie de página ─────────────────────────────────────────────────
             const footY = PH - 20;
             pdf.setDrawColor(...LINE);
             pdf.setLineWidth(0.4);
