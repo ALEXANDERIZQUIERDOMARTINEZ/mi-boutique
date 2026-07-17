@@ -61,7 +61,7 @@ client.on('ready', async () => {
 
                 const items = (pedido.items || [])
                     .map(i => {
-                        const t = i.talla && i.talla !== 'unica' ? ' T:' + i.talla : '';
+                        const t = i.talla && i.talla.toLowerCase() !== 'unica' && i.talla.toLowerCase() !== 'única' ? ' T:' + i.talla : '';
                         const c = i.color && i.color !== 'unico' ? ' C:' + i.color : '';
                         return `  • ${i.nombre}${t}${c} ×${i.cantidad} — ${formatPrecio(i.total || i.precio * i.cantidad)}`;
                     })

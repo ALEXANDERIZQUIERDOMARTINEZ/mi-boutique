@@ -2362,9 +2362,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <label for="select-talla" class="form-label">Talla:</label>
                     <select class="form-select" id="select-talla" ${esTallaUnica ? 'disabled' : ''}>
                         ${esTallaUnica
-                            ? `<option value="${tallaUnicaValue}" selected>${tallaUnicaValue || 'Única'}</option>`
+                            ? `<option value="${tallaUnicaValue}" selected>${tallaUnicaValue.toLowerCase() === 'unica' ? 'Única' : (tallaUnicaValue || 'Única')}</option>`
                             : `<option value="" selected>Selecciona una talla...</option>
-                               ${tallas.map(t => `<option value="${t}">${t || 'Única'}</option>`).join('')}`
+                               ${tallas.map(t => `<option value="${t}">${t.toLowerCase() === 'unica' ? 'Única' : (t || 'Única')}</option>`).join('')}`
                         }
                     </select>
                 </div>
