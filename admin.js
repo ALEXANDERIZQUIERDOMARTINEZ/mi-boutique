@@ -72,6 +72,15 @@ const fabricaCollection = collection(db, 'movimientosFabrica');
 const closingsCollection = collection(db, 'cierresCaja');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const chatConversationsCollection = collection(db, 'chatConversations');
+
+// --- Dos empresas: Mishelles Boutique y Mishelles Fábrica ---
+// Solo las prendas cuyo proveedor sea exactamente "Mishelles Boutique" pueden
+// venderse al por mayor (tablas de precio por cantidad). Cualquier otro
+// proveedor queda restringido a venta al detal.
+function esProveedorBoutique(producto) {
+    return (producto?.proveedor || '').trim().toLowerCase() === 'mishelles boutique';
+}
+window.esProveedorBoutique = esProveedorBoutique;
 const metasCollection = collection(db, 'metas');
 const recepcionesCollection = collection(db, 'ordenesRecepcion');
 const promocionesGlobalesCollection = collection(db, 'promocionesGlobales');
@@ -2330,6 +2339,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Aplicar precio según el tipo de venta
             let precioAplicar = product.precioDetal || 0;
             if (tipoVenta === 'mayorista') {
+                if (!esProveedorBoutique(product)) {
+                    showToast(`"${product.nombre}" no es de Mishelles Boutique: solo se puede vender al detal`, "error");
+                    return;
+                }
                 precioAplicar = product.precioMayor || 0;
                 if (precioAplicar === 0) {
                     showToast("Advertencia: Este producto no tiene precio mayorista configurado", "warning");
@@ -4640,6 +4653,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 let nuevoTotal = ventaData.totalVenta;
 
                 if (nuevoTipo !== ventaData.tipoVenta) {
+                    if (nuevoTipo === 'mayorista') {
+                        const productosVenta = await Promise.all(
+                            ventaData.items.map(item => getDoc(doc(db, 'productos', item.productoId)))
+                        );
+                        const noBoutique = productosVenta.find(snap => snap.exists() && !esProveedorBoutique(snap.data()));
+                        if (noBoutique) {
+                            showToast(`"${noBoutique.data().nombre}" no es de Mishelles Boutique: no se puede pasar a mayorista`, 'error');
+                            return;
+                        }
+                    }
+
                     let subtotal = 0;
                     itemsActualizados = await Promise.all(ventaData.items.map(async (item) => {
                         const prodRef = doc(db, 'productos', item.productoId);
@@ -9021,39 +9045,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             .sort((a, b) => b.utilidadTotal - a.utilidadTotal);
     }
 
-    // ── Ganancia real dividida por tipo de venta (detal vs mayorista) ──
-    function calcularUtilidadPorTipo(ventas, productCostMap) {
-        let utilidadDetal = 0;
-        let utilidadMayorista = 0;
-
-        ventas.forEach(({ venta }) => {
-            if (!venta.items || !venta.items.length) return;
-
-            const ratio = discountRatio(venta);
-            const esMayorista = venta.tipoVenta === 'mayorista';
-
-            venta.items.forEach(item => {
-                const costo = parseFloat(
-                    item.precioCosto ||
-                    item.costo ||
-                    (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
-                    0
-                );
-                const precioEfectivo = parseFloat(item.precio || item.precioUnitario || 0) * ratio;
-                const cant = parseInt(item.cantidad || 1, 10);
-                const utilidad = (precioEfectivo - costo) * cant;
-
-                if (esMayorista) {
-                    utilidadMayorista += utilidad;
-                } else {
-                    utilidadDetal += utilidad;
-                }
-            });
-        });
-
-        return { utilidadDetal, utilidadMayorista };
-    }
-
     // ── Construir datos de gráfica por día ──
     function buildChartData(ventas, desde, hasta, productCostMap) {
         const dayMap = new Map();
@@ -9182,10 +9173,18 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 productCostMap.set(d.id, parseFloat(data.costoCompra) || 0);
             });
 
+            // Mishelles Boutique solo se queda con la ganancia de ventas al detal:
+            // lo mayorista (100% de la venta) es dinero de Mishelles Fábrica, no se
+            // mezcla aquí ni en la tabla ni en la gráfica de Boutique.
             const ventas = [];
+            let totalVentasMayoristasRango = 0;
             snapshot.forEach(docSnap => {
                 const venta = docSnap.data();
                 if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
+                if (venta.tipoVenta === 'mayorista') {
+                    totalVentasMayoristasRango += parseFloat(venta.totalVenta) || 0;
+                    return;
+                }
                 ventas.push({
                     venta,
                     fecha: venta.timestamp ? venta.timestamp.toDate() : new Date()
@@ -9226,10 +9225,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             document.getElementById('fin2-costos').textContent     = fmt.format(costosTotal);
             document.getElementById('fin2-margen').textContent     = `${margen}%`;
 
-            // ── Ganancia dividida: detal vs mayorista ──
-            const { utilidadDetal, utilidadMayorista } = calcularUtilidadPorTipo(ventas, productCostMap);
-            document.getElementById('fin2-utilidad-detal').textContent     = fmt.format(utilidadDetal);
-            document.getElementById('fin2-utilidad-mayorista').textContent = fmt.format(utilidadMayorista);
+            // ── Ganancia detal (= utilidad total de Boutique) y venta mayorista del
+            // periodo, que es 100% de Mishelles Fábrica y solo se muestra informativa ──
+            document.getElementById('fin2-utilidad-detal').textContent     = fmt.format(utilidadTotal);
+            document.getElementById('fin2-utilidad-mayorista').textContent = fmt.format(totalVentasMayoristasRango);
 
             // ── Gráfica ──
             const { labels, data } = buildChartData(ventas, desde, hasta, productCostMap);
@@ -9392,6 +9391,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // Las ventas mayoristas solo cuentan como ingreso de Fábrica desde esta fecha
     const FECHA_CORTE_MAYORISTA = new Date(2026, 0, 1, 0, 0, 0, 0);
 
+    // Desde esta fecha, cada venta al detal reparte su dinero entre las dos
+    // empresas: el costo de la mercancía vendida (costoCompra × cantidad) se
+    // recupera como ingreso de Fábrica, y el resto (precio venta − costo) es
+    // ganancia de Boutique. Ventas al detal anteriores a esta fecha no se
+    // recalculan retroactivamente.
+    const FECHA_CORTE_DETAL = new Date(2026, 6, 17, 0, 0, 0, 0);
+
     function fechaDeMovimiento(m) {
         return m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : new Date(0));
     }
@@ -9428,6 +9434,60 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             if (typeof showToast === 'function') {
                 showToast('No se pudieron cargar las ventas mayoristas: ' + error.message, 'error');
             }
+            return [];
+        }
+    }
+
+    // ── Costo de mercancía de ventas al detal (desde 2026-07-17), traducido a
+    // "ingreso" de Fábrica: recupera lo invertido en cada prenda vendida ──
+    async function fetchCostosDetalComoIngresos() {
+        try {
+            const [ventasSnap, prodsSnap] = await Promise.all([
+                getDocs(query(
+                    salesCollection,
+                    where('tipoVenta', '==', 'detal'),
+                    where('timestamp', '>=', Timestamp.fromDate(FECHA_CORTE_DETAL)),
+                    orderBy('timestamp', 'desc')
+                )),
+                getDocs(productsCollection)
+            ]);
+
+            const productCostMap = new Map();
+            prodsSnap.forEach(d => productCostMap.set(d.id, parseFloat(d.data().costoCompra) || 0));
+
+            const resultado = [];
+            ventasSnap.forEach(docSnap => {
+                const v = docSnap.data();
+                if (v.estado === 'Anulada' || v.estado === 'Cancelada') return;
+                if (!v.items || !v.items.length) return;
+
+                const costoTotal = v.items.reduce((s, item) => {
+                    const costo = parseFloat(
+                        item.precioCosto ||
+                        item.costo ||
+                        (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
+                        0
+                    );
+                    const cant = parseInt(item.cantidad || 1, 10);
+                    return s + costo * cant;
+                }, 0);
+
+                if (costoTotal <= 0) return;
+
+                resultado.push({
+                    id: `costo_${docSnap.id}`,
+                    tipo: 'ingreso',
+                    concepto: `Costo mercancía — venta detal${v.clienteNombre ? ' — ' + v.clienteNombre : ''}`,
+                    monto: costoTotal,
+                    fecha: v.timestamp,
+                    origenVenta: true
+                });
+            });
+
+            console.log(`🏭 Fábrica: ${resultado.length} recuperación(es) de costo de venta(s) al detal desde ${FECHA_CORTE_DETAL.toLocaleDateString('es-CO')}`);
+            return resultado;
+        } catch (error) {
+            console.error('Error al cargar costos de ventas al detal para Fábrica:', error);
             return [];
         }
     }
@@ -9663,13 +9723,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const clauses = [orderBy('timestamp', 'desc')];
             if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
 
-            const [snapshot, ventasMayoristas] = await Promise.all([
+            const [snapshot, ventasMayoristas, costosDetal] = await Promise.all([
                 getDocs(query(fabricaCollection, ...clauses)),
-                fetchVentasMayoristasComoIngresos()
+                fetchVentasMayoristasComoIngresos(),
+                fetchCostosDetalComoIngresos()
             ]);
 
             let movimientos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
                 .concat(ventasMayoristas)
+                .concat(costosDetal)
                 .sort((a, b) => fechaDeMovimiento(b) - fechaDeMovimiento(a));
 
             if (desde && hasta) {
@@ -9745,7 +9807,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const colorCls  = esIngreso ? 'fin2-positive-text' : 'fin2-negative-text';
                     const signo     = esIngreso ? '+' : '−';
                     const acciones  = m.origenVenta
-                        ? '<span class="text-muted small">Venta mayorista</span>'
+                        ? `<span class="text-muted small">${String(m.id).startsWith('costo_') ? 'Costo venta detal' : 'Venta mayorista'}</span>`
                         : `<button class="btn btn-sm btn-outline-secondary fab-btn-editar" data-id="${m.id}"><i class="bi bi-pencil"></i></button>
                            <button class="btn btn-sm btn-outline-danger fab-btn-eliminar" data-id="${m.id}"><i class="bi bi-trash"></i></button>`;
                     return `<tr>

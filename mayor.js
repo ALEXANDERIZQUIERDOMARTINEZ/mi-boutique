@@ -23,6 +23,12 @@ const categoriesCollection = collection(db, 'categorias');
 
 const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const WHATSAPP_NUMBER = '573046084971';
+
+// Solo las prendas de proveedor "Mishelles Boutique" entran al catálogo de
+// venta al por mayor — el resto de proveedores queda restringido al detal.
+function esProveedorBoutique(p) {
+    return (p?.proveedor || '').trim().toLowerCase() === 'mishelles boutique';
+}
 const MIN_POR_PRENDA = 6;
 const PRODUCTS_PER_PAGE = 30;
 
@@ -1076,6 +1082,7 @@ onSnapshot(productsCollection, (snapshot) => {
     snapshot.forEach(docSnap => {
         const data = docSnap.data();
         if (data.visible === false) return;
+        if (!esProveedorBoutique(data)) return;
         allProducts.push({ id: docSnap.id, ...data });
     });
     renderProducts();
