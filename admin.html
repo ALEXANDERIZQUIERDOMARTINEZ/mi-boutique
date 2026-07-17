@@ -264,10 +264,11 @@
         <div class="tab-content">
             <div class="tab-pane fade show active" id="dashboard">
                 <!-- CABECERA -->
-                <div class="db2-head">
-                    <div class="db2-head-left">
-                        <h1 class="db2-title">Dashboard</h1>
-                        <span class="db2-date" id="dashboard-date"></span>
+                <div class="db-head">
+                    <div class="db-head-left">
+                        <span class="db-eyebrow">Panel general</span>
+                        <h1 class="db-title">Dashboard</h1>
+                        <span class="db-date" id="dashboard-date"></span>
                     </div>
                     <div class="db2-time-range">
                         <button class="db2-range-btn active" data-range="today">Hoy</button>
@@ -277,184 +278,191 @@
                     </div>
                 </div>
 
-                <!-- MÉTRICAS OPERATIVAS (compartidas) -->
-                <div class="db2-metrics">
-                    <div class="db2-met">
-                        <div class="db2-met-icon fin2-skpi-icon--blue"><i class="bi bi-boxes"></i></div>
-                        <div class="db2-met-body">
-                            <div class="db2-met-val" id="db-total-productos">0</div>
-                            <div class="db2-met-name">Productos</div>
-                            <div class="db2-met-sub" id="db-productos-disponibles">0 disponibles</div>
+                <!-- RESUMEN OPERATIVO -->
+                <section class="db-section">
+                    <div class="db2-metrics">
+                        <div class="db2-met">
+                            <div class="db2-met-icon fin2-skpi-icon--blue"><i class="bi bi-boxes"></i></div>
+                            <div class="db2-met-body">
+                                <div class="db2-met-val" id="db-total-productos">0</div>
+                                <div class="db2-met-name">Productos</div>
+                                <div class="db2-met-sub" id="db-productos-disponibles">0 disponibles</div>
+                            </div>
+                        </div>
+                        <div class="db2-met db2-met--clickable" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
+                            <div class="db2-met-icon fin2-skpi-icon--amber"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                            <div class="db2-met-body">
+                                <div class="db2-met-val" id="db-bajo-stock">0</div>
+                                <div class="db2-met-name">Bajo stock</div>
+                                <div class="db2-met-sub">2 unidades o menos</div>
+                            </div>
+                            <i class="bi bi-chevron-right db2-met-chevron"></i>
+                        </div>
+                        <div class="db2-met db2-met--clickable" onclick="document.querySelector('a[href=\'#apartados\']').click()">
+                            <div class="db2-met-icon fin2-skpi-icon--purple"><i class="bi bi-bookmark-check-fill"></i></div>
+                            <div class="db2-met-body">
+                                <div class="db2-met-val" id="db-apartados-vencer">0</div>
+                                <div class="db2-met-name">Apartados</div>
+                                <div class="db2-met-sub" id="db-apartados-total-saldo">$0 pendiente</div>
+                            </div>
+                            <i class="bi bi-chevron-right db2-met-chevron"></i>
+                        </div>
+                        <div class="db2-met db2-met--clickable" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
+                            <div class="db2-met-icon fin2-skpi-icon--slate"><i class="bi bi-box-seam-fill"></i></div>
+                            <div class="db2-met-body">
+                                <div class="db2-met-val" id="db-inversion-inventario">$0</div>
+                                <div class="db2-met-name">Inversión inventario</div>
+                                <div class="db2-met-sub" id="db-inventario-unidades">0 unidades</div>
+                            </div>
+                            <i class="bi bi-chevron-right db2-met-chevron"></i>
                         </div>
                     </div>
-                    <div class="db2-met" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
-                        <div class="db2-met-icon fin2-skpi-icon--amber"><i class="bi bi-exclamation-triangle-fill"></i></div>
-                        <div class="db2-met-body">
-                            <div class="db2-met-val" id="db-bajo-stock">0</div>
-                            <div class="db2-met-name">Bajo stock</div>
-                            <div class="db2-met-sub">2 unidades o menos</div>
-                        </div>
-                    </div>
-                    <div class="db2-met" style="cursor:pointer;" onclick="document.querySelector('a[href=\'#apartados\']').click()">
-                        <div class="db2-met-icon fin2-skpi-icon--purple"><i class="bi bi-bookmark-check-fill"></i></div>
-                        <div class="db2-met-body">
-                            <div class="db2-met-val" id="db-apartados-vencer">0</div>
-                            <div class="db2-met-name">Apartados</div>
-                            <div class="db2-met-sub" id="db-apartados-total-saldo">$0 pendiente</div>
-                        </div>
-                    </div>
-                    <div class="db-fin-item" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
-                        <div class="db-fin-icon db-fin-icon--neutral">
-                            <i class="bi bi-box-seam-fill"></i>
-                        </div>
-                        <div class="db-fin-body">
-                            <span class="db-fin-label">Inversión inventario</span>
-                            <span class="db-fin-val" id="db-inversion-inventario">$0</span>
-                            <span class="db-fin-sub" id="db-inventario-unidades">0 unidades</span>
-                        </div>
-                        <i class="bi bi-chevron-right db-fin-chevron"></i>
-                    </div>
-                </div>
-
-                <div class="db2-sep"></div>
+                </section>
 
                 <!-- DOS EMPRESAS: Mishelles Boutique / Mishelles Fábrica -->
-                <div class="db2-companies-row">
-                    <div class="db2-company-panel db2-company-panel--boutique">
-                        <div class="db2-company-head">
-                            <span class="db2-company-name"><i class="bi bi-graph-up-arrow"></i> Mishelles Boutique</span>
-                            <a class="db2-company-link" href="#finanzas">Ver detalle <i class="bi bi-arrow-right"></i></a>
+                <section class="db-section">
+                    <div class="db-panel db-compare">
+                        <div class="db-panel-head">
+                            <span class="db-panel-title">Comparativo por empresa</span>
                         </div>
-                        <div class="db2-company-kpis">
-                            <div class="db2-company-kpi">
-                                <span class="db2-company-kpi-label" id="db-ventas-periodo-title">Ventas detal</span>
-                                <span class="db2-company-kpi-val" id="db-ventas-hoy">$0</span>
-                                <span class="db2-company-kpi-sub" id="db-ventas-count">0 ventas</span>
+                        <div class="db-compare-grid">
+                            <div class="db-compare-col db-compare-col--boutique">
+                                <div class="db-compare-col-head">
+                                    <span class="db-compare-name"><i class="bi bi-graph-up-arrow"></i> Mishelles Boutique</span>
+                                    <a class="db-panel-link" href="#finanzas">Ver detalle <i class="bi bi-arrow-right"></i></a>
+                                </div>
+                                <div class="db-compare-kpis">
+                                    <div class="db-compare-kpi">
+                                        <span class="db-compare-kpi-label" id="db-ventas-periodo-title">Ventas detal</span>
+                                        <span class="db-compare-kpi-val" id="db-ventas-hoy">$0</span>
+                                        <span class="db-compare-kpi-sub" id="db-ventas-count">0 ventas</span>
+                                    </div>
+                                    <div class="db-compare-kpi">
+                                        <span class="db-compare-kpi-label">Ganancia real</span>
+                                        <span class="db-compare-kpi-val" id="db-boutique-ganancia">$0</span>
+                                    </div>
+                                    <div class="db-compare-kpi" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
+                                        <span class="db-compare-kpi-label">Utilidad potencial</span>
+                                        <span class="db-compare-kpi-val" id="db-utilidad-potencial">$0</span>
+                                        <span class="db-compare-kpi-sub" id="db-margen-utilidad">0% de margen</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="db2-company-kpi">
-                                <span class="db2-company-kpi-label">Ganancia real</span>
-                                <span class="db2-company-kpi-val" id="db-boutique-ganancia">$0</span>
-                            </div>
-                            <div class="db2-company-kpi" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
-                                <span class="db2-company-kpi-label">Utilidad potencial</span>
-                                <span class="db2-company-kpi-val" id="db-utilidad-potencial">$0</span>
-                                <span class="db2-company-kpi-sub" id="db-margen-utilidad">0% de margen</span>
+                            <div class="db-compare-divider" aria-hidden="true"></div>
+                            <div class="db-compare-col db-compare-col--fabrica">
+                                <div class="db-compare-col-head">
+                                    <span class="db-compare-name"><i class="bi bi-buildings"></i> Mishelles Fábrica</span>
+                                    <a class="db-panel-link" href="#fabrica">Ver detalle <i class="bi bi-arrow-right"></i></a>
+                                </div>
+                                <div class="db-compare-kpis">
+                                    <div class="db-compare-kpi">
+                                        <span class="db-compare-kpi-label">Ventas mayoristas</span>
+                                        <span class="db-compare-kpi-val" id="db-ventas-mayoristas-hoy">$0</span>
+                                        <span class="db-compare-kpi-sub" id="db-ventas-mayoristas-count">0 ventas</span>
+                                    </div>
+                                    <div class="db-compare-kpi">
+                                        <span class="db-compare-kpi-label">Ingresos totales</span>
+                                        <span class="db-compare-kpi-val" id="db-fabrica-ingresos">$0</span>
+                                    </div>
+                                    <div class="db-compare-kpi">
+                                        <span class="db-compare-kpi-label">Gastos</span>
+                                        <span class="db-compare-kpi-val" id="db-fabrica-gastos">$0</span>
+                                    </div>
+                                    <div class="db-compare-kpi">
+                                        <span class="db-compare-kpi-label">Utilidad neta</span>
+                                        <span class="db-compare-kpi-val" id="db-fabrica-utilidad">$0</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="db2-company-panel db2-company-panel--fabrica">
-                        <div class="db2-company-head">
-                            <span class="db2-company-name"><i class="bi bi-buildings"></i> Mishelles Fábrica</span>
-                            <a class="db2-company-link" href="#fabrica">Ver detalle <i class="bi bi-arrow-right"></i></a>
-                        </div>
-                        <div class="db2-company-kpis">
-                            <div class="db2-company-kpi">
-                                <span class="db2-company-kpi-label">Ventas mayoristas</span>
-                                <span class="db2-company-kpi-val" id="db-ventas-mayoristas-hoy">$0</span>
-                                <span class="db2-company-kpi-sub" id="db-ventas-mayoristas-count">0 ventas</span>
-                            </div>
-                            <div class="db2-company-kpi">
-                                <span class="db2-company-kpi-label">Ingresos totales</span>
-                                <span class="db2-company-kpi-val" id="db-fabrica-ingresos">$0</span>
-                            </div>
-                            <div class="db2-company-kpi">
-                                <span class="db2-company-kpi-label">Gastos</span>
-                                <span class="db2-company-kpi-val" id="db-fabrica-gastos">$0</span>
-                            </div>
-                            <div class="db2-company-kpi">
-                                <span class="db2-company-kpi-label">Utilidad neta</span>
-                                <span class="db2-company-kpi-val" id="db-fabrica-utilidad">$0</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="db2-sep"></div>
+                </section>
 
                 <!-- ACCESOS RÁPIDOS + CATÁLOGO -->
-                <div class="db2-quick-card">
-                    <span class="db2-quick-label">Accesos rápidos</span>
-                    <div class="db2-quick">
-                        <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
-                            <span class="db2-quick-val" id="db-pedidos-web">0</span>
-                            <span class="db2-quick-name">Pedidos Web</span>
+                <section class="db-section">
+                    <div class="db-panel db-quick-panel">
+                        <div class="db-panel-head">
+                            <span class="db-panel-title">Accesos rápidos</span>
+                            <button class="btn btn-sm btn-outline-secondary" id="btn-descargar-catalogo-pdf">
+                                <i class="bi bi-download me-1"></i>Catálogo PDF
+                            </button>
                         </div>
-                        <span class="db2-dot">·</span>
-                        <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#clientes\']').click()">
-                            <span class="db2-quick-val" id="db-total-clientes">0</span>
-                            <span class="db2-quick-name">Clientes</span>
-                        </div>
-                        <span class="db2-dot">·</span>
-                        <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#promociones\']').click()">
-                            <span class="db2-quick-val" id="db-promociones-activas">0</span>
-                            <span class="db2-quick-name">Promociones</span>
-                        </div>
-                        <span class="db2-dot">·</span>
-                        <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#repartidores\']').click()">
-                            <span class="db2-quick-val" id="db-total-repartidores">0</span>
-                            <span class="db2-quick-name">Repartidores</span>
+                        <div class="db2-quick">
+                            <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
+                                <span class="db2-quick-val" id="db-pedidos-web">0</span>
+                                <span class="db2-quick-name">Pedidos Web</span>
+                            </div>
+                            <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#clientes\']').click()">
+                                <span class="db2-quick-val" id="db-total-clientes">0</span>
+                                <span class="db2-quick-name">Clientes</span>
+                            </div>
+                            <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#promociones\']').click()">
+                                <span class="db2-quick-val" id="db-promociones-activas">0</span>
+                                <span class="db2-quick-name">Promociones</span>
+                            </div>
+                            <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#repartidores\']').click()">
+                                <span class="db2-quick-val" id="db-total-repartidores">0</span>
+                                <span class="db2-quick-name">Repartidores</span>
+                            </div>
                         </div>
                     </div>
-                    <button class="btn btn-sm btn-outline-secondary ms-auto" id="btn-descargar-catalogo-pdf">
-                        <i class="bi bi-download me-1"></i>Catálogo PDF
-                    </button>
-                </div>
-
-                <div class="db2-sep"></div>
+                </section>
 
                 <!-- TABLAS MÓVIL-FIRST: TENDENCIA + TOP PRODUCTOS -->
-                <div class="row g-3">
-                    <div class="col-12 col-lg-7">
-                        <div class="db-chart-card">
-                            <div class="db-chart-header">
-                                <span class="db-chart-title">Tendencia de ventas</span>
-                                <div class="db-period-tabs">
-                                    <input type="radio" class="btn-check" name="mt-period" id="mt-7days" autocomplete="off" checked>
-                                    <label class="db-period-tab" for="mt-7days">7d</label>
-                                    <input type="radio" class="btn-check" name="mt-period" id="mt-30days" autocomplete="off">
-                                    <label class="db-period-tab" for="mt-30days">30d</label>
-                                    <input type="radio" class="btn-check" name="mt-period" id="mt-6months" autocomplete="off">
-                                    <label class="db-period-tab" for="mt-6months">6m</label>
+                <section class="db-section">
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-7">
+                            <div class="db-panel h-100">
+                                <div class="db-panel-head">
+                                    <span class="db-panel-title">Tendencia de ventas</span>
+                                    <div class="db-period-tabs">
+                                        <input type="radio" class="btn-check" name="mt-period" id="mt-7days" autocomplete="off" checked>
+                                        <label class="db-period-tab" for="mt-7days">7d</label>
+                                        <input type="radio" class="btn-check" name="mt-period" id="mt-30days" autocomplete="off">
+                                        <label class="db-period-tab" for="mt-30days">30d</label>
+                                        <input type="radio" class="btn-check" name="mt-period" id="mt-6months" autocomplete="off">
+                                        <label class="db-period-tab" for="mt-6months">6m</label>
+                                    </div>
+                                </div>
+                                <div id="db-trend-table">
+                                    <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
                                 </div>
                             </div>
-                            <div id="db-trend-table">
-                                <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
+                        </div>
+                        <div class="col-12 col-lg-5">
+                            <div class="db-panel h-100">
+                                <div class="db-panel-head">
+                                    <span class="db-panel-title">Top 15 productos</span>
+                                    <div class="db-period-tabs">
+                                        <input type="radio" class="btn-check" name="tp-tipo" id="tp-todos" autocomplete="off" checked>
+                                        <label class="db-period-tab" for="tp-todos">Todos</label>
+                                        <input type="radio" class="btn-check" name="tp-tipo" id="tp-detal" autocomplete="off">
+                                        <label class="db-period-tab" for="tp-detal">Detal</label>
+                                        <input type="radio" class="btn-check" name="tp-tipo" id="tp-mayor" autocomplete="off">
+                                        <label class="db-period-tab" for="tp-mayor">Mayor</label>
+                                    </div>
+                                </div>
+                                <small class="text-muted d-block" style="font-size:0.72rem;padding:0.5rem 1.25rem 0;">Últimos 30 días</small>
+                                <div id="db-top-table" style="max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+                                    <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-12 col-lg-5">
-                        <div class="db-chart-card h-100">
-                            <div class="db-chart-header">
-                                <span class="db-chart-title">Top 15 productos</span>
-                                <div class="db-period-tabs">
-                                    <input type="radio" class="btn-check" name="tp-tipo" id="tp-todos" autocomplete="off" checked>
-                                    <label class="db-period-tab" for="tp-todos">Todos</label>
-                                    <input type="radio" class="btn-check" name="tp-tipo" id="tp-detal" autocomplete="off">
-                                    <label class="db-period-tab" for="tp-detal">Detal</label>
-                                    <input type="radio" class="btn-check" name="tp-tipo" id="tp-mayor" autocomplete="off">
-                                    <label class="db-period-tab" for="tp-mayor">Mayor</label>
-                                </div>
-                            </div>
-                            <small class="text-muted d-block" style="font-size:0.72rem;padding:0 1.25rem;">Últimos 30 días</small>
-                            <div id="db-top-table" style="max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
-                                <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="db2-sep"></div>
+                </section>
 
                 <!-- ACTIVIDAD RECIENTE -->
-                <div class="db-chart-card db-activity-feed">
-                    <div class="db-chart-header">
-                        <span class="db-chart-title">Actividad reciente</span>
-                        <small class="text-muted" style="font-size:0.72rem;">Últimas 5 ventas</small>
+                <section class="db-section">
+                    <div class="db-panel db-activity-feed">
+                        <div class="db-panel-head">
+                            <span class="db-panel-title">Actividad reciente</span>
+                            <small class="text-muted" style="font-size:0.72rem;">Últimas 5 ventas</small>
+                        </div>
+                        <div id="db-actividad-reciente">
+                            <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
+                        </div>
                     </div>
-                    <div id="db-actividad-reciente">
-                        <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
-                    </div>
-                </div>
+                </section>
 
             </div>
 

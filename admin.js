@@ -7712,7 +7712,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ================================================================
     calcularVentasRango('today');
     document.querySelectorAll('.db2-range-btn').forEach(btn => {
-        btn.addEventListener('click', () => calcularVentasRango(btn.dataset.range));
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.db2-range-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            calcularVentasRango(btn.dataset.range);
+        });
     });
     calcularBajoStock();
     calcularApartadosVencer();
