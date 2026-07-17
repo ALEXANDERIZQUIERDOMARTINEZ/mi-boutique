@@ -205,11 +205,8 @@ body.admin-page::after {
   position: fixed;
   top: 0; left: 0; bottom: 0;
   width: 228px;
-  background: var(--surface-overlay);
-  backdrop-filter: var(--blur-md);
-  -webkit-backdrop-filter: var(--blur-md);
-  border-right: 1px solid rgba(255,255,255,0.6);
-  box-shadow: 4px 0 32px rgba(0,0,0,0.05), inset -1px 0 0 rgba(255,255,255,0.4);
+  background: var(--surface-raised);
+  border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   z-index: 1040;
@@ -224,18 +221,6 @@ body.admin-page::after {
 .admin-rail::-webkit-scrollbar { width: 3px; }
 .admin-rail::-webkit-scrollbar-track { background: transparent; }
 .admin-rail::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.08); border-radius: 3px; }
-
-/* Subtle brand stripe */
-.admin-rail::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 2px;
-  background: var(--grad-brand);
-  opacity: 0.7;
-  flex-shrink: 0;
-  z-index: 1;
-}
 
 /* ── Brand/Logo ── */
 .rail-brand {
@@ -260,7 +245,6 @@ body.admin-page::after {
   border-radius: var(--radius-sm);
   flex-shrink: 0;
   transition: all var(--duration-base) var(--ease-out);
-  box-shadow: var(--shadow-brand);
 }
 
 .rail-brand-name {
@@ -272,10 +256,6 @@ body.admin-page::after {
   color: var(--text-primary);
   display: block;
   line-height: 1;
-  background: var(--grad-brand);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 /* Collapse button */
@@ -354,7 +334,7 @@ body.admin-page::after {
 }
 
 .rail-link:hover {
-  background: rgba(217,136,185,0.07);
+  background: var(--surface-base);
   color: var(--text-primary);
 }
 .rail-link:hover i {
@@ -364,8 +344,8 @@ body.admin-page::after {
 
 /* Active state */
 .rail-link.active {
-  background: linear-gradient(135deg, rgba(244,114,182,0.1) 0%, rgba(168,85,247,0.07) 100%);
-  color: var(--brand-700);
+  background: var(--boutique-accent-soft);
+  color: var(--boutique-accent-text);
   font-weight: 600;
 }
 .rail-link.active i {
@@ -378,8 +358,21 @@ body.admin-page::after {
   top: 18%;
   bottom: 18%;
   width: 3px;
-  background: var(--grad-brand);
+  background: var(--brand-500);
   border-radius: 0 var(--radius-full) var(--radius-full) 0;
+}
+
+/* El enlace a Fábrica se identifica con su propio acento azul, no el rosa de Boutique */
+.rail-link[href="#fabrica"].active {
+  background: var(--fabrica-accent-soft);
+  color: var(--fabrica-accent-text);
+}
+.rail-link[href="#fabrica"].active i,
+.rail-link[href="#fabrica"]:hover i {
+  color: var(--fabrica-accent);
+}
+.rail-link[href="#fabrica"].active::before {
+  background: var(--fabrica-accent);
 }
 
 /* ── Sidebar Bottom ── */
@@ -435,9 +428,9 @@ body.admin-page::after {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--grad-brand-soft);
-  border: 1.5px solid var(--border-brand);
-  color: var(--brand-600);
+  background: var(--boutique-accent-soft);
+  border: 1px solid var(--boutique-accent-border);
+  color: var(--boutique-accent-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -511,7 +504,7 @@ body.admin-page::after {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 2px;
-  background: var(--grad-brand);
+  background: var(--brand-500);
 }
 
 /* Logo pequeño en topbar móvil */
@@ -1450,7 +1443,7 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 2px;
-  background: var(--grad-brand);
+  background: var(--brand-500);
   opacity: 0;
   transition: opacity var(--duration-base) ease;
 }
@@ -1524,6 +1517,8 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   font-size: 0.9rem;
   flex-shrink: 0;
 }
+.db2-met-split-icon--boutique { background: var(--boutique-accent-soft); color: var(--boutique-accent-text); }
+.db2-met-split-icon--fabrica  { background: var(--fabrica-accent-soft);  color: var(--fabrica-accent-text); }
 .db2-met-split-body { flex: 1; min-width: 0; }
 .db2-met-split-val {
   font-size: 1.3rem;
@@ -1689,8 +1684,8 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 2px;
-  background: var(--grad-brand);
-  opacity: 0.6;
+  background: var(--brand-500);
+  opacity: 0.5;
 }
 .db2-fin-card:hover {
   box-shadow: var(--shadow-lg);
@@ -3917,23 +3912,24 @@ body.dark-mode::after {
 
 /* Sidebar dark */
 body.dark-mode .admin-rail {
-  background: rgba(19,18,26,0.94);
+  background: var(--surface-raised);
   border-right-color: rgba(255,255,255,0.07);
-  box-shadow: 4px 0 32px rgba(0,0,0,0.3);
 }
 body.dark-mode .rail-brand { border-bottom-color: rgba(255,255,255,0.07); }
 body.dark-mode .rail-group { border-bottom-color: rgba(255,255,255,0.04); }
-body.dark-mode .rail-brand-name { /* gradient still shows */ }
 body.dark-mode .rail-link { color: var(--text-secondary); }
-body.dark-mode .rail-link:hover { background: rgba(217,136,185,0.08); color: var(--text-primary); }
-body.dark-mode .rail-link.active { background: rgba(217,136,185,0.1); color: var(--brand-300); }
-body.dark-mode .rail-link.active i { color: var(--brand-400); }
+body.dark-mode .rail-link:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+body.dark-mode .rail-link.active { background: var(--boutique-accent-soft); color: var(--boutique-accent-text); }
+body.dark-mode .rail-link.active i { color: var(--boutique-accent); }
+body.dark-mode .rail-link[href="#fabrica"].active { background: var(--fabrica-accent-soft); color: var(--fabrica-accent-text); }
+body.dark-mode .rail-link[href="#fabrica"].active i,
+body.dark-mode .rail-link[href="#fabrica"]:hover i { color: var(--fabrica-accent); }
 body.dark-mode .rail-collapse-btn { border-color: rgba(255,255,255,0.1); color: var(--text-tertiary); }
 body.dark-mode .rail-bottom { border-top-color: rgba(255,255,255,0.07); }
 body.dark-mode .rail-darkmode-wrap { border-bottom-color: rgba(255,255,255,0.04); }
 body.dark-mode .rail-switch { background: rgba(255,255,255,0.1); }
-body.dark-mode .rail-switch.active { background: var(--brand-500); }
-body.dark-mode .rail-profile-avatar { background: rgba(217,136,185,0.1); border-color: rgba(217,136,185,0.25); }
+body.dark-mode .rail-switch.active { background: var(--boutique-accent); }
+body.dark-mode .rail-profile-avatar { background: var(--boutique-accent-soft); border-color: var(--boutique-accent-border); color: var(--boutique-accent-text); }
 body.dark-mode .rail-profile-name { color: var(--text-primary); }
 
 /* Mobile topbar dark */
@@ -4637,8 +4633,8 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 2px;
-  background: var(--grad-brand);
-  opacity: 0.5;
+  background: var(--brand-500);
+  opacity: 0.4;
 }
 .db-fin-item:hover {
   box-shadow: var(--shadow-md);
@@ -4655,6 +4651,8 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
   font-size: 1.15rem;
   flex-shrink: 0;
 }
+.db-fin-icon--boutique { background: var(--boutique-accent-soft); color: var(--boutique-accent-text); }
+.db-fin-icon--neutral  { background: var(--neutral-100); color: var(--text-secondary); }
 
 .db-fin-body {
   display: flex;
