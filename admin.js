@@ -9389,7 +9389,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     let lineChartInstance = null;
 
     // Las ventas mayoristas solo cuentan como ingreso de Fábrica desde esta fecha
-    const FECHA_CORTE_MAYORISTA = new Date(2026, 0, 1, 0, 0, 0, 0);
+    const FECHA_CORTE_MAYORISTA = new Date(2026, 5, 26, 0, 0, 0, 0);
 
     // Desde esta fecha, cada venta al detal reparte su dinero entre las dos
     // empresas: el costo de la mercancía vendida (costoCompra × cantidad) se
