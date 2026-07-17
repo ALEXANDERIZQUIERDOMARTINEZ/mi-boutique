@@ -1489,49 +1489,6 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   font-weight: 500;
 }
 
-/* ── Tarjeta combinada: Ventas hoy (Detal / Mayorista) ── */
-.db2-met-split {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.6rem;
-}
-.db2-met-split-title {
-  margin-bottom: -0.15rem;
-}
-.db2-met-split-row {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-}
-.db2-met-split-row + .db2-met-split-row {
-  padding-top: 0.6rem;
-  border-top: 1px dashed var(--border-subtle);
-}
-.db2-met-split-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  flex-shrink: 0;
-}
-.db2-met-split-icon--boutique { background: var(--boutique-accent-soft); color: var(--boutique-accent-text); }
-.db2-met-split-icon--fabrica  { background: var(--fabrica-accent-soft);  color: var(--fabrica-accent-text); }
-.db2-met-split-body { flex: 1; min-width: 0; }
-.db2-met-split-val {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  letter-spacing: -0.7px;
-  line-height: 1.15;
-}
-.db2-met-split-sub {
-  font-size: 0.71rem;
-  color: var(--text-disabled);
-  font-weight: 500;
-}
 
 /* ─────────────────────────────────────────────────────────────────────────
    QUICK ACCESS — Inline stats
@@ -4696,6 +4653,99 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
 body.dark-mode .db-fin-item {
   background: var(--surface-raised);
   border-color: var(--border-subtle);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   DOS EMPRESAS — panel Boutique / Fábrica en el Dashboard
+   ───────────────────────────────────────────────────────────────────────── */
+.db2-companies-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+@media (min-width: 768px) {
+  .db2-companies-row { grid-template-columns: 1fr 1fr; }
+}
+
+.db2-company-panel {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-top: 3px solid var(--boutique-accent);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem 1.5rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+.db2-company-panel--fabrica { border-top-color: var(--fabrica-accent); }
+
+.db2-company-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+}
+
+.db2-company-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.db2-company-panel .db2-company-name i { color: var(--boutique-accent-text); }
+.db2-company-panel--fabrica .db2-company-name i { color: var(--fabrica-accent-text); }
+
+.db2-company-link {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  transition: color var(--duration-fast) ease;
+}
+.db2-company-link:hover { color: var(--boutique-accent-text); }
+.db2-company-panel--fabrica .db2-company-link:hover { color: var(--fabrica-accent-text); }
+
+.db2-company-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1.1rem 1.5rem;
+}
+
+.db2-company-kpi { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.db2-company-kpi[data-bs-toggle] { cursor: pointer; }
+
+.db2-company-kpi-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+}
+
+.db2-company-kpi-val {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.db2-company-kpi-sub {
+  font-size: 0.71rem;
+  color: var(--text-disabled);
+  font-weight: 500;
+}
+
+@media (max-width: 479.98px) {
+  .db2-company-panel { padding: 1.1rem 1.15rem 1.25rem; }
+  .db2-company-kpi-val { font-size: 1.15rem; }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

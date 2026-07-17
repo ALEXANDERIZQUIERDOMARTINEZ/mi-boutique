@@ -81,6 +81,16 @@ function esProveedorBoutique(producto) {
     return (producto?.proveedor || '').trim().toLowerCase() === 'mishelles boutique';
 }
 window.esProveedorBoutique = esProveedorBoutique;
+
+// Las ventas mayoristas solo cuentan como ingreso de Fábrica desde esta fecha
+const FECHA_CORTE_MAYORISTA = new Date(2026, 0, 1, 0, 0, 0, 0);
+
+// Desde esta fecha, cada venta al detal reparte su dinero entre las dos
+// empresas: el costo de la mercancía vendida (costoCompra × cantidad) se
+// recupera como ingreso de Fábrica, y el resto (precio venta − costo) es
+// ganancia de Boutique. Ventas al detal anteriores a esta fecha no se
+// recalculan retroactivamente.
+const FECHA_CORTE_DETAL = new Date(2026, 6, 17, 0, 0, 0, 0);
 const metasCollection = collection(db, 'metas');
 const recepcionesCollection = collection(db, 'ordenesRecepcion');
 const promocionesGlobalesCollection = collection(db, 'promocionesGlobales');
@@ -6720,7 +6730,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         year: 'Ventas este año'
     };
 
-    function calcularVentasRango(rango = 'today') {
+    async function calcularVentasRango(rango = 'today') {
         console.log(`📊 Calculando ventas del período: ${rango}...`);
 
         if (unsubscribeVentasRango) {
@@ -6733,6 +6743,35 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         try {
             const { inicio, fin } = obtenerRangoFechas(rango);
+
+            // Costo de cada producto: para el margen real de Boutique y el costo
+            // que se recupera como ingreso de Fábrica en cada venta al detal.
+            const productCostMap = new Map();
+            try {
+                const prodsSnap = await getDocs(productsCollection);
+                prodsSnap.forEach(d => productCostMap.set(d.id, parseFloat(d.data().costoCompra) || 0));
+            } catch (err) {
+                console.error('Error cargando costos de productos para el dashboard:', err);
+            }
+
+            // Movimientos manuales de Fábrica (ingresos/gastos registrados a mano)
+            // dentro del rango. Se filtra en cliente porque un movimiento manual
+            // puede llevar una fecha propia distinta a la de creación.
+            let ingresosManualesFabrica = 0;
+            let gastosManualesFabrica = 0;
+            try {
+                const fabSnap = await getDocs(fabricaCollection);
+                fabSnap.forEach(d => {
+                    const m = d.data();
+                    const fechaMov = m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : null);
+                    if (!fechaMov || fechaMov < inicio || fechaMov >= fin) return;
+                    const monto = parseFloat(m.monto) || 0;
+                    if (m.tipo === 'ingreso') ingresosManualesFabrica += monto;
+                    else if (m.tipo === 'gasto') gastosManualesFabrica += monto;
+                });
+            } catch (err) {
+                console.error('Error cargando movimientos de Fábrica para el dashboard:', err);
+            }
 
             // ⚠️ IMPORTANTE: Solo filtrar por UN campo con desigualdad
             // NO podemos filtrar por timestamp Y estado al mismo tiempo
@@ -6750,6 +6789,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     let ventasContadas = 0;
                     let totalMayorista = 0;
                     let ventasMayoristaContadas = 0;
+                    let gananciaBoutique = 0;
+                    let costoDetalRecuperado = 0;
 
                     snapshot.forEach(doc => {
                         const venta = doc.data();
@@ -6764,13 +6805,32 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             const recibido = efectivo + transferencia;
 
                             // 🏷️ Las ventas mayoristas se contabilizan aparte,
-                            // no se suman al total de "Ventas hoy" (detal)
+                            // no se suman al total de "Ventas hoy" (detal). Su 100%
+                            // ya es ingreso de Fábrica, sin repartir costo/margen.
                             if (venta.tipoVenta === 'mayorista') {
                                 totalMayorista += recibido;
                                 ventasMayoristaContadas++;
                             } else {
                                 totalDineroRecibido += recibido;
                                 ventasContadas++;
+
+                                // Ganancia real de Boutique (precio venta − costo) y,
+                                // desde FECHA_CORTE_DETAL, el costo que le corresponde
+                                // a Fábrica como ingreso recuperado.
+                                const fechaVenta = venta.timestamp?.toDate ? venta.timestamp.toDate() : null;
+                                const contarCostoFabrica = fechaVenta && fechaVenta >= FECHA_CORTE_DETAL;
+                                (venta.items || []).forEach(item => {
+                                    const costo = parseFloat(
+                                        item.precioCosto ||
+                                        item.costo ||
+                                        (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
+                                        0
+                                    );
+                                    const precio = parseFloat(item.precio || item.precioUnitario || 0);
+                                    const cant = parseInt(item.cantidad || 1, 10);
+                                    gananciaBoutique += (precio - costo) * cant;
+                                    if (contarCostoFabrica) costoDetalRecuperado += costo * cant;
+                                });
                             }
                         }
                     });
@@ -6814,7 +6874,24 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         dbVentasMayoristaCountEl.textContent = `${ventasMayoristaContadas} ${ventasMayoristaContadas === 1 ? 'venta' : 'ventas'}`;
                     }
 
-                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas)`);
+                    // 🏷️ Panel Mishelles Boutique: ganancia real del período (detal)
+                    const dbBoutiqueGananciaEl = document.getElementById('db-boutique-ganancia');
+                    if (dbBoutiqueGananciaEl) {
+                        dbBoutiqueGananciaEl.textContent = formatoMoneda.format(gananciaBoutique);
+                    }
+
+                    // 🏷️ Panel Mishelles Fábrica: 100% de lo mayorista + costo
+                    // recuperado del detal + movimientos manuales, menos gastos
+                    const ingresosFabricaTotal = totalMayorista + costoDetalRecuperado + ingresosManualesFabrica;
+                    const utilidadFabrica = ingresosFabricaTotal - gastosManualesFabrica;
+                    const dbFabricaIngresosEl = document.getElementById('db-fabrica-ingresos');
+                    if (dbFabricaIngresosEl) dbFabricaIngresosEl.textContent = formatoMoneda.format(ingresosFabricaTotal);
+                    const dbFabricaGastosEl = document.getElementById('db-fabrica-gastos');
+                    if (dbFabricaGastosEl) dbFabricaGastosEl.textContent = formatoMoneda.format(gastosManualesFabrica);
+                    const dbFabricaUtilidadEl = document.getElementById('db-fabrica-utilidad');
+                    if (dbFabricaUtilidadEl) dbFabricaUtilidadEl.textContent = formatoMoneda.format(utilidadFabrica);
+
+                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas) | Ganancia Boutique: ${formatoMoneda.format(gananciaBoutique)} | Utilidad Fábrica: ${formatoMoneda.format(utilidadFabrica)}`);
                 },
                 (error) => {
                     console.error("❌ Error al calcular ventas del período:", error);
@@ -9387,16 +9464,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     let idPendienteEliminar = null;
     let ultimoRango = { desde: null, hasta: null, label: 'Todo el historial' };
     let lineChartInstance = null;
-
-    // Las ventas mayoristas solo cuentan como ingreso de Fábrica desde esta fecha
-    const FECHA_CORTE_MAYORISTA = new Date(2026, 5, 26, 0, 0, 0, 0);
-
-    // Desde esta fecha, cada venta al detal reparte su dinero entre las dos
-    // empresas: el costo de la mercancía vendida (costoCompra × cantidad) se
-    // recupera como ingreso de Fábrica, y el resto (precio venta − costo) es
-    // ganancia de Boutique. Ventas al detal anteriores a esta fecha no se
-    // recalculan retroactivamente.
-    const FECHA_CORTE_DETAL = new Date(2026, 6, 17, 0, 0, 0, 0);
 
     function fechaDeMovimiento(m) {
         return m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : new Date(0));

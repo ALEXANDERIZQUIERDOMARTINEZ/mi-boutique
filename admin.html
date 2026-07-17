@@ -277,25 +277,8 @@
                     </div>
                 </div>
 
-                <!-- MÉTRICAS -->
+                <!-- MÉTRICAS OPERATIVAS (compartidas) -->
                 <div class="db2-metrics">
-                    <div class="db2-met db2-met-split">
-                        <div class="db2-met-name db2-met-split-title" id="db-ventas-periodo-title">Ventas hoy</div>
-                        <div class="db2-met-split-row">
-                            <div class="db2-met-split-icon db2-met-split-icon--boutique"><i class="bi bi-cash-stack"></i></div>
-                            <div class="db2-met-split-body">
-                                <div class="db2-met-split-val" id="db-ventas-hoy">$0</div>
-                                <div class="db2-met-split-sub">Detal · <span id="db-ventas-count">0 ventas</span></div>
-                            </div>
-                        </div>
-                        <div class="db2-met-split-row">
-                            <div class="db2-met-split-icon db2-met-split-icon--fabrica"><i class="bi bi-shop"></i></div>
-                            <div class="db2-met-split-body">
-                                <div class="db2-met-split-val" id="db-ventas-mayoristas-hoy">$0</div>
-                                <div class="db2-met-split-sub">Mayorista · <span id="db-ventas-mayoristas-count">0 ventas</span></div>
-                            </div>
-                        </div>
-                    </div>
                     <div class="db2-met">
                         <div class="db2-met-icon fin2-skpi-icon--blue"><i class="bi bi-boxes"></i></div>
                         <div class="db2-met-body">
@@ -318,6 +301,70 @@
                             <div class="db2-met-val" id="db-apartados-vencer">0</div>
                             <div class="db2-met-name">Apartados</div>
                             <div class="db2-met-sub" id="db-apartados-total-saldo">$0 pendiente</div>
+                        </div>
+                    </div>
+                    <div class="db-fin-item" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
+                        <div class="db-fin-icon db-fin-icon--neutral">
+                            <i class="bi bi-box-seam-fill"></i>
+                        </div>
+                        <div class="db-fin-body">
+                            <span class="db-fin-label">Inversión inventario</span>
+                            <span class="db-fin-val" id="db-inversion-inventario">$0</span>
+                            <span class="db-fin-sub" id="db-inventario-unidades">0 unidades</span>
+                        </div>
+                        <i class="bi bi-chevron-right db-fin-chevron"></i>
+                    </div>
+                </div>
+
+                <div class="db2-sep"></div>
+
+                <!-- DOS EMPRESAS: Mishelles Boutique / Mishelles Fábrica -->
+                <div class="db2-companies-row">
+                    <div class="db2-company-panel db2-company-panel--boutique">
+                        <div class="db2-company-head">
+                            <span class="db2-company-name"><i class="bi bi-graph-up-arrow"></i> Mishelles Boutique</span>
+                            <a class="db2-company-link" href="#finanzas">Ver detalle <i class="bi bi-arrow-right"></i></a>
+                        </div>
+                        <div class="db2-company-kpis">
+                            <div class="db2-company-kpi">
+                                <span class="db2-company-kpi-label" id="db-ventas-periodo-title">Ventas detal</span>
+                                <span class="db2-company-kpi-val" id="db-ventas-hoy">$0</span>
+                                <span class="db2-company-kpi-sub" id="db-ventas-count">0 ventas</span>
+                            </div>
+                            <div class="db2-company-kpi">
+                                <span class="db2-company-kpi-label">Ganancia real</span>
+                                <span class="db2-company-kpi-val" id="db-boutique-ganancia">$0</span>
+                            </div>
+                            <div class="db2-company-kpi" style="cursor:pointer;" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
+                                <span class="db2-company-kpi-label">Utilidad potencial</span>
+                                <span class="db2-company-kpi-val" id="db-utilidad-potencial">$0</span>
+                                <span class="db2-company-kpi-sub" id="db-margen-utilidad">0% de margen</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="db2-company-panel db2-company-panel--fabrica">
+                        <div class="db2-company-head">
+                            <span class="db2-company-name"><i class="bi bi-buildings"></i> Mishelles Fábrica</span>
+                            <a class="db2-company-link" href="#fabrica">Ver detalle <i class="bi bi-arrow-right"></i></a>
+                        </div>
+                        <div class="db2-company-kpis">
+                            <div class="db2-company-kpi">
+                                <span class="db2-company-kpi-label">Ventas mayoristas</span>
+                                <span class="db2-company-kpi-val" id="db-ventas-mayoristas-hoy">$0</span>
+                                <span class="db2-company-kpi-sub" id="db-ventas-mayoristas-count">0 ventas</span>
+                            </div>
+                            <div class="db2-company-kpi">
+                                <span class="db2-company-kpi-label">Ingresos totales</span>
+                                <span class="db2-company-kpi-val" id="db-fabrica-ingresos">$0</span>
+                            </div>
+                            <div class="db2-company-kpi">
+                                <span class="db2-company-kpi-label">Gastos</span>
+                                <span class="db2-company-kpi-val" id="db-fabrica-gastos">$0</span>
+                            </div>
+                            <div class="db2-company-kpi">
+                                <span class="db2-company-kpi-label">Utilidad neta</span>
+                                <span class="db2-company-kpi-val" id="db-fabrica-utilidad">$0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -351,32 +398,6 @@
                     <button class="btn btn-sm btn-outline-secondary ms-auto" id="btn-descargar-catalogo-pdf">
                         <i class="bi bi-download me-1"></i>Catálogo PDF
                     </button>
-                </div>
-
-                <!-- FINANCIEROS (resumen rápido) -->
-                <div class="db-fin-row">
-                    <div class="db-fin-item" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
-                        <div class="db-fin-icon db-fin-icon--neutral">
-                            <i class="bi bi-box-seam-fill"></i>
-                        </div>
-                        <div class="db-fin-body">
-                            <span class="db-fin-label">Inversión en inventario</span>
-                            <span class="db-fin-val" id="db-inversion-inventario">$0</span>
-                            <span class="db-fin-sub" id="db-inventario-unidades">0 unidades</span>
-                        </div>
-                        <i class="bi bi-chevron-right db-fin-chevron"></i>
-                    </div>
-                    <div class="db-fin-item" data-bs-toggle="modal" data-bs-target="#utilidadPotencialModal">
-                        <div class="db-fin-icon db-fin-icon--boutique">
-                            <i class="bi bi-graph-up-arrow"></i>
-                        </div>
-                        <div class="db-fin-body">
-                            <span class="db-fin-label">Utilidad potencial (detal)</span>
-                            <span class="db-fin-val" id="db-utilidad-potencial">$0</span>
-                            <span class="db-fin-sub" id="db-margen-utilidad">0% de margen</span>
-                        </div>
-                        <i class="bi bi-chevron-right db-fin-chevron"></i>
-                    </div>
                 </div>
 
                 <div class="db2-sep"></div>
