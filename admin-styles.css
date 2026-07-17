@@ -121,6 +121,28 @@
   --sombra-sm: var(--shadow-sm);
   --sombra-md: var(--shadow-md);
   --sombra-lg: var(--shadow-lg);
+
+  /* ── Dos empresas: acento propio por marca ──
+     Mishelles Boutique conserva el rosa de siempre; Mishelles Fábrica usa un
+     azul propio. Se usan en las secciones de Finanzas/Fábrica para que un
+     número se identifique de un vistazo con la empresa a la que pertenece. */
+  --boutique-accent:        var(--brand-500);
+  --boutique-accent-text:   var(--brand-700);   /* contraste 6.3:1 en claro, texto legible */
+  --boutique-accent-soft:   rgba(217,136,185,0.12);
+  --boutique-accent-border: rgba(217,136,185,0.35);
+  --boutique-accent-shadow: rgba(217,136,185,0.25);
+
+  --fabrica-accent:        #2a78d6;
+  --fabrica-accent-text:   #184f95;             /* contraste 8.1:1 en claro, texto legible */
+  --fabrica-accent-soft:   rgba(42,120,214,0.12);
+  --fabrica-accent-border: rgba(42,120,214,0.35);
+  --fabrica-accent-shadow: rgba(42,120,214,0.25);
+
+  /* ── Estado (fijo, no cambia por tema) ── */
+  --status-good:     #0ca30c;
+  --status-warning:  #fab219;
+  --status-serious:  #ec835a;
+  --status-critical: #d03b3b;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -3011,14 +3033,19 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
   margin: 0.2rem 0 0;
 }
 .fin2-active-period {
-  background: var(--grad-brand-soft);
-  border: 1px solid var(--border-brand);
-  color: var(--brand-700);
+  background: var(--boutique-accent-soft);
+  border: 1px solid var(--boutique-accent-border);
+  color: var(--boutique-accent-text);
   font-weight: 700;
   font-size: 0.78rem;
   padding: 0.35rem 0.9rem;
   border-radius: var(--radius-full);
   white-space: nowrap;
+}
+#fabrica .fin2-active-period {
+  background: var(--fabrica-accent-soft);
+  border-color: var(--fabrica-accent-border);
+  color: var(--fabrica-accent-text);
 }
 
 /* Filter Bar */
@@ -3045,15 +3072,24 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
   gap: 0.3rem;
 }
 .fin2-filter-btn:hover:not(.active) {
-  border-color: var(--border-brand);
-  color: var(--brand-600);
-  background: rgba(217,136,185,0.06);
+  border-color: var(--boutique-accent-border);
+  color: var(--boutique-accent-text);
+  background: var(--boutique-accent-soft);
 }
 .fin2-filter-btn.active {
-  background: var(--grad-brand);
+  background: var(--boutique-accent);
   border-color: transparent;
   color: #fff;
-  box-shadow: var(--shadow-brand);
+  box-shadow: 0 2px 10px var(--boutique-accent-shadow);
+}
+#fabrica .fin2-filter-btn:hover:not(.active) {
+  border-color: var(--fabrica-accent-border);
+  color: var(--fabrica-accent-text);
+  background: var(--fabrica-accent-soft);
+}
+#fabrica .fin2-filter-btn.active {
+  background: var(--fabrica-accent);
+  box-shadow: 0 2px 10px var(--fabrica-accent-shadow);
 }
 
 /* Custom Range Bar */
@@ -3065,7 +3101,7 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
   margin-bottom: 1.25rem;
   padding: 1rem 1.1rem;
   background: var(--surface-raised);
-  border: 1.5px solid var(--border-brand);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
 }
@@ -3101,8 +3137,12 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
   appearance: none;
 }
 .fin2-date-input:focus {
-  border-color: var(--brand-400);
-  box-shadow: 0 0 0 3px rgba(217,136,185,0.15);
+  border-color: var(--boutique-accent);
+  box-shadow: 0 0 0 3px var(--boutique-accent-soft);
+}
+#fabrica .fin2-date-input:focus {
+  border-color: var(--fabrica-accent);
+  box-shadow: 0 0 0 3px var(--fabrica-accent-soft);
 }
 .fin2-date-arrow {
   color: var(--text-tertiary);
@@ -3111,7 +3151,7 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
   flex-shrink: 0;
 }
 .fin2-btn-apply {
-  background: var(--grad-brand);
+  background: var(--boutique-accent);
   border: none;
   color: #fff;
   font-size: 0.85rem;
@@ -3122,13 +3162,17 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  box-shadow: var(--shadow-brand);
+  box-shadow: 0 2px 10px var(--boutique-accent-shadow);
   transition: opacity 0.15s ease;
   white-space: nowrap;
   flex-shrink: 0;
   align-self: flex-end;
 }
 .fin2-btn-apply:hover { opacity: 0.88; }
+#fabrica .fin2-btn-apply {
+  background: var(--fabrica-accent);
+  box-shadow: 0 2px 10px var(--fabrica-accent-shadow);
+}
 
 /* Loading */
 .fin2-loading {
@@ -3144,80 +3188,76 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
   width: 22px;
   height: 22px;
   border: 2.5px solid var(--border-default);
-  border-top-color: var(--brand-500);
+  border-top-color: var(--boutique-accent);
   border-radius: 50%;
   animation: fin2-spin 0.7s linear infinite;
 }
+#fabrica .fin2-spinner { border-top-color: var(--fabrica-accent); }
 @keyframes fin2-spin { to { transform: rotate(360deg); } }
 
-/* ── HERO KPI (Utilidad Total) ── */
+/* ── HERO KPI (Utilidad Total) — tarjeta plana, acento por empresa ── */
 .fin2-hero-kpi {
-  background: linear-gradient(135deg, #0f1a14 0%, #122318 40%, #0d1f19 100%);
-  border-radius: var(--radius-2xl, 20px);
-  padding: 2rem 2.25rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-top: 3px solid var(--boutique-accent);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem 2rem;
   margin-bottom: 1.25rem;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 24px rgba(16,185,129,0.18), 0 1px 3px rgba(0,0,0,0.3);
+  box-shadow: var(--shadow-sm);
 }
-.fin2-hero-kpi::before {
-  content: '';
-  position: absolute;
-  top: -40px;
-  right: -40px;
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%);
-  pointer-events: none;
-}
+#fabrica .fin2-hero-kpi { border-top-color: var(--fabrica-accent); }
 .fin2-hero-kpi-inner {
   display: flex;
   align-items: center;
   gap: 1.5rem;
 }
 .fin2-hero-icon {
-  width: 64px;
-  height: 64px;
-  background: rgba(16,185,129,0.15);
-  border: 1.5px solid rgba(16,185,129,0.3);
-  border-radius: 18px;
+  width: 56px;
+  height: 56px;
+  background: var(--boutique-accent-soft);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
-  color: #10b981;
+  font-size: 1.6rem;
+  color: var(--boutique-accent-text);
   flex-shrink: 0;
+}
+#fabrica .fin2-hero-icon {
+  background: var(--fabrica-accent-soft);
+  color: var(--fabrica-accent-text);
 }
 .fin2-hero-content { flex: 1; min-width: 0; }
 .fin2-hero-label {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.45);
+  color: var(--text-tertiary);
   text-transform: uppercase;
   margin-bottom: 0.3rem;
 }
 .fin2-hero-value {
-  font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 800;
+  font-size: clamp(1.9rem, 4.5vw, 2.75rem);
+  font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  color: #fff;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
   transition: color 0.3s ease;
 }
-.fin2-hero-value.fin2-positive { color: #34d399; }
-.fin2-hero-value.fin2-negative { color: #f87171; }
+.fin2-hero-value.fin2-positive { color: var(--status-good); }
+.fin2-hero-value.fin2-negative { color: var(--status-critical); }
 .fin2-hero-trend {
   margin-top: 0.5rem;
   font-size: 0.8rem;
   font-weight: 600;
-  color: rgba(255,255,255,0.45);
+  color: var(--text-tertiary);
   display: flex;
   align-items: center;
   gap: 0.3rem;
 }
-.fin2-trend-up   { color: #6ee7b7; }
-.fin2-trend-down { color: #fca5a5; }
+.fin2-trend-up   { color: var(--status-good); }
+.fin2-trend-down { color: var(--status-critical); }
 
 /* ── Secondary KPIs ── */
 .fin2-secondary-kpis {
@@ -3251,16 +3291,19 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
   font-size: 1.1rem;
   flex-shrink: 0;
 }
-.fin2-skpi-icon--blue   { background: rgba(59,130,246,0.1);  color: #3b82f6; }
-.fin2-skpi-icon--purple { background: rgba(168,85,247,0.1);  color: #a855f7; }
-.fin2-skpi-icon--amber  { background: rgba(245,158,11,0.1);  color: #f59e0b; }
-.fin2-skpi-icon--green  { background: rgba(16,185,129,0.1);  color: #10b981; }
-.fin2-skpi-icon--pink   { background: rgba(219,39,119,0.1);  color: #db2777; }
+.fin2-skpi-body { min-width: 0; }
+.fin2-skpi-icon--blue    { background: rgba(59,130,246,0.1);  color: #3b82f6; }
+.fin2-skpi-icon--purple  { background: rgba(168,85,247,0.1);  color: #a855f7; }
+.fin2-skpi-icon--amber   { background: rgba(245,158,11,0.1);  color: #f59e0b; }
+.fin2-skpi-icon--green   { background: rgba(16,185,129,0.1);  color: #10b981; }
+.fin2-skpi-icon--pink    { background: rgba(219,39,119,0.1);  color: #db2777; }
+.fin2-skpi-icon--boutique { background: var(--boutique-accent-soft); color: var(--boutique-accent-text); }
+.fin2-skpi-icon--fabrica  { background: var(--fabrica-accent-soft);  color: var(--fabrica-accent-text); }
 .fin2-skpi-label {
   font-size: 0.73rem;
   color: var(--text-tertiary);
   font-weight: 500;
-  white-space: nowrap;
+  line-height: 1.3;
 }
 .fin2-skpi-val {
   font-size: 1.1rem;
@@ -3851,6 +3894,18 @@ body.dark-mode {
   --neutral-200:     rgba(255,255,255,0.1);
   background: #09090d !important;
   color: var(--text-primary);
+
+  --boutique-accent:        #d55181;
+  --boutique-accent-text:   #d55181;            /* 5.0:1 sobre fondo oscuro */
+  --boutique-accent-soft:   rgba(213,81,129,0.16);
+  --boutique-accent-border: rgba(213,81,129,0.4);
+  --boutique-accent-shadow: rgba(213,81,129,0.3);
+
+  --fabrica-accent:        #3987e5;
+  --fabrica-accent-text:   #3987e5;             /* 5.5:1 sobre fondo oscuro */
+  --fabrica-accent-soft:   rgba(57,135,229,0.16);
+  --fabrica-accent-border: rgba(57,135,229,0.4);
+  --fabrica-accent-shadow: rgba(57,135,229,0.3);
 }
 
 body.dark-mode::before {
