@@ -1255,9 +1255,15 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   DASHBOARD — Header
+   DASHBOARD — sistema unificado
+   Un único lenguaje visual para todo el dashboard: .db-section marca el
+   ritmo vertical entre bloques y .db-panel es la tarjeta que usan por igual
+   accesos rápidos, comparativo de empresas, gráficas y actividad reciente.
    ───────────────────────────────────────────────────────────────────────── */
-.db2-head {
+.db-section { margin-bottom: 1.75rem; }
+.db-section:last-child { margin-bottom: 0; }
+
+.db-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1266,26 +1272,28 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   margin-bottom: 1.75rem;
 }
 
-.db2-head-left { display: flex; flex-direction: column; gap: 0.15rem; }
+.db-head-left { display: flex; flex-direction: column; gap: 0.2rem; }
 
-.db2-title {
+.db-eyebrow {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--boutique-accent-text);
+}
+
+.db-title {
   font-size: 1.45rem;
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.6px;
-  line-height: 1;
+  line-height: 1.15;
 }
 
-.db2-date {
+.db-date {
   font-size: 0.74rem;
   color: var(--text-tertiary);
   font-weight: 500;
-}
-
-.db2-sep {
-  height: 1px;
-  background: var(--border-subtle);
-  margin: 1.5rem 0;
 }
 
 /* Time range selector */
@@ -1318,103 +1326,7 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   KPI CARDS — Hero metrics
-   ───────────────────────────────────────────────────────────────────────── */
-.db2-kpi-row {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-@media (min-width: 768px) {
-  .db2-kpi-row { grid-template-columns: repeat(4, 1fr); }
-}
-
-.db2-kpi-card {
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  position: relative;
-  overflow: hidden;
-  transition: box-shadow var(--duration-base) var(--ease-out),
-              transform var(--duration-base) var(--ease-out);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Decorative gradient orb per card */
-.db2-kpi-card::after {
-  content: '';
-  position: absolute;
-  top: -20px;
-  right: -20px;
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background: radial-gradient(circle, currentColor 0%, transparent 70%);
-  opacity: 0.04;
-  pointer-events: none;
-}
-
-.db2-kpi-card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-3px);
-}
-
-.db2-kpi-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
-
-.db2-kpi-body { flex: 1; }
-
-.db2-kpi-val {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  letter-spacing: -1.2px;
-  line-height: 1;
-  margin-bottom: 0.3rem;
-}
-
-.db2-kpi-name {
-  font-size: 0.63rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: var(--text-tertiary);
-  margin-bottom: 0.45rem;
-}
-
-.db2-kpi-growth {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.18rem 0.55rem;
-  border-radius: var(--radius-full);
-}
-.db2-kpi-growth.positive {
-  background: rgba(16,185,129,0.1);
-  color: #059669;
-}
-.db2-kpi-growth.negative {
-  background: rgba(239,68,68,0.1);
-  color: #dc2626;
-}
-.db2-kpi-growth i { font-size: 1rem; margin: -3px; }
-
-/* ─────────────────────────────────────────────────────────────────────────
-   DASHBOARD METRICS — Naked stats
+   DASHBOARD METRICS — resumen operativo (4 tarjetas iguales)
    ───────────────────────────────────────────────────────────────────────── */
 .db2-metrics {
   display: grid;
@@ -1447,6 +1359,7 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   opacity: 0;
   transition: opacity var(--duration-base) ease;
 }
+.db2-met--clickable { cursor: pointer; }
 .db2-met:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
@@ -1489,86 +1402,19 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   font-weight: 500;
 }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   QUICK ACCESS — Inline stats
-   ───────────────────────────────────────────────────────────────────────── */
-.db2-quick-card {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  padding: 1rem 1.5rem;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xs);
-}
-.db2-quick-label {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
+.db2-met-chevron {
+  align-self: center;
   color: var(--text-tertiary);
-  white-space: nowrap;
-  padding-right: 0.75rem;
-  border-right: 1px solid var(--border-subtle);
-  margin-right: 0.25rem;
-}
-.db2-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.db2-quick {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.db2-quick-item {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.6rem 1rem;
-  border-radius: var(--radius-lg);
-  transition: background var(--duration-fast) ease;
-}
-.db2-quick-item:hover { background: rgba(217,136,185,0.06); }
-
-.db2-quick-val {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  letter-spacing: -0.5px;
-  line-height: 1;
-}
-
-.db2-quick-name {
-  font-size: 0.62rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: var(--text-tertiary);
-  margin-top: 0.2rem;
-}
-
-.db2-dot {
-  color: var(--border-default);
-  font-size: 1.2rem;
-  line-height: 1;
-  user-select: none;
+  font-size: 0.75rem;
+  flex-shrink: 0;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   CHART CARDS
+   DASHBOARD PANEL — tarjeta compartida por accesos rápidos, comparativo,
+   gráficas y actividad reciente. Un único contenedor visual para todo
+   el contenido "en caja" del dashboard.
    ───────────────────────────────────────────────────────────────────────── */
-.db-chart-card {
+.db-panel {
   background: var(--surface-raised);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
@@ -1576,9 +1422,9 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   box-shadow: var(--shadow-sm);
   transition: box-shadow var(--duration-base) var(--ease-out);
 }
-.db-chart-card:hover { box-shadow: var(--shadow-md); }
+.db-panel:hover { box-shadow: var(--shadow-md); }
 
-.db-chart-header {
+.db-panel-head {
   padding: 1.05rem 1.5rem;
   display: flex;
   align-items: center;
@@ -1587,18 +1433,25 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.db-chart-title {
+.db-panel-title {
   font-size: 0.84rem;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.15px;
 }
 
-.db-chart-body {
-  padding: 1.25rem 1.5rem 1.5rem;
+.db-panel-link {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  transition: color var(--duration-fast) ease;
 }
 
-/* Period tabs */
+/* Period tabs (dentro de un .db-panel-head) */
 .db-period-tabs {
   display: flex;
   background: rgba(0,0,0,0.03);
@@ -1622,40 +1475,44 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   box-shadow: var(--shadow-xs);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   FINANCIAL CARDS
-   ───────────────────────────────────────────────────────────────────────── */
-.db2-fin-card {
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: 1.5rem;
-  transition: box-shadow var(--duration-base) var(--ease-out),
-              transform var(--duration-base) var(--ease-out);
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  overflow: hidden;
-}
-.db2-fin-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--brand-500);
-  opacity: 0.5;
-}
-.db2-fin-card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-3px);
+/* ── Accesos rápidos ── */
+.db-quick-panel .db-panel-head { border-bottom: none; padding-bottom: 0.5rem; }
+
+.db2-quick {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  padding: 0.25rem 0.75rem 1rem;
 }
 
-.db2-fin-val {
-  font-size: 1.75rem;
+.db2-quick-item {
+  cursor: pointer;
+  flex: 1 1 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-lg);
+  transition: background var(--duration-fast) ease;
+}
+.db2-quick-item:hover { background: rgba(217,136,185,0.06); }
+
+.db2-quick-val {
+  font-size: 1.2rem;
   font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: -1.2px;
+  letter-spacing: -0.5px;
   line-height: 1;
-  margin-bottom: 0.4rem;
+}
+
+.db2-quick-name {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-tertiary);
+  margin-top: 0.35rem;
+  text-align: center;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -3251,6 +3108,7 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
 .fin2-skpi-icon--pink    { background: rgba(219,39,119,0.1);  color: #db2777; }
 .fin2-skpi-icon--boutique { background: var(--boutique-accent-soft); color: var(--boutique-accent-text); }
 .fin2-skpi-icon--fabrica  { background: var(--fabrica-accent-soft);  color: var(--fabrica-accent-text); }
+.fin2-skpi-icon--slate    { background: var(--neutral-100); color: var(--text-secondary); }
 .fin2-skpi-label {
   font-size: 0.73rem;
   color: var(--text-tertiary);
@@ -3950,23 +3808,16 @@ body.dark-mode .card-header.bg-white {
 }
 
 /* Dashboard elements dark */
-body.dark-mode .db2-quick-card {
-  background: var(--surface-raised);
-  border-color: var(--border-subtle);
-}
-body.dark-mode .db2-kpi-card,
-body.dark-mode .db2-fin-card,
-body.dark-mode .db-chart-card,
+body.dark-mode .db-panel,
 body.dark-mode .db2-met {
   background: var(--surface-raised);
   border-color: var(--border-subtle);
 }
-body.dark-mode .db2-title { color: var(--text-primary); }
-body.dark-mode .db2-date { color: var(--text-tertiary); }
-body.dark-mode .db2-kpi-val,
-body.dark-mode .db2-fin-val,
+body.dark-mode .db-title { color: var(--text-primary); }
+body.dark-mode .db-date { color: var(--text-tertiary); }
 body.dark-mode .db2-met-val,
-body.dark-mode .db2-quick-val { color: var(--text-primary); }
+body.dark-mode .db2-quick-val,
+body.dark-mode .db-compare-kpi-val { color: var(--text-primary); }
 body.dark-mode .db2-time-range,
 body.dark-mode .db-period-tabs { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); }
 body.dark-mode .db2-range-btn.active,
@@ -3975,8 +3826,8 @@ body.dark-mode .btn-check:checked + .db-period-tab {
   background: rgba(255,255,255,0.1);
   color: var(--text-primary);
 }
-body.dark-mode .db-chart-title { color: var(--text-primary); }
-body.dark-mode .db2-sep { background: var(--border-subtle); }
+body.dark-mode .db-panel-title { color: var(--text-primary); }
+body.dark-mode .db-compare-divider { background: var(--border-subtle); }
 body.dark-mode .tbl-wrap { background: var(--surface-raised); border-color: var(--border-subtle); }
 body.dark-mode .tbl-head { background: var(--surface-raised); border-bottom-color: var(--border-subtle); }
 body.dark-mode .tbl-title { color: var(--text-primary); }
@@ -4120,9 +3971,7 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
 
   /* Sin hover transform en touch */
   .db2-met:hover,
-  .db2-kpi-card:hover,
-  .db2-fin-card:hover,
-  .db-chart-card:hover,
+  .db-panel:hover,
   .card:hover,
   .tbl-wrap:hover {
     transform: none !important;
@@ -4133,36 +3982,22 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
   /* Métricas: 2 columnas en móvil */
   .db2-metrics { grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
 
-  /* Quick card: stack vertical */
-  .db2-quick-card {
+  /* Accesos rápidos: cabecera y botón apilados */
+  .db-quick-panel .db-panel-head {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.75rem;
-    padding: 0.875rem 1rem;
+    gap: 0.6rem;
   }
-  .db2-quick-label {
-    border-right: none;
-    border-bottom: 1px solid var(--border-subtle);
-    padding-right: 0;
-    padding-bottom: 0.5rem;
-    width: 100%;
-    margin-right: 0;
-  }
-  .db2-quick {
-    width: 100%;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    gap: 0;
-    scrollbar-width: none;
-  }
-  .db2-quick::-webkit-scrollbar { display: none; }
-  .db2-quick-item { flex-shrink: 0; }
-  .db2-foot { flex-direction: column; gap: 0.75rem; }
-  .db2-foot > .btn { width: 100%; }
+  .db-quick-panel .db-panel-head .btn { width: 100%; }
+  .db2-quick-item { flex: 1 1 40%; }
+
+  /* Comparativo: columnas apiladas */
+  .db-compare-grid { grid-template-columns: 1fr; }
+  .db-compare-divider { display: none; }
+  .db-compare-col--boutique { border-bottom: 1px solid var(--border-subtle); }
 
   /* Dashboard header */
-  .db2-head {
+  .db-head {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.6rem;
@@ -4177,9 +4012,8 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
   .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .table { min-width: 560px; }
 
-  /* Charts */
-  .db-chart-body { padding: 0.875rem 1rem 1rem; }
-  .db-chart-header { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
+  /* Paneles */
+  .db-panel-head { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
 
   /* Formularios */
   .row .col-md-6,
@@ -4189,15 +4023,14 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
   /* Títulos de sección */
   .admin-main h1,
   .admin-main .h2 { font-size: 1.2rem; }
-  .db2-title { font-size: 1.15rem; }
-  .db2-met-val,
-  .db2-fin-val { font-size: 1.35rem; }
+  .db-title { font-size: 1.15rem; }
+  .db2-met-val { font-size: 1.35rem; }
 
   /* Botones de acción en tablas */
   .action-buttons button { padding: 4px 8px !important; font-size: 0.75rem; }
 
-  /* Separadores más compactos */
-  .db2-sep { margin: 1rem 0; }
+  /* Secciones más compactas */
+  .db-section { margin-bottom: 1.1rem; }
 }
 
 /* Sólo móvil pequeño */
@@ -4207,8 +4040,7 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
   .db2-met { padding: 0.875rem 0.75rem; }
   .db2-met-icon { width: 36px; height: 36px; font-size: 0.95rem; }
   .db2-met-val { font-size: 1.2rem; }
-  .db-chart-card { border-radius: var(--radius-lg); }
-  .db2-quick-card { border-radius: var(--radius-lg); }
+  .db-panel { border-radius: var(--radius-lg); }
 }
 
 /* Tablet mediana */
@@ -4226,9 +4058,7 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
 /* Dispositivos sin hover (touch) — eliminar todos los transforms */
 @media (hover: none) {
   .db2-met,
-  .db2-kpi-card,
-  .db2-fin-card,
-  .db-chart-card,
+  .db-panel,
   .rail-link,
   .btn-primary,
   .btn-secondary,
@@ -4328,48 +4158,9 @@ body.modal-open {
   .modal-footer { flex-shrink: 0; padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 0.5rem); }
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   GRÁFICAS — alturas responsivas
-   ───────────────────────────────────────────────────────────────────────── */
-
-/* Contenedor de la gráfica de ventas */
-.db-chart-body {
-  position: relative;
-}
-
-/* Desktop: altura razonable */
-@media (min-width: 992px) {
-  #ventasChart     { height: 240px !important; }
-  #topProductosChart { height: 360px !important; }
-}
-
-/* Móvil: más compacto */
+/* Móvil: espacio para la barra de navegación inferior */
 @media (max-width: 991.98px) {
   .admin-content-wrapper { padding-bottom: 62px; }
-
-  #ventasChart     { height: 190px !important; }
-  #topProductosChart { height: 280px !important; }
-
-  /* Reducir max-height del contenedor del top productos en móvil */
-  .db-chart-body[style*="max-height"] {
-    max-height: 300px !important;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Las dos cartas de gráficas apilan completas */
-  .row.g-3 .col-lg-8,
-  .row.g-3 .col-lg-4 {
-    width: 100%;
-    flex: 0 0 100%;
-    max-width: 100%;
-  }
-}
-
-/* Gráfica de barras de ventas: fondo limpio */
-.db-chart-body canvas {
-  display: block;
-  width: 100% !important;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -4557,128 +4348,27 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
 /* El botón de cámara usa la clase .sv-btn-camera definida en style.css */
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TARJETAS FINANCIERAS — diseño móvil-first
+   COMPARATIVO POR EMPRESA — Boutique vs Fábrica en un solo .db-panel
    ───────────────────────────────────────────────────────────────────────── */
-.db-fin-row {
+.db-compare-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-top: 0.875rem;
+  grid-template-columns: 1fr auto 1fr;
+}
+@media (max-width: 767.98px) {
+  .db-compare-grid { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 479.98px) {
-  .db-fin-row { grid-template-columns: 1fr; }
+.db-compare-col {
+  padding: 1.1rem 1.5rem 1.5rem;
 }
 
-.db-fin-item {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: 1rem 1.1rem;
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition: box-shadow var(--duration-base) var(--ease-out),
-              transform var(--duration-base) var(--ease-out);
-  position: relative;
-  overflow: hidden;
-}
-.db-fin-item::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--brand-500);
-  opacity: 0.4;
-}
-.db-fin-item:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+.db-compare-divider {
+  width: 1px;
+  background: var(--border-subtle);
+  margin: 0.25rem 0;
 }
 
-.db-fin-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.15rem;
-  flex-shrink: 0;
-}
-.db-fin-icon--boutique { background: var(--boutique-accent-soft); color: var(--boutique-accent-text); }
-.db-fin-icon--neutral  { background: var(--neutral-100); color: var(--text-secondary); }
-
-.db-fin-body {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  flex: 1;
-  min-width: 0;
-}
-
-.db-fin-label {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.db-fin-val {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--text-primary);
-  letter-spacing: -0.8px;
-  line-height: 1.2;
-}
-
-.db-fin-sub {
-  font-size: 0.7rem;
-  color: var(--text-tertiary);
-  font-weight: 500;
-}
-
-.db-fin-chevron {
-  color: var(--text-tertiary);
-  font-size: 0.75rem;
-  flex-shrink: 0;
-}
-
-body.dark-mode .db-fin-item {
-  background: var(--surface-raised);
-  border-color: var(--border-subtle);
-}
-
-/* ─────────────────────────────────────────────────────────────────────────
-   DOS EMPRESAS — panel Boutique / Fábrica en el Dashboard
-   ───────────────────────────────────────────────────────────────────────── */
-.db2-companies-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-@media (min-width: 768px) {
-  .db2-companies-row { grid-template-columns: 1fr 1fr; }
-}
-
-.db2-company-panel {
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  border-top: 3px solid var(--boutique-accent);
-  border-radius: var(--radius-xl);
-  padding: 1.25rem 1.5rem 1.5rem;
-  box-shadow: var(--shadow-sm);
-}
-.db2-company-panel--fabrica { border-top-color: var(--fabrica-accent); }
-
-.db2-company-head {
+.db-compare-col-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4687,7 +4377,7 @@ body.dark-mode .db-fin-item {
   margin-bottom: 1.1rem;
 }
 
-.db2-company-name {
+.db-compare-name {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -4695,32 +4385,23 @@ body.dark-mode .db-fin-item {
   align-items: center;
   gap: 0.45rem;
 }
-.db2-company-panel .db2-company-name i { color: var(--boutique-accent-text); }
-.db2-company-panel--fabrica .db2-company-name i { color: var(--fabrica-accent-text); }
+.db-compare-col--boutique .db-compare-name i { color: var(--boutique-accent-text); }
+.db-compare-col--fabrica .db-compare-name i { color: var(--fabrica-accent-text); }
 
-.db2-company-link {
-  font-size: 0.73rem;
-  font-weight: 600;
-  color: var(--text-tertiary);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  transition: color var(--duration-fast) ease;
-}
-.db2-company-link:hover { color: var(--boutique-accent-text); }
-.db2-company-panel--fabrica .db2-company-link:hover { color: var(--fabrica-accent-text); }
+.db-compare-col--boutique .db-panel-link:hover { color: var(--boutique-accent-text); }
+.db-compare-col--fabrica .db-panel-link:hover { color: var(--fabrica-accent-text); }
 
-.db2-company-kpis {
+.db-compare-kpis {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
   gap: 1.1rem 1.5rem;
+  align-content: start;
 }
 
-.db2-company-kpi { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
-.db2-company-kpi[data-bs-toggle] { cursor: pointer; }
+.db-compare-kpi { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.db-compare-kpi[data-bs-toggle] { cursor: pointer; }
 
-.db2-company-kpi-label {
+.db-compare-kpi-label {
   font-size: 0.66rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -4728,7 +4409,7 @@ body.dark-mode .db-fin-item {
   color: var(--text-tertiary);
 }
 
-.db2-company-kpi-val {
+.db-compare-kpi-val {
   font-size: 1.3rem;
   font-weight: 800;
   color: var(--text-primary);
@@ -4737,15 +4418,15 @@ body.dark-mode .db-fin-item {
   font-variant-numeric: tabular-nums;
 }
 
-.db2-company-kpi-sub {
+.db-compare-kpi-sub {
   font-size: 0.71rem;
   color: var(--text-disabled);
   font-weight: 500;
 }
 
 @media (max-width: 479.98px) {
-  .db2-company-panel { padding: 1.1rem 1.15rem 1.25rem; }
-  .db2-company-kpi-val { font-size: 1.15rem; }
+  .db-compare-col { padding: 1rem 1.15rem 1.25rem; }
+  .db-compare-kpi-val { font-size: 1.15rem; }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
