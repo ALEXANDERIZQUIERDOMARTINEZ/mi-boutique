@@ -3771,7 +3771,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nombreLegal: 'Andrea Mishell Espitia Solano',
             cedula: '1193211056',
             direccion: 'Mz 35 Lote 14',
-            telefono: '3046084971'
+            telefono: '3017850041'
         };
 
         function formatearNumeroFactura(numero) {

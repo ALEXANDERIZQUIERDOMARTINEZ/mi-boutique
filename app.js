@@ -3281,7 +3281,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (observaciones) waMsg += `\n\n📝 ${observaciones}`;
 
-            const waUrl = `https://wa.me/573046084971?text=${encodeURIComponent(waMsg)}`;
+            const waUrl = `https://wa.me/573017850041?text=${encodeURIComponent(waMsg)}`;
             if (_waWindow) {
                 _waWindow.location.href = waUrl;
             } else {

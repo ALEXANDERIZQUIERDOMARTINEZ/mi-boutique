@@ -22,7 +22,7 @@ const categoriesCollection = collection(db, 'categorias');
 
 const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const formatoFechaEntrega = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long' });
-const WHATSAPP_NUMBER = '573046084971';
+const WHATSAPP_NUMBER = '573017850041';
 const MIN_POR_PRENDA = 6;
 const DIAS_ENTREGA = 8;
 const PRODUCTS_PER_PAGE = 30;
