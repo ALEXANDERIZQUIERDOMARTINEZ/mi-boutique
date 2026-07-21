@@ -8849,8 +8849,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     const fmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
     let idPendienteEliminar = null;
-    let ultimoRango = { desde: null, hasta: null, label: 'Todo el historial' };
+    let ultimoRango = { desde: null, hasta: null, label: 'Desde junio' };
     let lineChartInstance = null;
+
+    // Inicio real de operaciones de Fábrica: los datos anteriores a esta fecha
+    // eran pruebas y no deben mezclarse en la tabla ni en la gráfica.
+    const INICIO_FABRICA = new Date(2026, 5, 1, 0, 0, 0, 0);
 
     function fechaDeMovimiento(m) {
         return m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : new Date(0));
@@ -9161,7 +9165,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 return { desde, hasta: hoyFin, label: 'Este mes' };
             }
             default: // 'todo'
-                return { desde: null, hasta: null, label: 'Todo el historial' };
+                return { desde: INICIO_FABRICA, hasta: hoyFin, label: 'Desde junio' };
         }
     }
 
@@ -9329,13 +9333,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     function cargarFabricaSiCorresponde() {
         if ((window.location.hash || '') !== '#fabrica') return;
         fabricaYaCargada = true;
-        calcularFabrica(null, null, 'Todo el historial');
+        const { desde, hasta, label } = getDateRange('todo');
+        calcularFabrica(desde, hasta, label);
     }
 
     const tabLink = document.querySelector('a[href="#fabrica"]');
     if (tabLink) {
         tabLink.addEventListener('click', () => {
-            calcularFabrica(null, null, 'Todo el historial');
+            const { desde, hasta, label } = getDateRange('todo');
+            calcularFabrica(desde, hasta, label);
         });
     }
     window.addEventListener('hashchange', cargarFabricaSiCorresponde);
