@@ -1326,47 +1326,42 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   DASHBOARD METRICS — resumen operativo (4 tarjetas iguales)
+   RESUMEN OPERATIVO — una sola franja (.db-panel) con 4 columnas separadas
+   por divisores, en vez de 4 tarjetas flotantes independientes.
    ───────────────────────────────────────────────────────────────────────── */
-.db2-metrics {
+.db-stat-strip {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
 }
 @media (min-width: 768px) {
-  .db2-metrics { grid-template-columns: repeat(4, 1fr); }
+  .db-stat-strip { grid-template-columns: repeat(4, 1fr); }
 }
 
-.db2-met {
+.db-stat {
   padding: 1.25rem;
-  border-radius: var(--radius-xl);
-  background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
-  transition: all var(--duration-base) var(--ease-out);
-  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: flex-start;
   gap: 0.9rem;
   position: relative;
-  overflow: hidden;
+  border-bottom: 1px solid var(--border-subtle);
 }
-.db2-met::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--brand-500);
-  opacity: 0;
-  transition: opacity var(--duration-base) ease;
+@media (min-width: 768px) {
+  .db-stat {
+    border-bottom: none;
+    border-right: 1px solid var(--border-subtle);
+  }
+  .db-stat:last-child { border-right: none; }
 }
-.db2-met--clickable { cursor: pointer; }
-.db2-met:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+.db-stat:nth-child(2n) { border-right: none; }
+@media (min-width: 768px) {
+  .db-stat:nth-child(2n) { border-right: 1px solid var(--border-subtle); }
+  .db-stat:last-child { border-right: none; }
 }
-.db2-met:hover::after { opacity: 0.7; }
 
-.db2-met-icon {
+.db-stat--clickable { cursor: pointer; transition: background var(--duration-fast) ease; }
+.db-stat--clickable:hover { background: rgba(0,0,0,0.015); }
+
+.db-stat-icon {
   width: 42px;
   height: 42px;
   border-radius: var(--radius-md);
@@ -1376,18 +1371,18 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   font-size: 1.1rem;
   flex-shrink: 0;
 }
-.db2-met-body { flex: 1; min-width: 0; }
+.db-stat-body { flex: 1; min-width: 0; }
 
-.db2-met-val {
-  font-size: 2rem;
+.db-stat-val {
+  font-size: 1.7rem;
   font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: -1.2px;
+  letter-spacing: -1px;
   line-height: 1;
   margin-bottom: 0.4rem;
 }
 
-.db2-met-name {
+.db-stat-name {
   font-size: 0.63rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -1396,13 +1391,13 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   margin-bottom: 0.2rem;
 }
 
-.db2-met-sub {
+.db-stat-sub {
   font-size: 0.71rem;
   color: var(--text-disabled);
   font-weight: 500;
 }
 
-.db2-met-chevron {
+.db-stat-chevron {
   align-self: center;
   color: var(--text-tertiary);
   font-size: 0.75rem;
@@ -3809,13 +3804,13 @@ body.dark-mode .card-header.bg-white {
 
 /* Dashboard elements dark */
 body.dark-mode .db-panel,
-body.dark-mode .db2-met {
+body.dark-mode .db-stat {
   background: var(--surface-raised);
   border-color: var(--border-subtle);
 }
 body.dark-mode .db-title { color: var(--text-primary); }
 body.dark-mode .db-date { color: var(--text-tertiary); }
-body.dark-mode .db2-met-val,
+body.dark-mode .db-stat-val,
 body.dark-mode .db2-quick-val,
 body.dark-mode .db-compare-kpi-val { color: var(--text-primary); }
 body.dark-mode .db2-time-range,
@@ -3970,17 +3965,15 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
   }
 
   /* Sin hover transform en touch */
-  .db2-met:hover,
+  .db-stat:hover,
   .db-panel:hover,
   .card:hover,
   .tbl-wrap:hover {
     transform: none !important;
     box-shadow: var(--shadow-sm) !important;
   }
-  .db2-met::after { display: none; }
-
   /* Métricas: 2 columnas en móvil */
-  .db2-metrics { grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
+  .db-stat-strip { grid-template-columns: repeat(2, 1fr); }
 
   /* Accesos rápidos: cabecera y botón apilados */
   .db-quick-panel .db-panel-head {
@@ -4024,7 +4017,7 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
   .admin-main h1,
   .admin-main .h2 { font-size: 1.2rem; }
   .db-title { font-size: 1.15rem; }
-  .db2-met-val { font-size: 1.35rem; }
+  .db-stat-val { font-size: 1.35rem; }
 
   /* Botones de acción en tablas */
   .action-buttons button { padding: 4px 8px !important; font-size: 0.75rem; }
@@ -4036,35 +4029,35 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
 /* Sólo móvil pequeño */
 @media (max-width: 480px) {
   .admin-main { padding: 0.875rem 0.75rem 2rem; }
-  .db2-metrics { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-  .db2-met { padding: 0.875rem 0.75rem; }
-  .db2-met-icon { width: 36px; height: 36px; font-size: 0.95rem; }
-  .db2-met-val { font-size: 1.2rem; }
+  .db-stat-strip { grid-template-columns: 1fr 1fr; }
+  .db-stat { padding: 0.875rem 0.75rem; }
+  .db-stat-icon { width: 36px; height: 36px; font-size: 0.95rem; }
+  .db-stat-val { font-size: 1.2rem; }
   .db-panel { border-radius: var(--radius-lg); }
 }
 
 /* Tablet mediana */
 @media (min-width: 576px) and (max-width: 991.98px) {
   .admin-main { padding: 1.25rem 1.25rem 2rem; }
-  .db2-metrics { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+  .db-stat-strip { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* Desktop */
 @media (min-width: 992px) {
   .admin-main { padding-top: 1.75rem; }
-  .db2-metrics { grid-template-columns: repeat(4, 1fr); }
+  .db-stat-strip { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* Dispositivos sin hover (touch) — eliminar todos los transforms */
 @media (hover: none) {
-  .db2-met,
+  .db-stat,
   .db-panel,
   .rail-link,
   .btn-primary,
   .btn-secondary,
   .btn-danger { transition: none !important; }
 
-  .db2-met:active { background: var(--surface-raised); }
+  .db-stat:active { background: var(--surface-raised); }
   .db2-quick-item:active { background: rgba(217,136,185,0.08); }
 }
 
@@ -4348,8 +4341,49 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
 /* El botón de cámara usa la clase .sv-btn-camera definida en style.css */
 
 /* ─────────────────────────────────────────────────────────────────────────
-   COMPARATIVO POR EMPRESA — Boutique vs Fábrica en un solo .db-panel
+   COMPARATIVO POR EMPRESA — dona de reparto + franja de KPIs
    ───────────────────────────────────────────────────────────────────────── */
+.db-compare-split {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.db-compare-split-chart {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+}
+
+.db-compare-split-legend {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.db-compare-split-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.db-compare-split-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+@media (max-width: 479.98px) {
+  .db-compare-split { padding: 1rem 1.15rem; gap: 1rem; }
+  .db-compare-split-chart { width: 52px; height: 52px; }
+}
+
 .db-compare-grid {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -4430,174 +4464,18 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   TABLAS MÓVIL-FIRST DEL DASHBOARD
+   GRÁFICAS DEL DASHBOARD — Chart.js (tendencia + top productos)
    ───────────────────────────────────────────────────────────────────────── */
+.db-chart-canvas-wrap {
+  position: relative;
+  height: 280px;
+  padding: 1rem 1.25rem 1.25rem;
+}
+.db-chart-canvas-wrap--tall { height: 460px; }
 
-/* ── Tendencia de ventas – lista ── */
-.db-trend-list { padding: 0.25rem 0; }
-
-.db-trend-row {
-  display: grid;
-  grid-template-columns: 76px 1fr 88px;
-  align-items: center;
-  gap: 0.65rem;
-  padding: 0.55rem 1.25rem;
-  border-bottom: 1px solid var(--border-subtle);
-  transition: background var(--duration-fast);
-}
-.db-trend-row:last-child { border-bottom: none; }
-.db-trend-row:hover { background: rgba(0,0,0,0.02); }
-
-.db-trend-row--today {
-  background: rgba(99,102,241,0.05);
-}
-.db-trend-row--today .db-trend-label { font-weight: 700; color: var(--text-primary); }
-.db-trend-row--today .db-trend-val   { font-weight: 700; color: #6366f1; }
-
-.db-trend-label {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.db-trend-bar-wrap {
-  height: 8px;
-  background: rgba(0,0,0,0.06);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-
-.db-trend-bar {
-  height: 100%;
-  display: flex;
-  border-radius: var(--radius-full);
-  transition: width 0.7s var(--ease-out);
-  min-width: 2px;
-  overflow: hidden;
-}
-
-.db-trend-bar-seg {
-  height: 100%;
-  transition: flex-grow 0.7s var(--ease-out);
-}
-.db-trend-bar-seg--detal {
-  background: linear-gradient(90deg, rgba(99,102,241,0.65), rgba(139,92,246,0.85));
-}
-.db-trend-bar-seg--mayor {
-  background: linear-gradient(90deg, #DB2777, #EC4899);
-}
-.db-trend-row--today .db-trend-bar-seg--detal {
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
-}
-
-.db-trend-legend {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.5rem 1.25rem 0.25rem;
-}
-
-.db-trend-val {
-  font-size: 0.79rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  text-align: right;
-  white-space: nowrap;
-}
-
-/* ── Top productos – lista ── */
-.db-top-list { padding: 0.25rem 0; }
-
-.db-top-row {
-  display: grid;
-  grid-template-columns: 30px 1fr 42px;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 1.25rem;
-  border-bottom: 1px solid var(--border-subtle);
-  transition: background var(--duration-fast);
-}
-.db-top-row:last-child { border-bottom: none; }
-.db-top-row:hover { background: rgba(0,0,0,0.02); }
-
-.db-top-rank {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--border-subtle);
-  color: var(--text-secondary);
-  font-size: 0.67rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.db-top-rank--gold   { background: #fef3c7; color: #d97706; }
-.db-top-rank--silver { background: #f1f5f9; color: #64748b; }
-.db-top-rank--bronze { background: #fdf2e9; color: #b45309; }
-
-.db-top-info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.db-top-name {
-  font-size: 0.79rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.db-top-bar-wrap {
-  height: 4px;
-  background: rgba(0,0,0,0.06);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-
-.db-top-bar {
-  height: 100%;
-  display: flex;
-  background: linear-gradient(90deg, rgba(16,185,129,0.7), rgba(5,150,105,0.9));
-  border-radius: var(--radius-full);
-  transition: width 0.7s var(--ease-out);
-  min-width: 2px;
-  overflow: hidden;
-}
-
-.db-top-bar-seg {
-  height: 100%;
-  transition: flex-grow 0.7s var(--ease-out);
-}
-.db-top-bar-seg--detal {
-  background: linear-gradient(90deg, rgba(99,102,241,0.65), rgba(139,92,246,0.85));
-}
-.db-top-bar-seg--mayor {
-  background: linear-gradient(90deg, #DB2777, #EC4899);
-}
-
-.db-top-units {
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-align: right;
-  white-space: nowrap;
-}
-
-/* ── Dark mode ── */
-body.dark-mode .db-trend-bar-wrap,
-body.dark-mode .db-top-bar-wrap {
-  background: rgba(255,255,255,0.08);
-}
-body.dark-mode .db-trend-row--today {
-  background: rgba(99,102,241,0.1);
+@media (max-width: 767.98px) {
+  .db-chart-canvas-wrap { height: 240px; }
+  .db-chart-canvas-wrap--tall { height: 420px; }
 }
 
 /* ── Actividad reciente (feed de últimas ventas) ── */
@@ -4610,10 +4488,6 @@ body.dark-mode .db-trend-row--today {
 .db-activity-feed .activity-item .text-dark {
   color: var(--text-primary) !important;
 }
-body.dark-mode .db-top-rank--gold   { background: rgba(254,243,199,0.12); }
-body.dark-mode .db-top-rank--silver { background: rgba(241,245,249,0.08); }
-body.dark-mode .db-top-rank--bronze { background: rgba(253,242,233,0.08); }
-
 /* ─── iOS/Safari: normalizar estilo nativo de inputs de fecha ─── */
 input[type="date"],
 input[type="time"],

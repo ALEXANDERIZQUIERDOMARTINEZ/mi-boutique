@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="style.css?v=1.8.4">
-    <link rel="stylesheet" href="admin-styles.css?v=2.4.2">
+    <link rel="stylesheet" href="admin-styles.css?v=2.5.0">
 
     <!-- Logo/Icon -->
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -67,7 +67,7 @@
                 </a>
             </div>
 
-            <!-- Ventas -->
+            <!-- Ventas y clientes: todo lo que usa el mostrador día a día -->
             <div class="rail-group">
                 <span class="rail-group-label">Ventas</span>
                 <a class="rail-link" href="#ventas" data-tooltip="Registrar Venta" data-permiso="ventas_crear">
@@ -79,6 +79,12 @@
                 </a>
                 <a class="rail-link" href="#apartados" data-tooltip="Apartados" data-permiso="apartados_ver">
                     <i class="bi bi-bookmark-star"></i><span>Apartados</span>
+                </a>
+                <a class="rail-link" href="#clientes" data-tooltip="Clientes" data-permiso="clientes_ver">
+                    <i class="bi bi-people"></i><span>Clientes</span>
+                </a>
+                <a class="rail-link" href="#promociones" data-tooltip="Promociones" data-permiso="promociones_gestionar">
+                    <i class="bi bi-megaphone"></i><span>Promociones</span>
                 </a>
             </div>
 
@@ -96,13 +102,6 @@
                 </a>
             </div>
 
-            <!-- Clientes -->
-            <div class="rail-group">
-                <a class="rail-link" href="#clientes" data-tooltip="Clientes" data-permiso="clientes_ver">
-                    <i class="bi bi-people"></i><span>Clientes</span>
-                </a>
-            </div>
-
             <!-- Logística -->
             <div class="rail-group">
                 <span class="rail-group-label">Logística</span>
@@ -112,41 +111,28 @@
                 <a class="rail-link" href="#config-domicilio" data-tooltip="Tarifas Domicilio" data-permiso="repartidores_gestionar">
                     <i class="bi bi-geo-alt"></i><span>Tarifas Domicilio</span>
                 </a>
-                <a class="rail-link" href="#promociones" data-tooltip="Promociones" data-permiso="promociones_gestionar">
-                    <i class="bi bi-megaphone"></i><span>Promociones</span>
-                </a>
             </div>
 
-            <!-- Finanzas -->
+            <!-- Finanzas: las dos empresas juntas, ya no separadas en dos grupos -->
             <div class="rail-group">
                 <span class="rail-group-label">Finanzas</span>
                 <a class="rail-link" href="#finanzas" data-tooltip="Mishelles Boutique" data-permiso="finanzas_ver">
                     <i class="bi bi-graph-up-arrow"></i><span>Mishelles Boutique</span>
+                </a>
+                <a class="rail-link" href="#fabrica" data-tooltip="Mishelles Fábrica" data-permiso="fabrica_gestionar">
+                    <i class="bi bi-buildings"></i><span>Mishelles Fábrica</span>
                 </a>
                 <a class="rail-link" href="#proveedores" data-tooltip="Proveedores" data-permiso="proveedores_gestionar">
                     <i class="bi bi-building"></i><span>Proveedores</span>
                 </a>
             </div>
 
-            <!-- Fábrica (segmento propio de Mishelles Fábrica) -->
+            <!-- Configuración: cuenta, sistema y accesos -->
             <div class="rail-group">
-                <span class="rail-group-label">Fábrica</span>
-                <a class="rail-link" href="#fabrica" data-tooltip="Mishelles Fábrica" data-permiso="fabrica_gestionar">
-                    <i class="bi bi-buildings"></i><span>Mishelles Fábrica</span>
-                </a>
-            </div>
-
-            <!-- Sistema -->
-            <div class="rail-group">
-                <span class="rail-group-label">Sistema</span>
+                <span class="rail-group-label">Configuración</span>
                 <a class="rail-link" href="#usuarios" data-tooltip="Usuarios" data-permiso="usuarios_ver">
                     <i class="bi bi-person-badge"></i><span>Usuarios</span>
                 </a>
-            </div>
-
-            <!-- Config / Accesos -->
-            <div class="rail-group">
-                <span class="rail-group-label">Config</span>
                 <a class="rail-link" href="#config-pagos" data-tooltip="Config. Pagos" data-permiso="config_gestionar">
                     <i class="bi bi-qr-code"></i><span>Config. Pagos</span>
                 </a>
@@ -278,43 +264,43 @@
                     </div>
                 </div>
 
-                <!-- RESUMEN OPERATIVO -->
+                <!-- RESUMEN OPERATIVO: una sola franja con divisores, no 4 tarjetas sueltas -->
                 <section class="db-section">
-                    <div class="db2-metrics">
-                        <div class="db2-met">
-                            <div class="db2-met-icon fin2-skpi-icon--blue"><i class="bi bi-boxes"></i></div>
-                            <div class="db2-met-body">
-                                <div class="db2-met-val" id="db-total-productos">0</div>
-                                <div class="db2-met-name">Productos</div>
-                                <div class="db2-met-sub" id="db-productos-disponibles">0 disponibles</div>
+                    <div class="db-panel db-stat-strip">
+                        <div class="db-stat">
+                            <div class="db-stat-icon fin2-skpi-icon--blue"><i class="bi bi-boxes"></i></div>
+                            <div class="db-stat-body">
+                                <div class="db-stat-val" id="db-total-productos">0</div>
+                                <div class="db-stat-name">Productos</div>
+                                <div class="db-stat-sub" id="db-productos-disponibles">0 disponibles</div>
                             </div>
                         </div>
-                        <div class="db2-met db2-met--clickable" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
-                            <div class="db2-met-icon fin2-skpi-icon--amber"><i class="bi bi-exclamation-triangle-fill"></i></div>
-                            <div class="db2-met-body">
-                                <div class="db2-met-val" id="db-bajo-stock">0</div>
-                                <div class="db2-met-name">Bajo stock</div>
-                                <div class="db2-met-sub">2 unidades o menos</div>
+                        <div class="db-stat db-stat--clickable" data-bs-toggle="modal" data-bs-target="#bajoStockModal">
+                            <div class="db-stat-icon fin2-skpi-icon--amber"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                            <div class="db-stat-body">
+                                <div class="db-stat-val" id="db-bajo-stock">0</div>
+                                <div class="db-stat-name">Bajo stock</div>
+                                <div class="db-stat-sub">2 unidades o menos</div>
                             </div>
-                            <i class="bi bi-chevron-right db2-met-chevron"></i>
+                            <i class="bi bi-chevron-right db-stat-chevron"></i>
                         </div>
-                        <div class="db2-met db2-met--clickable" onclick="document.querySelector('a[href=\'#apartados\']').click()">
-                            <div class="db2-met-icon fin2-skpi-icon--purple"><i class="bi bi-bookmark-check-fill"></i></div>
-                            <div class="db2-met-body">
-                                <div class="db2-met-val" id="db-apartados-vencer">0</div>
-                                <div class="db2-met-name">Apartados</div>
-                                <div class="db2-met-sub" id="db-apartados-total-saldo">$0 pendiente</div>
+                        <div class="db-stat db-stat--clickable" onclick="document.querySelector('a[href=\'#apartados\']').click()">
+                            <div class="db-stat-icon fin2-skpi-icon--purple"><i class="bi bi-bookmark-check-fill"></i></div>
+                            <div class="db-stat-body">
+                                <div class="db-stat-val" id="db-apartados-vencer">0</div>
+                                <div class="db-stat-name">Apartados</div>
+                                <div class="db-stat-sub" id="db-apartados-total-saldo">$0 pendiente</div>
                             </div>
-                            <i class="bi bi-chevron-right db2-met-chevron"></i>
+                            <i class="bi bi-chevron-right db-stat-chevron"></i>
                         </div>
-                        <div class="db2-met db2-met--clickable" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
-                            <div class="db2-met-icon fin2-skpi-icon--slate"><i class="bi bi-box-seam-fill"></i></div>
-                            <div class="db2-met-body">
-                                <div class="db2-met-val" id="db-inversion-inventario">$0</div>
-                                <div class="db2-met-name">Inversión inventario</div>
-                                <div class="db2-met-sub" id="db-inventario-unidades">0 unidades</div>
+                        <div class="db-stat db-stat--clickable" data-bs-toggle="modal" data-bs-target="#inversionInventarioModal">
+                            <div class="db-stat-icon fin2-skpi-icon--slate"><i class="bi bi-box-seam-fill"></i></div>
+                            <div class="db-stat-body">
+                                <div class="db-stat-val" id="db-inversion-inventario">$0</div>
+                                <div class="db-stat-name">Inversión inventario</div>
+                                <div class="db-stat-sub" id="db-inventario-unidades">0 unidades</div>
                             </div>
-                            <i class="bi bi-chevron-right db2-met-chevron"></i>
+                            <i class="bi bi-chevron-right db-stat-chevron"></i>
                         </div>
                     </div>
                 </section>
@@ -324,6 +310,15 @@
                     <div class="db-panel db-compare">
                         <div class="db-panel-head">
                             <span class="db-panel-title">Comparativo por empresa</span>
+                        </div>
+                        <div class="db-compare-split">
+                            <div class="db-compare-split-chart">
+                                <canvas id="db-compare-chart"></canvas>
+                            </div>
+                            <div class="db-compare-split-legend">
+                                <span class="db-compare-split-item"><span class="db-compare-split-dot" style="background:#D988B9;"></span>Boutique</span>
+                                <span class="db-compare-split-item"><span class="db-compare-split-dot" style="background:#2a78d6;"></span>Fábrica</span>
+                            </div>
                         </div>
                         <div class="db-compare-grid">
                             <div class="db-compare-col db-compare-col--boutique">
@@ -424,8 +419,8 @@
                                         <label class="db-period-tab" for="mt-6months">6m</label>
                                     </div>
                                 </div>
-                                <div id="db-trend-table">
-                                    <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
+                                <div class="db-chart-canvas-wrap">
+                                    <canvas id="db-trend-chart"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -443,8 +438,8 @@
                                     </div>
                                 </div>
                                 <small class="text-muted d-block" style="font-size:0.72rem;padding:0.5rem 1.25rem 0;">Últimos 30 días</small>
-                                <div id="db-top-table" style="max-height:400px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
-                                    <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
+                                <div class="db-chart-canvas-wrap db-chart-canvas-wrap--tall">
+                                    <canvas id="db-top-chart"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -3355,7 +3350,7 @@
         });
     </script>
 
-    <script type="module" src="admin.js?v=3.3.7"></script>
+    <script type="module" src="admin.js?v=3.4.0"></script>
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
 
     <!-- Script para generar catálogo en PDF -->
