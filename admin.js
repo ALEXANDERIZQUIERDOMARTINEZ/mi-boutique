@@ -6701,6 +6701,48 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // 1️⃣ VENTAS DEL PERÍODO (Hoy / Semana / Mes / Año)
     // ================================================================
     let unsubscribeVentasRango = null;
+    let compareChart = null;
+
+    // Dona Boutique vs Fábrica dentro de la tarjeta "Comparativo por empresa"
+    function actualizarGraficoComparativo(ventasDetal, ventasMayor) {
+        const canvas = document.getElementById('db-compare-chart');
+        if (!canvas || typeof Chart === 'undefined') return;
+
+        const data = (ventasDetal + ventasMayor) > 0 ? [ventasDetal, ventasMayor] : [1, 1];
+
+        if (compareChart) {
+            compareChart.data.datasets[0].data = data;
+            compareChart.update();
+            return;
+        }
+
+        compareChart = new Chart(canvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Boutique', 'Fábrica'],
+                datasets: [{
+                    data,
+                    backgroundColor: ['#D988B9', '#2a78d6'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                animation: { duration: 400 },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.label}: ${formatoMoneda.format(ctx.parsed)}`
+                        }
+                    }
+                }
+            }
+        });
+    }
 
     function obtenerRangoFechas(rango) {
         const inicio = new Date();
@@ -6891,6 +6933,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const dbFabricaUtilidadEl = document.getElementById('db-fabrica-utilidad');
                     if (dbFabricaUtilidadEl) dbFabricaUtilidadEl.textContent = formatoMoneda.format(utilidadFabrica);
 
+                    // Dona del comparativo: reparto de ventas Boutique (detal) vs Fábrica (mayorista)
+                    actualizarGraficoComparativo(totalDineroRecibido, totalMayorista);
+
                     console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas) | Ganancia Boutique: ${formatoMoneda.format(gananciaBoutique)} | Utilidad Fábrica: ${formatoMoneda.format(utilidadFabrica)}`);
                 },
                 (error) => {
@@ -6912,77 +6957,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ================================================================
     window.productosBajoStock = []; // Variable global para el modal
 
-    function calcularBajoStock() {
-        console.log("📦 Calculando productos con bajo stock...");
 
-        try {
-            const STOCK_MINIMO = 2; // Productos con 2 prendas o menos
-
-            // Query simple: solo productos visibles
-            const q = query(
-                productsCollection,
-                where('visible', '==', true)
-            );
-
-            // Escuchar cambios en tiempo real
-            onSnapshot(q,
-                (snapshot) => {
-                    window.productosBajoStock = []; // Limpiar lista
-
-                    snapshot.forEach(doc => {
-                        const producto = doc.data();
-                        const productoId = doc.id;
-                        const variaciones = producto.variaciones || [];
-
-                        // Calcular stock TOTAL del producto (suma de todas las variaciones)
-                        const stockTotal = variaciones.reduce((total, variacion) => {
-                            return total + (parseInt(variacion.stock, 10) || 0);
-                        }, 0);
-
-                        // Si el stock TOTAL del producto es <= 2
-                        if (stockTotal > 0 && stockTotal <= STOCK_MINIMO) {
-                            // Guardar el producto UNA VEZ con todas sus variaciones
-                            window.productosBajoStock.push({
-                                id: productoId,
-                                nombre: producto.nombre,
-                                stockTotal: stockTotal,
-                                variaciones: variaciones.map(v => ({
-                                    talla: v.talla || 'N/A',
-                                    color: v.color || 'N/A',
-                                    stock: parseInt(v.stock, 10) || 0
-                                })),
-                                categoriaId: producto.categoriaId
-                            });
-                        }
-                    });
-
-                    // Actualizar UI - muestra cantidad de PRODUCTOS únicos
-                    const count = window.productosBajoStock.length;
-                    dbBajoStockEl.textContent = count;
-                    dbBajoStockEl.classList.remove('text-warning', 'text-success');
-
-                    if (count > 0) {
-                        dbBajoStockEl.classList.add('text-warning');
-                    } else {
-                        dbBajoStockEl.classList.add('text-success');
-                    }
-
-                    console.log(`✅ Productos con bajo stock: ${count}`);
-                },
-                (error) => {
-                    console.error("❌ Error al calcular bajo stock:", error);
-                    dbBajoStockEl.textContent = "Error";
-                    dbBajoStockEl.classList.add('text-danger');
-                }
-            );
-
-        } catch (error) {
-            console.error("❌ Error fatal al configurar bajo stock:", error);
-            dbBajoStockEl.textContent = "Error";
-            dbBajoStockEl.classList.add('text-danger');
-        }
-    }
-    
     // ================================================================
     // 3️⃣ APARTADOS ACTIVOS
     // ================================================================
@@ -7100,42 +7075,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 bajoStockList.appendChild(tr);
             });
         });
-    }
-
-    // ================================================================
-    // 4️⃣ PRODUCTOS TOTALES Y DISPONIBLES
-    // ================================================================
-    function calcularProductosTotales() {
-        console.log("📦 Calculando productos totales...");
-
-        try {
-            onSnapshot(productsCollection, (snapshot) => {
-                const totalProductos = snapshot.size;
-                let productosDisponibles = 0;
-
-                snapshot.forEach(doc => {
-                    const producto = doc.data();
-                    if (producto.visible) {
-                        productosDisponibles++;
-                    }
-                });
-
-                const dbTotalProductosEl = document.getElementById('db-total-productos');
-                const dbProductosDisponiblesEl = document.getElementById('db-productos-disponibles');
-
-                if (dbTotalProductosEl) {
-                    dbTotalProductosEl.textContent = totalProductos;
-                }
-
-                if (dbProductosDisponiblesEl) {
-                    dbProductosDisponiblesEl.textContent = `${productosDisponibles} disponibles`;
-                }
-
-                console.log(`✅ Productos totales: ${totalProductos}, Disponibles: ${productosDisponibles}`);
-            });
-        } catch (error) {
-            console.error("❌ Error al calcular productos:", error);
-        }
     }
 
     // ================================================================
@@ -7429,80 +7368,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ================================================================
-    // 🔟 INVERSIÓN Y UTILIDAD EN INVENTARIO
-    // ================================================================
-    function calcularInversionInventario() {
-        console.log("💎 Calculando inversión y utilidad en inventario...");
-
-        try {
-            onSnapshot(productsCollection, (snapshot) => {
-                let inversionTotal = 0;
-                let valorPotencialDetal = 0;
-                let valorPotencialMayor = 0;
-                let totalUnidades = 0;
-
-                snapshot.forEach(doc => {
-                    const producto = doc.data();
-                    const costoCompra = parseFloat(producto.costoCompra) || 0;
-                    const precioDetal = parseFloat(producto.precioDetal) || 0;
-                    const precioMayor = parseFloat(producto.precioMayor) || 0;
-
-                    // Calcular stock total del producto
-                    const variaciones = producto.variaciones || [];
-                    const stockTotal = variaciones.reduce((sum, v) => {
-                        return sum + (parseInt(v.stock, 10) || 0);
-                    }, 0);
-
-                    // Calcular inversión y valores potenciales
-                    inversionTotal += costoCompra * stockTotal;
-                    valorPotencialDetal += precioDetal * stockTotal;
-                    valorPotencialMayor += precioMayor * stockTotal;
-                    totalUnidades += stockTotal;
-                });
-
-                // Calcular utilidad potencial (usando precio detal)
-                const utilidadPotencial = valorPotencialDetal - inversionTotal;
-                const margenUtilidad = inversionTotal > 0
-                    ? ((utilidadPotencial / inversionTotal) * 100)
-                    : 0;
-
-                // Actualizar UI - Inversión Total
-                const dbInversionEl = document.getElementById('db-inversion-inventario');
-                if (dbInversionEl) {
-                    dbInversionEl.textContent = formatoMoneda.format(inversionTotal);
-                }
-
-                const dbUnidadesEl = document.getElementById('db-inventario-unidades');
-                if (dbUnidadesEl) {
-                    dbUnidadesEl.textContent = `${totalUnidades} unidades`;
-                }
-
-                // Actualizar UI - Utilidad Potencial
-                const dbUtilidadPotencialEl = document.getElementById('db-utilidad-potencial');
-                if (dbUtilidadPotencialEl) {
-                    dbUtilidadPotencialEl.textContent = formatoMoneda.format(utilidadPotencial);
-                }
-
-                const dbMargenEl = document.getElementById('db-margen-utilidad');
-                if (dbMargenEl) {
-                    dbMargenEl.innerHTML = `
-                        <i class="bi bi-percent"></i> ${margenUtilidad.toFixed(1)}% de margen
-                    `;
-                }
-
-                console.log(`✅ Inversión en inventario calculada:
-                    - Inversión Total: ${formatoMoneda.format(inversionTotal)}
-                    - Valor Potencial Detal: ${formatoMoneda.format(valorPotencialDetal)}
-                    - Utilidad Potencial: ${formatoMoneda.format(utilidadPotencial)}
-                    - Margen: ${margenUtilidad.toFixed(1)}%
-                    - Unidades: ${totalUnidades}`);
-            });
-        } catch (error) {
-            console.error("❌ Error al calcular inversión en inventario:", error);
-        }
-    }
-
-    // ================================================================
     // 💡 POBLAR MODALES DE DETALLE
     // ================================================================
 
@@ -7610,56 +7475,83 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         utilidadModal.addEventListener('show.bs.modal', poblarModalUtilidad);
     }
 
-    // Modificar calcularInversionInventario para almacenar datos globalmente
-    const calcularInversionInventarioOriginal = calcularInversionInventario;
-    calcularInversionInventario = function() {
-        console.log("💎 Calculando inversión y utilidad en inventario...");
+    // ================================================================
+    // 🔟 LISTENER ÚNICO DE PRODUCTOS
+    // Un solo onSnapshot sobre productsCollection alimenta: totales y
+    // disponibles, bajo stock, e inversión/utilidad potencial. Antes eran
+    // 3 listeners independientes recorriendo la misma colección completa
+    // en cada cambio — esto es lo que hacía lenta la carga del dashboard.
+    // ================================================================
+    const STOCK_MINIMO_DASHBOARD = 2; // Productos con 2 prendas o menos
+
+    function iniciarListenerProductos() {
+        console.log("📦 Iniciando listener único de productos (totales, bajo stock, inversión)...");
 
         try {
             onSnapshot(productsCollection, (snapshot) => {
+                let totalProductos = 0;
+                let productosDisponibles = 0;
                 let inversionTotal = 0;
                 let valorPotencialDetal = 0;
                 let valorPotencialMayor = 0;
                 let totalUnidades = 0;
-                let productos = [];
+                const productos = [];
+                window.productosBajoStock = [];
 
                 snapshot.forEach(doc => {
                     const producto = doc.data();
+                    const productoId = doc.id;
+                    totalProductos++;
+                    if (producto.visible) productosDisponibles++;
+
                     const costoCompra = parseFloat(producto.costoCompra) || 0;
                     const precioDetal = parseFloat(producto.precioDetal) || 0;
                     const precioMayor = parseFloat(producto.precioMayor) || 0;
 
-                    // Calcular stock total del producto
                     const variaciones = producto.variaciones || [];
-                    const stockTotal = variaciones.reduce((sum, v) => {
-                        return sum + (parseInt(v.stock, 10) || 0);
-                    }, 0);
+                    const stockTotal = variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
 
-                    // Calcular inversión y valores potenciales
                     inversionTotal += costoCompra * stockTotal;
                     valorPotencialDetal += precioDetal * stockTotal;
                     valorPotencialMayor += precioMayor * stockTotal;
                     totalUnidades += stockTotal;
 
-                    // Guardar datos del producto
                     if (stockTotal > 0) {
-                        productos.push({
-                            nombre: producto.nombre || 'Sin nombre',
-                            costoCompra,
-                            precioDetal,
-                            precioMayor,
-                            stock: stockTotal
+                        productos.push({ nombre: producto.nombre || 'Sin nombre', costoCompra, precioDetal, precioMayor, stock: stockTotal });
+                    }
+
+                    // Bajo stock: mismo criterio que antes (visible, stock entre 1 y 2)
+                    if (producto.visible && stockTotal > 0 && stockTotal <= STOCK_MINIMO_DASHBOARD) {
+                        window.productosBajoStock.push({
+                            id: productoId,
+                            nombre: producto.nombre,
+                            stockTotal,
+                            variaciones: variaciones.map(v => ({
+                                talla: v.talla || 'N/A',
+                                color: v.color || 'N/A',
+                                stock: parseInt(v.stock, 10) || 0
+                            })),
+                            categoriaId: producto.categoriaId
                         });
                     }
                 });
 
-                // Calcular utilidad potencial (usando precio detal)
-                const utilidadPotencial = valorPotencialDetal - inversionTotal;
-                const margenUtilidad = inversionTotal > 0
-                    ? ((utilidadPotencial / inversionTotal) * 100)
-                    : 0;
+                // Productos totales / disponibles
+                const dbTotalProductosEl = document.getElementById('db-total-productos');
+                const dbProductosDisponiblesEl = document.getElementById('db-productos-disponibles');
+                if (dbTotalProductosEl) dbTotalProductosEl.textContent = totalProductos;
+                if (dbProductosDisponiblesEl) dbProductosDisponiblesEl.textContent = `${productosDisponibles} disponibles`;
 
-                // Guardar datos globalmente
+                // Bajo stock
+                const bajoStockCount = window.productosBajoStock.length;
+                dbBajoStockEl.textContent = bajoStockCount;
+                dbBajoStockEl.classList.remove('text-warning', 'text-success');
+                dbBajoStockEl.classList.add(bajoStockCount > 0 ? 'text-warning' : 'text-success');
+
+                // Inversión y utilidad potencial
+                const utilidadPotencial = valorPotencialDetal - inversionTotal;
+                const margenUtilidad = inversionTotal > 0 ? ((utilidadPotencial / inversionTotal) * 100) : 0;
+
                 datosInventarioGlobal = {
                     inversionTotal,
                     valorPotencialDetal,
@@ -7671,41 +7563,30 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     productos
                 };
 
-                // Actualizar UI - Inversión Total
                 const dbInversionEl = document.getElementById('db-inversion-inventario');
-                if (dbInversionEl) {
-                    dbInversionEl.textContent = formatoMoneda.format(inversionTotal);
-                }
+                if (dbInversionEl) dbInversionEl.textContent = formatoMoneda.format(inversionTotal);
 
                 const dbUnidadesEl = document.getElementById('db-inventario-unidades');
-                if (dbUnidadesEl) {
-                    dbUnidadesEl.textContent = `${totalUnidades} unidades`;
-                }
+                if (dbUnidadesEl) dbUnidadesEl.textContent = `${totalUnidades} unidades`;
 
-                // Actualizar UI - Utilidad Potencial
                 const dbUtilidadPotencialEl = document.getElementById('db-utilidad-potencial');
-                if (dbUtilidadPotencialEl) {
-                    dbUtilidadPotencialEl.textContent = formatoMoneda.format(utilidadPotencial);
-                }
+                if (dbUtilidadPotencialEl) dbUtilidadPotencialEl.textContent = formatoMoneda.format(utilidadPotencial);
 
                 const dbMargenEl = document.getElementById('db-margen-utilidad');
                 if (dbMargenEl) {
-                    dbMargenEl.innerHTML = `
-                        <i class="bi bi-percent"></i> ${margenUtilidad.toFixed(1)}% de margen
-                    `;
+                    dbMargenEl.innerHTML = `<i class="bi bi-percent"></i> ${margenUtilidad.toFixed(1)}% de margen`;
                 }
 
-                console.log(`✅ Inversión en inventario calculada:
-                    - Inversión Total: ${formatoMoneda.format(inversionTotal)}
-                    - Valor Potencial Detal: ${formatoMoneda.format(valorPotencialDetal)}
-                    - Utilidad Potencial: ${formatoMoneda.format(utilidadPotencial)}
-                    - Margen: ${margenUtilidad.toFixed(1)}%
-                    - Unidades: ${totalUnidades}`);
+                console.log(`✅ Productos: ${totalProductos} (${productosDisponibles} disponibles) | Bajo stock: ${bajoStockCount} | Inversión: ${formatoMoneda.format(inversionTotal)} | Utilidad potencial: ${formatoMoneda.format(utilidadPotencial)} (${margenUtilidad.toFixed(1)}%)`);
+            }, (error) => {
+                console.error("❌ Error en listener de productos:", error);
+                dbBajoStockEl.textContent = "Error";
+                dbBajoStockEl.classList.add('text-danger');
             });
         } catch (error) {
-            console.error("❌ Error al calcular inversión en inventario:", error);
+            console.error("❌ Error fatal al iniciar listener de productos:", error);
         }
-    };
+    }
 
     // ================================================================
     // 🚀 INICIALIZAR TODAS LAS FUNCIONES
@@ -7718,15 +7599,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             calcularVentasRango(btn.dataset.range);
         });
     });
-    calcularBajoStock();
+    iniciarListenerProductos(); // Totales, bajo stock e inversión en un solo listener
     calcularApartadosVencer();
-    calcularProductosTotales();
     calcularPedidosWeb();
     calcularTotalClientes();
     calcularPromocionesActivas();
     calcularTotalRepartidores();
     calcularMetricasFinancierasMes(); // Nueva función
-    calcularInversionInventario(); // Inversión y utilidad
 
     // Mostrar fecha actual en el dashboard
     const dashboardDateEl = document.getElementById('dashboard-date');
@@ -7749,361 +7628,230 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 // ========================================================================
 
 // ========================================================================
-// 📊 GRÁFICOS PROFESIONALES CON CHART.JS
+// 📊 GRÁFICAS REALES DEL DASHBOARD (Chart.js)
 // ========================================================================
 (() => {
-    console.log("📊 Inicializando gráficos del dashboard...");
+    console.log("📊 Inicializando gráficas del dashboard...");
 
-    // Referencias a los canvas
-    const ventasChartCanvas = document.getElementById('ventasChart');
-    const topProductosChartCanvas = document.getElementById('topProductosChart');
+    let trendChart = null;
+    let topChart = null;
 
-    // Variables para almacenar las instancias de los gráficos
-    let ventasChart = null;
-    let topProductosChart = null;
+    const COLOR_DETAL = 'rgba(217,136,185,0.85)';   // rosa Boutique
+    const COLOR_MAYOR = 'rgba(42,120,214,0.85)';    // azul Fábrica
 
     // ================================================================
-    // GRÁFICO 1: TENDENCIA DE VENTAS (BARRAS)
+    // GRÁFICA 1: TENDENCIA DE VENTAS (barras apiladas Detal/Mayorista)
+    // 7d y 30d agrupan por día; 6m agrupa por mes para no saturar el eje.
     // ================================================================
-    async function crearGraficoVentas(dias = 7) {
-        if (!ventasChartCanvas) {
-            console.warn("Canvas de ventas no encontrado");
-            return;
-        }
+    async function crearGraficoTendencia(dias = 7) {
+        const canvas = document.getElementById('db-trend-chart');
+        if (!canvas || typeof Chart === 'undefined') return;
 
         try {
-            // Destruir gráfico anterior si existe
-            if (ventasChart) {
-                ventasChart.destroy();
-            }
-
-            // Calcular rango de fechas
             const hoy = new Date();
             const fechaInicio = new Date(hoy);
             fechaInicio.setDate(fechaInicio.getDate() - dias + 1);
             fechaInicio.setHours(0, 0, 0, 0);
 
-            // Obtener ventas del período
             const q = query(
                 salesCollection,
                 where('timestamp', '>=', Timestamp.fromDate(fechaInicio)),
                 orderBy('timestamp', 'asc')
             );
-
             const snapshot = await getDocs(q);
 
-            // Agrupar ventas por día
-            const ventasPorDia = {};
+            const agruparPorMes = dias > 30;
+            const claveDe = (fecha) => agruparPorMes
+                ? fecha.toLocaleDateString('es-CO', { month: 'short', year: '2-digit' })
+                : fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+
+            const ventasPorClave = new Map();
             const labels = [];
 
-            // Inicializar todos los días con 0
-            for (let i = 0; i < dias; i++) {
-                const fecha = new Date(fechaInicio);
-                fecha.setDate(fecha.getDate() + i);
-                const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
-                ventasPorDia[key] = 0;
-                labels.push(key);
+            if (agruparPorMes) {
+                const cursor = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), 1);
+                const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+                while (cursor <= fin) {
+                    const key = claveDe(cursor);
+                    ventasPorClave.set(key, { detal: 0, mayorista: 0 });
+                    labels.push(key);
+                    cursor.setMonth(cursor.getMonth() + 1);
+                }
+            } else {
+                for (let i = 0; i < dias; i++) {
+                    const fecha = new Date(fechaInicio);
+                    fecha.setDate(fecha.getDate() + i);
+                    const key = claveDe(fecha);
+                    ventasPorClave.set(key, { detal: 0, mayorista: 0 });
+                    labels.push(key);
+                }
             }
 
-            // Sumar ventas por día
             snapshot.forEach(doc => {
                 const venta = doc.data();
-                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
-                    const fecha = venta.timestamp?.toDate();
-                    if (fecha) {
-                        const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
-                        if (ventasPorDia.hasOwnProperty(key)) {
-                            // ✅ CORRECCIÓN: Sumar solo lo recibido en efectivo/transferencia
-                            // para reflejar correctamente el dinero en caja (apartados incluidos)
-                            const montoRecibido = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
-                            ventasPorDia[key] += montoRecibido;
-                        }
-                    }
-                }
+                if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
+                const fecha = venta.timestamp?.toDate();
+                if (!fecha) return;
+                const key = claveDe(fecha);
+                const bucket = ventasPorClave.get(key);
+                if (!bucket) return;
+                const monto = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                if (venta.tipoVenta === 'mayorista') bucket.mayorista += monto;
+                else bucket.detal += monto;
             });
 
-            const data = labels.map(label => ventasPorDia[label] || 0);
+            const dataDetal = labels.map(l => ventasPorClave.get(l).detal);
+            const dataMayor = labels.map(l => ventasPorClave.get(l).mayorista);
 
-            // Crear gradiente moderno para el gráfico
-            const ctx = ventasChartCanvas.getContext('2d');
-            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.9)');
-            gradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.8)');
-            gradient.addColorStop(1, 'rgba(168, 85, 247, 0.7)');
-
-            ventasChart = new Chart(ctx, {
+            if (trendChart) trendChart.destroy();
+            trendChart = new Chart(canvas.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Ventas ($)',
-                        data: data,
-                        backgroundColor: gradient,
-                        borderColor: 'rgba(99, 102, 241, 1)',
-                        borderWidth: 2,
-                        borderRadius: 10,
-                        borderSkipped: false,
-                        hoverBackgroundColor: 'rgba(99, 102, 241, 1)',
-                        hoverBorderWidth: 3,
-                        hoverBorderColor: 'rgba(79, 70, 229, 1)',
-                    }]
+                    labels,
+                    datasets: [
+                        { label: 'Detal', data: dataDetal, backgroundColor: COLOR_DETAL, borderRadius: 6, borderSkipped: false, stack: 'ventas' },
+                        { label: 'Mayorista', data: dataMayor, backgroundColor: COLOR_MAYOR, borderRadius: 6, borderSkipped: false, stack: 'ventas' }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeInOutQuart'
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
+                    animation: { duration: 400 },
+                    interaction: { intersect: false, mode: 'index' },
                     plugins: {
                         legend: {
-                            display: false
+                            position: 'top',
+                            align: 'end',
+                            labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
                         },
                         tooltip: {
-                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                            padding: 16,
-                            titleFont: { size: 14, weight: 'bold' },
-                            bodyFont: { size: 13 },
-                            borderColor: 'rgba(99, 102, 241, 0.5)',
-                            borderWidth: 1,
-                            cornerRadius: 8,
-                            displayColors: true,
-                            boxPadding: 6,
                             callbacks: {
-                                label: function(context) {
-                                    return 'Ventas: ' + formatoMoneda.format(context.parsed.y);
-                                }
+                                label: (ctx) => `${ctx.dataset.label}: ${formatoMoneda.format(ctx.parsed.y)}`
                             }
                         }
                     },
                     scales: {
+                        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
                         y: {
+                            stacked: true,
                             beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + (value / 1000).toFixed(0) + 'k';
-                                },
-                                font: {
-                                    size: 12,
-                                    weight: '500'
-                                },
-                                color: '#6B7280'
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.04)',
-                                drawBorder: false
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                font: {
-                                    size: 12,
-                                    weight: '500'
-                                },
-                                color: '#6B7280'
-                            },
-                            grid: {
-                                display: false
-                            }
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { callback: (v) => '$' + (v / 1000).toFixed(0) + 'k', font: { size: 11 } }
                         }
                     }
                 }
             });
-
-            console.log(`✅ Gráfico de ventas creado (${dias} días)`);
-
         } catch (error) {
-            console.error("❌ Error al crear gráfico de ventas:", error);
+            console.error("❌ Error al crear gráfica de tendencia:", error);
         }
     }
 
     // ================================================================
-    // GRÁFICO 2: TOP PRODUCTOS (HORIZONTAL)
+    // GRÁFICA 2: TOP 15 PRODUCTOS (barras horizontales, últimos 30 días)
     // ================================================================
-    async function crearGraficoTopProductos() {
-        if (!topProductosChartCanvas) {
-            console.warn("Canvas de top productos no encontrado");
-            return;
-        }
+    async function crearGraficoTopProductos(tipo = 'todos') {
+        const canvas = document.getElementById('db-top-chart');
+        if (!canvas || typeof Chart === 'undefined') return;
 
         try {
-            // Destruir gráfico anterior si existe
-            if (topProductosChart) {
-                topProductosChart.destroy();
-            }
-
-            // Obtener ventas del último mes
             const fechaInicio = new Date();
             fechaInicio.setDate(fechaInicio.getDate() - 30);
             fechaInicio.setHours(0, 0, 0, 0);
 
-            const q = query(
-                salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(fechaInicio))
-            );
-
+            const q = query(salesCollection, where('timestamp', '>=', Timestamp.fromDate(fechaInicio)));
             const snapshot = await getDocs(q);
 
-            // Contar productos vendidos
             const productosVendidos = {};
-
             snapshot.forEach(doc => {
                 const venta = doc.data();
-                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
-                    const items = venta.items || [];
-                    items.forEach(item => {
-                        const nombre = item.nombre || 'Sin nombre';
-                        if (!productosVendidos[nombre]) {
-                            productosVendidos[nombre] = 0;
-                        }
-                        productosVendidos[nombre] += (item.cantidad || 0);
-                    });
-                }
+                if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
+                const esMayorista = venta.tipoVenta === 'mayorista';
+                (venta.items || []).forEach(item => {
+                    const nombre = item.nombre || 'Sin nombre';
+                    if (!productosVendidos[nombre]) productosVendidos[nombre] = { detal: 0, mayorista: 0 };
+                    if (esMayorista) productosVendidos[nombre].mayorista += (item.cantidad || 0);
+                    else productosVendidos[nombre].detal += (item.cantidad || 0);
+                });
             });
 
-            // Ordenar y obtener top 15
+            const unidadesSegunTipo = ({ detal, mayorista }) =>
+                tipo === 'detal' ? detal : tipo === 'mayor' ? mayorista : detal + mayorista;
+
             const topProductos = Object.entries(productosVendidos)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 15);
+                .map(([nombre, cantidades]) => [nombre, cantidades, unidadesSegunTipo(cantidades)])
+                .filter(([, , unidades]) => unidades > 0)
+                .sort((a, b) => b[2] - a[2])
+                .slice(0, 15)
+                .reverse(); // Chart.js dibuja barras horizontales de abajo hacia arriba
+
+            if (topChart) topChart.destroy();
 
             if (topProductos.length === 0) {
-                topProductos.push(['Sin datos', 0]);
+                topChart = new Chart(canvas.getContext('2d'), {
+                    type: 'bar',
+                    data: { labels: ['Sin datos de ventas'], datasets: [{ data: [0], backgroundColor: 'rgba(0,0,0,0.06)' }] },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
+                });
+                return;
             }
 
-            const labels = topProductos.map(p => p[0].length > 20 ? p[0].substring(0, 20) + '...' : p[0]);
-            const data = topProductos.map(p => p[1]);
+            const labels = topProductos.map(([nombre]) => nombre.length > 24 ? nombre.slice(0, 24) + '…' : nombre);
 
-            // Generar 15 colores modernos y vibrantes
-            const modernColors = [
-                'rgba(59, 130, 246, 0.85)',   // Azul moderno
-                'rgba(16, 185, 129, 0.85)',   // Verde esmeralda
-                'rgba(245, 158, 11, 0.85)',   // Naranja ámbar
-                'rgba(239, 68, 68, 0.85)',    // Rojo
-                'rgba(139, 92, 246, 0.85)',   // Púrpura
-                'rgba(236, 72, 153, 0.85)',   // Rosa
-                'rgba(20, 184, 166, 0.85)',   // Turquesa
-                'rgba(251, 146, 60, 0.85)',   // Naranja
-                'rgba(99, 102, 241, 0.85)',   // Índigo
-                'rgba(244, 63, 94, 0.85)',    // Rosa fuerte
-                'rgba(34, 197, 94, 0.85)',    // Verde lima
-                'rgba(168, 85, 247, 0.85)',   // Violeta
-                'rgba(59, 189, 248, 0.85)',   // Cian
-                'rgba(234, 179, 8, 0.85)',    // Amarillo
-                'rgba(249, 115, 22, 0.85)'    // Naranja oscuro
-            ];
+            const datasets = tipo === 'todos'
+                ? [
+                    { label: 'Detal', data: topProductos.map(([, c]) => c.detal), backgroundColor: COLOR_DETAL, borderRadius: 4, stack: 'u' },
+                    { label: 'Mayorista', data: topProductos.map(([, c]) => c.mayorista), backgroundColor: COLOR_MAYOR, borderRadius: 4, stack: 'u' }
+                  ]
+                : [{
+                    label: tipo === 'detal' ? 'Detal' : 'Mayorista',
+                    data: topProductos.map(([, , unidades]) => unidades),
+                    backgroundColor: tipo === 'detal' ? COLOR_DETAL : COLOR_MAYOR,
+                    borderRadius: 4
+                  }];
 
-            const modernBorderColors = [
-                'rgba(59, 130, 246, 1)',
-                'rgba(16, 185, 129, 1)',
-                'rgba(245, 158, 11, 1)',
-                'rgba(239, 68, 68, 1)',
-                'rgba(139, 92, 246, 1)',
-                'rgba(236, 72, 153, 1)',
-                'rgba(20, 184, 166, 1)',
-                'rgba(251, 146, 60, 1)',
-                'rgba(99, 102, 241, 1)',
-                'rgba(244, 63, 94, 1)',
-                'rgba(34, 197, 94, 1)',
-                'rgba(168, 85, 247, 1)',
-                'rgba(59, 189, 248, 1)',
-                'rgba(234, 179, 8, 1)',
-                'rgba(249, 115, 22, 1)'
-            ];
-
-            // Crear el gráfico
-            const ctx = topProductosChartCanvas.getContext('2d');
-            topProductosChart = new Chart(ctx, {
+            topChart = new Chart(canvas.getContext('2d'), {
                 type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Unidades',
-                        data: data,
-                        backgroundColor: modernColors,
-                        borderColor: modernBorderColors,
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        borderSkipped: false
-                    }]
-                },
+                data: { labels, datasets },
                 options: {
                     indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: { duration: 400 },
                     plugins: {
                         legend: {
-                            display: false
+                            display: tipo === 'todos',
+                            position: 'top',
+                            align: 'end',
+                            labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
                         },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: 12,
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 }
+                            callbacks: {
+                                label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.x} u.`
+                            }
                         }
                     },
                     scales: {
                         x: {
+                            stacked: tipo === 'todos',
                             beginAtZero: true,
-                            ticks: {
-                                precision: 0
-                            },
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
-                            }
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { precision: 0, font: { size: 11 } }
                         },
                         y: {
-                            grid: {
-                                display: false
-                            }
+                            stacked: tipo === 'todos',
+                            grid: { display: false },
+                            ticks: { font: { size: 11 } }
                         }
                     }
                 }
             });
-
-            console.log("✅ Gráfico de top productos creado");
-
         } catch (error) {
-            console.error("❌ Error al crear gráfico de top productos:", error);
-        }
-    }
-
-    // ================================================================
-    // TABLA: STOCK CRÍTICO
-    // ================================================================
-    function actualizarTablaStockCritico() {
-        const tablaBody = document.getElementById('db-tabla-stock-critico');
-        if (!tablaBody) return;
-
-        if (window.productosBajoStock && window.productosBajoStock.length > 0) {
-            const top5 = window.productosBajoStock.slice(0, 5);
-
-            tablaBody.innerHTML = '';
-
-            top5.forEach(item => {
-                const tr = document.createElement('tr');
-                const stockClass = item.stockTotal === 1 ? 'text-danger fw-bold' : 'text-warning fw-bold';
-
-                tr.innerHTML = `
-                    <td>
-                        <div class="fw-semibold">${item.nombre}</div>
-                        <small class="text-muted">${item.variaciones.length} variación(es)</small>
-                    </td>
-                    <td class="text-center ${stockClass}">${item.stockTotal}</td>
-                    <td class="text-end">
-                        <a href="#productos" data-bs-toggle="pill" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                    </td>
-                `;
-
-                tablaBody.appendChild(tr);
-            });
-        } else {
-            tablaBody.innerHTML = '<tr><td colspan="3" class="text-center text-success py-3">✓ Stock saludable</td></tr>';
+            console.error("❌ Error al crear gráfica de top productos:", error);
         }
     }
 
@@ -8175,209 +7923,28 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ================================================================
-    // TABLA MÓVIL 1: TENDENCIA DE VENTAS
-    // ================================================================
-    async function crearTablaTendenciaMobile(dias = 7) {
-        const container = document.getElementById('db-trend-table');
-        if (!container) return;
-
-        container.innerHTML = '<div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>';
-
-        try {
-            const hoy = new Date();
-            const fechaInicio = new Date(hoy);
-            fechaInicio.setDate(fechaInicio.getDate() - dias + 1);
-            fechaInicio.setHours(0, 0, 0, 0);
-
-            const q = query(
-                salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(fechaInicio)),
-                orderBy('timestamp', 'asc')
-            );
-
-            const snapshot = await getDocs(q);
-
-            // Cada día se separa en detal y mayorista (mismo criterio que usa
-            // la métrica "Ventas hoy" del dashboard: tipoVenta === 'mayorista').
-            const ventasPorDia = {};
-            const labels = [];
-
-            for (let i = 0; i < dias; i++) {
-                const fecha = new Date(fechaInicio);
-                fecha.setDate(fecha.getDate() + i);
-                const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
-                ventasPorDia[key] = { detal: 0, mayorista: 0 };
-                labels.push(key);
-            }
-
-            snapshot.forEach(doc => {
-                const venta = doc.data();
-                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
-                    const fecha = venta.timestamp?.toDate();
-                    if (fecha) {
-                        const key = fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
-                        if (ventasPorDia.hasOwnProperty(key)) {
-                            const monto = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
-                            if (venta.tipoVenta === 'mayorista') {
-                                ventasPorDia[key].mayorista += monto;
-                            } else {
-                                ventasPorDia[key].detal += monto;
-                            }
-                        }
-                    }
-                }
-            });
-
-            const data = labels.map(l => ventasPorDia[l]);
-            const maxVal = Math.max(...data.map(d => d.detal + d.mayorista), 1);
-
-            let html = `
-                <div class="db-trend-legend">
-                    <span class="db-legend-item"><span class="db-legend-dot" style="background:#8b5cf6;"></span><span class="db-legend-label">Detal</span></span>
-                    <span class="db-legend-item"><span class="db-legend-dot" style="background:#DB2777;"></span><span class="db-legend-label">Mayorista</span></span>
-                </div>
-                <div class="db-trend-list">`;
-            labels.forEach((label, i) => {
-                const { detal, mayorista } = data[i];
-                const val = detal + mayorista;
-                const pctTotal = Math.round((val / maxVal) * 100);
-                const isToday = i === labels.length - 1;
-                const tituloDetalle = `Detal: $${detal.toLocaleString('es-CO')} · Mayorista: $${mayorista.toLocaleString('es-CO')}`;
-                html += `
-                    <div class="db-trend-row${isToday ? ' db-trend-row--today' : ''}">
-                        <span class="db-trend-label">${label}</span>
-                        <div class="db-trend-bar-wrap" title="${tituloDetalle}">
-                            <div class="db-trend-bar" style="width:${pctTotal}%">
-                                <span class="db-trend-bar-seg db-trend-bar-seg--detal" style="flex:${detal || 0} ${detal || 0} 0"></span>
-                                <span class="db-trend-bar-seg db-trend-bar-seg--mayor" style="flex:${mayorista || 0} ${mayorista || 0} 0"></span>
-                            </div>
-                        </div>
-                        <span class="db-trend-val">${val > 0 ? '$' + val.toLocaleString('es-CO') : '—'}</span>
-                    </div>`;
-            });
-            html += '</div>';
-
-            container.innerHTML = html;
-
-        } catch (error) {
-            console.error("❌ Error tabla tendencia mobile:", error);
-            container.innerHTML = '<div class="text-center text-danger py-3">Error al cargar</div>';
-        }
-    }
-
-    // ================================================================
-    // TABLA MÓVIL 2: TOP PRODUCTOS
-    // ================================================================
-    async function crearTablaTopProductosMobile(tipo = 'todos') {
-        const container = document.getElementById('db-top-table');
-        if (!container) return;
-
-        container.innerHTML = '<div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>';
-
-        try {
-            const fechaInicio = new Date();
-            fechaInicio.setDate(fechaInicio.getDate() - 30);
-            fechaInicio.setHours(0, 0, 0, 0);
-
-            const q = query(
-                salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(fechaInicio))
-            );
-
-            const snapshot = await getDocs(q);
-
-            // Cada producto se acumula separado por detal y mayorista (mismo
-            // criterio que usa la tabla de tendencia: tipoVenta === 'mayorista').
-            const productosVendidos = {};
-            snapshot.forEach(doc => {
-                const venta = doc.data();
-                if (venta.estado !== 'Anulada' && venta.estado !== 'Cancelada') {
-                    const esMayorista = venta.tipoVenta === 'mayorista';
-                    const items = venta.items || [];
-                    items.forEach(item => {
-                        const nombre = item.nombre || 'Sin nombre';
-                        if (!productosVendidos[nombre]) productosVendidos[nombre] = { detal: 0, mayorista: 0 };
-                        if (esMayorista) {
-                            productosVendidos[nombre].mayorista += (item.cantidad || 0);
-                        } else {
-                            productosVendidos[nombre].detal += (item.cantidad || 0);
-                        }
-                    });
-                }
-            });
-
-            const unidadesSegunTipo = ({ detal, mayorista }) =>
-                tipo === 'detal' ? detal : tipo === 'mayor' ? mayorista : detal + mayorista;
-
-            const topProductos = Object.entries(productosVendidos)
-                .map(([nombre, cantidades]) => [nombre, cantidades, unidadesSegunTipo(cantidades)])
-                .filter(([, , unidades]) => unidades > 0)
-                .sort((a, b) => b[2] - a[2])
-                .slice(0, 15);
-
-            if (topProductos.length === 0) {
-                container.innerHTML = '<div class="text-center text-muted py-4">Sin datos de ventas</div>';
-                return;
-            }
-
-            const maxUnits = topProductos[0][2];
-
-            let html = '<div class="db-top-list">';
-            topProductos.forEach(([nombre, { detal, mayorista }, unidades], i) => {
-                const pct = Math.round((unidades / maxUnits) * 100);
-                const rankClass = i === 0 ? 'db-top-rank--gold' : i === 1 ? 'db-top-rank--silver' : i === 2 ? 'db-top-rank--bronze' : '';
-                const tituloDetalle = `Detal: ${detal} u. · Mayorista: ${mayorista} u.`;
-                const barra = tipo === 'todos'
-                    ? `<div class="db-top-bar" style="width:${pct}%">
-                            <span class="db-top-bar-seg db-top-bar-seg--detal" style="flex:${detal || 0} ${detal || 0} 0"></span>
-                            <span class="db-top-bar-seg db-top-bar-seg--mayor" style="flex:${mayorista || 0} ${mayorista || 0} 0"></span>
-                        </div>`
-                    : `<div class="db-top-bar" style="width:${pct}%"></div>`;
-                html += `
-                    <div class="db-top-row">
-                        <span class="db-top-rank ${rankClass}">${i + 1}</span>
-                        <div class="db-top-info">
-                            <span class="db-top-name">${nombre}</span>
-                            <div class="db-top-bar-wrap" title="${tituloDetalle}">
-                                ${barra}
-                            </div>
-                        </div>
-                        <span class="db-top-units">${unidades} u.</span>
-                    </div>`;
-            });
-            html += '</div>';
-
-            container.innerHTML = html;
-
-        } catch (error) {
-            console.error("❌ Error tabla top productos mobile:", error);
-            container.innerHTML = '<div class="text-center text-danger py-3">Error al cargar</div>';
-        }
-    }
-
-    // ================================================================
     // EVENT LISTENERS
     // ================================================================
 
-    // Cambiar período de la tabla móvil de tendencia
+    // Cambiar período de la gráfica de tendencia
     const mtPeriodoBtns = document.querySelectorAll('input[name="mt-period"]');
     mtPeriodoBtns.forEach(btn => {
         btn.addEventListener('change', (e) => {
             const dias = e.target.id === 'mt-7days' ? 7 :
                         e.target.id === 'mt-30days' ? 30 :
                         180;
-            crearTablaTendenciaMobile(dias);
+            crearGraficoTendencia(dias);
         });
     });
 
-    // Cambiar tipo de venta (detal/mayor) de la tabla de top productos
+    // Cambiar tipo de venta (detal/mayor) de la gráfica de top productos
     const tpTipoBtns = document.querySelectorAll('input[name="tp-tipo"]');
     tpTipoBtns.forEach(btn => {
         btn.addEventListener('change', (e) => {
             const tipo = e.target.id === 'tp-detal' ? 'detal' :
                         e.target.id === 'tp-mayor' ? 'mayor' :
                         'todos';
-            crearTablaTopProductosMobile(tipo);
+            crearGraficoTopProductos(tipo);
         });
     });
 
@@ -8385,19 +7952,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // INICIALIZAR
     // ================================================================
 
-    crearTablaTendenciaMobile(7);
-    crearTablaTopProductosMobile();
-    actualizarTablaStockCritico();
+    crearGraficoTendencia(7);
+    crearGraficoTopProductos();
     actualizarActividadReciente();
 
-    // Actualizar tabla de stock crítico cuando cambie window.productosBajoStock
-    const originalCalcBajoStock = window.calcularBajoStock;
-    if (originalCalcBajoStock) {
-        // Se actualiza automáticamente con el onSnapshot
-        setTimeout(() => actualizarTablaStockCritico(), 2000);
-    }
-
-    console.log("✅ Gráficos del dashboard inicializados");
+    console.log("✅ Gráficas del dashboard inicializadas");
 
 })();
 
