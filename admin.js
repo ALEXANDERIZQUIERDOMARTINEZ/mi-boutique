@@ -2863,7 +2863,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.innerHTML = `
                     ${imgHtml}
                     <div class="vf-cart-item-info">
-                        <div class="vf-cart-item-name">${item.nombreCompleto}</div>
+                        <div class="vf-cart-item-name">${item.nombre || item.nombreCompleto}</div>
+                        <div class="vf-cart-item-variant">${item.talla || ''} ${item.talla && item.color ? '/' : ''} ${item.color || ''}</div>
                         <div class="vf-cart-item-unit">${formatoMoneda.format(item.precio)} c/u</div>
                     </div>
                     <div class="vf-cart-item-controls">
