@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "mi-boutique.vercel.app"
+        }
+      ],
+      "destination": "https://mishelles.store/:path*",
+      "permanent": true
+    }
+  ]
+}
