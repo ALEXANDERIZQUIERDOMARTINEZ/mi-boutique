@@ -2018,6 +2018,16 @@ function resetAllFilters() {
 // --- DOMCONTENTLOADED ---
 document.addEventListener('DOMContentLoaded', () => {
 
+    // ✅ Header: sombra al hacer scroll (menú de escritorio más pulido)
+    const siteHeaderEl = document.querySelector('header.site-header');
+    if (siteHeaderEl) {
+        const updateHeaderScrollState = () => {
+            siteHeaderEl.classList.toggle('is-scrolled', window.scrollY > 8);
+        };
+        updateHeaderScrollState();
+        window.addEventListener('scroll', updateHeaderScrollState, { passive: true });
+    }
+
     // Tabla de precios y condiciones de pedido (solo existen en mayor.html)
     const tiersToggleBtn = document.getElementById('btn-toggle-tiers');
     const tiersTablesEl = document.getElementById('tiers-tables');

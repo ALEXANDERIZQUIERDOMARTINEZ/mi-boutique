@@ -180,6 +180,11 @@ h1, h2, h3, h4, h5, h6 {
     background: white;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     padding: 0;
+    transition: box-shadow 0.25s ease;
+}
+
+.site-header.is-scrolled .header-nav {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 
 .header-layout {
@@ -194,7 +199,7 @@ h1, h2, h3, h4, h5, h6 {
 .header-left {
     display: flex;
     align-items: center;
-    gap: 0;
+    gap: 2px;
 }
 
 .nav-link-header {
@@ -206,9 +211,11 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--color-texto);
     background: none;
     border: none;
-    padding: 18px 14px;
+    border-radius: var(--radio-sm);
+    padding: 10px 14px;
+    margin: 0 1px;
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, background-color 0.2s ease;
     position: relative;
     white-space: nowrap;
 }
@@ -216,7 +223,7 @@ h1, h2, h3, h4, h5, h6 {
 .nav-link-header::after {
     content: '';
     position: absolute;
-    bottom: 0;
+    bottom: -1px;
     left: 14px;
     right: 14px;
     height: 2px;
@@ -227,7 +234,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .nav-link-header:hover {
     color: var(--color-primario);
-    background: none;
+    background: var(--color-primario-claro);
     transform: none;
     box-shadow: none;
 }
@@ -238,12 +245,20 @@ h1, h2, h3, h4, h5, h6 {
 
 .nav-link-header.active {
     color: var(--color-primario);
-    background: none;
+    background: var(--color-primario-claro);
     box-shadow: none;
 }
 
 .nav-link-header.active::after {
     transform: scaleX(1);
+}
+
+.nav-link-header .bi-chevron-down {
+    transition: transform 0.2s ease;
+}
+
+.dropdown.show > .nav-link-header .bi-chevron-down {
+    transform: rotate(180deg);
 }
 
 /* Sale button */
@@ -297,6 +312,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .header-icon:hover {
     color: var(--color-primario);
+    transform: translateY(-1px);
 }
 
 .header-icon .cart-counter {
@@ -320,6 +336,11 @@ h1, h2, h3, h4, h5, h6 {
 .search-box {
     position: relative;
     width: 180px;
+    transition: width 0.25s ease;
+}
+
+.search-box:focus-within {
+    width: 230px;
 }
 
 .search-box input {
@@ -373,6 +394,22 @@ h1, h2, h3, h4, h5, h6 {
     min-width: 200px;
     max-height: none;
     overflow-y: visible;
+    margin-top: 8px !important;
+}
+
+.dropdown-menu-enhanced.show {
+    animation: dropdownEnter 0.18s ease;
+}
+
+@keyframes dropdownEnter {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .dropdown-menu-enhanced .dropdown-item {
