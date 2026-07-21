@@ -81,7 +81,7 @@ client.on('ready', async () => {
                     `🛒 *Productos:*\n${items}\n\n` +
                     `💳 *Pago:* ${pagoStr}\n` +
                     `📦 Envío: ${formatPrecio(pedido.costoEnvio || 0)}\n` +
-                    (pedido.comprobanteId ? `📋 https://mi-boutique.vercel.app/comprobante.html?id=${pedido.comprobanteId}\n` : '') +
+                    (pedido.comprobanteId ? `📋 https://mishelles.store/comprobante.html?id=${pedido.comprobanteId}\n` : '') +
                     `\n💰 *Total: ${formatPrecio(pedido.totalPedido)}*` +
                     (pedido.observaciones ? `\n\n📝 ${pedido.observaciones}` : '');
 
