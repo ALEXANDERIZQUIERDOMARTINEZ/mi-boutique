@@ -127,6 +127,27 @@ function getColoresDelProducto(p) {
     return [...map.entries()].map(([color, stock]) => ({ color, stock }));
 }
 
+// Imagen principal de la tarjeta: la foto real del primer color CON STOCK
+// (igual que en el catálogo al detal, index.html), y solo si ningún color
+// tiene fotos cae de vuelta a imagenUrl / placeholder. Antes se usaba
+// siempre imagenUrl a secas, así que las prendas cargadas únicamente con
+// fotos por color (sin foto principal aparte) se veían con el placeholder
+// genérico en vez de la ropa real.
+function getCardImageUrl(p) {
+    const variantesColor = p.variantes_color || [];
+    const coloresConStock = getColoresDelProducto(p).map(c => c.color);
+    for (const colorNombre of coloresConStock) {
+        const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === colorNombre.toLowerCase().trim());
+        const imgs = (vc?.imagenes || []).filter(img => img.url);
+        if (imgs.length === 0) continue;
+        const sorted = [...imgs].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+        const frente = (sorted.find(img => img.angulo === 'frente') || sorted[0])?.url;
+        if (frente) return frente;
+    }
+    if (p.mostrarFotoPrincipal !== false && p.imagenUrl) return p.imagenUrl;
+    return 'https://placehold.co/300x400/f5e8ed/D988B9?text=Mishell';
+}
+
 function getStockCombo(p, talla, color) {
     return (p.variaciones || []).reduce((sum, v) => {
         const stock = parseInt(v.stock, 10) || 0;
@@ -544,7 +565,7 @@ function buildCardExtraHtml(p) {
 // Construye el nodo de UNA tarjeta completa (se usa al pintar la grilla).
 function buildCardElement(p) {
     const filas = detalleFilas.get(p.id) || [];
-    const img = p.imagenUrl || 'https://placehold.co/300x400/f5e8ed/D988B9?text=Mishell';
+    const img = getCardImageUrl(p);
 
     const card = document.createElement('div');
     card.className = 'mayor-card' + (filas.length > 0 ? ' is-selected' : '');
