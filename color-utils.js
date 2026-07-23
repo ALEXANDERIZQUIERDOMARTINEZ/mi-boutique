@@ -146,6 +146,13 @@ export function getColorHex(colorName) {
     return '#9E9E9E';
 }
 
+/** Texto a mostrar para un color: sin importar cómo esté escrito
+ *  ('unico', 'Unico', 'único', vacío...) siempre se muestra "Único". */
+export function formatColorLabel(color) {
+    const n = (color || '').toLowerCase().trim();
+    return (n === '' || n === 'unico' || n === 'único') ? 'Único' : color;
+}
+
 /** Devuelve el estilo CSS para una bolita de color:
  *  - Si la variante tiene imagen, usa recorte circular (igual que las tarjetas del catálogo).
  *  - Si no, usa el color sólido hex.

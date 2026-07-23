@@ -27,6 +27,18 @@ const db = initializeFirestore(app, {
 const storage = getStorage(app);
 console.log("Firebase Initialized!");
 
+// Normaliza los valores de talla/color para prendas sin variación real: sin
+// importar cómo se haya escrito ('unica', 'Unica', 'única', vacío...), siempre
+// se guarda y se muestra como "Única" / "Único" en toda la app.
+function normalizeTalla(talla) {
+    const t = (talla || '').toLowerCase().trim();
+    return (t === '' || t === 'unica' || t === 'única') ? 'Única' : talla.trim();
+}
+function normalizeColor(color) {
+    const c = (color || '').toLowerCase().trim();
+    return (c === '' || c === 'unico' || c === 'único') ? 'Único' : color.trim();
+}
+
 // Inicializar window.appContext desde sessionStorage (datos guardados en login)
 (function() {
     try {
@@ -1417,7 +1429,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const imagenUrl = d.imagenUrl || defaultImgTabla; 
 
                 let variacionesHtml = (d.variaciones || [])
-                    .map(v => `<span class="badge bg-light text-dark me-1">${v.talla || ''} / ${v.color || ''} (Stock: ${v.stock})</span>`)
+                    .map(v => `<span class="badge bg-light text-dark me-1">${normalizeTalla(v.talla)} / ${normalizeColor(v.color)} (Stock: ${v.stock})</span>`)
                     .join(' ');
                 if (variacionesHtml === '') variacionesHtml = '<small class="text-muted">Sin variaciones</small>';
 
@@ -2385,9 +2397,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <label for="select-talla" class="form-label">Talla:</label>
                     <select class="form-select" id="select-talla" ${esTallaUnica ? 'disabled' : ''}>
                         ${esTallaUnica
-                            ? `<option value="${tallaUnicaValue}" selected>${tallaUnicaValue.toLowerCase() === 'unica' ? 'Única' : (tallaUnicaValue || 'Única')}</option>`
+                            ? `<option value="${tallaUnicaValue}" selected>${normalizeTalla(tallaUnicaValue)}</option>`
                             : `<option value="" selected>Selecciona una talla...</option>
-                               ${tallas.map(t => `<option value="${t}">${t.toLowerCase() === 'unica' ? 'Única' : (t || 'Única')}</option>`).join('')}`
+                               ${tallas.map(t => `<option value="${t}">${normalizeTalla(t)}</option>`).join('')}`
                         }
                     </select>
                 </div>
@@ -2395,7 +2407,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <label for="select-color" class="form-label">Color:</label>
                     <select class="form-select" id="select-color">
                         <option value="" selected>Selecciona un color...</option>
-                        ${colores.map(c => `<option value="${c}">${c || 'Único'}</option>`).join('')}
+                        ${colores.map(c => `<option value="${c}">${normalizeColor(c)}</option>`).join('')}
                     </select>
                 </div>
             `;
@@ -2428,7 +2440,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Actualizar opciones de color
                     selectColor.innerHTML = '<option value="" selected>Selecciona un color...</option>';
                     coloresDisponibles.forEach(c => {
-                        selectColor.innerHTML += `<option value="${c}">${c || 'Único'}</option>`;
+                        selectColor.innerHTML += `<option value="${c}">${normalizeColor(c)}</option>`;
                     });
 
                     // Si solo hay un color, seleccionarlo automáticamente
@@ -7073,7 +7085,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 // Crear string con todas las variaciones
                 const variacionesHtml = item.variaciones
                     .filter(v => v.stock > 0)
-                    .map(v => `<span class="badge bg-secondary me-1">${v.talla}/${v.color}: ${v.stock}</span>`)
+                    .map(v => `<span class="badge bg-secondary me-1">${normalizeTalla(v.talla)}/${normalizeColor(v.color)}: ${v.stock}</span>`)
                     .join(' ');
 
                 const tr = document.createElement('tr');
