@@ -6952,6 +6952,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const utilidadFabrica = ingresosFabricaTotal - gastosManualesFabrica;
                     const dbFabricaIngresosEl = document.getElementById('db-fabrica-ingresos');
                     if (dbFabricaIngresosEl) dbFabricaIngresosEl.textContent = formatoMoneda.format(ingresosFabricaTotal);
+
+                    // Desglose de qué compone "Ingresos totales", para que no
+                    // se vea como un número suelto sin explicación.
+                    const dbFabricaIngresosDesgloseEl = document.getElementById('db-fabrica-ingresos-desglose');
+                    if (dbFabricaIngresosDesgloseEl) {
+                        const partesFabrica = [`Mayorista ${formatoMoneda.format(totalMayorista)}`];
+                        if (costoDetalRecuperado > 0) partesFabrica.push(`Costo detal ${formatoMoneda.format(costoDetalRecuperado)}`);
+                        if (ingresosManualesFabrica > 0) partesFabrica.push(`Manual ${formatoMoneda.format(ingresosManualesFabrica)}`);
+                        dbFabricaIngresosDesgloseEl.textContent = partesFabrica.join(' + ');
+                    }
+
                     const dbFabricaGastosEl = document.getElementById('db-fabrica-gastos');
                     if (dbFabricaGastosEl) dbFabricaGastosEl.textContent = formatoMoneda.format(gastosManualesFabrica);
                     const dbFabricaUtilidadEl = document.getElementById('db-fabrica-utilidad');
