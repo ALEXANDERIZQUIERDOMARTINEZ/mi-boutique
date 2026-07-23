@@ -159,7 +159,7 @@ function drawFooter(pdf, yStart) {
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(9.5);
     pdf.setTextColor(...WHITE);
-    pdf.text('+57 301 785 0041', PW / 2, yStart + 19.5, { align: 'center' });
+    pdf.text('+57 304 608 4971', PW / 2, yStart + 19.5, { align: 'center' });
 
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(6);

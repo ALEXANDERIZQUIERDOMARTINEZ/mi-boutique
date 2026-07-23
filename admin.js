@@ -3772,7 +3772,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nombreLegal: 'Andrea Mishell Espitia Solano',
             cedula: '1193211056',
             direccion: 'Mz 35 Lote 14',
-            telefono: '3017850041'
+            telefono: '3046084971'
         };
 
         function formatearNumeroFactura(numero) {
@@ -6083,7 +6083,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 }
 
                 // Abrir WhatsApp
-                const whatsappUrl = `https://wa.me/573017850041?text=${encodeURIComponent(mensaje)}`;
+                const whatsappUrl = `https://wa.me/573046084971?text=${encodeURIComponent(mensaje)}`;
                 openWhatsApp(whatsappUrl);
 
                 showToast("✅ Cierre guardado! Enviando por WhatsApp...", 'success');

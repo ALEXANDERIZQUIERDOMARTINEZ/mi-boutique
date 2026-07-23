@@ -22,7 +22,7 @@ const productsCollection = collection(db, 'productos');
 const categoriesCollection = collection(db, 'categorias');
 
 const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
-const WHATSAPP_NUMBER = '573017850041';
+const WHATSAPP_NUMBER = '573046084971';
 
 // Solo las prendas de proveedor "Mishelles Boutique" entran al catálogo de
 // venta al por mayor — el resto de proveedores queda restringido al detal.

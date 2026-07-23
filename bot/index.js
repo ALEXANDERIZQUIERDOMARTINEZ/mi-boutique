@@ -16,7 +16,7 @@ const firebaseApp = initializeApp({
 const db = getFirestore(firebaseApp);
 
 // ─── Configuración ────────────────────────────────────────────────────────────
-const OWNER_PHONE = process.env.OWNER_PHONE || '573017850041';
+const OWNER_PHONE = process.env.OWNER_PHONE || '573046084971';
 
 function formatPrecio(n) {
     return `$${Number(n).toLocaleString('es-CO')}`;
