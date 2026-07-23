@@ -7471,6 +7471,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
     let trendChart = null;
     let topChart = null;
+    let unsubscribeTendencia = null;
 
     const COLOR_DETAL = 'rgba(217,136,185,0.85)';   // rosa Boutique
     const COLOR_MAYOR = 'rgba(42,120,214,0.85)';    // azul Fábrica
@@ -7483,6 +7484,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const canvas = document.getElementById('db-trend-chart');
         if (!canvas || typeof Chart === 'undefined') return;
 
+        if (unsubscribeTendencia) {
+            unsubscribeTendencia();
+            unsubscribeTendencia = null;
+        }
+
         try {
             const hoy = new Date();
             const fechaInicio = new Date(hoy);
@@ -7494,14 +7500,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 where('timestamp', '>=', Timestamp.fromDate(fechaInicio)),
                 orderBy('timestamp', 'asc')
             );
-            const [snapshot, prodsSnap] = await Promise.all([
-                getDocs(q),
-                getDocs(productsCollection)
-            ]);
 
             // Costo de compra por producto: para sumarle a Fábrica lo que
             // recupera de cada venta al detal (mismo criterio que el panel
             // "Comparativo por empresa" / db-fabrica-ingresos).
+            const prodsSnap = await getDocs(productsCollection);
             const productCostMap = new Map();
             prodsSnap.forEach(d => productCostMap.set(d.id, parseFloat(d.data().costoCompra) || 0));
 
@@ -7510,64 +7513,77 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 ? fecha.toLocaleDateString('es-CO', { month: 'short', year: '2-digit' })
                 : fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
 
-            const ventasPorClave = new Map();
-            const labels = [];
+            // 🔴 Tiempo real: igual que el panel "Comparativo por empresa",
+            // para que esta gráfica nunca quede desactualizada frente a él.
+            unsubscribeTendencia = onSnapshot(q, (snapshot) => {
+                const ventasPorClave = new Map();
+                const labels = [];
 
-            if (agruparPorMes) {
-                const cursor = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), 1);
-                const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-                while (cursor <= fin) {
-                    const key = claveDe(cursor);
-                    ventasPorClave.set(key, { detal: 0, mayorista: 0 });
-                    labels.push(key);
-                    cursor.setMonth(cursor.getMonth() + 1);
-                }
-            } else {
-                for (let i = 0; i < dias; i++) {
-                    const fecha = new Date(fechaInicio);
-                    fecha.setDate(fecha.getDate() + i);
-                    const key = claveDe(fecha);
-                    ventasPorClave.set(key, { detal: 0, mayorista: 0 });
-                    labels.push(key);
-                }
-            }
-
-            snapshot.forEach(doc => {
-                const venta = doc.data();
-                if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
-                const fecha = venta.timestamp?.toDate();
-                if (!fecha) return;
-                const key = claveDe(fecha);
-                const bucket = ventasPorClave.get(key);
-                if (!bucket) return;
-                const monto = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
-                if (venta.tipoVenta === 'mayorista') {
-                    bucket.mayorista += monto;
+                if (agruparPorMes) {
+                    const cursor = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), 1);
+                    const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+                    while (cursor <= fin) {
+                        const key = claveDe(cursor);
+                        ventasPorClave.set(key, { detal: 0, mayorista: 0 });
+                        labels.push(key);
+                        cursor.setMonth(cursor.getMonth() + 1);
+                    }
                 } else {
-                    bucket.detal += monto;
-                    // Costo de la mercancía vendida al detal, recuperado como
-                    // ingreso de Fábrica desde FECHA_CORTE_DETAL (no se
-                    // recalcula retroactivamente para ventas anteriores).
-                    if (fecha >= FECHA_CORTE_DETAL) {
-                        (venta.items || []).forEach(item => {
-                            const costo = parseFloat(
-                                item.precioCosto ||
-                                item.costo ||
-                                (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
-                                0
-                            );
-                            const cant = parseInt(item.cantidad || 1, 10);
-                            bucket.mayorista += costo * cant;
-                        });
+                    for (let i = 0; i < dias; i++) {
+                        const fecha = new Date(fechaInicio);
+                        fecha.setDate(fecha.getDate() + i);
+                        const key = claveDe(fecha);
+                        ventasPorClave.set(key, { detal: 0, mayorista: 0 });
+                        labels.push(key);
                     }
                 }
+
+                snapshot.forEach(doc => {
+                    const venta = doc.data();
+                    if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
+                    const fecha = venta.timestamp?.toDate();
+                    if (!fecha) return;
+                    const key = claveDe(fecha);
+                    const bucket = ventasPorClave.get(key);
+                    if (!bucket) return;
+                    const monto = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                    if (venta.tipoVenta === 'mayorista') {
+                        bucket.mayorista += monto;
+                    } else {
+                        bucket.detal += monto;
+                        // Costo de la mercancía vendida al detal, recuperado como
+                        // ingreso de Fábrica desde FECHA_CORTE_DETAL (no se
+                        // recalcula retroactivamente para ventas anteriores).
+                        if (fecha >= FECHA_CORTE_DETAL) {
+                            (venta.items || []).forEach(item => {
+                                const costo = parseFloat(
+                                    item.precioCosto ||
+                                    item.costo ||
+                                    (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
+                                    0
+                                );
+                                const cant = parseInt(item.cantidad || 1, 10);
+                                bucket.mayorista += costo * cant;
+                            });
+                        }
+                    }
+                });
+
+                renderGraficoTendencia(labels, labels.map(l => ventasPorClave.get(l).detal), labels.map(l => ventasPorClave.get(l).mayorista));
+            }, (error) => {
+                console.error("❌ Error en listener de tendencia de ventas:", error);
             });
+        } catch (error) {
+            console.error("❌ Error al crear gráfica de tendencia:", error);
+        }
+    }
 
-            const dataDetal = labels.map(l => ventasPorClave.get(l).detal);
-            const dataMayor = labels.map(l => ventasPorClave.get(l).mayorista);
+    function renderGraficoTendencia(labels, dataDetal, dataMayor) {
+        const canvas = document.getElementById('db-trend-chart');
+        if (!canvas || typeof Chart === 'undefined') return;
 
-            if (trendChart) trendChart.destroy();
-            trendChart = new Chart(canvas.getContext('2d'), {
+        if (trendChart) trendChart.destroy();
+        trendChart = new Chart(canvas.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels,
@@ -7604,9 +7620,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     }
                 }
             });
-        } catch (error) {
-            console.error("❌ Error al crear gráfica de tendencia:", error);
-        }
     }
 
     // ================================================================
