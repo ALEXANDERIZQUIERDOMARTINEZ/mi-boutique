@@ -7572,8 +7572,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 data: {
                     labels,
                     datasets: [
-                        { label: 'Detal', data: dataDetal, backgroundColor: COLOR_DETAL, borderRadius: 6, borderSkipped: false, stack: 'ventas' },
-                        { label: 'Mayorista', data: dataMayor, backgroundColor: COLOR_MAYOR, borderRadius: 6, borderSkipped: false, stack: 'ventas' }
+                        { label: 'Boutique', data: dataDetal, backgroundColor: COLOR_DETAL, borderRadius: 6, borderSkipped: false, stack: 'ventas' },
+                        { label: 'Fábrica', data: dataMayor, backgroundColor: COLOR_MAYOR, borderRadius: 6, borderSkipped: false, stack: 'ventas' }
                     ]
                 },
                 options: {
