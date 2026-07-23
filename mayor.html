@@ -174,6 +174,7 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    cursor: zoom-in;
     transition: transform 0.45s ease;
   }
   .mayor-card:hover .mayor-card-img img {
@@ -623,45 +624,45 @@
       margin-bottom: 8px;
     }
     .mayor-grid {
-      gap: 8px;
+      gap: 10px;
       padding: 10px 8px 16px;
     }
     .mayor-card-img {
-      aspect-ratio: 1 / 1;
+      aspect-ratio: 3 / 4;
     }
     .mayor-card-body {
-      padding: 6px 8px 8px;
+      padding: 8px 9px 9px;
     }
     .mayor-card-name {
-      font-size: 0.7rem;
-      margin-bottom: 2px;
+      font-size: 0.82rem;
+      margin-bottom: 3px;
     }
     .mayor-card-price {
-      font-size: 0.74rem;
-      margin-bottom: 4px;
+      font-size: 0.8rem;
+      margin-bottom: 5px;
     }
     .mayor-card-price .tier-hint {
-      font-size: 0.6rem;
-      margin-top: 1px;
+      font-size: 0.66rem;
+      margin-top: 2px;
     }
     .mayor-card-colors {
-      gap: 6px 4px;
-      margin-bottom: 6px;
+      gap: 7px 5px;
+      margin-bottom: 8px;
     }
     .mayor-card-color-item {
-      width: 30px;
+      width: 34px;
     }
     .mayor-card-color-swatch {
-      width: 18px;
-      height: 18px;
+      width: 21px;
+      height: 21px;
     }
     .mayor-card-color-item .color-swatch-name {
-      font-size: 0.42rem;
-      max-width: 30px;
+      font-size: 0.46rem;
+      max-width: 34px;
     }
     .mayor-add-btn {
-      padding: 6px;
-      font-size: 0.68rem;
+      padding: 8px;
+      font-size: 0.74rem;
     }
   }
 </style>
@@ -808,6 +809,18 @@
         <i class="bi bi-x"></i>
       </button>
     </div>
+  </div>
+</div>
+
+<!-- Visor de pantalla completa para ampliar la foto de la prenda -->
+<div id="mayorZoomOverlay" class="image-zoom-overlay">
+  <div class="izoom-topbar">
+    <button class="izoom-icon-btn" id="mayorCloseZoomBtn" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+    <span class="izoom-counter" id="mayorZoomName"></span>
+    <span style="width:40px;"></span>
+  </div>
+  <div class="izoom-img-area" id="mayorZoomImgArea">
+    <img src="" id="mayorZoomedImage" class="zoomed-image" alt="Prenda ampliada">
   </div>
 </div>
 

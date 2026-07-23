@@ -674,9 +674,43 @@ function updateProgress() {
     if (finalizePanelEl) finalizePanelEl.classList.toggle('is-visible', hayAlgoSeleccionado);
 }
 
+// ── Visor de pantalla completa para ampliar la foto de la prenda ────────
+const mayorZoomOverlay = document.getElementById('mayorZoomOverlay');
+const mayorZoomedImage = document.getElementById('mayorZoomedImage');
+const mayorZoomName = document.getElementById('mayorZoomName');
+const mayorCloseZoomBtn = document.getElementById('mayorCloseZoomBtn');
+const mayorZoomImgArea = document.getElementById('mayorZoomImgArea');
+
+function openMayorZoom(src, nombre) {
+    if (!mayorZoomOverlay || !mayorZoomedImage || !src) return;
+    mayorZoomedImage.src = src;
+    if (mayorZoomName) mayorZoomName.textContent = nombre || '';
+    mayorZoomOverlay.classList.add('active');
+}
+function closeMayorZoom() {
+    if (mayorZoomOverlay) mayorZoomOverlay.classList.remove('active');
+}
+if (mayorCloseZoomBtn) mayorCloseZoomBtn.addEventListener('click', closeMayorZoom);
+if (mayorZoomImgArea) {
+    // Cerrar al tocar fuera de la imagen (el área tiene padding alrededor).
+    mayorZoomImgArea.addEventListener('click', (e) => {
+        if (e.target === mayorZoomImgArea) closeMayorZoom();
+    });
+}
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && mayorZoomOverlay && mayorZoomOverlay.classList.contains('active')) closeMayorZoom();
+});
+
 // ── Interacción dentro de la grilla ─────────────────────────────────────
 if (gridEl) {
     gridEl.addEventListener('click', (e) => {
+        const zoomImg = e.target.closest('.mayor-card-img img');
+        if (zoomImg) {
+            const card = zoomImg.closest('.mayor-card');
+            const p = card ? productsData.find(pp => pp.id === card.dataset.productId) : null;
+            openMayorZoom(zoomImg.src, p ? p.nombre : '');
+            return;
+        }
         const addBtn = e.target.closest('.mayor-add-btn');
         if (addBtn) {
             const p = productsData.find(pp => pp.id === addBtn.dataset.id);
