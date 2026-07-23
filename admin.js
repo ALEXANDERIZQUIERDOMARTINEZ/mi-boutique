@@ -8927,6 +8927,18 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ── Auto-calcular al entrar a la sección ──
+    // Cubre tanto el clic en el link del rail como llegar directo a #finanzas
+    // (recarga de página, botón atrás/adelante, o redirección automática de
+    // aplicarPermisosNav cuando la sección activa no estaba permitida), casos
+    // en los que nunca se dispara un evento "click" sobre el link del rail.
+    let finanzasYaCargada = false;
+    function cargarFinanzasSiCorresponde() {
+        if ((window.location.hash || '') !== '#finanzas') return;
+        finanzasYaCargada = true;
+        const { desde, hasta, label } = getDateRange('hoy');
+        calcularFinanzas(desde, hasta, label);
+    }
+
     const tabLink = document.querySelector('a[href="#finanzas"]');
     if (tabLink) {
         tabLink.addEventListener('click', () => {
@@ -8934,6 +8946,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             calcularFinanzas(desde, hasta, label);
         });
     }
+    window.addEventListener('hashchange', cargarFinanzasSiCorresponde);
+    if (!finanzasYaCargada) cargarFinanzasSiCorresponde();
 
     // ── Exportar CSV ──
     const btnExport = document.getElementById('fin2-btn-export');
