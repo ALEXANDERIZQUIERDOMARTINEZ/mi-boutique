@@ -3427,11 +3427,11 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
    ───────────────────────────────────────────────────────────────────────── */
 #lista-inventario-produtos td,
 #lista-inventario-productos td {
-  padding: 0.5rem 0.65rem !important;
+  padding: 0.5rem 0.5rem !important;
   font-size: 0.82rem !important;
 }
 #lista-inventario-productos thead th {
-  padding: 0.62rem 0.65rem !important;
+  padding: 0.62rem 0.5rem !important;
   font-size: 0.63rem !important;
 }
 #lista-inventario-productos .table-product-img { max-width: 48px; max-height: 62px; }
@@ -3439,17 +3439,62 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
 #lista-inventario-productos .barcode-cell { padding: 0.3rem !important; font-size: 0.68rem !important; }
 #lista-inventario-productos .product-name { font-size: 0.82rem; line-height: 1.3; }
 #lista-inventario-productos .product-name small { font-size: 0.7rem; }
-#lista-inventario-productos th:nth-child(1),
-#lista-inventario-productos td:nth-child(1) { width: 58px; min-width: 58px; }
-#lista-inventario-productos th:nth-child(5),
-#lista-inventario-productos td:nth-child(5),
-#lista-inventario-productos th:nth-child(6),
-#lista-inventario-productos td:nth-child(6) { width: 78px; min-width: 78px; white-space: nowrap; }
-#lista-inventario-productos th:nth-child(7),
-#lista-inventario-productos td:nth-child(7) { width: 58px; min-width: 58px; text-align: center; }
-#lista-inventario-productos .btn-action { padding: 0.23rem 0.38rem !important; font-size: 0.72rem !important; }
+#lista-inventario-productos .btn-action { padding: 0.23rem 0.3rem !important; font-size: 0.72rem !important; }
 #lista-inventario-productos .badge { font-size: 0.68rem !important; padding: 0.22rem 0.4rem !important; }
 #lista-inventario-productos td:nth-child(4) { font-size: 0.73rem !important; line-height: 1.3; }
+
+/* Desde tablet (≥768px) hay espacio suficiente para mostrar las 12 columnas
+   completas sin necesidad de scroll horizontal: se reparte el ancho en %
+   (table-layout: fixed) y se permite el wrap de texto dentro de cada celda. */
+@media (min-width: 768px) {
+  .tbl-wrap:has(#lista-inventario-productos) .table-responsive {
+    overflow-x: visible !important;
+  }
+  table:has(#lista-inventario-productos) {
+    table-layout: fixed !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  #lista-inventario-productos td {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+  table:has(#lista-inventario-productos) thead th {
+    padding: 0.62rem 0.4rem !important;
+    font-size: 0.6rem !important;
+    letter-spacing: 0.4px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+  #lista-inventario-productos .table-product-img { max-width: 100%; height: auto; }
+  #lista-inventario-productos .barcode-mini { max-width: 100%; }
+
+  table:has(#lista-inventario-productos) th:nth-child(1),
+  table:has(#lista-inventario-productos) td:nth-child(1)  { width: 7%; }
+  table:has(#lista-inventario-productos) th:nth-child(2),
+  table:has(#lista-inventario-productos) td:nth-child(2)  { width: 13%; }
+  table:has(#lista-inventario-productos) th:nth-child(3),
+  table:has(#lista-inventario-productos) td:nth-child(3)  { width: 6%; }
+  table:has(#lista-inventario-productos) th:nth-child(4),
+  table:has(#lista-inventario-productos) td:nth-child(4)  { width: 11%; }
+  table:has(#lista-inventario-productos) th:nth-child(5),
+  table:has(#lista-inventario-productos) td:nth-child(5)  { width: 9%; text-align: center; white-space: nowrap !important; }
+  table:has(#lista-inventario-productos) th:nth-child(6),
+  table:has(#lista-inventario-productos) td:nth-child(6)  { width: 9%; text-align: center; white-space: nowrap !important; }
+  table:has(#lista-inventario-productos) th:nth-child(7),
+  table:has(#lista-inventario-productos) td:nth-child(7)  { width: 5%; text-align: center; white-space: nowrap !important; }
+  table:has(#lista-inventario-productos) th:nth-child(8),
+  table:has(#lista-inventario-productos) td:nth-child(8)  { width: 11%; text-align: center; }
+  table:has(#lista-inventario-productos) th:nth-child(9),
+  table:has(#lista-inventario-productos) td:nth-child(9)  { width: 8%; text-align: center; }
+  table:has(#lista-inventario-productos) th:nth-child(10),
+  table:has(#lista-inventario-productos) td:nth-child(10) { width: 6%; text-align: center; }
+  table:has(#lista-inventario-productos) th:nth-child(11),
+  table:has(#lista-inventario-productos) td:nth-child(11) { width: 5%; text-align: center; }
+  table:has(#lista-inventario-productos) th:nth-child(12),
+  table:has(#lista-inventario-productos) td:nth-child(12) { width: 10%; }
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    SALES TABLE — Alignment
