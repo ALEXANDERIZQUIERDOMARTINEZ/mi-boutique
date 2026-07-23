@@ -198,11 +198,39 @@ export class AuthManager {
      */
     async init() {
         return new Promise((resolve, reject) => {
+            // Salvaguarda contra cuelgues indefinidos: en redes móviles lentas o
+            // cuando el SDK de Firebase Auth no logra resolver la persistencia
+            // (p.ej. IndexedDB bloqueado en Safari), onAuthStateChanged puede no
+            // llamar al callback nunca, dejando el gate "Verificando sesión..."
+            // congelado para siempre. Si no se resuelve en INIT_TIMEOUT_MS,
+            // se rechaza para que la UI pueda mostrar un error accionable.
+            let settled = false;
+            const INIT_TIMEOUT_MS = 15000;
+            const timeoutId = setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                reject(new Error('TIMEOUT_VERIFICACION_SESION'));
+            }, INIT_TIMEOUT_MS);
+
+            const resolveOnce = (value) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeoutId);
+                resolve(value);
+            };
+            const rejectOnce = (error) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeoutId);
+                reject(error);
+            };
+
             onAuthStateChanged(this.auth, async (user) => {
+                if (settled) return; // ya se resolvió por timeout; ignorar callback tardío
                 if (!user) {
                     // No hay usuario autenticado
                     this.redirectToLogin();
-                    reject('No authenticated user');
+                    rejectOnce('No authenticated user');
                     return;
                 }
 
@@ -219,7 +247,7 @@ export class AuthManager {
                         // Usuario no autorizado
                         await this.logout();
                         alert('Usuario no autorizado para acceder al panel de administración');
-                        reject('User not authorized');
+                        rejectOnce('User not authorized');
                         return;
                     }
 
@@ -229,7 +257,7 @@ export class AuthManager {
                     if (!userData.activo) {
                         await this.logout();
                         alert('Tu cuenta está desactivada. Contacta al administrador');
-                        reject('User disabled');
+                        rejectOnce('User disabled');
                         return;
                     }
 
@@ -238,7 +266,7 @@ export class AuthManager {
                     if (!sesionVigente) {
                         await this.logout();
                         alert('Tu sesión fue cerrada por un administrador. Vuelve a iniciar sesión.');
-                        reject('Session invalidated');
+                        rejectOnce('Session invalidated');
                         return;
                     }
 
@@ -260,11 +288,11 @@ export class AuthManager {
                     // Aplicar restricciones de UI
                     this.applyUIRestrictions();
 
-                    resolve(this.currentUser);
+                    resolveOnce(this.currentUser);
                 } catch (error) {
                     console.error('Error verificando usuario:', error);
                     this.redirectToLogin();
-                    reject(error);
+                    rejectOnce(error);
                 }
             });
         });
