@@ -7482,7 +7482,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 where('timestamp', '>=', Timestamp.fromDate(fechaInicio)),
                 orderBy('timestamp', 'asc')
             );
-            const snapshot = await getDocs(q);
+            const [snapshot, prodsSnap] = await Promise.all([
+                getDocs(q),
+                getDocs(productsCollection)
+            ]);
+
+            // Costo de compra por producto: para sumarle a Fábrica lo que
+            // recupera de cada venta al detal (mismo criterio que el panel
+            // "Comparativo por empresa" / db-fabrica-ingresos).
+            const productCostMap = new Map();
+            prodsSnap.forEach(d => productCostMap.set(d.id, parseFloat(d.data().costoCompra) || 0));
 
             const agruparPorMes = dias > 30;
             const claveDe = (fecha) => agruparPorMes
@@ -7520,8 +7529,26 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const bucket = ventasPorClave.get(key);
                 if (!bucket) return;
                 const monto = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
-                if (venta.tipoVenta === 'mayorista') bucket.mayorista += monto;
-                else bucket.detal += monto;
+                if (venta.tipoVenta === 'mayorista') {
+                    bucket.mayorista += monto;
+                } else {
+                    bucket.detal += monto;
+                    // Costo de la mercancía vendida al detal, recuperado como
+                    // ingreso de Fábrica desde FECHA_CORTE_DETAL (no se
+                    // recalcula retroactivamente para ventas anteriores).
+                    if (fecha >= FECHA_CORTE_DETAL) {
+                        (venta.items || []).forEach(item => {
+                            const costo = parseFloat(
+                                item.precioCosto ||
+                                item.costo ||
+                                (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
+                                0
+                            );
+                            const cant = parseInt(item.cantidad || 1, 10);
+                            bucket.mayorista += costo * cant;
+                        });
+                    }
+                }
             });
 
             const dataDetal = labels.map(l => ventasPorClave.get(l).detal);
@@ -8903,7 +8930,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const [ventasSnap, prodsSnap] = await Promise.all([
                 getDocs(query(
                     salesCollection,
-                    where('tipoVenta', '==', 'detal'),
                     where('timestamp', '>=', Timestamp.fromDate(FECHA_CORTE_DETAL)),
                     orderBy('timestamp', 'desc')
                 )),
@@ -8916,6 +8942,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const resultado = [];
             ventasSnap.forEach(docSnap => {
                 const v = docSnap.data();
+                // Todo lo que no es mayorista (detal, apartado, catálogo) recupera
+                // su costo como ingreso de Fábrica, igual que en el dashboard.
+                if (v.tipoVenta === 'mayorista') return;
                 if (v.estado === 'Anulada' || v.estado === 'Cancelada') return;
                 if (!v.items || !v.items.length) return;
 
