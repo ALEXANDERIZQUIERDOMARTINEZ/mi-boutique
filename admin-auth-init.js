@@ -13,6 +13,30 @@ function ocultarGate() {
 }
 
 /**
+ * Reemplaza el spinner infinito del gate por un mensaje accionable cuando
+ * la verificación de sesión no pudo completarse a tiempo (red lenta/caída,
+ * o el SDK de Firebase Auth no resolvió su persistencia). Sin esto, el
+ * usuario se queda mirando "Verificando sesión..." para siempre sin saber
+ * qué pasó ni poder hacer nada al respecto.
+ */
+function mostrarErrorGate() {
+    const gate = document.getElementById('admin-auth-gate');
+    if (!gate) return;
+    gate.innerHTML = `
+        <span style="font-size:2rem;">⚠️</span>
+        <span style="color:#495057;font-size:.95rem;text-align:center;max-width:320px;padding:0 16px;">
+            No se pudo verificar tu sesión. Revisa tu conexión a internet e inténtalo de nuevo.
+        </span>
+        <button type="button" id="admin-auth-gate-retry" style="background:#D988B9;color:#fff;border:none;border-radius:6px;padding:8px 20px;font-size:.9rem;">
+            Reintentar
+        </button>
+    `;
+    document.getElementById('admin-auth-gate-retry')?.addEventListener('click', () => {
+        window.location.reload();
+    });
+}
+
+/**
  * Conecta el botón "Cerrar todas las sesiones" (visible solo para
  * Administrador/Sistema vía data-roles) con AuthManager.invalidarTodasLasSesiones.
  */
@@ -130,8 +154,17 @@ function aplicarPermisosNav() {
 
         window.dispatchEvent(new CustomEvent('adminAuthReady', { detail: window.appContext }));
     } catch (error) {
-        // AuthManager.init() ya redirige a login.html en caso de no estar
-        // autenticado, no autorizado o inactivo — no queda más por hacer aquí.
+        if (error instanceof Error && error.message === 'TIMEOUT_VERIFICACION_SESION') {
+            // Red lenta o SDK de Firebase Auth colgado: no hay redirección
+            // automática (podría ser un problema de conexión temporal), así
+            // que se le da al usuario una salida en vez de dejarlo con el
+            // spinner girando indefinidamente.
+            console.warn('Verificación de sesión: tiempo de espera agotado');
+            mostrarErrorGate();
+            return;
+        }
+        // Para el resto de casos, AuthManager.init() ya redirige a login.html
+        // (no autenticado, no autorizado o inactivo) — no queda más por hacer aquí.
         console.warn('Sesión no válida, redirigiendo a login:', error);
     }
 })();
