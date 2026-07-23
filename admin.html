@@ -1192,9 +1192,17 @@
                 <div class="fin2-page-header">
                     <div>
                         <h1 class="fin2-page-title"><i class="bi bi-graph-up-arrow"></i> Mishelles Boutique</h1>
-                        <p class="fin2-page-subtitle">Ganancia de ventas al detal (precio venta − costo). Lo mayorista es de Mishelles Fábrica.</p>
+                        <p class="fin2-page-subtitle">Ganancia de ventas al detal (precio venta − costo) menos gastos operativos. Lo mayorista es de Mishelles Fábrica.</p>
                     </div>
-                    <span class="fin2-active-period" id="fin2-period-badge">Mes actual</span>
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <span class="fin2-active-period" id="fin2-period-badge">Mes actual</span>
+                        <button type="button" class="btn btn-success btn-sm" id="bout-btn-nuevo-ingreso">
+                            <i class="bi bi-plus-circle me-1"></i> Ingreso
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm" id="bout-btn-nuevo-gasto">
+                            <i class="bi bi-dash-circle me-1"></i> Gasto
+                        </button>
+                    </div>
                 </div>
 
                 <!-- ── Filtros de periodo ── -->
@@ -1242,7 +1250,7 @@
                                 <i class="bi bi-currency-dollar"></i>
                             </div>
                             <div class="fin2-hero-content">
-                                <div class="fin2-hero-label">UTILIDAD TOTAL (GANANCIA NETA)</div>
+                                <div class="fin2-hero-label">UTILIDAD NETA (VENTAS − GASTOS)</div>
                                 <div class="fin2-hero-value" id="fin2-utilidad-total">$0</div>
                                 <div class="fin2-hero-trend" id="fin2-trend-badge">
                                     <i class="bi bi-dash"></i> Sin datos anteriores
@@ -1307,6 +1315,24 @@
                                 <div class="fin2-skpi-val" id="fin2-utilidad-mayorista">$0</div>
                             </div>
                         </div>
+                        <div class="fin2-skpi-card">
+                            <div class="fin2-skpi-icon fin2-skpi-icon--pink">
+                                <i class="bi bi-piggy-bank"></i>
+                            </div>
+                            <div class="fin2-skpi-body">
+                                <div class="fin2-skpi-label">Otros ingresos</div>
+                                <div class="fin2-skpi-val" id="fin2-otros-ingresos">$0</div>
+                            </div>
+                        </div>
+                        <div class="fin2-skpi-card">
+                            <div class="fin2-skpi-icon fin2-skpi-icon--amber">
+                                <i class="bi bi-receipt"></i>
+                            </div>
+                            <div class="fin2-skpi-body">
+                                <div class="fin2-skpi-label">Gastos operativos</div>
+                                <div class="fin2-skpi-val" id="fin2-gastos-operativos">$0</div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Gráfica: Utilidad en el tiempo -->
@@ -1363,6 +1389,39 @@
                                         <td class="text-end" id="fin2-footer-utilidad"></td>
                                     </tr>
                                 </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de movimientos manuales: ingresos y gastos operativos -->
+                    <div class="fin2-table-card">
+                        <div class="fin2-table-header">
+                            <div>
+                                <span class="fin2-table-title">
+                                    <i class="bi bi-list-ul"></i> Ingresos y gastos operativos
+                                </span>
+                                <span class="fin2-table-count" id="bout-movs-count">0 movimientos</span>
+                            </div>
+                        </div>
+                        <div class="fin2-table-wrapper">
+                            <table class="fin2-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tipo</th>
+                                        <th>Concepto</th>
+                                        <th class="text-end">Monto</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bout-tabla-body">
+                                    <tr>
+                                        <td colspan="5" class="fin2-empty-state">
+                                            <i class="bi bi-inbox"></i>
+                                            <span>Aún no hay movimientos registrados</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -3408,6 +3467,59 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-danger" id="fabrica-confirm-delete-btn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Nuevo/Editar movimiento de Boutique (ingresos y gastos operativos) -->
+    <div class="modal fade" id="boutiqueMovModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="boutiqueMovForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="boutiqueMovModalTitle">Nuevo Ingreso</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="boutiqueMov-id" value="">
+                        <input type="hidden" id="boutiqueMov-tipo" value="ingreso">
+                        <div class="mb-3">
+                            <label class="form-label">Concepto</label>
+                            <input type="text" class="form-control" id="boutiqueMov-concepto" placeholder="Ej: Arriendo, Servicios, Nómina, Empaques..." required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Monto</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="boutiqueMov-monto" placeholder="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" class="form-control" id="boutiqueMov-fecha" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="boutiqueMov-btn-guardar">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de movimiento de Boutique -->
+    <div class="modal fade" id="boutiqueDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar movimiento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Seguro que quieres eliminar este movimiento? Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="boutique-confirm-delete-btn">Eliminar</button>
                 </div>
             </div>
         </div>

@@ -352,6 +352,20 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE BOUTIQUE - GASTOS E INGRESOS OPERATIVOS (segmento Finanzas)
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /movimientosBoutique/{movimientoId} {
+      allow read: if hasPermission('finanzas_ver') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      allow create, update, delete: if hasPermission('finanzas_gestionar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // REGLAS DE CIERRES DE CAJA - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
 

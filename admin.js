@@ -81,6 +81,7 @@ const salesCollection = collection(db, 'ventas');
 const apartadosCollection = collection(db, 'apartados');
 const financesCollection = collection(db, 'movimientosFinancieros');
 const fabricaCollection = collection(db, 'movimientosFabrica');
+const boutiqueCollection = collection(db, 'movimientosBoutique');
 const closingsCollection = collection(db, 'cierresCaja');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const chatConversationsCollection = collection(db, 'chatConversations');
@@ -8440,13 +8441,40 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     const loadingDiv     = document.getElementById('fin2-loading');
     const resultadosDiv  = document.getElementById('fin2-resultados');
 
+    // ── DOM refs: gastos e ingresos operativos (movimientosBoutique) ──
+    const btnNuevoIngreso  = document.getElementById('bout-btn-nuevo-ingreso');
+    const btnNuevoGasto    = document.getElementById('bout-btn-nuevo-gasto');
+    const movForm          = document.getElementById('boutiqueMovForm');
+    const movModalTitle    = document.getElementById('boutiqueMovModalTitle');
+    const movIdInput       = document.getElementById('boutiqueMov-id');
+    const movTipoInput     = document.getElementById('boutiqueMov-tipo');
+    const movConceptoInput = document.getElementById('boutiqueMov-concepto');
+    const movMontoInput    = document.getElementById('boutiqueMov-monto');
+    const movFechaInput    = document.getElementById('boutiqueMov-fecha');
+    const movTbody         = document.getElementById('bout-tabla-body');
+    const btnConfirmDelete = document.getElementById('boutique-confirm-delete-btn');
+
     if (!filterBtns.length) return;
 
     // ── Instancia del gráfico ──
     let chartInstance = null;
 
+    // ── Último rango calculado, para refrescar tras crear/editar/eliminar un movimiento ──
+    let ultimoRango = { desde: null, hasta: null, label: 'Hoy' };
+    let idPendienteEliminar = null;
+
     // ── Formateador ──
     const fmt = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+
+    function getModal(id) {
+        const el = document.getElementById(id);
+        return bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el);
+    }
+
+    // ── Fecha efectiva de un movimiento manual (fecha elegida, o timestamp de creación) ──
+    function fechaDeMovimiento(m) {
+        return m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : new Date(0));
+    }
 
     // ── Parsear fecha "YYYY-MM-DD" como hora local (NO UTC) ──
     function parseLocalDate(str) {
@@ -8652,22 +8680,45 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
     // ── Consulta y renderizado principal ──
     async function calcularFinanzas(desde, hasta, label) {
+        ultimoRango = { desde, hasta, label };
+
         if (loadingDiv)    loadingDiv.style.display  = 'flex';
         if (resultadosDiv) resultadosDiv.style.display = 'none';
 
         document.getElementById('fin2-period-badge').textContent = label;
 
         try {
-            // Cargar ventas y productos en paralelo
-            const [snapshot, prodsSnapshot] = await Promise.all([
+            // Cargar ventas, productos y movimientos manuales (ingresos/gastos
+            // operativos de Boutique) en paralelo
+            const tenantId = window.appContext?.tenantId || null;
+            const movClauses = [orderBy('timestamp', 'desc')];
+            if (tenantId) movClauses.unshift(where('tenantId', '==', tenantId));
+
+            const [snapshot, prodsSnapshot, movSnapshot] = await Promise.all([
                 getDocs(query(
                     salesCollection,
                     where('timestamp', '>=', Timestamp.fromDate(desde)),
                     where('timestamp', '<=', Timestamp.fromDate(hasta)),
                     orderBy('timestamp', 'desc')
                 )),
-                getDocs(productsCollection)
+                getDocs(productsCollection),
+                getDocs(query(boutiqueCollection, ...movClauses))
             ]);
+
+            const movimientos = movSnapshot.docs
+                .map(d => ({ id: d.id, ...d.data() }))
+                .filter(m => {
+                    const fecha = fechaDeMovimiento(m);
+                    return fecha >= desde && fecha <= hasta;
+                })
+                .sort((a, b) => fechaDeMovimiento(b) - fechaDeMovimiento(a));
+
+            const ingresosManuales = movimientos
+                .filter(m => m.tipo === 'ingreso')
+                .reduce((s, m) => s + (parseFloat(m.monto) || 0), 0);
+            const gastosManuales = movimientos
+                .filter(m => m.tipo === 'gasto')
+                .reduce((s, m) => s + (parseFloat(m.monto) || 0), 0);
 
             // Mapa productoId → costoCompra (el costo real del producto)
             const productCostMap = new Map();
@@ -8704,17 +8755,20 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const udsTotal      = productos.reduce((s, p) => s + p.cantidad, 0);
             const margen        = ingresosTotal > 0 ? ((utilidadTotal / ingresosTotal) * 100).toFixed(1) : 0;
 
+            // ── Utilidad neta: ganancia de ventas al detal + otros ingresos − gastos operativos ──
+            const utilidadNeta = utilidadTotal + ingresosManuales - gastosManuales;
+
             // ── KPI principal ──
             const elUtilidad = document.getElementById('fin2-utilidad-total');
-            elUtilidad.textContent = fmt.format(utilidadTotal);
-            elUtilidad.className   = 'fin2-hero-value ' + (utilidadTotal >= 0 ? 'fin2-positive' : 'fin2-negative');
+            elUtilidad.textContent = fmt.format(utilidadNeta);
+            elUtilidad.className   = 'fin2-hero-value ' + (utilidadNeta >= 0 ? 'fin2-positive' : 'fin2-negative');
 
             // ── Tendencia (simplificada: positivo / negativo) ──
             const trendBadge = document.getElementById('fin2-trend-badge');
-            if (utilidadTotal > 0) {
+            if (utilidadNeta > 0) {
                 trendBadge.innerHTML = '<i class="bi bi-arrow-up-right"></i> Ganancia positiva';
                 trendBadge.className = 'fin2-hero-trend fin2-trend-up';
-            } else if (utilidadTotal < 0) {
+            } else if (utilidadNeta < 0) {
                 trendBadge.innerHTML = '<i class="bi bi-arrow-down-right"></i> Ganancia negativa';
                 trendBadge.className = 'fin2-hero-trend fin2-trend-down';
             } else {
@@ -8732,6 +8786,44 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             // periodo, que es 100% de Mishelles Fábrica y solo se muestra informativa ──
             document.getElementById('fin2-utilidad-detal').textContent     = fmt.format(utilidadTotal);
             document.getElementById('fin2-utilidad-mayorista').textContent = fmt.format(totalVentasMayoristasRango);
+
+            // ── Otros ingresos y gastos operativos registrados manualmente ──
+            document.getElementById('fin2-otros-ingresos').textContent    = fmt.format(ingresosManuales);
+            document.getElementById('fin2-gastos-operativos').textContent = fmt.format(gastosManuales);
+
+            // ── Tabla de movimientos manuales ──
+            const movCount = document.getElementById('bout-movs-count');
+            if (movCount) movCount.textContent = `${movimientos.length} movimiento${movimientos.length !== 1 ? 's' : ''}`;
+
+            if (movTbody) {
+                if (movimientos.length === 0) {
+                    movTbody.innerHTML = `<tr>
+                        <td colspan="5" class="fin2-empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <span>Aún no hay movimientos registrados</span>
+                        </td>
+                    </tr>`;
+                } else {
+                    movTbody.innerHTML = movimientos.map(m => {
+                        const fechaMov = fechaDeMovimiento(m);
+                        const esIngreso = m.tipo === 'ingreso';
+                        const badgeCls  = esIngreso ? 'bg-success' : 'bg-danger';
+                        const badgeTxt  = esIngreso ? 'Ingreso' : 'Gasto';
+                        const colorCls  = esIngreso ? 'fin2-positive-text' : 'fin2-negative-text';
+                        const signo     = esIngreso ? '+' : '−';
+                        return `<tr>
+                            <td>${fechaMov.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                            <td><span class="badge ${badgeCls}">${badgeTxt}</span></td>
+                            <td>${m.concepto || ''}</td>
+                            <td class="text-end ${colorCls} fw-semibold">${signo}${fmt.format(parseFloat(m.monto) || 0)}</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary bout-btn-editar" data-id="${m.id}"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-outline-danger bout-btn-eliminar" data-id="${m.id}"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>`;
+                    }).join('');
+                }
+            }
 
             // ── Gráfica ──
             const { labels, data } = buildChartData(ventas, desde, hasta, productCostMap);
@@ -8855,7 +8947,119 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         });
     }
 
-    console.log("✅ Módulo Finanzas v2 inicializado (Utilidad Real por Producto)");
+    // ── Abrir modal: Nuevo Ingreso / Nuevo Gasto (operativos de Boutique) ──
+    function abrirModalNuevoMov(tipo) {
+        if (!movForm) return;
+        movForm.reset();
+        movIdInput.value = '';
+        movTipoInput.value = tipo;
+        movModalTitle.textContent = tipo === 'ingreso' ? 'Nuevo Ingreso' : 'Nuevo Gasto';
+        movFechaInput.value = new Date().toISOString().slice(0, 10);
+        getModal('boutiqueMovModal').show();
+    }
+
+    if (btnNuevoIngreso) btnNuevoIngreso.addEventListener('click', () => abrirModalNuevoMov('ingreso'));
+    if (btnNuevoGasto)   btnNuevoGasto.addEventListener('click', () => abrirModalNuevoMov('gasto'));
+
+    // ── Editar / eliminar movimiento ──
+    if (movTbody) {
+        movTbody.addEventListener('click', async (e) => {
+            const btnEditar = e.target.closest('.bout-btn-editar');
+            const btnEliminar = e.target.closest('.bout-btn-eliminar');
+
+            if (btnEditar) {
+                const id = btnEditar.dataset.id;
+                try {
+                    const docSnap = await getDoc(doc(db, 'movimientosBoutique', id));
+                    if (!docSnap.exists()) return;
+                    const data = docSnap.data();
+                    movForm.reset();
+                    movIdInput.value = id;
+                    movTipoInput.value = data.tipo;
+                    movConceptoInput.value = data.concepto || '';
+                    movMontoInput.value = data.monto || '';
+                    const fecha = data.fecha?.toDate ? data.fecha.toDate() : new Date();
+                    movFechaInput.value = fecha.toISOString().slice(0, 10);
+                    movModalTitle.textContent = data.tipo === 'ingreso' ? 'Editar Ingreso' : 'Editar Gasto';
+                    getModal('boutiqueMovModal').show();
+                } catch (error) {
+                    console.error('Error al cargar movimiento:', error);
+                    showToast('Error al cargar el movimiento', 'error');
+                }
+            }
+
+            if (btnEliminar) {
+                idPendienteEliminar = btnEliminar.dataset.id;
+                getModal('boutiqueDeleteModal').show();
+            }
+        });
+    }
+
+    if (btnConfirmDelete) {
+        btnConfirmDelete.addEventListener('click', async () => {
+            if (!idPendienteEliminar) return;
+            try {
+                await deleteDoc(doc(db, 'movimientosBoutique', idPendienteEliminar));
+                showToast('Movimiento eliminado', 'success');
+                getModal('boutiqueDeleteModal').hide();
+                idPendienteEliminar = null;
+                calcularFinanzas(ultimoRango.desde, ultimoRango.hasta, ultimoRango.label);
+            } catch (error) {
+                console.error('Error al eliminar movimiento:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        });
+    }
+
+    // ── Guardar (crear/editar) ──
+    if (movForm) {
+        movForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = movIdInput.value;
+            const tipo = movTipoInput.value;
+            const concepto = movConceptoInput.value.trim();
+            const monto = parseFloat(movMontoInput.value);
+            const fecha = movFechaInput.value ? parseLocalDate(movFechaInput.value) : new Date();
+
+            if (!concepto || !monto || monto <= 0) {
+                showToast('Concepto y monto son requeridos.', 'warning');
+                return;
+            }
+
+            const btnGuardar = document.getElementById('boutiqueMov-btn-guardar');
+            btnGuardar.disabled = true;
+
+            try {
+                const datos = {
+                    tipo,
+                    concepto,
+                    monto,
+                    fecha: Timestamp.fromDate(fecha),
+                    tenantId: window.appContext?.tenantId || null
+                };
+
+                if (id) {
+                    await updateDoc(doc(db, 'movimientosBoutique', id), datos);
+                    showToast('Movimiento actualizado', 'success');
+                } else {
+                    await addDoc(boutiqueCollection, { ...datos, timestamp: serverTimestamp() });
+                    showToast(tipo === 'ingreso' ? 'Ingreso guardado' : 'Gasto guardado', 'success');
+                }
+
+                getModal('boutiqueMovModal').hide();
+                movForm.reset();
+                calcularFinanzas(ultimoRango.desde, ultimoRango.hasta, ultimoRango.label);
+            } catch (error) {
+                console.error('Error al guardar movimiento de Boutique:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            } finally {
+                btnGuardar.disabled = false;
+            }
+        });
+    }
+
+    console.log("✅ Módulo Finanzas v2 inicializado (Utilidad Real por Producto + Gastos operativos)");
 })();
 
 // ========================================================================
