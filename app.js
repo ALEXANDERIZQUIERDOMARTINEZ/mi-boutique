@@ -888,6 +888,17 @@ function tallasEquivalentes(a, b) {
     return norm(a) === norm(b);
 }
 
+// Texto a mostrar para una talla/color: sin importar cómo esté escrito
+// ('unica', 'Unica', 'única', vacío...) siempre se muestra "Única" / "Único".
+function formatTallaLabel(talla) {
+    const n = (talla || '').toLowerCase().trim();
+    return (n === '' || n === 'unica' || n === 'única') ? 'Única' : talla;
+}
+function formatColorLabel(color) {
+    const n = (color || '').toLowerCase().trim();
+    return (n === '' || n === 'unico' || n === 'único') ? 'Único' : color;
+}
+
 function renderSizeButtons(tallas, esTallaUnica, product) {
     const tallasButtons = document.getElementById('tallas-buttons');
     const tallasContainer = document.getElementById('tallas-container');
@@ -952,7 +963,7 @@ function renderSizeButtons(tallas, esTallaUnica, product) {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'size-color-btn';
-                btn.textContent = talla;
+                btn.textContent = formatTallaLabel(talla);
                 btn.dataset.value = talla;
                 btn.onclick = () => selectTalla(talla, product);
                 tallasButtons.appendChild(btn);
@@ -1057,11 +1068,11 @@ function renderColorButtons(selectedTalla, product) {
             );
             if (varianteColor && (varianteColor.hex || varianteColor.imagenes?.length)) {
                 const swatchStyle = getColorSwatchStyle(varianteColor);
-                btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span><span class="color-swatch-name">${color}</span>`;
+                btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span><span class="color-swatch-name">${formatColorLabel(color)}</span>`;
                 btn.classList.add('has-swatch');
-                btn.title = color;
+                btn.title = formatColorLabel(color);
             } else {
-                btn.textContent = color;
+                btn.textContent = formatColorLabel(color);
             }
 
             btn.onclick = () => selectColor(color, product);
@@ -1123,7 +1134,7 @@ function selectColor(color, product) {
 
     // Actualizar etiqueta con el nombre del color seleccionado
     const colorNameLabel = document.getElementById('color-name-label');
-    if (colorNameLabel) colorNameLabel.textContent = color;
+    if (colorNameLabel) colorNameLabel.textContent = formatColorLabel(color);
 
     // Ocultar aviso de selección de color
     const colorHint = document.getElementById('color-select-hint');
@@ -2320,8 +2331,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 codigo: product.codigo || '',
                 nombre: product.nombre,
                 precio: precioUnitarioFinal,
-                talla: talla.toLowerCase() === 'unica' ? 'Única' : talla,
-                color: color.toLowerCase() === 'unico' ? 'Único' : color,
+                talla: formatTallaLabel(talla),
+                color: formatColorLabel(color),
                 cantidad,
                 total: cantidad * precioUnitarioFinal,
                 imagenUrl: product.imagenUrl || '',

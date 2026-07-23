@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { initializeFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
-import { getColorHex, getColorSwatchStyle } from './color-utils.js';
+import { getColorHex, getColorSwatchStyle, formatColorLabel } from './color-utils.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -338,7 +338,7 @@ function renderOrderSummary() {
             const subtotal = precioUnitario * cantidad;
             total += subtotal;
             totalUnidades += cantidad;
-            const detalle = f.talla ? `${f.color} · talla ${f.talla}` : f.color;
+            const detalle = f.talla ? `${formatColorLabel(f.color)} · talla ${f.talla}` : formatColorLabel(f.color);
             return `
                 <div class="mayor-summary-row">
                     <span>${detalle} × ${cantidad}</span>
@@ -494,7 +494,7 @@ function renderFilaHtml(p, fila, idx, tallas) {
 
     const colorSelectHtml = `
         <select class="mayor-color-select" data-id="${p.id}" data-idx="${idx}">
-            ${colores.map(c => `<option value="${c.color.replace(/"/g, '&quot;')}" ${c.color === fila.color ? 'selected' : ''}>${c.color} (${c.stock} disp.)</option>`).join('')}
+            ${colores.map(c => `<option value="${c.color.replace(/"/g, '&quot;')}" ${c.color === fila.color ? 'selected' : ''}>${formatColorLabel(c.color)} (${c.stock} disp.)</option>`).join('')}
         </select>`;
 
     return `
@@ -527,9 +527,9 @@ function buildCardColorsHtml(p) {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
         return `
-            <span class="mayor-card-color-item" title="${color}">
+            <span class="mayor-card-color-item" title="${formatColorLabel(color)}">
                 <span class="color-swatch-circle mayor-card-color-swatch" style="${swatchStyle}"></span>
-                <span class="color-swatch-name">${color}</span>
+                <span class="color-swatch-name">${formatColorLabel(color)}</span>
             </span>
         `;
     }).join('');
@@ -873,7 +873,7 @@ if (waBtn) {
             const precioUnitario = getPrecioUnitario(p);
             const detalleLineas = filas.map(f => {
                 const cantidad = parseInt(f.cantidad, 10) || 0;
-                const detalle = f.talla ? `${f.color} (talla ${f.talla})` : f.color;
+                const detalle = f.talla ? `${formatColorLabel(f.color)} (talla ${f.talla})` : formatColorLabel(f.color);
                 return `   • ${detalle} x${cantidad} = ${formatoMoneda.format(precioUnitario * cantidad)}`;
             }).join('\n');
             return `🛍️ *${p.nombre}* — ${formatoMoneda.format(precioUnitario)} c/u\n${detalleLineas}`;
