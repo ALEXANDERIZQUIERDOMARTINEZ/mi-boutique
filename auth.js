@@ -12,6 +12,13 @@ import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp } from "
 // saber si un "cerrar todas las sesiones" lo dejó fuera.
 const LOGIN_TIMESTAMP_KEY = 'mishellLoginEn';
 
+// Caché en localStorage (sobrevive a cerrar la pestaña/app, a diferencia de
+// sessionStorage) del último usuario verificado con éxito. admin-auth-init.js
+// la usa para pintar el panel de inmediato en cada apertura — como
+// Instagram, que no te muestra una pantalla de carga si ya iniciaste sesión
+// — mientras la verificación real contra Firebase ocurre en segundo plano.
+const USER_CACHE_KEY = 'mishellAdminUserCache';
+
 // Definición de permisos del sistema
 // IMPORTANTE: estas claves deben coincidir exactamente con los permisos
 // evaluados en firestore.rules (función hasPermission), ya que las Security
@@ -228,7 +235,11 @@ export class AuthManager {
             onAuthStateChanged(this.auth, async (user) => {
                 if (settled) return; // ya se resolvió por timeout; ignorar callback tardío
                 if (!user) {
-                    // No hay usuario autenticado
+                    // No hay usuario autenticado: limpiar cualquier caché
+                    // optimista para que la próxima apertura no vuelva a
+                    // pintar un panel con datos de una sesión que ya no existe.
+                    sessionStorage.removeItem('adminUser');
+                    localStorage.removeItem(USER_CACHE_KEY);
                     this.redirectToLogin();
                     rejectOnce('No authenticated user');
                     return;
@@ -282,8 +293,9 @@ export class AuthManager {
 
                     this.userPermissions = this.currentUser.permisos;
 
-                    // Guardar en sessionStorage
+                    // Guardar en sessionStorage y en el caché persistente
                     sessionStorage.setItem('adminUser', JSON.stringify(this.currentUser));
+                    localStorage.setItem(USER_CACHE_KEY, JSON.stringify(this.currentUser));
 
                     // Aplicar restricciones de UI
                     this.applyUIRestrictions();
@@ -296,6 +308,21 @@ export class AuthManager {
                 }
             });
         });
+    }
+
+    /**
+     * Devuelve el último usuario verificado con éxito en este dispositivo
+     * (o null si no hay caché), para pintar el panel de inmediato antes de
+     * que termine la verificación real contra Firebase.
+     */
+    getCachedUser() {
+        try {
+            const raw = localStorage.getItem(USER_CACHE_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            console.warn('No se pudo leer el caché de usuario:', error);
+            return null;
+        }
     }
 
     /**
@@ -364,6 +391,7 @@ export class AuthManager {
         try {
             await signOut(this.auth);
             sessionStorage.removeItem('adminUser');
+            localStorage.removeItem(USER_CACHE_KEY);
             this.currentUser = null;
             this.userPermissions = [];
             this.redirectToLogin();
@@ -419,16 +447,18 @@ export class AuthManager {
     }
 
     /**
-     * Actualiza la información del usuario en la UI (nombre y rol)
+     * Actualiza la información del usuario en la UI (nombre y rol).
+     * Acepta un usuario explícito para poder pintar con datos cacheados
+     * antes de que termine la verificación real (this.currentUser aún null).
      */
-    updateUserInfo() {
-        if (!this.currentUser) return;
-        const roleName = ROLES[this.currentUser.rol]?.nombre || this.currentUser.rol;
+    updateUserInfo(usuario = this.currentUser) {
+        if (!usuario) return;
+        const roleName = ROLES[usuario.rol]?.nombre || usuario.rol;
 
         const nameTargets = ['currentUserInfo', 'rail-admin-name', 'topbar-admin-name', 'topbar-dropdown-name'];
         nameTargets.forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.textContent = this.currentUser.nombre;
+            if (el) el.textContent = usuario.nombre;
         });
 
         const roleTargets = ['currentUserRole', 'rail-profile-role', 'topbar-dropdown-role'];
@@ -438,7 +468,7 @@ export class AuthManager {
         });
 
         const emailEl = document.getElementById('topbar-dropdown-email');
-        if (emailEl) emailEl.textContent = this.currentUser.email || '';
+        if (emailEl) emailEl.textContent = usuario.email || '';
     }
 
     /**

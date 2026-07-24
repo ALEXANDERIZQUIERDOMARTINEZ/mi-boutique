@@ -123,6 +123,26 @@ function aplicarPermisosNav() {
     }
 }
 
+function construirAppContext(usuario) {
+    return {
+        userId: usuario.uid,
+        email: usuario.email,
+        nombre: usuario.nombre,
+        rol: usuario.rol,
+        permisos: usuario.permisos || {},
+        tenantId: usuario.tenantId ?? null,
+        isSuperAdmin: usuario.rol === 'SUPER_ADMIN'
+    };
+}
+
+function renderizarSesion(authManager, usuario) {
+    window.appContext = construirAppContext(usuario);
+    recordarUsuarioEnDirectorio(usuario);
+    authManager.updateUserInfo(usuario);
+    aplicarPermisosNav();
+    window.dispatchEvent(new CustomEvent('adminAuthReady', { detail: window.appContext }));
+}
+
 (async function initAuthGuard() {
     if (!window.firebaseApp || !window.db) {
         console.error('admin-auth-init: firebaseApp/db no están disponibles. ¿Falló admin.js?');
@@ -132,39 +152,49 @@ function aplicarPermisosNav() {
     const authManager = new AuthManager(window.firebaseApp);
     window.authManager = authManager;
 
-    try {
-        const usuario = await authManager.init();
-
-        window.appContext = {
-            userId: usuario.uid,
-            email: usuario.email,
-            nombre: usuario.nombre,
-            rol: usuario.rol,
-            permisos: usuario.permisos || {},
-            tenantId: usuario.tenantId ?? null,
-            isSuperAdmin: usuario.rol === 'SUPER_ADMIN'
-        };
-
-        recordarUsuarioEnDirectorio(usuario);
-        aplicarPermisosNav();
+    // Entrada optimista tipo Instagram: si este dispositivo ya verificó a
+    // este usuario antes, se pinta el panel de inmediato con esos datos
+    // mientras la verificación real (Firebase Auth + Firestore) corre en
+    // segundo plano, en vez de bloquear cada apertura con el spinner
+    // "Verificando sesión...". Si la verificación real encuentra que la
+    // sesión ya no es válida, AuthManager la cierra y redirige igual.
+    const usuarioCache = authManager.getCachedUser();
+    if (usuarioCache) {
+        authManager.currentUser = usuarioCache;
+        authManager.userPermissions = usuarioCache.permisos || {};
+        renderizarSesion(authManager, usuarioCache);
         initUsuariosManager(window.db, authManager);
         configurarCierreSesionesGlobal(authManager);
+        ocultarGate();
+    }
+
+    try {
+        const usuario = await authManager.init();
+        renderizarSesion(authManager, usuario);
+
+        if (!usuarioCache) {
+            initUsuariosManager(window.db, authManager);
+            configurarCierreSesionesGlobal(authManager);
+        }
         authManager.escucharInvalidacionSesiones();
         ocultarGate();
-
-        window.dispatchEvent(new CustomEvent('adminAuthReady', { detail: window.appContext }));
     } catch (error) {
         if (error instanceof Error && error.message === 'TIMEOUT_VERIFICACION_SESION') {
             // Red lenta o SDK de Firebase Auth colgado: no hay redirección
-            // automática (podría ser un problema de conexión temporal), así
-            // que se le da al usuario una salida en vez de dejarlo con el
-            // spinner girando indefinidamente.
+            // automática (podría ser un problema de conexión temporal). Si ya
+            // se pintó el panel con datos cacheados, se deja usable tal cual
+            // (se revalidará en la próxima apertura); si no había caché, se
+            // le da al usuario una salida en vez de dejarlo con el spinner
+            // girando indefinidamente.
             console.warn('Verificación de sesión: tiempo de espera agotado');
-            mostrarErrorGate();
+            if (!usuarioCache) {
+                mostrarErrorGate();
+            }
             return;
         }
-        // Para el resto de casos, AuthManager.init() ya redirige a login.html
-        // (no autenticado, no autorizado o inactivo) — no queda más por hacer aquí.
+        // Para el resto de casos (no autenticado, no autorizado, inactivo o
+        // sesión invalidada), AuthManager.init() ya cerró la sesión, limpió
+        // el caché y redirige a login.html — no queda más por hacer aquí.
         console.warn('Sesión no válida, redirigiendo a login:', error);
     }
 })();

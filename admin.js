@@ -39,10 +39,15 @@ function normalizeColor(color) {
     return (c === '' || c === 'unico' || c === 'único') ? 'Único' : color.trim();
 }
 
-// Inicializar window.appContext desde sessionStorage (datos guardados en login)
+// Inicializar window.appContext lo antes posible con el último usuario
+// conocido en este dispositivo. Se prueba primero sessionStorage (recién
+// llegado desde login.html) y si no hay nada, el caché persistente en
+// localStorage (reapertura de la app/pestaña) — así el contexto ya existe
+// aquí mismo, antes de que admin-auth-init.js termine de verificar contra
+// Firebase.
 (function() {
     try {
-        const stored = sessionStorage.getItem('adminUser');
+        const stored = sessionStorage.getItem('adminUser') || localStorage.getItem('mishellAdminUserCache');
         if (stored) {
             const u = JSON.parse(stored);
             window.appContext = {
