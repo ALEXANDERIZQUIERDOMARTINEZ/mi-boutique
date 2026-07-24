@@ -2015,14 +2015,28 @@ small.text-muted {
   width: 100%;
 }
 .action-buttons button { margin: 0; flex: 0 0 auto; }
-.table tbody td.action-buttons { vertical-align: top !important; }
-.table .action-buttons {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 0.4rem !important;
-  align-items: stretch !important;
+
+/* Celdas de acciones dentro de tablas: NO se puede poner display:flex en un
+   <td> (aquí lo era antes vía ".table .action-buttons"). Un <td> deja de
+   comportarse como celda de tabla en cuanto su display deja de ser
+   table-cell, y el algoritmo de layout de la tabla le asigna un ancho
+   minúsculo en vez del ancho de columna real — los botones "Editar" /
+   "Eliminar" quedaban aplastados con el icono superpuesto al texto. En vez
+   de eso, la celda se queda como table-cell normal y los botones se apilan
+   como bloques comunes (cada botón ya es block-level y ocupa el 100% del
+   ancho real de la columna). */
+td.action-buttons {
+  display: table-cell !important;
+  vertical-align: top !important;
+  white-space: normal;
 }
-.table .action-buttons .btn-action { width: 100%; justify-content: center; }
+td.action-buttons .btn-action {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  white-space: nowrap;
+}
+td.action-buttons .btn-action + .btn-action { margin-top: 0.4rem; }
 
 .btn-action {
   display: inline-flex;
@@ -3443,6 +3457,19 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
 #lista-inventario-productos .badge { font-size: 0.68rem !important; padding: 0.22rem 0.4rem !important; }
 #lista-inventario-productos td:nth-child(4) { font-size: 0.73rem !important; line-height: 1.3; }
 
+/* Productos con muchas variaciones (talla/color) generaban una fila
+   gigante — el resto de columnas (Detal, Mayor, Stock, Promo...) quedaban
+   con mucho espacio vacío al estirarse a la misma altura. Se limita la
+   altura de esta celda con scroll interno para que la fila se mantenga
+   compacta sin importar cuántas variaciones tenga el producto. */
+#lista-inventario-productos .variaciones-cell {
+  max-height: 4.6rem;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+#lista-inventario-productos .variaciones-cell::-webkit-scrollbar { width: 5px; }
+#lista-inventario-productos .variaciones-cell::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+
 /* Desde tablet (≥768px) hay espacio suficiente para mostrar las 12 columnas
    completas sin necesidad de scroll horizontal: se reparte el ancho en %
    (table-layout: fixed) y se permite el wrap de texto dentro de cada celda. */
@@ -3508,7 +3535,6 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
 #lista-ventas-anteriores .d-flex.gap-2 img { margin-top: 0 !important; flex-shrink: 0 !important; }
 #lista-ventas-anteriores .d-flex.gap-2 small { display: block; line-height: 1.4; }
 #lista-ventas-anteriores td.action-buttons { vertical-align: top !important; }
-#lista-ventas-anteriores .action-buttons { display: flex !important; flex-direction: column !important; gap: 0.4rem !important; align-items: stretch !important; }
 #lista-ventas-anteriores .badge { display: inline-block; white-space: nowrap; }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -3521,8 +3547,6 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
 #lista-apartados .d-flex.gap-2 { margin-bottom: 0.65rem !important; }
 #lista-apartados .d-flex.gap-2:last-child { margin-bottom: 0 !important; }
 #lista-apartados .d-flex.gap-2 img { margin-top: 0 !important; flex-shrink: 0 !important; }
-#lista-apartados .action-buttons { display: flex !important; flex-direction: column !important; gap: 0.4rem !important; align-items: stretch !important; }
-#lista-apartados .btn-action { width: 100%; justify-content: center; }
 #lista-apartados .badge { display: inline-block; white-space: nowrap; }
 
 /* ─────────────────────────────────────────────────────────────────────────
