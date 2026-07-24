@@ -6724,7 +6724,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // Costo de compra por producto, alimentado por iniciarListenerProductos().
     // Evita que calcularVentasRango tenga que descargar toda la colección de
     // productos otra vez cada vez que se cambia de rango (Hoy/Semana/Mes/Año).
+    // Se expone en window para que otras secciones del dashboard (gráfica de
+    // tendencia) reutilicen el mismo caché en vez de volver a descargar toda
+    // la colección de productos.
     const productCostMapCache = new Map();
+    window.__dashboardProductCostMap = productCostMapCache;
 
     // Dona Boutique vs Fábrica dentro de la tarjeta "Comparativo por empresa"
     function actualizarGraficoComparativo(ventasDetal, ventasMayor) {
@@ -7521,9 +7525,17 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             // Costo de compra por producto: para sumarle a Fábrica lo que
             // recupera de cada venta al detal (mismo criterio que el panel
             // "Comparativo por empresa" / db-fabrica-ingresos).
-            const prodsSnap = await getDocs(productsCollection);
-            const productCostMap = new Map();
-            prodsSnap.forEach(d => productCostMap.set(d.id, parseFloat(d.data().costoCompra) || 0));
+            // Reutiliza el caché alimentado por iniciarListenerProductos() en vez
+            // de descargar toda la colección de productos otra vez cada vez que
+            // se abre el dashboard o se cambia de rango (7d/30d/6m) — esto era
+            // una de las causas de la sobrecarga de memoria que hacía fallar
+            // Safari repetidamente en #dashboard.
+            let productCostMap = window.__dashboardProductCostMap;
+            if (!productCostMap || productCostMap.size === 0) {
+                productCostMap = new Map();
+                const prodsSnap = await getDocs(productsCollection);
+                prodsSnap.forEach(d => productCostMap.set(d.id, parseFloat(d.data().costoCompra) || 0));
+            }
 
             const agruparPorMes = dias > 30;
             const claveDe = (fecha) => agruparPorMes
