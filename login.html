@@ -623,14 +623,17 @@
             }
         });
 
-        // Check if already logged in
+        // Si Firebase ya tiene una sesión activa (persistida de una vez
+        // anterior), entrar directo al panel sin pedir credenciales de
+        // nuevo. No depender de sessionStorage aquí: se vacía cada vez que
+        // se cierra la pestaña/app, así que en el celular casi siempre
+        // estaría vacío aunque la sesión siga siendo válida — eso obligaba
+        // a re-loguearse cada vez. admin.html hace su propia verificación
+        // completa (auth.js) y reconstruye ese caché, así que basta con
+        // saber que hay un usuario autenticado para redirigir.
         auth.onAuthStateChanged((user) => {
             if (user) {
-                // Check if user data exists in sessionStorage
-                const adminUser = sessionStorage.getItem('adminUser');
-                if (adminUser) {
-                    window.location.href = 'admin.html';
-                }
+                window.location.href = 'admin.html';
             }
         });
     </script>
