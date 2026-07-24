@@ -20,9 +20,6 @@
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
 
-    <!-- SheetJS para leer archivos Excel -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-
     </head>
 <body class="admin-page">
 
@@ -3202,15 +3199,6 @@
         </div>
     </div>
 
-    <!-- SheetJS para exportación a Excel -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-
-    <!-- Chart.js para gráficos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-    <!-- jsPDF para generar PDFs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
     <!-- ══ RAIL NAV: sección activa + apertura móvil ══ -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -3415,6 +3403,15 @@
 
     <!-- Script para generar catálogo en PDF -->
     <script type="module" src="catalogoPDF.js?v=1.0.0"></script>
+
+    <!-- Librerías pesadas (exportar Excel, gráficos, PDF) van después de los
+         scripts de sesión/panel con "defer": así no bloquean el parser ni
+         retrasan la verificación de sesión ni la primera pintura del panel,
+         y solo se necesitan cuando el usuario exporta, ve el dashboard o
+         genera un PDF (nunca antes de que termine de cargar el resto). -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 
     <!-- ═══════════════════════════════════════════════════════════════════
          MODAL: AGREGAR/EDITAR PROMOCIÓN GLOBAL
@@ -3642,13 +3639,14 @@
     </div>
 
     <!-- 📚 LIBRERÍA JSBARCODE PARA GENERAR CÓDIGOS DE BARRAS -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js" defer></script>
 
     <!-- 📷 LIBRERÍA HTML5-QRCODE PARA ESCANEO CON CÁMARA -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 
-    <!-- 🔍 SISTEMA DE CÓDIGOS DE BARRAS -->
-    <script src="barcode-system.js"></script>
+    <!-- 🔍 SISTEMA DE CÓDIGOS DE BARRAS (usa las dos librerías de arriba;
+         "defer" preserva el orden de ejecución entre las tres) -->
+    <script src="barcode-system.js" defer></script>
 
     <!-- DASHBOARD ANALYTICS CHARTS + SIDEBAR CONTROLS -->
     <script>
