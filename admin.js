@@ -1474,7 +1474,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.dataset.id = id;
                 tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img" onerror="this.src='${defaultImgTabla}'"></td>
                                 <td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td>
-                                <td>${categoryName}</td> <td>${variacionesHtml}</td>
+                                <td>${categoryName}</td> <td><div class="variaciones-cell">${variacionesHtml}</div></td>
                                 <td>${formatoMoneda.format(d.precioDetal || 0)}</td>
                                 <td>${formatoMoneda.format(d.precioMayor || 0)}</td>
                                 <td>${stockTotal}</td>
