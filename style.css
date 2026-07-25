@@ -3860,6 +3860,35 @@ textarea.form-control-modern {
     transform: translateY(0);
 }
 
+/* Botón Enviar Cotización */
+.sv-quote-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 20px;
+    background: #fff;
+    border: 2px solid #a855f7;
+    border-radius: 12px;
+    color: #a855f7;
+    font-size: .95rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+}
+
+.sv-quote-btn:hover {
+    background: #a855f7;
+    color: #fff;
+}
+
+body.dark-mode .sv-quote-btn {
+    background: transparent;
+}
+
 /* ── Filtros del historial ── */
 .sv-filters {
     background: #ffffff;
