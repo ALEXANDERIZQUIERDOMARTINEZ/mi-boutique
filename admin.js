@@ -3600,10 +3600,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const celularRaw = document.getElementById('venta-cliente-celular')?.value || '';
                 const celular = celularRaw.replace(/\D/g, '');
-                if (!celular) {
-                    showToast("Selecciona un cliente con celular para enviar la cotización.", 'warning');
-                    return;
-                }
 
                 const subtotalItems = window.ventaItems.reduce((sum, item) => sum + item.total, 0);
                 let descuento = parseFloat(eliminarFormatoNumero(ventaDescuentoInput.value)) || 0;
@@ -3645,10 +3641,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (costoRuta > 0) msg += `Domicilio: ${formatoMoneda.format(costoRuta)}\n`;
                     msg += `\n*TOTAL A CANCELAR: ${formatoMoneda.format(totalCalculado)}*\n\nPor favor confírmame si deseas continuar con la compra. ¡Gracias!`;
 
-                    let tel = celular;
-                    if (tel.startsWith('57')) tel = tel.substring(2);
-                    openWhatsApp(`https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`);
-                    showToast('Cotización enviada. Queda pendiente hasta que el cliente confirme.', 'success');
+                    if (celular) {
+                        let tel = celular;
+                        if (tel.startsWith('57')) tel = tel.substring(2);
+                        openWhatsApp(`https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`);
+                        showToast('Cotización enviada. Queda pendiente hasta que el cliente confirme.', 'success');
+                    } else {
+                        showToast('Cotización guardada como pendiente. El cliente no tiene celular registrado, compártela manualmente.', 'success');
+                    }
 
                     salesForm.reset();
                     window.ventaItems = [];
