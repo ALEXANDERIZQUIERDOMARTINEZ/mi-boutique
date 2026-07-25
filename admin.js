@@ -3779,7 +3779,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                     if (estado === cqCurrentTab) renderCqTab();
-                }, err => console.error(`Error cotizaciones ${estado}:`, err));
+                }, err => {
+                    console.error(`Error cotizaciones ${estado}:`, err);
+                    if (cqLoading) cqLoading.style.display = 'none';
+                    if (estado === cqCurrentTab) {
+                        cqContainer.querySelectorAll('.pw-order-card, .pw-empty').forEach(el => el.remove());
+                        const errorEl = document.createElement('div');
+                        errorEl.className = 'pw-empty';
+                        const isPermiso = err?.code === 'permission-denied';
+                        errorEl.innerHTML = `<i class="bi bi-exclamation-triangle pw-empty-icon"></i><p class="pw-empty-text">${isPermiso ? 'Sin permisos para ver cotizaciones. Verifica que las Security Rules de Firestore estén publicadas y que tu usuario tenga el permiso de ventas.' : 'No se pudieron cargar las cotizaciones. Intenta de nuevo.'}</p>`;
+                        cqContainer.appendChild(errorEl);
+                    }
+                });
             });
 
             cqContainer.addEventListener('click', async e => {
