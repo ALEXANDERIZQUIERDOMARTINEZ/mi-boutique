@@ -89,6 +89,7 @@ const fabricaCollection = collection(db, 'movimientosFabrica');
 const boutiqueCollection = collection(db, 'movimientosBoutique');
 const closingsCollection = collection(db, 'cierresCaja');
 const webOrdersCollection = collection(db, 'pedidosWeb');
+const cotizacionesCollection = collection(db, 'cotizaciones');
 const chatConversationsCollection = collection(db, 'chatConversations');
 
 // --- Dos empresas: Mishelles Boutique y Mishelles Fábrica ---
@@ -3586,6 +3587,251 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // ========================================================================
+        // --- COTIZACIONES: enviar al cliente lo que debe cancelar y gestionar
+        //     su respuesta (aceptar → completar pago / rechazar → descartar) ---
+        // ========================================================================
+        const btnEnviarCotizacion = document.getElementById('btn-enviar-cotizacion');
+        if (btnEnviarCotizacion) {
+            btnEnviarCotizacion.addEventListener('click', async () => {
+                if (!window.ventaItems || window.ventaItems.length === 0) {
+                    showToast("Agrega productos para cotizar.", 'warning');
+                    return;
+                }
+                const celularRaw = document.getElementById('venta-cliente-celular')?.value || '';
+                const celular = celularRaw.replace(/\D/g, '');
+                if (!celular) {
+                    showToast("Selecciona un cliente con celular para enviar la cotización.", 'warning');
+                    return;
+                }
+
+                const subtotalItems = window.ventaItems.reduce((sum, item) => sum + item.total, 0);
+                let descuento = parseFloat(eliminarFormatoNumero(ventaDescuentoInput.value)) || 0;
+                if (ventaDescuentoTipo.value === 'porcentaje') descuento = subtotalItems * (descuento / 100);
+                const costoRuta = tipoEntregaSelect.value === 'domicilio' ? (parseFloat(eliminarFormatoNumero(costoRutaInput.value)) || 0) : 0;
+                const totalCalculado = window.calcularTotalVentaGeneral();
+
+                const cotizacionData = {
+                    clienteNombre: ventaClienteInput.value || "Cliente General",
+                    clienteCelular: celularRaw,
+                    clienteDireccion: document.getElementById('venta-cliente-direccion')?.value || "",
+                    clienteCedula: document.getElementById('venta-cliente-cedula')?.value || "",
+                    tipoVenta: tipoVentaSelect.value,
+                    tipoEntrega: tipoEntregaSelect.value,
+                    items: window.ventaItems,
+                    observaciones: ventaObservaciones.value.trim(),
+                    subtotal: subtotalItems,
+                    descuento: descuento,
+                    descuentoTipo: ventaDescuentoTipo.value,
+                    costoRuta: costoRuta,
+                    total: totalCalculado,
+                    estado: 'pendiente',
+                    timestamp: serverTimestamp(),
+                    tenantId: window.appContext?.tenantId || null
+                };
+
+                try {
+                    await addDoc(cotizacionesCollection, cotizacionData);
+
+                    let msg = `*COTIZACIÓN*\n\nHola *${cotizacionData.clienteNombre}*, este es el detalle de tu cotización:\n\n*PRODUCTOS:*\n`;
+                    cotizacionData.items.forEach((item, i) => {
+                        msg += `\n${i + 1}. *${item.nombre}*`;
+                        const meta = [item.talla, item.color].filter(Boolean).join(' · ');
+                        if (meta) msg += `\n   ${meta}`;
+                        msg += `\n   Cantidad: ${item.cantidad} x ${formatoMoneda.format(item.precio)} = ${formatoMoneda.format(item.total)}`;
+                    });
+                    msg += `\n\n*RESUMEN:*\nSubtotal: ${formatoMoneda.format(subtotalItems)}\n`;
+                    if (descuento > 0) msg += `Descuento: -${formatoMoneda.format(descuento)}\n`;
+                    if (costoRuta > 0) msg += `Domicilio: ${formatoMoneda.format(costoRuta)}\n`;
+                    msg += `\n*TOTAL A CANCELAR: ${formatoMoneda.format(totalCalculado)}*\n\nPor favor confírmame si deseas continuar con la compra. ¡Gracias!`;
+
+                    let tel = celular;
+                    if (tel.startsWith('57')) tel = tel.substring(2);
+                    openWhatsApp(`https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`);
+                    showToast('Cotización enviada. Queda pendiente hasta que el cliente confirme.', 'success');
+
+                    salesForm.reset();
+                    window.ventaItems = [];
+                    renderCarrito();
+                    ventaClienteInput.value = 'General';
+                    window.fillClientInfoSales();
+                    tipoVentaSelect.value = 'detal';
+                    tipoEntregaSelect.value = 'tienda';
+                    toggleDeliveryFields();
+                    window.calcularTotalVentaGeneral();
+                } catch (err) {
+                    console.error('Error al enviar cotización:', err);
+                    showToast(`Error al enviar cotización: ${err.message}`, 'error');
+                }
+            });
+        }
+
+        const cqContainer = document.getElementById('cotizaciones-container');
+        if (cqContainer) {
+            let cqOrders = { pendiente: [], aceptado: [], rechazado: [] };
+            let cqCurrentTab = 'pendiente';
+            const cqTabButtons = document.querySelectorAll('#cq-tabs .pw-tab');
+            const cqLoading = document.getElementById('loading-cotizaciones');
+
+            cqTabButtons.forEach(btn => btn.addEventListener('click', () => {
+                cqTabButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                cqCurrentTab = btn.dataset.tab;
+                renderCqTab();
+            }));
+
+            function formatFechaCQ(ts) {
+                if (!ts?.toDate) return 'Fecha no disponible';
+                return ts.toDate().toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+            }
+
+            function createQuoteCard(order, quoteId) {
+                const card = document.createElement('div');
+                const estado = order.estado || 'pendiente';
+                card.className = `pw-order-card pw-status-${estado}`;
+                card.dataset.quoteId = quoteId;
+                const isPendiente = estado === 'pendiente';
+
+                const itemsHtml = (order.items || []).map(item => `
+                    <div class="pw-item-row">
+                        <div class="pw-item-img-placeholder"><i class="bi bi-tag"></i></div>
+                        <div class="pw-item-info">
+                            <div class="pw-item-name">${item.nombre}</div>
+                            <div class="pw-item-meta">${[item.talla, item.color].filter(Boolean).join(' · ')} · x${item.cantidad}</div>
+                        </div>
+                        <div class="pw-item-total">${formatoMoneda.format(item.total)}</div>
+                    </div>`).join('');
+
+                const statusLabels = { pendiente: 'Pendiente', aceptado: 'Aceptada', rechazado: 'Rechazada' };
+                const statusIcons  = { pendiente: 'bi-clock-fill', aceptado: 'bi-check-circle-fill', rechazado: 'bi-x-circle-fill' };
+                const statusBadge  = `<span class="pw-status-badge ${estado}"><i class="bi ${statusIcons[estado]}"></i>${statusLabels[estado]}</span>`;
+
+                const obsHtml = order.observaciones
+                    ? `<div class="pw-obs"><i class="bi bi-chat-text me-1"></i>${order.observaciones}</div>` : '';
+
+                const actionsHtml = isPendiente ? `
+                    <div class="pw-actions">
+                        <button class="pw-btn pw-btn-reject btn-reject-quote" data-quote-id="${quoteId}">
+                            <i class="bi bi-x-lg"></i><span class="d-none d-sm-inline ms-1">Rechazar</span>
+                        </button>
+                        <button class="pw-btn pw-btn-accept btn-accept-quote" data-quote-id="${quoteId}">
+                            <i class="bi bi-check-lg"></i><span class="ms-1">Aceptar</span>
+                        </button>
+                    </div>` : '';
+
+                card.innerHTML = `
+                    <div class="pw-card-header">
+                        <div>
+                            <div class="pw-card-id"><i class="bi bi-file-earmark-text me-1"></i>#${quoteId.substring(0,8).toUpperCase()}</div>
+                            <div class="pw-card-date">${formatFechaCQ(order.timestamp)}</div>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                    <div class="pw-card-body">
+                        <div class="pw-client-row">
+                            <div class="pw-client-name">${order.clienteNombre || '—'}</div>
+                            ${order.clienteCelular ? `<div class="pw-client-chip"><i class="bi bi-telephone"></i><a href="https://wa.me/57${order.clienteCelular.replace(/\D/g,'')}" target="_blank">${order.clienteCelular}</a></div>` : ''}
+                        </div>
+                        ${obsHtml}
+                        <div class="pw-items-list">${itemsHtml}</div>
+                    </div>
+                    <div class="pw-card-footer">
+                        <div>
+                            <div class="pw-total-label">Total a cancelar</div>
+                            <div class="pw-total-val">${formatoMoneda.format(order.total || 0)}</div>
+                        </div>
+                        ${actionsHtml}
+                    </div>`;
+
+                return card;
+            }
+
+            function renderCqTab() {
+                cqContainer.querySelectorAll('.pw-order-card, .pw-empty').forEach(el => el.remove());
+                const orders = cqOrders[cqCurrentTab] || [];
+                if (orders.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'pw-empty';
+                    const labels = { pendiente: 'No hay cotizaciones pendientes', aceptado: 'No hay cotizaciones aceptadas', rechazado: 'No hay cotizaciones rechazadas' };
+                    const icons  = { pendiente: 'bi-clock', aceptado: 'bi-check-circle', rechazado: 'bi-x-circle' };
+                    empty.innerHTML = `<i class="bi ${icons[cqCurrentTab]} pw-empty-icon"></i><p class="pw-empty-text">${labels[cqCurrentTab]}</p>`;
+                    cqContainer.appendChild(empty);
+                    return;
+                }
+                const frag = document.createDocumentFragment();
+                orders.forEach(({ id, order }) => frag.appendChild(createQuoteCard(order, id)));
+                cqContainer.appendChild(frag);
+            }
+
+            ['pendiente', 'aceptado', 'rechazado'].forEach(estado => {
+                const q = query(cotizacionesCollection, where('estado', '==', estado), orderBy('timestamp', 'desc'), limit(50));
+                onSnapshot(q, snapshot => {
+                    cqOrders[estado] = [];
+                    snapshot.forEach(d => cqOrders[estado].push({ id: d.id, order: d.data() }));
+                    if (cqLoading) cqLoading.style.display = 'none';
+                    const badge = document.getElementById(`cq-badge-${estado}`);
+                    if (badge) badge.textContent = cqOrders[estado].length;
+                    if (estado === 'pendiente') {
+                        const tabBadge = document.getElementById('cq-badge-pendiente-tab');
+                        if (tabBadge) {
+                            tabBadge.textContent = cqOrders.pendiente.length;
+                            tabBadge.style.display = cqOrders.pendiente.length > 0 ? 'inline-flex' : 'none';
+                        }
+                    }
+                    if (estado === cqCurrentTab) renderCqTab();
+                }, err => console.error(`Error cotizaciones ${estado}:`, err));
+            });
+
+            cqContainer.addEventListener('click', async e => {
+                const a = e.target.closest('.btn-accept-quote');
+                const r = e.target.closest('.btn-reject-quote');
+                if (a) { e.preventDefault(); await handleAcceptQuote(a.dataset.quoteId); }
+                else if (r) { e.preventDefault(); await handleRejectQuote(r.dataset.quoteId); }
+            });
+
+            async function handleRejectQuote(quoteId) {
+                if (!confirm('¿Estás seguro de que quieres rechazar esta cotización?')) return;
+                try {
+                    await updateDoc(doc(db, 'cotizaciones', quoteId), { estado: 'rechazado', fechaRechazo: serverTimestamp() });
+                    showToast('Cotización rechazada correctamente', 'info');
+                } catch (err) { console.error('Error al rechazar cotización:', err); showToast('Error al rechazar la cotización', 'error'); }
+            }
+
+            async function handleAcceptQuote(quoteId) {
+                try {
+                    const qRef = doc(db, 'cotizaciones', quoteId);
+                    const qSnap = await getDoc(qRef);
+                    if (!qSnap.exists()) { showToast('Cotización no encontrada', 'error'); return; }
+                    const data = qSnap.data();
+                    await updateDoc(qRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp() });
+
+                    window.ventaItems = [];
+                    (data.items || []).forEach(item => {
+                        const meta = [item.talla, item.color].filter(Boolean).join('/');
+                        window.agregarItemAlCarrito(item.productoId, item.nombre, item.cantidad, item.precio, item.talla, item.color, meta ? `${item.nombre} (${meta})` : item.nombre);
+                    });
+                    if (ventaClienteInput) ventaClienteInput.value = data.clienteNombre || '';
+                    const vcel = document.getElementById('venta-cliente-celular'); if (vcel) vcel.value = data.clienteCelular || '';
+                    const vdir = document.getElementById('venta-cliente-direccion'); if (vdir) vdir.value = data.clienteDireccion || '';
+                    if (ventaObservaciones) {
+                        let obs = `Cotización #${quoteId.substring(0,8).toUpperCase()} aceptada por el cliente`;
+                        if (data.observaciones) obs += `\n${data.observaciones}`;
+                        ventaObservaciones.value = obs;
+                    }
+                    if (tipoVentaSelect) tipoVentaSelect.value = data.tipoVenta || 'detal';
+                    if (tipoEntregaSelect) { tipoEntregaSelect.value = data.tipoEntrega || 'tienda'; toggleDeliveryFields(); }
+                    if (data.tipoEntrega === 'domicilio' && costoRutaInput) costoRutaInput.value = data.costoRuta || 0;
+                    if (ventaDescuentoInput) ventaDescuentoInput.value = data.descuento || 0;
+                    if (ventaDescuentoTipo) ventaDescuentoTipo.value = data.descuentoTipo || 'fijo';
+                    window.calcularTotalVentaGeneral();
+
+                    showToast('Cotización aceptada. Completa el pago para registrar la venta.', 'success');
+                    const btnForm = document.getElementById('toggle-sales-form-view-btn');
+                    if (btnForm) btnForm.click();
+                } catch (err) { console.error('Error al aceptar cotización:', err); showToast('Error al procesar la cotización', 'error'); }
+            }
+        }
+
         // NOTA: actualizarStock ahora es una función global (definida al inicio del archivo)
 
         // --- Función para Anular Venta (D) ---
@@ -6667,7 +6913,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ========================================================================
     (() => {
         const fV_prod = document.getElementById('form-view'); const iV_prod = document.getElementById('inventory-view'); const tIB_prod = document.getElementById('toggle-inventory-view-btn'); const tFB_prod = document.getElementById('toggle-form-view-btn'); if(fV_prod && iV_prod && tIB_prod && tFB_prod){ tIB_prod.addEventListener('click',(e)=>{ e.preventDefault(); fV_prod.style.display='none'; iV_prod.style.display='block'; tIB_prod.classList.add('active'); tFB_prod.classList.remove('active');}); tFB_prod.addEventListener('click',(e)=>{ e.preventDefault(); iV_prod.style.display='none'; fV_prod.style.display='block'; tFB_prod.classList.add('active'); tIB_prod.classList.remove('active'); window.clearProductForm(); }); iV_prod.style.display='block'; tIB_prod.classList.add('active'); } else { console.warn("Product view toggle missing."); }
-        const sFV = document.getElementById('sales-form-view'); const sLV = document.getElementById('sales-list-view'); const tSLB = document.getElementById('toggle-sales-list-view-btn'); const tSFB = document.getElementById('toggle-sales-form-view-btn'); if(sFV && sLV && tSLB && tSFB){ tSLB.addEventListener('click',(e)=>{ e.preventDefault(); sFV.style.display='none'; sLV.style.display='block'; tSLB.classList.add('active'); tSFB.classList.remove('active'); }); tSFB.addEventListener('click',(e)=>{ e.preventDefault(); sLV.style.display='none'; sFV.style.display='block'; tSFB.classList.add('active'); tSLB.classList.remove('active'); }); sFV.style.display='block'; tSFB.classList.add('active'); } else { console.warn("Sales view toggle missing."); }
+        const sFV = document.getElementById('sales-form-view'); const sLV = document.getElementById('sales-list-view'); const sQV = document.getElementById('sales-quotes-view'); const tSLB = document.getElementById('toggle-sales-list-view-btn'); const tSFB = document.getElementById('toggle-sales-form-view-btn'); const tSQB = document.getElementById('toggle-sales-quotes-view-btn'); if(sFV && sLV && tSLB && tSFB){ const salesViews = [sFV, sLV, sQV].filter(Boolean); const salesTabs = [tSFB, tSLB, tSQB].filter(Boolean); const showSalesView = (view, tab) => { salesViews.forEach(v => v.style.display = 'none'); salesTabs.forEach(t => t.classList.remove('active')); if (view) view.style.display = 'block'; if (tab) tab.classList.add('active'); }; tSLB.addEventListener('click',(e)=>{ e.preventDefault(); showSalesView(sLV, tSLB); }); tSFB.addEventListener('click',(e)=>{ e.preventDefault(); showSalesView(sFV, tSFB); }); if (tSQB) tSQB.addEventListener('click',(e)=>{ e.preventDefault(); showSalesView(sQV, tSQB); }); showSalesView(sFV, tSFB); } else { console.warn("Sales view toggle missing."); }
          const todayViewR = document.getElementById('delivery-today-view'); const historyViewR = document.getElementById('delivery-history-view'); const toggleHistoryBtnR = document.getElementById('toggle-delivery-history-btn'); const toggleTodayBtnR = document.getElementById('toggle-delivery-today-btn'); if (todayViewR && historyViewR && toggleHistoryBtnR && toggleTodayBtnR) { toggleHistoryBtnR.addEventListener('click', (e) => { e.preventDefault(); todayViewR.style.display = 'none'; historyViewR.style.display = 'block'; toggleHistoryBtnR.classList.add('active'); toggleTodayBtnR.classList.remove('active'); }); toggleTodayBtnR.addEventListener('click', (e) => { e.preventDefault(); historyViewR.style.display = 'none'; todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); toggleHistoryBtnR.classList.remove('active'); }); todayViewR.style.display = 'block'; toggleTodayBtnR.classList.add('active'); } else { console.warn("Delivery view toggle missing."); }
         const tCV = document.getElementById('closing-today-view'); const hCV = document.getElementById('closing-history-view'); const tHB = document.getElementById('toggle-closing-history-btn'); const tTB = document.getElementById('toggle-closing-today-btn'); if (tCV && hCV && tHB && tTB) { tHB.addEventListener('click', (e) => { e.preventDefault(); tCV.style.display = 'none'; hCV.style.display = 'block'; tHB.classList.add('active'); tTB.classList.remove('active'); }); tTB.addEventListener('click', (e) => { e.preventDefault(); hCV.style.display = 'none'; tCV.style.display = 'block'; tTB.classList.add('active'); tHB.classList.remove('active'); }); tCV.style.display = 'block'; tTB.classList.add('active'); } else { console.warn("Finance closing view toggle missing."); }
                         

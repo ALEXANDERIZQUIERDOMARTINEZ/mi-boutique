@@ -256,6 +256,31 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE COTIZACIONES - CON VALIDACIÓN DE TENANT
+    // (creadas desde el panel de Ventas para enviar al cliente lo que
+    //  debe cancelar; se aceptan o rechazan como los pedidos web)
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /cotizaciones/{cotizacionId} {
+      // Leer: quien puede registrar/ver ventas, solo del mismo tenant
+      allow read: if (hasPermission('ventas_ver') || hasPermission('ventas_crear')) &&
+                    belongsToTenant(resource.data.tenantId);
+
+      // Crear: quien puede registrar ventas, con tenantId correcto
+      allow create: if hasPermission('ventas_crear') &&
+                      hasRequiredTenantId() &&
+                      isCreatingWithCorrectTenant();
+
+      // Actualizar (aceptar/rechazar): Solo del mismo tenant, sin cambiar tenantId
+      allow update: if hasPermission('ventas_editar') &&
+                      belongsToTenant(resource.data.tenantId) &&
+                      isNotChangingTenant();
+
+      // No eliminar cotizaciones
+      allow delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // REGLAS DE APARTADOS - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
 
