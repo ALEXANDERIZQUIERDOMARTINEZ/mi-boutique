@@ -7857,6 +7857,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const canvas = document.getElementById('db-trend-chart');
         if (!canvas || typeof Chart === 'undefined') return;
 
+        const totalBoutique = dataDetal.reduce((sum, v) => sum + v, 0);
+        const totalFabrica = dataMayor.reduce((sum, v) => sum + v, 0);
+        const elBoutique = document.getElementById('db-trend-total-boutique');
+        const elFabrica = document.getElementById('db-trend-total-fabrica');
+        const elSuma = document.getElementById('db-trend-total-suma');
+        if (elBoutique) elBoutique.textContent = formatoMoneda.format(totalBoutique);
+        if (elFabrica) elFabrica.textContent = formatoMoneda.format(totalFabrica);
+        if (elSuma) elSuma.textContent = formatoMoneda.format(totalBoutique + totalFabrica);
+
         if (trendChart) trendChart.destroy();
         trendChart = new Chart(canvas.getContext('2d'), {
                 type: 'bar',

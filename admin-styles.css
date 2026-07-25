@@ -4547,6 +4547,44 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
   .db-chart-canvas-wrap--tall { height: 420px; }
 }
 
+/* Resumen de totales (Boutique / Fábrica / Suma) sobre la gráfica de tendencia */
+.db-trend-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 0 1.25rem;
+  margin-top: -0.25rem;
+}
+.db-trend-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.db-trend-summary-item--total { margin-left: auto; }
+.db-trend-summary-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.db-trend-summary-label {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+.db-trend-summary-value {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.db-trend-summary-item--total .db-trend-summary-value { color: var(--boutique-accent-text); }
+
+@media (max-width: 479.98px) {
+  .db-trend-summary { gap: 0.75rem; padding: 0 1rem; }
+  .db-trend-summary-item--total { margin-left: 0; }
+}
+
 /* ── Actividad reciente (feed de últimas ventas) ── */
 .db-activity-feed .activity-item {
   border-color: var(--border-subtle) !important;
