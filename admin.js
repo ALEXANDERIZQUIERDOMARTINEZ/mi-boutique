@@ -4947,7 +4947,37 @@ document.addEventListener('DOMContentLoaded', () => {
             return colores;
         }
 
-        // Sincroniza nombre/talla/color/precio de un item con el producto seleccionado
+        // Stock disponible de una variación puntual, sumando lo que esta misma venta ya tenía
+        // reservado antes de editar (esa cantidad sigue siendo "suya" hasta que se guarde el cambio)
+        function obtenerStockDisponibleEditSale(productoId, talla, color) {
+            const producto = localProductsMap.get(productoId);
+            if (!producto || !Array.isArray(producto.variaciones)) return 0;
+            const variacion = producto.variaciones.find(v => (v.talla || '') === (talla || '') && (v.color || '') === (color || ''));
+            const stockBase = variacion ? (parseInt(variacion.stock, 10) || 0) : 0;
+            const reservadoPorEstaVenta = (editSaleVentaData?.items || [])
+                .filter(it => it.productoId === productoId && (it.talla || '') === (talla || '') && (it.color || '') === (color || ''))
+                .reduce((sum, it) => sum + (parseInt(it.cantidad, 10) || 0), 0);
+            return stockBase + reservadoPorEstaVenta;
+        }
+
+        // Stock disponible de una talla (suma de sus colores) para saber si conviene deshabilitarla
+        function obtenerStockDisponibleTallaEditSale(productoId, talla) {
+            const producto = localProductsMap.get(productoId);
+            if (!producto || !Array.isArray(producto.variaciones)) return 0;
+            return producto.variaciones
+                .filter(v => (v.talla || '') === (talla || ''))
+                .reduce((sum, v) => sum + obtenerStockDisponibleEditSale(productoId, v.talla, v.color), 0);
+        }
+
+        // Stock disponible total de un producto. Productos sin variaciones no controlan stock.
+        function obtenerStockTotalDisponibleEditSale(productoId) {
+            const producto = localProductsMap.get(productoId);
+            if (!producto || !Array.isArray(producto.variaciones) || !producto.variaciones.length) return Infinity;
+            return producto.variaciones.reduce((sum, v) => sum + obtenerStockDisponibleEditSale(productoId, v.talla, v.color), 0);
+        }
+
+        // Sincroniza nombre/talla/color/precio de un item con el producto seleccionado,
+        // prefiriendo por defecto una variación que sí tenga stock disponible
         function sincronizarItemConProductoEditSale(item) {
             const tipoVenta = document.getElementById('edit-sale-tipo').value;
             if (!item.productoId) return;
@@ -4958,34 +4988,44 @@ document.addEventListener('DOMContentLoaded', () => {
             item.nombre = producto.nombre || item.nombre;
 
             const tallas = obtenerTallasEditSale(producto);
-            if (tallas.length && !tallas.includes(item.talla)) item.talla = tallas[0];
+            if (tallas.length && !tallas.includes(item.talla)) {
+                item.talla = tallas.find(t => obtenerStockDisponibleTallaEditSale(item.productoId, t) > 0) || tallas[0];
+            }
             if (!tallas.length) item.talla = '';
 
             const colores = obtenerColoresEditSale(producto, item.talla);
-            if (colores.length && !colores.includes(item.color)) item.color = colores[0];
+            if (colores.length && !colores.includes(item.color)) {
+                item.color = colores.find(c => obtenerStockDisponibleEditSale(item.productoId, item.talla, c) > 0) || colores[0];
+            }
             if (!colores.length) item.color = '';
 
             item.precio = obtenerPrecioUnitarioEditSale(producto, tipoVenta);
         }
 
-        // Construye las <option> del selector de producto
+        // Construye las <option> del selector de producto, deshabilitando los que no tienen stock
+        // disponible (salvo el que ya está seleccionado en esta línea, para no perderlo)
         function construirOpcionesProductoEditSale(selectedId) {
             const productos = Array.from(localProductsMap.entries())
                 .sort((a, b) => (a[1].nombre || '').localeCompare(b[1].nombre || ''));
             let html = `<option value="">Seleccionar producto...</option>`;
             productos.forEach(([id, p]) => {
-                html += `<option value="${id}" ${id === selectedId ? 'selected' : ''}>${escaparHtmlEditSale(p.nombre || 'Sin nombre')}</option>`;
+                const esSeleccionado = id === selectedId;
+                const sinStock = obtenerStockTotalDisponibleEditSale(id) <= 0;
+                html += `<option value="${id}" ${esSeleccionado ? 'selected' : ''} ${sinStock && !esSeleccionado ? 'disabled' : ''}>${escaparHtmlEditSale(p.nombre || 'Sin nombre')}${sinStock ? ' (Sin stock)' : ''}</option>`;
             });
             return html;
         }
 
-        // Construye las <option> de un selector simple (talla o color), preservando el valor actual aunque ya no exista
-        function construirOpcionesSimpleEditSale(valores, seleccionado) {
+        // Construye las <option> de un selector simple (talla o color): preserva el valor actual
+        // aunque ya no exista y deshabilita las opciones sin stock disponible (excepto la seleccionada)
+        function construirOpcionesSimpleEditSale(valores, seleccionado, disponibilidadFn) {
             const opciones = [...valores];
             if (seleccionado && !opciones.includes(seleccionado)) opciones.unshift(seleccionado);
             let html = `<option value="">N/A</option>`;
             opciones.forEach(v => {
-                html += `<option value="${escaparHtmlEditSale(v)}" ${v === seleccionado ? 'selected' : ''}>${escaparHtmlEditSale(v)}</option>`;
+                const esSeleccionado = v === seleccionado;
+                const sinStock = disponibilidadFn ? !disponibilidadFn(v) : false;
+                html += `<option value="${escaparHtmlEditSale(v)}" ${esSeleccionado ? 'selected' : ''} ${sinStock && !esSeleccionado ? 'disabled' : ''}>${escaparHtmlEditSale(v)}${sinStock ? ' (Sin stock)' : ''}</option>`;
             });
             return html;
         }
@@ -5041,13 +5081,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="esp-field">
                             <span class="esp-field-label">Talla</span>
                             <select class="esp-mini-select" data-index="${i}" data-field="talla" ${!tallas.length ? 'disabled' : ''}>
-                                ${construirOpcionesSimpleEditSale(tallas, item.talla)}
+                                ${construirOpcionesSimpleEditSale(tallas, item.talla, (t) => obtenerStockDisponibleTallaEditSale(item.productoId, t) > 0)}
                             </select>
                         </div>
                         <div class="esp-field">
                             <span class="esp-field-label">Color</span>
                             <select class="esp-mini-select" data-index="${i}" data-field="color" ${!colores.length ? 'disabled' : ''}>
-                                ${construirOpcionesSimpleEditSale(colores, item.color)}
+                                ${construirOpcionesSimpleEditSale(colores, item.color, (c) => obtenerStockDisponibleEditSale(item.productoId, item.talla, c) > 0)}
                             </select>
                         </div>
                         <div class="esp-field esp-field-qty">
@@ -5088,7 +5128,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.talla = target.value;
                     const producto = item.productoId ? localProductsMap.get(item.productoId) : null;
                     const colores = obtenerColoresEditSale(producto, item.talla);
-                    if (colores.length && !colores.includes(item.color)) item.color = colores[0];
+                    if (colores.length && !colores.includes(item.color)) {
+                        item.color = colores.find(c => obtenerStockDisponibleEditSale(item.productoId, item.talla, c) > 0) || colores[0];
+                    }
                     renderEditSaleProductos();
                 } else if (target.dataset.field === 'color') {
                     item.color = target.value;
