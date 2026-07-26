@@ -105,11 +105,11 @@ window.esProveedorBoutique = esProveedorBoutique;
 const FECHA_CORTE_MAYORISTA = new Date(2026, 0, 1, 0, 0, 0, 0);
 
 // Desde esta fecha, cada venta al detal reparte su dinero entre las dos
-// empresas: el costo de la mercancía vendida (costoCompra × cantidad) se
-// recupera como ingreso de Fábrica, y el resto (precio venta − costo) es
-// ganancia de Boutique. Ventas al detal anteriores a esta fecha no se
-// recalculan retroactivamente.
-const FECHA_CORTE_DETAL = new Date(2026, 6, 17, 0, 0, 0, 0);
+// empresas: las prendas con proveedor "Mishelles Boutique" reparten su
+// P. Mayor a Fábrica (el resto es de Boutique), y el resto de proveedores
+// recupera su costo de compra (costoCompra × cantidad) como ingreso de
+// Fábrica. Ventas al detal anteriores a esta fecha no se recalculan.
+const FECHA_CORTE_DETAL = new Date(2026, 5, 1, 0, 0, 0, 0);
 const metasCollection = collection(db, 'metas');
 const recepcionesCollection = collection(db, 'ordenesRecepcion');
 const promocionesGlobalesCollection = collection(db, 'promocionesGlobales');
