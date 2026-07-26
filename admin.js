@@ -303,6 +303,15 @@ let localProductsMap = new Map();
 window.localProductsMap = localProductsMap;
 let repartidoresMap = new Map(); // ✅ Mapa de repartidores para el modal de ver venta
 
+// Suscriptores ligeros del listener único de repartidores (más abajo, junto al
+// CRUD de la pestaña Repartidores). Antes el dashboard, el formulario de
+// reportes y el historial de repartidores abrían cada uno su propio
+// onSnapshot sobre la colección COMPLETA — igual que pasaba con productos
+// (ver iniciarListenerProductos) — así que se consolidan en un solo listener
+// real y estos consumidores simplemente reciben el mismo snapshot.
+const repartidoresSubscribers = [];
+function subscribeRepartidores(callback) { repartidoresSubscribers.push(callback); }
+
 // ========================================================================
 // --- FUNCIÓN GLOBAL: ACTUALIZAR STOCK ---
 // ========================================================================
@@ -904,6 +913,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     })();
 
+    // Suscriptores ligeros del listener único de categorías/proveedores (más
+    // abajo, junto a cada CRUD). Antes cada dropdown de filtro (inventario,
+    // ventas, modal de búsqueda de producto) abría su propio onSnapshot sobre
+    // la colección completa — se consolidan en un solo listener real por
+    // colección, igual que se hizo con productos y repartidores.
+    const categoriesSubscribers = [];
+    function subscribeCategories(callback) { categoriesSubscribers.push(callback); }
+    const suppliersSubscribers = [];
+    function subscribeSuppliers(callback) { suppliersSubscribers.push(callback); }
+
     // ========================================================================
     // --- LÓGICA CATEGORÍAS (Funcional CRUD with Modals) ---
     // ========================================================================
@@ -913,7 +932,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const render = (snapshot) => { if (!categoryList) return; categoryList.innerHTML = ''; if (snapshot.empty) { categoryList.innerHTML = '<li class="list-group-item text-muted">No hay categorías.</li>'; return; } snapshot.forEach(doc => { const d = doc.data(); const id = doc.id; const li = document.createElement('li'); li.className = 'list-group-item d-flex justify-content-between align-items-center'; li.dataset.id = id; li.innerHTML = `<span class="category-name">${d.nombre}</span><div class="action-buttons"><button class="btn btn-action btn-action-edit me-1 btn-edit-category"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button><button class="btn btn-action btn-action-delete btn-delete-category"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></div>`; categoryList.appendChild(li); }); };
         const updateDropdown = (snapshot) => { if (!categoryDropdown) return; const sel = categoryDropdown.value; categoryDropdown.innerHTML = '<option value="">Selecciona...</option>'; snapshot.forEach(doc => { const d = doc.data(); const opt = document.createElement('option'); opt.value = doc.id; opt.textContent = d.nombre; categoryDropdown.appendChild(opt); }); categoryDropdown.value = sel; }
         const checkDuplicate = async (name, currentId = null) => { const lowerCaseName = name.toLowerCase(); const q = query(categoriesCollection, where("nombreLower", "==", lowerCaseName)); const querySnapshot = await getDocs(q); let isDuplicate = false; querySnapshot.forEach((doc) => { if (doc.id !== currentId) { isDuplicate = true; } }); return isDuplicate; };
-        onSnapshot(query(categoriesCollection, orderBy("nombre")), (s) => { render(s); updateDropdown(s); }, (e) => { console.error("Error categories: ", e); if(categoryList) categoryList.innerHTML = '<li class="list-group-item text-danger">Error.</li>'; });
+        onSnapshot(query(categoriesCollection, orderBy("nombre")), (s) => { render(s); updateDropdown(s); categoriesSubscribers.forEach(cb => { try { cb(s); } catch (e) { console.error('Error en suscriptor de categorías:', e); } }); }, (e) => { console.error("Error categories: ", e); if(categoryList) categoryList.innerHTML = '<li class="list-group-item text-danger">Error.</li>'; });
         if (categoryForm) categoryForm.addEventListener('submit', async (e) => { e.preventDefault(); const name = categoryNameInput.value.trim(); if (!name) return; if (await checkDuplicate(name)) { showToast('Ya existe una categoría con ese nombre.', 'warning'); return; } try { await addDoc(categoriesCollection, { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría guardada!"); categoryNameInput.value = ''; } catch (err) { console.error("Error add cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
         if (editForm && editCategoryModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const name = editNameInput.value.trim(); if (!id || !name) return; if (await checkDuplicate(name, id)) { showToast('Ya existe otra categoría con ese nombre.', 'warning'); return; } try { await updateDoc(doc(db, "categorias", id), { nombre: name, nombreLower: name.toLowerCase() }); showToast("Categoría actualizada!"); editCategoryModalInstance.hide(); } catch (err) { console.error("Error update cat:", err); showToast(`Error: ${err.message}`, 'error'); } });
         if (categoryList) categoryList.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const li = target.closest('li'); const id = li.dataset.id; const nameSpan = li.querySelector('.category-name'); if (!id || !nameSpan) return;
@@ -943,7 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const renderSuppliers = (snapshot) => { suppliersMap.clear(); listTable.innerHTML = ''; searchModalList.innerHTML = ''; if (snapshot.empty) { listTable.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay proveedores.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; suppliersMap.set(id, d); if (listTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="supplier-name">${d.nombre}</td> <td>${d.contacto || '-'}</td> <td>${d.telefono || '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-edit btn-edit-supplier"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-supplier"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td>`; listTable.appendChild(tr); }
             const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action supplier-search-item'; li.dataset.name = d.nombre; li.dataset.id = id; li.textContent = d.nombre; searchModalList.appendChild(li);
         }); };
-        onSnapshot(query(suppliersCollection, orderBy('nombre')), renderSuppliers, (e) => { console.error("Error suppliers:", e); if(listTable) listTable.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error.</td></tr>';});
+        onSnapshot(query(suppliersCollection, orderBy('nombre')), (s) => { renderSuppliers(s); suppliersSubscribers.forEach(cb => { try { cb(s); } catch (e) { console.error('Error en suscriptor de proveedores:', e); } }); }, (e) => { console.error("Error suppliers:", e); if(listTable) listTable.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error.</td></tr>';});
         if (addForm && addSupplierModalInstance) addForm.addEventListener('submit', async (e) => { e.preventDefault(); const name = addNameInput.value.trim(); const contact = addContactInput.value.trim(); const phone = addPhoneInput.value.trim(); if (name) { try { await addDoc(suppliersCollection, { nombre: name, contacto: contact, telefono: phone, nombreLower: name.toLowerCase() }); showToast("Proveedor guardado!"); addSupplierModalInstance.hide(); addForm.reset(); } catch (err) { console.error("Err add supplier:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast("Nombre requerido.", 'warning'); }});
         if (editForm && editSupplierModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const name = editNameInput.value.trim(); const contact = editContactInput.value.trim(); const phone = editPhoneInput.value.trim(); if (id && name) { try { await updateDoc(doc(db, "proveedores", id), { nombre: name, contacto: contact, telefono: phone, nombreLower: name.toLowerCase() }); showToast("Proveedor actualizado!"); editSupplierModalInstance.hide(); } catch (err) { console.error("Err update supplier:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast("Nombre requerido.", 'warning'); }});
         if (listTable) listTable.addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; e.preventDefault(); const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.supplier-name'); if (!id || !nameTd) return;
@@ -1188,6 +1207,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
          // ✅ Renderizar repartidores con cálculos reales
          const renderRepartidores = async (snapshot) => {
+             // Avisar de inmediato a los suscriptores ligeros (dashboard,
+             // reportes, historial) sin esperar a los cálculos async de abajo
+             // (liquidaciones, estadísticas de ventas).
+             repartidoresSubscribers.forEach(cb => {
+                 try { cb(snapshot); } catch (e) { console.error('Error en suscriptor de repartidores:', e); }
+             });
+
              repartidoresMap.clear();
              if(repartidorListTableBody) repartidorListTableBody.innerHTML = '';
              if(repartidorSelectVenta) repartidorSelectVenta.innerHTML = '<option value="">Selecciona...</option>';
@@ -2305,7 +2331,7 @@ document.addEventListener('DOMContentLoaded', () => {
             productModalCategory.addEventListener('change', applyProductModalFilters);
 
             // Cargar categorías en el select
-            onSnapshot(categoriesCollection, (snapshot) => {
+            subscribeCategories((snapshot) => {
                 productModalCategory.innerHTML = '<option value="">Todas las categorías</option>';
                 snapshot.forEach(doc => {
                     const cat = doc.data();
@@ -2537,7 +2563,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const inventoryBody = document.getElementById('lista-inventario-productos');
 
         function loadCategoriesForFilter() {
-            onSnapshot(query(categoriesCollection, orderBy("nombre")), (snapshot) => {
+            subscribeCategories((snapshot) => {
                 categoriesMap.clear();
                 snapshot.forEach(doc => {
                     categoriesMap.set(doc.id, doc.data().nombre);
@@ -2546,7 +2572,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         function loadSuppliersForFilter() {
-            onSnapshot(query(suppliersCollection, orderBy("nombre")), (snapshot) => {
+            subscribeSuppliers((snapshot) => {
                 if (!supplierSelectInventory) return;
 
                 // Mantener la opción "Todos los Proveedores"
@@ -3315,7 +3341,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Cargar categorías en el select
-            onSnapshot(categoriesCollection, (snapshot) => {
+            subscribeCategories((snapshot) => {
                 filtroCategoriaVentas.innerHTML = '<option value="">Todas las categorías</option>';
                 snapshot.forEach(doc => {
                     const cat = doc.data();
@@ -7492,7 +7518,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         console.log("🚴 Calculando total de repartidores...");
 
         try {
-            onSnapshot(repartidoresCollection, (snapshot) => {
+            subscribeRepartidores((snapshot) => {
                 const totalRepartidores = snapshot.size;
 
                 const dbTotalRepartidoresEl = document.getElementById('db-total-repartidores');
@@ -8213,7 +8239,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
     // Cargar repartidores en el select
     if (repartidorSelect) {
-        onSnapshot(repartidoresCollection, (snapshot) => {
+        subscribeRepartidores((snapshot) => {
             repartidorSelect.innerHTML = '<option value="">Todos los repartidores</option>';
             snapshot.forEach(doc => {
                 const repartidor = doc.data();
@@ -10117,7 +10143,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
     // Cargar repartidores en el select
     if (historyRepartidorSelect) {
-        onSnapshot(repartidoresCollection, (snapshot) => {
+        subscribeRepartidores((snapshot) => {
             historyRepartidorSelect.innerHTML = '<option value="">Todos</option>';
             snapshot.forEach(doc => {
                 const repartidor = doc.data();
