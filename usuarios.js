@@ -7,6 +7,7 @@ import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/9.6
 import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js';
+import { registrarAuditoria } from './auditoria.js';
 
 // Referencias globales
 let usuariosCollection;
@@ -388,6 +389,15 @@ async function createUsuario(email, password, nombre, rol, permisosArray, activo
 
         await signOutSecondary(secondaryAuth);
         console.log('Usuario creado exitosamente:', user.uid);
+
+        registrarAuditoria({
+            accion: 'crear',
+            modulo: 'usuario',
+            entidadId: user.uid,
+            entidadNombre: nombre,
+            descripcion: `Creó al usuario "${nombre}" (${email}) con rol ${ROLES[rol]?.nombre || rol}`,
+            detalles: { email, rol }
+        });
     } catch (error) {
         console.error('Error al crear usuario:', error);
         throw new Error(getAuthErrorMessage(error.code));
@@ -413,6 +423,15 @@ async function updateUsuario(usuarioId, nombre, email, rol, permisosArray, activ
         });
 
         console.log('Usuario actualizado exitosamente');
+
+        registrarAuditoria({
+            accion: 'editar',
+            modulo: 'usuario',
+            entidadId: usuarioId,
+            entidadNombre: nombre,
+            descripcion: `Editó al usuario "${nombre}" (${email}) — rol: ${ROLES[rol]?.nombre || rol}, activo: ${activo ? 'sí' : 'no'}`,
+            detalles: { email, rol, activo }
+        });
     } catch (error) {
         console.error('Error al actualizar usuario:', error);
         throw error;
@@ -424,6 +443,7 @@ async function updateUsuario(usuarioId, nombre, email, rol, permisosArray, activ
  */
 async function handleDeleteUsuario() {
     const usuarioId = document.getElementById('confirm-delete-usuario').dataset.usuarioId;
+    const usuarioEliminado = allUsuarios.find(u => u.id === usuarioId);
 
     try {
         // Eliminar de Firestore
@@ -434,6 +454,15 @@ async function handleDeleteUsuario() {
 
         bootstrap.Modal.getInstance(document.getElementById('deleteUsuarioModal')).hide();
         showToast('Usuario eliminado exitosamente', 'success');
+
+        registrarAuditoria({
+            accion: 'eliminar',
+            modulo: 'usuario',
+            entidadId: usuarioId,
+            entidadNombre: usuarioEliminado?.nombre || usuarioId,
+            descripcion: `Eliminó al usuario "${usuarioEliminado?.nombre || usuarioId}"${usuarioEliminado?.email ? ' (' + usuarioEliminado.email + ')' : ''}`,
+            detalles: { email: usuarioEliminado?.email || null, rol: usuarioEliminado?.rol || null }
+        });
     } catch (error) {
         console.error('Error al eliminar usuario:', error);
         alert('Error al eliminar usuario: ' + error.message);

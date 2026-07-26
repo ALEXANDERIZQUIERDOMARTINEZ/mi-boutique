@@ -199,6 +199,26 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE AUDITORÍA - REGISTRO DE QUIÉN CREA/EDITA/ELIMINA
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /auditoria/{logId} {
+      // Leer: solo quien tenga el permiso explícito de auditoría
+      allow read: if hasPermission('auditoria_ver');
+
+      // Crear: cualquier usuario activo puede dejar su propio registro,
+      // pero solo puede firmarlo como sí mismo (no puede suplantar a otro
+      // usuario ni cambiar el tenant del que forma parte)
+      allow create: if isActiveUser() &&
+                      request.resource.data.usuarioId == request.auth.uid &&
+                      (!('tenantId' in request.resource.data) ||
+                       request.resource.data.tenantId == getUserData().tenantId);
+
+      // Es un log inmutable: nunca se edita ni se elimina
+      allow update, delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // REGLAS DE CONTADORES - CONSECUTIVOS INTERNOS (p.ej. numeración factura)
     // ═══════════════════════════════════════════════════════════════════
 

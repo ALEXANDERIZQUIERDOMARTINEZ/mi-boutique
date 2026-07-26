@@ -76,6 +76,9 @@ export const PERMISOS = {
     USUARIOS_CREAR: 'usuarios_crear',
     USUARIOS_EDITAR: 'usuarios_editar',
 
+    // Auditoría (historial de quién creó/editó/eliminó productos, ventas y usuarios)
+    AUDITORIA_VER: 'auditoria_ver',
+
     // Configuración (no está en firestore.rules — solo controla si el enlace
     // "Config. Pagos" aparece en el menú, la escritura ya la permiten las
     // reglas a cualquier usuario activo)
@@ -109,7 +112,8 @@ export const MODULOS_PERMISOS = [
     { id: 'fabrica_gestionar', nombre: 'Fábrica (Gastos e Ingresos)', permisos: [PERMISOS.FABRICA_GESTIONAR] },
     { id: 'proveedores_gestionar', nombre: 'Proveedores', permisos: [PERMISOS.PROVEEDORES_GESTIONAR] },
     { id: 'config_gestionar', nombre: 'Config. Pagos', permisos: [PERMISOS.CONFIG_GESTIONAR] },
-    { id: 'usuarios_ver', nombre: 'Usuarios', permisos: [PERMISOS.USUARIOS_VER, PERMISOS.USUARIOS_CREAR, PERMISOS.USUARIOS_EDITAR] }
+    { id: 'usuarios_ver', nombre: 'Usuarios', permisos: [PERMISOS.USUARIOS_VER, PERMISOS.USUARIOS_CREAR, PERMISOS.USUARIOS_EDITAR] },
+    { id: 'auditoria_ver', nombre: 'Auditoría', permisos: [PERMISOS.AUDITORIA_VER] }
     // "Backup" no aparece aquí a propósito: exporta todos los datos de la
     // tienda, así que se queda reservado solo para Sistema (Super Admin).
 ];
