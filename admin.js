@@ -5061,6 +5061,23 @@ document.addEventListener('DOMContentLoaded', () => {
             return producto.variaciones.reduce((sum, v) => sum + obtenerStockDisponibleEditSale(productoId, v.talla, v.color), 0);
         }
 
+        // Máximo de unidades que se le puede poner a un item (Infinity si el producto no controla stock)
+        function obtenerStockMaximoParaItemEditSale(item) {
+            if (!item.productoId) return Infinity;
+            const producto = localProductsMap.get(item.productoId);
+            if (!producto || !Array.isArray(producto.variaciones) || !producto.variaciones.length) return Infinity;
+            return obtenerStockDisponibleEditSale(item.productoId, item.talla, item.color);
+        }
+
+        // Ajusta la cantidad de un item para que no supere el stock disponible de su variación
+        function clamparCantidadEditSale(item) {
+            const maximo = obtenerStockMaximoParaItemEditSale(item);
+            const actual = parseInt(item.cantidad, 10) || 1;
+            if (Number.isFinite(maximo) && actual > maximo) {
+                item.cantidad = maximo > 0 ? maximo : 1;
+            }
+        }
+
         // Sincroniza nombre/talla/color/precio de un item con el producto seleccionado,
         // prefiriendo por defecto una variación que sí tenga stock disponible
         function sincronizarItemConProductoEditSale(item) {
@@ -5087,30 +5104,27 @@ document.addEventListener('DOMContentLoaded', () => {
             item.precio = obtenerPrecioUnitarioEditSale(producto, tipoVenta);
         }
 
-        // Construye las <option> del selector de producto, deshabilitando los que no tienen stock
+        // Construye las <option> del selector de producto: oculta los que no tienen stock
         // disponible (salvo el que ya está seleccionado en esta línea, para no perderlo)
         function construirOpcionesProductoEditSale(selectedId) {
             const productos = Array.from(localProductsMap.entries())
+                .filter(([id]) => id === selectedId || obtenerStockTotalDisponibleEditSale(id) > 0)
                 .sort((a, b) => (a[1].nombre || '').localeCompare(b[1].nombre || ''));
             let html = `<option value="">Seleccionar producto...</option>`;
             productos.forEach(([id, p]) => {
-                const esSeleccionado = id === selectedId;
-                const sinStock = obtenerStockTotalDisponibleEditSale(id) <= 0;
-                html += `<option value="${id}" ${esSeleccionado ? 'selected' : ''} ${sinStock && !esSeleccionado ? 'disabled' : ''}>${escaparHtmlEditSale(p.nombre || 'Sin nombre')}${sinStock ? ' (Sin stock)' : ''}</option>`;
+                html += `<option value="${id}" ${id === selectedId ? 'selected' : ''}>${escaparHtmlEditSale(p.nombre || 'Sin nombre')}</option>`;
             });
             return html;
         }
 
-        // Construye las <option> de un selector simple (talla o color): preserva el valor actual
-        // aunque ya no exista y deshabilita las opciones sin stock disponible (excepto la seleccionada)
+        // Construye las <option> de un selector simple (talla o color): oculta las opciones sin
+        // stock disponible, preservando el valor actual aunque ya no tenga stock o ya no exista
         function construirOpcionesSimpleEditSale(valores, seleccionado, disponibilidadFn, placeholder) {
-            const opciones = [...valores];
+            const opciones = valores.filter(v => v === seleccionado || !disponibilidadFn || disponibilidadFn(v));
             if (seleccionado && !opciones.includes(seleccionado)) opciones.unshift(seleccionado);
             let html = `<option value="">${placeholder}</option>`;
             opciones.forEach(v => {
-                const esSeleccionado = v === seleccionado;
-                const sinStock = disponibilidadFn ? !disponibilidadFn(v) : false;
-                html += `<option value="${escaparHtmlEditSale(v)}" ${esSeleccionado ? 'selected' : ''} ${sinStock && !esSeleccionado ? 'disabled' : ''}>${escaparHtmlEditSale(v)}${sinStock ? ' (Sin stock)' : ''}</option>`;
+                html += `<option value="${escaparHtmlEditSale(v)}" ${v === seleccionado ? 'selected' : ''}>${escaparHtmlEditSale(v)}</option>`;
             });
             return html;
         }
@@ -5150,6 +5164,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const precio = parseFloat(item.precio) || 0;
                 const cantidad = parseInt(item.cantidad, 10) || 1;
                 const subtotal = precio * cantidad;
+                const maximoStock = obtenerStockMaximoParaItemEditSale(item);
+                const hayLimiteStock = Number.isFinite(maximoStock);
 
                 html += `
                 <div class="esp-card" data-index="${i}">
@@ -5178,10 +5194,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="esp-field esp-field-qty">
                             <span class="esp-field-label">Cantidad</span>
                             <div class="esp-qty-stepper">
-                                <button type="button" class="esp-qty-btn" data-index="${i}" data-dir="-1" aria-label="Restar">−</button>
-                                <input type="number" class="esp-qty-input" data-index="${i}" min="1" value="${cantidad}">
-                                <button type="button" class="esp-qty-btn" data-index="${i}" data-dir="1" aria-label="Sumar">+</button>
+                                <button type="button" class="esp-qty-btn" data-index="${i}" data-dir="-1" aria-label="Restar" ${cantidad <= 1 ? 'disabled' : ''}>−</button>
+                                <input type="number" class="esp-qty-input" data-index="${i}" min="1" ${hayLimiteStock ? `max="${maximoStock}"` : ''} value="${cantidad}">
+                                <button type="button" class="esp-qty-btn" data-index="${i}" data-dir="1" aria-label="Sumar" ${hayLimiteStock && cantidad >= maximoStock ? 'disabled' : ''}>+</button>
                             </div>
+                            ${hayLimiteStock ? `<span class="esp-qty-stock">Disponible: ${maximoStock}</span>` : ''}
                         </div>
                     </div>
                     <div class="esp-card-bottom">
@@ -5208,6 +5225,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.talla = '';
                     item.color = '';
                     sincronizarItemConProductoEditSale(item);
+                    clamparCantidadEditSale(item);
                     renderEditSaleProductos();
                 } else if (target.dataset.field === 'talla') {
                     item.talla = target.value;
@@ -5216,13 +5234,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (colores.length && !colores.includes(item.color)) {
                         item.color = colores.find(c => obtenerStockDisponibleEditSale(item.productoId, item.talla, c) > 0) || colores[0];
                     }
+                    clamparCantidadEditSale(item);
                     renderEditSaleProductos();
                 } else if (target.dataset.field === 'color') {
                     item.color = target.value;
+                    clamparCantidadEditSale(item);
                     renderEditSaleProductos();
                 } else if (target.classList.contains('esp-qty-input')) {
                     const nuevaCantidad = parseInt(target.value, 10);
                     item.cantidad = nuevaCantidad > 0 ? nuevaCantidad : 1;
+                    const maximo = obtenerStockMaximoParaItemEditSale(item);
+                    if (Number.isFinite(maximo) && item.cantidad > maximo) {
+                        item.cantidad = maximo > 0 ? maximo : 1;
+                        showToast(`Solo hay ${maximo} unidades disponibles de esta variante`, 'warning');
+                    }
                     renderEditSaleProductos();
                 }
             });
@@ -5238,11 +5263,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const qtyBtn = e.target.closest('.esp-qty-btn');
                 if (qtyBtn) {
                     const index = parseInt(qtyBtn.dataset.index, 10);
-                    if (!editSaleItemsState[index]) return;
+                    const item = editSaleItemsState[index];
+                    if (!item) return;
                     const dir = parseInt(qtyBtn.dataset.dir, 10);
-                    const actual = parseInt(editSaleItemsState[index].cantidad, 10) || 1;
-                    const nueva = actual + dir;
-                    editSaleItemsState[index].cantidad = nueva > 0 ? nueva : 1;
+                    const actual = parseInt(item.cantidad, 10) || 1;
+                    let nueva = actual + dir;
+                    if (nueva < 1) nueva = 1;
+                    const maximo = obtenerStockMaximoParaItemEditSale(item);
+                    if (Number.isFinite(maximo) && nueva > maximo) {
+                        nueva = maximo > 0 ? maximo : actual;
+                        if (dir > 0) showToast(`Solo hay ${maximo} unidades disponibles de esta variante`, 'warning');
+                    }
+                    item.cantidad = nueva;
                     renderEditSaleProductos();
                 }
             });
@@ -5302,6 +5334,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (itemSinTallaOColor) {
                     const producto = localProductsMap.get(itemSinTallaOColor.productoId);
                     showToast(`Selecciona talla y color para "${producto?.nombre || 'el producto'}" antes de guardar`, 'error');
+                    return;
+                }
+
+                const itemExcedeStock = editSaleItemsState.find(item => {
+                    const maximo = obtenerStockMaximoParaItemEditSale(item);
+                    return Number.isFinite(maximo) && (parseInt(item.cantidad, 10) || 0) > maximo;
+                });
+                if (itemExcedeStock) {
+                    const producto = localProductsMap.get(itemExcedeStock.productoId);
+                    showToast(`La cantidad de "${producto?.nombre || 'el producto'}" supera el stock disponible`, 'error');
                     return;
                 }
 

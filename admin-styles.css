@@ -2889,6 +2889,15 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
   flex-shrink: 0;
 }
 .esp-qty-btn:hover { background: var(--brand-50); }
+.esp-qty-btn:disabled { color: var(--text-disabled); cursor: not-allowed; }
+.esp-qty-btn:disabled:hover { background: transparent; }
+.esp-qty-stock {
+  display: block;
+  margin-top: .25rem;
+  font-size: .68rem;
+  color: var(--text-tertiary);
+  text-align: center;
+}
 .esp-qty-input {
   width: 36px;
   border: none;
