@@ -106,7 +106,7 @@ const FECHA_CORTE_MAYORISTA = new Date(2026, 0, 1, 0, 0, 0, 0);
 
 // Desde esta fecha, cada venta al detal reparte su dinero entre las dos
 // empresas: las prendas con proveedor "Mishelles Boutique" reparten su
-// P. Mayor a Fábrica (el resto es de Boutique), y el resto de proveedores
+// Costo ($) a Fábrica (el resto es de Boutique), y el resto de proveedores
 // recupera su costo de compra (costoCompra × cantidad) como ingreso de
 // Fábrica. Ventas al detal anteriores a esta fecha no se recalculan.
 const FECHA_CORTE_DETAL = new Date(2026, 5, 1, 0, 0, 0, 0);
@@ -6986,11 +6986,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // la colección de productos.
     const productCostMapCache = new Map();
     window.__dashboardProductCostMap = productCostMapCache;
-    // P. Mayor y proveedor por producto, para el reparto Boutique/Fábrica:
-    // { precioMayor, esBoutique }. Se alimenta junto al caché de costos en
-    // iniciarListenerProductos().
-    const productMayorInfoCache = new Map();
-    window.__dashboardProductMayorInfoMap = productMayorInfoCache;
+    // Proveedor por producto, para el reparto Boutique/Fábrica: true si el
+    // proveedor es "Mishelles Boutique". Se alimenta junto al caché de
+    // costos en iniciarListenerProductos().
+    const productEsBoutiqueCache = new Map();
+    window.__dashboardProductEsBoutiqueMap = productEsBoutiqueCache;
 
     // Dona Boutique vs Fábrica dentro de la tarjeta "Comparativo por empresa"
     function actualizarGraficoComparativo(ventasDetal, ventasMayor) {
@@ -7081,16 +7081,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             // solo se vuelve a descargar la colección si todavía no ha llegado ese primer
             // snapshot (evita repetir esta lectura completa cada vez que se cambia de rango).
             let productCostMap = productCostMapCache;
-            let productMayorInfo = productMayorInfoCache;
-            if (productCostMap.size === 0 || productMayorInfo.size === 0) {
+            let productEsBoutique = productEsBoutiqueCache;
+            if (productCostMap.size === 0 || productEsBoutique.size === 0) {
                 productCostMap = new Map();
-                productMayorInfo = new Map();
+                productEsBoutique = new Map();
                 try {
                     const prodsSnap = await getDocs(productsCollection);
                     prodsSnap.forEach(d => {
                         const p = d.data();
                         productCostMap.set(d.id, parseFloat(p.costoCompra) || 0);
-                        productMayorInfo.set(d.id, { precioMayor: parseFloat(p.precioMayor) || 0, esBoutique: esProveedorBoutique(p) });
+                        productEsBoutique.set(d.id, esProveedorBoutique(p));
                     });
                 } catch (err) {
                     console.error('Error cargando costos de productos para el dashboard:', err);
@@ -7158,7 +7158,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                                 // Ganancia real de Boutique (precio venta − costo) y,
                                 // desde FECHA_CORTE_DETAL, lo que le corresponde a Fábrica:
-                                // - Prendas con proveedor "Mishelles Boutique": su P. Mayor
+                                // - Prendas con proveedor "Mishelles Boutique": su Costo ($)
                                 //   es ingreso mayorista de Fábrica; el resto es de Boutique.
                                 // - Cualquier otro proveedor: se recupera el costo de compra
                                 //   como ingreso de Fábrica (comportamiento anterior).
@@ -7177,9 +7177,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                                     gananciaBoutique += (precio - costo) * cant;
 
                                     if (contarCostoFabrica) {
-                                        const infoMayor = item.productoId ? productMayorInfo.get(item.productoId) : undefined;
-                                        if (infoMayor && infoMayor.esBoutique) {
-                                            aporteMayoristaVenta += Math.min(infoMayor.precioMayor, precio) * cant;
+                                        const esBoutique = item.productoId ? productEsBoutique.get(item.productoId) : false;
+                                        if (esBoutique) {
+                                            aporteMayoristaVenta += Math.min(costo, precio) * cant;
                                         } else {
                                             costoDetalRecuperado += costo * cant;
                                         }
@@ -7638,7 +7638,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const productos = [];
                 window.productosBajoStock = [];
                 productCostMapCache.clear();
-                productMayorInfoCache.clear();
+                productEsBoutiqueCache.clear();
 
                 snapshot.forEach(doc => {
                     const producto = doc.data();
@@ -7650,7 +7650,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const precioDetal = parseFloat(producto.precioDetal) || 0;
                     const precioMayor = parseFloat(producto.precioMayor) || 0;
                     productCostMapCache.set(productoId, costoCompra);
-                    productMayorInfoCache.set(productoId, { precioMayor, esBoutique: esProveedorBoutique(producto) });
+                    productEsBoutiqueCache.set(productoId, esProveedorBoutique(producto));
 
                     const variaciones = producto.variaciones || [];
                     const stockTotal = variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
@@ -7873,15 +7873,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             // una de las causas de la sobrecarga de memoria que hacía fallar
             // Safari repetidamente en #dashboard.
             let productCostMap = window.__dashboardProductCostMap;
-            let productMayorInfo = window.__dashboardProductMayorInfoMap;
-            if (!productCostMap || productCostMap.size === 0 || !productMayorInfo || productMayorInfo.size === 0) {
+            let productEsBoutique = window.__dashboardProductEsBoutiqueMap;
+            if (!productCostMap || productCostMap.size === 0 || !productEsBoutique || productEsBoutique.size === 0) {
                 productCostMap = new Map();
-                productMayorInfo = new Map();
+                productEsBoutique = new Map();
                 const prodsSnap = await getDocs(productsCollection);
                 prodsSnap.forEach(d => {
                     const p = d.data();
                     productCostMap.set(d.id, parseFloat(p.costoCompra) || 0);
-                    productMayorInfo.set(d.id, { precioMayor: parseFloat(p.precioMayor) || 0, esBoutique: esProveedorBoutique(p) });
+                    productEsBoutique.set(d.id, esProveedorBoutique(p));
                 });
             }
 
@@ -7927,32 +7927,34 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     if (venta.tipoVenta === 'mayorista') {
                         bucket.mayorista += monto;
                     } else {
-                        // Desde FECHA_CORTE_DETAL: prendas con proveedor "Mishelles
-                        // Boutique" reparten su P. Mayor a Fábrica y el resto a
-                        // Boutique; el resto de proveedores recupera su costo de
-                        // compra como ingreso de Fábrica (no se recalcula
+                        // Desde FECHA_CORTE_DETAL, igual que el panel "Comparativo por
+                        // empresa": prendas con proveedor "Mishelles Boutique" reparten
+                        // su Costo ($) a Fábrica y el resto a Boutique; el resto de
+                        // proveedores recupera su costo de compra como ingreso extra de
+                        // Fábrica, sin restárselo a Boutique (no se recalcula
                         // retroactivamente para ventas anteriores).
                         let aporteMayoristaVenta = 0;
+                        let costoRecuperadoVenta = 0;
                         if (fecha >= FECHA_CORTE_DETAL) {
                             (venta.items || []).forEach(item => {
                                 const precio = parseFloat(item.precio || item.precioUnitario || 0);
                                 const cant = parseInt(item.cantidad || 1, 10);
-                                const infoMayor = item.productoId ? productMayorInfo.get(item.productoId) : undefined;
-                                if (infoMayor && infoMayor.esBoutique) {
-                                    aporteMayoristaVenta += Math.min(infoMayor.precioMayor, precio) * cant;
+                                const costo = parseFloat(
+                                    item.precioCosto ||
+                                    item.costo ||
+                                    (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
+                                    0
+                                );
+                                const esBoutique = item.productoId ? productEsBoutique.get(item.productoId) : false;
+                                if (esBoutique) {
+                                    aporteMayoristaVenta += Math.min(costo, precio) * cant;
                                 } else {
-                                    const costo = parseFloat(
-                                        item.precioCosto ||
-                                        item.costo ||
-                                        (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
-                                        0
-                                    );
-                                    aporteMayoristaVenta += costo * cant;
+                                    costoRecuperadoVenta += costo * cant;
                                 }
                             });
                         }
                         bucket.detal += Math.max(monto - aporteMayoristaVenta, 0);
-                        bucket.mayorista += aporteMayoristaVenta;
+                        bucket.mayorista += aporteMayoristaVenta + costoRecuperadoVenta;
                     }
                 });
 
@@ -9605,11 +9607,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             ]);
 
             const productCostMap = new Map();
-            const productMayorInfo = new Map();
+            const productEsBoutique = new Map();
             prodsSnap.forEach(d => {
                 const p = d.data();
                 productCostMap.set(d.id, parseFloat(p.costoCompra) || 0);
-                productMayorInfo.set(d.id, { precioMayor: parseFloat(p.precioMayor) || 0, esBoutique: esProveedorBoutique(p) });
+                productEsBoutique.set(d.id, esProveedorBoutique(p));
             });
 
             const resultado = [];
@@ -9618,7 +9620,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 // Todo lo que no es mayorista (detal, apartado, catálogo) recupera
                 // su costo como ingreso de Fábrica, igual que en el dashboard.
                 // Las prendas con proveedor "Mishelles Boutique" reparten en
-                // cambio su P. Mayor a Fábrica (el resto queda para Boutique).
+                // cambio su Costo ($) a Fábrica (el resto queda para Boutique).
                 if (v.tipoVenta === 'mayorista') return;
                 if (v.estado === 'Anulada' || v.estado === 'Cancelada') return;
                 if (!v.items || !v.items.length) return;
@@ -9628,16 +9630,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 v.items.forEach(item => {
                     const precio = parseFloat(item.precio || item.precioUnitario || 0);
                     const cant = parseInt(item.cantidad || 1, 10);
-                    const infoMayor = item.productoId ? productMayorInfo.get(item.productoId) : undefined;
-                    if (infoMayor && infoMayor.esBoutique) {
-                        aporteMayorista += Math.min(infoMayor.precioMayor, precio) * cant;
+                    const costo = parseFloat(
+                        item.precioCosto ||
+                        item.costo ||
+                        (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
+                        0
+                    );
+                    const esBoutique = item.productoId ? productEsBoutique.get(item.productoId) : false;
+                    if (esBoutique) {
+                        aporteMayorista += Math.min(costo, precio) * cant;
                     } else {
-                        const costo = parseFloat(
-                            item.precioCosto ||
-                            item.costo ||
-                            (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
-                            0
-                        );
                         costoTotal += costo * cant;
                     }
                 });
@@ -9648,7 +9650,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     resultado.push({
                         id: `mayorista_detal_${docSnap.id}`,
                         tipo: 'ingreso',
-                        concepto: `Venta mayorista (P. Mayor) — venta detal${clienteSufijo}`,
+                        concepto: `Costo mercancía (proveedor Boutique) — venta detal${clienteSufijo}`,
                         monto: aporteMayorista,
                         fecha: v.timestamp,
                         origenVenta: true
