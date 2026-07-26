@@ -2,6 +2,18 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <script>
+        // Si este dispositivo ya tiene una sesión guardada, saltar la pantalla
+        // de login por completo en vez de descargar el formulario, Bootstrap y
+        // el SDK de Firebase Auth solo para, un instante después, redirigir a
+        // donde ya sabemos que va a terminar. admin.html hace su propia
+        // verificación real contra Firebase (auth.js) y devuelve aquí si la
+        // sesión ya no es válida — limpiando este caché antes de hacerlo, así
+        // que no hay riesgo de quedar en un ciclo de redirecciones.
+        if (localStorage.getItem('mishellAdminUserCache')) {
+            location.replace('admin.html');
+        }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <title>Login - MISHELL'ES BOUTIQUE Admin</title>
 
