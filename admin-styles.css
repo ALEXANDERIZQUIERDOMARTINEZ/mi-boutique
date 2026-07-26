@@ -2780,6 +2780,185 @@ body.dark-mode .pw-obs { background: rgba(255,255,255,.04); }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   EDITAR VENTA · Productos (tarjetas editables)
+   ───────────────────────────────────────────────────────────────────────── */
+.esp-list {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+.esp-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  padding: .75rem;
+  transition: box-shadow .15s, border-color .15s;
+}
+.esp-card:hover { border-color: var(--brand-300); box-shadow: var(--shadow-sm); }
+
+.esp-card-top {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .6rem;
+}
+.esp-card-icon {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  border-radius: var(--radius-xs);
+  background: var(--grad-brand-soft);
+  color: var(--brand-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+}
+.esp-select {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  background: var(--surface-inset);
+  color: var(--text-primary);
+  font-size: .85rem;
+  font-weight: 500;
+  padding: .4rem .6rem;
+}
+.esp-select:focus { outline: none; border-color: var(--brand-400); box-shadow: 0 0 0 3px rgba(217,136,185,0.18); }
+.esp-remove-btn {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, color .15s;
+}
+.esp-remove-btn:hover { background: rgba(220,53,69,0.1); color: #dc3545; }
+
+.esp-card-variants {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: .5rem;
+  margin-bottom: .6rem;
+}
+.esp-field { min-width: 0; }
+.esp-field-label {
+  display: block;
+  font-size: .68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--text-tertiary);
+  margin-bottom: .25rem;
+}
+.esp-mini-select {
+  width: 100%;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  background: var(--surface-inset);
+  color: var(--text-primary);
+  font-size: .8rem;
+  padding: .35rem .5rem;
+}
+.esp-mini-select:disabled { opacity: .5; }
+
+.esp-field-qty { flex-shrink: 0; }
+.esp-qty-stepper {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  background: var(--surface-inset);
+  overflow: hidden;
+}
+.esp-qty-btn {
+  border: none;
+  background: transparent;
+  color: var(--brand-600);
+  font-weight: 700;
+  width: 26px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.esp-qty-btn:hover { background: var(--brand-50); }
+.esp-qty-input {
+  width: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  text-align: center;
+  font-size: .82rem;
+  font-weight: 600;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+.esp-qty-input::-webkit-outer-spin-button,
+.esp-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.esp-qty-input:focus { outline: none; }
+
+.esp-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: .5rem;
+  border-top: 1px dashed var(--border-subtle);
+  font-size: .8rem;
+}
+.esp-unit-price { color: var(--text-tertiary); }
+.esp-subtotal { color: var(--brand-600); font-size: .95rem; }
+
+.esp-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  width: 100%;
+  margin-top: .6rem;
+  padding: .55rem;
+  border: 1.5px dashed var(--brand-300);
+  border-radius: var(--radius-sm);
+  background: var(--grad-brand-soft);
+  color: var(--brand-600);
+  font-weight: 600;
+  font-size: .85rem;
+  transition: background .15s, border-color .15s;
+}
+.esp-add-btn:hover { background: var(--brand-100); border-color: var(--brand-400); }
+
+.esp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: 2rem 1rem;
+  color: var(--text-tertiary);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: .85rem;
+}
+.esp-empty i { font-size: 1.75rem; opacity: .4; }
+
+body.dark-mode .esp-card { background: rgba(255,255,255,.03); }
+body.dark-mode .esp-select,
+body.dark-mode .esp-mini-select,
+body.dark-mode .esp-qty-stepper { background: rgba(255,255,255,.05); color: var(--text-primary); }
+body.dark-mode .esp-empty { border-color: var(--border-subtle); }
+
+@media (max-width: 540px) {
+  .esp-card-variants { grid-template-columns: 1fr 1fr; }
+  .esp-field-qty { grid-column: span 2; }
+  .esp-qty-stepper { width: 100%; justify-content: center; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    PRODUCT / NAMES in tables
    ───────────────────────────────────────────────────────────────────────── */
 .product-name { font-weight: 600; color: var(--text-primary); font-size: 0.84rem; }

@@ -4776,6 +4776,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Estado local de los productos de la venta que se está editando
+        let editSaleItemsState = [];
+        let editSaleVentaData = null;
+
         // ═══════════════════════════════════════════════════════════════════
         // FUNCIÓN: ABRIR MODAL EDITAR VENTA
         // ═══════════════════════════════════════════════════════════════════
@@ -4812,11 +4816,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 await cargarRepartidoresEdit();
                 document.getElementById('edit-sale-repartidor').value = ventaData.repartidor || '';
 
-                // Mostrar productos
-                mostrarProductosEdit(ventaData.items || []);
+                // Guardar datos de la venta (descuento/costoRuta) para recalcular el total
+                editSaleVentaData = ventaData;
 
-                // Mostrar total
-                document.getElementById('edit-sale-total').textContent = formatoMoneda.format(ventaData.totalVenta || 0);
+                // Clonar los items en un estado editable independiente
+                editSaleItemsState = (ventaData.items || []).map(item => ({
+                    productoId: item.productoId || '',
+                    nombre: item.nombre || '',
+                    talla: item.talla || '',
+                    color: item.color || '',
+                    precio: parseFloat(item.precio ?? item.precioUnitario) || 0,
+                    cantidad: parseInt(item.cantidad, 10) || 1
+                }));
+
+                // Mostrar productos
+                renderEditSaleProductos();
 
                 // Abrir modal
                 const modal = new bootstrap.Modal(document.getElementById('editSaleModal'));
@@ -4842,90 +4856,227 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Mostrar productos en el modal de edición
-        function mostrarProductosEdit(items) {
+        // Escapar texto para insertarlo en HTML de forma segura
+        function escaparHtmlEditSale(texto) {
+            const div = document.createElement('div');
+            div.textContent = texto ?? '';
+            return div.innerHTML;
+        }
+
+        // Precio unitario de un producto según el tipo de venta actual
+        function obtenerPrecioUnitarioEditSale(producto, tipoVenta) {
+            if (!producto) return 0;
+            if (tipoVenta === 'mayorista') return parseFloat(producto.precioMayor || producto.precioDetal) || 0;
+            return parseFloat(producto.precioDetal) || 0;
+        }
+
+        // Tallas únicas disponibles para un producto
+        function obtenerTallasEditSale(producto) {
+            if (!producto || !Array.isArray(producto.variaciones)) return [];
+            const tallas = [];
+            producto.variaciones.forEach(v => { if (v.talla && !tallas.includes(v.talla)) tallas.push(v.talla); });
+            return tallas;
+        }
+
+        // Colores únicos disponibles para un producto (opcionalmente filtrados por talla)
+        function obtenerColoresEditSale(producto, talla) {
+            if (!producto || !Array.isArray(producto.variaciones)) return [];
+            const colores = [];
+            producto.variaciones.forEach(v => {
+                if (!v.color) return;
+                if (talla && v.talla !== talla) return;
+                if (!colores.includes(v.color)) colores.push(v.color);
+            });
+            return colores;
+        }
+
+        // Sincroniza nombre/talla/color/precio de un item con el producto seleccionado
+        function sincronizarItemConProductoEditSale(item) {
+            const tipoVenta = document.getElementById('edit-sale-tipo').value;
+            if (!item.productoId) return;
+
+            const producto = localProductsMap.get(item.productoId);
+            if (!producto) return;
+
+            item.nombre = producto.nombre || item.nombre;
+
+            const tallas = obtenerTallasEditSale(producto);
+            if (tallas.length && !tallas.includes(item.talla)) item.talla = tallas[0];
+            if (!tallas.length) item.talla = '';
+
+            const colores = obtenerColoresEditSale(producto, item.talla);
+            if (colores.length && !colores.includes(item.color)) item.color = colores[0];
+            if (!colores.length) item.color = '';
+
+            item.precio = obtenerPrecioUnitarioEditSale(producto, tipoVenta);
+        }
+
+        // Construye las <option> del selector de producto
+        function construirOpcionesProductoEditSale(selectedId) {
+            const productos = Array.from(localProductsMap.entries())
+                .sort((a, b) => (a[1].nombre || '').localeCompare(b[1].nombre || ''));
+            let html = `<option value="">Seleccionar producto...</option>`;
+            productos.forEach(([id, p]) => {
+                html += `<option value="${id}" ${id === selectedId ? 'selected' : ''}>${escaparHtmlEditSale(p.nombre || 'Sin nombre')}</option>`;
+            });
+            return html;
+        }
+
+        // Construye las <option> de un selector simple (talla o color), preservando el valor actual aunque ya no exista
+        function construirOpcionesSimpleEditSale(valores, seleccionado) {
+            const opciones = [...valores];
+            if (seleccionado && !opciones.includes(seleccionado)) opciones.unshift(seleccionado);
+            let html = `<option value="">N/A</option>`;
+            opciones.forEach(v => {
+                html += `<option value="${escaparHtmlEditSale(v)}" ${v === seleccionado ? 'selected' : ''}>${escaparHtmlEditSale(v)}</option>`;
+            });
+            return html;
+        }
+
+        // Recalcula y muestra el total de la venta a partir del estado local de items
+        function actualizarTotalEditSale() {
+            const subtotal = editSaleItemsState.reduce((sum, item) => {
+                return sum + (parseFloat(item.precio) || 0) * (parseInt(item.cantidad, 10) || 1);
+            }, 0);
+            const descuento = parseFloat(editSaleVentaData?.descuento) || 0;
+            const costoRuta = parseFloat(editSaleVentaData?.costoRuta) || 0;
+            const total = subtotal - descuento + costoRuta;
+            document.getElementById('edit-sale-total').textContent = formatoMoneda.format(total);
+            return total;
+        }
+
+        // Mostrar productos en el modal de edición (tarjetas editables: producto, talla, color y cantidad por separado)
+        function renderEditSaleProductos() {
             const container = document.getElementById('edit-sale-productos');
-            if (!items || items.length === 0) {
-                container.innerHTML = '<p class="text-muted">No hay productos en esta venta</p>';
+            if (!container) return;
+
+            if (!editSaleItemsState.length) {
+                container.innerHTML = `
+                    <div class="esp-empty">
+                        <i class="bi bi-bag-x"></i>
+                        <span>No hay productos en esta venta</span>
+                    </div>`;
+                actualizarTotalEditSale();
                 return;
             }
 
-            let html = '<div class="list-group">';
-            items.forEach((item) => {
-                // ✅ CORRECCIÓN: Usar item.precio (no precioUnitario) que es el campo correcto
-                const precioUnit = parseFloat(item.precio || item.precioUnitario) || 0;
-                const cantidad = parseFloat(item.cantidad) || 1;
-                const total = precioUnit * cantidad;
+            let html = '';
+            editSaleItemsState.forEach((item, i) => {
+                const producto = item.productoId ? localProductsMap.get(item.productoId) : null;
+                const tallas = obtenerTallasEditSale(producto);
+                const colores = obtenerColoresEditSale(producto, item.talla);
+                const precio = parseFloat(item.precio) || 0;
+                const cantidad = parseInt(item.cantidad, 10) || 1;
+                const subtotal = precio * cantidad;
 
                 html += `
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <strong>${item.nombre || 'Producto'}</strong><br>
-                                <small class="text-muted">
-                                    ${item.talla ? `Talla: ${item.talla}` : ''}
-                                    ${item.color ? ` • Color: ${item.color}` : ''}
-                                </small>
-                            </div>
-                            <div class="text-end">
-                                <strong>${formatoMoneda.format(total)}</strong><br>
-                                <small class="text-muted">${cantidad} x ${formatoMoneda.format(precioUnit)}</small>
+                <div class="esp-card" data-index="${i}">
+                    <div class="esp-card-top">
+                        <span class="esp-card-icon"><i class="bi bi-bag-fill"></i></span>
+                        <select class="esp-select esp-product-select" data-index="${i}" data-field="producto">
+                            ${construirOpcionesProductoEditSale(item.productoId)}
+                        </select>
+                        <button type="button" class="esp-remove-btn" data-index="${i}" title="Quitar producto">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
+                    <div class="esp-card-variants">
+                        <div class="esp-field">
+                            <span class="esp-field-label">Talla</span>
+                            <select class="esp-mini-select" data-index="${i}" data-field="talla" ${!tallas.length ? 'disabled' : ''}>
+                                ${construirOpcionesSimpleEditSale(tallas, item.talla)}
+                            </select>
+                        </div>
+                        <div class="esp-field">
+                            <span class="esp-field-label">Color</span>
+                            <select class="esp-mini-select" data-index="${i}" data-field="color" ${!colores.length ? 'disabled' : ''}>
+                                ${construirOpcionesSimpleEditSale(colores, item.color)}
+                            </select>
+                        </div>
+                        <div class="esp-field esp-field-qty">
+                            <span class="esp-field-label">Cantidad</span>
+                            <div class="esp-qty-stepper">
+                                <button type="button" class="esp-qty-btn" data-index="${i}" data-dir="-1" aria-label="Restar">−</button>
+                                <input type="number" class="esp-qty-input" data-index="${i}" min="1" value="${cantidad}">
+                                <button type="button" class="esp-qty-btn" data-index="${i}" data-dir="1" aria-label="Sumar">+</button>
                             </div>
                         </div>
-                    </div>`;
+                    </div>
+                    <div class="esp-card-bottom">
+                        <span class="esp-unit-price">${cantidad} × ${formatoMoneda.format(precio)}</span>
+                        <strong class="esp-subtotal">${formatoMoneda.format(subtotal)}</strong>
+                    </div>
+                </div>`;
             });
-            html += '</div>';
             container.innerHTML = html;
+            actualizarTotalEditSale();
         }
 
-        // Listener para cambio de tipo de venta en el modal
-        document.getElementById('edit-sale-tipo').addEventListener('change', async function() {
-            const ventaId = document.getElementById('edit-sale-id').value;
-            if (!ventaId) return;
+        // Delegación de eventos sobre las tarjetas de productos del modal de edición
+        const editSaleProductosContainer = document.getElementById('edit-sale-productos');
+        if (editSaleProductosContainer) {
+            editSaleProductosContainer.addEventListener('change', (e) => {
+                const target = e.target;
+                const index = parseInt(target.dataset.index, 10);
+                if (isNaN(index) || !editSaleItemsState[index]) return;
+                const item = editSaleItemsState[index];
 
-            try {
-                const ventaRef = doc(db, 'ventas', ventaId);
-                const ventaSnap = await getDoc(ventaRef);
+                if (target.classList.contains('esp-product-select')) {
+                    item.productoId = target.value;
+                    item.talla = '';
+                    item.color = '';
+                    sincronizarItemConProductoEditSale(item);
+                    renderEditSaleProductos();
+                } else if (target.dataset.field === 'talla') {
+                    item.talla = target.value;
+                    const producto = item.productoId ? localProductsMap.get(item.productoId) : null;
+                    const colores = obtenerColoresEditSale(producto, item.talla);
+                    if (colores.length && !colores.includes(item.color)) item.color = colores[0];
+                    renderEditSaleProductos();
+                } else if (target.dataset.field === 'color') {
+                    item.color = target.value;
+                    renderEditSaleProductos();
+                } else if (target.classList.contains('esp-qty-input')) {
+                    const nuevaCantidad = parseInt(target.value, 10);
+                    item.cantidad = nuevaCantidad > 0 ? nuevaCantidad : 1;
+                    renderEditSaleProductos();
+                }
+            });
 
-                if (!ventaSnap.exists()) return;
+            editSaleProductosContainer.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('.esp-remove-btn');
+                if (removeBtn) {
+                    const index = parseInt(removeBtn.dataset.index, 10);
+                    editSaleItemsState.splice(index, 1);
+                    renderEditSaleProductos();
+                    return;
+                }
+                const qtyBtn = e.target.closest('.esp-qty-btn');
+                if (qtyBtn) {
+                    const index = parseInt(qtyBtn.dataset.index, 10);
+                    if (!editSaleItemsState[index]) return;
+                    const dir = parseInt(qtyBtn.dataset.dir, 10);
+                    const actual = parseInt(editSaleItemsState[index].cantidad, 10) || 1;
+                    const nueva = actual + dir;
+                    editSaleItemsState[index].cantidad = nueva > 0 ? nueva : 1;
+                    renderEditSaleProductos();
+                }
+            });
+        }
 
-                const ventaData = ventaSnap.data();
-                const nuevoTipo = this.value;
+        // Botón para agregar un nuevo producto (por si el usuario se equivocó y falta una prenda)
+        const btnAddEditSaleItem = document.getElementById('btn-edit-sale-add-item');
+        if (btnAddEditSaleItem) {
+            btnAddEditSaleItem.addEventListener('click', () => {
+                editSaleItemsState.push({ productoId: '', nombre: '', talla: '', color: '', precio: 0, cantidad: 1 });
+                renderEditSaleProductos();
+            });
+        }
 
-                // Recalcular precios según nuevo tipo
-                let nuevoTotal = 0;
-                const itemsActualizados = await Promise.all(ventaData.items.map(async (item) => {
-                    const prodRef = doc(db, 'productos', item.id);
-                    const prodSnap = await getDoc(prodRef);
-
-                    if (prodSnap.exists()) {
-                        const prodData = prodSnap.data();
-                        let nuevoPrecio = prodData.precioDetal;
-
-                        if (nuevoTipo === 'mayorista') {
-                            nuevoPrecio = prodData.precioMayor || prodData.precioDetal;
-                        }
-
-                        const cantidad = parseFloat(item.cantidad) || 1;
-                        const totalItem = nuevoPrecio * cantidad;
-                        nuevoTotal += totalItem;
-
-                        return { ...item, precioUnitario: nuevoPrecio, totalItem: totalItem };
-                    }
-                    return item;
-                }));
-
-                // Aplicar descuento y costo ruta
-                const descuento = parseFloat(ventaData.descuento) || 0;
-                const costoRuta = parseFloat(ventaData.costoRuta) || 0;
-                nuevoTotal = nuevoTotal - descuento + costoRuta;
-
-                // Actualizar vista
-                mostrarProductosEdit(itemsActualizados);
-                document.getElementById('edit-sale-total').textContent = formatoMoneda.format(nuevoTotal);
-            } catch (error) {
-                console.error('Error al recalcular precios:', error);
-            }
+        // Listener para cambio de tipo de venta en el modal (recalcula precios con los datos ya cargados localmente)
+        document.getElementById('edit-sale-tipo').addEventListener('change', function() {
+            editSaleItemsState.forEach(item => sincronizarItemConProductoEditSale(item));
+            renderEditSaleProductos();
         });
 
         // Guardar cambios de edición
@@ -4947,61 +5098,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 console.log('📋 [EDICIÓN] Datos a actualizar:', { nuevoCliente, nuevoTipo, nuevoRepartidor });
 
-                // Obtener venta actual
-                const ventaRef = doc(db, 'ventas', ventaId);
-                const ventaSnap = await getDoc(ventaRef);
-
-                if (!ventaSnap.exists()) {
-                    console.error('❌ [EDICIÓN] Venta no encontrada en Firestore');
-                    showToast('Venta no encontrada', 'error');
+                if (!editSaleItemsState.length) {
+                    showToast('La venta debe tener al menos un producto', 'error');
                     return;
                 }
 
-                const ventaData = ventaSnap.data();
-                console.log('📦 [EDICIÓN] Datos actuales de la venta:', ventaData);
-
-                // Recalcular items si cambió el tipo
-                let itemsActualizados = ventaData.items;
-                let nuevoTotal = ventaData.totalVenta;
-
-                if (nuevoTipo !== ventaData.tipoVenta) {
-                    if (nuevoTipo === 'mayorista') {
-                        const productosVenta = await Promise.all(
-                            ventaData.items.map(item => getDoc(doc(db, 'productos', item.productoId)))
-                        );
-                        const noBoutique = productosVenta.find(snap => snap.exists() && !esProveedorBoutique(snap.data()));
-                        if (noBoutique) {
-                            showToast(`"${noBoutique.data().nombre}" no es de Mishelles Boutique: no se puede pasar a mayorista`, 'error');
-                            return;
-                        }
-                    }
-
-                    let subtotal = 0;
-                    itemsActualizados = await Promise.all(ventaData.items.map(async (item) => {
-                        const prodRef = doc(db, 'productos', item.productoId);
-                        const prodSnap = await getDoc(prodRef);
-
-                        if (prodSnap.exists()) {
-                            const prodData = prodSnap.data();
-                            let nuevoPrecio = prodData.precioDetal;
-
-                            if (nuevoTipo === 'mayorista') {
-                                nuevoPrecio = prodData.precioMayor || prodData.precioDetal;
-                            }
-
-                            const cantidad = parseFloat(item.cantidad) || 1;
-                            const totalItem = nuevoPrecio * cantidad;
-                            subtotal += totalItem;
-
-                            return { ...item, precio: nuevoPrecio };
-                        }
-                        return item;
-                    }));
-
-                    const descuento = parseFloat(ventaData.descuento) || 0;
-                    const costoRuta = parseFloat(ventaData.costoRuta) || 0;
-                    nuevoTotal = subtotal - descuento + costoRuta;
+                if (editSaleItemsState.some(item => !item.productoId)) {
+                    showToast('Selecciona un producto para cada línea antes de guardar', 'error');
+                    return;
                 }
+
+                if (nuevoTipo === 'mayorista') {
+                    const productoNoBoutique = editSaleItemsState.find(item => {
+                        const producto = localProductsMap.get(item.productoId);
+                        return producto && !esProveedorBoutique(producto);
+                    });
+                    if (productoNoBoutique) {
+                        const producto = localProductsMap.get(productoNoBoutique.productoId);
+                        showToast(`"${producto?.nombre || 'Producto'}" no es de Mishelles Boutique: no se puede pasar a mayorista`, 'error');
+                        return;
+                    }
+                }
+
+                // Sincronizar precios finales con el tipo de venta seleccionado
+                editSaleItemsState.forEach(item => sincronizarItemConProductoEditSale(item));
+
+                const itemsActualizados = editSaleItemsState.map(item => ({
+                    productoId: item.productoId,
+                    nombre: item.nombre,
+                    talla: item.talla,
+                    color: item.color,
+                    precio: parseFloat(item.precio) || 0,
+                    cantidad: parseInt(item.cantidad, 10) || 1
+                }));
+
+                const nuevoTotal = actualizarTotalEditSale();
+
+                const ventaRef = doc(db, 'ventas', ventaId);
 
                 // Preparar objeto de actualización con los campos correctos
                 const updateData = {
