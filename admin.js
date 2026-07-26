@@ -366,6 +366,63 @@ async function actualizarStock(itemsVendido, accion = 'restar') {
     }
 }
 
+// Reconcilia el stock al editar los items de una venta ya existente: calcula, por producto,
+// el delta neto (repone lo original y descuenta lo nuevo) y lo aplica en un solo batch por
+// producto para no pisar cambios cuando el mismo producto aparece en ambas listas.
+async function reconciliarStockEdicionVenta(itemsOriginales, itemsNuevos) {
+    const deltas = new Map(); // productoId -> Map(`${talla}|${color}` -> deltaNeto)
+
+    const acumular = (items, signo) => {
+        (items || []).forEach(item => {
+            if (!item.productoId) return;
+            const cantidad = parseInt(item.cantidad, 10) || 0;
+            if (!cantidad) return;
+            if (!deltas.has(item.productoId)) deltas.set(item.productoId, new Map());
+            const porVariacion = deltas.get(item.productoId);
+            const clave = `${item.talla || ''}|${item.color || ''}`;
+            porVariacion.set(clave, (porVariacion.get(clave) || 0) + signo * cantidad);
+        });
+    };
+
+    acumular(itemsOriginales, 1);   // reponer lo que tenía la venta antes de editar
+    acumular(itemsNuevos, -1);      // descontar lo que queda tras la edición
+
+    const batch = writeBatch(db);
+    let huboCambios = false;
+
+    deltas.forEach((porVariacion, productoId) => {
+        const producto = localProductsMap.get(productoId);
+        if (!producto || !Array.isArray(producto.variaciones)) {
+            console.warn(`Producto ${productoId} no encontrado en localProductsMap. Omitiendo ajuste de stock.`);
+            return;
+        }
+
+        const nuevasVariaciones = JSON.parse(JSON.stringify(producto.variaciones));
+        let productoTuvoCambio = false;
+
+        porVariacion.forEach((delta, clave) => {
+            if (!delta) return;
+            const [talla, color] = clave.split('|');
+            const variacion = nuevasVariaciones.find(v => (v.talla || '') === talla && (v.color || '') === color);
+            if (variacion) {
+                variacion.stock = (parseInt(variacion.stock, 10) || 0) + delta;
+                productoTuvoCambio = true;
+            } else {
+                console.warn(`No se encontró la variación ${talla}/${color} para el producto ${productoId} al ajustar stock.`);
+            }
+        });
+
+        if (productoTuvoCambio) {
+            batch.update(doc(db, 'productos', productoId), { variaciones: nuevasVariaciones });
+            huboCambios = true;
+        }
+    });
+
+    if (huboCambios) {
+        await batch.commit();
+    }
+}
+
 // ========================================================================
 // --- SCRIPT EJECUTADO AL CARGAR EL DOM ---
 // ========================================================================
@@ -5132,6 +5189,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     updateData.repartidorId = repartidorId;
                     updateData.repartidorNombre = nuevoRepartidor;
+                }
+
+                // Ajustar stock: reponer lo que tenía la venta antes y descontar lo que quedó tras la edición
+                if (!editSaleVentaData?.esCatalogoExterno) {
+                    console.log('📦 [EDICIÓN] Reconciliando stock de productos...');
+                    await reconciliarStockEdicionVenta(editSaleVentaData?.items || [], itemsActualizados);
+                    console.log('✅ [EDICIÓN] Stock reconciliado');
                 }
 
                 // Actualizar venta en Firestore
