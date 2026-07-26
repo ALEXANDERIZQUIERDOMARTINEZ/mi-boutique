@@ -3,6 +3,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase
 import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 // Import Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+// Import Auditoría (registro de quién crea/edita/elimina)
+import { registrarAuditoria } from "./auditoria.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -493,11 +495,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const productDocRef = doc(db, 'productos', idToDelete);
                     const docSnap = await getDoc(productDocRef);
-                    
+                    let productData = null;
+
                     if (docSnap.exists()) {
-                        const productData = docSnap.data();
+                        productData = docSnap.data();
                         const imageUrl = productData.imagenUrl;
-                        
+
                         if (imageUrl) {
                             try {
                                 const imageRef = ref(storage, imageUrl);
@@ -509,27 +512,44 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                     }
-                    
+
                     await deleteDoc(productDocRef);
                     showToast("Producto e imagen eliminados!");
-                    
+
+                    registrarAuditoria({
+                        accion: 'eliminar',
+                        modulo: 'producto',
+                        entidadId: idToDelete,
+                        entidadNombre: productData?.nombre || idToDelete,
+                        descripcion: `Eliminó el producto "${productData?.nombre || idToDelete}"${productData?.codigo ? ' (código ' + productData.codigo + ')' : ''}`,
+                        detalles: { codigo: productData?.codigo || null }
+                    });
+
                 } catch (err) {
-                    console.error(`Error deleting product:`, err); 
-                    showToast(`Error al eliminar: ${err.message}`, 'error'); 
+                    console.error(`Error deleting product:`, err);
+                    showToast(`Error al eliminar: ${err.message}`, 'error');
                 } finally {
                     deleteConfirmModalInstance.hide();
                 }
             } else {
-                try { 
-                    await deleteDoc(doc(db, collectionToDelete, idToDelete)); 
-                    showToast("Elemento eliminado!"); 
+                try {
+                    await deleteDoc(doc(db, collectionToDelete, idToDelete));
+                    showToast("Elemento eliminado!");
+
+                    registrarAuditoria({
+                        accion: 'eliminar',
+                        modulo: collectionToDelete,
+                        entidadId: idToDelete,
+                        entidadNombre: idToDelete,
+                        descripcion: `Eliminó un elemento de "${collectionToDelete}" (ID ${idToDelete})`
+                    });
                 }
-                catch (err) { 
-                    console.error(`Error deleting:`, err); 
-                    showToast(`Error al eliminar: ${err.message}`, 'error'); 
+                catch (err) {
+                    console.error(`Error deleting:`, err);
+                    showToast(`Error al eliminar: ${err.message}`, 'error');
                 }
-                finally { 
-                    deleteConfirmModalInstance.hide(); 
+                finally {
+                    deleteConfirmModalInstance.hide();
                 }
             }
          });
@@ -2096,6 +2116,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     imagenInput.value = '';
                     showToast("Producto actualizado!");
 
+                    registrarAuditoria({
+                        accion: 'editar',
+                        modulo: 'producto',
+                        entidadId: productId,
+                        entidadNombre: productData.nombre,
+                        descripcion: `Editó el producto "${productData.nombre}" (código ${productData.codigo || ''})`,
+                        detalles: {
+                            costoCompra: productData.costoCompra,
+                            precioDetal: productData.precioDetal,
+                            precioMayor: productData.precioMayor,
+                            visible: productData.visible
+                        }
+                    });
+
                     // ✅ AUTO-SCROLL: Cambiar a vista de inventario y hacer scroll
                     const formView = document.getElementById('form-view');
                     const inventoryView = document.getElementById('inventory-view');
@@ -2116,11 +2150,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } else { 
                     if (!productData.imagenUrl) { showToast("Se requiere una imagen para crear un producto nuevo.", 'warning'); throw new Error("Imagen requerida"); }
-                    productData.codigo = "P" + Date.now().toString().slice(-5); 
-                    const docRef = await addDoc(productsCollection, productData); 
-                    showToast("Producto guardado!"); 
-                    window.clearProductForm(); 
-                } 
+                    productData.codigo = "P" + Date.now().toString().slice(-5);
+                    const docRef = await addDoc(productsCollection, productData);
+                    showToast("Producto guardado!");
+
+                    registrarAuditoria({
+                        accion: 'crear',
+                        modulo: 'producto',
+                        entidadId: docRef.id,
+                        entidadNombre: productData.nombre,
+                        descripcion: `Agregó el producto "${productData.nombre}" (código ${productData.codigo})`,
+                        detalles: {
+                            costoCompra: productData.costoCompra,
+                            precioDetal: productData.precioDetal,
+                            precioMayor: productData.precioMayor,
+                            proveedor: productData.proveedor
+                        }
+                    });
+
+                    window.clearProductForm();
+                }
             } catch (err) { 
                 console.error("Error saving product or image:", err); 
                 if (err.message !== "Imagen requerida" && err.message !== "Color sin nombre") {
@@ -3491,6 +3540,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     delete window.editingVentaId;
                     console.log("🔓 [EDICIÓN FORMULARIO] Flag de edición limpiado");
 
+                    registrarAuditoria({
+                        accion: 'editar',
+                        modulo: 'venta',
+                        entidadId: ventaId,
+                        entidadNombre: `Venta de ${ventaData.clienteNombre}`,
+                        descripcion: `Editó la venta de "${ventaData.clienteNombre}" por ${formatoMoneda.format(ventaData.totalVenta || 0)}`,
+                        detalles: { tipoVenta: ventaData.tipoVenta, totalVenta: ventaData.totalVenta }
+                    });
+
                 } else {
                     // MODO CREACIÓN: Registrar nueva venta
                     docRef = await addDoc(salesCollection, ventaData);
@@ -3504,6 +3562,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         console.log("ℹ️ Venta por catálogo externo - Stock NO afectado");
                     }
+
+                    registrarAuditoria({
+                        accion: 'crear',
+                        modulo: 'venta',
+                        entidadId: ventaId,
+                        entidadNombre: `Venta de ${ventaData.clienteNombre}`,
+                        descripcion: `Generó una venta para "${ventaData.clienteNombre}" por ${formatoMoneda.format(ventaData.totalVenta || 0)}`,
+                        detalles: { tipoVenta: ventaData.tipoVenta, totalVenta: ventaData.totalVenta }
+                    });
                 }
 
                 // ✅ PASO 3: Si es apartado, crear documento apartado
@@ -3923,7 +3990,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 showToast('Venta anulada y stock repuesto.', 'info');
-                
+
+                registrarAuditoria({
+                    accion: 'anular',
+                    modulo: 'venta',
+                    entidadId: ventaId,
+                    entidadNombre: `Venta de ${ventaData.clienteNombre || 'Cliente General'}`,
+                    descripcion: `Anuló la venta de "${ventaData.clienteNombre || 'Cliente General'}" por ${formatoMoneda.format(ventaData.totalVenta || 0)}`,
+                    detalles: { tipoVenta: ventaData.tipoVenta, totalVenta: ventaData.totalVenta }
+                });
+
             } catch (error) {
                 console.error("Error al anular la venta:", error);
                 showToast('Error al anular la venta.', 'error');
@@ -4652,6 +4728,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     showToast('✅ Venta eliminada y stock repuesto correctamente', 'success');
 
+                    registrarAuditoria({
+                        accion: 'eliminar',
+                        modulo: 'venta',
+                        entidadId: currentVentaId,
+                        entidadNombre: `Venta de ${currentVentaData?.clienteNombre || 'Cliente General'}`,
+                        descripcion: `Eliminó la venta de "${currentVentaData?.clienteNombre || 'Cliente General'}" por ${formatoMoneda.format(currentVentaData?.totalVenta || 0)}`,
+                        detalles: { tipoVenta: currentVentaData?.tipoVenta, totalVenta: currentVentaData?.totalVenta }
+                    });
+
                     // Cerrar modales
                     bootstrap.Modal.getInstance(document.getElementById('deleteConfirmPassword')).hide();
                     passwordInput.value = '';
@@ -5317,6 +5402,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 await deleteDoc(ventaRef);
 
                 showToast('Venta eliminada exitosamente. Stock restaurado.', 'success');
+
+                registrarAuditoria({
+                    accion: 'eliminar',
+                    modulo: 'venta',
+                    entidadId: ventaId,
+                    entidadNombre: `Venta de ${ventaData?.clienteNombre || 'Cliente General'}`,
+                    descripcion: `Eliminó la venta de "${ventaData?.clienteNombre || 'Cliente General'}" por ${formatoMoneda.format(ventaData?.totalVenta || 0)}`,
+                    detalles: { tipoVenta: ventaData?.tipoVenta, totalVenta: ventaData?.totalVenta }
+                });
 
                 // Cerrar modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('deleteSaleModal'));
@@ -6165,6 +6259,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const nuevaVentaRef = await addDoc(collection(db, 'ventas'), nuevaVentaData);
                     console.log("✅ Nueva venta creada con el abono. ID:", nuevaVentaRef.id);
                     console.log("💰 Monto de la venta:", formatoMoneda.format(monto));
+
+                    registrarAuditoria({
+                        accion: 'crear',
+                        modulo: 'venta',
+                        entidadId: nuevaVentaRef.id,
+                        entidadNombre: `Venta de ${clienteNombre}`,
+                        descripcion: `Registró un abono de apartado como venta para "${clienteNombre}" por ${formatoMoneda.format(monto)}`,
+                        detalles: { esAbonoApartado: true, apartadoId, monto }
+                    });
 
                 } catch (ventaErr) {
                     console.error("❌ Error al crear venta con el abono:", ventaErr);
