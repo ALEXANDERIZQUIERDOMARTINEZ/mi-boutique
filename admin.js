@@ -4992,10 +4992,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Construye las <option> de un selector simple (talla o color): preserva el valor actual
         // aunque ya no exista y deshabilita las opciones sin stock disponible (excepto la seleccionada)
-        function construirOpcionesSimpleEditSale(valores, seleccionado, disponibilidadFn) {
+        function construirOpcionesSimpleEditSale(valores, seleccionado, disponibilidadFn, placeholder) {
             const opciones = [...valores];
             if (seleccionado && !opciones.includes(seleccionado)) opciones.unshift(seleccionado);
-            let html = `<option value="">N/A</option>`;
+            let html = `<option value="">${placeholder}</option>`;
             opciones.forEach(v => {
                 const esSeleccionado = v === seleccionado;
                 const sinStock = disponibilidadFn ? !disponibilidadFn(v) : false;
@@ -5054,14 +5054,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="esp-card-variants">
                         <div class="esp-field">
                             <span class="esp-field-label">Talla</span>
-                            <select class="esp-mini-select" data-index="${i}" data-field="talla" ${!tallas.length ? 'disabled' : ''}>
-                                ${construirOpcionesSimpleEditSale(tallas, item.talla, (t) => obtenerStockDisponibleTallaEditSale(item.productoId, t) > 0)}
+                            <select class="esp-mini-select ${!item.talla && tallas.length ? 'esp-mini-select-empty' : ''}" data-index="${i}" data-field="talla" ${!tallas.length ? 'disabled' : ''}>
+                                ${construirOpcionesSimpleEditSale(tallas, item.talla, (t) => obtenerStockDisponibleTallaEditSale(item.productoId, t) > 0, tallas.length ? 'Sin talla' : 'N/A')}
                             </select>
                         </div>
                         <div class="esp-field">
                             <span class="esp-field-label">Color</span>
-                            <select class="esp-mini-select" data-index="${i}" data-field="color" ${!colores.length ? 'disabled' : ''}>
-                                ${construirOpcionesSimpleEditSale(colores, item.color, (c) => obtenerStockDisponibleEditSale(item.productoId, item.talla, c) > 0)}
+                            <select class="esp-mini-select ${!item.color && colores.length ? 'esp-mini-select-empty' : ''}" data-index="${i}" data-field="color" ${!colores.length ? 'disabled' : ''}>
+                                ${construirOpcionesSimpleEditSale(colores, item.color, (c) => obtenerStockDisponibleEditSale(item.productoId, item.talla, c) > 0, colores.length ? 'Sin color' : 'N/A')}
                             </select>
                         </div>
                         <div class="esp-field esp-field-qty">
@@ -5178,6 +5178,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (editSaleItemsState.some(item => !item.productoId)) {
                     showToast('Selecciona un producto para cada línea antes de guardar', 'error');
+                    return;
+                }
+
+                const itemSinTallaOColor = editSaleItemsState.find(item => {
+                    const producto = localProductsMap.get(item.productoId);
+                    if (!producto) return false;
+                    const requiereTalla = obtenerTallasEditSale(producto).length > 0 && !item.talla;
+                    const requiereColor = obtenerColoresEditSale(producto, item.talla).length > 0 && !item.color;
+                    return requiereTalla || requiereColor;
+                });
+                if (itemSinTallaOColor) {
+                    const producto = localProductsMap.get(itemSinTallaOColor.productoId);
+                    showToast(`Selecciona talla y color para "${producto?.nombre || 'el producto'}" antes de guardar`, 'error');
                     return;
                 }
 
