@@ -108,7 +108,7 @@ const FECHA_CORTE_MAYORISTA = new Date(2026, 0, 1, 0, 0, 0, 0);
 
 // Desde esta fecha, cada venta al detal reparte su dinero entre las dos
 // empresas: las prendas con proveedor "Mishelles Boutique" reparten su
-// P. Mayor a Fábrica (el resto es de Boutique), y el resto de proveedores
+// Costo ($) a Fábrica (el resto es de Boutique), y el resto de proveedores
 // recupera su costo de compra (costoCompra × cantidad) como ingreso de
 // Fábrica. Ventas al detal anteriores a esta fecha no se recalculan.
 const FECHA_CORTE_DETAL = new Date(2026, 5, 1, 0, 0, 0, 0);
@@ -7409,11 +7409,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // la colección de productos.
     const productCostMapCache = new Map();
     window.__dashboardProductCostMap = productCostMapCache;
-    // P. Mayor y proveedor por producto, para el reparto Boutique/Fábrica:
-    // { precioMayor, esBoutique }. Se alimenta junto al caché de costos en
-    // iniciarListenerProductos().
-    const productMayorInfoCache = new Map();
-    window.__dashboardProductMayorInfoMap = productMayorInfoCache;
+    // Proveedor por producto, para el reparto Boutique/Fábrica: true si el
+    // proveedor es "Mishelles Boutique". Se alimenta junto al caché de
+    // costos en iniciarListenerProductos().
+    const productEsBoutiqueCache = new Map();
+    window.__dashboardProductEsBoutiqueMap = productEsBoutiqueCache;
 
     // Dona Boutique vs Fábrica dentro de la tarjeta "Comparativo por empresa"
     function actualizarGraficoComparativo(ventasDetal, ventasMayor) {
@@ -7504,16 +7504,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             // solo se vuelve a descargar la colección si todavía no ha llegado ese primer
             // snapshot (evita repetir esta lectura completa cada vez que se cambia de rango).
             let productCostMap = productCostMapCache;
-            let productMayorInfo = productMayorInfoCache;
-            if (productCostMap.size === 0 || productMayorInfo.size === 0) {
+            let productEsBoutique = productEsBoutiqueCache;
+            if (productCostMap.size === 0 || productEsBoutique.size === 0) {
                 productCostMap = new Map();
-                productMayorInfo = new Map();
+                productEsBoutique = new Map();
                 try {
                     const prodsSnap = await getDocs(productsCollection);
                     prodsSnap.forEach(d => {
                         const p = d.data();
                         productCostMap.set(d.id, parseFloat(p.costoCompra) || 0);
-                        productMayorInfo.set(d.id, { precioMayor: parseFloat(p.precioMayor) || 0, esBoutique: esProveedorBoutique(p) });
+                        productEsBoutique.set(d.id, esProveedorBoutique(p));
                     });
                 } catch (err) {
                     console.error('Error cargando costos de productos para el dashboard:', err);
@@ -7581,7 +7581,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                                 // Ganancia real de Boutique (precio venta − costo) y,
                                 // desde FECHA_CORTE_DETAL, lo que le corresponde a Fábrica:
-                                // - Prendas con proveedor "Mishelles Boutique": su P. Mayor
+                                // - Prendas con proveedor "Mishelles Boutique": su Costo ($)
                                 //   es ingreso mayorista de Fábrica; el resto es de Boutique.
                                 // - Cualquier otro proveedor: se recupera el costo de compra
                                 //   como ingreso de Fábrica (comportamiento anterior).
@@ -7600,9 +7600,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                                     gananciaBoutique += (precio - costo) * cant;
 
                                     if (contarCostoFabrica) {
-                                        const infoMayor = item.productoId ? productMayorInfo.get(item.productoId) : undefined;
-                                        if (infoMayor && infoMayor.esBoutique) {
-                                            aporteMayoristaVenta += Math.min(infoMayor.precioMayor, precio) * cant;
+                                        const esBoutique = item.productoId ? productEsBoutique.get(item.productoId) : false;
+                                        if (esBoutique) {
+                                            aporteMayoristaVenta += Math.min(costo, precio) * cant;
                                         } else {
                                             costoDetalRecuperado += costo * cant;
                                         }
@@ -8061,7 +8061,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const productos = [];
                 window.productosBajoStock = [];
                 productCostMapCache.clear();
-                productMayorInfoCache.clear();
+                productEsBoutiqueCache.clear();
 
                 snapshot.forEach(doc => {
                     const producto = doc.data();
@@ -8073,7 +8073,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const precioDetal = parseFloat(producto.precioDetal) || 0;
                     const precioMayor = parseFloat(producto.precioMayor) || 0;
                     productCostMapCache.set(productoId, costoCompra);
-                    productMayorInfoCache.set(productoId, { precioMayor, esBoutique: esProveedorBoutique(producto) });
+                    productEsBoutiqueCache.set(productoId, esProveedorBoutique(producto));
 
                     const variaciones = producto.variaciones || [];
                     const stockTotal = variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
@@ -8205,6 +8205,62 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
     const COLOR_DETAL = 'rgba(217,136,185,0.85)';   // rosa Boutique
     const COLOR_MAYOR = 'rgba(42,120,214,0.85)';    // azul Fábrica
+    const COLOR_DETAL_HOVER = 'rgba(217,136,185,1)';
+    const COLOR_MAYOR_HOVER = 'rgba(42,120,214,1)';
+
+    // Total del día compacto para la etiqueta encima de cada barra ($420 k / $1,6 M)
+    const formatoCompacto = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', notation: 'compact', maximumFractionDigits: 1 });
+
+    // Colores de la gráfica de tendencia, dark-mode aware (mismo criterio que coloresGrafica() en Finanzas)
+    function coloresTendencia() {
+        const dark = document.body.classList.contains('dark-mode');
+        return {
+            tick: dark ? '#c3c2b7' : '#898781',
+            grid: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            surface: dark ? '#1a1a19' : '#fcfcfb',
+            total: dark ? 'rgba(235,234,228,0.85)' : 'rgba(40,40,38,0.75)'
+        };
+    }
+
+    // ── Plugin: separador de 2px (color superficie) entre los segmentos
+    // apilados de cada barra, y el total del día en el remate de la barra
+    // (columna → valor en el remate, solo si hay ancho suficiente) ──
+    const trendTotalsPlugin = {
+        id: 'trendTotals',
+        afterDatasetsDraw(chart) {
+            const metaBoutique = chart.getDatasetMeta(0);
+            const metaFabrica = chart.getDatasetMeta(1);
+            if (!metaBoutique.data.length || !metaFabrica.data.length) return;
+
+            const { surface, total } = coloresTendencia();
+            const { ctx } = chart;
+            ctx.save();
+            ctx.font = '600 11px system-ui, -apple-system, "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+
+            metaFabrica.data.forEach((topBar, i) => {
+                const bottomBar = metaBoutique.data[i];
+                if (!topBar || !bottomBar) return;
+                const valBoutique = chart.data.datasets[0].data[i] || 0;
+                const valFabrica = chart.data.datasets[1].data[i] || 0;
+                const totalDia = valBoutique + valFabrica;
+                if (totalDia <= 0) return;
+
+                if (valBoutique > 0 && valFabrica > 0) {
+                    const halfWidth = topBar.width / 2;
+                    ctx.fillStyle = surface;
+                    ctx.fillRect(topBar.x - halfWidth, bottomBar.y - 1, halfWidth * 2, 2);
+                }
+
+                if (topBar.width >= 26) {
+                    ctx.fillStyle = total;
+                    ctx.fillText(formatoCompacto.format(totalDia), topBar.x, topBar.y - 6);
+                }
+            });
+            ctx.restore();
+        }
+    };
 
     // ================================================================
     // GRÁFICA 1: TENDENCIA DE VENTAS (barras apiladas Detal/Mayorista)
@@ -8240,15 +8296,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             // una de las causas de la sobrecarga de memoria que hacía fallar
             // Safari repetidamente en #dashboard.
             let productCostMap = window.__dashboardProductCostMap;
-            let productMayorInfo = window.__dashboardProductMayorInfoMap;
-            if (!productCostMap || productCostMap.size === 0 || !productMayorInfo || productMayorInfo.size === 0) {
+            let productEsBoutique = window.__dashboardProductEsBoutiqueMap;
+            if (!productCostMap || productCostMap.size === 0 || !productEsBoutique || productEsBoutique.size === 0) {
                 productCostMap = new Map();
-                productMayorInfo = new Map();
+                productEsBoutique = new Map();
                 const prodsSnap = await getDocs(productsCollection);
                 prodsSnap.forEach(d => {
                     const p = d.data();
                     productCostMap.set(d.id, parseFloat(p.costoCompra) || 0);
-                    productMayorInfo.set(d.id, { precioMayor: parseFloat(p.precioMayor) || 0, esBoutique: esProveedorBoutique(p) });
+                    productEsBoutique.set(d.id, esProveedorBoutique(p));
                 });
             }
 
@@ -8294,32 +8350,34 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     if (venta.tipoVenta === 'mayorista') {
                         bucket.mayorista += monto;
                     } else {
-                        // Desde FECHA_CORTE_DETAL: prendas con proveedor "Mishelles
-                        // Boutique" reparten su P. Mayor a Fábrica y el resto a
-                        // Boutique; el resto de proveedores recupera su costo de
-                        // compra como ingreso de Fábrica (no se recalcula
+                        // Desde FECHA_CORTE_DETAL, igual que el panel "Comparativo por
+                        // empresa": prendas con proveedor "Mishelles Boutique" reparten
+                        // su Costo ($) a Fábrica y el resto a Boutique; el resto de
+                        // proveedores recupera su costo de compra como ingreso extra de
+                        // Fábrica, sin restárselo a Boutique (no se recalcula
                         // retroactivamente para ventas anteriores).
                         let aporteMayoristaVenta = 0;
+                        let costoRecuperadoVenta = 0;
                         if (fecha >= FECHA_CORTE_DETAL) {
                             (venta.items || []).forEach(item => {
                                 const precio = parseFloat(item.precio || item.precioUnitario || 0);
                                 const cant = parseInt(item.cantidad || 1, 10);
-                                const infoMayor = item.productoId ? productMayorInfo.get(item.productoId) : undefined;
-                                if (infoMayor && infoMayor.esBoutique) {
-                                    aporteMayoristaVenta += Math.min(infoMayor.precioMayor, precio) * cant;
+                                const costo = parseFloat(
+                                    item.precioCosto ||
+                                    item.costo ||
+                                    (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
+                                    0
+                                );
+                                const esBoutique = item.productoId ? productEsBoutique.get(item.productoId) : false;
+                                if (esBoutique) {
+                                    aporteMayoristaVenta += Math.min(costo, precio) * cant;
                                 } else {
-                                    const costo = parseFloat(
-                                        item.precioCosto ||
-                                        item.costo ||
-                                        (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
-                                        0
-                                    );
-                                    aporteMayoristaVenta += costo * cant;
+                                    costoRecuperadoVenta += costo * cant;
                                 }
                             });
                         }
                         bucket.detal += Math.max(monto - aporteMayoristaVenta, 0);
-                        bucket.mayorista += aporteMayoristaVenta;
+                        bucket.mayorista += aporteMayoristaVenta + costoRecuperadoVenta;
                     }
                 });
 
@@ -8345,19 +8403,44 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         if (elFabrica) elFabrica.textContent = formatoMoneda.format(totalFabrica);
         if (elSuma) elSuma.textContent = formatoMoneda.format(totalBoutique + totalFabrica);
 
+        const { tick, grid } = coloresTendencia();
+
         if (trendChart) trendChart.destroy();
         trendChart = new Chart(canvas.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels,
                     datasets: [
-                        { label: 'Boutique', data: dataDetal, backgroundColor: COLOR_DETAL, borderRadius: 6, borderSkipped: false, stack: 'ventas' },
-                        { label: 'Fábrica', data: dataMayor, backgroundColor: COLOR_MAYOR, borderRadius: 6, borderSkipped: false, stack: 'ventas' }
+                        {
+                            label: 'Boutique',
+                            data: dataDetal,
+                            backgroundColor: COLOR_DETAL,
+                            hoverBackgroundColor: COLOR_DETAL_HOVER,
+                            borderRadius: 0,
+                            stack: 'ventas',
+                            maxBarThickness: 28,
+                            categoryPercentage: 0.6,
+                            barPercentage: 0.9
+                        },
+                        {
+                            label: 'Fábrica',
+                            data: dataMayor,
+                            backgroundColor: COLOR_MAYOR,
+                            hoverBackgroundColor: COLOR_MAYOR_HOVER,
+                            borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+                            borderSkipped: false,
+                            stack: 'ventas',
+                            maxBarThickness: 28,
+                            categoryPercentage: 0.6,
+                            barPercentage: 0.9
+                        }
                     ]
                 },
+                plugins: [trendTotalsPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: { top: 22 } },
                     animation: { duration: 400 },
                     interaction: { intersect: false, mode: 'index' },
                     plugins: {
@@ -8367,18 +8450,23 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
                         },
                         tooltip: {
+                            padding: 10,
+                            cornerRadius: 8,
+                            boxPadding: 4,
+                            footerFont: { weight: '600' },
                             callbacks: {
-                                label: (ctx) => `${ctx.dataset.label}: ${formatoMoneda.format(ctx.parsed.y)}`
+                                label: (ctx) => `${ctx.dataset.label}: ${formatoMoneda.format(ctx.parsed.y)}`,
+                                footer: (items) => `Total del día: ${formatoMoneda.format(items.reduce((s, it) => s + (it.parsed.y || 0), 0))}`
                             }
                         }
                     },
                     scales: {
-                        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+                        x: { stacked: true, grid: { display: false }, ticks: { color: tick, font: { size: 11 } } },
                         y: {
                             stacked: true,
                             beginAtZero: true,
-                            grid: { color: 'rgba(0,0,0,0.05)' },
-                            ticks: { callback: (v) => '$' + (v / 1000).toFixed(0) + 'k', font: { size: 11 } }
+                            grid: { color: grid },
+                            ticks: { color: tick, callback: (v) => '$' + (v / 1000).toFixed(0) + 'k', font: { size: 11 } }
                         }
                     }
                 }
@@ -9942,11 +10030,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             ]);
 
             const productCostMap = new Map();
-            const productMayorInfo = new Map();
+            const productEsBoutique = new Map();
             prodsSnap.forEach(d => {
                 const p = d.data();
                 productCostMap.set(d.id, parseFloat(p.costoCompra) || 0);
-                productMayorInfo.set(d.id, { precioMayor: parseFloat(p.precioMayor) || 0, esBoutique: esProveedorBoutique(p) });
+                productEsBoutique.set(d.id, esProveedorBoutique(p));
             });
 
             const resultado = [];
@@ -9955,7 +10043,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 // Todo lo que no es mayorista (detal, apartado, catálogo) recupera
                 // su costo como ingreso de Fábrica, igual que en el dashboard.
                 // Las prendas con proveedor "Mishelles Boutique" reparten en
-                // cambio su P. Mayor a Fábrica (el resto queda para Boutique).
+                // cambio su Costo ($) a Fábrica (el resto queda para Boutique).
                 if (v.tipoVenta === 'mayorista') return;
                 if (v.estado === 'Anulada' || v.estado === 'Cancelada') return;
                 if (!v.items || !v.items.length) return;
@@ -9965,16 +10053,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 v.items.forEach(item => {
                     const precio = parseFloat(item.precio || item.precioUnitario || 0);
                     const cant = parseInt(item.cantidad || 1, 10);
-                    const infoMayor = item.productoId ? productMayorInfo.get(item.productoId) : undefined;
-                    if (infoMayor && infoMayor.esBoutique) {
-                        aporteMayorista += Math.min(infoMayor.precioMayor, precio) * cant;
+                    const costo = parseFloat(
+                        item.precioCosto ||
+                        item.costo ||
+                        (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
+                        0
+                    );
+                    const esBoutique = item.productoId ? productEsBoutique.get(item.productoId) : false;
+                    if (esBoutique) {
+                        aporteMayorista += Math.min(costo, precio) * cant;
                     } else {
-                        const costo = parseFloat(
-                            item.precioCosto ||
-                            item.costo ||
-                            (item.productoId ? productCostMap.get(item.productoId) : undefined) ||
-                            0
-                        );
                         costoTotal += costo * cant;
                     }
                 });
@@ -9985,7 +10073,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     resultado.push({
                         id: `mayorista_detal_${docSnap.id}`,
                         tipo: 'ingreso',
-                        concepto: `Venta mayorista (P. Mayor) — venta detal${clienteSufijo}`,
+                        concepto: `Costo mercancía (proveedor Boutique) — venta detal${clienteSufijo}`,
                         monto: aporteMayorista,
                         fecha: v.timestamp,
                         origenVenta: true
