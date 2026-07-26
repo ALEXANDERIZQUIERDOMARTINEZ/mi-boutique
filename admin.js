@@ -7782,6 +7782,62 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
     const COLOR_DETAL = 'rgba(217,136,185,0.85)';   // rosa Boutique
     const COLOR_MAYOR = 'rgba(42,120,214,0.85)';    // azul Fábrica
+    const COLOR_DETAL_HOVER = 'rgba(217,136,185,1)';
+    const COLOR_MAYOR_HOVER = 'rgba(42,120,214,1)';
+
+    // Total del día compacto para la etiqueta encima de cada barra ($420 k / $1,6 M)
+    const formatoCompacto = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', notation: 'compact', maximumFractionDigits: 1 });
+
+    // Colores de la gráfica de tendencia, dark-mode aware (mismo criterio que coloresGrafica() en Finanzas)
+    function coloresTendencia() {
+        const dark = document.body.classList.contains('dark-mode');
+        return {
+            tick: dark ? '#c3c2b7' : '#898781',
+            grid: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+            surface: dark ? '#1a1a19' : '#fcfcfb',
+            total: dark ? 'rgba(235,234,228,0.85)' : 'rgba(40,40,38,0.75)'
+        };
+    }
+
+    // ── Plugin: separador de 2px (color superficie) entre los segmentos
+    // apilados de cada barra, y el total del día en el remate de la barra
+    // (columna → valor en el remate, solo si hay ancho suficiente) ──
+    const trendTotalsPlugin = {
+        id: 'trendTotals',
+        afterDatasetsDraw(chart) {
+            const metaBoutique = chart.getDatasetMeta(0);
+            const metaFabrica = chart.getDatasetMeta(1);
+            if (!metaBoutique.data.length || !metaFabrica.data.length) return;
+
+            const { surface, total } = coloresTendencia();
+            const { ctx } = chart;
+            ctx.save();
+            ctx.font = '600 11px system-ui, -apple-system, "Segoe UI", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+
+            metaFabrica.data.forEach((topBar, i) => {
+                const bottomBar = metaBoutique.data[i];
+                if (!topBar || !bottomBar) return;
+                const valBoutique = chart.data.datasets[0].data[i] || 0;
+                const valFabrica = chart.data.datasets[1].data[i] || 0;
+                const totalDia = valBoutique + valFabrica;
+                if (totalDia <= 0) return;
+
+                if (valBoutique > 0 && valFabrica > 0) {
+                    const halfWidth = topBar.width / 2;
+                    ctx.fillStyle = surface;
+                    ctx.fillRect(topBar.x - halfWidth, bottomBar.y - 1, halfWidth * 2, 2);
+                }
+
+                if (topBar.width >= 26) {
+                    ctx.fillStyle = total;
+                    ctx.fillText(formatoCompacto.format(totalDia), topBar.x, topBar.y - 6);
+                }
+            });
+            ctx.restore();
+        }
+    };
 
     // ================================================================
     // GRÁFICA 1: TENDENCIA DE VENTAS (barras apiladas Detal/Mayorista)
@@ -7922,19 +7978,44 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         if (elFabrica) elFabrica.textContent = formatoMoneda.format(totalFabrica);
         if (elSuma) elSuma.textContent = formatoMoneda.format(totalBoutique + totalFabrica);
 
+        const { tick, grid } = coloresTendencia();
+
         if (trendChart) trendChart.destroy();
         trendChart = new Chart(canvas.getContext('2d'), {
                 type: 'bar',
                 data: {
                     labels,
                     datasets: [
-                        { label: 'Boutique', data: dataDetal, backgroundColor: COLOR_DETAL, borderRadius: 6, borderSkipped: false, stack: 'ventas' },
-                        { label: 'Fábrica', data: dataMayor, backgroundColor: COLOR_MAYOR, borderRadius: 6, borderSkipped: false, stack: 'ventas' }
+                        {
+                            label: 'Boutique',
+                            data: dataDetal,
+                            backgroundColor: COLOR_DETAL,
+                            hoverBackgroundColor: COLOR_DETAL_HOVER,
+                            borderRadius: 0,
+                            stack: 'ventas',
+                            maxBarThickness: 28,
+                            categoryPercentage: 0.6,
+                            barPercentage: 0.9
+                        },
+                        {
+                            label: 'Fábrica',
+                            data: dataMayor,
+                            backgroundColor: COLOR_MAYOR,
+                            hoverBackgroundColor: COLOR_MAYOR_HOVER,
+                            borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+                            borderSkipped: false,
+                            stack: 'ventas',
+                            maxBarThickness: 28,
+                            categoryPercentage: 0.6,
+                            barPercentage: 0.9
+                        }
                     ]
                 },
+                plugins: [trendTotalsPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: { top: 22 } },
                     animation: { duration: 400 },
                     interaction: { intersect: false, mode: 'index' },
                     plugins: {
@@ -7944,18 +8025,23 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
                         },
                         tooltip: {
+                            padding: 10,
+                            cornerRadius: 8,
+                            boxPadding: 4,
+                            footerFont: { weight: '600' },
                             callbacks: {
-                                label: (ctx) => `${ctx.dataset.label}: ${formatoMoneda.format(ctx.parsed.y)}`
+                                label: (ctx) => `${ctx.dataset.label}: ${formatoMoneda.format(ctx.parsed.y)}`,
+                                footer: (items) => `Total del día: ${formatoMoneda.format(items.reduce((s, it) => s + (it.parsed.y || 0), 0))}`
                             }
                         }
                     },
                     scales: {
-                        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 } } },
+                        x: { stacked: true, grid: { display: false }, ticks: { color: tick, font: { size: 11 } } },
                         y: {
                             stacked: true,
                             beginAtZero: true,
-                            grid: { color: 'rgba(0,0,0,0.05)' },
-                            ticks: { callback: (v) => '$' + (v / 1000).toFixed(0) + 'k', font: { size: 11 } }
+                            grid: { color: grid },
+                            ticks: { color: tick, callback: (v) => '$' + (v / 1000).toFixed(0) + 'k', font: { size: 11 } }
                         }
                     }
                 }
