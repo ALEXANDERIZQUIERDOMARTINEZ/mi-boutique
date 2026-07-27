@@ -405,6 +405,20 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE INVENTARIO FÁBRICA - HILAZAS, HILOS Y TELAS
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /inventarioFabrica/{itemId} {
+      allow read: if hasPermission('inventario_fabrica_gestionar') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      allow create, update, delete: if hasPermission('inventario_fabrica_gestionar') &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || isNotChangingTenant());
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // REGLAS DE BOUTIQUE - GASTOS E INGRESOS OPERATIVOS (segmento Finanzas)
     // ═══════════════════════════════════════════════════════════════════
 
