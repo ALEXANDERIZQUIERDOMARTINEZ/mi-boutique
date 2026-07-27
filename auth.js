@@ -67,6 +67,7 @@ export const PERMISOS = {
 
     // Fábrica (segmento aparte para Mishell Fábrica: gastos vs. ingresos propios)
     FABRICA_GESTIONAR: 'fabrica_gestionar',
+    INVENTARIO_FABRICA_GESTIONAR: 'inventario_fabrica_gestionar',
 
     // Soporte
     CHAT_RESPONDER: 'chat_responder',
@@ -110,6 +111,7 @@ export const MODULOS_PERMISOS = [
     { id: 'promociones_gestionar', nombre: 'Promociones', permisos: [PERMISOS.PROMOCIONES_GESTIONAR] },
     { id: 'finanzas_ver', nombre: 'Finanzas', permisos: [PERMISOS.FINANZAS_VER, PERMISOS.FINANZAS_GESTIONAR, PERMISOS.CIERRES_CAJA] },
     { id: 'fabrica_gestionar', nombre: 'Fábrica (Gastos e Ingresos)', permisos: [PERMISOS.FABRICA_GESTIONAR] },
+    { id: 'inventario_fabrica_gestionar', nombre: 'Inventario Fábrica (Hilazas, Hilos, Telas)', permisos: [PERMISOS.INVENTARIO_FABRICA_GESTIONAR] },
     { id: 'proveedores_gestionar', nombre: 'Proveedores', permisos: [PERMISOS.PROVEEDORES_GESTIONAR] },
     { id: 'config_gestionar', nombre: 'Config. Pagos', permisos: [PERMISOS.CONFIG_GESTIONAR] },
     { id: 'usuarios_ver', nombre: 'Usuarios', permisos: [PERMISOS.USUARIOS_VER, PERMISOS.USUARIOS_CREAR, PERMISOS.USUARIOS_EDITAR] },
@@ -160,7 +162,8 @@ export const ROLES = {
             PERMISOS.PRODUCTOS_CREAR,
             PERMISOS.PRODUCTOS_EDITAR,
             PERMISOS.PRODUCTOS_IMPORTAR,
-            PERMISOS.CATEGORIAS_GESTIONAR
+            PERMISOS.CATEGORIAS_GESTIONAR,
+            PERMISOS.INVENTARIO_FABRICA_GESTIONAR
         ]
     },
     CONTADOR: {
