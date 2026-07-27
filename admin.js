@@ -7656,16 +7656,19 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         dbVentasMayoristaCountEl.textContent = `${ventasMayoristaContadas} ${ventasMayoristaContadas === 1 ? 'venta' : 'ventas'}`;
                     }
 
-                    // 🏷️ Panel Mishelles Boutique: ganancia real del período (detal)
-                    const dbBoutiqueGananciaEl = document.getElementById('db-boutique-ganancia');
-                    if (dbBoutiqueGananciaEl) {
-                        dbBoutiqueGananciaEl.textContent = formatoMoneda.format(gananciaBoutique);
-                    }
-
                     // 🏷️ Panel Mishelles Fábrica: 100% de lo mayorista + costo
                     // recuperado del detal + movimientos manuales, menos gastos
                     const ingresosFabricaTotal = totalMayorista + costoDetalRecuperado + ingresosManualesFabrica;
                     const utilidadFabrica = ingresosFabricaTotal - gastosManualesFabrica;
+
+                    // 🏷️ "Ganancia real": utilidad completa del negocio (Boutique +
+                    // Fábrica), sin repartir entre las dos empresas.
+                    const gananciaRealTotal = gananciaBoutique + utilidadFabrica;
+                    const dbBoutiqueGananciaEl = document.getElementById('db-boutique-ganancia');
+                    if (dbBoutiqueGananciaEl) {
+                        dbBoutiqueGananciaEl.textContent = formatoMoneda.format(gananciaRealTotal);
+                    }
+
                     const dbFabricaIngresosEl = document.getElementById('db-fabrica-ingresos');
                     if (dbFabricaIngresosEl) dbFabricaIngresosEl.textContent = formatoMoneda.format(ingresosFabricaTotal);
 
@@ -7687,7 +7690,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     // Dona del comparativo: reparto de ventas Boutique (detal) vs Fábrica (mayorista)
                     actualizarGraficoComparativo(totalDineroRecibido, totalMayorista);
 
-                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas) | Ganancia Boutique: ${formatoMoneda.format(gananciaBoutique)} | Utilidad Fábrica: ${formatoMoneda.format(utilidadFabrica)}`);
+                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas) | Ganancia real (Boutique + Fábrica): ${formatoMoneda.format(gananciaRealTotal)} | Utilidad Fábrica: ${formatoMoneda.format(utilidadFabrica)}`);
                 },
                 (error) => {
                     console.error("❌ Error al calcular ventas del período:", error);
