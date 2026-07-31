@@ -369,6 +369,18 @@
             experimentalAutoDetectLongPolling: true
         });
 
+        // signInWithEmailAndPassword es una llamada HTTPS directa (no pasa por
+        // el long-polling de Firestore de arriba) y no trae un timeout propio:
+        // en una conexión móvil muy mala puede quedarse colgada indefinidamente
+        // con el botón deshabilitado y el spinner girando sin dar ningún error
+        // ni forma de reintentar. Esto la envuelve para rendirse a los 20s.
+        function withTimeout(promise, ms) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => setTimeout(() => reject({ code: 'app/login-timeout' }), ms))
+            ]);
+        }
+
         // Elements
         const loginForm = document.getElementById('loginForm');
         const loginBtn = document.getElementById('loginBtn');
@@ -544,11 +556,11 @@
 
             try {
                 // Sign in with Firebase Auth
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const userCredential = await withTimeout(signInWithEmailAndPassword(auth, email, password), 20000);
                 const user = userCredential.user;
 
                 // Check if user exists in 'usuarios' collection
-                const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+                const userDoc = await withTimeout(getDoc(doc(db, 'usuarios', user.uid)), 20000);
 
                 if (!userDoc.exists()) {
                     // User not found in database
@@ -614,6 +626,9 @@
                         break;
                     case 'auth/invalid-credential':
                         errorMsg = 'Credenciales inválidas';
+                        break;
+                    case 'app/login-timeout':
+                        errorMsg = 'La conexión está tardando demasiado. Revisa tu internet e inténtalo de nuevo';
                         break;
                     default:
                         errorMsg = `Error: ${error.message}`;
