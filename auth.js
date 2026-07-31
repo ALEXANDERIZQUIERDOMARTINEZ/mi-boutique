@@ -6,12 +6,6 @@
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-// Clave de localStorage (no sessionStorage: debe sobrevivir a pestañas nuevas
-// y reinicios del navegador) con el momento exacto en que este dispositivo
-// inició sesión por última vez — se compara contra config/seguridad para
-// saber si un "cerrar todas las sesiones" lo dejó fuera.
-const LOGIN_TIMESTAMP_KEY = 'mishellLoginEn';
-
 // Caché en localStorage (sobrevive a cerrar la pestaña/app, a diferencia de
 // sessionStorage) del último usuario verificado con éxito. admin-auth-init.js
 // la usa para pintar el panel de inmediato en cada apertura — como
@@ -258,7 +252,7 @@ export class AuthManager {
                     // dos idas y vueltas de red seguidas en conexiones lentas.
                     const [userDoc, sesionVigente] = await Promise.all([
                         getDoc(doc(this.db, 'usuarios', user.uid)),
-                        this.verificarSesionVigente()
+                        this.verificarSesionVigente(user)
                     ]);
 
                     if (!userDoc.exists()) {
@@ -342,21 +336,29 @@ export class AuthManager {
     }
 
     /**
-     * Compara el momento en que este dispositivo inició sesión (guardado en
-     * localStorage por login.html) contra config/seguridad.invalidarSesionesEn.
-     * Si un administrador cerró todas las sesiones después de ese login, o si
-     * este dispositivo no tiene registro de cuándo inició sesión (sesión
-     * persistida de antes de que existiera este control), la sesión ya no es
-     * válida y hay que volver a pedir la contraseña.
+     * Compara el momento en que Firebase Auth registró el último inicio de
+     * sesión de este usuario (user.metadata.lastSignInTime, dato del propio
+     * servidor de Firebase) contra config/seguridad.invalidarSesionesEn.
+     * Antes esto se comparaba contra una marca de tiempo propia guardada en
+     * localStorage, pero localStorage puede vaciarse solo (limpieza de
+     * almacenamiento de Safari/iOS tras días sin interacción, modo privado,
+     * o particiones de almacenamiento distintas entre la PWA instalada y el
+     * navegador) sin que la sesión de Firebase (persistida en IndexedDB) se
+     * pierda con ella — dejando al dispositivo sin "loginEn" y por lo tanto
+     * bloqueado para siempre con "sesión cerrada por un administrador",
+     * incluso reinstalando o reiniciando la app una y mil veces.
+     * lastSignInTime en cambio vive del lado de Firebase y solo cambia
+     * cuando ocurre un inicio de sesión real, así que no depende de que
+     * localStorage sobreviva.
      */
-    async verificarSesionVigente() {
+    async verificarSesionVigente(user) {
         try {
             const cfgDoc = await getDoc(doc(this.db, 'config', 'seguridad'));
             const invalidarEn = cfgDoc.exists() ? cfgDoc.data().invalidarSesionesEn : null;
             if (!invalidarEn) return true; // nunca se ha usado "cerrar todas las sesiones"
 
-            const loginEn = parseInt(localStorage.getItem(LOGIN_TIMESTAMP_KEY) || '0', 10);
-            if (!loginEn) return false;
+            const loginEn = Date.parse(user?.metadata?.lastSignInTime || '');
+            if (!loginEn) return true; // sin dato confiable, no bloquear el acceso por eso
             return invalidarEn.toMillis() <= loginEn;
         } catch (error) {
             console.warn('No se pudo verificar el estado de la sesión:', error);
@@ -373,8 +375,8 @@ export class AuthManager {
         onSnapshot(doc(this.db, 'config', 'seguridad'), (snap) => {
             const invalidarEn = snap.exists() ? snap.data().invalidarSesionesEn : null;
             if (!invalidarEn) return;
-            const loginEn = parseInt(localStorage.getItem(LOGIN_TIMESTAMP_KEY) || '0', 10);
-            if (!loginEn || invalidarEn.toMillis() > loginEn) {
+            const loginEn = Date.parse(this.auth.currentUser?.metadata?.lastSignInTime || '');
+            if (loginEn && invalidarEn.toMillis() > loginEn) {
                 alert('Un administrador cerró todas las sesiones. Vuelve a iniciar sesión.');
                 this.logout();
             }
