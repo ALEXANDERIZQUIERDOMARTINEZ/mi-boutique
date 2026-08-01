@@ -4578,16 +4578,21 @@ document.addEventListener('DOMContentLoaded', () => {
         async function compartirFacturaWhatsApp({ blob, fileName, folioTxt, ventaData }) {
             const nombreCliente = ventaData.clienteNombre || 'Cliente';
             const mensaje = `Hola ${nombreCliente}, aquí tienes tu factura ${folioTxt} de ${NEGOCIO_INFO.marca}. ¡Gracias por tu compra!`;
+            const file = new File([blob], fileName, { type: 'application/pdf' });
+            const puedeCompartirArchivo = navigator.canShare && navigator.canShare({ files: [file] });
 
-            try {
-                const file = new File([blob], fileName, { type: 'application/pdf' });
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            if (puedeCompartirArchivo) {
+                try {
                     await navigator.share({ files: [file], title: `Factura ${folioTxt}`, text: mensaje });
-                    return;
+                } catch (e) {
+                    if (e.name === 'AbortError') return; // el usuario canceló el share
+                    console.warn('No se pudo compartir el PDF directamente:', e);
+                    // No se sabe con certeza si WhatsApp ya recibió el archivo antes del error
+                    // (pasa en algunos Android/Chrome), así que NO se abre un segundo chat
+                    // automático: eso causaba que el cliente recibiera la factura dos veces.
+                    showToast('No se pudo confirmar el envío. Revisa WhatsApp antes de reintentar para no enviar la factura dos veces.', 'warning');
                 }
-            } catch (e) {
-                if (e.name === 'AbortError') return; // el usuario canceló el share
-                console.warn('No se pudo compartir el PDF directamente, uso respaldo:', e);
+                return;
             }
 
             // Respaldo (navegadores sin Web Share API con archivos): descarga el PDF
@@ -4640,8 +4645,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const btnFacturaWhatsapp = document.getElementById('btn-factura-whatsapp');
         if (btnFacturaWhatsapp) {
-            btnFacturaWhatsapp.addEventListener('click', () => {
-                if (facturaGenerada) compartirFacturaWhatsApp(facturaGenerada);
+            btnFacturaWhatsapp.addEventListener('click', async () => {
+                // Bloquea el botón mientras se comparte: en celulares donde el share
+                // sheet tarda en aparecer, un doble toque volvía a llamar a esta función
+                // y la factura se enviaba dos veces.
+                if (!facturaGenerada || btnFacturaWhatsapp.disabled) return;
+                btnFacturaWhatsapp.disabled = true;
+                try {
+                    await compartirFacturaWhatsApp(facturaGenerada);
+                } finally {
+                    btnFacturaWhatsapp.disabled = false;
+                }
             });
         }
 
