@@ -1,6 +1,6 @@
 // --- IMPORTACIONES DE FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { initializeFirestore, enableMultiTabIndexedDbPersistence, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { initializeFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
@@ -22,13 +22,15 @@ const app = initializeApp(firebaseConfig);
 // quede colgada en redes móviles o navegadores in-app (Instagram/WhatsApp)
 // que bloquean WebSockets: sin esto, algunos celulares se quedan cargando
 // indefinidamente hasta que el usuario cierra y vuelve a abrir la página.
+// La persistencia offline multi-pestaña (IndexedDB) se probó y se quitó: al
+// quedar guardada en disco sobrevive a un simple recargar, así que si el
+// "lock" entre pestañas quedaba en mal estado (celular mata la pestaña en
+// segundo plano, red inestable a mitad de sincronización) ni el long-polling
+// ni el botón de reintento lo arreglaban — solo cerrar la pestaña del todo,
+// que es justo el síntoma reportado. La tienda depende de stock en tiempo
+// real de todas formas, así que no perdemos nada al no cachear offline.
 const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
-});
-// Caché offline: permite mostrar productos ya vistos al instante mientras
-// se sincroniza con el servidor, en vez de una pantalla en blanco.
-enableMultiTabIndexedDbPersistence(db).catch((err) => {
-    console.warn('⚠️ Persistencia offline no disponible:', err.code);
 });
 const productsCollection = collection(db, 'productos');
 const webOrdersCollection = collection(db, 'pedidosWeb');
