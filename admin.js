@@ -7410,7 +7410,30 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         console.log("- db-apartados-vencer:", !!dbApartadosVencerEl);
         return;
     }
-    
+
+    // ================================================================
+    // ⏳ SALVAVIDAS DE CARGA: si los listeners iniciales (productos,
+    // apartados, ventas del rango) no responden en 12s -red lenta o
+    // conexión atascada-, se muestra un aviso con botón de reintentar en
+    // vez de dejar las tarjetas en "0" sin explicación (mismo criterio que
+    // el salvavidas de la tienda pública en app.js).
+    // ================================================================
+    const dashboardSlowBannerEl = document.getElementById('dashboard-slow-banner');
+    const dashboardListosPendientes = new Set(['productos', 'apartados', 'ventasRango']);
+    let dashboardPrimeraCargaLista = false;
+    function marcarDashboardListo(clave) {
+        dashboardListosPendientes.delete(clave);
+        if (dashboardListosPendientes.size === 0) {
+            dashboardPrimeraCargaLista = true;
+            dashboardSlowBannerEl?.classList.add('d-none');
+        }
+    }
+    setTimeout(() => {
+        if (!dashboardPrimeraCargaLista) {
+            dashboardSlowBannerEl?.classList.remove('d-none');
+        }
+    }, 12000);
+
     // ================================================================
     // 1️⃣ VENTAS DEL PERÍODO (Hoy / Semana / Mes / Año)
     // ================================================================
@@ -7513,46 +7536,60 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         try {
             const { inicio, fin } = obtenerRangoFechas(rango);
 
-            // Costo de cada producto: para el margen real de Boutique y el costo
-            // que se recupera como ingreso de Fábrica en cada venta al detal.
-            // Normalmente ya viene poblado por el listener de iniciarListenerProductos();
-            // solo se vuelve a descargar la colección si todavía no ha llegado ese primer
-            // snapshot (evita repetir esta lectura completa cada vez que se cambia de rango).
+            // Costo de cada producto y movimientos manuales de Fábrica del rango:
+            // dos lecturas independientes entre sí, así que se piden en paralelo
+            // en vez de una detrás de otra — en la primera carga del dashboard
+            // (cuando aún no hay nada cacheado) esto evita esperar dos viajes
+            // completos a Firestore antes de poder abrir el listener de ventas.
             let productCostMap = productCostMapCache;
             let productEsBoutique = productEsBoutiqueCache;
-            if (productCostMap.size === 0 || productEsBoutique.size === 0) {
+            const necesitaCostos = productCostMap.size === 0 || productEsBoutique.size === 0;
+            if (necesitaCostos) {
                 productCostMap = new Map();
                 productEsBoutique = new Map();
-                try {
-                    const prodsSnap = await getDocs(productsCollection);
-                    prodsSnap.forEach(d => {
-                        const p = d.data();
-                        productCostMap.set(d.id, parseFloat(p.costoCompra) || 0);
-                        productEsBoutique.set(d.id, esProveedorBoutique(p));
-                    });
-                } catch (err) {
-                    console.error('Error cargando costos de productos para el dashboard:', err);
-                }
             }
 
-            // Movimientos manuales de Fábrica (ingresos/gastos registrados a mano)
-            // dentro del rango. Se filtra en cliente porque un movimiento manual
-            // puede llevar una fecha propia distinta a la de creación.
             let ingresosManualesFabrica = 0;
             let gastosManualesFabrica = 0;
-            try {
-                const fabSnap = await getDocs(fabricaCollection);
-                fabSnap.forEach(d => {
-                    const m = d.data();
-                    const fechaMov = m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : null);
-                    if (!fechaMov || fechaMov < inicio || fechaMov >= fin) return;
-                    const monto = parseFloat(m.monto) || 0;
-                    if (m.tipo === 'ingreso') ingresosManualesFabrica += monto;
-                    else if (m.tipo === 'gasto') gastosManualesFabrica += monto;
-                });
-            } catch (err) {
-                console.error('Error cargando movimientos de Fábrica para el dashboard:', err);
-            }
+
+            await Promise.all([
+                (async () => {
+                    if (!necesitaCostos) return;
+                    // Costo de cada producto: para el margen real de Boutique y el costo
+                    // que se recupera como ingreso de Fábrica en cada venta al detal.
+                    // Normalmente ya viene poblado por el listener de iniciarListenerProductos();
+                    // solo se vuelve a descargar la colección si todavía no ha llegado ese primer
+                    // snapshot (evita repetir esta lectura completa cada vez que se cambia de rango).
+                    try {
+                        const prodsSnap = await getDocs(productsCollection);
+                        prodsSnap.forEach(d => {
+                            const p = d.data();
+                            productCostMap.set(d.id, parseFloat(p.costoCompra) || 0);
+                            productEsBoutique.set(d.id, esProveedorBoutique(p));
+                        });
+                    } catch (err) {
+                        console.error('Error cargando costos de productos para el dashboard:', err);
+                    }
+                })(),
+                (async () => {
+                    // Movimientos manuales de Fábrica (ingresos/gastos registrados a mano)
+                    // dentro del rango. Se filtra en cliente porque un movimiento manual
+                    // puede llevar una fecha propia distinta a la de creación.
+                    try {
+                        const fabSnap = await getDocs(fabricaCollection);
+                        fabSnap.forEach(d => {
+                            const m = d.data();
+                            const fechaMov = m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : null);
+                            if (!fechaMov || fechaMov < inicio || fechaMov >= fin) return;
+                            const monto = parseFloat(m.monto) || 0;
+                            if (m.tipo === 'ingreso') ingresosManualesFabrica += monto;
+                            else if (m.tipo === 'gasto') gastosManualesFabrica += monto;
+                        });
+                    } catch (err) {
+                        console.error('Error cargando movimientos de Fábrica para el dashboard:', err);
+                    }
+                })()
+            ]);
 
             // ⚠️ IMPORTANTE: Solo filtrar por UN campo con desigualdad
             // NO podemos filtrar por timestamp Y estado al mismo tiempo
@@ -7566,6 +7603,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             // Escuchar cambios en tiempo real
             unsubscribeVentasRango = onSnapshot(q,
                 async (snapshot) => {
+                    marcarDashboardListo('ventasRango');
                     let totalDineroRecibido = 0;
                     let ventasContadas = 0;
                     let totalMayorista = 0;
@@ -7708,6 +7746,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas) | Ganancia real (valor prendas): ${formatoMoneda.format(valorPrendasVendidas)} | Utilidad Fábrica: ${formatoMoneda.format(utilidadFabrica)}`);
                 },
                 (error) => {
+                    marcarDashboardListo('ventasRango');
                     console.error("❌ Error al calcular ventas del período:", error);
                     dbVentasHoyEl.textContent = "Error";
                     dbVentasHoyEl.classList.add('text-danger');
@@ -7715,6 +7754,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             );
 
         } catch (error) {
+            marcarDashboardListo('ventasRango');
             console.error("❌ Error fatal al configurar ventas del período:", error);
             dbVentasHoyEl.textContent = "Error";
             dbVentasHoyEl.classList.add('text-danger');
@@ -7737,6 +7777,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             // Query simplificada - filtrar en memoria
             onSnapshot(apartadosCollection,
                 (snapshot) => {
+                    marcarDashboardListo('apartados');
                     let countActivos = 0;
                     let saldoTotal = 0;
                     let countVencidos = 0;
@@ -7783,6 +7824,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     console.log(`✅ Apartados activos: ${countActivos} (vencidos: ${countVencidos})`);
                 },
                 (error) => {
+                    marcarDashboardListo('apartados');
                     console.error("❌ Error al calcular apartados activos:", error);
                     dbApartadosVencerEl.textContent = "Error";
                     dbApartadosVencerEl.classList.add('text-danger');
@@ -7790,6 +7832,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             );
 
         } catch (error) {
+            marcarDashboardListo('apartados');
             console.error("❌ Error fatal al configurar apartados:", error);
             dbApartadosVencerEl.textContent = "Error";
             dbApartadosVencerEl.classList.add('text-danger');
@@ -8070,6 +8113,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         try {
             onSnapshot(productsCollection, (snapshot) => {
+                marcarDashboardListo('productos');
                 let totalProductos = 0;
                 let productosDisponibles = 0;
                 let inversionTotal = 0;
@@ -8164,11 +8208,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                 console.log(`✅ Productos: ${totalProductos} (${productosDisponibles} disponibles) | Bajo stock: ${bajoStockCount} | Inversión: ${formatoMoneda.format(inversionTotal)} | Utilidad potencial: ${formatoMoneda.format(utilidadPotencial)} (${margenUtilidad.toFixed(1)}%)`);
             }, (error) => {
+                marcarDashboardListo('productos');
                 console.error("❌ Error en listener de productos:", error);
                 dbBajoStockEl.textContent = "Error";
                 dbBajoStockEl.classList.add('text-danger');
             });
         } catch (error) {
+            marcarDashboardListo('productos');
             console.error("❌ Error fatal al iniciar listener de productos:", error);
         }
     }
