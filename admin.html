@@ -267,6 +267,14 @@
                     </div>
                 </div>
 
+                <!-- Aviso: se muestra si las lecturas iniciales del dashboard tardan
+                     demasiado (red lenta/inestable), en vez de dejar las tarjetas en
+                     "0" indefinidamente sin explicación -->
+                <div id="dashboard-slow-banner" class="alert alert-warning d-none" role="alert" style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                    <span>La conexión está tardando más de lo normal en cargar el dashboard.</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.reload()">Reintentar</button>
+                </div>
+
                 <!-- RESUMEN OPERATIVO: una sola franja con divisores, no 4 tarjetas sueltas -->
                 <section class="db-section">
                     <div class="db-panel db-stat-strip">
@@ -3709,7 +3717,7 @@
         });
     </script>
 
-    <script type="module" src="admin.js?v=3.4.1"></script>
+    <script type="module" src="admin.js?v=3.4.2"></script>
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
     <script type="module" src="auditoria.js?v=1.0.0"></script>
 
