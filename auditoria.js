@@ -57,6 +57,117 @@ export async function registrarAuditoria({ accion, modulo, entidadId = null, ent
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// DESCRIPCIÓN DE CAMBIOS EN PRODUCTOS (color, talla, precios, visibilidad)
+// ═══════════════════════════════════════════════════════════════════════
+
+function claveVariacion(v) {
+    return `${(v.color || '').trim().toLowerCase()}__${(v.talla || '').trim().toLowerCase()}`;
+}
+
+function describirVariacion(v) {
+    return [v.color, v.talla].filter(Boolean).join(' / ') || 'sin color/talla';
+}
+
+/**
+ * Resume, en una frase corta, qué colores/tallas tiene un producto recién
+ * creado (para usar en la descripción del registro de auditoría de creación).
+ */
+export function resumenVariacionesProducto(productData) {
+    const partes = [];
+    const colores = [...new Set((productData.variaciones || []).map(v => (v.color || '').trim()).filter(Boolean))];
+    const tallas = [...new Set((productData.variaciones || []).map(v => (v.talla || '').trim()).filter(Boolean))];
+    if (colores.length > 0) partes.push(`colores: ${colores.join(', ')}`);
+    if (tallas.length > 0) partes.push(`tallas: ${tallas.join(', ')}`);
+
+    const coloresGaleria = (productData.variantes_color || []).map(c => (c.nombre || '').trim()).filter(Boolean);
+    if (coloresGaleria.length > 0) partes.push(`galería de colores: ${coloresGaleria.join(', ')}`);
+
+    return partes.length > 0 ? ` — ${partes.join(' | ')}` : '';
+}
+
+/**
+ * Compara el producto antes y después de una edición y devuelve una lista de
+ * cambios en lenguaje natural (para la descripción del registro) más un
+ * objeto de detalles estructurado (para el modal "Ver detalles").
+ */
+export function describirCambiosProducto(anterior, nuevo) {
+    const cambios = [];
+    const detalles = {};
+    anterior = anterior || {};
+
+    const camposPrecio = [
+        { campo: 'precioDetal', etiqueta: 'el precio al detal' },
+        { campo: 'precioMayor', etiqueta: 'el precio al mayor' },
+        { campo: 'costoCompra', etiqueta: 'el costo de compra' }
+    ];
+    camposPrecio.forEach(({ campo, etiqueta }) => {
+        const antes = anterior[campo] ?? 0;
+        const despues = nuevo[campo] ?? 0;
+        if (antes !== despues) {
+            cambios.push(`cambió ${etiqueta} de $${antes.toLocaleString('es-CO')} a $${despues.toLocaleString('es-CO')}`);
+            detalles[campo] = { antes, despues };
+        }
+    });
+
+    if (!!anterior.visible !== !!nuevo.visible) {
+        cambios.push(nuevo.visible ? 'lo marcó como visible en la tienda' : 'lo ocultó de la tienda');
+        detalles.visible = { antes: !!anterior.visible, despues: !!nuevo.visible };
+    }
+
+    const antesVar = new Map((anterior.variaciones || []).map(v => [claveVariacion(v), v]));
+    const despuesVar = new Map((nuevo.variaciones || []).map(v => [claveVariacion(v), v]));
+
+    const agregadas = [];
+    const eliminadas = [];
+    const stockCambiado = [];
+
+    despuesVar.forEach((v, k) => {
+        if (!antesVar.has(k)) {
+            agregadas.push(v);
+        } else {
+            const anteriorV = antesVar.get(k);
+            if ((anteriorV.stock || 0) !== (v.stock || 0)) {
+                stockCambiado.push(`${describirVariacion(v)} (de ${anteriorV.stock || 0} a ${v.stock || 0} unidades)`);
+            }
+        }
+    });
+    antesVar.forEach((v, k) => {
+        if (!despuesVar.has(k)) eliminadas.push(v);
+    });
+
+    if (agregadas.length > 0) {
+        cambios.push(`agregó ${agregadas.length === 1 ? 'la variación' : 'las variaciones'} ${agregadas.map(describirVariacion).join(', ')}`);
+        detalles.variacionesAgregadas = agregadas.map(v => `${describirVariacion(v)} (stock ${v.stock || 0})`);
+    }
+    if (eliminadas.length > 0) {
+        cambios.push(`eliminó ${eliminadas.length === 1 ? 'la variación' : 'las variaciones'} ${eliminadas.map(describirVariacion).join(', ')}`);
+        detalles.variacionesEliminadas = eliminadas.map(describirVariacion);
+    }
+    if (stockCambiado.length > 0) {
+        cambios.push(`cambió el stock de ${stockCambiado.join(', ')}`);
+        detalles.stockCambiado = stockCambiado;
+    }
+
+    const nombreColor = c => (c.nombre || '').trim().toLowerCase();
+    const antesColores = new Set((anterior.variantes_color || []).map(nombreColor).filter(Boolean));
+    const despuesColores = new Set((nuevo.variantes_color || []).map(nombreColor).filter(Boolean));
+
+    const coloresAgregados = [...despuesColores].filter(c => !antesColores.has(c));
+    const coloresEliminados = [...antesColores].filter(c => !despuesColores.has(c));
+
+    if (coloresAgregados.length > 0) {
+        cambios.push(`agregó ${coloresAgregados.length === 1 ? 'el color' : 'los colores'} ${coloresAgregados.join(', ')} a la galería`);
+        detalles.coloresGaleriaAgregados = coloresAgregados;
+    }
+    if (coloresEliminados.length > 0) {
+        cambios.push(`quitó ${coloresEliminados.length === 1 ? 'el color' : 'los colores'} ${coloresEliminados.join(', ')} de la galería`);
+        detalles.coloresGaleriaEliminados = coloresEliminados;
+    }
+
+    return { cambios, detalles };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // UI DE LA SECCIÓN "AUDITORÍA"
 // ═══════════════════════════════════════════════════════════════════════
 
