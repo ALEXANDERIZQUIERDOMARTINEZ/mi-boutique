@@ -4,7 +4,7 @@ import { initializeFirestore, collection, addDoc, onSnapshot, query, where, orde
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
-import { WHOLESALE_TIER_GROUPS, getHybridTierPrice, getBaseTierPrice, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getHybridTierPrice, getBaseTierPrice, resolveWholesaleGroup, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js';
 
 // *** CONFIGURACIÓN DE FIREBASE ***
 const firebaseConfig = {
@@ -105,9 +105,10 @@ function getEffectiveWholesalePrice(product) {
 
 // Recalcula el precio por unidad de cada ítem del carrito que pertenezca a algún
 // grupo con precio por volumen. Mezclar categorías (bodys + vestidos largos +
-// vestidos cortos) solo alcanza para desbloquear el primer escalón real (ej. 6X);
-// para subir a escalones más altos (12X, 24X...) hace falta esa cantidad DENTRO de
-// la misma categoría, sin mezclar.
+// vestidos cortos básicos) solo alcanza para desbloquear el primer escalón real
+// (ej. 6X); las líneas elaboradas/semi elaboradas/mallatex llevan su conteo aparte,
+// no se benefician de mezclarse con básicos ni entre ellas. Para subir a escalones
+// más altos (12X, 24X...) hace falta esa cantidad DENTRO de la misma categoría.
 function recalculateWholesaleTierPricing() {
     if (!isWholesaleActive || cart.length === 0) return;
     // Solo ítems agregados en modo mayorista (el carrito se comparte con index.html vía localStorage)
@@ -119,7 +120,7 @@ function recalculateWholesaleTierPricing() {
         const grupo = resolveWholesaleGroup(product, categoriesMap);
         if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
             totalesPorGrupo.set(grupo, (totalesPorGrupo.get(grupo) || 0) + item.cantidad);
-            totalSurtido += item.cantidad;
+            if (isSurtidoGroup(grupo)) totalSurtido += item.cantidad;
         }
     });
     itemsMayoristas.forEach(item => {

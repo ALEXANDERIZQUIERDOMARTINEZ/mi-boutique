@@ -3,6 +3,7 @@
 export const WHOLESALE_TIER_GROUPS = {
     bodys: {
         label: 'Bodys básicos',
+        surtido: true,
         tiers: [
             { min: 1, precio: 28000 },
             { min: 6, precio: 17000 },
@@ -16,6 +17,7 @@ export const WHOLESALE_TIER_GROUPS = {
     },
     vestidosLargos: {
         label: 'Vestidos largos / Conjuntos',
+        surtido: true,
         tiers: [
             { min: 1, precio: 55000 },
             { min: 6, precio: 32000 },
@@ -27,6 +29,7 @@ export const WHOLESALE_TIER_GROUPS = {
     },
     vestidosCortos: {
         label: 'Vestidos cortos básicos',
+        surtido: true,
         tiers: [
             { min: 1, precio: 40000 },
             { min: 6, precio: 23000 },
@@ -105,11 +108,13 @@ export function getBaseTierPrice(grupo) {
     return group ? group.tiers[0].precio : null;
 }
 
-// Umbral del primer escalón real de mayoreo (ej. 6X), compartido entre todas las
-// tablas: no hace falta comprar 6 del MISMO tipo, cuenta el total surtido entre
-// bodys, vestidos largos/conjuntos y vestidos cortos combinados.
+// Umbral del primer escalón real de mayoreo (ej. 6X) para los grupos que
+// participan del surtido (bodys, vestidos largos/conjuntos y vestidos cortos
+// básicos): no hace falta comprar 6 del MISMO tipo entre ellos, cuenta el
+// total combinado. Los grupos elaborados/semi elaborados no entran aquí.
 export function getPrimerEscalonMayorista() {
     const minimos = Object.values(WHOLESALE_TIER_GROUPS)
+        .filter(g => g.surtido)
         .map(g => g.tiers[1]?.min)
         .filter(v => typeof v === 'number');
     return minimos.length ? Math.min(...minimos) : Infinity;
@@ -117,10 +122,15 @@ export function getPrimerEscalonMayorista() {
 
 // Precio/escalón real de un grupo combinando dos totales:
 // - totalPropio: cuántas prendas de ESA MISMA categoría hay en el pedido.
-// - totalMixto: cuántas prendas hay en total sumando TODAS las categorías (surtido).
-// Mezclar categorías solo alcanza para desbloquear el primer escalón real (ej. 6X).
-// Para subir a escalones más altos (12X, 24X...) hace falta esa cantidad DENTRO de
-// la misma categoría, sin mezclar.
+// - totalMixto: cuántas prendas hay en total sumando los grupos "surtido" (bodys,
+//   vestidos largos/conjuntos y vestidos cortos básicos).
+// Mezclar categorías solo alcanza para desbloquear el primer escalón real (ej. 6X),
+// y solo entre esos grupos básicos marcados con surtido:true — las líneas elaboradas
+// (Body Elaborados, Vestidos cortos/largos Elaborados, semi elaborados, mallatex)
+// llevan su conteo aparte: necesitan su propia cantidad para subir de escalón, sin
+// beneficiarse de mezclar con básicos ni con otras líneas elaboradas.
+// Para subir a escalones más altos (12X, 24X...) siempre hace falta esa cantidad
+// DENTRO de la misma categoría, sin mezclar.
 export function getHybridTierInfo(grupo, totalPropio, totalMixto) {
     const group = WHOLESALE_TIER_GROUPS[grupo];
     if (!group) return null;
@@ -129,7 +139,7 @@ export function getHybridTierInfo(grupo, totalPropio, totalMixto) {
         if (totalPropio >= group.tiers[i].min) idxPropio = i;
     }
     let idxMixto = 0;
-    if (group.tiers[1] && totalMixto >= group.tiers[1].min) idxMixto = 1;
+    if (group.surtido && group.tiers[1] && totalMixto >= group.tiers[1].min) idxMixto = 1;
     const idx = Math.max(idxPropio, idxMixto);
     return {
         precio: group.tiers[idx].precio,
@@ -142,6 +152,13 @@ export function getHybridTierInfo(grupo, totalPropio, totalMixto) {
 export function getHybridTierPrice(grupo, totalPropio, totalMixto) {
     const info = getHybridTierInfo(grupo, totalPropio, totalMixto);
     return info ? info.precio : null;
+}
+
+// Si un grupo participa del "surtido" (bodys, vestidos largos/conjuntos y vestidos
+// cortos básicos): usado por las páginas para saber qué cantidades sumar al calcular
+// el total mixto, sin mezclar ahí las líneas elaboradas/semi elaboradas/mallatex.
+export function isSurtidoGroup(grupo) {
+    return !!WHOLESALE_TIER_GROUPS[grupo]?.surtido;
 }
 
 // Detecta el grupo de precio mayorista a partir del NOMBRE de la categoría del
