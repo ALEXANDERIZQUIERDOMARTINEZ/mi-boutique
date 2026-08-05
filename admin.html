@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="style.css?v=1.8.4">
-    <link rel="stylesheet" href="admin-styles.css?v=2.5.1">
+    <link rel="stylesheet" href="admin-styles.css?v=2.5.2">
 
     <!-- Logo/Icon -->
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -1631,6 +1631,27 @@
                                 <div class="fin2-skpi-val" id="fab-gastos">$0</div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Desglose por concepto: cuánto fue cada ingreso/gasto -->
+                    <div class="fin2-table-card fin2-breakdown-card">
+                        <div class="fin2-table-header">
+                            <span class="fin2-table-title">
+                                <i class="bi bi-arrow-down-circle text-success"></i> Desglose de ingresos
+                            </span>
+                            <span class="fin2-table-count" id="fab-desglose-ingresos-count">0 conceptos</span>
+                        </div>
+                        <div class="fin2-breakdown-list" id="fab-desglose-ingresos"></div>
+                    </div>
+
+                    <div class="fin2-table-card fin2-breakdown-card">
+                        <div class="fin2-table-header">
+                            <span class="fin2-table-title">
+                                <i class="bi bi-arrow-up-circle text-danger"></i> Desglose de gastos
+                            </span>
+                            <span class="fin2-table-count" id="fab-desglose-gastos-count">0 conceptos</span>
+                        </div>
+                        <div class="fin2-breakdown-list" id="fab-desglose-gastos"></div>
                     </div>
 
                     <!-- Gráfica: Ingresos vs. Gastos en el tiempo -->
@@ -3717,7 +3738,7 @@
         });
     </script>
 
-    <script type="module" src="admin.js?v=3.4.6"></script>
+    <script type="module" src="admin.js?v=3.4.7"></script>
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
     <script type="module" src="auditoria.js?v=1.0.0"></script>
 

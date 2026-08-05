@@ -10425,6 +10425,69 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         }
     }
 
+    // ── Desglose por concepto: cuánto ingresó/salió por cada tipo de
+    // movimiento, no solo el total. Las entradas automáticas de venta se
+    // agrupan por su origen (ignorando el nombre del cliente, que las
+    // volvería todas "distintas"); las manuales se agrupan por su texto de
+    // concepto tal cual lo escribió el usuario (sin importar mayúsculas). ──
+    function claveConcepto(m) {
+        if (m.origenVenta) {
+            const id = String(m.id);
+            if (id.startsWith('mayorista_detal_')) return 'Costo mercancía (proveedor Boutique)';
+            if (id.startsWith('costo_')) return 'Costo mercancía recuperado (venta detal)';
+            return 'Ventas mayoristas';
+        }
+        return (m.concepto || 'Sin concepto').trim() || 'Sin concepto';
+    }
+
+    function agruparPorConcepto(lista) {
+        const grupos = new Map();
+        lista.forEach(m => {
+            const nombre = claveConcepto(m);
+            const clave = nombre.toLowerCase();
+            if (!grupos.has(clave)) grupos.set(clave, { nombre, total: 0 });
+            grupos.get(clave).total += parseFloat(m.monto) || 0;
+        });
+        return Array.from(grupos.values()).sort((a, b) => b.total - a.total);
+    }
+
+    function escaparHtml(texto) {
+        const div = document.createElement('div');
+        div.textContent = texto;
+        return div.innerHTML;
+    }
+
+    function renderDesglose(containerId, countId, grupos, total, tipo) {
+        const container = document.getElementById(containerId);
+        const countEl = document.getElementById(countId);
+        if (!container) return;
+
+        if (countEl) countEl.textContent = `${grupos.length} concepto${grupos.length === 1 ? '' : 's'}`;
+
+        if (grupos.length === 0) {
+            container.innerHTML = `<div class="fin2-empty-state">
+                <i class="bi bi-inbox"></i>
+                <span>Sin ${tipo === 'ingreso' ? 'ingresos' : 'gastos'} en este periodo</span>
+            </div>`;
+            return;
+        }
+
+        const colorClass = tipo === 'ingreso' ? 'fin2-breakdown-bar-fill--ingreso' : 'fin2-breakdown-bar-fill--gasto';
+        container.innerHTML = grupos.map(g => {
+            const pct = total > 0 ? (g.total / total) * 100 : 0;
+            return `<div class="fin2-breakdown-row">
+                <div class="fin2-breakdown-top">
+                    <span class="fin2-breakdown-name">${escaparHtml(g.nombre)}</span>
+                    <span class="fin2-breakdown-amount">${fmt.format(g.total)}</span>
+                </div>
+                <div class="fin2-breakdown-bar-track">
+                    <div class="fin2-breakdown-bar-fill ${colorClass}" style="width:${pct.toFixed(1)}%"></div>
+                </div>
+                <span class="fin2-breakdown-pct">${pct.toFixed(1)}%</span>
+            </div>`;
+        }).join('');
+    }
+
     // ── Consulta y renderizado principal ──
     async function calcularFabrica(desde, hasta, label) {
         ultimoRango = { desde, hasta, label };
@@ -10482,6 +10545,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             document.getElementById('fab-ingresos').textContent = fmt.format(totalIngresos);
             document.getElementById('fab-gastos').textContent   = fmt.format(totalGastos);
+
+            // ── Desglose: cuánto fue cada concepto de ingreso/gasto ──
+            const ingresosPorConcepto = agruparPorConcepto(movimientos.filter(m => m.tipo === 'ingreso'));
+            const gastosPorConcepto   = agruparPorConcepto(movimientos.filter(m => m.tipo === 'gasto'));
+            renderDesglose('fab-desglose-ingresos', 'fab-desglose-ingresos-count', ingresosPorConcepto, totalIngresos, 'ingreso');
+            renderDesglose('fab-desglose-gastos', 'fab-desglose-gastos-count', gastosPorConcepto, totalGastos, 'gasto');
 
             // ── Gráfica: ingresos vs. gastos en el tiempo ──
             let desdeGrafica = desde;

@@ -3456,6 +3456,61 @@ body.dark-mode .esp-empty { border-color: var(--border-subtle); }
 .fin2-positive-text { color: var(--admin-success) !important; }
 .fin2-negative-text { color: #ef4444 !important; }
 
+/* ── Desglose por concepto (Ingresos/Gastos de Fábrica) ── */
+.fin2-breakdown-card { margin-bottom: 1.25rem; }
+.fin2-breakdown-list { padding: 0.4rem 1.25rem 0.9rem; }
+.fin2-breakdown-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.15rem 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.fin2-breakdown-row:last-child { border-bottom: none; }
+.fin2-breakdown-top {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.fin2-breakdown-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fin2-breakdown-amount {
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.fin2-breakdown-bar-track {
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--surface-inset);
+  overflow: hidden;
+}
+.fin2-breakdown-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+}
+.fin2-breakdown-bar-fill--ingreso { background: var(--admin-success); }
+.fin2-breakdown-bar-fill--gasto { background: #ef4444; }
+.fin2-breakdown-pct {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Empty state */
 .fin2-empty-state {
   padding: 3rem 1rem !important;
