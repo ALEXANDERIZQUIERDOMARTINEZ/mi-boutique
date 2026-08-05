@@ -7774,8 +7774,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         console.log("📅 Calculando apartados activos...");
 
         try {
-            // Query simplificada - filtrar en memoria
-            onSnapshot(apartadosCollection,
+            // Solo interesan los apartados "Pendiente" (Completado/Cancelado se
+            // ignoran igual en el conteo de abajo); filtrarlos en la consulta
+            // en vez de traer también todo el historial ya cerrado evita
+            // descargar cada vez más datos a medida que crece la tienda.
+            const qApartadosPendientes = query(apartadosCollection, where('estado', '==', 'Pendiente'));
+            onSnapshot(qApartadosPendientes,
                 (snapshot) => {
                     marcarDashboardListo('apartados');
                     let countActivos = 0;
@@ -7786,7 +7790,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     snapshot.forEach(doc => {
                         const apartado = doc.data();
 
-                        // Contar TODOS los apartados pendientes (no solo los que vencen pronto)
+                        // La query ya solo trae "Pendiente"
                         if (apartado.estado === 'Pendiente') {
                             countActivos++;
                             saldoTotal += apartado.saldo || 0;
