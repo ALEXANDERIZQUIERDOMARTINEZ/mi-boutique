@@ -1380,6 +1380,9 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   letter-spacing: -1px;
   line-height: 1;
   margin-bottom: 0.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .db-stat-name {
@@ -1389,12 +1392,18 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   letter-spacing: 1.5px;
   color: var(--text-tertiary);
   margin-bottom: 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .db-stat-sub {
   font-size: 0.71rem;
   color: var(--text-disabled);
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .db-stat-chevron {
