@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { initializeFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js';
 import { getColorHex, getColorSwatchStyle, formatColorLabel } from './color-utils.js';
 
 const firebaseConfig = {
@@ -269,17 +269,32 @@ function totalPorGrupo(grupo) {
     return total;
 }
 
+// Cuánto se ha elegido sumando SOLO los grupos "surtido" (bodys, vestidos
+// largos/conjuntos y vestidos cortos básicos). Las líneas elaboradas/semi
+// elaboradas/mallatex no entran aquí: llevan su conteo aparte, ver getPrecioInfo.
+function totalSurtidoBasico() {
+    let total = 0;
+    allProducts.forEach(p => {
+        const grupo = resolveWholesaleGroup(p, categoriesMap);
+        if (isSurtidoGroup(grupo)) total += getCantidadProducto(p.id);
+    });
+    return total;
+}
+
 // Info de precio de una prenda según cuántas hay de su categoría (totalPropio) y
-// cuántas hay en TODO el pedido mezclando categorías (totalMixto). Mezclar
-// referencias solo alcanza para desbloquear el primer escalón (6X); para subir a
-// escalones más altos (12X, 24X...) hace falta esa cantidad dentro de la misma
-// categoría. Antes de elegir nada se asume el mínimo (vitrina), para mostrar de
-// una vez el precio al que se puede llegar surtiendo 6 prendas.
+// cuántas hay entre los grupos básicos que participan del surtido (totalMixto).
+// Mezclar referencias solo alcanza para desbloquear el primer escalón (6X), y solo
+// entre bodys/vestidos largos/vestidos cortos básicos — los elaborados no se
+// benefician de mezclar con básicos ni entre sí (getHybridTierInfo lo aplica según
+// el flag surtido de cada grupo). Para subir a escalones más altos (12X, 24X...)
+// hace falta esa cantidad dentro de la misma categoría. Antes de elegir nada se
+// asume el mínimo (vitrina), para mostrar de una vez el precio al que se puede
+// llegar surtiendo 6 prendas.
 function getPrecioInfo(p) {
     const grupo = resolveWholesaleGroup(p, categoriesMap);
     if (!grupo || !WHOLESALE_TIER_GROUPS[grupo]) return null;
     const totalPropio = totalPorGrupo(grupo);
-    const totalMixto = Math.max(MIN_POR_PRENDA, getTotalGeneral());
+    const totalMixto = Math.max(MIN_POR_PRENDA, totalSurtidoBasico());
     return getHybridTierInfo(grupo, totalPropio, totalMixto);
 }
 
