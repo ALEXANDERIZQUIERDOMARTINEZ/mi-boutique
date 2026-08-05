@@ -7603,6 +7603,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             // Escuchar cambios en tiempo real
             unsubscribeVentasRango = onSnapshot(q,
                 async (snapshot) => {
+                    // Una reconexión de red (celular con señal inestable) puede
+                    // entregar primero un snapshot vacío "fromCache" un instante
+                    // antes del real, lo que hacía que la tarjeta volviera a "0"
+                    // para corregirse sola un segundo después. Se ignora ese caso
+                    // vacío-de-caché y se espera al snapshot real (del servidor o
+                    // ya con datos) en vez de pintar el falso cero.
+                    if (snapshot.metadata.fromCache && snapshot.empty) return;
                     marcarDashboardListo('ventasRango');
                     let totalDineroRecibido = 0;
                     let ventasContadas = 0;
@@ -7781,6 +7788,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const qApartadosPendientes = query(apartadosCollection, where('estado', '==', 'Pendiente'));
             onSnapshot(qApartadosPendientes,
                 (snapshot) => {
+                    // Ver el mismo guard en calcularVentasRango: ignora el snapshot
+                    // vacío "fromCache" que a veces llega un instante antes del real
+                    // tras una reconexión, para no pintar un falso "0 apartados".
+                    if (snapshot.metadata.fromCache && snapshot.empty) return;
                     marcarDashboardListo('apartados');
                     let countActivos = 0;
                     let saldoTotal = 0;
@@ -8117,6 +8128,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         try {
             onSnapshot(productsCollection, (snapshot) => {
+                // Ver el mismo guard en calcularVentasRango: ignora el snapshot
+                // vacío "fromCache" que a veces llega un instante antes del real
+                // tras una reconexión, para no pintar un falso "0 productos".
+                if (snapshot.metadata.fromCache && snapshot.empty) return;
                 marcarDashboardListo('productos');
                 let totalProductos = 0;
                 let productosDisponibles = 0;
