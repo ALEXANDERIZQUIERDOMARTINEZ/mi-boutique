@@ -8568,12 +8568,14 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const unidadesSegunTipo = ({ detal, mayorista }) =>
                 tipo === 'detal' ? detal : tipo === 'mayor' ? mayorista : detal + mayorista;
 
+            // Sin .reverse(): Chart.js dibuja el índice 0 arriba en las barras
+            // horizontales, así que dejar el orden descendente (mayor a menor)
+            // pone el producto más vendido arriba y el resto bajando.
             const topProductos = Object.entries(productosVendidos)
                 .map(([nombre, cantidades]) => [nombre, cantidades, unidadesSegunTipo(cantidades)])
                 .filter(([, , unidades]) => unidades > 0)
                 .sort((a, b) => b[2] - a[2])
-                .slice(0, 15)
-                .reverse(); // Chart.js dibuja barras horizontales de abajo hacia arriba
+                .slice(0, 15);
 
             if (topChart) topChart.destroy();
 
