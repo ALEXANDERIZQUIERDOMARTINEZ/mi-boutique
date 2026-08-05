@@ -10048,12 +10048,19 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // Nota: no se filtra por tenantId aquí porque ninguna otra consulta a
     // "ventas" en este archivo lo hace (muchas ventas no traen ese campo),
     // así que filtrar por él dejaba las ventas mayoristas reales fuera.
-    async function fetchVentasMayoristasComoIngresos() {
+    //
+    // Acepta el "desde" del filtro activo (Hoy/Ayer/Semana/Mes/rango) para no
+    // descargar siempre los mismos meses completos de ventas mayoristas
+    // cuando el usuario solo quiere ver "Hoy": antes se traía TODO desde
+    // FECHA_CORTE_MAYORISTA sin importar el filtro, y calcularFabrica()
+    // filtraba en memoria — el filtro de fecha nunca llegaba a la consulta.
+    async function fetchVentasMayoristasComoIngresos(desde) {
         try {
+            const inicio = desde && desde > FECHA_CORTE_MAYORISTA ? desde : FECHA_CORTE_MAYORISTA;
             const snapshot = await getDocs(query(
                 salesCollection,
                 where('tipoVenta', '==', 'mayorista'),
-                where('timestamp', '>=', Timestamp.fromDate(FECHA_CORTE_MAYORISTA)),
+                where('timestamp', '>=', Timestamp.fromDate(inicio)),
                 orderBy('timestamp', 'desc')
             ));
 
@@ -10069,7 +10076,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     origenVenta: true
                 }));
 
-            console.log(`🏭 Fábrica: ${resultado.length} venta(s) mayorista(s) desde ${FECHA_CORTE_MAYORISTA.toLocaleDateString('es-CO')}`);
+            console.log(`🏭 Fábrica: ${resultado.length} venta(s) mayorista(s) desde ${inicio.toLocaleDateString('es-CO')}`);
             return resultado;
         } catch (error) {
             console.error('Error al cargar ventas mayoristas para Fábrica:', error);
@@ -10082,24 +10089,38 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
     // ── Costo de mercancía de ventas al detal (desde 2026-07-17), traducido a
     // "ingreso" de Fábrica: recupera lo invertido en cada prenda vendida ──
-    async function fetchCostosDetalComoIngresos() {
+    // Mismo criterio que fetchVentasMayoristasComoIngresos: acota la consulta
+    // al "desde" del filtro activo en vez de traer siempre el histórico
+    // completo, y reutiliza el caché de costos del Dashboard
+    // (window.__dashboardProductCostMap, alimentado por iniciarListenerProductos())
+    // en vez de volver a descargar toda la colección de productos si ya está disponible.
+    async function fetchCostosDetalComoIngresos(desde) {
         try {
+            const inicio = desde && desde > FECHA_CORTE_DETAL ? desde : FECHA_CORTE_DETAL;
+            const costoMapCacheado = window.__dashboardProductCostMap;
+            const esBoutiqueCacheado = window.__dashboardProductEsBoutiqueMap;
+            const hayCache = costoMapCacheado && costoMapCacheado.size > 0 && esBoutiqueCacheado && esBoutiqueCacheado.size > 0;
+
             const [ventasSnap, prodsSnap] = await Promise.all([
                 getDocs(query(
                     salesCollection,
-                    where('timestamp', '>=', Timestamp.fromDate(FECHA_CORTE_DETAL)),
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
                     orderBy('timestamp', 'desc')
                 )),
-                getDocs(productsCollection)
+                hayCache ? Promise.resolve(null) : getDocs(productsCollection)
             ]);
 
-            const productCostMap = new Map();
-            const productEsBoutique = new Map();
-            prodsSnap.forEach(d => {
-                const p = d.data();
-                productCostMap.set(d.id, parseFloat(p.costoCompra) || 0);
-                productEsBoutique.set(d.id, esProveedorBoutique(p));
-            });
+            let productCostMap = costoMapCacheado;
+            let productEsBoutique = esBoutiqueCacheado;
+            if (!hayCache) {
+                productCostMap = new Map();
+                productEsBoutique = new Map();
+                prodsSnap.forEach(d => {
+                    const p = d.data();
+                    productCostMap.set(d.id, parseFloat(p.costoCompra) || 0);
+                    productEsBoutique.set(d.id, esProveedorBoutique(p));
+                });
+            }
 
             const resultado = [];
             ventasSnap.forEach(docSnap => {
@@ -10156,7 +10177,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 }
             });
 
-            console.log(`🏭 Fábrica: ${resultado.length} recuperación(es) de costo de venta(s) al detal desde ${FECHA_CORTE_DETAL.toLocaleDateString('es-CO')}`);
+            console.log(`🏭 Fábrica: ${resultado.length} recuperación(es) de costo de venta(s) al detal desde ${inicio.toLocaleDateString('es-CO')}`);
             return resultado;
         } catch (error) {
             console.error('Error al cargar costos de ventas al detal para Fábrica:', error);
@@ -10397,8 +10418,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             const [snapshot, ventasMayoristas, costosDetal] = await Promise.all([
                 getDocs(query(fabricaCollection, ...clauses)),
-                fetchVentasMayoristasComoIngresos(),
-                fetchCostosDetalComoIngresos()
+                fetchVentasMayoristasComoIngresos(desde),
+                fetchCostosDetalComoIngresos(desde)
             ]);
 
             let movimientos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
