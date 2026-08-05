@@ -4,7 +4,7 @@ import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updat
 // Import Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 // Import Auditoría (registro de quién crea/edita/elimina)
-import { registrarAuditoria } from "./auditoria.js";
+import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -2166,26 +2166,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 // ───────────────────────────────────────────────────────────────────
 
                 if (productId) {
+                    const existingDoc = localProductsMap.get(productId);
                     if (!productData.imagenUrl) {
-                        const existingDoc = localProductsMap.get(productId);
                         productData.imagenUrl = existingDoc?.imagenUrl || null;
                     }
                     await updateDoc(doc(db, "productos", productId), productData);
                     imagenInput.value = '';
                     showToast("Producto actualizado!");
 
+                    const { cambios, detalles } = describirCambiosProducto(existingDoc, productData);
                     registrarAuditoria({
                         accion: 'editar',
                         modulo: 'producto',
                         entidadId: productId,
                         entidadNombre: productData.nombre,
-                        descripcion: `Editó el producto "${productData.nombre}" (código ${productData.codigo || ''})`,
-                        detalles: {
-                            costoCompra: productData.costoCompra,
-                            precioDetal: productData.precioDetal,
-                            precioMayor: productData.precioMayor,
-                            visible: productData.visible
-                        }
+                        descripcion: cambios.length > 0
+                            ? `Editó el producto "${productData.nombre}" (código ${productData.codigo || ''}): ${cambios.join('; ')}`
+                            : `Editó el producto "${productData.nombre}" (código ${productData.codigo || ''})`,
+                        detalles
                     });
 
                     // ✅ AUTO-SCROLL: Cambiar a vista de inventario y hacer scroll
@@ -2217,12 +2215,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         modulo: 'producto',
                         entidadId: docRef.id,
                         entidadNombre: productData.nombre,
-                        descripcion: `Agregó el producto "${productData.nombre}" (código ${productData.codigo})`,
+                        descripcion: `Agregó el producto "${productData.nombre}" (código ${productData.codigo})${resumenVariacionesProducto(productData)}`,
                         detalles: {
                             costoCompra: productData.costoCompra,
                             precioDetal: productData.precioDetal,
                             precioMayor: productData.precioMayor,
-                            proveedor: productData.proveedor
+                            proveedor: productData.proveedor,
+                            variaciones: (productData.variaciones || []).map(v => `${[v.color, v.talla].filter(Boolean).join(' / ') || 'sin color/talla'} (stock ${v.stock || 0})`),
+                            coloresGaleria: (productData.variantes_color || []).map(c => c.nombre).filter(Boolean)
                         }
                     });
 
