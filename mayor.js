@@ -22,7 +22,12 @@ const productsCollection = collection(db, 'productos');
 const categoriesCollection = collection(db, 'categorias');
 
 const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
-const WHATSAPP_NUMBER = '573046084971';
+// Asesoras/asesores a los que se puede enviar el pedido por WhatsApp — el
+// cliente elige uno con los radios del panel de cierre (ver #mayor-advisor-options).
+const ASESORES = {
+    mishell: { nombre: 'Mishell Espitia Solano', numero: '573046084971' },
+    alexander: { nombre: 'Alexander Izquierdo', numero: '573017850041' }
+};
 
 // Solo las prendas de proveedor "Mishelles Boutique" entran al catálogo de
 // venta al por mayor — el resto de proveedores queda restringido al detal.
@@ -48,6 +53,7 @@ const finalizePanelEl = document.getElementById('mayor-finalize-panel');
 const finalizeToggleBtn = document.getElementById('btn-toggle-mayor-finalize');
 const waBtn = document.getElementById('btn-send-mayor-whatsapp');
 const obsEl = document.getElementById('mayor-observaciones');
+const asesorOptionsEl = document.getElementById('mayor-advisor-options');
 const totalEstimadoEl = document.getElementById('mayor-total-estimado');
 const orderSummaryEl = document.getElementById('mayor-order-summary');
 const tiersToggleBtn = document.getElementById('btn-toggle-tiers');
@@ -873,6 +879,19 @@ if (finalizeToggleBtn) {
     });
 }
 
+function getAsesorSeleccionado() {
+    const input = asesorOptionsEl?.querySelector('input[name="mayor-asesor"]:checked');
+    return ASESORES[input?.value] || ASESORES.mishell;
+}
+
+if (asesorOptionsEl) {
+    asesorOptionsEl.addEventListener('change', () => {
+        asesorOptionsEl.querySelectorAll('.mayor-advisor-option').forEach(opt => {
+            opt.classList.toggle('is-selected', opt.querySelector('input').checked);
+        });
+    });
+}
+
 if (waBtn) {
     waBtn.addEventListener('click', () => {
         // Última verificación antes de armar el pedido: si el stock cambió mientras
@@ -914,7 +933,8 @@ if (waBtn) {
         const totalUnidades = getTotalGeneral();
         let mensaje = `¡Hola! 👋 Quiero hacer este pedido al por mayor:\n\n${bloques.join('\n\n')}\n\n———————————————\nTotal: ${totalUnidades} prenda${totalUnidades === 1 ? '' : 's'} — ${formatoMoneda.format(totalEstimado)}`;
         if (observaciones) mensaje += `\n\n📝 Observaciones: ${observaciones}`;
-        const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`;
+        const asesor = getAsesorSeleccionado();
+        const url = `https://wa.me/${asesor.numero}?text=${encodeURIComponent(mensaje)}`;
         const a = document.createElement('a');
         a.href = url;
         a.target = '_blank';
