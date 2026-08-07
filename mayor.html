@@ -620,6 +620,52 @@
     font-size: 0.85rem;
     flex-shrink: 0;
   }
+  .mayor-advisor-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-texto);
+    margin: 12px 0 6px;
+    display: block;
+    flex-shrink: 0;
+  }
+  .mayor-advisor-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .mayor-advisor-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-sm);
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .mayor-advisor-option.is-selected {
+    border-color: var(--color-primario);
+    background: #fff5f9;
+  }
+  .mayor-advisor-option input {
+    accent-color: var(--color-primario);
+    flex-shrink: 0;
+  }
+  .mayor-advisor-option-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+  .mayor-advisor-option-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-texto);
+  }
+  .mayor-advisor-option-phone {
+    font-size: 0.75rem;
+    color: var(--color-texto-secundario);
+  }
   .btn-mayor-send {
     width: 100%;
     margin-top: 14px;
@@ -846,6 +892,23 @@
     <div class="mayor-summary" id="mayor-order-summary"></div>
     <label class="mayor-obs-label" for="mayor-observaciones">Observaciones (opcional)</label>
     <textarea class="form-control form-control-sm" id="mayor-observaciones" rows="2" placeholder="Ej: Recoger en tienda, entrega en Montería..."></textarea>
+    <label class="mayor-advisor-label">¿A quién quieres enviar tu pedido?</label>
+    <div class="mayor-advisor-options" id="mayor-advisor-options">
+      <label class="mayor-advisor-option is-selected">
+        <input type="radio" name="mayor-asesor" value="mishell" checked>
+        <span class="mayor-advisor-option-text">
+          <span class="mayor-advisor-option-name">Mishell Espitia Solano</span>
+          <span class="mayor-advisor-option-phone">304 608 4971</span>
+        </span>
+      </label>
+      <label class="mayor-advisor-option">
+        <input type="radio" name="mayor-asesor" value="alexander">
+        <span class="mayor-advisor-option-text">
+          <span class="mayor-advisor-option-name">Alexander Izquierdo</span>
+          <span class="mayor-advisor-option-phone">301 785 0041</span>
+        </span>
+      </label>
+    </div>
     <button type="button" class="btn btn-mayor-send" id="btn-send-mayor-whatsapp">
       <i class="bi bi-whatsapp"></i> Enviar mi pedido al por mayor
     </button>
