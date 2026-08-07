@@ -232,135 +232,168 @@
     gap: 8px 6px;
     margin-bottom: 10px;
   }
+  /* Cada color es un botón: un solo toque lo agrega al pedido (o lo quita si
+     ya estaba elegido), en vez del flujo anterior de "Elegir esta prenda" +
+     desplegables separados para color/talla/cantidad. */
   .mayor-card-color-item {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
     gap: 3px;
     width: 40px;
+    position: relative;
+    border: none;
+    background: none;
+    padding: 3px 0 0;
+    cursor: pointer;
   }
   .mayor-card-color-swatch {
     width: 24px;
     height: 24px;
+    box-shadow: 0 0 0 1px var(--color-borde);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
   }
   .mayor-card-color-item .color-swatch-name {
     font-size: 0.5rem;
     max-width: 40px;
   }
-  .mayor-add-btn {
-    margin-top: auto;
-    width: 100%;
-    padding: 10px;
-    border: 1.5px solid var(--color-primario);
-    background: #fff;
-    color: var(--color-primario-oscuro);
-    font-size: 0.84rem;
-    font-weight: 600;
-    border-radius: var(--radio-sm);
-    cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
+  .mayor-card-color-item.is-selected .mayor-card-color-swatch {
+    box-shadow: 0 0 0 2px var(--color-primario);
+    transform: scale(1.08);
   }
-  .mayor-add-btn:hover {
+  .mayor-card-color-item.is-selected .color-swatch-name {
+    color: var(--color-primario-oscuro);
+    font-weight: 700;
+  }
+  .mayor-swatch-badge {
+    position: absolute;
+    top: -4px;
+    right: 3px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    border-radius: 999px;
     background: var(--color-primario);
     color: #fff;
+    font-size: 0.58rem;
+    font-weight: 700;
+    line-height: 15px;
+    text-align: center;
   }
-  .mayor-card-toggle {
+  .mayor-no-colores {
+    font-size: 0.78rem;
+    color: var(--color-texto-secundario);
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+  .mayor-add-hint {
     margin-top: auto;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    background: var(--color-fondo-secundario);
-    border: 1px solid var(--color-borde);
-    border-radius: var(--radio-sm);
-    padding: 8px 10px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-  }
-  .mayor-card-toggle:hover {
-    background: #f0eeee;
+    font-size: 0.78rem;
+    color: var(--color-texto-secundario);
+    text-align: center;
+    padding: 8px 4px 2px;
   }
   .mayor-card-toggle-label {
     font-size: 0.8rem;
-    color: var(--color-texto-secundario);
-    font-weight: 600;
-    text-align: left;
-  }
-  .mayor-card-toggle-label.is-warning {
-    color: #c62828;
-  }
-  .mayor-card-toggle-icon {
     color: var(--color-primario-oscuro);
-    font-size: 0.8rem;
-    flex-shrink: 0;
+    font-weight: 700;
+    margin-bottom: 8px;
   }
-  .mayor-colors-wrap {
-    margin-top: 10px;
-  }
-  .mayor-colors-list {
+  /* Lista de colores ya elegidos para esta prenda: talla (si aplica) y
+     cantidad con botones +/-, siempre visible (sin curtain que expandir). */
+  .mayor-selected-list {
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 10px;
+    margin-top: auto;
   }
-  .mayor-color-row {
-    display: grid;
-    grid-template-columns: 1fr 50px 26px;
-    gap: 5px;
-    align-items: center;
-  }
-  .mayor-color-row.has-talla {
-    grid-template-columns: 64px 1fr 50px 26px;
-  }
-  .mayor-talla-select,
-  .mayor-color-select,
-  .mayor-color-qty {
-    width: 100%;
-    font-size: 0.82rem;
-    padding: 7px 6px;
+  .mayor-selected-item {
     border: 1px solid var(--color-borde);
     border-radius: var(--radio-sm);
-    background: #fff;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: var(--color-fondo-secundario);
+    padding: 8px 9px;
   }
-  .mayor-color-qty {
-    padding: 6px 4px;
-    text-align: center;
+  .mayor-selected-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
   }
-  .mayor-talla-select:focus,
-  .mayor-color-select:focus,
-  .mayor-color-qty:focus {
-    outline: none;
-    border-color: var(--color-primario);
-    box-shadow: 0 0 0 3px var(--color-primario-claro);
+  .mayor-selected-swatch {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px var(--color-borde);
   }
-  .mayor-color-remove {
-    width: 26px;
-    height: 26px;
+  .mayor-selected-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-texto);
+    flex: 1;
+  }
+  .mayor-selected-remove {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
     border: 1px solid var(--color-borde);
     border-radius: 6px;
     background: #fff;
     color: #c62828;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     line-height: 1;
     cursor: pointer;
     transition: background 0.2s ease;
   }
-  .mayor-color-remove:hover {
+  .mayor-selected-remove:hover {
     background: #fdecea;
   }
-  .mayor-add-color {
-    background: none;
-    border: none;
-    color: var(--color-primario-oscuro);
-    font-size: 0.82rem;
-    font-weight: 600;
-    padding: 6px 0 0;
-    cursor: pointer;
-    text-align: left;
+  .mayor-talla-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 7px;
   }
-  .mayor-add-color:hover {
-    text-decoration: underline;
+  .mayor-talla-pill {
+    padding: 4px 10px;
+    font-size: 0.74rem;
+    min-width: auto;
+  }
+  .mayor-qty {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .mayor-qty .mp-qty {
+    border-color: var(--color-borde);
+  }
+  .mayor-qty .mp-qty-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.95rem;
+  }
+  .mayor-qty-input {
+    width: 40px;
+    height: 28px;
+    border: none;
+    border-left: 1.5px solid var(--color-borde);
+    border-right: 1.5px solid var(--color-borde);
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: var(--fuente-principal);
+    background: #fff;
+    color: var(--color-texto);
+    -moz-appearance: textfield;
+  }
+  .mayor-qty-input::-webkit-outer-spin-button,
+  .mayor-qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .mayor-qty-stock {
+    font-size: 0.68rem;
+    color: var(--color-texto-secundario);
   }
   .mayor-empty {
     max-width: 480px;
@@ -660,9 +693,28 @@
       font-size: 0.46rem;
       max-width: 34px;
     }
-    .mayor-add-btn {
-      padding: 8px;
+    .mayor-selected-item {
+      padding: 7px 8px;
+    }
+    .mayor-talla-pill {
+      padding: 3px 8px;
+      font-size: 0.68rem;
+    }
+    .mayor-qty .mp-qty-btn {
+      width: 25px;
+      height: 25px;
+      font-size: 0.85rem;
+    }
+    .mayor-qty-input {
+      width: 34px;
+      height: 25px;
       font-size: 0.74rem;
+    }
+    .mayor-qty-stock {
+      font-size: 0.62rem;
+    }
+    .mayor-add-hint {
+      font-size: 0.7rem;
     }
   }
 </style>
@@ -828,7 +880,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.3.2"></script>
+<script type="module" src="mayor.js?v=1.4.0"></script>
 
 </body>
 </html>

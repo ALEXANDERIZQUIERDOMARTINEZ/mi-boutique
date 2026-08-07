@@ -34,8 +34,6 @@ const PRODUCTS_PER_PAGE = 30;
 
 // productId -> [{ talla, color, cantidad }] (talla es null cuando la prenda es de talla única)
 const detalleFilas = new Map();
-// productId -> true si la tarjeta está colapsada (oculta su lista de colores/tallas)
-const tarjetasColapsadas = new Set();
 let allProducts = [];
 let productsData = []; // productos ya filtrados (categoría/búsqueda) que se están mostrando
 const categoriesMap = new Map(); // categoriaId <-> nombre (bidireccional, igual que app.js)
@@ -97,26 +95,8 @@ function getTallasConStock(p) {
     return [...set];
 }
 
-// Colores con stock disponible para una talla dada (o para "sin talla" si talla es null),
-// junto con el stock acumulado de cada color.
-function getColoresParaTalla(p, talla) {
-    const map = new Map();
-    (p.variaciones || []).forEach(v => {
-        const stock = parseInt(v.stock, 10) || 0;
-        if (stock <= 0 || !v.color) return;
-        if (talla) {
-            if (normTalla(v.talla) !== talla) return;
-        } else if (!esTallaUnica(v.talla)) {
-            return;
-        }
-        map.set(v.color, (map.get(v.color) || 0) + stock);
-    });
-    return [...map.entries()].map(([color, stock]) => ({ color, stock }));
-}
-
 // Todos los colores con stock disponible de la prenda, sumando todas las
-// tallas (a diferencia de getColoresParaTalla, que filtra por una talla).
-// Se usa para mostrar en la tarjeta qué colores hay antes de elegir.
+// tallas. Se usa para mostrar en la tarjeta qué colores hay antes de elegir.
 function getColoresDelProducto(p) {
     const map = new Map();
     (p.variaciones || []).forEach(v => {
@@ -180,12 +160,18 @@ function getStockDisponibleFila(p, talla, color, excludeIdx) {
     return Math.max(0, stockTotal - getCantidadReservadaOtrasFilas(p.id, talla, color, excludeIdx));
 }
 
-// Colores que le quedan disponibles a ESTA fila para elegir (descontando lo que
-// ya reservaron las demás filas del mismo producto), con su stock restante.
-function getColoresDisponiblesFila(p, talla, excludeIdx) {
-    return getColoresParaTalla(p, talla)
-        .map(c => ({ color: c.color, stock: getStockDisponibleFila(p, talla, c.color, excludeIdx) }))
-        .filter(c => c.stock > 0);
+// Tallas con stock disponible para UN color específico — se usa para ofrecer,
+// una vez elegido el color (tocando su bolita), solo las tallas donde ese
+// color realmente tiene prendas (a diferencia de getTallasConStock, que
+// mezcla todos los colores).
+function getTallasParaColor(p, color) {
+    const set = new Set();
+    (p.variaciones || []).forEach(v => {
+        const stock = parseInt(v.stock, 10) || 0;
+        if (stock <= 0 || v.color !== color || esTallaUnica(v.talla)) return;
+        set.add(normTalla(v.talla));
+    });
+    return [...set];
 }
 
 // Corrige/depura las filas de una prenda para que nunca superen el stock real:
@@ -385,7 +371,6 @@ if (orderSummaryEl) {
         if (removeAllBtn) {
             const id = removeAllBtn.dataset.id;
             detalleFilas.delete(id);
-            tarjetasColapsadas.delete(id);
             updateCardInPlace(id);
             updateProgress();
             return;
@@ -398,7 +383,6 @@ if (orderSummaryEl) {
             filas.splice(idx, 1);
             if (filas.length === 0) {
                 detalleFilas.delete(id);
-                tarjetasColapsadas.delete(id);
             } else {
                 detalleFilas.set(id, filas);
             }
@@ -488,36 +472,40 @@ function goToPage(page) {
 }
 
 // ── Render de tarjetas ───────────────────────────────────────────────────
+// Bloque de UN color ya elegido: talla (si aplica, solo las que ese color
+// realmente tiene) + cantidad con botones +/- estilo el resto del sitio
+// (mismo lenguaje visual que el selector de cantidad del detalle al detal).
 function renderFilaHtml(p, fila, idx, tallas) {
     const hasTallas = tallas.length > 0;
     const talla = hasTallas ? fila.talla : null;
-    // Colores que le quedan a ESTA fila (ya descontando lo que reservaron las demás
-    // filas del mismo producto); si el color actual de la fila ya no quedó en esa
-    // lista (otra fila se llevó todo lo que quedaba), igual se incluye para que el
-    // <select> no pierda su valor — reconciliarFilas() se encarga de quitar la fila
-    // por completo en ese caso, así que aquí solo es una salvaguarda de render.
-    const disponibles = getColoresDisponiblesFila(p, talla, idx);
     const stockFila = getStockDisponibleFila(p, talla, fila.color, idx);
-    const colores = disponibles.some(c => c.color === fila.color)
-        ? disponibles
-        : [...disponibles, { color: fila.color, stock: stockFila }];
+    const cantidad = parseInt(fila.cantidad, 10) || 0;
 
-    const tallaSelectHtml = hasTallas ? `
-        <select class="mayor-talla-select" data-id="${p.id}" data-idx="${idx}">
-            ${tallas.map(t => `<option value="${t}" ${t === fila.talla ? 'selected' : ''}>${t}</option>`).join('')}
-        </select>` : '';
+    const tallasColor = hasTallas ? getTallasParaColor(p, fila.color) : [];
+    const tallaPillsHtml = hasTallas ? `
+        <div class="mayor-talla-pills">
+            ${tallasColor.map(t => `<button type="button" class="size-color-btn mayor-talla-pill${t === fila.talla ? ' selected' : ''}" data-id="${p.id}" data-idx="${idx}" data-talla="${t.replace(/"/g, '&quot;')}">${t}</button>`).join('')}
+        </div>` : '';
 
-    const colorSelectHtml = `
-        <select class="mayor-color-select" data-id="${p.id}" data-idx="${idx}">
-            ${colores.map(c => `<option value="${c.color.replace(/"/g, '&quot;')}" ${c.color === fila.color ? 'selected' : ''}>${formatColorLabel(c.color)} (${c.stock} disp.)</option>`).join('')}
-        </select>`;
+    const vc = (p.variantes_color || []).find(v => (v.nombre || '').toLowerCase().trim() === fila.color.toLowerCase().trim());
+    const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(fila.color)};`;
 
     return `
-        <div class="mayor-color-row${hasTallas ? ' has-talla' : ''}">
-            ${tallaSelectHtml}
-            ${colorSelectHtml}
-            <input type="number" min="1" max="${stockFila || 1}" class="mayor-color-qty" data-id="${p.id}" data-idx="${idx}" value="${fila.cantidad}">
-            <button type="button" class="mayor-color-remove" data-id="${p.id}" data-idx="${idx}" aria-label="Quitar">×</button>
+        <div class="mayor-selected-item">
+            <div class="mayor-selected-head">
+                <span class="color-swatch-circle mayor-selected-swatch" style="${swatchStyle}"></span>
+                <span class="mayor-selected-name">${formatColorLabel(fila.color)}</span>
+                <button type="button" class="mayor-selected-remove" data-id="${p.id}" data-idx="${idx}" aria-label="Quitar ${formatColorLabel(fila.color)}"><i class="bi bi-x-lg"></i></button>
+            </div>
+            ${tallaPillsHtml}
+            <div class="mayor-qty">
+                <div class="mp-qty">
+                    <button type="button" class="mp-qty-btn mayor-qty-minus" data-id="${p.id}" data-idx="${idx}" ${cantidad <= 1 ? 'disabled' : ''}>−</button>
+                    <input type="number" min="1" max="${stockFila || 1}" class="mayor-qty-input" data-id="${p.id}" data-idx="${idx}" value="${cantidad}">
+                    <button type="button" class="mp-qty-btn mayor-qty-plus" data-id="${p.id}" data-idx="${idx}" ${cantidad >= stockFila ? 'disabled' : ''}>+</button>
+                </div>
+                <span class="mayor-qty-stock">${stockFila} disp.</span>
+            </div>
         </div>
     `;
 }
@@ -531,49 +519,46 @@ function buildCardPriceHtml(p) {
     return formatoMoneda.format(precioUnitario);
 }
 
-// Lista de bolitas de color con el nombre de cada una, para que se vea de una
-// vez qué colores hay disponibles de la prenda (se compra por color, así que
-// esto es lo primero que preguntan las mayoristas antes de elegir).
+// Bolitas de color: la manera de agregar la prenda ahora es tocar el color
+// directamente (un toque la agrega, otro toque la quita), en vez de un botón
+// "Elegir esta prenda" separado seguido de desplegables — así lo primero que
+// el ojo ve (los colores disponibles) es también la forma de comprarlos.
 function buildCardColorsHtml(p) {
     const colores = getColoresDelProducto(p);
-    if (colores.length === 0) return '';
+    if (colores.length === 0) return '<p class="mayor-no-colores">Sin colores registrados — escríbenos por WhatsApp para este pedido.</p>';
+    const filas = detalleFilas.get(p.id) || [];
+    const seleccion = new Map(filas.map((f, idx) => [f.color, { idx, cantidad: parseInt(f.cantidad, 10) || 0 }]));
     const variantesColor = p.variantes_color || [];
     const itemsHtml = colores.map(({ color }) => {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
+        const sel = seleccion.get(color);
         return `
-            <span class="mayor-card-color-item" title="${formatColorLabel(color)}">
+            <button type="button" class="mayor-card-color-item mayor-swatch-btn${sel ? ' is-selected' : ''}" data-id="${p.id}" data-color="${color.replace(/"/g, '&quot;')}" title="${formatColorLabel(color)}">
                 <span class="color-swatch-circle mayor-card-color-swatch" style="${swatchStyle}"></span>
                 <span class="color-swatch-name">${formatColorLabel(color)}</span>
-            </span>
+                ${sel ? `<span class="mayor-swatch-badge">${sel.cantidad}</span>` : ''}
+            </button>
         `;
     }).join('');
     return `<div class="mayor-card-colors">${itemsHtml}</div>`;
 }
 
-// HTML de la parte interactiva de la tarjeta (botón "Elegir"/filas de color):
-// lo único que cambia al elegir/quitar un color, cambiar talla o colapsar.
+// HTML de la parte interactiva de la tarjeta: lo único que cambia al elegir/
+// quitar un color, cambiar talla o tocar +/-. Sin curtain que expandir: cada
+// color elegido siempre se ve con su talla y cantidad, listas para ajustar.
 function buildCardExtraHtml(p) {
     const filas = detalleFilas.get(p.id) || [];
     if (filas.length === 0) {
-        return `<button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-circle"></i> Elegir esta prenda</button>`;
+        if (getColoresDelProducto(p).length === 0) return '';
+        return `<p class="mayor-add-hint">👆 Toca un color para agregarlo a tu pedido</p>`;
     }
     const totalProducto = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
-    const colapsada = tarjetasColapsadas.has(p.id);
     const tallas = getTallasConStock(p);
     const filasHtml = filas.map((f, idx) => renderFilaHtml(p, f, idx, tallas)).join('');
-    const talla = tallas.length > 0 ? tallas[0] : null;
-    const usados = new Set(filas.map(f => f.color));
-    const quedanColores = getColoresDisponiblesFila(p, talla, filas.length).some(c => !usados.has(c.color));
     return `
-        <button type="button" class="mayor-card-toggle" data-id="${p.id}">
-            <span class="mayor-card-toggle-label">${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}</span>
-            <i class="bi bi-chevron-${colapsada ? 'down' : 'up'} mayor-card-toggle-icon"></i>
-        </button>
-        <div class="mayor-colors-wrap"${colapsada ? ' style="display:none;"' : ''}>
-            <div class="mayor-colors-list">${filasHtml}</div>
-            ${quedanColores ? `<button type="button" class="mayor-add-color" data-id="${p.id}">+ Agregar otro color</button>` : ''}
-        </div>
+        <div class="mayor-card-toggle-label">${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}</div>
+        <div class="mayor-selected-list">${filasHtml}</div>
     `;
 }
 
@@ -590,7 +575,7 @@ function buildCardElement(p) {
         <div class="mayor-card-body">
             <h3 class="mayor-card-name">${p.nombre}</h3>
             <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
-            ${buildCardColorsHtml(p)}
+            <div class="mayor-card-colors-wrap">${buildCardColorsHtml(p)}</div>
             <div class="mayor-card-extra">${buildCardExtraHtml(p)}</div>
         </div>
     `;
@@ -610,6 +595,8 @@ function updateCardInPlace(id) {
     cardEl.classList.toggle('is-selected', filas.length > 0);
     const priceEl = cardEl.querySelector('.mayor-card-price');
     if (priceEl) priceEl.innerHTML = buildCardPriceHtml(p);
+    const colorsEl = cardEl.querySelector('.mayor-card-colors-wrap');
+    if (colorsEl) colorsEl.innerHTML = buildCardColorsHtml(p);
     const extraEl = cardEl.querySelector('.mayor-card-extra');
     if (extraEl) extraEl.innerHTML = buildCardExtraHtml(p);
 }
@@ -654,6 +641,12 @@ function actualizarPreciosEnVivo() {
         if (totalEl) {
             totalEl.textContent = `${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}`;
         }
+
+        const cantidadPorColor = new Map(filas.map(f => [f.color, parseInt(f.cantidad, 10) || 0]));
+        card.querySelectorAll('.mayor-swatch-btn').forEach(btn => {
+            const badge = btn.querySelector('.mayor-swatch-badge');
+            if (badge && cantidadPorColor.has(btn.dataset.color)) badge.textContent = cantidadPorColor.get(btn.dataset.color);
+        });
     });
 
     renderOrderSummary();
@@ -726,51 +719,38 @@ if (gridEl) {
             openMayorZoom(zoomImg.src, p ? p.nombre : '');
             return;
         }
-        const addBtn = e.target.closest('.mayor-add-btn');
-        if (addBtn) {
-            const p = productsData.find(pp => pp.id === addBtn.dataset.id);
-            if (!p) return;
-            const tallas = getTallasConStock(p);
-            const talla = tallas.length > 0 ? tallas[0] : null;
-            const colores = getColoresParaTalla(p, talla);
-            if (colores.length === 0) {
-                showToast('Sin stock disponible para esta prenda', 'warning');
-                return;
-            }
-            detalleFilas.set(p.id, [{ talla, color: colores[0].color, cantidad: 1 }]);
-            updateCardInPlace(p.id);
-            updateProgress();
-            return;
-        }
-        const addColorBtn = e.target.closest('.mayor-add-color');
-        if (addColorBtn) {
-            const id = addColorBtn.dataset.id;
+        // Tocar la bolita de un color la agrega al pedido (cantidad 1, con la
+        // primera talla que ese color tenga en stock); tocar una ya elegida la
+        // quita — un solo gesto reemplaza el viejo "Elegir esta prenda" + selects.
+        const swatchBtn = e.target.closest('.mayor-swatch-btn');
+        if (swatchBtn) {
+            const id = swatchBtn.dataset.id;
+            const color = swatchBtn.dataset.color;
             const p = productsData.find(pp => pp.id === id);
             if (!p) return;
             const filas = detalleFilas.get(id) || [];
-            const tallas = getTallasConStock(p);
-            const talla = tallas.length > 0 ? tallas[0] : null;
-            // Descuenta lo que ya reservaron las filas existentes de este producto,
-            // así no se puede volver a ofrecer un color que ya se agotó entre todas.
-            const disponibles = getColoresDisponiblesFila(p, talla, filas.length);
-            // Cada fila debe representar un color distinto: si ya hay una fila con
-            // ese color, no lo vuelvas a ofrecer aunque le quede stock (para eso está
-            // el campo de cantidad de esa misma fila, no una fila duplicada).
-            const usados = new Set(filas.map(f => f.color));
-            const colores = disponibles.filter(c => !usados.has(c.color));
-            if (colores.length === 0) {
-                showToast(disponibles.length === 0
-                    ? 'Ya no hay más colores disponibles de esta prenda'
-                    : 'Ya agregaste todos los colores disponibles de esta prenda', 'warning');
-                return;
+            const idxExistente = filas.findIndex(f => f.color === color);
+            if (idxExistente >= 0) {
+                filas.splice(idxExistente, 1);
+                if (filas.length === 0) detalleFilas.delete(id);
+                else detalleFilas.set(id, filas);
+            } else {
+                const tallas = getTallasConStock(p);
+                const tallasColor = tallas.length > 0 ? getTallasParaColor(p, color) : [];
+                const talla = tallas.length > 0 ? (tallasColor[0] || tallas[0]) : null;
+                const stockDisp = getStockDisponibleFila(p, talla, color, filas.length);
+                if (stockDisp <= 0) {
+                    showToast('Sin stock disponible para este color', 'warning');
+                    return;
+                }
+                filas.push({ talla, color, cantidad: 1 });
+                detalleFilas.set(id, filas);
             }
-            filas.push({ talla, color: colores[0].color, cantidad: 1 });
-            detalleFilas.set(id, filas);
             updateCardInPlace(id);
             updateProgress();
             return;
         }
-        const removeBtn = e.target.closest('.mayor-color-remove');
+        const removeBtn = e.target.closest('.mayor-selected-remove');
         if (removeBtn) {
             const id = removeBtn.dataset.id;
             const idx = parseInt(removeBtn.dataset.idx, 10);
@@ -778,7 +758,6 @@ if (gridEl) {
             filas.splice(idx, 1);
             if (filas.length === 0) {
                 detalleFilas.delete(id);
-                tarjetasColapsadas.delete(id);
             } else {
                 detalleFilas.set(id, filas);
             }
@@ -786,48 +765,51 @@ if (gridEl) {
             updateProgress();
             return;
         }
-        const toggleBtn = e.target.closest('.mayor-card-toggle');
-        if (toggleBtn) {
-            const id = toggleBtn.dataset.id;
-            if (tarjetasColapsadas.has(id)) tarjetasColapsadas.delete(id);
-            else tarjetasColapsadas.add(id);
-            updateCardInPlace(id);
-        }
-    });
-
-    // Cambiar talla o color reconstruye la fila (las opciones disponibles cambian),
-    // pero ya no hace falta repintar toda la grilla: solo se actualiza esta tarjeta.
-    gridEl.addEventListener('change', (e) => {
-        const tallaSel = e.target.closest('.mayor-talla-select');
-        if (tallaSel) {
-            const id = tallaSel.dataset.id;
-            const idx = parseInt(tallaSel.dataset.idx, 10);
+        const tallaPill = e.target.closest('.mayor-talla-pill');
+        if (tallaPill) {
+            const id = tallaPill.dataset.id;
+            const idx = parseInt(tallaPill.dataset.idx, 10);
             const p = productsData.find(pp => pp.id === id);
             const filas = detalleFilas.get(id);
             if (p && filas && filas[idx]) {
-                filas[idx].talla = tallaSel.value;
-                const colores = getColoresDisponiblesFila(p, filas[idx].talla, idx);
-                filas[idx].color = colores[0]?.color || '';
-                filas[idx].cantidad = Math.min(filas[idx].cantidad || 1, colores[0]?.stock || 1) || 1;
+                filas[idx].talla = tallaPill.dataset.talla;
+                const disponible = getStockDisponibleFila(p, filas[idx].talla, filas[idx].color, idx) || 1;
+                filas[idx].cantidad = Math.min(parseInt(filas[idx].cantidad, 10) || 1, disponible);
                 updateCardInPlace(id);
                 updateProgress();
             }
             return;
         }
-        const colorSel = e.target.closest('.mayor-color-select');
-        if (colorSel) {
-            const id = colorSel.dataset.id;
-            const idx = parseInt(colorSel.dataset.idx, 10);
+        const qtyMinus = e.target.closest('.mayor-qty-minus');
+        if (qtyMinus) {
+            const id = qtyMinus.dataset.id;
+            const idx = parseInt(qtyMinus.dataset.idx, 10);
+            const filas = detalleFilas.get(id);
+            if (filas && filas[idx] && (parseInt(filas[idx].cantidad, 10) || 0) > 1) {
+                filas[idx].cantidad = (parseInt(filas[idx].cantidad, 10) || 1) - 1;
+                updateCardInPlace(id);
+                updateProgress();
+            }
+            return;
+        }
+        const qtyPlus = e.target.closest('.mayor-qty-plus');
+        if (qtyPlus) {
+            const id = qtyPlus.dataset.id;
+            const idx = parseInt(qtyPlus.dataset.idx, 10);
             const p = productsData.find(pp => pp.id === id);
             const filas = detalleFilas.get(id);
             if (p && filas && filas[idx]) {
-                filas[idx].color = colorSel.value;
                 const tallas = getTallasConStock(p);
                 const hasTallas = tallas.length > 0;
-                const disponible = getStockDisponibleFila(p, hasTallas ? filas[idx].talla : null, filas[idx].color, idx) || 1;
-                filas[idx].cantidad = Math.min(filas[idx].cantidad || 1, disponible);
-                updateCardInPlace(id);
-                updateProgress();
+                const disponible = getStockDisponibleFila(p, hasTallas ? filas[idx].talla : null, filas[idx].color, idx);
+                const cantidadActual = parseInt(filas[idx].cantidad, 10) || 0;
+                if (cantidadActual < disponible) {
+                    filas[idx].cantidad = cantidadActual + 1;
+                    updateCardInPlace(id);
+                    updateProgress();
+                } else {
+                    showToast('Ya no hay más stock disponible de este color/talla', 'warning');
+                }
             }
         }
     });
@@ -835,7 +817,7 @@ if (gridEl) {
     // La cantidad NO reconstruye la grilla en 'input' (perdería el foco del campo
     // mientras se escribe); el precio sí se recalcula en vivo con cada tecla.
     gridEl.addEventListener('input', (e) => {
-        const qtyInput = e.target.closest('.mayor-color-qty');
+        const qtyInput = e.target.closest('.mayor-qty-input');
         if (!qtyInput) return;
         const filas = detalleFilas.get(qtyInput.dataset.id);
         const idx = parseInt(qtyInput.dataset.idx, 10);
@@ -850,7 +832,7 @@ if (gridEl) {
     // esa combinación talla+color, sin reconstruir la grilla (ver nota en encargo.js
     // sobre por qué 'focusout' y no un render inmediato).
     gridEl.addEventListener('focusout', (e) => {
-        const qtyInput = e.target.closest && e.target.closest('.mayor-color-qty');
+        const qtyInput = e.target.closest && e.target.closest('.mayor-qty-input');
         if (!qtyInput) return;
         const id = qtyInput.dataset.id;
         const idx = parseInt(qtyInput.dataset.idx, 10);
