@@ -178,10 +178,16 @@ export function detectGroupFromCategoryName(nombreCategoria) {
     return '';
 }
 
-// Resuelve el grupo de precio mayorista de un producto: si tiene el campo
-// grupoMayorista asignado a mano (desde el admin) lo respeta como override;
-// si no, lo detecta automáticamente por el nombre de su categoría.
+// Resuelve el grupo de precio mayorista de un producto:
+// - grupoMayorista === 'ninguno': override explícito para IGNORAR la detección
+//   por categoría y usar siempre el Precio Mayor fijo del producto (ej. un
+//   producto en categoría "Bodys" que no debe entrar a esa tabla de precios).
+// - grupoMayorista con un grupo real: lo respeta como override.
+// - grupoMayorista vacío/sin definir (nunca se tocó el campo): lo detecta
+//   automáticamente por el nombre de su categoría, para que la tabla aplique
+//   sin depender de que alguien la asigne a mano.
 export function resolveWholesaleGroup(product, categoriesMap) {
+    if (product?.grupoMayorista === 'ninguno') return '';
     if (product?.grupoMayorista && WHOLESALE_TIER_GROUPS[product.grupoMayorista]) {
         return product.grupoMayorista;
     }
