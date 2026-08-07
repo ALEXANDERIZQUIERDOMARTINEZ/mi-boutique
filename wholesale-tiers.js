@@ -49,7 +49,6 @@ export const WHOLESALE_TIER_GROUPS = {
     bodyElaborados: {
         label: 'Body Elaborados',
         tiers: [
-            { min: 1, precio: 29000 },
             { min: 6, precio: 18000 },
             { min: 12, precio: 17000 },
             { min: 24, precio: 16000 },
@@ -62,7 +61,6 @@ export const WHOLESALE_TIER_GROUPS = {
     vestidosCortosElaborados: {
         label: 'Vestidos cortos elaborados',
         tiers: [
-            { min: 1, precio: 58000 },
             { min: 6, precio: 33000 },
             { min: 12, precio: 32000 },
             { min: 24, precio: 31000 },
@@ -82,7 +80,6 @@ export const WHOLESALE_TIER_GROUPS = {
     vestidosLargosElaborados: {
         label: 'Vestidos largos Elaborados',
         tiers: [
-            { min: 1, precio: 75000 },
             { min: 6, precio: 38000 },
             { min: 12, precio: 37000 },
             { min: 24, precio: 36000 },
