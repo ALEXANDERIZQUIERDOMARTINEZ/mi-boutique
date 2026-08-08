@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase
 import { initializeFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js';
 import { getColorHex, getColorSwatchStyle, formatColorLabel } from './color-utils.js';
+import { startGuideTour } from './guide-tour.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -721,6 +722,14 @@ function renderQuickAddSheet(id) {
     if (mqaNameEl) mqaNameEl.textContent = p.nombre;
     if (mqaPriceEl) mqaPriceEl.innerHTML = buildCardPriceHtml(p);
     mqaBodyEl.innerHTML = buildCardColorsHtml(p) + buildCardExtraHtml(p);
+
+    // Cuantos más colores/tallas haya que mostrar, menos espacio le
+    // dejamos a la foto — así todo sigue cabiendo sin necesidad de
+    // deslizar la pantalla.
+    const colores = getColoresDelProducto(p);
+    const filas = detalleFilas.get(p.id) || [];
+    const isCompact = (colores.length + filas.length) > 3;
+    if (quickAddSheetEl) quickAddSheetEl.classList.toggle('is-compact', isCompact);
 }
 
 function openQuickAddSheet(id) {
@@ -1206,6 +1215,43 @@ if (sortSelectEl) {
     });
 }
 
+// ── Recorrido guiado: se muestra solo la primera vez que alguien entra a
+// esta página (guardado en localStorage) y explica, en orden, las piezas
+// clave para comprar al por mayor. El botón "?" del encabezado lo repite
+// cuando se quiera. Espera a que haya al menos una prenda pintada en la
+// grilla para poder señalarla. ──────────────────────────────────────────
+const MAYOR_TOUR_STEPS = [
+    {
+        selector: '#btn-open-info',
+        title: '👋 Antes de empezar',
+        text: 'Aquí puedes ver el mínimo de prendas por pedido, la tabla de precios por cantidad y las demás condiciones de la compra al por mayor.',
+    },
+    {
+        selector: '.mayor-toolbar-controls',
+        title: 'Filtra y ordena',
+        text: 'Usa estos controles para ver solo las prendas con poca disponibilidad, u ordenarlas por precio o stock.',
+    },
+    {
+        selector: '.mayor-card',
+        title: 'Elige tus prendas',
+        text: 'Toca "+ Agregar" en cualquier prenda para elegir color, talla y cantidad. Todo cabe en una sola pantalla, sin necesidad de deslizar.',
+    },
+    {
+        title: 'Envía tu pedido',
+        text: 'A medida que agregues prendas, verás el total en una barra al final de la pantalla. Desde ahí eliges a quién enviárselo por WhatsApp.',
+    },
+];
+let mayorTourStarted = false;
+function maybeStartMayorTour() {
+    if (mayorTourStarted || !gridEl || !gridEl.querySelector('.mayor-card')) return;
+    mayorTourStarted = true;
+    startGuideTour('mayor', MAYOR_TOUR_STEPS);
+}
+const replayGuideBtn = document.getElementById('btn-replay-guide');
+if (replayGuideBtn) {
+    replayGuideBtn.addEventListener('click', () => startGuideTour('mayor', MAYOR_TOUR_STEPS, { force: true }));
+}
+
 // ── Carga de productos ────────────────────────────────────────────────
 onSnapshot(productsCollection, (snapshot) => {
     allProducts = [];
@@ -1217,6 +1263,7 @@ onSnapshot(productsCollection, (snapshot) => {
     });
     renderProducts();
     updateProgress();
+    maybeStartMayorTour();
 }, (err) => {
     console.error('Error cargando productos:', err);
     if (gridEl) gridEl.style.display = 'none';

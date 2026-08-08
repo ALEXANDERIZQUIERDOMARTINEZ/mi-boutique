@@ -85,6 +85,12 @@
   .mayor-info-btn i {
     color: var(--color-primario-oscuro);
   }
+  .mayor-info-btn#btn-replay-guide {
+    padding: 8px;
+    width: 34px;
+    height: 34px;
+    justify-content: center;
+  }
   .mayor-info-btn:hover {
     border-color: var(--color-primario);
     background: var(--color-primario-claro);
@@ -243,7 +249,7 @@
     min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 18px;
+    padding: 14px 18px;
   }
   .mayor-fullsheet-body > * {
     width: 100%;
@@ -539,24 +545,35 @@
     color: var(--color-texto-secundario);
   }
 
-  /* ── Hoja de "Agregar rápido": foto grande + precio + lista de colores
-     (con disponibilidad de cada uno) + tallas/cantidades de la prenda que
-     se está editando. ──────────────────────────────────────────────────── */
+  /* ── Hoja de "Agregar rápido": foto + precio + lista de colores (con
+     disponibilidad de cada uno) + tallas/cantidades de la prenda que se
+     está editando. Todo pensado para caber en una pantalla sin necesidad
+     de deslizar: la foto es modesta desde el inicio y se encoge todavía
+     más (`.is-compact`, activado desde mayor.js según cuánto contenido
+     haya) para dejarle sitio a la lista cuando hay varios colores o ya
+     se eligió más de uno. El body conserva overflow-y:auto solo como red
+     de seguridad para el caso extremo de una prenda con muchísimos
+     colores — nunca se oculta contenido. */
   .mqa-hero-img {
     display: block;
     width: 100%;
     aspect-ratio: 4/5;
-    max-height: 46vh;
+    max-height: 22vh;
+    max-height: 22dvh;
     object-fit: cover;
     border-radius: var(--radio-md);
     background: var(--color-fondo-secundario);
-    margin-bottom: 14px;
+    margin-bottom: 10px;
+    transition: max-height 0.2s ease;
+  }
+  .mayor-quickadd-sheet.is-compact .mqa-hero-img {
+    max-height: 70px;
   }
   .mqa-price {
     font-size: 1.05rem;
     font-weight: 700;
     color: var(--color-texto);
-    margin-bottom: 18px;
+    margin-bottom: 12px;
   }
   .mqa-price .tier-hint {
     display: block;
@@ -568,29 +585,30 @@
 
   /* Cuántos colores tiene la prenda, de un vistazo. */
   .mayor-colors-summary {
-    font-size: 0.84rem;
+    font-size: 0.8rem;
     font-weight: 700;
     color: var(--color-primario-oscuro);
-    margin: 0 0 10px;
+    margin: 0 0 6px;
   }
-  /* Cada color es una fila completa (no una bolita chica): se ve el nombre
-     y cuántas unidades quedan sin tener que adivinar — un toque la agrega
-     al pedido (o la quita si ya estaba elegida). */
+  /* Lista de colores para elegir: grilla de 2 columnas (en vez de una fila
+     por color) para que quepan más sin crecer en alto — clave para que
+     prendas con varios colores no obliguen a hacer scroll. */
   .mayor-card-colors {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
   }
   .mayor-card-color-item {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     width: 100%;
+    min-width: 0;
     border: 1px solid var(--color-borde);
     border-radius: var(--radio-sm);
     background: #fff;
-    padding: 10px 12px;
+    padding: 7px 8px;
     cursor: pointer;
     text-align: left;
     transition: border-color 0.15s ease, background 0.15s ease;
@@ -600,8 +618,8 @@
     background: #fff5f9;
   }
   .mayor-card-color-swatch {
-    width: 36px;
-    height: 36px;
+    width: 26px;
+    height: 26px;
     flex-shrink: 0;
     box-shadow: 0 0 0 1px var(--color-borde);
   }
@@ -613,85 +631,88 @@
     gap: 1px;
   }
   .mayor-color-row-name {
-    font-size: 0.9rem;
+    font-size: 0.78rem;
     font-weight: 600;
     color: var(--color-texto);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .mayor-card-color-item.is-selected .mayor-color-row-name {
     color: var(--color-primario-oscuro);
   }
   .mayor-color-row-stock {
-    font-size: 0.76rem;
+    font-size: 0.68rem;
     color: var(--color-texto-secundario);
   }
   .mayor-color-row-add {
     flex-shrink: 0;
     color: var(--color-texto-secundario);
-    font-size: 0.9rem;
+    font-size: 0.82rem;
   }
   .mayor-swatch-badge {
     flex-shrink: 0;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 8px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
     border-radius: 999px;
     background: var(--color-primario);
     color: #fff;
-    font-size: 0.76rem;
+    font-size: 0.68rem;
     font-weight: 700;
-    line-height: 24px;
+    line-height: 20px;
     text-align: center;
   }
   .mayor-add-hint {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: var(--color-texto-secundario);
     text-align: center;
-    padding: 6px 4px 2px;
+    padding: 4px 4px 0;
   }
   .mayor-card-toggle-label {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     color: var(--color-primario-oscuro);
     font-weight: 700;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
   .mayor-selected-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 6px;
   }
   .mayor-selected-item {
     border: 1px solid var(--color-borde);
     border-radius: var(--radio-sm);
     background: var(--color-fondo-secundario);
-    padding: 10px 11px;
+    padding: 7px 8px;
   }
   .mayor-selected-head {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
   }
   .mayor-selected-swatch {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
     box-shadow: 0 0 0 1px var(--color-borde);
   }
   .mayor-selected-name {
-    font-size: 0.84rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: var(--color-texto);
     flex: 1;
   }
   .mayor-selected-remove {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     flex-shrink: 0;
     border: 1px solid var(--color-borde);
     border-radius: 6px;
     background: #fff;
     color: #c62828;
-    font-size: 0.78rem;
+    font-size: 0.7rem;
     line-height: 1;
     cursor: pointer;
     transition: background 0.2s ease;
@@ -702,12 +723,12 @@
   .mayor-talla-pills {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 9px;
+    gap: 5px;
+    margin-bottom: 6px;
   }
   .mayor-talla-pill {
-    padding: 5px 12px;
-    font-size: 0.78rem;
+    padding: 3px 10px;
+    font-size: 0.74rem;
     min-width: auto;
   }
   .mayor-qty {
@@ -720,18 +741,18 @@
     border-color: var(--color-borde);
   }
   .mayor-qty .mp-qty-btn {
-    width: 30px;
-    height: 30px;
-    font-size: 1rem;
+    width: 26px;
+    height: 26px;
+    font-size: 0.9rem;
   }
   .mayor-qty-input {
-    width: 44px;
-    height: 30px;
+    width: 40px;
+    height: 26px;
     border: none;
     border-left: 1.5px solid var(--color-borde);
     border-right: 1.5px solid var(--color-borde);
     text-align: center;
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     font-weight: 600;
     font-family: var(--fuente-principal);
     background: #fff;
@@ -1133,6 +1154,140 @@
       font-size: 0.64rem;
     }
   }
+
+  /* ── Recorrido guiado (motor genérico en guide-tour.js) ──────────────
+     Overlay + "hueco de luz" alrededor del elemento señalado (truco del
+     box-shadow gigante) más una burbuja con el texto y los controles. */
+  body.gtour-locked {
+    overflow: hidden;
+  }
+  .gtour-root {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+  }
+  .gtour-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 16, 18, 0.5);
+  }
+  .gtour-spot {
+    position: fixed;
+    border-radius: 14px;
+    box-shadow: 0 0 0 9999px rgba(20, 16, 18, 0.6);
+    transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+    pointer-events: none;
+  }
+  .gtour-tooltip {
+    position: fixed;
+    width: min(320px, calc(100vw - 24px));
+    background: #fff;
+    border-radius: var(--radio-md);
+    box-shadow: var(--sombra-lg);
+    padding: 16px 16px 14px;
+    z-index: 3001;
+  }
+  .gtour-tooltip-center {
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+  }
+  .gtour-tooltip-arrow {
+    display: none;
+  }
+  .gtour-tooltip[data-arrow="top"] .gtour-tooltip-arrow,
+  .gtour-tooltip[data-arrow="bottom"] .gtour-tooltip-arrow {
+    display: block;
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #fff;
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .gtour-tooltip[data-arrow="top"] .gtour-tooltip-arrow {
+    top: -6px;
+    box-shadow: -2px -2px 3px rgba(0,0,0,0.03);
+  }
+  .gtour-tooltip[data-arrow="bottom"] .gtour-tooltip-arrow {
+    bottom: -6px;
+    box-shadow: 2px 2px 3px rgba(0,0,0,0.03);
+  }
+  .gtour-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: transparent;
+    color: var(--color-texto-secundario);
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+  .gtour-dots {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  .gtour-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-borde);
+  }
+  .gtour-dot.is-active {
+    background: var(--color-primario);
+    width: 16px;
+    border-radius: 999px;
+  }
+  .gtour-title {
+    margin: 0 0 4px;
+    padding-right: 20px;
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--color-texto);
+  }
+  .gtour-text {
+    margin: 0 0 14px;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--color-texto-secundario);
+  }
+  .gtour-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .gtour-actions-right {
+    display: flex;
+    gap: 8px;
+  }
+  .gtour-btn {
+    border: none;
+    background: transparent;
+    font-family: var(--fuente-principal);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 10px;
+    border-radius: var(--radio-sm);
+  }
+  .gtour-btn-skip {
+    color: var(--color-texto-secundario);
+  }
+  .gtour-btn-back {
+    color: var(--color-texto-secundario);
+    background: var(--color-fondo-secundario);
+  }
+  .gtour-btn-next {
+    color: #fff;
+    background: var(--color-primario);
+    padding: 8px 16px;
+  }
+  .gtour-btn-next:hover {
+    background: var(--color-primario-oscuro);
+  }
 </style>
 </head>
 <body class="wholesale-active">
@@ -1194,9 +1349,14 @@
           <h1>Prendas de Entrega Inmediata</h1>
           <p class="mayor-topbar-sub">Mínimo 6 prendas surtidas · el precio baja por cantidad</p>
         </div>
-        <button type="button" class="mayor-info-btn" id="btn-open-info">
-          <i class="bi bi-info-circle"></i> Cómo comprar
-        </button>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button type="button" class="mayor-info-btn" id="btn-open-info">
+            <i class="bi bi-info-circle"></i> Cómo comprar
+          </button>
+          <button type="button" class="mayor-info-btn" id="btn-replay-guide" aria-label="Ver guía de uso" title="Ver guía de uso">
+            <i class="bi bi-question-circle"></i>
+          </button>
+        </div>
       </div>
 
       <div class="mayor-toolbar">
@@ -1352,7 +1512,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.6.0"></script>
+<script type="module" src="mayor.js?v=1.7.0"></script>
 
 </body>
 </html>
