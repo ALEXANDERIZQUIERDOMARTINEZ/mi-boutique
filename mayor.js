@@ -676,6 +676,22 @@ function buildCardActionHtml(p) {
 }
 
 // Construye el nodo de UNA tarjeta completa (se usa al pintar la grilla).
+// Vista previa de colores directo en la tarjeta de la grilla — el nombre de
+// cada color, no solo una bolita, para que se vea sin tener que abrir la
+// hoja de agregar. Es solo informativa (un toque abre la misma hoja que el
+// botón "Agregar"); la selección real ocurre ahí.
+function buildCardColorsPreviewHtml(p) {
+    const colores = getColoresDelProducto(p);
+    if (colores.length === 0) return '';
+    const variantesColor = p.variantes_color || [];
+    const chipsHtml = colores.map(({ color }) => {
+        const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
+        const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
+        return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-chip-swatch" style="${swatchStyle}"></span>${formatColorLabel(color)}</span>`;
+    }).join('');
+    return `<div class="mayor-card-colors-preview" data-id="${p.id}">${chipsHtml}</div>`;
+}
+
 function buildCardElement(p) {
     const filas = detalleFilas.get(p.id) || [];
     const img = getCardImageUrl(p);
@@ -688,6 +704,7 @@ function buildCardElement(p) {
         <div class="mayor-card-body">
             <h3 class="mayor-card-name">${p.nombre}</h3>
             <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
+            ${buildCardColorsPreviewHtml(p)}
             <div class="mayor-card-action">${buildCardActionHtml(p)}</div>
         </div>
     `;
@@ -854,6 +871,11 @@ if (gridEl) {
         const addBtn = e.target.closest('.mayor-add-btn');
         if (addBtn) {
             openQuickAddSheet(addBtn.dataset.id);
+            return;
+        }
+        const colorsPreview = e.target.closest('.mayor-card-colors-preview');
+        if (colorsPreview) {
+            openQuickAddSheet(colorsPreview.dataset.id);
         }
     });
 }
