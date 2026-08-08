@@ -2655,13 +2655,18 @@
                     
                     <div id="variation-options-container">
                         </div>
-                    
+
                     <div id="variation-stock-display" class="alert alert-light text-center mt-3" style="display: none;">
                         Stock disponible: <span class="fw-bold">0</span>
                     </div>
+
+                    <div id="variation-added-list" class="mt-3" style="display: none;">
+                        <small class="text-muted d-block mb-1">Agregados a esta venta:</small>
+                        <div id="variation-added-list-items" class="d-flex flex-wrap gap-1"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="close-variation-modal-btn">Cerrar</button>
                     <button type="button" class="btn btn-primary" id="add-variation-to-cart-btn" disabled>Añadir al Carrito</button>
                 </div>
             </div>
