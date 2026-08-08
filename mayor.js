@@ -1294,9 +1294,10 @@ if (sortFilterEl) {
 // esta página (guardado en localStorage) y explica, en orden, las piezas
 // clave para comprar al por mayor — incluyendo abrir de verdad la hoja de
 // "agregar rápido" de la primera prenda para señalar adentro cómo se
-// elige color/talla/cantidad. El enlace "Ver recorrido guiado" dentro de
-// "Cómo comprar" lo repite cuando se quiera. Espera a que haya al menos
-// una prenda pintada en la grilla para poder señalarla. ─────────────────
+// elige color/talla/cantidad. El botón "Ver recorrido guiado" del menú
+// lateral (y el enlace equivalente dentro de "Cómo comprar") lo repiten
+// cuando se quiera. Espera a que haya al menos una prenda pintada en la
+// grilla para poder señalarla. ─────────────────
 
 // Abre (o mantiene abierta) la hoja de agregar rápido de la primera
 // prenda visible, para usarla como ejemplo durante el recorrido. Es
@@ -1351,6 +1352,13 @@ const startTourFromInfoBtn = document.getElementById('btn-start-tour-from-info')
 if (startTourFromInfoBtn) {
     startTourFromInfoBtn.addEventListener('click', () => {
         closeFullsheet(infoSheetEl);
+        startGuideTour('mayor', MAYOR_TOUR_STEPS, { force: true, onExit: closeQuickAddSheet });
+    });
+}
+const startTourFromSidebarBtn = document.getElementById('btn-start-tour-sidebar');
+if (startTourFromSidebarBtn) {
+    startTourFromSidebarBtn.addEventListener('click', () => {
+        closeMayorSidebar();
         startGuideTour('mayor', MAYOR_TOUR_STEPS, { force: true, onExit: closeQuickAddSheet });
     });
 }
