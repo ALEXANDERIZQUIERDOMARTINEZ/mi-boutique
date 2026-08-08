@@ -42,6 +42,119 @@
 <meta name="twitter:title" content="Mishell Boutique">
 <meta name="twitter:description" content="Mishell Boutique">
 <meta name="twitter:image" content="https://mishelles.store/og-image.jpg">
+
+<style>
+  /* ── Barra móvil rediseñada: buscador y carrito viven en el header, junto
+     al menú de categorías — ya no hace falta la barra flotante inferior
+     (más limpio y consistente con el header de escritorio). */
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .header-search-mobile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0 4px;
+  }
+  .header-search-mobile i.bi-search {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-texto-claro);
+    font-size: 0.82rem;
+    pointer-events: none;
+  }
+  .header-search-mobile input {
+    width: 100%;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 8px 30px 8px 32px;
+    font-size: 0.82rem;
+    font-family: var(--fuente-principal);
+    background: #f5f5f5;
+    color: var(--color-texto);
+  }
+  .header-search-mobile input:focus {
+    outline: none;
+    background: #fff;
+    border-color: var(--color-borde);
+    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.12);
+  }
+  .header-search-mobile-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.08);
+    color: #777;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .header-cart-mobile {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-texto);
+    font-size: 1.2rem;
+    text-decoration: none;
+    justify-self: end;
+  }
+  .header-cart-mobile .cart-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 3px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    line-height: 1;
+    border-radius: 50%;
+    background: var(--color-primario);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Sugerencias de categoría mientras se escribe — ahora cuelgan del propio
+     buscador del header en vez de flotar sobre la barra inferior. */
+  .header-search-suggestions {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-radius: var(--radio-md, 12px);
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    padding: 12px 14px;
+    z-index: 999;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .header-search-suggestions.visible {
+    display: flex;
+  }
+</style>
 </head>
 <body>
 
@@ -67,7 +180,7 @@
             <!-- Mobile: Menu hamburguesa -->
             <div class="header-left-mobile d-lg-none">
                 <div class="dropdown">
-                    <button class="nav-link-header filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="nav-link-header filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir menú de categorías">
                         <i class="bi bi-list"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-enhanced" id="category-dropdown-menu-mobile">
@@ -76,10 +189,20 @@
                 </div>
             </div>
 
-            <!-- Centro: Marca -->
-            <a class="header-brand" href="index.html">MISHELL'ES BOUTIQUE</a>
+            <!-- Centro: Marca (escritorio) -->
+            <a class="header-brand d-none d-lg-block" href="index.html">MISHELL'ES BOUTIQUE</a>
 
-            <!-- Derecha: Buscador + Carrito -->
+            <!-- Centro: Buscador siempre visible (móvil) — reemplaza la marca en esa franja -->
+            <div class="header-search-mobile d-lg-none">
+                <i class="bi bi-search"></i>
+                <input type="text" id="nav-search-input" placeholder="Buscar productos..." autocomplete="off" autocorrect="off" spellcheck="false">
+                <button type="button" class="header-search-mobile-clear" id="nis-clear" aria-label="Limpiar búsqueda" style="display:none">
+                    <i class="bi bi-x"></i>
+                </button>
+                <div class="header-search-suggestions" id="nav-search-suggestions"></div>
+            </div>
+
+            <!-- Derecha: Buscador + Carrito (escritorio) -->
             <div class="header-right d-none d-lg-flex">
                 <div class="search-box">
                     <input type="text" class="form-control" id="search-input" placeholder="Buscar...">
@@ -91,8 +214,11 @@
                 </a>
             </div>
 
-            <!-- Mobile: placeholder derecho para centrar marca -->
-            <div class="d-lg-none" style="width: 40px;"></div>
+            <!-- Derecha: Carrito, en el lugar donde antes iba solo un espaciador (móvil) -->
+            <a href="#" class="header-cart-mobile d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas" aria-label="Ver carrito">
+                <i class="bi bi-bag"></i>
+                <span class="cart-badge" id="cart-badge-mobile" style="display: none;">0</span>
+            </a>
         </div>
     </div>
 </nav>
@@ -133,37 +259,6 @@
   <p class="text-muted small m-0">© 2026 MISHELL'ES BOUTIQUE</p>
   <p class="text-muted small mt-1 mb-0">Desarrollado por <a href="https://www.instagram.com/amei_group/" target="_blank" rel="noopener noreferrer" class="footer-link">amei_group</a></p>
 </footer>
-
-<div class="nav-search-suggestions d-lg-none" id="nav-search-suggestions"></div>
-
-<nav class="mobile-bottom-nav d-lg-none">
-<button class="nav-item active" id="mobile-home-btn">
-<i class="bi bi-house"></i>
-</button>
-<button class="nav-item" id="mobile-search-btn">
-<i class="bi bi-search"></i>
-</button>
-<button class="nav-item" id="mobile-cart-btn" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas">
-<i class="bi bi-bag"></i>
-<span class="cart-badge" id="cart-badge-mobile" style="display: none;">0</span>
-</button>
-<!-- Búsqueda inline (oculta por defecto) -->
-<div class="nav-inline-search" id="nav-inline-search">
-  <button class="nis-back" id="nis-back" aria-label="Cerrar búsqueda">
-    <i class="bi bi-arrow-left"></i>
-  </button>
-  <input type="text"
-         class="nis-input"
-         id="nav-search-input"
-         placeholder="Productos o categorías..."
-         autocomplete="off"
-         autocorrect="off"
-         spellcheck="false">
-  <button class="nis-clear" id="nis-clear" aria-label="Limpiar" style="display:none">
-    <i class="bi bi-x"></i>
-  </button>
-</div>
-</nav>
 
 <div class="toast-container">
   <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
@@ -638,7 +733,7 @@ Finalizar Pedido
 
 <!-- Scripts de la aplicación -->
 <script type="module" src="analytics.js?v=1.0.0"></script>
-<script type="module" src="app.js?v=1.9.3"></script>
+<script type="module" src="app.js?v=1.9.4"></script>
 
 <!-- QR Zoom overlay -->
 <div id="qr-zoom-overlay" class="qr-zoom-overlay" style="display:none" onclick="coCloseQRZoom()">
