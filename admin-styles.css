@@ -1378,11 +1378,11 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -1px;
-  line-height: 1;
+  line-height: 1.15;
   margin-bottom: 0.4rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: break-word;
+  font-variant-numeric: tabular-nums;
 }
 
 .db-stat-name {
@@ -1401,9 +1401,8 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   font-size: 0.71rem;
   color: var(--text-disabled);
   font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .db-stat-chevron {
