@@ -120,6 +120,100 @@
     margin-bottom: 0;
   }
 
+  /* ── Barra de búsqueda (móvil) + orden/disponibilidad ────────────── */
+  .mayor-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .mayor-toolbar-search {
+    position: relative;
+  }
+  .mayor-toolbar-search input {
+    width: 100%;
+    border: 1px solid var(--color-borde);
+    border-radius: 999px;
+    padding: 9px 16px 9px 38px;
+    font-size: 0.85rem;
+    font-family: var(--fuente-principal);
+    background: var(--color-fondo-secundario);
+    color: var(--color-texto);
+  }
+  .mayor-toolbar-search input:focus {
+    outline: none;
+    border-color: var(--color-primario);
+    background: #fff;
+  }
+  .mayor-toolbar-search i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-texto-secundario);
+    font-size: 0.9rem;
+    pointer-events: none;
+  }
+  .mayor-toolbar-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .mayor-stock-filter {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .mayor-chip {
+    border: 1px solid var(--color-borde);
+    background: #fff;
+    color: var(--color-texto-secundario);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    white-space: nowrap;
+  }
+  .mayor-chip.active {
+    background: var(--color-primario);
+    border-color: var(--color-primario);
+    color: #fff;
+  }
+  .mayor-sort-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .mayor-sort-select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid var(--color-borde);
+    border-radius: 999px;
+    padding: 6px 30px 6px 14px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--color-texto);
+    background: #fff;
+    cursor: pointer;
+    font-family: var(--fuente-principal);
+  }
+  .mayor-sort-select:focus {
+    outline: none;
+    border-color: var(--color-primario);
+  }
+  .mayor-sort-wrap i {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.65rem;
+    color: var(--color-texto-secundario);
+    pointer-events: none;
+  }
+
   /* ── Grilla de prendas ────────────────────────────────────────── */
   .mayor-grid {
     display: grid;
@@ -194,6 +288,26 @@
     padding: 4px 9px;
     border-radius: 999px;
     box-shadow: var(--sombra-sm);
+  }
+  /* Disponibilidad total de la prenda, visible de un vistazo sin tener que
+     tocar cada color — lo que se pidió para "ver la disponibilidad" rápido. */
+  .mayor-card-stock-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255,255,255,0.94);
+    color: var(--color-texto);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    box-shadow: var(--sombra-sm);
+    white-space: nowrap;
+  }
+  .mayor-card-stock-badge.is-low {
+    background: #fdecea;
+    color: #c62828;
   }
   .mayor-card-body {
     padding: 12px 14px 14px;
@@ -481,8 +595,9 @@
     display: none;
   }
   .mayor-order-progress {
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 7px;
     font-size: 0.82rem;
     font-weight: 600;
     color: #9a6400;
@@ -494,13 +609,33 @@
     line-height: 1.4;
     flex-shrink: 0;
   }
-  .mayor-order-progress i {
+  .mayor-order-progress-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mayor-order-progress-text i {
     flex-shrink: 0;
   }
   .mayor-order-progress.is-complete {
     color: #1e7e34;
     background: #eaf7ed;
     border-color: #b9e4c4;
+  }
+  .mayor-progress-track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .mayor-progress-fill {
+    height: 100%;
+    background: #d99a1f;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+  }
+  .mayor-order-progress.is-complete .mayor-progress-fill {
+    background: #1e7e34;
   }
   .mayor-summary {
     border: 1px solid var(--color-borde);
@@ -702,6 +837,27 @@
       padding: 7px 9px;
       margin-bottom: 8px;
     }
+    .mayor-toolbar {
+      margin-top: 8px;
+    }
+    .mayor-toolbar-search input {
+      padding: 8px 14px 8px 34px;
+      font-size: 0.82rem;
+    }
+    .mayor-chip {
+      font-size: 0.7rem;
+      padding: 5px 10px;
+    }
+    .mayor-sort-select {
+      font-size: 0.7rem;
+      padding: 5px 26px 5px 12px;
+    }
+    .mayor-card-stock-badge {
+      font-size: 0.54rem;
+      padding: 3px 6px;
+      top: 6px;
+      right: 6px;
+    }
     .mayor-grid {
       gap: 10px;
       padding: 10px 8px 16px;
@@ -856,6 +1012,29 @@
           </div>
         </div>
       </div>
+
+      <div class="mayor-toolbar">
+        <div class="mayor-toolbar-search d-lg-none">
+          <i class="bi bi-search"></i>
+          <input type="text" id="mayor-search-input-mobile" placeholder="Buscar prendas...">
+        </div>
+        <div class="mayor-toolbar-controls">
+          <div class="mayor-stock-filter" id="mayor-stock-filter" role="group" aria-label="Filtrar por disponibilidad">
+            <button type="button" class="mayor-chip active" data-stock="all">Todas</button>
+            <button type="button" class="mayor-chip" data-stock="low">Poca disponibilidad</button>
+          </div>
+          <div class="mayor-sort-wrap">
+            <select class="mayor-sort-select" id="mayor-sort-select" aria-label="Ordenar prendas">
+              <option value="relevancia">Ordenar: relevancia</option>
+              <option value="precio-asc">Precio: menor a mayor</option>
+              <option value="precio-desc">Precio: mayor a menor</option>
+              <option value="stock-desc">Más disponibilidad</option>
+              <option value="stock-asc">Menos disponibilidad</option>
+            </select>
+            <i class="bi bi-chevron-down"></i>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -943,7 +1122,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.4.0"></script>
+<script type="module" src="mayor.js?v=1.5.0"></script>
 
 </body>
 </html>

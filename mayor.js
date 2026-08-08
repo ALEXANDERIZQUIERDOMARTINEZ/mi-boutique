@@ -36,6 +36,10 @@ function esProveedorBoutique(p) {
 }
 const MIN_POR_PRENDA = 6;
 const PRODUCTS_PER_PAGE = 30;
+// A partir de aquí una prenda se marca como "poca disponibilidad" en su badge
+// de stock y en el filtro rápido — ayuda al cliente a ver de un vistazo qué
+// se está agotando sin tener que abrir cada color.
+const LOW_STOCK_THRESHOLD = 8;
 
 // productId -> [{ talla, color, cantidad }] (talla es null cuando la prenda es de talla única)
 const detalleFilas = new Map();
@@ -44,6 +48,8 @@ let productsData = []; // productos ya filtrados (categoría/búsqueda) que se e
 const categoriesMap = new Map(); // categoriaId <-> nombre (bidireccional, igual que app.js)
 let activeFilter = 'disponible';
 let searchTerm = '';
+let stockFilterMode = 'all'; // 'all' | 'low'
+let sortMode = 'relevancia'; // 'relevancia' | 'precio-asc' | 'precio-desc' | 'stock-desc' | 'stock-asc'
 let currentPage = 1;
 let bsToast = null;
 
@@ -61,6 +67,9 @@ const tiersTablesEl = document.getElementById('tiers-tables');
 const policyToggleBtn = document.getElementById('btn-toggle-policy');
 const policyPanelEl = document.getElementById('policy-panel');
 const orderProgressEl = document.getElementById('mayor-order-progress');
+const mobileSearchInputEl = document.getElementById('mayor-search-input-mobile');
+const stockFilterEl = document.getElementById('mayor-stock-filter');
+const sortSelectEl = document.getElementById('mayor-sort-select');
 
 function showToast(message, type = 'success') {
     const liveToastEl = document.getElementById('liveToast');
@@ -429,7 +438,21 @@ function computeVisibleProducts() {
         );
     }
 
-    return list;
+    if (stockFilterMode === 'low') {
+        list = list.filter(p => getStockTotal(p) <= LOW_STOCK_THRESHOLD);
+    }
+
+    return sortProducts(list);
+}
+
+function sortProducts(list) {
+    switch (sortMode) {
+        case 'precio-asc': return [...list].sort((a, b) => getPrecioUnitario(a) - getPrecioUnitario(b));
+        case 'precio-desc': return [...list].sort((a, b) => getPrecioUnitario(b) - getPrecioUnitario(a));
+        case 'stock-desc': return [...list].sort((a, b) => getStockTotal(b) - getStockTotal(a));
+        case 'stock-asc': return [...list].sort((a, b) => getStockTotal(a) - getStockTotal(b));
+        default: return list;
+    }
 }
 
 function buildPageList(current, total) {
@@ -516,6 +539,16 @@ function renderFilaHtml(p, fila, idx, tallas) {
     `;
 }
 
+// Disponibilidad total de la prenda (todos los colores/tallas sumados), para
+// que se vea de un vistazo en la tarjeta sin tener que tocar cada color.
+function buildStockBadgeHtml(p) {
+    const stock = getStockTotal(p);
+    if (stock <= 0) return '';
+    const isLow = stock <= LOW_STOCK_THRESHOLD;
+    const label = isLow ? `¡Últimas ${stock}!` : `${stock} disponibles`;
+    return `<span class="mayor-card-stock-badge${isLow ? ' is-low' : ''}">${label}</span>`;
+}
+
 function buildCardPriceHtml(p) {
     const grupo = resolveWholesaleGroup(p, categoriesMap);
     const precioUnitario = getPrecioUnitario(p);
@@ -535,12 +568,13 @@ function buildCardColorsHtml(p) {
     const filas = detalleFilas.get(p.id) || [];
     const seleccion = new Map(filas.map((f, idx) => [f.color, { idx, cantidad: parseInt(f.cantidad, 10) || 0 }]));
     const variantesColor = p.variantes_color || [];
-    const itemsHtml = colores.map(({ color }) => {
+    const itemsHtml = colores.map(({ color, stock }) => {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
         const sel = seleccion.get(color);
+        const titulo = `${formatColorLabel(color)} — ${stock} disponible${stock === 1 ? '' : 's'}`;
         return `
-            <button type="button" class="mayor-card-color-item mayor-swatch-btn${sel ? ' is-selected' : ''}" data-id="${p.id}" data-color="${color.replace(/"/g, '&quot;')}" title="${formatColorLabel(color)}">
+            <button type="button" class="mayor-card-color-item mayor-swatch-btn${sel ? ' is-selected' : ''}" data-id="${p.id}" data-color="${color.replace(/"/g, '&quot;')}" title="${titulo}">
                 <span class="color-swatch-circle mayor-card-color-swatch" style="${swatchStyle}"></span>
                 <span class="color-swatch-name">${formatColorLabel(color)}</span>
                 ${sel ? `<span class="mayor-swatch-badge">${sel.cantidad}</span>` : ''}
@@ -577,7 +611,7 @@ function buildCardElement(p) {
     card.className = 'mayor-card' + (filas.length > 0 ? ' is-selected' : '');
     card.dataset.productId = p.id;
     card.innerHTML = `
-        <div class="mayor-card-img"><img src="${img}" alt="${p.nombre}" loading="lazy"></div>
+        <div class="mayor-card-img">${buildStockBadgeHtml(p)}<img src="${img}" alt="${p.nombre}" loading="lazy"></div>
         <div class="mayor-card-body">
             <h3 class="mayor-card-name">${p.nombre}</h3>
             <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
@@ -670,14 +704,16 @@ function renderOrderProgress() {
         return;
     }
     orderProgressEl.style.display = 'flex';
-    if (total >= MIN_POR_PRENDA) {
-        orderProgressEl.classList.add('is-complete');
-        orderProgressEl.innerHTML = `<i class="bi bi-check-circle-fill"></i> Mínimo alcanzado: llevas ${total} prendas surtidas.`;
-    } else {
-        orderProgressEl.classList.remove('is-complete');
-        const faltan = MIN_POR_PRENDA - total;
-        orderProgressEl.innerHTML = `<i class="bi bi-info-circle-fill"></i> Llevas ${total} de ${MIN_POR_PRENDA} prendas mínimas — te faltan ${faltan} (pueden ser de cualquier referencia).`;
-    }
+    const pct = Math.min(100, Math.round((total / MIN_POR_PRENDA) * 100));
+    const complete = total >= MIN_POR_PRENDA;
+    orderProgressEl.classList.toggle('is-complete', complete);
+    const texto = complete
+        ? `<i class="bi bi-check-circle-fill"></i> Mínimo alcanzado: llevas ${total} prendas surtidas.`
+        : `<i class="bi bi-info-circle-fill"></i> Llevas ${total} de ${MIN_POR_PRENDA} prendas mínimas — te faltan ${MIN_POR_PRENDA - total} (pueden ser de cualquier referencia).`;
+    orderProgressEl.innerHTML = `
+        <div class="mayor-order-progress-text">${texto}</div>
+        <div class="mayor-progress-track"><div class="mayor-progress-fill" style="width:${pct}%"></div></div>
+    `;
 }
 
 function updateProgress() {
@@ -1018,133 +1054,48 @@ onSnapshot(categoriesCollection, (snapshot) => {
     console.error('Error cargando categorías:', err);
 });
 
-// ── Búsqueda (barra desktop + búsqueda inline móvil) ─────────────────────
+// ── Búsqueda (barra desktop + barra dedicada en móvil) ────────────────────
+// mayor.html no trae el nav flotante de abajo del resto del sitio (con su
+// buscador inline): aquí hay dos inputs de texto — el de escritorio en el
+// header y uno propio en la barra de la página para móvil — que se
+// mantienen sincronizados y ambos alimentan el mismo `searchTerm`.
 const searchInputEl = document.getElementById('search-input');
 let searchTimeout;
 function applyFiltersAndRedraw() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => { currentPage = 1; renderProducts(); updateProgress(); }, 200);
 }
-if (searchInputEl) {
-    searchInputEl.addEventListener('input', (e) => {
-        searchTerm = e.target.value;
-        applyFiltersAndRedraw();
-    });
+function syncSearchInputs(value) {
+    if (searchInputEl && searchInputEl.value !== value) searchInputEl.value = value;
+    if (mobileSearchInputEl && mobileSearchInputEl.value !== value) mobileSearchInputEl.value = value;
 }
-
-const mobileNav = document.querySelector('.mobile-bottom-nav');
-const mobileNavItems = document.querySelectorAll('.nav-item');
-const navSearchInput = document.getElementById('nav-search-input');
-const nisClearBtn = document.getElementById('nis-clear');
-const navSearchSuggestions = document.getElementById('nav-search-suggestions');
-
-function setActiveNavItem(selectedItem) {
-    mobileNavItems.forEach(item => item.classList.remove('active'));
-    if (selectedItem) selectedItem.classList.add('active');
+function handleSearchInput(e) {
+    searchTerm = e.target.value;
+    syncSearchInputs(searchTerm);
+    applyFiltersAndRedraw();
 }
+if (searchInputEl) searchInputEl.addEventListener('input', handleSearchInput);
+if (mobileSearchInputEl) mobileSearchInputEl.addEventListener('input', handleSearchInput);
 
-function hideSearchSuggestions() {
-    if (!navSearchSuggestions) return;
-    navSearchSuggestions.classList.remove('visible');
-    navSearchSuggestions.innerHTML = '';
-}
-
-function updateSearchSuggestions(term) {
-    if (!navSearchSuggestions) return;
-    if (!term) { hideSearchSuggestions(); return; }
-    const lowerTerm = term.toLowerCase();
-    const matchingCategories = [];
-    categoriesMap.forEach((value, key) => {
-        if (typeof key === 'string' && key.toLowerCase().includes(lowerTerm) && categoriesMap.get(value) === key) {
-            matchingCategories.push(key);
-        }
-    });
-    if (matchingCategories.length === 0) { hideSearchSuggestions(); return; }
-
-    let html = `<span class="nss-label">Categorías</span><div class="nss-categories">`;
-    matchingCategories.slice(0, 8).forEach(catName => {
-        html += `<button class="nss-cat-chip" data-cat="${catName}">${catName}</button>`;
-    });
-    html += `</div>`;
-    navSearchSuggestions.innerHTML = html;
-    navSearchSuggestions.classList.add('visible');
-
-    navSearchSuggestions.querySelectorAll('.nss-cat-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-            const catName = chip.dataset.cat;
-            document.querySelectorAll('.header-left .filter-group.active, .header-left-mobile .filter-group.active').forEach(b => b.classList.remove('active'));
-            categoryDropdownButton.classList.add('active');
-            activeFilter = catName;
-            categoryDropdownButton.innerHTML = `${catName} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
-            closeInlineSearch();
-            currentPage = 1;
-            renderProducts();
-            updateProgress();
-        });
-    });
-}
-
-function openInlineSearch() {
-    if (!mobileNav) return;
-    mobileNav.classList.add('search-active');
-    setTimeout(() => navSearchInput?.focus(), 80);
-    setActiveNavItem(document.getElementById('mobile-search-btn'));
-}
-
-function closeInlineSearch() {
-    if (!mobileNav) return;
-    mobileNav.classList.remove('search-active');
-    if (navSearchInput) navSearchInput.value = '';
-    if (searchInputEl) searchInputEl.value = '';
-    searchTerm = '';
-    if (nisClearBtn) nisClearBtn.style.display = 'none';
-    hideSearchSuggestions();
-    currentPage = 1;
-    renderProducts();
-    updateProgress();
-}
-
-const mobileSearchBtn = document.getElementById('mobile-search-btn');
-if (mobileSearchBtn) mobileSearchBtn.addEventListener('click', openInlineSearch);
-const nisBackBtn = document.getElementById('nis-back');
-if (nisBackBtn) nisBackBtn.addEventListener('click', closeInlineSearch);
-
-if (navSearchInput) {
-    navSearchInput.addEventListener('input', (e) => {
-        const term = e.target.value;
-        searchTerm = term;
-        if (searchInputEl) searchInputEl.value = term;
-        if (nisClearBtn) nisClearBtn.style.display = term ? 'flex' : 'none';
-        updateSearchSuggestions(term);
-        applyFiltersAndRedraw();
-    });
-    navSearchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') { e.preventDefault(); closeInlineSearch(); }
-    });
-}
-
-if (nisClearBtn) {
-    nisClearBtn.addEventListener('click', () => {
-        if (navSearchInput) navSearchInput.value = '';
-        if (searchInputEl) searchInputEl.value = '';
-        searchTerm = '';
-        nisClearBtn.style.display = 'none';
-        hideSearchSuggestions();
+// ── Filtro rápido de disponibilidad + orden ────────────────────────────────
+if (stockFilterEl) {
+    stockFilterEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('.mayor-chip');
+        if (!btn) return;
+        stockFilterEl.querySelectorAll('.mayor-chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        stockFilterMode = btn.dataset.stock;
         currentPage = 1;
         renderProducts();
         updateProgress();
-        navSearchInput?.focus();
     });
 }
-
-const mobileHomeBtn = document.getElementById('mobile-home-btn');
-if (mobileHomeBtn) {
-    mobileHomeBtn.addEventListener('click', () => {
-        if (mobileNav?.classList.contains('search-active')) closeInlineSearch();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        const disponibleBtn = document.querySelector('.filter-group[data-filter="disponible"]');
-        if (disponibleBtn) disponibleBtn.click();
-        setActiveNavItem(mobileHomeBtn);
+if (sortSelectEl) {
+    sortSelectEl.addEventListener('change', () => {
+        sortMode = sortSelectEl.value;
+        currentPage = 1;
+        renderProducts();
+        updateProgress();
     });
 }
 
