@@ -3561,6 +3561,12 @@
                 var target = document.getElementById(id);
                 if (target) target.classList.add('show', 'active');
                 history.replaceState(null, '', '#' + id);
+                /* history.replaceState no dispara 'hashchange', así que las
+                   secciones que cargan sus datos al entrar (dashboard, productos,
+                   finanzas, fábrica, etc.) escuchan este evento en su lugar —
+                   es el único aviso confiable sin importar si la navegación
+                   vino del rail de escritorio o de la barra inferior móvil. */
+                window.dispatchEvent(new CustomEvent('admin:section-shown', { detail: { hash: '#' + id } }));
             }
 
             /* ─── Resalta el enlace activo en el rail ─── */
