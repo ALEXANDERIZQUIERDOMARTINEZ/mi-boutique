@@ -4347,13 +4347,22 @@ body.dark-mode .db-countries-table tbody tr:hover td { background: rgba(217,136,
   .db-section { margin-bottom: 1.1rem; }
 }
 
-/* Sólo móvil pequeño */
+/* Sólo móvil pequeño: una franja apilada de filas completas en vez de
+   una grilla 2x2, para que cada cifra tenga todo el ancho disponible
+   y nunca deba partirse en dos líneas. */
 @media (max-width: 480px) {
   .admin-main { padding: 0.875rem 0.75rem 2rem; }
-  .db-stat-strip { grid-template-columns: 1fr 1fr; }
-  .db-stat { padding: 0.875rem 0.75rem; }
+  .db-stat-strip { grid-template-columns: 1fr; }
+  .db-stat {
+    padding: 0.875rem 0.75rem;
+    align-items: center;
+    border-right: none !important;
+  }
+  .db-stat:last-child { border-bottom: none; }
   .db-stat-icon { width: 36px; height: 36px; font-size: 0.95rem; }
-  .db-stat-val { font-size: 1.2rem; }
+  .db-stat-val { font-size: 1.3rem; white-space: nowrap; }
+  .db-stat-name { white-space: normal; overflow: visible; }
+  .db-stat-sub { white-space: nowrap; }
   .db-panel { border-radius: var(--radius-lg); }
 }
 
