@@ -35,19 +35,6 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  .wholesale-banner {
-    background: linear-gradient(135deg, #7B4FA6, #C273A2);
-    color: #fff;
-    text-align: center;
-    padding: 8px 16px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-  }
-  .wholesale-banner i {
-    margin-right: 6px;
-  }
-
   /* ── Barra superior: compacta a propósito — el objetivo es llegar a las
      prendas casi de inmediato. Toda la política/tabla de precios/condiciones
      vive en un solo botón "Cómo comprar" que abre una hoja aparte. ────── */
@@ -462,6 +449,33 @@
     font-weight: 600;
     color: var(--color-primario-oscuro);
     margin-top: 3px;
+  }
+  /* Vista previa de colores en la tarjeta — el nombre de cada color visible
+     de un vistazo, sin tener que abrir la hoja de agregar. */
+  .mayor-card-colors-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  .mayor-card-color-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--color-texto-secundario);
+    background: var(--color-fondo-secundario);
+    border-radius: 999px;
+    padding: 3px 9px 3px 4px;
+    white-space: nowrap;
+  }
+  .mayor-card-color-chip-swatch {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px var(--color-borde);
   }
   .mayor-card-action {
     margin-top: auto;
@@ -1096,6 +1110,18 @@
       font-size: 0.66rem;
       margin-top: 2px;
     }
+    .mayor-card-colors-preview {
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .mayor-card-color-chip {
+      font-size: 0.6rem;
+      padding: 2px 7px 2px 3px;
+    }
+    .mayor-card-color-chip-swatch {
+      width: 11px;
+      height: 11px;
+    }
     .mayor-add-btn {
       font-size: 0.76rem;
       padding: 8px;
@@ -1110,10 +1136,6 @@
 </style>
 </head>
 <body class="wholesale-active">
-
-<div class="wholesale-banner">
-  <i class="bi bi-shop"></i> VENTAS AL POR MAYOR DE PRENDAS DISPONIBLES
-</div>
 
 <header class="site-header sticky-top">
 <div class="header-gradient"></div>
