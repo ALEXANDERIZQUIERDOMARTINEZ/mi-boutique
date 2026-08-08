@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { initializeFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { initializeFirestore, collection, onSnapshot, addDoc, doc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js';
 import { getColorHex, getColorSwatchStyle, formatColorLabel } from './color-utils.js';
 import { startGuideTour } from './guide-tour.js';
@@ -21,6 +21,7 @@ const db = initializeFirestore(app, {
 });
 const productsCollection = collection(db, 'productos');
 const categoriesCollection = collection(db, 'categorias');
+const webOrdersCollection = collection(db, 'pedidosWeb');
 
 const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 // Asesoras/asesores a los que se puede enviar el pedido por WhatsApp — el
@@ -1045,7 +1046,7 @@ if (asesorOptionsEl) {
 }
 
 if (waBtn) {
-    waBtn.addEventListener('click', () => {
+    waBtn.addEventListener('click', async () => {
         // Última verificación antes de armar el pedido: si el stock cambió mientras
         // se elegía, o alguna combinación de filas se pasó del disponible, se
         // corrige aquí y se le pide al cliente revisar el resumen actualizado antes
@@ -1066,15 +1067,30 @@ if (waBtn) {
             );
             return;
         }
+        waBtn.disabled = true;
         // Un bloque por prenda (nombre + precio/u una sola vez) y debajo sus colores/
         // tallas, en vez de una lista plana repitiendo el nombre en cada línea —
-        // así se lee de un vistazo cuánto va de cada referencia.
+        // así se lee de un vistazo cuánto va de cada referencia. Junto con cada
+        // bloque armamos también los renglones "items" con la misma info, para
+        // guardar el pedido en Firestore (colección pedidosWeb) y que quede listo
+        // para que el admin solo tenga que darle "Aceptar".
         const productosConSeleccion = allProducts.filter(p => getCantidadProducto(p.id) > 0);
+        const items = [];
         const bloques = productosConSeleccion.map(p => {
             const filas = (detalleFilas.get(p.id) || []).filter(f => (parseInt(f.cantidad, 10) || 0) > 0);
             const precioUnitario = getPrecioUnitario(p);
             const detalleLineas = filas.map(f => {
                 const cantidad = parseInt(f.cantidad, 10) || 0;
+                items.push({
+                    productoId: p.id || '',
+                    codigo: p.codigo || '',
+                    nombre: p.nombre || '',
+                    talla: f.talla || '',
+                    color: f.color || '',
+                    cantidad,
+                    precio: precioUnitario,
+                    total: precioUnitario * cantidad
+                });
                 const detalle = f.talla ? `${formatColorLabel(f.color)} (talla ${f.talla})` : formatColorLabel(f.color);
                 return `   • ${detalle} x${cantidad} = ${formatoMoneda.format(precioUnitario * cantidad)}`;
             }).join('\n');
@@ -1083,9 +1099,49 @@ if (waBtn) {
         const observaciones = (obsEl?.value || '').trim();
         const totalEstimado = calcularTotalEstimado();
         const totalUnidades = getTotalGeneral();
-        let mensaje = `¡Hola! 👋 Quiero hacer este pedido al por mayor:\n\n${bloques.join('\n\n')}\n\n———————————————\nTotal: ${totalUnidades} prenda${totalUnidades === 1 ? '' : 's'} — ${formatoMoneda.format(totalEstimado)}`;
-        if (observaciones) mensaje += `\n\n📝 Observaciones: ${observaciones}`;
         const asesor = getAsesorSeleccionado();
+
+        // Sin nombre/celular del comprador (mayor.html no los pide): el pedido
+        // queda a nombre de "Cliente General" con su propio código, para que el
+        // admin lo identifique en Pedidos Web y solo tenga que darle "Aceptar".
+        let codigoPedido = '';
+        try {
+            const docRef = await addDoc(webOrdersCollection, {
+                clienteNombre: 'Cliente General',
+                clienteCedula: '',
+                clienteCelular: '',
+                clienteCiudad: '',
+                clienteBarrio: '',
+                clienteDireccion: '',
+                observaciones,
+                metodoPagoSolicitado: '',
+                items,
+                subtotalProductos: totalEstimado,
+                costoEnvio: 0,
+                totalPedido: totalEstimado,
+                estado: 'pendiente',
+                notificadoBot: false,
+                timestamp: serverTimestamp(),
+                origen: 'web',
+                tipoVenta: 'Mayorista',
+                asesorNombre: asesor.nombre
+            });
+            codigoPedido = docRef.id.substring(0, 8).toUpperCase();
+            await Promise.all(
+                items
+                    .filter(item => item.productoId)
+                    .map(item => updateDoc(doc(db, 'productos', item.productoId), {
+                        ventas: increment(item.cantidad || 1)
+                    }).catch(() => {})) // no interrumpir el pedido si falla un producto
+            );
+        } catch (err) {
+            console.error('Error guardando pedido web:', err);
+            showToast('No pudimos guardar tu pedido en el sistema, pero puedes enviarlo igual por WhatsApp.', 'warning');
+        }
+
+        let mensaje = `¡Hola! 👋 Quiero hacer este pedido al por mayor:\n\n${bloques.join('\n\n')}\n\n———————————————\nTotal: ${totalUnidades} prenda${totalUnidades === 1 ? '' : 's'} — ${formatoMoneda.format(totalEstimado)}`;
+        if (codigoPedido) mensaje += `\n\n🧾 Código de pedido: #${codigoPedido}`;
+        if (observaciones) mensaje += `\n\n📝 Observaciones: ${observaciones}`;
         const url = `https://wa.me/${asesor.numero}?text=${encodeURIComponent(mensaje)}`;
         const a = document.createElement('a');
         a.href = url;
@@ -1094,6 +1150,7 @@ if (waBtn) {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        waBtn.disabled = false;
     });
 }
 

@@ -4864,8 +4864,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const folioEl = document.getElementById('factura-modal-folio');
                 if (folioEl) folioEl.textContent = resultado.folioTxt;
 
-                modalAOcultar?.hide();
-                facturaAccionesModalInstance?.show();
+                // Ocultar el modal anterior y mostrar el de acciones en el mismo tick
+                // deja a Bootstrap con dos backdrops en transición a la vez: a veces
+                // el que se está cerrando termina borrando también el del modal nuevo,
+                // y ese backdrop huérfano se queda sobre toda la página bloqueando
+                // cualquier clic (sin overlay visible ni error) hasta recargar. Se
+                // espera a que termine de ocultarse el anterior antes de abrir el
+                // siguiente para que Bootstrap limpie su backdrop correctamente.
+                if (modalAOcultar) {
+                    const elAOcultar = modalAOcultar._element;
+                    if (elAOcultar) elAOcultar.addEventListener('hidden.bs.modal', () => facturaAccionesModalInstance?.show(), { once: true });
+                    modalAOcultar.hide();
+                } else {
+                    facturaAccionesModalInstance?.show();
+                }
                 return resultado;
             } catch (error) {
                 console.error('Error al generar factura:', error);
