@@ -57,7 +57,8 @@
   .mayor-topbar-row h1 {
     font-family: var(--fuente-principal);
     font-size: 1.2rem;
-    font-weight: 800;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     color: var(--color-texto);
     margin: 0 0 2px;
   }
@@ -66,13 +67,16 @@
     color: var(--color-texto-secundario);
     margin: 0;
   }
+  /* Botón de texto teñido en vez de píldora con borde — mismo lenguaje que
+     los badges del sitio (fondo claro + texto en el color de marca), sin el
+     recuadro grueso que hacía ver la barra sobrecargada de "cajas". */
   .mayor-info-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: #fff;
-    border: 1px solid var(--color-borde);
-    color: var(--color-texto);
+    background: var(--color-primario-claro);
+    border: none;
+    color: var(--color-primario-oscuro);
     font-size: 0.78rem;
     font-weight: 600;
     padding: 8px 14px;
@@ -80,14 +84,14 @@
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
-    transition: border-color 0.2s ease, background 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease;
   }
   .mayor-info-btn i {
-    color: var(--color-primario-oscuro);
+    color: inherit;
   }
   .mayor-info-btn:hover {
-    border-color: var(--color-primario);
-    background: var(--color-primario-claro);
+    background: var(--color-primario-hover);
+    color: #fff;
   }
 
   /* ── Barra de búsqueda (móvil) + orden/disponibilidad ────────────── */
@@ -100,11 +104,14 @@
   .mayor-toolbar-search {
     position: relative;
   }
+  /* Relleno plano sin borde + resplandor suave al enfocar, igual que el
+     buscador del header principal — evita el recuadro duro que desentonaba
+     con el resto del sitio. */
   .mayor-toolbar-search input {
     width: 100%;
-    border: 1px solid var(--color-borde);
+    border: 1px solid transparent;
     border-radius: 999px;
-    padding: 9px 16px 9px 38px;
+    padding: 10px 16px 10px 38px;
     font-size: 0.85rem;
     font-family: var(--fuente-principal);
     background: var(--color-fondo-secundario);
@@ -112,8 +119,8 @@
   }
   .mayor-toolbar-search input:focus {
     outline: none;
-    border-color: var(--color-primario);
     background: #fff;
+    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.12);
   }
   .mayor-toolbar-search i {
     position: absolute;
@@ -128,51 +135,58 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
     gap: 8px;
   }
+  /* Control segmentado (una sola pista gris con la opción activa flotando
+     en blanco) en vez de dos píldoras sueltas y desparejas — una sólida y
+     otra con borde — que era lo que más rompía la sensación minimalista. */
   .mayor-stock-filter {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--color-fondo-secundario);
+    border-radius: 999px;
   }
   .mayor-chip {
-    border: 1px solid var(--color-borde);
-    background: #fff;
+    border: none;
+    background: transparent;
     color: var(--color-texto-secundario);
     border-radius: 999px;
     padding: 6px 12px;
     font-size: 0.76rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     white-space: nowrap;
   }
   .mayor-chip.active {
-    background: var(--color-primario);
-    border-color: var(--color-primario);
-    color: #fff;
+    background: #fff;
+    color: var(--color-primario-oscuro);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   }
   .mayor-sort-wrap {
     position: relative;
     flex-shrink: 0;
+    width: auto;
   }
   .mayor-sort-select {
     appearance: none;
     -webkit-appearance: none;
-    border: 1px solid var(--color-borde);
+    width: auto;
+    border: none;
     border-radius: 999px;
-    padding: 6px 30px 6px 14px;
+    padding: 7px 28px 7px 14px;
     font-size: 0.76rem;
     font-weight: 600;
-    color: var(--color-texto);
-    background: #fff;
+    color: var(--color-texto-secundario);
+    background: var(--color-fondo-secundario);
     cursor: pointer;
     font-family: var(--fuente-principal);
   }
   .mayor-sort-select:focus {
     outline: none;
-    border-color: var(--color-primario);
+    color: var(--color-texto);
+    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.12);
   }
   .mayor-sort-wrap i {
     position: absolute;

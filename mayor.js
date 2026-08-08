@@ -1312,12 +1312,6 @@ const MAYOR_TOUR_STEPS = [
         onEnter: closeQuickAddSheet,
     },
     {
-        selector: '#mayorQuickAddSheet .mqa-hero-img',
-        title: 'La foto completa',
-        text: 'Al tocar "+ Agregar" se abre esto: la foto completa de la prenda, sin recortes, para que la veas bien antes de elegir.',
-        onEnter: openDemoTourSheet,
-    },
-    {
         selector: '#mqa-body',
         title: 'Color, talla y cantidad',
         text: 'Toca un color para agregarlo a tu pedido (puedes elegir varios). Luego elige la talla si aplica y ajusta la cantidad con los botones − y +.',
