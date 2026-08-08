@@ -35,79 +35,56 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* ── Barra superior: compacta a propósito — el objetivo es llegar a las
-     prendas casi de inmediato. Toda la política/tabla de precios/condiciones
-     vive en un solo botón "Cómo comprar" que abre una hoja aparte. ────── */
+  /* El buscador propio del header general queda redundante en esta página:
+     aquí el buscador vive en la barra estilo Gmail de .mayor-topbar. */
+  .site-header .header-right {
+    display: none !important;
+  }
+
+  /* ── Barra superior: estilo Gmail — menú hamburguesa, buscador y avatar
+     en una sola pila, siempre visible. Filtros, orden y "Cómo comprar"
+     viven detrás del menú lateral que abre el hamburguesa. ────── */
   .mayor-topbar {
     background: #fff;
     border-bottom: 1px solid var(--color-borde);
-    padding: 14px 20px;
+    padding: 10px 16px;
   }
   .mayor-topbar-inner {
     max-width: 900px;
     margin: 0 auto;
   }
-  .mayor-topbar-row {
+  .mayor-searchbar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-  .mayor-topbar-row h1 {
-    font-family: var(--fuente-principal);
-    font-size: 1.2rem;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    color: var(--color-texto);
-    margin: 0 0 2px;
-  }
-  .mayor-topbar-sub {
-    font-size: 0.82rem;
-    color: var(--color-texto-secundario);
-    margin: 0;
-  }
-  /* Botón de texto teñido en vez de píldora con borde — mismo lenguaje que
-     los badges del sitio (fondo claro + texto en el color de marca), sin el
-     recuadro grueso que hacía ver la barra sobrecargada de "cajas". */
-  .mayor-info-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--color-primario-claro);
-    border: none;
-    color: var(--color-primario-oscuro);
-    font-size: 0.78rem;
-    font-weight: 600;
-    padding: 8px 14px;
-    border-radius: 999px;
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition: background 0.2s ease, color 0.2s ease;
-  }
-  .mayor-info-btn i {
-    color: inherit;
-  }
-  .mayor-info-btn:hover {
-    background: var(--color-primario-hover);
-    color: #fff;
-  }
-
-  /* ── Barra de búsqueda (móvil) + orden/disponibilidad ────────────── */
-  .mayor-toolbar {
-    display: flex;
-    flex-direction: column;
     gap: 10px;
-    margin-top: 12px;
   }
-  .mayor-toolbar-search {
+  .mayor-searchbar-menu-btn {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: var(--color-fondo-secundario);
+    color: var(--color-texto);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .mayor-searchbar-menu-btn:hover {
+    background: var(--color-borde);
+  }
+  .mayor-searchbar-field {
     position: relative;
+    flex: 1;
+    min-width: 0;
   }
   /* Relleno plano sin borde + resplandor suave al enfocar, igual que el
      buscador del header principal — evita el recuadro duro que desentonaba
      con el resto del sitio. */
-  .mayor-toolbar-search input {
+  .mayor-searchbar-field input {
     width: 100%;
     border: 1px solid transparent;
     border-radius: 999px;
@@ -117,12 +94,12 @@
     background: var(--color-fondo-secundario);
     color: var(--color-texto);
   }
-  .mayor-toolbar-search input:focus {
+  .mayor-searchbar-field input:focus {
     outline: none;
     background: #fff;
     box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.12);
   }
-  .mayor-toolbar-search i {
+  .mayor-searchbar-field i {
     position: absolute;
     left: 14px;
     top: 50%;
@@ -131,71 +108,123 @@
     font-size: 0.9rem;
     pointer-events: none;
   }
-  .mayor-toolbar-controls {
+  /* Avatar/isotipo circular a la derecha, en el lugar donde Gmail muestra
+     la foto de cuenta — aquí es solo la inicial de la marca. */
+  .mayor-searchbar-avatar {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--color-primario);
+    color: #fff;
+    font-family: var(--fuente-principal);
+    font-weight: 700;
+    font-size: 0.95rem;
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
   }
-  /* Control segmentado (una sola pista gris con la opción activa flotando
-     en blanco) en vez de dos píldoras sueltas y desparejas — una sólida y
-     otra con borde — que era lo que más rompía la sensación minimalista. */
-  .mayor-stock-filter {
-    display: inline-flex;
-    gap: 2px;
-    padding: 3px;
-    background: var(--color-fondo-secundario);
-    border-radius: 999px;
+
+  /* ── Menú lateral (estilo Gmail): disponibilidad, orden y "Cómo
+     comprar" en una sola lista vertical detrás del hamburguesa. ────── */
+  .mayor-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 1060;
   }
-  .mayor-chip {
+  .mayor-sidebar-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .mayor-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(300px, 84vw);
+    background: #fff;
+    z-index: 1065;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.12);
+  }
+  .mayor-sidebar.is-open {
+    transform: translateX(0);
+  }
+  .mayor-sidebar-header {
+    flex-shrink: 0;
+    padding: max(18px, env(safe-area-inset-top)) 20px 14px;
+    border-bottom: 1px solid var(--color-borde);
+  }
+  .mayor-sidebar-brand {
+    display: block;
+    font-family: var(--fuente-principal);
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--color-texto);
+    letter-spacing: -0.01em;
+  }
+  .mayor-sidebar-sub {
+    margin: 4px 0 0;
+    font-size: 0.78rem;
+    color: var(--color-texto-secundario);
+    line-height: 1.35;
+  }
+  .mayor-sidebar-nav {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 0 max(12px, env(safe-area-inset-bottom));
+  }
+  .mayor-sidebar-group-label {
+    margin: 14px 20px 4px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-texto-secundario);
+    opacity: 0.75;
+  }
+  .mayor-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
     border: none;
     background: transparent;
     color: var(--color-texto-secundario);
-    border-radius: 999px;
-    padding: 6px 12px;
-    font-size: 0.76rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-    white-space: nowrap;
-  }
-  .mayor-chip.active {
-    background: #fff;
-    color: var(--color-primario-oscuro);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  }
-  .mayor-sort-wrap {
-    position: relative;
-    flex-shrink: 0;
-    width: auto;
-  }
-  .mayor-sort-select {
-    appearance: none;
-    -webkit-appearance: none;
-    width: auto;
-    border: none;
-    border-radius: 999px;
-    padding: 7px 28px 7px 14px;
-    font-size: 0.76rem;
-    font-weight: 600;
-    color: var(--color-texto-secundario);
-    background: var(--color-fondo-secundario);
-    cursor: pointer;
     font-family: var(--fuente-principal);
+    font-size: 0.86rem;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
   }
-  .mayor-sort-select:focus {
-    outline: none;
-    color: var(--color-texto);
-    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.12);
+  .mayor-sidebar-item i {
+    width: 18px;
+    text-align: center;
+    font-size: 1rem;
+    flex-shrink: 0;
   }
-  .mayor-sort-wrap i {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.65rem;
-    color: var(--color-texto-secundario);
-    pointer-events: none;
+  .mayor-sidebar-item:hover {
+    background: var(--color-fondo-secundario);
+  }
+  .mayor-sidebar-item.active {
+    background: var(--color-primario-claro);
+    color: var(--color-primario-oscuro);
+  }
+  .mayor-sidebar-divider {
+    height: 1px;
+    background: var(--color-borde);
+    margin: 10px 20px;
   }
 
   /* ── Hojas de pantalla completa (Cómo comprar / Agregar rápido) ─────────
@@ -1108,32 +1137,11 @@
   /* ── Densidad compacta en móvil: más prendas visibles por pantalla ── */
   @media (max-width: 991.98px) {
     .mayor-topbar {
-      padding: 10px 12px;
+      padding: 8px 10px;
     }
-    .mayor-topbar-row h1 {
-      font-size: 1rem;
-    }
-    .mayor-topbar-sub {
-      font-size: 0.75rem;
-    }
-    .mayor-info-btn {
-      font-size: 0.72rem;
-      padding: 7px 12px;
-    }
-    .mayor-toolbar {
-      margin-top: 8px;
-    }
-    .mayor-toolbar-search input {
+    .mayor-searchbar-field input {
       padding: 8px 14px 8px 34px;
       font-size: 0.82rem;
-    }
-    .mayor-chip {
-      font-size: 0.7rem;
-      padding: 5px 10px;
-    }
-    .mayor-sort-select {
-      font-size: 0.7rem;
-      padding: 5px 26px 5px 12px;
     }
     .mayor-card-stock-badge {
       font-size: 0.54rem;
@@ -1376,40 +1384,47 @@
 
   <section class="mayor-topbar">
     <div class="mayor-topbar-inner">
-      <div class="mayor-topbar-row">
-        <div>
-          <h1>Prendas de Entrega Inmediata</h1>
-          <p class="mayor-topbar-sub">Mínimo 6 prendas surtidas · el precio baja por cantidad</p>
-        </div>
-        <button type="button" class="mayor-info-btn" id="btn-open-info">
-          <i class="bi bi-info-circle"></i> Cómo comprar
+      <div class="mayor-searchbar">
+        <button type="button" class="mayor-searchbar-menu-btn" id="btn-open-mayor-sidebar" aria-label="Abrir menú de filtros">
+          <i class="bi bi-list"></i>
         </button>
-      </div>
-
-      <div class="mayor-toolbar">
-        <div class="mayor-toolbar-search d-lg-none">
+        <div class="mayor-searchbar-field">
           <i class="bi bi-search"></i>
-          <input type="text" id="mayor-search-input-mobile" placeholder="Buscar prendas...">
+          <input type="text" id="mayor-search-input" placeholder="Buscar prendas...">
         </div>
-        <div class="mayor-toolbar-controls">
-          <div class="mayor-stock-filter" id="mayor-stock-filter" role="group" aria-label="Filtrar por disponibilidad">
-            <button type="button" class="mayor-chip active" data-stock="all">Todas</button>
-            <button type="button" class="mayor-chip" data-stock="low">Poca disponibilidad</button>
-          </div>
-          <div class="mayor-sort-wrap">
-            <select class="mayor-sort-select" id="mayor-sort-select" aria-label="Ordenar prendas">
-              <option value="relevancia">Ordenar: relevancia</option>
-              <option value="precio-asc">Precio: menor a mayor</option>
-              <option value="precio-desc">Precio: mayor a menor</option>
-              <option value="stock-desc">Más disponibilidad</option>
-              <option value="stock-asc">Menos disponibilidad</option>
-            </select>
-            <i class="bi bi-chevron-down"></i>
-          </div>
-        </div>
+        <span class="mayor-searchbar-avatar" aria-hidden="true">M</span>
       </div>
     </div>
   </section>
+
+  <!-- Menú lateral: disponibilidad, orden y "Cómo comprar" — se abre desde
+       el hamburguesa de la barra de búsqueda, igual que en Gmail. -->
+  <div class="mayor-sidebar-backdrop" id="mayor-sidebar-backdrop"></div>
+  <aside class="mayor-sidebar" id="mayor-sidebar" aria-label="Menú de prendas al por mayor">
+    <div class="mayor-sidebar-header">
+      <span class="mayor-sidebar-brand">Prendas de Entrega Inmediata</span>
+      <p class="mayor-sidebar-sub">Mínimo 6 prendas surtidas · el precio baja por cantidad</p>
+    </div>
+    <nav class="mayor-sidebar-nav">
+      <p class="mayor-sidebar-group-label">Disponibilidad</p>
+      <div id="mayor-stock-filter" role="group" aria-label="Filtrar por disponibilidad">
+        <button type="button" class="mayor-sidebar-item active" data-stock="all"><i class="bi bi-grid"></i> Todas</button>
+        <button type="button" class="mayor-sidebar-item" data-stock="low"><i class="bi bi-exclamation-circle"></i> Poca disponibilidad</button>
+      </div>
+
+      <p class="mayor-sidebar-group-label">Ordenar por</p>
+      <div id="mayor-sort-filter" role="group" aria-label="Ordenar prendas">
+        <button type="button" class="mayor-sidebar-item active" data-sort="relevancia"><i class="bi bi-stars"></i> Relevancia</button>
+        <button type="button" class="mayor-sidebar-item" data-sort="precio-asc"><i class="bi bi-sort-numeric-down"></i> Precio: menor a mayor</button>
+        <button type="button" class="mayor-sidebar-item" data-sort="precio-desc"><i class="bi bi-sort-numeric-up"></i> Precio: mayor a menor</button>
+        <button type="button" class="mayor-sidebar-item" data-sort="stock-desc"><i class="bi bi-boxes"></i> Más disponibilidad</button>
+        <button type="button" class="mayor-sidebar-item" data-sort="stock-asc"><i class="bi bi-box"></i> Menos disponibilidad</button>
+      </div>
+
+      <div class="mayor-sidebar-divider"></div>
+      <button type="button" class="mayor-sidebar-item" id="btn-open-info"><i class="bi bi-info-circle"></i> Cómo comprar</button>
+    </nav>
+  </aside>
 
   <div class="mayor-empty" id="mayor-empty" style="display:none;">
     <i class="bi bi-hourglass-split" style="font-size: 2.2rem; opacity: 0.4;"></i>
