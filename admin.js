@@ -4255,11 +4255,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const pdf = new jsPDF('p', 'mm', 'a4');
 
             const PW = 210, PH = 297, M = 18;
-            // Paleta 100% en escala de grises — sin color, para un aspecto
-            // serio de factura real (nada de rellenos ni acentos de color).
+            // Paleta neutra en escala de grises con un acento burdeos discreto
+            // para un aspecto elegante y profesional de factura real.
             const INK = [20, 20, 22], TEXT = [55, 54, 57], MUTED = [128, 127, 130],
                   SOFT = [168, 167, 170], LINE = [220, 219, 222], HAIRLINE = [235, 234, 237],
                   ROW_ALT = [247, 247, 248], WHITE = [255, 255, 255];
+            const ACCENT = [141, 33, 63], ACCENT_TINT = [248, 236, 240];
+
+            function dibujarBordePagina() {
+                pdf.setDrawColor(...LINE);
+                pdf.setLineWidth(0.3);
+                pdf.rect(8, 8, PW - 16, PH - 16);
+            }
 
             const numeroFactura = await obtenerNumeroFactura(ventaId, ventaData);
             const folioTxt = formatearNumeroFactura(numeroFactura);
@@ -4267,6 +4274,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const vendedor = window.appContext?.nombre || null;
 
             // ── Encabezado ──────────────────────────────────────────────────
+            pdf.setFillColor(...ACCENT);
+            pdf.rect(0, 0, PW, 3, 'F');
+            dibujarBordePagina();
+
             pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(19);
             pdf.setTextColor(...INK);
@@ -4285,7 +4296,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pdf.text('FACTURA DE VENTA', PW - M, 13, { align: 'right' });
             pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(17);
-            pdf.setTextColor(...INK);
+            pdf.setTextColor(...ACCENT);
             pdf.text(folioTxt, PW - M, 21.5, { align: 'right' });
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(8.5);
@@ -4295,8 +4306,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 PW - M, 27, { align: 'right' }
             );
 
-            pdf.setDrawColor(...INK);
-            pdf.setLineWidth(0.6);
+            pdf.setDrawColor(...ACCENT);
+            pdf.setLineWidth(0.8);
             pdf.line(M, 33, PW - M, 33);
 
             // ── Datos del cliente / detalles de la venta (dos columnas) ──────
@@ -4313,7 +4324,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(8);
-            pdf.setTextColor(...SOFT);
+            pdf.setTextColor(...ACCENT);
             pdf.text('FACTURAR A', colClienteX, y);
             pdf.text('DETALLES DE LA VENTA', colDetalleX, y);
             y += 5.5;
@@ -4365,19 +4376,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const colCant = 126, colPrecio = 156, colTotal = PW - M;
 
             function dibujarCabeceraTabla() {
-                pdf.setDrawColor(...INK);
-                pdf.setLineWidth(0.5);
-                pdf.line(M, y, PW - M, y);
+                pdf.setFillColor(...ACCENT_TINT);
+                pdf.rect(M, y, PW - M * 2, 9, 'F');
                 y += 6;
                 pdf.setFont('helvetica', 'bold');
                 pdf.setFontSize(8);
-                pdf.setTextColor(...SOFT);
-                pdf.text('PRODUCTO', M, y);
+                pdf.setTextColor(...ACCENT);
+                pdf.text('PRODUCTO', M + 2, y);
                 pdf.text('CANT.', colCant, y, { align: 'center' });
                 pdf.text('PRECIO UNIT.', colPrecio, y, { align: 'right' });
                 pdf.text('TOTAL', colTotal, y, { align: 'right' });
                 y += 3;
-                pdf.setDrawColor(...INK);
+                pdf.setDrawColor(...ACCENT);
                 pdf.setLineWidth(0.4);
                 pdf.line(M, y, PW - M, y);
                 y += 5.5;
@@ -4391,6 +4401,7 @@ document.addEventListener('DOMContentLoaded', () => {
             items.forEach((item, idx) => {
                 if (y > PH - 65) {
                     pdf.addPage();
+                    dibujarBordePagina();
                     y = M;
                     dibujarCabeceraTabla();
                     pdf.setFont('helvetica', 'normal');
@@ -4424,12 +4435,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 y += rowH;
             });
 
-            pdf.setDrawColor(...INK);
+            pdf.setDrawColor(...ACCENT);
             pdf.setLineWidth(0.5);
             pdf.line(M, y - 5, PW - M, y - 5);
             y += 8;
 
             // ── Totales ───────────────────────────────────────────────────────
+            const totalPrendas = items.reduce((s, i) => s + (parseInt(i.cantidad, 10) || 0), 0);
             const subtotal = items.reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
             const descuento = parseFloat(ventaData.descuento) || 0;
             const costoRuta = ventaData.tipoEntrega === 'domicilio' ? (parseFloat(ventaData.costoRuta) || 0) : 0;
@@ -4437,48 +4449,48 @@ document.addEventListener('DOMContentLoaded', () => {
             const esApartado = ventaData.tipoVenta === 'apartado';
 
             let filasTotales = [
-                ['Subtotal', subtotal, false],
-                descuento > 0 ? ['Descuento', -descuento, false] : null,
-                costoRuta > 0 ? ['Costo de envío', costoRuta, false] : null
+                ['Total de prendas', `${totalPrendas} ${totalPrendas === 1 ? 'prenda' : 'prendas'}`, false],
+                ['Subtotal', formatoMoneda.format(subtotal), false],
+                descuento > 0 ? ['Descuento', `-${formatoMoneda.format(descuento)}`, false] : null,
+                costoRuta > 0 ? ['Costo de envío', formatoMoneda.format(costoRuta), false] : null
             ].filter(Boolean);
 
             if (esApartado) {
                 const totalProducto = parseFloat(ventaData.montoTotalProducto) || totalVenta;
-                filasTotales.push(['Total del producto', totalProducto, false]);
-                filasTotales.push(['Abonado', totalVenta, false]);
-                filasTotales.push(['SALDO PENDIENTE', totalProducto - totalVenta, true]);
+                filasTotales.push(['Total del producto', formatoMoneda.format(totalProducto), false]);
+                filasTotales.push(['Abonado', formatoMoneda.format(totalVenta), false]);
+                filasTotales.push(['SALDO PENDIENTE', formatoMoneda.format(totalProducto - totalVenta), true]);
             } else {
-                filasTotales.push(['TOTAL A PAGAR', totalVenta, true]);
+                filasTotales.push(['TOTAL A PAGAR', formatoMoneda.format(totalVenta), true]);
             }
 
             const cardW = 84, cardX = PW - M - cardW;
             const filasNormales = filasTotales.filter(f => !f[2]).length;
-            const cardH = filasNormales * 6.2 + 14;
-            if (y + cardH > PH - 55) { pdf.addPage(); y = M; }
+            const cardH = filasNormales * 6.2 + 18;
+            if (y + cardH > PH - 55) { pdf.addPage(); dibujarBordePagina(); y = M; }
 
             let ty = y + 2;
             filasTotales.forEach(([label, valor, resaltado]) => {
                 if (resaltado) {
-                    ty += 2.5;
-                    pdf.setDrawColor(...LINE);
-                    pdf.setLineWidth(0.3);
-                    pdf.line(cardX, ty - 5, cardX + cardW, ty - 5);
-                    pdf.setDrawColor(...INK);
-                    pdf.setLineWidth(0.7);
-                    pdf.line(cardX, ty - 4.3, cardX + cardW, ty - 4.3);
+                    ty += 3;
+                    pdf.setFillColor(...ACCENT_TINT);
+                    pdf.roundedRect(cardX - 4, ty - 6, cardW + 4, 11, 1.5, 1.5, 'F');
+                    pdf.setDrawColor(...ACCENT);
+                    pdf.setLineWidth(0.5);
+                    pdf.roundedRect(cardX - 4, ty - 6, cardW + 4, 11, 1.5, 1.5, 'S');
                     pdf.setFont('helvetica', 'bold');
                     pdf.setFontSize(12.5);
-                    pdf.setTextColor(...INK);
+                    pdf.setTextColor(...ACCENT);
                     pdf.text(label, cardX, ty + 1.5);
-                    pdf.text(formatoMoneda.format(valor), cardX + cardW, ty + 1.5, { align: 'right' });
-                    ty += 8;
+                    pdf.text(valor, cardX + cardW, ty + 1.5, { align: 'right' });
+                    ty += 9;
                 } else {
                     pdf.setFont('helvetica', 'normal');
                     pdf.setFontSize(9);
                     pdf.setTextColor(...MUTED);
                     pdf.text(label, cardX, ty);
                     pdf.setTextColor(...TEXT);
-                    pdf.text(formatoMoneda.format(valor), cardX + cardW, ty, { align: 'right' });
+                    pdf.text(valor, cardX + cardW, ty, { align: 'right' });
                     ty += 6.2;
                 }
             });
@@ -4486,10 +4498,10 @@ document.addEventListener('DOMContentLoaded', () => {
             y = ty + 6;
 
             // ── Forma de pago + observaciones ─────────────────────────────────
-            if (y > PH - 45) { pdf.addPage(); y = M; }
+            if (y > PH - 45) { pdf.addPage(); dibujarBordePagina(); y = M; }
             pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(8);
-            pdf.setTextColor(...SOFT);
+            pdf.setTextColor(...ACCENT);
             pdf.text('FORMA DE PAGO', M, y);
             y += 5.5;
             pdf.setFont('helvetica', 'normal');
@@ -4502,10 +4514,10 @@ document.addEventListener('DOMContentLoaded', () => {
             y += 8;
 
             if (ventaData.observaciones) {
-                if (y > PH - 40) { pdf.addPage(); y = M; }
+                if (y > PH - 40) { pdf.addPage(); dibujarBordePagina(); y = M; }
                 pdf.setFont('helvetica', 'bold');
                 pdf.setFontSize(8);
-                pdf.setTextColor(...SOFT);
+                pdf.setTextColor(...ACCENT);
                 pdf.text('OBSERVACIONES', M, y);
                 y += 5.5;
                 pdf.setFont('helvetica', 'normal');
@@ -4518,13 +4530,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // ── Pie de página ─────────────────────────────────────────────────
             const footY = PH - 20;
-            pdf.setDrawColor(...LINE);
-            pdf.setLineWidth(0.4);
+            pdf.setDrawColor(...ACCENT);
+            pdf.setLineWidth(0.6);
             pdf.line(M, footY, PW - M, footY);
 
             pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(9.5);
-            pdf.setTextColor(...INK);
+            pdf.setTextColor(...ACCENT);
             pdf.text('¡Gracias por tu compra!', PW / 2, footY + 7, { align: 'center' });
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(7.5);
@@ -4539,6 +4551,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 `Factura ${folioTxt} generada el ${new Date().toLocaleString('es-CO')}`,
                 PW / 2, footY + 16.5, { align: 'center' }
             );
+
+            const totalPaginas = pdf.internal.getNumberOfPages();
+            if (totalPaginas > 1) {
+                for (let p = 1; p <= totalPaginas; p++) {
+                    pdf.setPage(p);
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.setFontSize(7);
+                    pdf.setTextColor(...SOFT);
+                    pdf.text(`Página ${p} de ${totalPaginas}`, PW - M - 2, PH - 10, { align: 'right' });
+                }
+            }
 
             const nombreArchivo = `Factura_${folioTxt}_${(ventaData.clienteNombre || 'Cliente').replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
             const blob = pdf.output('blob');
