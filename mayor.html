@@ -48,76 +48,59 @@
     margin-right: 6px;
   }
 
-  /* ── Barra superior de información (políticas y facts) ─────────────── */
+  /* ── Barra superior: compacta a propósito — el objetivo es llegar a las
+     prendas casi de inmediato. Toda la política/tabla de precios/condiciones
+     vive en un solo botón "Cómo comprar" que abre una hoja aparte. ────── */
   .mayor-topbar {
     background: #fff;
     border-bottom: 1px solid var(--color-borde);
-    padding: 16px 20px;
+    padding: 14px 20px;
   }
   .mayor-topbar-inner {
     max-width: 900px;
     margin: 0 auto;
   }
-  .mayor-topbar-head {
+  .mayor-topbar-row {
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
-    gap: 6px 20px;
-    margin-bottom: 10px;
+    gap: 14px;
+    flex-wrap: wrap;
   }
-  .mayor-topbar-head h1 {
+  .mayor-topbar-row h1 {
     font-family: var(--fuente-principal);
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     font-weight: 800;
     color: var(--color-texto);
+    margin: 0 0 2px;
+  }
+  .mayor-topbar-sub {
+    font-size: 0.82rem;
+    color: var(--color-texto-secundario);
     margin: 0;
   }
-  .mayor-topbar-facts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-  }
-  .mayor-fact {
+  .mayor-info-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    font-size: 0.84rem;
-    color: var(--color-texto);
-    font-weight: 500;
-    white-space: nowrap;
-  }
-  .mayor-fact i {
-    color: var(--color-primario-oscuro);
-    font-size: 0.92rem;
-  }
-  .mayor-topbar-rule {
-    display: flex;
-    align-items: flex-start;
-    gap: 9px;
+    gap: 6px;
     background: #fff;
     border: 1px solid var(--color-borde);
-    border-left: 4px solid var(--color-primario);
     color: var(--color-texto);
-    border-radius: var(--radio-sm);
-    padding: 10px 13px;
-    font-size: 0.86rem;
-    font-weight: 500;
-    line-height: 1.55;
-    margin-bottom: 12px;
-  }
-  .mayor-topbar-rule i {
-    margin-top: 2px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
     flex-shrink: 0;
-    color: var(--color-primario-oscuro);
-    font-size: 1rem;
+    transition: border-color 0.2s ease, background 0.2s ease;
   }
-  .mayor-topbar-rule strong {
-    font-weight: 700;
+  .mayor-info-btn i {
     color: var(--color-primario-oscuro);
   }
-  .mayor-topbar .wtiers-toggle {
-    margin-bottom: 0;
+  .mayor-info-btn:hover {
+    border-color: var(--color-primario);
+    background: var(--color-primario-claro);
   }
 
   /* ── Barra de búsqueda (móvil) + orden/disponibilidad ────────────── */
@@ -214,7 +197,89 @@
     pointer-events: none;
   }
 
-  /* ── Grilla de prendas ────────────────────────────────────────── */
+  /* La barra de "Total estimado" (.mayor-finalize-panel) también es fixed al
+     fondo con z-index 1050; sin esto, quedaría por encima de estas hojas y
+     se robaría los toques destinados al botón "Listo". */
+  .offcanvas-backdrop {
+    z-index: 1055;
+  }
+  .mayor-info-sheet,
+  .mayor-quickadd-sheet {
+    z-index: 1060;
+  }
+
+  /* ── Hoja "Cómo comprar" (política + tabla de precios + condiciones) ── */
+  .mayor-info-sheet {
+    height: auto;
+    max-height: 82vh;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+  }
+  .mayor-info-sheet .offcanvas-body {
+    overflow-y: auto;
+    padding: 18px 20px calc(20px + env(safe-area-inset-bottom));
+  }
+  .mayor-info-rule {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    background: #fff5f9;
+    border: 1px solid var(--color-primario-claro);
+    border-left: 4px solid var(--color-primario);
+    color: var(--color-texto);
+    border-radius: var(--radio-sm);
+    padding: 12px 14px;
+    font-size: 0.86rem;
+    font-weight: 500;
+    line-height: 1.55;
+    margin-bottom: 20px;
+  }
+  .mayor-info-rule i {
+    margin-top: 2px;
+    flex-shrink: 0;
+    color: var(--color-primario-oscuro);
+    font-size: 1rem;
+  }
+  .mayor-info-rule strong {
+    font-weight: 700;
+    color: var(--color-primario-oscuro);
+  }
+  .mayor-info-heading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-texto);
+    border-left: 3px solid var(--color-primario);
+    padding-left: 8px;
+    margin: 20px 0 10px;
+  }
+  .mayor-info-heading:first-of-type {
+    margin-top: 0;
+  }
+  .mayor-info-heading i {
+    color: var(--color-primario-oscuro);
+  }
+  .mayor-info-tiers {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    margin-bottom: 4px;
+  }
+  .mayor-info-conditions {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 0.85rem;
+    color: var(--color-texto);
+    line-height: 1.65;
+  }
+  .mayor-info-conditions li {
+    margin-bottom: 4px;
+  }
+
+  /* ── Grilla de prendas: solo foto, nombre, precio y un botón — el resto
+     (colores/tallas/cantidades) vive en la hoja de agregar rápido. ─────── */
   .mayor-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -243,7 +308,7 @@
   }
   /* Solo levantar la tarjeta en dispositivos con hover real (mouse). En
      táctil, :hover se activa con el toque y el salto se sentía como una
-     animación no deseada cada vez que se elegía un color o cantidad. */
+     animación no deseada. */
   @media (hover: hover) and (pointer: fine) {
     .mayor-card {
       transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
@@ -290,7 +355,7 @@
     box-shadow: var(--sombra-sm);
   }
   /* Disponibilidad total de la prenda, visible de un vistazo sin tener que
-     tocar cada color — lo que se pidió para "ver la disponibilidad" rápido. */
+     abrir la ficha — lo que se pidió para "ver la disponibilidad" rápido. */
   .mayor-card-stock-badge {
     position: absolute;
     top: 8px;
@@ -340,21 +405,144 @@
     color: var(--color-primario-oscuro);
     margin-top: 3px;
   }
+  .mayor-card-action {
+    margin-top: auto;
+  }
+  /* Botón claro de "Agregar" — reemplaza el gesto escondido de tocar un
+     color directamente en la tarjeta. Una vez agregada la prenda, el mismo
+     botón muestra cuánto se eligió y funciona como "Editar". */
+  .mayor-add-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1.5px solid var(--color-primario);
+    background: #fff;
+    color: var(--color-primario-oscuro);
+    font-weight: 700;
+    font-size: 0.84rem;
+    font-family: var(--fuente-principal);
+    padding: 9px 10px;
+    border-radius: var(--radio-sm);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .mayor-add-btn:hover {
+    background: var(--color-primario-claro);
+  }
+  .mayor-add-btn.is-added {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    text-align: left;
+    border-color: var(--color-primario);
+    background: var(--color-primario);
+    color: #fff;
+    padding: 8px 12px;
+  }
+  .mayor-add-btn-count {
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+  .mayor-add-btn-edit {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.92;
+  }
+  .mayor-no-colores {
+    font-size: 0.78rem;
+    color: var(--color-texto-secundario);
+    font-style: italic;
+    margin-top: auto;
+  }
+  .mayor-empty {
+    max-width: 480px;
+    margin: 56px auto;
+    text-align: center;
+    padding: 0 16px;
+    color: var(--color-texto-secundario);
+  }
+
+  /* ── Hoja de "Agregar rápido": foto/nombre/precio + colores/tallas/
+     cantidades de la prenda que se está editando. ─────────────────────── */
+  .mayor-quickadd-sheet {
+    height: auto;
+    max-height: 88vh;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+  }
+  .mqa-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid var(--color-borde);
+    flex-shrink: 0;
+  }
+  .mqa-header img {
+    width: 52px;
+    height: 66px;
+    object-fit: cover;
+    border-radius: var(--radio-sm);
+    background: var(--color-fondo-secundario);
+    flex-shrink: 0;
+  }
+  .mqa-header-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .mqa-header-text h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-texto);
+    margin: 0 0 3px;
+    line-height: 1.3;
+  }
+  .mqa-price {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-texto);
+  }
+  .mqa-price .tier-hint {
+    display: block;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--color-primario-oscuro);
+    margin-top: 2px;
+  }
+  .mqa-body {
+    padding: 16px 18px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+  }
+  .mqa-footer {
+    padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--color-borde);
+    flex-shrink: 0;
+  }
+  .mqa-footer .btn-mayor-send {
+    margin-top: 0;
+  }
+
+  /* Bolitas de color dentro de la hoja: un toque agrega la prenda a ese
+     color (o la quita si ya estaba elegida). */
   .mayor-card-colors {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 6px;
-    margin-bottom: 10px;
+    gap: 10px 8px;
+    margin-bottom: 16px;
   }
-  /* Cada color es un botón: un solo toque lo agrega al pedido (o lo quita si
-     ya estaba elegido), en vez del flujo anterior de "Elegir esta prenda" +
-     desplegables separados para color/talla/cantidad. */
   .mayor-card-color-item {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
-    gap: 3px;
-    width: 40px;
+    gap: 4px;
+    width: 48px;
     position: relative;
     border: none;
     background: none;
@@ -362,14 +550,14 @@
     cursor: pointer;
   }
   .mayor-card-color-swatch {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
     box-shadow: 0 0 0 1px var(--color-borde);
     transition: box-shadow 0.15s ease, transform 0.15s ease;
   }
   .mayor-card-color-item .color-swatch-name {
-    font-size: 0.5rem;
-    max-width: 40px;
+    font-size: 0.56rem;
+    max-width: 48px;
   }
   .mayor-card-color-item.is-selected .mayor-card-color-swatch {
     box-shadow: 0 0 0 2px var(--color-primario);
@@ -383,77 +571,67 @@
     position: absolute;
     top: -4px;
     right: 3px;
-    min-width: 15px;
-    height: 15px;
+    min-width: 16px;
+    height: 16px;
     padding: 0 3px;
     border-radius: 999px;
     background: var(--color-primario);
     color: #fff;
-    font-size: 0.58rem;
+    font-size: 0.6rem;
     font-weight: 700;
-    line-height: 15px;
+    line-height: 16px;
     text-align: center;
-  }
-  .mayor-no-colores {
-    font-size: 0.78rem;
-    color: var(--color-texto-secundario);
-    font-style: italic;
-    margin-bottom: 8px;
   }
   .mayor-add-hint {
-    margin-top: auto;
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     color: var(--color-texto-secundario);
     text-align: center;
-    padding: 8px 4px 2px;
+    padding: 6px 4px 2px;
   }
   .mayor-card-toggle-label {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     color: var(--color-primario-oscuro);
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
-  /* Lista de colores ya elegidos para esta prenda: talla (si aplica) y
-     cantidad con botones +/-, siempre visible (sin curtain que expandir). */
   .mayor-selected-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-top: auto;
   }
   .mayor-selected-item {
     border: 1px solid var(--color-borde);
     border-radius: var(--radio-sm);
     background: var(--color-fondo-secundario);
-    padding: 8px 9px;
+    padding: 10px 11px;
   }
   .mayor-selected-head {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
   .mayor-selected-swatch {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
     box-shadow: 0 0 0 1px var(--color-borde);
   }
   .mayor-selected-name {
-    font-size: 0.8rem;
+    font-size: 0.84rem;
     font-weight: 600;
     color: var(--color-texto);
     flex: 1;
   }
   .mayor-selected-remove {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     flex-shrink: 0;
     border: 1px solid var(--color-borde);
     border-radius: 6px;
     background: #fff;
     color: #c62828;
-    font-size: 0.75rem;
+    font-size: 0.78rem;
     line-height: 1;
     cursor: pointer;
     transition: background 0.2s ease;
@@ -464,12 +642,12 @@
   .mayor-talla-pills {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 7px;
+    gap: 6px;
+    margin-bottom: 9px;
   }
   .mayor-talla-pill {
-    padding: 4px 10px;
-    font-size: 0.74rem;
+    padding: 5px 12px;
+    font-size: 0.78rem;
     min-width: auto;
   }
   .mayor-qty {
@@ -482,18 +660,18 @@
     border-color: var(--color-borde);
   }
   .mayor-qty .mp-qty-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 0.95rem;
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
   }
   .mayor-qty-input {
-    width: 40px;
-    height: 28px;
+    width: 44px;
+    height: 30px;
     border: none;
     border-left: 1.5px solid var(--color-borde);
     border-right: 1.5px solid var(--color-borde);
     text-align: center;
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 600;
     font-family: var(--fuente-principal);
     background: #fff;
@@ -506,14 +684,7 @@
     margin: 0;
   }
   .mayor-qty-stock {
-    font-size: 0.68rem;
-    color: var(--color-texto-secundario);
-  }
-  .mayor-empty {
-    max-width: 480px;
-    margin: 56px auto;
-    text-align: center;
-    padding: 0 16px;
+    font-size: 0.7rem;
     color: var(--color-texto-secundario);
   }
 
@@ -824,18 +995,17 @@
   /* ── Densidad compacta en móvil: más prendas visibles por pantalla ── */
   @media (max-width: 991.98px) {
     .mayor-topbar {
-      padding: 8px 12px;
+      padding: 10px 12px;
     }
-    .mayor-topbar-head h1 {
-      font-size: 0.98rem;
+    .mayor-topbar-row h1 {
+      font-size: 1rem;
     }
-    .mayor-fact {
-      font-size: 0.7rem;
+    .mayor-topbar-sub {
+      font-size: 0.75rem;
     }
-    .mayor-topbar-rule {
-      font-size: 0.74rem;
-      padding: 7px 9px;
-      margin-bottom: 8px;
+    .mayor-info-btn {
+      font-size: 0.72rem;
+      padding: 7px 12px;
     }
     .mayor-toolbar {
       margin-top: 8px;
@@ -880,43 +1050,15 @@
       font-size: 0.66rem;
       margin-top: 2px;
     }
-    .mayor-card-colors {
-      gap: 7px 5px;
-      margin-bottom: 8px;
+    .mayor-add-btn {
+      font-size: 0.76rem;
+      padding: 8px;
     }
-    .mayor-card-color-item {
-      width: 34px;
+    .mayor-add-btn-count {
+      font-size: 0.75rem;
     }
-    .mayor-card-color-swatch {
-      width: 21px;
-      height: 21px;
-    }
-    .mayor-card-color-item .color-swatch-name {
-      font-size: 0.46rem;
-      max-width: 34px;
-    }
-    .mayor-selected-item {
-      padding: 7px 8px;
-    }
-    .mayor-talla-pill {
-      padding: 3px 8px;
-      font-size: 0.68rem;
-    }
-    .mayor-qty .mp-qty-btn {
-      width: 25px;
-      height: 25px;
-      font-size: 0.85rem;
-    }
-    .mayor-qty-input {
-      width: 34px;
-      height: 25px;
-      font-size: 0.74rem;
-    }
-    .mayor-qty-stock {
-      font-size: 0.62rem;
-    }
-    .mayor-add-hint {
-      font-size: 0.7rem;
+    .mayor-add-btn-edit {
+      font-size: 0.64rem;
     }
   }
 </style>
@@ -979,38 +1121,14 @@
 
   <section class="mayor-topbar">
     <div class="mayor-topbar-inner">
-      <div class="mayor-topbar-head">
-        <h1>Prendas de Entrega Inmediata</h1>
-        <div class="mayor-topbar-facts">
-          <span class="mayor-fact"><i class="bi bi-box-seam"></i> Stock real disponible</span>
-          <span class="mayor-fact"><i class="bi bi-tag"></i> 6 prendas surtidas</span>
-          <span class="mayor-fact"><i class="bi bi-graph-down-arrow"></i> Precio baja por cantidad</span>
+      <div class="mayor-topbar-row">
+        <div>
+          <h1>Prendas de Entrega Inmediata</h1>
+          <p class="mayor-topbar-sub">Mínimo 6 prendas surtidas · el precio baja por cantidad</p>
         </div>
-      </div>
-      <div class="mayor-topbar-rule">
-        <i class="bi bi-info-circle-fill"></i>
-        <span>💖 Puedes llevar <strong>6 prendas surtidas</strong>, sin necesidad de que sean de la misma referencia. ¡Quedamos atentos a sus pedidos! 🛍️💕</span>
-      </div>
-      <div class="wtiers-toggle">
-        <button type="button" id="btn-toggle-tiers"><i class="bi bi-graph-down-arrow"></i><span class="wtiers-btn-label">Tabla de precios</span></button>
-        <button type="button" id="btn-toggle-policy"><i class="bi bi-info-circle"></i><span class="wtiers-btn-label">Condiciones</span></button>
-      </div>
-      <div class="wtiers-tables" id="tiers-tables"></div>
-      <div class="wpolicy-panel" id="policy-panel">
-        <div class="wpolicy-card">
-          <div class="wpolicy-card-header">📌 Condiciones para pedidos al por mayor</div>
-          <div class="wpolicy-card-body">
-            <div class="wpolicy-section">
-              <h5>💖 Prendas de entrega inmediata</h5>
-              <ul>
-                <li>Puedes llevar 6 prendas surtidas, sin necesidad de que sean de la misma referencia.</li>
-                <li>Solo puedes pedir hasta el stock real disponible de cada talla/color.</li>
-                <li>Si compras 12, 24 o más de una misma prenda, el precio por unidad baja aún más.</li>
-              </ul>
-              <p class="wpolicy-example">¡Quedamos atentos a sus pedidos! 🛍️💕</p>
-            </div>
-          </div>
-        </div>
+        <button type="button" class="mayor-info-btn" data-bs-toggle="offcanvas" data-bs-target="#mayorInfoSheet">
+          <i class="bi bi-info-circle"></i> Cómo comprar
+        </button>
       </div>
 
       <div class="mayor-toolbar">
@@ -1094,6 +1212,49 @@
   </div>
 </div>
 
+<!-- Hoja "Cómo comprar": política del mínimo + tabla de precios + condiciones,
+     todo junto en un solo lugar que no estorba mientras se navega el catálogo. -->
+<div class="offcanvas offcanvas-bottom mayor-info-sheet" tabindex="-1" id="mayorInfoSheet" aria-labelledby="mayorInfoSheetLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="mayorInfoSheetLabel"><i class="bi bi-shop"></i> Cómo comprar al por mayor</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+  </div>
+  <div class="offcanvas-body">
+    <div class="mayor-info-rule">
+      <i class="bi bi-info-circle-fill"></i>
+      <span>💖 Puedes llevar <strong>6 prendas surtidas</strong>, sin necesidad de que sean de la misma referencia. Solo se pide hasta el stock real disponible de cada talla/color. ¡Quedamos atentos a sus pedidos! 🛍️💕</span>
+    </div>
+    <h6 class="mayor-info-heading"><i class="bi bi-graph-down-arrow"></i> Tabla de precios por cantidad</h6>
+    <div class="mayor-info-tiers" id="tiers-tables"></div>
+    <h6 class="mayor-info-heading"><i class="bi bi-list-check"></i> Condiciones</h6>
+    <ul class="mayor-info-conditions">
+      <li>Puedes llevar 6 prendas surtidas, sin necesidad de que sean de la misma referencia.</li>
+      <li>Solo puedes pedir hasta el stock real disponible de cada talla/color.</li>
+      <li>Si compras 12, 24 o más de una misma prenda, el precio por unidad baja aún más.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Hoja de "Agregar rápido": se abre al tocar el botón de una prenda en la
+     grilla. Aquí viven los colores/tallas/cantidades — así la grilla queda
+     limpia y el botón "+ Agregar" es la única forma clara de comprar. -->
+<div class="offcanvas offcanvas-bottom mayor-quickadd-sheet" tabindex="-1" id="mayorQuickAddSheet" aria-labelledby="mqa-name">
+  <div class="mqa-header">
+    <img src="" id="mqa-img" alt="">
+    <div class="mqa-header-text">
+      <h3 id="mqa-name">Prenda</h3>
+      <div class="mqa-price" id="mqa-price"></div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+  </div>
+  <div class="mqa-body" id="mqa-body"></div>
+  <div class="mqa-footer">
+    <button type="button" class="btn btn-mayor-send" data-bs-dismiss="offcanvas">
+      <i class="bi bi-check2"></i> Listo
+    </button>
+  </div>
+</div>
+
 <div class="toast-container">
   <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
     <div class="toast-inner">
@@ -1122,7 +1283,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.5.0"></script>
+<script type="module" src="mayor.js?v=1.6.0"></script>
 
 </body>
 </html>
