@@ -220,18 +220,24 @@
   }
 
   /* ── Hoja "Cómo comprar" (política + tabla de precios + condiciones) ── */
+  /* Un solo contenedor con scroll (la hoja misma), en vez de anidar un hijo
+     flex:1 con su propio overflow — ese patrón anidado colapsaba a una
+     altura casi nula en Safari/iOS y cortaba el contenido. */
   .mayor-info-sheet {
     height: auto;
     max-height: 82vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     border-top-left-radius: 20px;
     border-top-right-radius: 20px;
   }
+  .mayor-info-sheet .offcanvas-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #fff;
+  }
   .mayor-info-sheet .offcanvas-body {
-    /* max-height explícito (no flex-grow) — en Safari/iOS, un contenedor con
-       height:auto + un hijo flex:1 a veces colapsa a una altura casi nula y
-       el contenido queda cortado. Con un tope fijo se evita ese problema. */
-    max-height: 68vh;
-    overflow-y: auto;
     padding: 18px 20px calc(20px + env(safe-area-inset-bottom));
   }
   .mayor-info-rule {
@@ -484,9 +490,16 @@
 
   /* ── Hoja de "Agregar rápido": foto/nombre/precio + colores/tallas/
      cantidades de la prenda que se está editando. ─────────────────────── */
+  /* Un solo contenedor con scroll (la hoja misma) — el encabezado y el pie
+     quedan "pegados" (sticky) mientras el cuerpo se desplaza por debajo, en
+     vez de anidar un hijo flex:1 con su propio overflow. Ese patrón anidado
+     colapsaba a una altura casi nula en Safari/iOS y cortaba el contenido
+     (colores/tallas/cantidad quedaban invisibles). */
   .mayor-quickadd-sheet {
     height: auto;
     max-height: 88vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     border-top-left-radius: 20px;
     border-top-right-radius: 20px;
   }
@@ -496,7 +509,10 @@
     gap: 12px;
     padding: 16px 18px 14px;
     border-bottom: 1px solid var(--color-borde);
-    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #fff;
   }
   .mqa-header img {
     width: 68px;
@@ -532,18 +548,15 @@
     margin-top: 2px;
   }
   .mqa-body {
-    /* max-height explícito (no flex-grow) — en Safari/iOS, un contenedor con
-       height:auto + un hijo flex:1 a veces colapsa a una altura casi nula y
-       el contenido (colores/tallas/cantidad) queda cortado. Con un tope fijo
-       se evita ese problema. */
-    max-height: 50vh;
     padding: 16px 18px;
-    overflow-y: auto;
   }
   .mqa-footer {
     padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--color-borde);
-    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: #fff;
   }
   .mqa-footer .btn-mayor-send {
     margin-top: 0;
