@@ -62,14 +62,25 @@ const obsEl = document.getElementById('mayor-observaciones');
 const asesorOptionsEl = document.getElementById('mayor-advisor-options');
 const totalEstimadoEl = document.getElementById('mayor-total-estimado');
 const orderSummaryEl = document.getElementById('mayor-order-summary');
-const tiersToggleBtn = document.getElementById('btn-toggle-tiers');
 const tiersTablesEl = document.getElementById('tiers-tables');
-const policyToggleBtn = document.getElementById('btn-toggle-policy');
-const policyPanelEl = document.getElementById('policy-panel');
 const orderProgressEl = document.getElementById('mayor-order-progress');
 const mobileSearchInputEl = document.getElementById('mayor-search-input-mobile');
 const stockFilterEl = document.getElementById('mayor-stock-filter');
 const sortSelectEl = document.getElementById('mayor-sort-select');
+
+// ── Hoja de "Agregar rápido" ─────────────────────────────────────────────
+// Los colores/tallas/cantidades de UNA prenda viven en esta hoja (offcanvas),
+// no en la tarjeta de la grilla — la tarjeta solo muestra foto/nombre/precio
+// y un botón claro que la abre. `openSheetProductId` recuerda para qué
+// prenda está abierta, para poder refrescarla en vivo si el usuario ajusta
+// cantidades desde otro lado (p.ej. el resumen del pedido).
+const quickAddSheetEl = document.getElementById('mayorQuickAddSheet');
+const mqaBodyEl = document.getElementById('mqa-body');
+const mqaImgEl = document.getElementById('mqa-img');
+const mqaNameEl = document.getElementById('mqa-name');
+const mqaPriceEl = document.getElementById('mqa-price');
+let openSheetProductId = null;
+let bsQuickAddOffcanvas = null;
 
 function showToast(message, type = 'success') {
     const liveToastEl = document.getElementById('liveToast');
@@ -602,6 +613,27 @@ function buildCardExtraHtml(p) {
     `;
 }
 
+// Botón de acción de la tarjeta: "+ Agregar" cuando no hay nada elegido de
+// esta prenda, o un resumen "X unidades agregadas · Editar" una vez que sí
+// hay algo — en ambos casos, tocarlo abre la hoja de agregar rápido. Es la
+// única forma de comprar visible en la grilla (antes había que descubrir
+// que se podía tocar directamente un color).
+function buildCardActionHtml(p) {
+    if (getColoresDelProducto(p).length === 0) {
+        return '<p class="mayor-no-colores">Sin colores registrados — escríbenos por WhatsApp para este pedido.</p>';
+    }
+    const filas = detalleFilas.get(p.id) || [];
+    const total = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
+    if (total === 0) {
+        return `<button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-lg"></i> Agregar</button>`;
+    }
+    return `
+        <button type="button" class="mayor-add-btn is-added" data-id="${p.id}">
+            <span class="mayor-add-btn-count">${total} unidad${total === 1 ? '' : 'es'} agregada${total === 1 ? '' : 's'}</span>
+            <span class="mayor-add-btn-edit">Editar <i class="bi bi-pencil-fill"></i></span>
+        </button>`;
+}
+
 // Construye el nodo de UNA tarjeta completa (se usa al pintar la grilla).
 function buildCardElement(p) {
     const filas = detalleFilas.get(p.id) || [];
@@ -615,30 +647,56 @@ function buildCardElement(p) {
         <div class="mayor-card-body">
             <h3 class="mayor-card-name">${p.nombre}</h3>
             <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
-            <div class="mayor-card-colors-wrap">${buildCardColorsHtml(p)}</div>
-            <div class="mayor-card-extra">${buildCardExtraHtml(p)}</div>
+            <div class="mayor-card-action">${buildCardActionHtml(p)}</div>
         </div>
     `;
     return card;
 }
 
-// Refresca solo el precio y la parte interactiva de una tarjeta ya pintada
-// (tras elegir/quitar color, cambiar talla o colapsar), sin tocar la imagen
-// ni recrear el nodo de la tarjeta — así no hay parpadeo ni recarga de
-// imagen en cada selección. Si la tarjeta ya no está en el DOM (cambió de
-// página, se filtró, etc.) se cae de vuelta al render completo.
+// Refresca el contenido de la hoja de agregar rápido para una prenda —
+// reutiliza las mismas piezas (colores + lista de elegidos) que antes vivían
+// directo en la tarjeta.
+function renderQuickAddSheet(id) {
+    const p = allProducts.find(pp => pp.id === id);
+    if (!p || !mqaBodyEl) return;
+    if (mqaImgEl) mqaImgEl.src = getCardImageUrl(p);
+    if (mqaNameEl) mqaNameEl.textContent = p.nombre;
+    if (mqaPriceEl) mqaPriceEl.innerHTML = buildCardPriceHtml(p);
+    mqaBodyEl.innerHTML = buildCardColorsHtml(p) + buildCardExtraHtml(p);
+}
+
+function openQuickAddSheet(id) {
+    if (!quickAddSheetEl || !mqaBodyEl || !window.bootstrap) return;
+    openSheetProductId = id;
+    renderQuickAddSheet(id);
+    if (!bsQuickAddOffcanvas) bsQuickAddOffcanvas = new bootstrap.Offcanvas(quickAddSheetEl);
+    bsQuickAddOffcanvas.show();
+}
+
+if (quickAddSheetEl) {
+    quickAddSheetEl.addEventListener('hidden.bs.offcanvas', () => {
+        openSheetProductId = null;
+    });
+}
+
+// Refresca la tarjeta de la grilla (precio + botón) y, si la hoja de agregar
+// rápido está abierta para esta misma prenda, también su contenido — tras
+// elegir/quitar un color, cambiar talla o tocar +/-. Si la tarjeta ya no
+// está en el DOM (cambió de página, se filtró, etc.) se cae de vuelta al
+// render completo.
 function updateCardInPlace(id) {
-    const p = productsData.find(pp => pp.id === id);
+    const p = productsData.find(pp => pp.id === id) || allProducts.find(pp => pp.id === id);
     const cardEl = gridEl && gridEl.querySelector(`.mayor-card[data-product-id="${id}"]`);
-    if (!p || !cardEl) { renderProducts(); return; }
-    const filas = detalleFilas.get(id) || [];
-    cardEl.classList.toggle('is-selected', filas.length > 0);
-    const priceEl = cardEl.querySelector('.mayor-card-price');
-    if (priceEl) priceEl.innerHTML = buildCardPriceHtml(p);
-    const colorsEl = cardEl.querySelector('.mayor-card-colors-wrap');
-    if (colorsEl) colorsEl.innerHTML = buildCardColorsHtml(p);
-    const extraEl = cardEl.querySelector('.mayor-card-extra');
-    if (extraEl) extraEl.innerHTML = buildCardExtraHtml(p);
+    if (!p) { renderProducts(); return; }
+    if (cardEl) {
+        const filas = detalleFilas.get(id) || [];
+        cardEl.classList.toggle('is-selected', filas.length > 0);
+        const priceEl = cardEl.querySelector('.mayor-card-price');
+        if (priceEl) priceEl.innerHTML = buildCardPriceHtml(p);
+        const actionEl = cardEl.querySelector('.mayor-card-action');
+        if (actionEl) actionEl.innerHTML = buildCardActionHtml(p);
+    }
+    if (openSheetProductId === id) renderQuickAddSheet(id);
 }
 
 function renderProducts() {
@@ -667,27 +725,25 @@ function renderProducts() {
     renderPagination(filtered.length);
 }
 
+// Se llama en cada tecla mientras se escribe una cantidad en la hoja de
+// agregar rápido: como el campo de texto vive en la hoja (no en la
+// tarjeta), es seguro reconstruir el precio/botón de TODAS las tarjetas de
+// la grilla sin perder el foco — solo el encabezado de precio de la hoja se
+// actualiza aquí, nunca su cuerpo (eso sí perdería el foco del campo).
 function actualizarPreciosEnVivo() {
     productsData.forEach(p => {
         const card = gridEl.querySelector(`.mayor-card[data-product-id="${p.id}"]`);
         if (!card) return;
-        const filas = detalleFilas.get(p.id) || [];
-        const totalProducto = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
-
         const priceEl = card.querySelector('.mayor-card-price');
         if (priceEl) priceEl.innerHTML = buildCardPriceHtml(p);
-
-        const totalEl = card.querySelector('.mayor-card-toggle-label');
-        if (totalEl) {
-            totalEl.textContent = `${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}`;
-        }
-
-        const cantidadPorColor = new Map(filas.map(f => [f.color, parseInt(f.cantidad, 10) || 0]));
-        card.querySelectorAll('.mayor-swatch-btn').forEach(btn => {
-            const badge = btn.querySelector('.mayor-swatch-badge');
-            if (badge && cantidadPorColor.has(btn.dataset.color)) badge.textContent = cantidadPorColor.get(btn.dataset.color);
-        });
+        const actionEl = card.querySelector('.mayor-card-action');
+        if (actionEl) actionEl.innerHTML = buildCardActionHtml(p);
     });
+
+    if (openSheetProductId) {
+        const p = allProducts.find(pp => pp.id === openSheetProductId);
+        if (p && mqaPriceEl) mqaPriceEl.innerHTML = buildCardPriceHtml(p);
+    }
 
     renderOrderSummary();
     if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
@@ -751,7 +807,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && mayorZoomOverlay && mayorZoomOverlay.classList.contains('active')) closeMayorZoom();
 });
 
-// ── Interacción dentro de la grilla ─────────────────────────────────────
+// ── Interacción dentro de la grilla: solo ampliar foto y abrir la hoja ──
 if (gridEl) {
     gridEl.addEventListener('click', (e) => {
         const zoomImg = e.target.closest('.mayor-card-img img');
@@ -761,14 +817,26 @@ if (gridEl) {
             openMayorZoom(zoomImg.src, p ? p.nombre : '');
             return;
         }
+        const addBtn = e.target.closest('.mayor-add-btn');
+        if (addBtn) {
+            openQuickAddSheet(addBtn.dataset.id);
+        }
+    });
+}
+
+// ── Interacción dentro de la hoja de agregar rápido (colores/tallas/cantidad) ──
+// Usa `allProducts` (no `productsData`) porque la prenda de la hoja puede no
+// estar en la página actualmente pintada.
+if (mqaBodyEl) {
+    mqaBodyEl.addEventListener('click', (e) => {
         // Tocar la bolita de un color la agrega al pedido (cantidad 1, con la
         // primera talla que ese color tenga en stock); tocar una ya elegida la
-        // quita — un solo gesto reemplaza el viejo "Elegir esta prenda" + selects.
+        // quita.
         const swatchBtn = e.target.closest('.mayor-swatch-btn');
         if (swatchBtn) {
             const id = swatchBtn.dataset.id;
             const color = swatchBtn.dataset.color;
-            const p = productsData.find(pp => pp.id === id);
+            const p = allProducts.find(pp => pp.id === id);
             if (!p) return;
             const filas = detalleFilas.get(id) || [];
             const idxExistente = filas.findIndex(f => f.color === color);
@@ -811,7 +879,7 @@ if (gridEl) {
         if (tallaPill) {
             const id = tallaPill.dataset.id;
             const idx = parseInt(tallaPill.dataset.idx, 10);
-            const p = productsData.find(pp => pp.id === id);
+            const p = allProducts.find(pp => pp.id === id);
             const filas = detalleFilas.get(id);
             if (p && filas && filas[idx]) {
                 filas[idx].talla = tallaPill.dataset.talla;
@@ -838,7 +906,7 @@ if (gridEl) {
         if (qtyPlus) {
             const id = qtyPlus.dataset.id;
             const idx = parseInt(qtyPlus.dataset.idx, 10);
-            const p = productsData.find(pp => pp.id === id);
+            const p = allProducts.find(pp => pp.id === id);
             const filas = detalleFilas.get(id);
             if (p && filas && filas[idx]) {
                 const tallas = getTallasConStock(p);
@@ -856,9 +924,9 @@ if (gridEl) {
         }
     });
 
-    // La cantidad NO reconstruye la grilla en 'input' (perdería el foco del campo
+    // La cantidad NO reconstruye la hoja en 'input' (perdería el foco del campo
     // mientras se escribe); el precio sí se recalcula en vivo con cada tecla.
-    gridEl.addEventListener('input', (e) => {
+    mqaBodyEl.addEventListener('input', (e) => {
         const qtyInput = e.target.closest('.mayor-qty-input');
         if (!qtyInput) return;
         const filas = detalleFilas.get(qtyInput.dataset.id);
@@ -871,15 +939,15 @@ if (gridEl) {
     });
 
     // Al salir del campo de cantidad, normalizamos entre 1 y el stock disponible de
-    // esa combinación talla+color, sin reconstruir la grilla (ver nota en encargo.js
+    // esa combinación talla+color, sin reconstruir la hoja (ver nota en encargo.js
     // sobre por qué 'focusout' y no un render inmediato).
-    gridEl.addEventListener('focusout', (e) => {
+    mqaBodyEl.addEventListener('focusout', (e) => {
         const qtyInput = e.target.closest && e.target.closest('.mayor-qty-input');
         if (!qtyInput) return;
         const id = qtyInput.dataset.id;
         const idx = parseInt(qtyInput.dataset.idx, 10);
         const filas = detalleFilas.get(id);
-        const p = productsData.find(pp => pp.id === id);
+        const p = allProducts.find(pp => pp.id === id);
         if (filas && filas[idx] && p) {
             const tallas = getTallasConStock(p);
             const hasTallas = tallas.length > 0;
@@ -889,23 +957,6 @@ if (gridEl) {
             qtyInput.value = val;
             actualizarPreciosEnVivo();
         }
-    });
-}
-
-// ── Tablas de precios / condiciones ──────────────────────────────────────
-if (tiersToggleBtn) {
-    tiersToggleBtn.addEventListener('click', () => {
-        const isOpen = tiersTablesEl.classList.toggle('is-open');
-        const label = tiersToggleBtn.querySelector('.wtiers-btn-label');
-        if (label) label.textContent = isOpen ? 'Ocultar tabla' : 'Tabla de precios';
-    });
-}
-
-if (policyToggleBtn) {
-    policyToggleBtn.addEventListener('click', () => {
-        const isOpen = policyPanelEl.classList.toggle('is-open');
-        const label = policyToggleBtn.querySelector('.wtiers-btn-label');
-        if (label) label.textContent = isOpen ? 'Ocultar condiciones' : 'Condiciones';
     });
 }
 
