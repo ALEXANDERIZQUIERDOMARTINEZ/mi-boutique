@@ -1175,48 +1175,21 @@ if (waBtn) {
 
 renderTiersTables();
 
-// ── Categorías (dropdown desktop + menú móvil) ───────────────────────────
-const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
-const categoryDropdownMenuMobile = document.getElementById('category-dropdown-menu-mobile');
-const categoryDropdownButton = document.getElementById('category-dropdown-button');
-
-function handleFilterClick(e) {
-    e.preventDefault();
-    const clickedFilter = e.target.closest('.filter-group') || e.currentTarget;
-    if (clickedFilter.dataset.bsToggle === 'dropdown' && !clickedFilter.dataset.filter) return;
-
-    document.querySelectorAll('.header-left .filter-group.active, .header-left-mobile .filter-group.active').forEach(b => b.classList.remove('active'));
-
-    if (clickedFilter.classList.contains('dropdown-item')) {
-        categoryDropdownButton.classList.add('active');
-        activeFilter = clickedFilter.dataset.filter;
-        categoryDropdownButton.innerHTML = `${clickedFilter.textContent.trim()} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
-    } else {
-        clickedFilter.classList.add('active');
-        activeFilter = clickedFilter.dataset.filter || 'disponible';
-        categoryDropdownButton.classList.remove('active');
-        categoryDropdownButton.removeAttribute('data-filter');
-        categoryDropdownButton.innerHTML = `Categorías <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
-    }
-
-    currentPage = 1;
-    renderProducts();
-    updateProgress();
-}
-
-if (categoryDropdownMenu) {
-    categoryDropdownMenu.addEventListener('click', (e) => {
-        if (e.target.closest('.filter-group')) handleFilterClick(e);
+// ── Categorías (fila del menú lateral) ───────────────────────────────────
+const categoryFilterEl = document.getElementById('mayor-category-filter');
+if (categoryFilterEl) {
+    categoryFilterEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('.mayor-sidebar-item');
+        if (!btn) return;
+        categoryFilterEl.querySelectorAll('.mayor-sidebar-item').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeFilter = btn.dataset.filter || 'disponible';
+        currentPage = 1;
+        renderProducts();
+        updateProgress();
+        closeMayorSidebar();
     });
 }
-if (categoryDropdownMenuMobile) {
-    categoryDropdownMenuMobile.addEventListener('click', (e) => {
-        if (e.target.closest('.filter-group')) handleFilterClick(e);
-    });
-}
-document.querySelectorAll('.header-left .filter-group, .header-left-mobile .filter-group').forEach(btn => {
-    btn.addEventListener('click', handleFilterClick);
-});
 
 onSnapshot(categoriesCollection, (snapshot) => {
     categoriesMap.clear();
@@ -1229,14 +1202,11 @@ onSnapshot(categoriesCollection, (snapshot) => {
         categoriesMap.set(cat.nombre, cat.id);
     });
 
-    if (categoryDropdownMenu) {
-        categoryDropdownMenu.innerHTML = categories.map(cat =>
-            `<li><a class="dropdown-item filter-group" href="#" data-filter="${cat.nombre}"><span>${cat.nombre}</span></a></li>`
-        ).join('');
-    }
-    if (categoryDropdownMenuMobile) {
-        categoryDropdownMenuMobile.innerHTML = categories.map(cat =>
-            `<li><a class="dropdown-item filter-group" href="#" data-filter="${cat.nombre}"><span>${cat.nombre}</span></a></li>`
+    if (categoryFilterEl) {
+        const items = [{ filtro: 'disponible', label: 'Disponibles', icon: 'bi-shop-window' },
+            ...categories.map(cat => ({ filtro: cat.nombre, label: cat.nombre, icon: 'bi-tag' }))];
+        categoryFilterEl.innerHTML = items.map(item =>
+            `<button type="button" class="mayor-sidebar-item${item.filtro === activeFilter ? ' active' : ''}" data-filter="${item.filtro}"><i class="bi ${item.icon}"></i> ${item.label}</button>`
         ).join('');
     }
 
@@ -1246,27 +1216,16 @@ onSnapshot(categoriesCollection, (snapshot) => {
     console.error('Error cargando categorías:', err);
 });
 
-// ── Búsqueda ────────────────────────────────────────────────────────────
-// El buscador visible vive en la barra estilo Gmail de esta página
-// (#mayor-search-input, a todo ancho de pantalla). El del header general
-// (#search-input) queda oculto aquí por CSS, pero se sincroniza igual por
-// si algún día vuelve a mostrarse.
-const searchInputEl = document.getElementById('search-input');
+// ── Búsqueda: única barra, estilo Gmail, a todo ancho de pantalla ───────
 let searchTimeout;
 function applyFiltersAndRedraw() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => { currentPage = 1; renderProducts(); updateProgress(); }, 200);
 }
-function syncSearchInputs(value) {
-    if (searchInputEl && searchInputEl.value !== value) searchInputEl.value = value;
-    if (mayorSearchInputEl && mayorSearchInputEl.value !== value) mayorSearchInputEl.value = value;
-}
 function handleSearchInput(e) {
     searchTerm = e.target.value;
-    syncSearchInputs(searchTerm);
     applyFiltersAndRedraw();
 }
-if (searchInputEl) searchInputEl.addEventListener('input', handleSearchInput);
 if (mayorSearchInputEl) mayorSearchInputEl.addEventListener('input', handleSearchInput);
 
 // ── Filtro rápido de disponibilidad + orden (filas del menú lateral) ────
