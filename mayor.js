@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { initializeFirestore, collection, onSnapshot, addDoc, doc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { initializeFirestore, collection, onSnapshot, setDoc, doc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js';
 import { getColorHex, getColorSwatchStyle, formatColorLabel } from './color-utils.js';
 import { startGuideTour } from './guide-tour.js';
@@ -1098,7 +1098,7 @@ if (asesorOptionsEl) {
 }
 
 if (waBtn) {
-    waBtn.addEventListener('click', async () => {
+    waBtn.addEventListener('click', () => {
         // Última verificación antes de armar el pedido: si el stock cambió mientras
         // se elegía, o alguna combinación de filas se pasó del disponible, se
         // corrige aquí y se le pide al cliente revisar el resumen actualizado antes
@@ -1156,44 +1156,49 @@ if (waBtn) {
         // Sin nombre/celular del comprador (mayor.html no los pide): el pedido
         // queda a nombre de "Cliente General" con su propio código, para que el
         // admin lo identifique en Pedidos Web y solo tenga que darle "Aceptar".
-        let codigoPedido = '';
-        try {
-            const docRef = await addDoc(webOrdersCollection, {
-                tenantId: window.appContext?.tenantId || null,
-                clienteNombre: 'Cliente General',
-                clienteCedula: '',
-                clienteCelular: '',
-                clienteCiudad: '',
-                clienteBarrio: '',
-                clienteDireccion: '',
-                observaciones,
-                metodoPagoSolicitado: '',
-                items,
-                subtotalProductos: totalEstimado,
-                costoEnvio: 0,
-                totalPedido: totalEstimado,
-                estado: 'pendiente',
-                notificadoBot: false,
-                timestamp: serverTimestamp(),
-                origen: 'web',
-                tipoVenta: 'Mayorista',
-                asesorNombre: asesor.nombre
-            });
-            codigoPedido = docRef.id.substring(0, 8).toUpperCase();
-            await Promise.all(
-                items
-                    .filter(item => item.productoId)
-                    .map(item => updateDoc(doc(db, 'productos', item.productoId), {
-                        ventas: increment(item.cantidad || 1)
-                    }).catch(() => {})) // no interrumpir el pedido si falla un producto
-            );
-        } catch (err) {
+        //
+        // El ID se genera localmente (doc() no llama a la red) para poder abrir
+        // WhatsApp de inmediato, en el mismo tick del clic: si esperáramos a que
+        // Firestore confirme el guardado antes de abrir el enlace, el navegador
+        // deja de tratarlo como parte del gesto del usuario y en el celular ya
+        // no entrega directo a la app de WhatsApp, sino que abre una pestaña
+        // nueva del navegador (justo lo que se reportó como regresión).
+        const pedidoDocRef = doc(webOrdersCollection);
+        const codigoPedido = pedidoDocRef.id.substring(0, 8).toUpperCase();
+
+        setDoc(pedidoDocRef, {
+            tenantId: window.appContext?.tenantId || null,
+            clienteNombre: 'Cliente General',
+            clienteCedula: '',
+            clienteCelular: '',
+            clienteCiudad: '',
+            clienteBarrio: '',
+            clienteDireccion: '',
+            observaciones,
+            metodoPagoSolicitado: '',
+            items,
+            subtotalProductos: totalEstimado,
+            costoEnvio: 0,
+            totalPedido: totalEstimado,
+            estado: 'pendiente',
+            notificadoBot: false,
+            timestamp: serverTimestamp(),
+            origen: 'web',
+            tipoVenta: 'Mayorista',
+            asesorNombre: asesor.nombre
+        }).then(() => Promise.all(
+            items
+                .filter(item => item.productoId)
+                .map(item => updateDoc(doc(db, 'productos', item.productoId), {
+                    ventas: increment(item.cantidad || 1)
+                }).catch(() => {})) // no interrumpir el pedido si falla un producto
+        )).catch(err => {
             console.error('Error guardando pedido web:', err);
             showToast('No pudimos guardar tu pedido en el sistema, pero puedes enviarlo igual por WhatsApp.', 'warning');
-        }
+        });
 
         let mensaje = `¡Hola! 👋 Quiero hacer este pedido al por mayor:\n\n${bloques.join('\n\n')}\n\n———————————————\nTotal: ${totalUnidades} prenda${totalUnidades === 1 ? '' : 's'} — ${formatoMoneda.format(totalEstimado)}`;
-        if (codigoPedido) mensaje += `\n\n🧾 Código de pedido: #${codigoPedido}`;
+        mensaje += `\n\n🧾 Código de pedido: #${codigoPedido}`;
         if (observaciones) mensaje += `\n\n📝 Observaciones: ${observaciones}`;
         const url = `https://wa.me/${asesor.numero}?text=${encodeURIComponent(mensaje)}`;
         const a = document.createElement('a');
