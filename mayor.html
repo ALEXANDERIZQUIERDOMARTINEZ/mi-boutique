@@ -207,6 +207,17 @@
   .mayor-quickadd-sheet {
     z-index: 1060;
   }
+  /* El banner morado y el header quedan por ENCIMA del fondo oscuro de estas
+     hojas — si no, el overlay los apaga y el texto blanco sobre el degradado
+     se ve lavado/ilegible mientras el cliente está eligiendo. Solo se
+     oscurece el catálogo de abajo, no la marca. */
+  .wholesale-banner {
+    position: relative;
+    z-index: 1056;
+  }
+  .site-header {
+    z-index: 1056;
+  }
 
   /* ── Hoja "Cómo comprar" (política + tabla de precios + condiciones) ── */
   .mayor-info-sheet {
@@ -484,10 +495,12 @@
     flex-shrink: 0;
   }
   .mqa-header img {
-    width: 52px;
-    height: 66px;
+    width: 68px;
+    height: 90px;
     object-fit: cover;
+    object-position: top center;
     border-radius: var(--radio-sm);
+    box-shadow: 0 0 0 1px var(--color-borde);
     background: var(--color-fondo-secundario);
     flex-shrink: 0;
   }
