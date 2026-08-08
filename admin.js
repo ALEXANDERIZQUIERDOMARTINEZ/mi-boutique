@@ -4255,12 +4255,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const pdf = new jsPDF('p', 'mm', 'a4');
 
             const PW = 210, PH = 297, M = 18;
-            // Paleta neutra en escala de grises con un acento burdeos discreto
+            // Paleta neutra en escala de grises con un acento rosado discreto
             // para un aspecto elegante y profesional de factura real.
             const INK = [20, 20, 22], TEXT = [55, 54, 57], MUTED = [128, 127, 130],
                   SOFT = [168, 167, 170], LINE = [220, 219, 222], HAIRLINE = [235, 234, 237],
                   ROW_ALT = [247, 247, 248], WHITE = [255, 255, 255];
-            const ACCENT = [141, 33, 63], ACCENT_TINT = [248, 236, 240];
+            const ACCENT = [214, 64, 128], ACCENT_TINT = [253, 234, 244];
 
             function dibujarBordePagina() {
                 pdf.setDrawColor(...LINE);
