@@ -891,6 +891,15 @@ function tallasEquivalentes(a, b) {
     return norm(a) === norm(b);
 }
 
+// Compara dos valores de color considerando que '', 'unico' y 'único' (en cualquier mayúscula/tilde) son equivalentes
+function coloresEquivalentes(a, b) {
+    const norm = c => {
+        const n = (c || '').toLowerCase().trim();
+        return (n === '' || n === 'unico' || n === 'único') ? 'unico' : n;
+    };
+    return norm(a) === norm(b);
+}
+
 // Texto a mostrar para una talla/color: sin importar cómo esté escrito
 // ('unica', 'Unica', 'única', vacío...) siempre se muestra "Única" / "Único".
 function formatTallaLabel(talla) {
@@ -1786,7 +1795,7 @@ function renderCart() {
         if (product) {
             const variacion = (product.variaciones || []).find(v =>
                 tallasEquivalentes(v.talla, item.talla) &&
-                (v.color || 'unico') === item.color
+                coloresEquivalentes(v.color, item.color)
             );
             if (!variacion || variacion.stock <= 0) {
                 productosConProblemas.push({ ...item, tipo: 'agotado' });
@@ -2814,7 +2823,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const product = productsMap.get(item.id);
             if (!product) return true;
             const v = (product.variaciones || []).find(v =>
-                tallasEquivalentes(v.talla, item.talla) && (v.color || 'unico') === item.color
+                tallasEquivalentes(v.talla, item.talla) && coloresEquivalentes(v.color, item.color)
             );
             return !v || v.stock <= 0 || v.stock < item.cantidad;
         });
@@ -3215,7 +3224,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Buscar la variación específica (talla + color)
             const variacion = (product.variaciones || []).find(v =>
                 tallasEquivalentes(v.talla, item.talla) &&
-                (v.color || 'unico') === item.color
+                coloresEquivalentes(v.color, item.color)
             );
 
             if (!variacion || variacion.stock <= 0) {
