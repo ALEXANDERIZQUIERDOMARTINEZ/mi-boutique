@@ -2084,26 +2084,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const trendingCategories = ['Vestidos', 'Blusas', 'Pantalones']; // Categorías en tendencia
     const newCategories = ['Accesorios', 'Zapatos']; // Categorías nuevas
 
-    // ✅ Cargar categorías sin índice (ordenar en memoria)
-    onSnapshot(categoriesCollection, (snapshot) => {
+    let latestCategoriesList = []; // última lista de categorías de Firestore (sin filtrar por stock)
+
+    // Compara la categoría de un producto contra un valor de filtro (nombre o
+    // id de categoría), aceptando cualquiera de las dos formas.
+    function productBelongsToCategory(p, filterValue) {
+        const categoryValue = p.categoriaId || p.categoria;
+        if (!categoryValue) return false;
+        const nameFromId = categoriesMap.get(categoryValue);
+        if (nameFromId === filterValue) return true;
+        if (categoryValue === filterValue) return true;
+        const idFromName = categoriesMap.get(filterValue);
+        if (categoryValue === idFromName) return true;
+        return false;
+    }
+
+    // Una categoría solo aparece en el menú si tiene al menos un producto con
+    // stock — evita listar categorías vacías. Se recalcula cada vez que
+    // cambian las categorías o los productos (el stock puede vaciar una
+    // categoría o llenarla de nuevo).
+    function renderCategoryDropdown() {
+        if (!categoryDropdownMenu) return;
+        const visibleCategories = latestCategoriesList.filter(cat => allProducts.some(p => {
+            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+            return stock > 0 && productBelongsToCategory(p, cat.nombre);
+        }));
+
         categoryDropdownMenu.innerHTML = '';
-        categoriesMap.clear();
-
-        // Ordenar categorías alfabéticamente en memoria
-        const categories = [];
-        snapshot.forEach(doc => {
-            categories.push({ id: doc.id, ...doc.data() });
-        });
-
-        categories.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-
-        categories.forEach(cat => {
-            const catId = cat.id;
+        visibleCategories.forEach(cat => {
             const catName = cat.nombre;
-
-            categoriesMap.set(catId, catName);
-            categoriesMap.set(catName, catId);
-
             const li = document.createElement('li');
             let badgeHTML = '';
 
@@ -2120,8 +2129,15 @@ document.addEventListener('DOMContentLoaded', () => {
             categoryDropdownMenu.appendChild(li);
         });
 
-        // Populate mobile dropdown — incluye "Descuentos" destacado al inicio
+        // Populate mobile dropdown — incluye "Disponibles" (para volver a la
+        // vista general, ya que el menú hamburguesa es la única forma de
+        // llegar ahí en móvil) y "Descuentos" destacados al inicio.
         if (categoryDropdownMenuMobile) {
+            const disponibleHeader = `<li>
+                <a class="dropdown-item filter-group" href="#" data-filter="disponible">
+                    <span>Disponibles</span>
+                </a>
+            </li>`;
             const promoHeader = `<li>
                 <a class="dropdown-item filter-group dropdown-promo-item" href="#" data-filter="promocion">
                     <i class="bi bi-tag-fill"></i>
@@ -2130,8 +2146,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 </a>
             </li>
             <li><hr class="dropdown-divider my-1"></li>`;
-            categoryDropdownMenuMobile.innerHTML = promoHeader + categoryDropdownMenu.innerHTML;
+            categoryDropdownMenuMobile.innerHTML = disponibleHeader + promoHeader + categoryDropdownMenu.innerHTML;
         }
+    }
+
+    // ✅ Cargar categorías sin índice (ordenar en memoria)
+    onSnapshot(categoriesCollection, (snapshot) => {
+        categoriesMap.clear();
+
+        // Ordenar categorías alfabéticamente en memoria
+        const categories = [];
+        snapshot.forEach(doc => {
+            categories.push({ id: doc.id, ...doc.data() });
+        });
+
+        categories.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+        categories.forEach(cat => {
+            categoriesMap.set(cat.id, cat.nombre);
+            categoriesMap.set(cat.nombre, cat.id);
+        });
+
+        latestCategoriesList = categories;
+        renderCategoryDropdown();
 
         console.log(`✅ ${categories.length} categorías cargadas correctamente`);
     }, (error) => {
@@ -2231,6 +2268,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log(`✅ ${allProducts.length} productos cargados correctamente`);
         loadAvailableColors();
+        renderCategoryDropdown();
         applyFiltersAndRender();
         recalculateWholesaleTierPricing(); // productos ya disponibles: recalcular precios por volumen
         renderCart(); // re-validate cart stock when products change
@@ -3504,34 +3542,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ✅ BÚSQUEDA INLINE EN BARRA DE NAVEGACIÓN
-    const mobileNav = document.querySelector('.mobile-bottom-nav');
-    const mobileNavItems = document.querySelectorAll('.nav-item');
+    // ✅ BÚSQUEDA DEL HEADER MÓVIL (siempre visible, ya no es un panel que se abre/cierra)
     const navSearchInput = document.getElementById('nav-search-input');
     const nisClearBtn = document.getElementById('nis-clear');
     const navSearchSuggestions = document.getElementById('nav-search-suggestions');
-
-    function setActiveNavItem(selectedItem) {
-        mobileNavItems.forEach(item => item.classList.remove('active'));
-        if (selectedItem && !selectedItem.id.includes('cart')) {
-            selectedItem.classList.add('active');
-        }
-    }
-
-    function openInlineSearch() {
-        mobileNav.classList.add('search-active');
-        setTimeout(() => navSearchInput.focus(), 80);
-        setActiveNavItem(document.getElementById('mobile-search-btn'));
-    }
-
-    function closeInlineSearch() {
-        mobileNav.classList.remove('search-active');
-        navSearchInput.value = '';
-        document.getElementById('search-input').value = '';
-        nisClearBtn.style.display = 'none';
-        hideSearchSuggestions();
-        applyFiltersAndRender();
-    }
 
     function hideSearchSuggestions() {
         navSearchSuggestions.classList.remove('visible');
@@ -3580,14 +3594,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 categoryDropdownButton.classList.add('active');
                 categoryDropdownButton.dataset.filter = catName;
                 categoryDropdownButton.innerHTML = `${catName} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
-                closeInlineSearch();
+                hideSearchSuggestions();
+                navSearchInput.blur();
                 applyFiltersAndRender();
             });
         });
     }
-
-    document.getElementById('mobile-search-btn').addEventListener('click', openInlineSearch);
-    document.getElementById('nis-back').addEventListener('click', closeInlineSearch);
 
     navSearchInput.addEventListener('input', (e) => {
         const term = e.target.value;
@@ -3609,16 +3621,14 @@ document.addEventListener('DOMContentLoaded', () => {
     navSearchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             e.preventDefault();
-            closeInlineSearch();
+            navSearchInput.blur();
+            hideSearchSuggestions();
         }
     });
 
-    document.getElementById('mobile-home-btn').addEventListener('click', () => {
-        if (mobileNav.classList.contains('search-active')) closeInlineSearch();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        const disponibleBtn = document.querySelector('.filter-group[data-filter="disponible"]');
-        if (disponibleBtn) disponibleBtn.click();
-        setActiveNavItem(document.getElementById('mobile-home-btn'));
+    // Deja tiempo a que un click en una sugerencia se procese antes de ocultarla
+    navSearchInput.addEventListener('blur', () => {
+        setTimeout(hideSearchSuggestions, 150);
     });
 
     // ═══════════════════════════════════════════════════════════════════

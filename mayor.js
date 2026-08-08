@@ -48,6 +48,7 @@ const detalleFilas = new Map();
 let allProducts = [];
 let productsData = []; // productos ya filtrados (categoría/búsqueda) que se están mostrando
 const categoriesMap = new Map(); // categoriaId <-> nombre (bidireccional, igual que app.js)
+let latestCategories = []; // última lista de categorías recibida de Firestore (sin filtrar por stock)
 let activeFilter = 'disponible';
 let searchTerm = '';
 let stockFilterMode = 'all'; // 'all' | 'low'
@@ -479,21 +480,53 @@ function renderTiersTables() {
     tiersTablesEl.innerHTML = buildTiersTablesHtml();
 }
 
+// Compara la categoría de una prenda contra un valor de filtro (nombre o id
+// de categoría), aceptando cualquiera de las dos formas — usado tanto para
+// filtrar la grilla como para saber si una categoría tiene algo que mostrar.
+function productBelongsToCategory(p, filterValue) {
+    const categoryValue = p.categoriaId || p.categoria;
+    if (!categoryValue) return false;
+    const nameFromId = categoriesMap.get(categoryValue);
+    if (nameFromId === filterValue) return true;
+    if (categoryValue === filterValue) return true;
+    const idFromName = categoriesMap.get(filterValue);
+    if (categoryValue === idFromName) return true;
+    return false;
+}
+
+// Una categoría solo se muestra en el filtro si tiene al menos una prenda
+// que realmente aparecería en la grilla (visible, con stock y con precio
+// al por mayor configurado) — evita listar categorías vacías.
+function categoryHasAvailableProduct(catName) {
+    return allProducts.some(p =>
+        p.visible !== false && getStockTotal(p) > 0 && getPrecioUnitario(p) > 0 && productBelongsToCategory(p, catName)
+    );
+}
+
+// Reconstruye los botones de categoría del menú lateral a partir de
+// `latestCategories`, dejando fuera las que no tienen ninguna prenda
+// disponible. Se llama tanto cuando cambian las categorías como cuando
+// cambian los productos (el stock/precio de una prenda puede vaciar o
+// llenar una categoría).
+function renderCategoryFilterButtons() {
+    if (!categoryFilterEl) return;
+    const visibleCategories = latestCategories.filter(cat => categoryHasAvailableProduct(cat.nombre));
+    const items = [{ filtro: 'disponible', label: 'Disponibles', icon: 'bi-shop-window' },
+        ...visibleCategories.map(cat => ({ filtro: cat.nombre, label: cat.nombre, icon: 'bi-tag' }))];
+    if (activeFilter !== 'disponible' && !items.some(item => item.filtro === activeFilter)) {
+        activeFilter = 'disponible';
+    }
+    categoryFilterEl.innerHTML = items.map(item =>
+        `<button type="button" class="mayor-sidebar-item${item.filtro === activeFilter ? ' active' : ''}" data-filter="${item.filtro}"><i class="bi ${item.icon}"></i> ${item.label}</button>`
+    ).join('');
+}
+
 // ── Filtro por categoría/búsqueda (solo prendas con stock y precio mayorista) ──
 function computeVisibleProducts() {
     let list = allProducts.filter(p => p.visible !== false && getStockTotal(p) > 0 && getPrecioUnitario(p) > 0);
 
     if (activeFilter && activeFilter !== 'disponible' && activeFilter !== 'all') {
-        list = list.filter(p => {
-            const categoryValue = p.categoriaId || p.categoria;
-            if (!categoryValue) return false;
-            const nameFromId = categoriesMap.get(categoryValue);
-            if (nameFromId === activeFilter) return true;
-            if (categoryValue === activeFilter) return true;
-            const idFromName = categoriesMap.get(activeFilter);
-            if (categoryValue === idFromName) return true;
-            return false;
-        });
+        list = list.filter(p => productBelongsToCategory(p, activeFilter));
     }
 
     if (searchTerm) {
@@ -1203,13 +1236,8 @@ onSnapshot(categoriesCollection, (snapshot) => {
         categoriesMap.set(cat.nombre, cat.id);
     });
 
-    if (categoryFilterEl) {
-        const items = [{ filtro: 'disponible', label: 'Disponibles', icon: 'bi-shop-window' },
-            ...categories.map(cat => ({ filtro: cat.nombre, label: cat.nombre, icon: 'bi-tag' }))];
-        categoryFilterEl.innerHTML = items.map(item =>
-            `<button type="button" class="mayor-sidebar-item${item.filtro === activeFilter ? ' active' : ''}" data-filter="${item.filtro}"><i class="bi ${item.icon}"></i> ${item.label}</button>`
-        ).join('');
-    }
+    latestCategories = categories;
+    renderCategoryFilterButtons();
 
     renderProducts();
     updateProgress();
@@ -1331,6 +1359,7 @@ onSnapshot(productsCollection, (snapshot) => {
         if (!esProveedorBoutique(data)) return;
         allProducts.push({ id: docSnap.id, ...data });
     });
+    renderCategoryFilterButtons();
     renderProducts();
     updateProgress();
     maybeStartMayorTour();

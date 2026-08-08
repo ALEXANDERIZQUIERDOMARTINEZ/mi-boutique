@@ -233,6 +233,22 @@
     background: var(--color-borde);
     margin: 10px 20px;
   }
+  /* "Cómo comprar" ahora es lo primero del menú: se destaca un poco y trae
+     una línea explicando qué hay ahí (la guía y la tabla de precios), para
+     que no quede como un ítem más perdido entre los filtros. */
+  .mayor-sidebar-item-howto {
+    color: var(--color-primario-oscuro);
+    font-weight: 700;
+  }
+  .mayor-sidebar-item-howto:hover {
+    background: var(--color-primario-claro);
+  }
+  .mayor-sidebar-howto-hint {
+    margin: 2px 20px 0;
+    font-size: 0.74rem;
+    color: var(--color-texto-secundario);
+    line-height: 1.4;
+  }
 
   /* ── Hojas de pantalla completa (Cómo comprar / Agregar rápido) ─────────
      Antes eran offcanvas de Bootstrap ancladas al fondo con height:auto —
@@ -1366,6 +1382,10 @@
       <p class="mayor-sidebar-sub">Mínimo 6 prendas surtidas · el precio baja por cantidad</p>
     </div>
     <nav class="mayor-sidebar-nav">
+      <button type="button" class="mayor-sidebar-item mayor-sidebar-item-howto" id="btn-open-info"><i class="bi bi-info-circle"></i> Cómo comprar</button>
+      <p class="mayor-sidebar-howto-hint">Ahí encuentras la guía de compra y la tabla de precios por cantidad.</p>
+      <div class="mayor-sidebar-divider"></div>
+
       <p class="mayor-sidebar-group-label">Categorías</p>
       <div id="mayor-category-filter" role="group" aria-label="Filtrar por categoría">
         <button type="button" class="mayor-sidebar-item active" data-filter="disponible"><i class="bi bi-shop-window"></i> Disponibles</button>
@@ -1385,9 +1405,6 @@
         <button type="button" class="mayor-sidebar-item" data-sort="stock-desc"><i class="bi bi-boxes"></i> Más disponibilidad</button>
         <button type="button" class="mayor-sidebar-item" data-sort="stock-asc"><i class="bi bi-box"></i> Menos disponibilidad</button>
       </div>
-
-      <div class="mayor-sidebar-divider"></div>
-      <button type="button" class="mayor-sidebar-item" id="btn-open-info"><i class="bi bi-info-circle"></i> Cómo comprar</button>
     </nav>
   </aside>
 
@@ -1522,7 +1539,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.9.0"></script>
+<script type="module" src="mayor.js?v=1.9.1"></script>
 
 </body>
 </html>
