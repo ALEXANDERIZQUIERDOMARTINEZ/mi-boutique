@@ -85,12 +85,6 @@
   .mayor-info-btn i {
     color: var(--color-primario-oscuro);
   }
-  .mayor-info-btn#btn-replay-guide {
-    padding: 8px;
-    width: 34px;
-    height: 34px;
-    justify-content: center;
-  }
   .mayor-info-btn:hover {
     border-color: var(--color-primario);
     background: var(--color-primario-claro);
@@ -270,6 +264,27 @@
   }
 
   /* ── Hoja "Cómo comprar" (política + tabla de precios + condiciones) ── */
+  .mayor-tour-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    border: 1.5px solid var(--color-primario);
+    background: #fff;
+    color: var(--color-primario-oscuro);
+    font-family: var(--fuente-principal);
+    font-size: 0.86rem;
+    font-weight: 700;
+    padding: 11px;
+    border-radius: var(--radio-sm);
+    cursor: pointer;
+    margin-bottom: 18px;
+    transition: background 0.2s ease;
+  }
+  .mayor-tour-link:hover {
+    background: var(--color-primario-claro);
+  }
   .mayor-info-rule {
     display: flex;
     align-items: flex-start;
@@ -558,16 +573,19 @@
     display: block;
     width: 100%;
     aspect-ratio: 4/5;
-    max-height: 22vh;
-    max-height: 22dvh;
-    object-fit: cover;
+    max-height: 30vh;
+    max-height: 30dvh;
+    /* "contain" (no "cover"): se ve la prenda completa, sin recortar
+       ningún borde de la foto — a costa de dejar franjas vacías arriba/
+       abajo o a los lados si la foto no es 4:5. */
+    object-fit: contain;
     border-radius: var(--radio-md);
     background: var(--color-fondo-secundario);
     margin-bottom: 10px;
     transition: max-height 0.2s ease;
   }
   .mayor-quickadd-sheet.is-compact .mqa-hero-img {
-    max-height: 70px;
+    max-height: 90px;
   }
   .mqa-price {
     font-size: 1.05rem;
@@ -1349,14 +1367,9 @@
           <h1>Prendas de Entrega Inmediata</h1>
           <p class="mayor-topbar-sub">Mínimo 6 prendas surtidas · el precio baja por cantidad</p>
         </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <button type="button" class="mayor-info-btn" id="btn-open-info">
-            <i class="bi bi-info-circle"></i> Cómo comprar
-          </button>
-          <button type="button" class="mayor-info-btn" id="btn-replay-guide" aria-label="Ver guía de uso" title="Ver guía de uso">
-            <i class="bi bi-question-circle"></i>
-          </button>
-        </div>
+        <button type="button" class="mayor-info-btn" id="btn-open-info">
+          <i class="bi bi-info-circle"></i> Cómo comprar
+        </button>
       </div>
 
       <div class="mayor-toolbar">
@@ -1448,6 +1461,9 @@
     <button type="button" class="mayor-fullsheet-close" id="btn-close-info" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
   </div>
   <div class="mayor-fullsheet-body">
+    <button type="button" class="mayor-tour-link" id="btn-start-tour-from-info">
+      <i class="bi bi-play-circle-fill"></i> Ver recorrido guiado de la página
+    </button>
     <div class="mayor-info-rule">
       <i class="bi bi-info-circle-fill"></i>
       <span>💖 Puedes llevar <strong>6 prendas surtidas</strong>, sin necesidad de que sean de la misma referencia. Solo se pide hasta el stock real disponible de cada talla/color. ¡Quedamos atentos a sus pedidos! 🛍️💕</span>
@@ -1512,7 +1528,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.7.0"></script>
+<script type="module" src="mayor.js?v=1.8.0"></script>
 
 </body>
 </html>

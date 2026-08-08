@@ -4,12 +4,20 @@
 // señalado, más una burbuja con el texto y botones Anterior/Siguiente/
 // Saltar. No depende de ninguna página en concreto — cada página decide
 // sus propios pasos y cuándo mostrarlo (normalmente: la primera vez que
-// alguien entra) y cuándo repetirlo (un botón de ayuda "?").
+// alguien entra) y cuándo repetirlo (p.ej. un enlace dentro de un panel
+// de ayuda ya existente).
+//
+// Cada paso puede traer un `onEnter` (puede ser async) que se espera
+// antes de posicionar la burbuja — así un paso puede, por ejemplo, abrir
+// una hoja/modal y luego señalar algo que vive adentro. `onEnter` debe
+// ser idempotente: se vuelve a llamar cada vez que se entra al paso,
+// incluso yendo hacia atrás.
 //
 // Uso:
 //   import { startGuideTour, hasSeenGuide } from './guide-tour.js';
 //   startGuideTour('mayor', steps);           // solo la primera vez
 //   startGuideTour('mayor', steps, { force: true }); // repetir a pedido
+//   startGuideTour('mayor', steps, { onExit: cerrarLoQueSeAbrio });
 
 const STORAGE_PREFIX = 'mishell_guide_seen_';
 
@@ -33,13 +41,15 @@ export function startGuideTour(key, steps, options = {}) {
     if (!steps || steps.length === 0) return;
     if (!options.force && hasSeenGuide(key)) return;
     if (activeTour) activeTour.destroy();
-    activeTour = createTour(key, steps);
+    activeTour = createTour(key, steps, options);
     activeTour.start();
 }
 
-function createTour(key, steps) {
+function createTour(key, steps, options) {
     let stepIndex = 0;
     let repositionHandler = null;
+    let renderToken = 0;
+    let isTransitioning = false;
 
     const root = document.createElement('div');
     root.className = 'gtour-root';
@@ -78,9 +88,13 @@ function createTour(key, steps) {
     function finish() {
         markGuideSeen(key);
         destroy();
+        if (typeof options.onExit === 'function') {
+            try { options.onExit(); } catch (e) { console.error(e); }
+        }
     }
 
     function destroy() {
+        renderToken += 1; // invalida cualquier onEnter todavía pendiente
         window.removeEventListener('resize', repositionHandler);
         window.removeEventListener('scroll', repositionHandler, true);
         document.removeEventListener('keydown', onKeydown);
@@ -95,16 +109,21 @@ function createTour(key, steps) {
         else if (e.key === 'ArrowLeft') goBack();
     }
 
-    function goNext() {
+    async function goNext() {
+        if (isTransitioning) return;
         if (stepIndex >= steps.length - 1) { finish(); return; }
+        isTransitioning = true;
         stepIndex += 1;
-        renderStep();
+        await renderStep();
+        isTransitioning = false;
     }
 
-    function goBack() {
-        if (stepIndex <= 0) return;
+    async function goBack() {
+        if (isTransitioning || stepIndex <= 0) return;
+        isTransitioning = true;
         stepIndex -= 1;
-        renderStep();
+        await renderStep();
+        isTransitioning = false;
     }
 
     function positionForTarget(targetEl) {
@@ -153,8 +172,15 @@ function createTour(key, steps) {
         tooltipEl.querySelector('.gtour-tooltip-arrow').style.left = `${arrowLeft}px`;
     }
 
-    function renderStep() {
+    async function renderStep() {
+        const myToken = ++renderToken;
         const step = steps[stepIndex];
+
+        if (typeof step.onEnter === 'function') {
+            try { await step.onEnter(); } catch (e) { console.error(e); }
+        }
+        if (myToken !== renderToken) return; // se saltó a otro paso mientras tanto
+
         const targetEl = step.selector ? document.querySelector(step.selector) : null;
 
         titleEl.textContent = step.title || '';
@@ -169,7 +195,7 @@ function createTour(key, steps) {
 
         if (targetEl && targetEl.scrollIntoView) {
             targetEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            setTimeout(() => positionForTarget(targetEl), 280);
+            setTimeout(() => { if (myToken === renderToken) positionForTarget(targetEl); }, 280);
         } else {
             positionForTarget(null);
         }
