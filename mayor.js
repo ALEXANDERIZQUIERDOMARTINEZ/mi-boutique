@@ -1126,6 +1126,7 @@ if (waBtn) {
         let codigoPedido = '';
         try {
             const docRef = await addDoc(webOrdersCollection, {
+                tenantId: window.appContext?.tenantId || null,
                 clienteNombre: 'Cliente General',
                 clienteCedula: '',
                 clienteCelular: '',
