@@ -1217,39 +1217,79 @@ if (sortSelectEl) {
 
 // ── Recorrido guiado: se muestra solo la primera vez que alguien entra a
 // esta página (guardado en localStorage) y explica, en orden, las piezas
-// clave para comprar al por mayor. El botón "?" del encabezado lo repite
-// cuando se quiera. Espera a que haya al menos una prenda pintada en la
-// grilla para poder señalarla. ──────────────────────────────────────────
+// clave para comprar al por mayor — incluyendo abrir de verdad la hoja de
+// "agregar rápido" de la primera prenda para señalar adentro cómo se
+// elige color/talla/cantidad. El enlace "Ver recorrido guiado" dentro de
+// "Cómo comprar" lo repite cuando se quiera. Espera a que haya al menos
+// una prenda pintada en la grilla para poder señalarla. ─────────────────
+
+// Abre (o mantiene abierta) la hoja de agregar rápido de la primera
+// prenda visible, para usarla como ejemplo durante el recorrido. Es
+// idempotente: se puede llamar en cada paso sin volver a animar nada si
+// ya estaba abierta con la misma prenda.
+function openDemoTourSheet() {
+    const demoId = gridEl?.querySelector('.mayor-card')?.dataset.productId;
+    if (!demoId) return;
+    if (openSheetProductId !== demoId || !quickAddSheetEl?.classList.contains('is-open')) {
+        openQuickAddSheet(demoId);
+    }
+}
+
 const MAYOR_TOUR_STEPS = [
     {
         selector: '#btn-open-info',
         title: '👋 Antes de empezar',
         text: 'Aquí puedes ver el mínimo de prendas por pedido, la tabla de precios por cantidad y las demás condiciones de la compra al por mayor.',
+        onEnter: closeQuickAddSheet,
     },
     {
         selector: '.mayor-toolbar-controls',
         title: 'Filtra y ordena',
         text: 'Usa estos controles para ver solo las prendas con poca disponibilidad, u ordenarlas por precio o stock.',
+        onEnter: closeQuickAddSheet,
     },
     {
         selector: '.mayor-card',
         title: 'Elige tus prendas',
-        text: 'Toca "+ Agregar" en cualquier prenda para elegir color, talla y cantidad. Todo cabe en una sola pantalla, sin necesidad de deslizar.',
+        text: 'Toca "+ Agregar" en cualquier prenda para abrir su ficha y elegir color, talla y cantidad.',
+        onEnter: closeQuickAddSheet,
+    },
+    {
+        selector: '#mayorQuickAddSheet .mqa-hero-img',
+        title: 'La foto completa',
+        text: 'Al tocar "+ Agregar" se abre esto: la foto completa de la prenda, sin recortes, para que la veas bien antes de elegir.',
+        onEnter: openDemoTourSheet,
+    },
+    {
+        selector: '#mqa-body',
+        title: 'Color, talla y cantidad',
+        text: 'Toca un color para agregarlo a tu pedido (puedes elegir varios). Luego elige la talla si aplica y ajusta la cantidad con los botones − y +.',
+        onEnter: openDemoTourSheet,
+    },
+    {
+        selector: '#mqa-done-btn',
+        title: 'Listo',
+        text: 'Cuando termines con esta prenda, toca "Listo" para volver a la lista y seguir agregando otras.',
+        onEnter: openDemoTourSheet,
     },
     {
         title: 'Envía tu pedido',
         text: 'A medida que agregues prendas, verás el total en una barra al final de la pantalla. Desde ahí eliges a quién enviárselo por WhatsApp.',
+        onEnter: closeQuickAddSheet,
     },
 ];
 let mayorTourStarted = false;
 function maybeStartMayorTour() {
     if (mayorTourStarted || !gridEl || !gridEl.querySelector('.mayor-card')) return;
     mayorTourStarted = true;
-    startGuideTour('mayor', MAYOR_TOUR_STEPS);
+    startGuideTour('mayor', MAYOR_TOUR_STEPS, { onExit: closeQuickAddSheet });
 }
-const replayGuideBtn = document.getElementById('btn-replay-guide');
-if (replayGuideBtn) {
-    replayGuideBtn.addEventListener('click', () => startGuideTour('mayor', MAYOR_TOUR_STEPS, { force: true }));
+const startTourFromInfoBtn = document.getElementById('btn-start-tour-from-info');
+if (startTourFromInfoBtn) {
+    startTourFromInfoBtn.addEventListener('click', () => {
+        closeFullsheet(infoSheetEl);
+        startGuideTour('mayor', MAYOR_TOUR_STEPS, { force: true, onExit: closeQuickAddSheet });
+    });
 }
 
 // ── Carga de productos ────────────────────────────────────────────────
