@@ -68,19 +68,54 @@ const mobileSearchInputEl = document.getElementById('mayor-search-input-mobile')
 const stockFilterEl = document.getElementById('mayor-stock-filter');
 const sortSelectEl = document.getElementById('mayor-sort-select');
 
-// ── Hoja de "Agregar rápido" ─────────────────────────────────────────────
-// Los colores/tallas/cantidades de UNA prenda viven en esta hoja (offcanvas),
-// no en la tarjeta de la grilla — la tarjeta solo muestra foto/nombre/precio
-// y un botón claro que la abre. `openSheetProductId` recuerda para qué
-// prenda está abierta, para poder refrescarla en vivo si el usuario ajusta
+// ── Hojas de pantalla completa (Cómo comprar / Agregar rápido) ──────────
+// Son overlays propios (position:fixed;inset:0 + clase .is-open) en vez de
+// offcanvas de Bootstrap: una hoja anclada al fondo con height:auto + un
+// hijo con flex:1 adentro colapsaba a una altura casi nula en Safari/iOS y
+// cortaba el contenido (colores/tallas/cantidad quedaban invisibles). Al
+// ocupar toda la pantalla el alto queda definido (no "auto"), sin esa
+// ambigüedad.
+function openFullsheet(el) {
+    if (!el) return;
+    el.classList.add('is-open');
+}
+function closeFullsheet(el) {
+    if (!el) return;
+    el.classList.remove('is-open');
+}
+
+const infoSheetEl = document.getElementById('mayorInfoSheet');
+const infoOpenBtn = document.getElementById('btn-open-info');
+const infoCloseBtn = document.getElementById('btn-close-info');
+if (infoOpenBtn) infoOpenBtn.addEventListener('click', () => openFullsheet(infoSheetEl));
+if (infoCloseBtn) infoCloseBtn.addEventListener('click', () => closeFullsheet(infoSheetEl));
+
+// Los colores/tallas/cantidades de UNA prenda viven en esta hoja, no en la
+// tarjeta de la grilla — la tarjeta solo muestra foto/nombre/precio y un
+// botón claro que la abre. `openSheetProductId` recuerda para qué prenda
+// está abierta, para poder refrescarla en vivo si el usuario ajusta
 // cantidades desde otro lado (p.ej. el resumen del pedido).
 const quickAddSheetEl = document.getElementById('mayorQuickAddSheet');
+const mqaCloseBtn = document.getElementById('mqa-close-btn');
+const mqaDoneBtn = document.getElementById('mqa-done-btn');
 const mqaBodyEl = document.getElementById('mqa-body');
 const mqaImgEl = document.getElementById('mqa-img');
 const mqaNameEl = document.getElementById('mqa-name');
 const mqaPriceEl = document.getElementById('mqa-price');
 let openSheetProductId = null;
-let bsQuickAddOffcanvas = null;
+
+function closeQuickAddSheet() {
+    closeFullsheet(quickAddSheetEl);
+    openSheetProductId = null;
+}
+if (mqaCloseBtn) mqaCloseBtn.addEventListener('click', closeQuickAddSheet);
+if (mqaDoneBtn) mqaDoneBtn.addEventListener('click', closeQuickAddSheet);
+
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (quickAddSheetEl?.classList.contains('is-open')) closeQuickAddSheet();
+    else if (infoSheetEl?.classList.contains('is-open')) closeFullsheet(infoSheetEl);
+});
 
 function showToast(message, type = 'success') {
     const liveToastEl = document.getElementById('liveToast');
@@ -573,6 +608,9 @@ function buildCardPriceHtml(p) {
 // directamente (un toque la agrega, otro toque la quita), en vez de un botón
 // "Elegir esta prenda" separado seguido de desplegables — así lo primero que
 // el ojo ve (los colores disponibles) es también la forma de comprarlos.
+// Cada color es una fila completa (no una bolita chica): se ve el nombre y
+// cuántas unidades quedan sin tener que adivinar ni tocar para enterarse —
+// más un resumen arriba con cuántos colores tiene la prenda en total.
 function buildCardColorsHtml(p) {
     const colores = getColoresDelProducto(p);
     if (colores.length === 0) return '<p class="mayor-no-colores">Sin colores registrados — escríbenos por WhatsApp para este pedido.</p>';
@@ -583,16 +621,19 @@ function buildCardColorsHtml(p) {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
         const sel = seleccion.get(color);
-        const titulo = `${formatColorLabel(color)} — ${stock} disponible${stock === 1 ? '' : 's'}`;
         return `
-            <button type="button" class="mayor-card-color-item mayor-swatch-btn${sel ? ' is-selected' : ''}" data-id="${p.id}" data-color="${color.replace(/"/g, '&quot;')}" title="${titulo}">
+            <button type="button" class="mayor-card-color-item mayor-swatch-btn${sel ? ' is-selected' : ''}" data-id="${p.id}" data-color="${color.replace(/"/g, '&quot;')}">
                 <span class="color-swatch-circle mayor-card-color-swatch" style="${swatchStyle}"></span>
-                <span class="color-swatch-name">${formatColorLabel(color)}</span>
-                ${sel ? `<span class="mayor-swatch-badge">${sel.cantidad}</span>` : ''}
+                <span class="mayor-color-row-info">
+                    <span class="mayor-color-row-name">${formatColorLabel(color)}</span>
+                    <span class="mayor-color-row-stock">${stock} disponible${stock === 1 ? '' : 's'}</span>
+                </span>
+                ${sel ? `<span class="mayor-swatch-badge">${sel.cantidad}</span>` : '<i class="bi bi-plus-lg mayor-color-row-add"></i>'}
             </button>
         `;
     }).join('');
-    return `<div class="mayor-card-colors">${itemsHtml}</div>`;
+    const resumen = `<p class="mayor-colors-summary">${colores.length} color${colores.length === 1 ? '' : 'es'} disponible${colores.length === 1 ? '' : 's'}</p>`;
+    return `${resumen}<div class="mayor-card-colors">${itemsHtml}</div>`;
 }
 
 // HTML de la parte interactiva de la tarjeta: lo único que cambia al elegir/
@@ -666,17 +707,10 @@ function renderQuickAddSheet(id) {
 }
 
 function openQuickAddSheet(id) {
-    if (!quickAddSheetEl || !mqaBodyEl || !window.bootstrap) return;
+    if (!quickAddSheetEl || !mqaBodyEl) return;
     openSheetProductId = id;
     renderQuickAddSheet(id);
-    if (!bsQuickAddOffcanvas) bsQuickAddOffcanvas = new bootstrap.Offcanvas(quickAddSheetEl);
-    bsQuickAddOffcanvas.show();
-}
-
-if (quickAddSheetEl) {
-    quickAddSheetEl.addEventListener('hidden.bs.offcanvas', () => {
-        openSheetProductId = null;
-    });
+    openFullsheet(quickAddSheetEl);
 }
 
 // Refresca la tarjeta de la grilla (precio + botón) y, si la hoja de agregar
