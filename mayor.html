@@ -35,19 +35,16 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* El buscador propio del header general queda redundante en esta página:
-     aquí el buscador vive en la barra estilo Gmail de .mayor-topbar. */
-  .site-header .header-right {
-    display: none !important;
-  }
-
   /* ── Barra superior: estilo Gmail — menú hamburguesa, buscador y avatar
      en una sola pila, siempre visible. Filtros, orden y "Cómo comprar"
      viven detrás del menú lateral que abre el hamburguesa. ────── */
   .mayor-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 500;
     background: #fff;
     border-bottom: 1px solid var(--color-borde);
-    padding: 10px 16px;
+    padding: max(10px, env(safe-area-inset-top)) 16px 10px;
   }
   .mayor-topbar-inner {
     max-width: 900px;
@@ -161,6 +158,16 @@
     flex-shrink: 0;
     padding: max(18px, env(safe-area-inset-top)) 20px 14px;
     border-bottom: 1px solid var(--color-borde);
+  }
+  .mayor-sidebar-store {
+    display: block;
+    font-family: var(--fuente-principal);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-primario-oscuro);
+    margin-bottom: 4px;
   }
   .mayor-sidebar-brand {
     display: block;
@@ -1332,54 +1339,6 @@
 </head>
 <body class="wholesale-active">
 
-<header class="site-header sticky-top">
-<div class="header-gradient"></div>
-<nav class="header-nav">
-    <div class="container">
-        <div class="header-layout">
-            <!-- Desktop: Nav links -->
-            <div class="header-left d-none d-lg-flex">
-                <button class="nav-link-header filter-group active" data-filter="disponible">Disponibles</button>
-                <div class="dropdown">
-                    <button class="nav-link-header filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="category-dropdown-button">
-                        Categorías <i class="bi bi-chevron-down" style="font-size: 0.65em; margin-left: 3px;"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-enhanced" id="category-dropdown-menu">
-                        <li><a class="dropdown-item" href="#">Cargando...</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Mobile: Menu hamburguesa -->
-            <div class="header-left-mobile d-lg-none">
-                <div class="dropdown">
-                    <button class="nav-link-header filter-group" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-list"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-enhanced" id="category-dropdown-menu-mobile">
-                        <li><a class="dropdown-item" href="#">Cargando...</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Centro: Marca -->
-            <a class="header-brand" href="mayor.html">MISHELL'ES FÁBRICA</a>
-
-            <!-- Derecha: Buscador -->
-            <div class="header-right d-none d-lg-flex">
-                <div class="search-box">
-                    <input type="text" class="form-control" id="search-input" placeholder="Buscar...">
-                    <i class="bi bi-search search-icon"></i>
-                </div>
-            </div>
-
-            <!-- Mobile: placeholder derecho para centrar marca -->
-            <div class="d-lg-none" style="width: 40px;"></div>
-        </div>
-    </div>
-</nav>
-</header>
-
 <main>
 
   <section class="mayor-topbar">
@@ -1402,10 +1361,16 @@
   <div class="mayor-sidebar-backdrop" id="mayor-sidebar-backdrop"></div>
   <aside class="mayor-sidebar" id="mayor-sidebar" aria-label="Menú de prendas al por mayor">
     <div class="mayor-sidebar-header">
+      <span class="mayor-sidebar-store">MISHELL'ES FÁBRICA</span>
       <span class="mayor-sidebar-brand">Prendas de Entrega Inmediata</span>
       <p class="mayor-sidebar-sub">Mínimo 6 prendas surtidas · el precio baja por cantidad</p>
     </div>
     <nav class="mayor-sidebar-nav">
+      <p class="mayor-sidebar-group-label">Categorías</p>
+      <div id="mayor-category-filter" role="group" aria-label="Filtrar por categoría">
+        <button type="button" class="mayor-sidebar-item active" data-filter="disponible"><i class="bi bi-shop-window"></i> Disponibles</button>
+      </div>
+
       <p class="mayor-sidebar-group-label">Disponibilidad</p>
       <div id="mayor-stock-filter" role="group" aria-label="Filtrar por disponibilidad">
         <button type="button" class="mayor-sidebar-item active" data-stock="all"><i class="bi bi-grid"></i> Todas</button>
