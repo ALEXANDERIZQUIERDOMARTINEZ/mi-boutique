@@ -2484,12 +2484,63 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        let variationAddedItems = [];
+
+        function renderVariationAddedList() {
+            const wrapper = document.getElementById('variation-added-list');
+            const list = document.getElementById('variation-added-list-items');
+            if (!wrapper || !list) return;
+
+            if (variationAddedItems.length === 0) {
+                wrapper.style.display = 'none';
+                list.innerHTML = '';
+                return;
+            }
+
+            wrapper.style.display = 'block';
+            list.innerHTML = variationAddedItems.map((it, idx) => `
+                <span class="badge bg-light text-dark border d-inline-flex align-items-center gap-1">
+                    ${[normalizeTalla(it.talla), normalizeColor(it.color)].filter(Boolean).join(' / ')} × ${it.cantidad}
+                    <button type="button" class="btn-close btn-close-sm" style="font-size: 0.55rem;" data-remove-added-index="${idx}" aria-label="Quitar"></button>
+                </span>
+            `).join('');
+
+            list.querySelectorAll('[data-remove-added-index]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.removeAddedIndex, 10);
+                    const removed = variationAddedItems[idx];
+                    if (removed) {
+                        const productId = document.getElementById('variation-product-id').value;
+                        const cartIndex = window.ventaItems.findIndex(item =>
+                            item.productoId === productId && item.talla === removed.talla && item.color === removed.color
+                        );
+                        if (cartIndex !== -1) {
+                            const cartItem = window.ventaItems[cartIndex];
+                            cartItem.cantidad -= removed.cantidad;
+                            if (cartItem.cantidad <= 0) {
+                                window.ventaItems.splice(cartIndex, 1);
+                            } else {
+                                cartItem.total = cartItem.cantidad * cartItem.precio;
+                            }
+                            renderCarrito();
+                            window.calcularTotalVentaGeneral();
+                        }
+                    }
+                    variationAddedItems.splice(idx, 1);
+                    renderVariationAddedList();
+                });
+            });
+        }
+
         function openVariationModal(productId) {
             const product = localProductsMap.get(productId);
             if (!product) {
                 showToast("Error: Producto no encontrado", "error");
                 return;
             }
+
+            variationAddedItems = [];
+            renderVariationAddedList();
 
             document.getElementById('variation-product-id').value = productId;
             document.getElementById('variation-product-name').value = product.nombre;
@@ -2650,14 +2701,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.agregarItemAlCarrito(
                     productId,
                     nombre,
-                    1, 
+                    1,
                     precio,
                     talla,
                     color,
-                    `${nombre} (${talla}/${color})` 
+                    `${nombre} (${talla}/${color})`
                 );
 
-                selectVariationModalInstance.hide();
+                // Registrar lo agregado y dejar el modal abierto para poder
+                // seguir eligiendo más colores/tallas de la misma prenda.
+                const existingAdded = variationAddedItems.find(it => it.talla === talla && it.color === color);
+                if (existingAdded) {
+                    existingAdded.cantidad += 1;
+                } else {
+                    variationAddedItems.push({ talla, color, cantidad: 1 });
+                }
+                renderVariationAddedList();
+                showToast(`"${nombre}" (${normalizeTalla(talla)}/${normalizeColor(color)}) agregado`, "success");
+
+                // Reiniciar la selección de color para permitir agregar otro color rápidamente.
+                const selectColor = document.getElementById('select-color');
+                const stockDisplay = document.getElementById('variation-stock-display');
+                if (selectColor) selectColor.value = '';
+                if (stockDisplay) stockDisplay.style.display = 'none';
+                addVariationBtn.disabled = true;
+                if (selectColor) selectColor.focus();
             });
         }
 
