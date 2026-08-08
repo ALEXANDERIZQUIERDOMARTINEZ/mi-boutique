@@ -315,6 +315,27 @@ let repartidoresMap = new Map(); // ✅ Mapa de repartidores para el modal de ve
 const repartidoresSubscribers = [];
 function subscribeRepartidores(callback) { repartidoresSubscribers.push(callback); }
 
+// Mismo consolidado para productos: el dashboard (iniciarListenerProductos)
+// ya no abre su propio onSnapshot sobre toda la colección, sino que se
+// suscribe al snapshot del listener único de la pestaña Productos.
+const productsSubscribers = [];
+function subscribeProducts(callback) { productsSubscribers.push(callback); }
+
+// ── Carga diferida por sección ──────────────────────────────────────────
+// Ejecuta cb() si `hash` ya es la sección activa ahora mismo, y cada vez
+// que se vuelva a entrar a ella después (ver evento 'admin:section-shown'
+// disparado por showSection() en admin.html). Así el catálogo completo de
+// productos, apartados, etc. no compite por red/CPU con el Dashboard al
+// cargar la página — solo se construye cuando el usuario realmente abre
+// esa pestaña, sin importar si la navegación vino del rail o de la barra
+// inferior móvil.
+function alEntrarSeccion(hash, cb) {
+    if ((window.location.hash || '#dashboard') === hash) cb();
+    window.addEventListener('admin:section-shown', (e) => {
+        if (e.detail && e.detail.hash === hash) cb();
+    });
+}
+
 // ========================================================================
 // --- FUNCIÓN GLOBAL: ACTUALIZAR STOCK ---
 // ========================================================================
@@ -1504,40 +1525,126 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const cI=document.getElementById('costo-compra'); const pDI=document.getElementById('precio-detal'); const pMI=document.getElementById('precio-mayor'); const mDI=document.getElementById('margen-detal-info'); const mMI=document.getElementById('margen-mayor-info'); const fM_margin=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}); function cYM(){ if(!cI || !pDI || !pMI || !mDI || !mMI) return; const c=parseFloat(eliminarFormatoNumero(cI.value))||0; const pD=parseFloat(eliminarFormatoNumero(pDI.value))||0; const pM=parseFloat(eliminarFormatoNumero(pMI.value))||0; let mDV=0,mDP=0;if(c>0&&pD>=c){mDV=pD-c;mDP=(mDV/c)*100;mDI.textContent=`Margen: ${fM_margin.format(mDV)} (${mDP.toFixed(1)}%)`;mDI.style.color='';mDI.style.fontWeight='';}else{mDI.textContent='Margen: $0 (0.0%)';mDI.style.color=(pD>0&&pD<c)?'red':'';mDI.style.fontWeight=(pD>0&&pD<c)?'bold':'';if(pD>0&&pD<c)mDI.textContent='Margen Negativo';} let mMV=0,mMP=0;if(c>0&&pM>=c){mMV=pM-c;mMP=(mMV/c)*100;mMI.textContent=`Margen: ${fM_margin.format(mMV)} (${mMP.toFixed(1)}%)`;mMI.style.color='';mMI.style.fontWeight='';}else{mMI.textContent='Margen: $0 (0.0%)';mMI.style.color=(pM>0&&pM<c)?'red':'';mMI.style.fontWeight=(pM>0&&pM<c)?'bold':'';if(pM>0&&pM<c)mMI.textContent='Margen Negativo';}} if(cI)cI.addEventListener('input',cYM); if(pDI)pDI.addEventListener('input',cYM); if(pMI)pMI.addEventListener('input',cYM); if(cI) cYM();
         
-        const renderProducts = (snapshot) => { 
-            localProductsMap.clear(); 
-            
+        // La tabla de Productos (filas + un <svg> de código de barras generado
+        // por cada producto que lo tenga) es lo más caro de construir de todo
+        // el arranque de la app. productosTablaSucia marca que llegó un
+        // snapshot nuevo mientras la pestaña Productos estaba oculta, para
+        // pintarla recién cuando el usuario entra a ella (alEntrarSeccion más
+        // abajo) en vez de reconstruirla en cada snapshot esté visible o no.
+        let productosTablaSucia = false;
+
+        const renderProducts = (snapshot) => {
+            // Avisar de inmediato a los suscriptores ligeros (dashboard) con
+            // el snapshot crudo, antes de reconstruir el mapa y el HTML de
+            // abajo — igual que se hace con repartidores.
+            productsSubscribers.forEach(cb => {
+                try { cb(snapshot); } catch (e) { console.error('Error en suscriptor de productos:', e); }
+            });
+
+            localProductsMap.clear();
+
             const filterCategoryDropdown = document.getElementById('filter-category-inventory');
             const productCategoryDropdown = document.getElementById('categoria-producto');
-            if (filterCategoryDropdown && productCategoryDropdown) { 
-                if (filterCategoryDropdown.options.length <= 1) { 
+            if (filterCategoryDropdown && productCategoryDropdown) {
+                if (filterCategoryDropdown.options.length <= 1) {
                     filterCategoryDropdown.innerHTML = productCategoryDropdown.innerHTML;
-                    filterCategoryDropdown.value = ''; 
+                    filterCategoryDropdown.value = '';
                 }
             }
 
-            if(!productListTableBody) return; 
-            const emptyRow = document.getElementById('empty-inventory-row'); 
-            productListTableBody.innerHTML = ''; 
-            if(productSearchModalList) productSearchModalList.innerHTML = ''; 
-            if (snapshot.empty) { 
-                if(emptyRow) { 
-                    emptyRow.style.display = ''; 
-                    productListTableBody.appendChild(emptyRow); 
-                } 
-                return; 
-            } 
-            if(emptyRow) emptyRow.style.display = 'none'; 
-            
-            snapshot.forEach(docSnap => { 
-                const d = docSnap.data(); 
-                const id = docSnap.id; 
-                
+            if(!productListTableBody) return;
+            if(productSearchModalList) productSearchModalList.innerHTML = '';
+
+            snapshot.forEach(docSnap => {
+                const d = docSnap.data();
+                const id = docSnap.id;
+
                 localProductsMap.set(id, d);
 
-                const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0; 
+                const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
+
+                const li = document.createElement('li');
+                li.className = 'list-group-item list-group-item-action product-search-item';
+                li.dataset.productId = id;
+                li.dataset.productName = d.nombre.toLowerCase();
+                li.dataset.productCode = (d.codigo || '').toLowerCase();
+                li.dataset.categoria = d.categoriaId || '';
+                li.dataset.stock = stockTotal;
+                li.dataset.visible = d.visible ? 'true' : 'false';
+                li.dataset.precioOriginal = d.precioDetal || 0;
+                li.dataset.totalSales = window.productSalesCount.get(id) || 0;
+
+                const defaultImgModal = 'https://placehold.co/70x90.png?text=Sin+Foto';
+                const imagenUrlModal = d.imagenUrl || defaultImgModal;
+
+                let categoryNameModal = 'Sin Categoría';
+                if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) {
+                    categoryNameModal = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
+                }
+
+                li.innerHTML = `
+                    <div class="pm-product-item">
+                        <img src="${imagenUrlModal}" alt="${d.nombre}" class="product-search-img" onerror="this.src='${defaultImgModal}'">
+                        <div class="pm-product-body">
+                            <div class="product-search-name">${d.nombre}</div>
+                            <div class="pm-product-meta">
+                                <span class="pm-product-cat">${categoryNameModal}</span>
+                                ${d.codigo ? `<span class="pm-product-code"># ${d.codigo}</span>` : ''}
+                            </div>
+                            <div class="pm-product-footer">
+                                <div class="price-info" data-precio-detal="${d.precioDetal || 0}" data-precio-mayor="${d.precioMayor || 0}">
+                                    ${formatoMoneda.format(d.precioDetal || 0)}
+                                </div>
+                                ${d.precioMayor ? `<div class="pm-price-mayor text-muted" style="font-size:0.72rem;">Mayor: ${formatoMoneda.format(d.precioMayor)}</div>` : ''}
+                                <div class="stock-info">Stock: ${stockTotal}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if(stockTotal <= 0) {
+                    li.classList.add('disabled');
+                    li.style.opacity = '0.5';
+                    li.style.cursor = 'not-allowed';
+                }
+                if(productSearchModalList) productSearchModalList.appendChild(li);
+            });
+
+            // Aplicar ordenamiento al modal de búsqueda
+            if (typeof applyProductModalFilters === 'function') {
+                applyProductModalFilters();
+            }
+
+            // Pestaña Productos visible ahora mismo: pintar la tabla de una
+            // vez. Si no, dejarla pendiente para cuando se entre a ella.
+            if ((window.location.hash || '#dashboard') === '#productos') {
+                pintarTablaProductos();
+            } else {
+                productosTablaSucia = true;
+            }
+        };
+
+        // Reconstruye la tabla de inventario (filas + códigos de barras) a
+        // partir de localProductsMap, ya poblado por renderProducts().
+        function pintarTablaProductos() {
+            if (!productListTableBody) return;
+            productListTableBody.innerHTML = '';
+            const emptyRow = document.getElementById('empty-inventory-row');
+
+            if (localProductsMap.size === 0) {
+                if (emptyRow) {
+                    emptyRow.style.display = '';
+                    productListTableBody.appendChild(emptyRow);
+                }
+                productosTablaSucia = false;
+                return;
+            }
+            if (emptyRow) emptyRow.style.display = 'none';
+
+            localProductsMap.forEach((d, id) => {
+                const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
                 const defaultImgTabla = 'https://placehold.co/60x80/f0f0f0/cccccc?text=Foto';
-                const imagenUrl = d.imagenUrl || defaultImgTabla; 
+                const imagenUrl = d.imagenUrl || defaultImgTabla;
 
                 let variacionesHtml = (d.variaciones || [])
                     .map(v => `<span class="badge bg-light text-dark me-1">${normalizeTalla(v.talla)} / ${normalizeColor(v.color)} (Stock: ${v.stock})</span>`)
@@ -1595,7 +1702,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         <i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span>
                                     </button>
                                 </td>`;
-                if(productListTableBody) productListTableBody.appendChild(tr);
+                productListTableBody.appendChild(tr);
 
                 // Generar código de barras visual en miniatura
                 if (d.codigoBarras) {
@@ -1611,61 +1718,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('Error generando código de barras:', e);
                     }
                 }
-
-                const li = document.createElement('li');
-                li.className = 'list-group-item list-group-item-action product-search-item';
-                li.dataset.productId = id;
-                li.dataset.productName = d.nombre.toLowerCase();
-                li.dataset.productCode = (d.codigo || '').toLowerCase();
-                li.dataset.categoria = d.categoriaId || '';
-                li.dataset.stock = stockTotal;
-                li.dataset.visible = d.visible ? 'true' : 'false';
-                li.dataset.precioOriginal = d.precioDetal || 0;
-                li.dataset.totalSales = window.productSalesCount.get(id) || 0;
-
-                const defaultImgModal = 'https://placehold.co/70x90.png?text=Sin+Foto';
-                const imagenUrlModal = d.imagenUrl || defaultImgModal; 
-
-                let categoryNameModal = 'Sin Categoría';
-                if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) {
-                    categoryNameModal = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
-                }
-
-                li.innerHTML = `
-                    <div class="pm-product-item">
-                        <img src="${imagenUrlModal}" alt="${d.nombre}" class="product-search-img" onerror="this.src='${defaultImgModal}'">
-                        <div class="pm-product-body">
-                            <div class="product-search-name">${d.nombre}</div>
-                            <div class="pm-product-meta">
-                                <span class="pm-product-cat">${categoryNameModal}</span>
-                                ${d.codigo ? `<span class="pm-product-code"># ${d.codigo}</span>` : ''}
-                            </div>
-                            <div class="pm-product-footer">
-                                <div class="price-info" data-precio-detal="${d.precioDetal || 0}" data-precio-mayor="${d.precioMayor || 0}">
-                                    ${formatoMoneda.format(d.precioDetal || 0)}
-                                </div>
-                                ${d.precioMayor ? `<div class="pm-price-mayor text-muted" style="font-size:0.72rem;">Mayor: ${formatoMoneda.format(d.precioMayor)}</div>` : ''}
-                                <div class="stock-info">Stock: ${stockTotal}</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                if(stockTotal <= 0) {
-                    li.classList.add('disabled');
-                    li.style.opacity = '0.5';
-                    li.style.cursor = 'not-allowed';
-                }
-                if(productSearchModalList) productSearchModalList.appendChild(li);
             });
 
             applyInventoryFilters();
+            productosTablaSucia = false;
+        }
 
-            // Aplicar ordenamiento al modal de búsqueda
-            if (typeof applyProductModalFilters === 'function') {
-                applyProductModalFilters();
-            }
-        };
+        // Pintar la tabla (si quedó pendiente) cada vez que se entra a la
+        // pestaña Productos, sin importar si la navegación vino del rail de
+        // escritorio o de la barra inferior móvil.
+        alEntrarSeccion('#productos', () => { if (productosTablaSucia) pintarTablaProductos(); });
         onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
         
         // ─── GALERÍA POR COLOR ──────────────────────────────────────────────────
@@ -8147,10 +8209,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     const STOCK_MINIMO_DASHBOARD = 2; // Productos con 2 prendas o menos
 
     function iniciarListenerProductos() {
-        console.log("📦 Iniciando listener único de productos (totales, bajo stock, inversión)...");
+        console.log("📦 Suscribiendo estadísticas del Dashboard al listener único de productos...");
 
+        // Antes esto abría su propio onSnapshot sobre TODA la colección de
+        // productos, duplicando la descarga que ya hace el listener de la
+        // pestaña Productos (renderProducts) — dos listeners en tiempo real
+        // sobre la misma colección completa desde el primer segundo de
+        // carga. Ahora se suscribe al mismo snapshot vía subscribeProducts()
+        // en vez de volver a pedirlo todo por su cuenta.
         try {
-            onSnapshot(productsCollection, (snapshot) => {
+            subscribeProducts((snapshot) => {
                 // Ver el mismo guard en calcularVentasRango: ignora el snapshot
                 // vacío "fromCache" que a veces llega un instante antes del real
                 // tras una reconexión, para no pintar un falso "0 productos".
@@ -8249,11 +8317,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 }
 
                 console.log(`✅ Productos: ${totalProductos} (${productosDisponibles} disponibles) | Bajo stock: ${bajoStockCount} | Inversión: ${formatoMoneda.format(inversionTotal)} | Utilidad potencial: ${formatoMoneda.format(utilidadPotencial)} (${margenUtilidad.toFixed(1)}%)`);
-            }, (error) => {
-                marcarDashboardListo('productos');
-                console.error("❌ Error en listener de productos:", error);
-                dbBajoStockEl.textContent = "Error";
-                dbBajoStockEl.classList.add('text-danger');
             });
         } catch (error) {
             marcarDashboardListo('productos');
@@ -9905,6 +9968,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         });
     }
     window.addEventListener('hashchange', cargarFinanzasSiCorresponde);
+    // history.replaceState (usada al navegar por el rail o la barra inferior
+    // móvil) no dispara 'hashchange', así que ese es solo un respaldo para
+    // navegación real del navegador (atrás/adelante). El evento de abajo es
+    // el que realmente cubre la navegación dentro de la app.
+    window.addEventListener('admin:section-shown', cargarFinanzasSiCorresponde);
     if (!finanzasYaCargada) cargarFinanzasSiCorresponde();
 
     // ── Exportar CSV ──
@@ -10693,6 +10761,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         });
     }
     window.addEventListener('hashchange', cargarFabricaSiCorresponde);
+    // Ver el mismo comentario en Finanzas: history.replaceState no dispara
+    // 'hashchange', así que este evento es el que cubre la navegación real
+    // dentro de la app (rail de escritorio o barra inferior móvil).
+    window.addEventListener('admin:section-shown', cargarFabricaSiCorresponde);
     if (!fabricaYaCargada) cargarFabricaSiCorresponde();
 
     // ── Abrir modal: Nuevo Ingreso / Nuevo Gasto ──
@@ -11062,6 +11134,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     if (tabLink) tabLink.addEventListener('click', cargarInventario);
     window.addEventListener('hashchange', () => {
         if ((window.location.hash || '') === '#inventario-fabrica') cargarInventario();
+    });
+    // Cubre también la barra inferior móvil / navegación por hash sin click
+    // directo en el link de arriba (ver mismo caso en Finanzas y Fábrica).
+    window.addEventListener('admin:section-shown', (e) => {
+        if (e.detail && e.detail.hash === '#inventario-fabrica') cargarInventario();
     });
     cargarInventario();
 
