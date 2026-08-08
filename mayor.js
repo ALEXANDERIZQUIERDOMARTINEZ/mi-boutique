@@ -66,9 +66,24 @@ const totalEstimadoEl = document.getElementById('mayor-total-estimado');
 const orderSummaryEl = document.getElementById('mayor-order-summary');
 const tiersTablesEl = document.getElementById('tiers-tables');
 const orderProgressEl = document.getElementById('mayor-order-progress');
-const mobileSearchInputEl = document.getElementById('mayor-search-input-mobile');
+const mayorSearchInputEl = document.getElementById('mayor-search-input');
 const stockFilterEl = document.getElementById('mayor-stock-filter');
-const sortSelectEl = document.getElementById('mayor-sort-select');
+const sortFilterEl = document.getElementById('mayor-sort-filter');
+
+// ── Menú lateral estilo Gmail: disponibilidad, orden y "Cómo comprar" ──
+const mayorSidebarEl = document.getElementById('mayor-sidebar');
+const mayorSidebarBackdropEl = document.getElementById('mayor-sidebar-backdrop');
+const openSidebarBtn = document.getElementById('btn-open-mayor-sidebar');
+function openMayorSidebar() {
+    mayorSidebarEl?.classList.add('is-open');
+    mayorSidebarBackdropEl?.classList.add('is-open');
+}
+function closeMayorSidebar() {
+    mayorSidebarEl?.classList.remove('is-open');
+    mayorSidebarBackdropEl?.classList.remove('is-open');
+}
+if (openSidebarBtn) openSidebarBtn.addEventListener('click', openMayorSidebar);
+if (mayorSidebarBackdropEl) mayorSidebarBackdropEl.addEventListener('click', closeMayorSidebar);
 
 // ── Hojas de pantalla completa (Cómo comprar / Agregar rápido) ──────────
 // Son overlays propios (position:fixed;inset:0 + clase .is-open) en vez de
@@ -89,7 +104,10 @@ function closeFullsheet(el) {
 const infoSheetEl = document.getElementById('mayorInfoSheet');
 const infoOpenBtn = document.getElementById('btn-open-info');
 const infoCloseBtn = document.getElementById('btn-close-info');
-if (infoOpenBtn) infoOpenBtn.addEventListener('click', () => openFullsheet(infoSheetEl));
+if (infoOpenBtn) infoOpenBtn.addEventListener('click', () => {
+    closeMayorSidebar();
+    openFullsheet(infoSheetEl);
+});
 if (infoCloseBtn) infoCloseBtn.addEventListener('click', () => closeFullsheet(infoSheetEl));
 
 // Los colores/tallas/cantidades de UNA prenda viven en esta hoja, no en la
@@ -117,6 +135,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (quickAddSheetEl?.classList.contains('is-open')) closeQuickAddSheet();
     else if (infoSheetEl?.classList.contains('is-open')) closeFullsheet(infoSheetEl);
+    else if (mayorSidebarEl?.classList.contains('is-open')) closeMayorSidebar();
 });
 
 function showToast(message, type = 'success') {
@@ -1227,11 +1246,11 @@ onSnapshot(categoriesCollection, (snapshot) => {
     console.error('Error cargando categorías:', err);
 });
 
-// ── Búsqueda (barra desktop + barra dedicada en móvil) ────────────────────
-// mayor.html no trae el nav flotante de abajo del resto del sitio (con su
-// buscador inline): aquí hay dos inputs de texto — el de escritorio en el
-// header y uno propio en la barra de la página para móvil — que se
-// mantienen sincronizados y ambos alimentan el mismo `searchTerm`.
+// ── Búsqueda ────────────────────────────────────────────────────────────
+// El buscador visible vive en la barra estilo Gmail de esta página
+// (#mayor-search-input, a todo ancho de pantalla). El del header general
+// (#search-input) queda oculto aquí por CSS, pero se sincroniza igual por
+// si algún día vuelve a mostrarse.
 const searchInputEl = document.getElementById('search-input');
 let searchTimeout;
 function applyFiltersAndRedraw() {
@@ -1240,7 +1259,7 @@ function applyFiltersAndRedraw() {
 }
 function syncSearchInputs(value) {
     if (searchInputEl && searchInputEl.value !== value) searchInputEl.value = value;
-    if (mobileSearchInputEl && mobileSearchInputEl.value !== value) mobileSearchInputEl.value = value;
+    if (mayorSearchInputEl && mayorSearchInputEl.value !== value) mayorSearchInputEl.value = value;
 }
 function handleSearchInput(e) {
     searchTerm = e.target.value;
@@ -1248,27 +1267,33 @@ function handleSearchInput(e) {
     applyFiltersAndRedraw();
 }
 if (searchInputEl) searchInputEl.addEventListener('input', handleSearchInput);
-if (mobileSearchInputEl) mobileSearchInputEl.addEventListener('input', handleSearchInput);
+if (mayorSearchInputEl) mayorSearchInputEl.addEventListener('input', handleSearchInput);
 
-// ── Filtro rápido de disponibilidad + orden ────────────────────────────────
+// ── Filtro rápido de disponibilidad + orden (filas del menú lateral) ────
 if (stockFilterEl) {
     stockFilterEl.addEventListener('click', (e) => {
-        const btn = e.target.closest('.mayor-chip');
+        const btn = e.target.closest('.mayor-sidebar-item');
         if (!btn) return;
-        stockFilterEl.querySelectorAll('.mayor-chip').forEach(b => b.classList.remove('active'));
+        stockFilterEl.querySelectorAll('.mayor-sidebar-item').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         stockFilterMode = btn.dataset.stock;
         currentPage = 1;
         renderProducts();
         updateProgress();
+        closeMayorSidebar();
     });
 }
-if (sortSelectEl) {
-    sortSelectEl.addEventListener('change', () => {
-        sortMode = sortSelectEl.value;
+if (sortFilterEl) {
+    sortFilterEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('.mayor-sidebar-item');
+        if (!btn) return;
+        sortFilterEl.querySelectorAll('.mayor-sidebar-item').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        sortMode = btn.dataset.sort;
         currentPage = 1;
         renderProducts();
         updateProgress();
+        closeMayorSidebar();
     });
 }
 
@@ -1294,22 +1319,16 @@ function openDemoTourSheet() {
 
 const MAYOR_TOUR_STEPS = [
     {
-        selector: '#btn-open-info',
+        selector: '#btn-open-mayor-sidebar',
         title: '👋 Antes de empezar',
-        text: 'Aquí puedes ver el mínimo de prendas por pedido, la tabla de precios por cantidad y las demás condiciones de la compra al por mayor.',
-        onEnter: closeQuickAddSheet,
-    },
-    {
-        selector: '.mayor-toolbar-controls',
-        title: 'Filtra y ordena',
-        text: 'Usa estos controles para ver solo las prendas con poca disponibilidad, u ordenarlas por precio o stock.',
-        onEnter: closeQuickAddSheet,
+        text: 'Toca aquí para ver el mínimo de prendas por pedido, la tabla de precios, y para filtrar u ordenar las prendas.',
+        onEnter: () => { closeQuickAddSheet(); openMayorSidebar(); },
     },
     {
         selector: '.mayor-card',
         title: 'Elige tus prendas',
         text: 'Toca "+ Agregar" en cualquier prenda para abrir su ficha y elegir color, talla y cantidad.',
-        onEnter: closeQuickAddSheet,
+        onEnter: () => { closeMayorSidebar(); closeQuickAddSheet(); },
     },
     {
         selector: '#mqa-body',
