@@ -28,14 +28,22 @@ async function cargarCategorias() {
 }
 
 async function cargarProductos(categoriaId = null) {
-    let q = query(collection(db, 'productos'), where('visible', '==', true));
+    // Ojo: NO se filtra "visible" en la consulta de Firestore. where('visible',
+    // '==', true) excluiría cualquier producto sin ese campo (productos viejos
+    // creados antes de que existiera, o importados por Excel) aunque sí
+    // aparezcan en la tienda — app.js y mayor.js tratan como visible todo lo
+    // que no sea explícitamente visible === false, así que se replica ese
+    // mismo criterio aquí, en memoria, para no dejar productos reales fuera
+    // del catálogo impreso sin ningún aviso.
+    let q = query(collection(db, 'productos'));
     if (categoriaId) {
-        q = query(collection(db, 'productos'), where('visible', '==', true), where('categoriaId', '==', categoriaId));
+        q = query(collection(db, 'productos'), where('categoriaId', '==', categoriaId));
     }
     const snap = await getDocs(q);
     return snap.docs
         .map(d => ({ ...d.data(), id: d.id }))
         .filter(p => {
+            if (p.visible === false) return false;
             // Excluir productos completamente agotados
             if (!p.variaciones || p.variaciones.length === 0) return false;
             return p.variaciones.some(v => (parseInt(v.stock) || 0) > 0);
@@ -90,6 +98,7 @@ const M         = 7;      // page margin mm
 const PW        = 210;
 const PH        = 297;
 const HDR_H     = 28;     // slim header band
+const FOOTER_H  = 36;     // page footer band (drawFooter background + reserved space before it)
 const GAP_X     = 5;      // gap between columns
 const GAP_Y     = 6;      // gap between rows
 const COLS      = 2;
@@ -138,9 +147,8 @@ function drawHeader(pdf) {
 }
 
 function drawFooter(pdf, yStart) {
-    const H = 36;
     pdf.setFillColor(...LGREY);
-    pdf.rect(M - 3, yStart - 4, PW - M * 2 + 6, H, 'F');
+    pdf.rect(M - 3, yStart - 4, PW - M * 2 + 6, FOOTER_H, 'F');
 
     pdf.setDrawColor(...PINK);
     pdf.setLineWidth(0.7);
@@ -512,7 +520,7 @@ async function generarCatalogoPDF() {
 
         if (productos.length === 0) {
             alert('No hay productos disponibles para la selección.');
-            return;
+            return; // el overlay de progreso se limpia igual en el finally de abajo
         }
 
         progreso.set(8, `${productos.length} productos. Preparando PDF…`);
@@ -552,8 +560,7 @@ async function generarCatalogoPDF() {
         if (col !== 0) yPos += CARD_H + GAP_Y;
 
         // Footer
-        const footH = 36;
-        if (yPos + footH + 6 > PH - M) {
+        if (yPos + FOOTER_H + 6 > PH - M) {
             pdf.addPage();
             yPos = M + 10;
         } else {
@@ -569,13 +576,17 @@ async function generarCatalogoPDF() {
         pdf.save(filename);
 
         await new Promise(r => setTimeout(r, 700));
-        progreso.remove();
 
     } catch (error) {
         console.error('Error generando PDF:', error);
         alert(`Error al generar PDF: ${error.message}`);
-        progreso.remove();
     } finally {
+        // Antes solo se quitaba el overlay en el camino feliz y en el catch:
+        // si "productos.length === 0" hacía return más arriba, el overlay de
+        // "Generando catálogo... no cierres esta ventana" se quedaba
+        // atascado en pantalla para siempre. Centralizarlo aquí garantiza
+        // que se cierre sin importar por dónde salga la función.
+        progreso.remove();
         button.disabled = false;
         button.innerHTML = '<i class="bi bi-download me-1"></i>Catálogo PDF';
     }
