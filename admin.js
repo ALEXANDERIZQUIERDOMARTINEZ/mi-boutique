@@ -7804,10 +7804,13 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const { inicio, fin } = obtenerRangoFechas(rango);
 
             // Costo de cada producto y movimientos manuales de Fábrica del rango:
-            // dos lecturas independientes entre sí, así que se piden en paralelo
-            // en vez de una detrás de otra — en la primera carga del dashboard
-            // (cuando aún no hay nada cacheado) esto evita esperar dos viajes
-            // completos a Firestore antes de poder abrir el listener de ventas.
+            // antes se esperaban los DOS completos (incluyendo bajar toda la
+            // colección movimientosFabrica sin filtrar) antes de siquiera abrir
+            // el listener de ventas — así que si esa descarga era lenta, el
+            // "banner de carga lenta" del dashboard salía aunque las ventas ya
+            // hubieran llegado. Ahora se piden en paralelo CON el listener de
+            // ventas (no antes) y solo se esperan justo al usarlas, dentro del
+            // callback; abrir el listener ya no depende de esta descarga.
             let productCostMap = productCostMapCache;
             let productEsBoutique = productEsBoutiqueCache;
             const necesitaCostos = productCostMap.size === 0 || productEsBoutique.size === 0;
@@ -7816,10 +7819,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 productEsBoutique = new Map();
             }
 
-            let ingresosManualesFabrica = 0;
-            let gastosManualesFabrica = 0;
-
-            await Promise.all([
+            const datosAuxiliaresPromise = Promise.all([
                 (async () => {
                     if (!necesitaCostos) return;
                     // Costo de cada producto: para el margen real de Boutique y el costo
@@ -7842,6 +7842,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     // Movimientos manuales de Fábrica (ingresos/gastos registrados a mano)
                     // dentro del rango. Se filtra en cliente porque un movimiento manual
                     // puede llevar una fecha propia distinta a la de creación.
+                    let ingresosManualesFabrica = 0;
+                    let gastosManualesFabrica = 0;
                     try {
                         const fabSnap = await getDocs(fabricaCollection);
                         fabSnap.forEach(d => {
@@ -7855,6 +7857,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     } catch (err) {
                         console.error('Error cargando movimientos de Fábrica para el dashboard:', err);
                     }
+                    return { ingresosManualesFabrica, gastosManualesFabrica };
                 })()
             ]);
 
@@ -7878,6 +7881,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     // ya con datos) en vez de pintar el falso cero.
                     if (snapshot.metadata.fromCache && snapshot.empty) return;
                     marcarDashboardListo('ventasRango');
+
+                    const [, { ingresosManualesFabrica, gastosManualesFabrica }] = await datosAuxiliaresPromise;
+
                     let totalDineroRecibido = 0;
                     let ventasContadas = 0;
                     let totalMayorista = 0;
