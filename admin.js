@@ -391,6 +391,21 @@ function subscribeRepartidores(callback) { repartidoresSubscribers.push(callback
 const productsSubscribers = [];
 function subscribeProducts(callback) { productsSubscribers.push(callback); }
 
+// Mismo consolidado para clientes: antes la pestaña Clientes y la tarjeta
+// "Total de clientes" del Dashboard abrían CADA UNA su propio onSnapshot
+// sobre la colección completa — dos conexiones en tiempo real idénticas a
+// la vez. El listener real vive en la pestaña Clientes; el Dashboard solo
+// se suscribe a ese mismo snapshot.
+const clientsSubscribers = [];
+function subscribeClients(callback) { clientsSubscribers.push(callback); }
+
+// Mismo consolidado para promociones globales: la pestaña Promociones y la
+// tarjeta "Promociones activas" del Dashboard tenían cada una su propio
+// onSnapshot sobre 'promocionesGlobales'. El listener real vive en la
+// pestaña Promociones; el Dashboard se suscribe a ese mismo snapshot.
+const promocionesGlobalesSubscribers = [];
+function subscribePromocionesGlobales(callback) { promocionesGlobalesSubscribers.push(callback); }
+
 // ── Carga diferida por sección ──────────────────────────────────────────
 // Ejecuta cb() si `hash` ya es la sección activa ahora mismo, y cada vez
 // que se vuelva a entrar a ella después (ver evento 'admin:section-shown'
@@ -1180,7 +1195,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        onSnapshot(query(clientsCollection, orderBy('nombre')), renderClients, (e) => { console.error("Error clients:", e); if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';});
+        onSnapshot(query(clientsCollection, orderBy('nombre')), (s) => { renderClients(s); clientsSubscribers.forEach(cb => { try { cb(s); } catch (e) { console.error('Error en suscriptor de clientes:', e); } }); }, (e) => { console.error("Error clients:", e); if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error.</td></tr>';});
         if (ventaClienteInput) ventaClienteInput.addEventListener('input', window.fillClientInfoSales);
         if (addForm && addClientModalInstance) addForm.addEventListener('submit', async (e) => { e.preventDefault(); const ced = addCedulaInput.value.trim(); const nom = addNombreInput.value.trim(); const cel = addCelularInput.value.trim(); const dir = addDireccionInput.value.trim(); if (nom && cel) { try { await addDoc(clientsCollection, { nombre: nom, cedula: ced, celular: cel, direccion: dir, ultimaCompra: null }); showToast("Cliente guardado!"); addClientModalInstance.hide(); addForm.reset(); } catch (err) { console.error("Err add client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); } });
         if (editForm && editClientModalInstance) editForm.addEventListener('submit', async (e) => { e.preventDefault(); const id = editIdInput.value; const ced = editCedulaInput.value.trim(); const nom = editNombreInput.value.trim(); const cel = editCelularInput.value.trim(); const dir = editDireccionInput.value.trim(); if (id && nom && cel) { try { await updateDoc(doc(db, "clientes", id), { nombre: nom, cedula: ced, celular: cel, direccion: dir }); showToast("Cliente actualizado!"); editClientModalInstance.hide(); } catch (err) { console.error("Err update client:", err); showToast(`Error: ${err.message}`, 'error'); } } else { showToast('Nombre y Celular requeridos.', 'warning'); }});
@@ -7413,44 +7428,59 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             calculateTotals();
         };
 
-        // Escuchar cambios en movimientos financieros (ingresos/gastos manuales)
-        console.log('🎧 Iniciando listener de movimientos financieros...');
-        onSnapshot(
-            query(financesCollection, orderBy('timestamp', 'desc')),
-            async (snapshot) => {
-                console.log(`📥 Recibidos ${snapshot.docs.length} movimientos financieros`);
-                allMovements = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    data: doc.data()
-                }));
-                await actualizarFinanzasCompletas();
-            },
-            (error) => {
-                console.error('❌ Error loading movements:', error);
-                if (movimientosTableBody) {
-                    movimientosTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar movimientos</td></tr>';
-                }
-            }
-        );
+        // Estos dos listeners (movimientos financieros completos + ventas de
+        // hoy) solo alimentan la tabla de movimientos y las tarjetas de
+        // totales de ESTA sección — allMovements es una variable local a esta
+        // IIFE, nada fuera de Finanzas la lee. Antes arrancaban apenas
+        // cargaba admin.html sin importar la pestaña activa; ahora se
+        // difieren hasta la primera vez que se entra a Finanzas, igual que
+        // ya hace calcularFinanzas() (ver cargarFinanzasSiCorresponde más
+        // abajo), y solo se inician una vez.
+        let finanzasListenersMovimientosIniciados = false;
+        function iniciarListenersMovimientosFinanzas() {
+            if (finanzasListenersMovimientosIniciados) return;
+            finanzasListenersMovimientosIniciados = true;
 
-        // 🔥 CRÍTICO: Escuchar cambios en VENTAS también
-        console.log('🎧 Iniciando listener de VENTAS para finanzas...');
-        const hoy = new Date();
-        const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
-        onSnapshot(
-            query(
-                salesCollection,
-                where('timestamp', '>=', Timestamp.fromDate(inicioHoy)),
-                orderBy('timestamp', 'desc')
-            ),
-            async (snapshot) => {
-                console.log(`🛍️ Cambio detectado en ventas: ${snapshot.docs.length} ventas del día`);
-                await actualizarFinanzasCompletas();
-            },
-            (error) => {
-                console.error('❌ Error loading sales:', error);
-            }
-        );
+            // Escuchar cambios en movimientos financieros (ingresos/gastos manuales)
+            console.log('🎧 Iniciando listener de movimientos financieros...');
+            onSnapshot(
+                query(financesCollection, orderBy('timestamp', 'desc')),
+                async (snapshot) => {
+                    console.log(`📥 Recibidos ${snapshot.docs.length} movimientos financieros`);
+                    allMovements = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        data: doc.data()
+                    }));
+                    await actualizarFinanzasCompletas();
+                },
+                (error) => {
+                    console.error('❌ Error loading movements:', error);
+                    if (movimientosTableBody) {
+                        movimientosTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al cargar movimientos</td></tr>';
+                    }
+                }
+            );
+
+            // 🔥 CRÍTICO: Escuchar cambios en VENTAS también
+            console.log('🎧 Iniciando listener de VENTAS para finanzas...');
+            const hoy = new Date();
+            const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0, 0);
+            onSnapshot(
+                query(
+                    salesCollection,
+                    where('timestamp', '>=', Timestamp.fromDate(inicioHoy)),
+                    orderBy('timestamp', 'desc')
+                ),
+                async (snapshot) => {
+                    console.log(`🛍️ Cambio detectado en ventas: ${snapshot.docs.length} ventas del día`);
+                    await actualizarFinanzasCompletas();
+                },
+                (error) => {
+                    console.error('❌ Error loading sales:', error);
+                }
+            );
+        }
+        alEntrarSeccion('#finanzas', iniciarListenersMovimientosFinanzas);
 
         // Filtros
         if (filterAllBtn) {
@@ -8172,7 +8202,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         console.log("👥 Calculando total de clientes...");
 
         try {
-            onSnapshot(clientsCollection, (snapshot) => {
+            // Reutiliza el snapshot del listener único de la pestaña Clientes
+            // (ver clientsSubscribers) en vez de abrir aquí una segunda
+            // conexión en tiempo real sobre la colección completa.
+            subscribeClients((snapshot) => {
                 const totalClientes = snapshot.size;
 
                 const dbTotalClientesEl = document.getElementById('db-total-clientes');
@@ -8196,7 +8229,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         try {
             // Mismo criterio de "Activa" que usa la pestaña Promociones:
             // activa === true y la fecha actual cae dentro de fechaInicio/fechaFin.
-            onSnapshot(promocionesGlobalesCollection, (snapshot) => {
+            // Reutiliza el snapshot del listener único de loadPromocionesGlobales()
+            // en vez de abrir aquí una segunda conexión en tiempo real.
+            subscribePromocionesGlobales((snapshot) => {
                 let promocionesActivas = 0;
                 const ahora = new Date();
 
@@ -13672,6 +13707,8 @@ function loadPromocionesGlobales() {
     if (!container) return;
 
     onSnapshot(promocionesGlobalesCollection, (snapshot) => {
+        promocionesGlobalesSubscribers.forEach(cb => { try { cb(snapshot); } catch (e) { console.error('Error en suscriptor de promociones globales:', e); } });
+
         container.innerHTML = '';
 
         if (snapshot.empty) {
