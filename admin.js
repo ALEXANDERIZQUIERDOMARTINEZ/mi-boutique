@@ -93,7 +93,8 @@ const EXTERNAL_LIB_URLS = {
     xlsx: 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js',
     jspdf: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
     jsbarcode: 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js',
-    html5qrcode: 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
+    html5qrcode: 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',
+    qrcode: 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
 };
 const _externalLibPromises = {};
 function loadExternalLib(name) {
@@ -147,6 +148,8 @@ window.getDocs = getDocs;
 window.query = query;
 window.where = where;
 window.orderBy = orderBy;
+window.doc = doc;
+window.updateDoc = updateDoc;
 
 // --- Collections References ---
 const categoriesCollection = collection(db, 'categorias');

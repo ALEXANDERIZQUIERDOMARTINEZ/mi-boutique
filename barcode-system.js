@@ -37,6 +37,7 @@
 
         return code12 + checkDigit;
     }
+    window.generarCodigoEAN13 = generarCodigoEAN13;
 
     /**
      * Calcula el dígito verificador para código EAN-13
@@ -116,18 +117,33 @@
 
     window.buscarProductoPorBarcode = async function(codigo) {
         try {
-            // Validar código
+            // Validar como EAN-13/UPC-A. Si no lo es, puede tratarse de una
+            // etiqueta QR que codifica la referencia del producto (ver
+            // buscarProductoPorCodigo) en vez de un código de barras numérico.
             const validacion = validarCodigoBarras(codigo);
             if (!validacion.valido) {
+                const porReferencia = await buscarProductoPorCodigo(codigo);
+                if (porReferencia) return porReferencia;
                 showToast(`Código inválido: ${validacion.mensaje}`, 'warning');
                 return null;
             }
 
-            // Buscar en Firebase
+            // Buscar primero en el mapa local (ya cargado en tiempo real por
+            // admin.js, sin red) — evita depender de una consulta a Firestore
+            // para algo tan frecuente como cada escaneo en el punto de venta.
+            const mapa = window.localProductsMap;
+            if (mapa && mapa.size > 0) {
+                for (const [id, p] of mapa) {
+                    if (p.codigoBarras === validacion.codigo) {
+                        return { id, ...p };
+                    }
+                }
+            }
+
+            // Respaldo: consultar Firestore por si el mapa local aún no cargó.
             const q = query(
                 collection(db, 'productos'),
-                where('codigoBarras', '==', validacion.codigo),
-                limit(1)
+                where('codigoBarras', '==', validacion.codigo)
             );
 
             const snapshot = await getDocs(q);
@@ -147,6 +163,34 @@
             return null;
         }
     };
+
+    // ========================================================================
+    // BÚSQUEDA POR REFERENCIA DE PRODUCTO (para etiquetas QR)
+    // ========================================================================
+
+    async function buscarProductoPorCodigo(texto) {
+        const codigo = (texto || '').trim();
+        if (!codigo) return null;
+        try {
+            const mapa = window.localProductsMap;
+            if (mapa && mapa.size > 0) {
+                for (const [id, p] of mapa) {
+                    if (p.codigo === codigo) return { id, ...p };
+                }
+            }
+
+            const q = query(collection(db, 'productos'), where('codigo', '==', codigo));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const doc = snapshot.docs[0];
+                return { id: doc.id, ...doc.data() };
+            }
+            return null;
+        } catch (error) {
+            console.error('Error buscando por código:', error);
+            return null;
+        }
+    }
 
     // ========================================================================
     // MOSTRAR MODAL DE CÓDIGO DE BARRAS
@@ -204,29 +248,6 @@
 
         img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
     };
-
-    // ========================================================================
-    // BÚSQUEDA POR CÓDIGO DE PRODUCTO (para QR personalizados)
-    // ========================================================================
-
-    async function buscarProductoPorCodigo(texto) {
-        try {
-            const q = query(
-                collection(db, 'productos'),
-                where('codigo', '==', texto.trim()),
-                limit(1)
-            );
-            const snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                const doc = snapshot.docs[0];
-                return { id: doc.id, ...doc.data() };
-            }
-            return null;
-        } catch (error) {
-            console.error('Error buscando por código:', error);
-            return null;
-        }
-    }
 
     // Versión local de validación (sin mostrar toast) para uso interno
     function validarCodigoBarrasLocal(codigo) {
