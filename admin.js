@@ -21,8 +21,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 // Evita que la conexión en tiempo real se quede colgada en redes móviles o
 // navegadores in-app que bloquean WebSockets (ver mismo fix en app.js).
-// auth.js / admin-auth-init.js / catalogoPDF.js reutilizan esta misma
-// instancia (mismo `app`), así que heredan esta configuración sin repetirla.
+// auth.js / admin-auth-init.js reutilizan esta misma instancia (mismo
+// `app`), así que heredan esta configuración sin repetirla.
 const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
 });
@@ -87,8 +87,8 @@ function compressProductImageFile(file) {
 // barras. Ahora se inyectan solo la primera vez que la función que los
 // necesita se ejecuta (botón de exportar, abrir el escáner, etc.), y la
 // promesa se cachea para no volver a pedirlos ni duplicar el <script>.
-// Se expone en window porque barcode-system.js y catalogoPDF.js (scripts
-// separados) también la necesitan.
+// Se expone en window porque barcode-system.js (script separado) también
+// la necesita.
 const EXTERNAL_LIB_URLS = {
     xlsx: 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js',
     jspdf: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
