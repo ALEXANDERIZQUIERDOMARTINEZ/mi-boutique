@@ -517,6 +517,7 @@ async function generarCatalogoPDF() {
 
         progreso.set(8, `${productos.length} productos. Preparando PDF…`);
 
+        await window.loadExternalLib('jspdf');
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4', true);
 
