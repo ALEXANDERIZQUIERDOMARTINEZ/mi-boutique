@@ -97,6 +97,9 @@
                 <a class="rail-link" href="#categorias" data-tooltip="Categorías" data-permiso="categorias_gestionar">
                     <i class="bi bi-tags"></i><span>Categorías</span>
                 </a>
+                <a class="rail-link" href="#etiquetas" data-tooltip="Etiquetas" data-permiso="productos_ver">
+                    <i class="bi bi-upc-scan"></i><span>Etiquetas</span>
+                </a>
                 <a class="rail-link" href="#inventario-fabrica" data-tooltip="Inventario Fábrica" data-permiso="inventario_fabrica_gestionar">
                     <i class="bi bi-boxes"></i><span>Inventario Fábrica</span>
                 </a>
@@ -794,10 +797,125 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div> 
-                </div> 
+                    </div>
+                </div>
             </div>
-            
+
+            <!-- ═══════════════════════════════════════════════════════════
+                 ETIQUETAS: impresión masiva de códigos de barra / QR para
+                 pegar en la prenda física. Al escanear la etiqueta con la
+                 pistola láser (o el input de escaneo rápido en Ventas) trae
+                 automáticamente nombre, referencia, talla y precio del
+                 producto — ver etiquetas.js y barcode-system.js.
+                 ═══════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="etiquetas">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1 class="h2 mb-0">Etiquetas de Productos</h1>
+                </div>
+                <p class="text-muted mb-3">Genera e imprime etiquetas con código de barras o QR para pegar en cada prenda. Al escanearlas en el punto de venta se carga automáticamente la información del producto.</p>
+
+                <!-- CONFIGURACIÓN DE IMPRESIÓN -->
+                <div class="card mb-3">
+                    <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Configuración de la etiqueta</h3></div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label d-block">Tipo de código:</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="etiquetas-tipo" id="etiquetas-tipo-barcode" value="barcode" checked>
+                                    <label class="btn btn-outline-primary" for="etiquetas-tipo-barcode"><i class="bi bi-upc-scan me-1"></i>Barras</label>
+                                    <input type="radio" class="btn-check" name="etiquetas-tipo" id="etiquetas-tipo-qr" value="qr">
+                                    <label class="btn btn-outline-primary" for="etiquetas-tipo-qr"><i class="bi bi-qr-code me-1"></i>QR</label>
+                                </div>
+                                <small class="form-text text-muted">Barras: requiere código EAN-13 (se genera solo si falta). QR: usa la referencia del producto, cabe más información.</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="etiquetas-tamano" class="form-label">Tamaño de etiqueta:</label>
+                                <select class="form-select" id="etiquetas-tamano">
+                                    <option value="50x25x3">50 × 25 mm — 3 por fila (hoja adhesiva)</option>
+                                    <option value="40x30x3">40 × 30 mm — 3 por fila (hoja adhesiva)</option>
+                                    <option value="30x20x4">30 × 20 mm — 4 por fila (hoja adhesiva)</option>
+                                    <option value="50x25x1">50 × 25 mm — 1 por fila (rollo térmico)</option>
+                                    <option value="40x25x1">40 × 25 mm — 1 por fila (rollo térmico)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label d-block">Incluir en la etiqueta:</label>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="etiquetas-campo-nombre" checked>
+                                        <label class="form-check-label" for="etiquetas-campo-nombre">Nombre</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="etiquetas-campo-referencia" checked>
+                                        <label class="form-check-label" for="etiquetas-campo-referencia">Referencia</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="etiquetas-campo-talla" checked>
+                                        <label class="form-check-label" for="etiquetas-campo-talla">Talla / Color</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="etiquetas-campo-precio" checked>
+                                        <label class="form-check-label" for="etiquetas-campo-precio">Precio</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FILTROS DE PRODUCTOS -->
+                <div class="inv-filters-block">
+                    <div class="inv-filters-grid">
+                        <div class="inv-search-wrap">
+                            <span class="inv-search-icon"><i class="bi bi-search"></i></span>
+                            <input type="search" id="etiquetas-search" class="inv-search-input" placeholder="Buscar por nombre o referencia...">
+                        </div>
+                        <select id="etiquetas-filter-categoria" class="inv-select">
+                            <option value="">Todas las categorías</option>
+                        </select>
+                        <div class="inv-filters-row2">
+                            <button type="button" id="etiquetas-select-all-btn" class="inv-clear-btn"><i class="bi bi-check2-square me-1"></i>Seleccionar todo</button>
+                            <button type="button" id="etiquetas-clear-selection-btn" class="inv-clear-btn"><i class="bi bi-x-circle me-1"></i>Limpiar selección</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLA DE PRODUCTOS PARA ETIQUETAR -->
+                <div class="tbl-wrap">
+                    <div class="tbl-head">
+                        <span class="tbl-title"><i class="bi bi-upc-scan"></i>Selecciona productos y cantidades</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:36px;"><input type="checkbox" class="form-check-input" id="etiquetas-check-header"></th>
+                                    <th>Producto</th>
+                                    <th>Referencia</th>
+                                    <th>Cód. Barras</th>
+                                    <th>Precio</th>
+                                    <th>Tallas / Colores (cantidad de etiquetas)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="etiquetas-tabla-body">
+                                <tr id="etiquetas-empty-row">
+                                    <td colspan="6" class="text-center text-muted">Cargando productos...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- BARRA DE ACCIÓN -->
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 mb-4 p-3 bg-white border rounded">
+                    <span class="fw-bold"><span id="etiquetas-contador">0</span> etiqueta(s) seleccionada(s)</span>
+                    <button type="button" class="btn btn-primary" id="etiquetas-btn-imprimir" disabled>
+                        <i class="bi bi-printer me-1"></i>Imprimir Etiquetas
+                    </button>
+                </div>
+            </div>
+
             <div class="tab-pane fade" id="ventas">
 
                 <!-- ── HEADER ── -->
@@ -4074,6 +4192,11 @@
          window.loadExternalLib() justo antes de usarlas (dibujar un código
          de barras o abrir el escáner de cámara). -->
     <script src="barcode-system.js" defer></script>
+
+    <!-- 🏷️ IMPRESIÓN MASIVA DE ETIQUETAS (código de barras / QR). Depende de
+         barcode-system.js (generación/validación de EAN-13) y usa
+         window.loadExternalLib() para JsBarcode/QRCode bajo demanda. -->
+    <script src="etiquetas.js" defer></script>
 
     <!-- DASHBOARD ANALYTICS CHARTS + SIDEBAR CONTROLS -->
     <script>
