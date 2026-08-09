@@ -7731,6 +7731,35 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         }
     }, 12000);
 
+    // Mismo patrón que DASHBOARD_VENTAS_CACHE_* (más abajo) para el resto de
+    // tarjetas del Dashboard: pintar de inmediato la última cifra conocida
+    // (guardada en localStorage) mientras se confirma el dato real de
+    // Firestore, en vez de mostrar "0". Se usa innerHTML (no textContent)
+    // porque "Utilidad potencial" incluye un ícono además del texto.
+    function cachearDashboard(clave, ids) {
+        try {
+            const valores = {};
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) valores[id] = el.innerHTML;
+            });
+            localStorage.setItem('mishellDashboardCache_' + clave, JSON.stringify(valores));
+        } catch (e) { /* localStorage puede fallar (privado/lleno); no es crítico */ }
+    }
+    function pintarCacheDashboard(clave, ids) {
+        try {
+            const valores = JSON.parse(localStorage.getItem('mishellDashboardCache_' + clave) || 'null');
+            if (!valores) return;
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && valores[id] !== undefined) {
+                    el.innerHTML = valores[id];
+                    el.classList.add('db-valor-en-cache');
+                }
+            });
+        } catch (e) { /* ignorar */ }
+    }
+
     // ================================================================
     // 1️⃣ VENTAS DEL PERÍODO (Hoy / Semana / Mes / Año)
     // ================================================================
@@ -8126,8 +8155,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ================================================================
     // 3️⃣ APARTADOS ACTIVOS
     // ================================================================
+    const APARTADOS_CACHE_IDS = ['db-apartados-vencer', 'db-apartados-total-saldo'];
+
     function calcularApartadosVencer() {
         console.log("📅 Calculando apartados activos...");
+        pintarCacheDashboard('apartados', APARTADOS_CACHE_IDS);
 
         try {
             // Solo interesan los apartados "Pendiente" (Completado/Cancelado se
@@ -8185,12 +8217,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         dbApartadosVencerEl.classList.add('text-success');
                     }
 
+                    APARTADOS_CACHE_IDS.forEach(id => document.getElementById(id)?.classList.remove('db-valor-en-cache'));
+                    cachearDashboard('apartados', APARTADOS_CACHE_IDS);
+
                     console.log(`✅ Apartados activos: ${countActivos} (vencidos: ${countVencidos})`);
                 },
                 (error) => {
                     marcarDashboardListo('apartados');
                     console.error("❌ Error al calcular apartados activos:", error);
                     dbApartadosVencerEl.textContent = "Error";
+                    dbApartadosVencerEl.classList.remove('db-valor-en-cache');
                     dbApartadosVencerEl.classList.add('text-danger');
                 }
             );
@@ -8199,6 +8235,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             marcarDashboardListo('apartados');
             console.error("❌ Error fatal al configurar apartados:", error);
             dbApartadosVencerEl.textContent = "Error";
+            dbApartadosVencerEl.classList.remove('db-valor-en-cache');
             dbApartadosVencerEl.classList.add('text-danger');
         }
     }
@@ -8477,8 +8514,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ================================================================
     const STOCK_MINIMO_DASHBOARD = 2; // Productos con 2 prendas o menos
 
+    const PRODUCTOS_CACHE_IDS = [
+        'db-total-productos', 'db-productos-disponibles', 'db-bajo-stock',
+        'db-inversion-inventario', 'db-inventario-unidades',
+        'db-utilidad-potencial', 'db-margen-utilidad'
+    ];
+
     function iniciarListenerProductos() {
         console.log("📦 Suscribiendo estadísticas del Dashboard al listener único de productos...");
+        pintarCacheDashboard('productos', PRODUCTOS_CACHE_IDS);
 
         // Antes esto abría su propio onSnapshot sobre TODA la colección de
         // productos, duplicando la descarga que ya hace el listener de la
@@ -8584,6 +8628,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 if (dbMargenEl) {
                     dbMargenEl.innerHTML = `<i class="bi bi-percent"></i> ${margenUtilidad.toFixed(1)}% de margen`;
                 }
+
+                PRODUCTOS_CACHE_IDS.forEach(id => document.getElementById(id)?.classList.remove('db-valor-en-cache'));
+                cachearDashboard('productos', PRODUCTOS_CACHE_IDS);
 
                 console.log(`✅ Productos: ${totalProductos} (${productosDisponibles} disponibles) | Bajo stock: ${bajoStockCount} | Inversión: ${formatoMoneda.format(inversionTotal)} | Utilidad potencial: ${formatoMoneda.format(utilidadPotencial)} (${margenUtilidad.toFixed(1)}%)`);
             });
