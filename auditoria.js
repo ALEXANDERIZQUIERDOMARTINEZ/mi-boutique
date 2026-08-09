@@ -390,13 +390,15 @@ function leerFiltrosDesdeUI() {
     };
 }
 
-function exportarExcel() {
-    if (typeof XLSX === 'undefined') {
-        window.showToast?.('El exportador de Excel aún no está listo, intenta de nuevo en un momento.', 'warning');
-        return;
-    }
+async function exportarExcel() {
     if (estado.filasActuales.length === 0) {
         window.showToast?.('No hay registros cargados para exportar.', 'warning');
+        return;
+    }
+    try {
+        await window.loadExternalLib('xlsx');
+    } catch (e) {
+        window.showToast?.('No se pudo cargar el exportador de Excel, intenta de nuevo.', 'warning');
         return;
     }
 

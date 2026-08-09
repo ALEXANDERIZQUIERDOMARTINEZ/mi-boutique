@@ -3750,21 +3750,23 @@
         });
     </script>
 
-    <script type="module" src="admin.js?v=3.4.8"></script>
+    <script type="module" src="admin.js?v=3.5.0"></script>
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
-    <script type="module" src="auditoria.js?v=1.0.0"></script>
+    <script type="module" src="auditoria.js?v=1.0.1"></script>
 
     <!-- Script para generar catálogo en PDF -->
-    <script type="module" src="catalogoPDF.js?v=1.0.0"></script>
+    <script type="module" src="catalogoPDF.js?v=1.0.1"></script>
 
-    <!-- Librerías pesadas (exportar Excel, gráficos, PDF) van después de los
-         scripts de sesión/panel con "defer": así no bloquean el parser ni
-         retrasan la verificación de sesión ni la primera pintura del panel,
-         y solo se necesitan cuando el usuario exporta, ve el dashboard o
-         genera un PDF (nunca antes de que termine de cargar el resto). -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
+    <!-- chart.js se usa en el Dashboard, la sección que se ve al entrar al
+         panel, así que se sigue cargando aquí con "defer" (no bloquea el
+         parser ni la primera pintura). xlsx, jspdf, jsbarcode y html5-qrcode
+         ya NO se cargan aquí: pesan ~1.7MB entre las cuatro y solo hacen
+         falta si el usuario exporta un Excel, genera un PDF, ve el
+         inventario o abre el escáner de cámara. admin.js expone
+         window.loadExternalLib(nombre), que las inyecta bajo demanda la
+         primera vez que se necesitan (ver admin.js, barcode-system.js y
+         catalogoPDF.js). -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 
     <!-- ═══════════════════════════════════════════════════════════════════
          MODAL: AGREGAR/EDITAR PROMOCIÓN GLOBAL
@@ -4079,14 +4081,10 @@
         </div>
     </div>
 
-    <!-- 📚 LIBRERÍA JSBARCODE PARA GENERAR CÓDIGOS DE BARRAS -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js" defer></script>
-
-    <!-- 📷 LIBRERÍA HTML5-QRCODE PARA ESCANEO CON CÁMARA -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
-
-    <!-- 🔍 SISTEMA DE CÓDIGOS DE BARRAS (usa las dos librerías de arriba;
-         "defer" preserva el orden de ejecución entre las tres) -->
+    <!-- 🔍 SISTEMA DE CÓDIGOS DE BARRAS. JsBarcode y Html5Qrcode ya no se
+         cargan aquí de entrada: barcode-system.js las pide bajo demanda con
+         window.loadExternalLib() justo antes de usarlas (dibujar un código
+         de barras o abrir el escáner de cámara). -->
     <script src="barcode-system.js" defer></script>
 
     <!-- DASHBOARD ANALYTICS CHARTS + SIDEBAR CONTROLS -->

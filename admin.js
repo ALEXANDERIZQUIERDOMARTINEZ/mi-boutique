@@ -80,6 +80,37 @@ function compressProductImageFile(file) {
     });
 }
 
+// ── Carga diferida de librerías pesadas de terceros ─────────────────────
+// xlsx, jspdf, chart.js, jsbarcode y html5-qrcode sumaban ~2MB sin comprimir
+// que antes se descargaban en TODA carga de admin.html sin importar si la
+// sesión iba a exportar un Excel, generar un PDF o escanear un código de
+// barras. Ahora se inyectan solo la primera vez que la función que los
+// necesita se ejecuta (botón de exportar, abrir el escáner, etc.), y la
+// promesa se cachea para no volver a pedirlos ni duplicar el <script>.
+// Se expone en window porque barcode-system.js y catalogoPDF.js (scripts
+// separados) también la necesitan.
+const EXTERNAL_LIB_URLS = {
+    xlsx: 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js',
+    jspdf: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    jsbarcode: 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js',
+    html5qrcode: 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
+};
+const _externalLibPromises = {};
+function loadExternalLib(name) {
+    if (_externalLibPromises[name]) return _externalLibPromises[name];
+    const src = EXTERNAL_LIB_URLS[name];
+    if (!src) return Promise.reject(new Error(`Librería externa desconocida: ${name}`));
+    _externalLibPromises[name] = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => resolve();
+        script.onerror = () => { delete _externalLibPromises[name]; reject(new Error(`No se pudo cargar ${name}`)); };
+        document.head.appendChild(script);
+    });
+    return _externalLibPromises[name];
+}
+window.loadExternalLib = loadExternalLib;
+
 // Inicializar window.appContext lo antes posible con el último usuario
 // conocido en este dispositivo. Se prueba primero sessionStorage (recién
 // llegado desde login.html) y si no hay nada, el caché persistente en
@@ -1665,7 +1696,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Reconstruye la tabla de inventario (filas + códigos de barras) a
         // partir de localProductsMap, ya poblado por renderProducts().
-        function pintarTablaProductos() {
+        async function pintarTablaProductos() {
             if (!productListTableBody) return;
             productListTableBody.innerHTML = '';
             const emptyRow = document.getElementById('empty-inventory-row');
@@ -1679,6 +1710,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             if (emptyRow) emptyRow.style.display = 'none';
+            await loadExternalLib('jsbarcode');
 
             localProductsMap.forEach((d, id) => {
                 const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
@@ -2361,7 +2393,7 @@ document.addEventListener('DOMContentLoaded', () => {
              if (target.classList.contains('btn-ver-barcode')) {
                  const producto = localProductsMap.get(id);
                  if (producto && window.mostrarBarcodeModal) {
-                     window.mostrarBarcodeModal(producto);
+                     await window.mostrarBarcodeModal(producto);
                  }
              } else if (target.classList.contains('btn-delete-product')) {
                  const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'productos'; deleteItemNameEl.textContent = `Producto: ${nameTd.firstChild.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
@@ -4420,6 +4452,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         async function generarFacturaVentaPDF(ventaId, ventaData) {
+            await loadExternalLib('jspdf');
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
 
@@ -11722,6 +11755,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const originalHtml = btn.innerHTML;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Exportando...';
                 btn.disabled = true;
+                await loadExternalLib('xlsx');
 
                 // Obtener productos
                 const productosSnapshot = await getDocs(collection(db, 'productos'));
@@ -11806,6 +11840,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const originalHtml = btn.innerHTML;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Exportando...';
                 btn.disabled = true;
+                await loadExternalLib('xlsx');
 
                 const clientesSnapshot = await getDocs(collection(db, 'clientes'));
                 const data = [];
@@ -11849,6 +11884,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const originalHtml = btn.innerHTML;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Exportando...';
                 btn.disabled = true;
+                await loadExternalLib('xlsx');
 
                 const ventasSnapshot = await getDocs(query(collection(db, 'ventas'), orderBy('fecha', 'desc')));
                 const data = [];
@@ -11901,6 +11937,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const originalHtml = btn.innerHTML;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Exportando...';
                 btn.disabled = true;
+                await loadExternalLib('xlsx');
 
                 const finanzasSnapshot = await getDocs(query(collection(db, 'finanzas'), orderBy('fecha', 'desc')));
                 const data = [];
@@ -11945,6 +11982,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const originalHtml = btn.innerHTML;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Exportando...';
                 btn.disabled = true;
+                await loadExternalLib('xlsx');
 
                 const apartadosSnapshot = await getDocs(collection(db, 'apartados'));
                 const data = [];
@@ -11994,6 +12032,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const originalHtml = btn.innerHTML;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Exportando...';
                 btn.disabled = true;
+                await loadExternalLib('xlsx');
 
                 const pedidosSnapshot = await getDocs(query(collection(db, 'pedidos'), orderBy('createdAt', 'desc')));
                 const data = [];
@@ -12045,6 +12084,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const btn = exportBackupBtn;
                 btn.disabled = true;
                 backupSpinner?.classList.remove('d-none');
+                await loadExternalLib('xlsx');
 
                 const wb = XLSX.utils.book_new();
 
@@ -12620,6 +12660,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // =====================================================================
     async function leerExcel(archivo) {
         mostrarLoader('Leyendo archivo...', 10);
+        await loadExternalLib('xlsx');
 
         return new Promise((resolve, reject) => {
             const reader = new FileReader();

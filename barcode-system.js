@@ -89,8 +89,9 @@
     // GENERACIÓN VISUAL DE CÓDIGOS DE BARRAS
     // ========================================================================
 
-    window.generarBarcodeVisual = function(codigo, elementId = 'barcode-svg') {
+    window.generarBarcodeVisual = async function(codigo, elementId = 'barcode-svg') {
         try {
+            await window.loadExternalLib('jsbarcode');
             JsBarcode(`#${elementId}`, codigo, {
                 format: 'EAN13',
                 width: 2,
@@ -151,7 +152,7 @@
     // MOSTRAR MODAL DE CÓDIGO DE BARRAS
     // ========================================================================
 
-    window.mostrarBarcodeModal = function(producto) {
+    window.mostrarBarcodeModal = async function(producto) {
         if (!producto.codigoBarras) {
             showToast('Este producto no tiene código de barras asignado', 'warning');
             return;
@@ -167,7 +168,7 @@
         document.getElementById('barcode-number').textContent = producto.codigoBarras;
 
         // Generar código de barras visual
-        window.generarBarcodeVisual(producto.codigoBarras);
+        await window.generarBarcodeVisual(producto.codigoBarras);
 
         // Mostrar modal
         const modal = new bootstrap.Modal(document.getElementById('barcodeModal'));
@@ -273,6 +274,7 @@
                 const container = document.getElementById('camera-scanner-container');
 
                 try {
+                    await window.loadExternalLib('html5qrcode');
                     html5QrCode = new Html5Qrcode('camera-scanner-container');
                     scannerActive = true;
 
@@ -462,6 +464,8 @@
                     const originalHTML = btn.innerHTML;
                     btn.disabled = true;
                     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando Excel...';
+
+                    await window.loadExternalLib('xlsx');
 
                     // Verificar que Firebase esté disponible
                     if (!window.db || !window.getDocs || !window.collection || !window.query) {
