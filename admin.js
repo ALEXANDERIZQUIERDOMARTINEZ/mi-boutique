@@ -1611,12 +1611,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const cI=document.getElementById('costo-compra'); const pDI=document.getElementById('precio-detal'); const pMI=document.getElementById('precio-mayor'); const mDI=document.getElementById('margen-detal-info'); const mMI=document.getElementById('margen-mayor-info'); const fM_margin=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0}); function cYM(){ if(!cI || !pDI || !pMI || !mDI || !mMI) return; const c=parseFloat(eliminarFormatoNumero(cI.value))||0; const pD=parseFloat(eliminarFormatoNumero(pDI.value))||0; const pM=parseFloat(eliminarFormatoNumero(pMI.value))||0; let mDV=0,mDP=0;if(c>0&&pD>=c){mDV=pD-c;mDP=(mDV/c)*100;mDI.textContent=`Margen: ${fM_margin.format(mDV)} (${mDP.toFixed(1)}%)`;mDI.style.color='';mDI.style.fontWeight='';}else{mDI.textContent='Margen: $0 (0.0%)';mDI.style.color=(pD>0&&pD<c)?'red':'';mDI.style.fontWeight=(pD>0&&pD<c)?'bold':'';if(pD>0&&pD<c)mDI.textContent='Margen Negativo';} let mMV=0,mMP=0;if(c>0&&pM>=c){mMV=pM-c;mMP=(mMV/c)*100;mMI.textContent=`Margen: ${fM_margin.format(mMV)} (${mMP.toFixed(1)}%)`;mMI.style.color='';mMI.style.fontWeight='';}else{mMI.textContent='Margen: $0 (0.0%)';mMI.style.color=(pM>0&&pM<c)?'red':'';mMI.style.fontWeight=(pM>0&&pM<c)?'bold':'';if(pM>0&&pM<c)mMI.textContent='Margen Negativo';}} if(cI)cI.addEventListener('input',cYM); if(pDI)pDI.addEventListener('input',cYM); if(pMI)pMI.addEventListener('input',cYM); if(cI) cYM();
         
         // La tabla de Productos (filas + un <svg> de código de barras generado
-        // por cada producto que lo tenga) es lo más caro de construir de todo
-        // el arranque de la app. productosTablaSucia marca que llegó un
-        // snapshot nuevo mientras la pestaña Productos estaba oculta, para
-        // pintarla recién cuando el usuario entra a ella (alEntrarSeccion más
-        // abajo) en vez de reconstruirla en cada snapshot esté visible o no.
+        // por cada producto que lo tenga) y la lista del buscador del punto de
+        // venta (una tarjeta con imagen por producto, hasta cientos) son lo
+        // más caro de construir de todo el arranque de la app. Antes las dos
+        // se reconstruían por completo en CADA snapshot de productos —una
+        // venta que baja stock dispara uno— aunque ni la pestaña Productos ni
+        // el buscador estuvieran abiertos; con un catálogo de varios cientos
+        // de productos y ventas frecuentes durante un turno, esa reconstrucción
+        // constante de cientos de nodos con imagen era presión real de
+        // memoria en el celular. Ahora solo se marca "sucio" al llegar un
+        // snapshot nuevo, y cada una se reconstruye recién cuando el usuario
+        // realmente la abre (alEntrarSeccion / show.bs.modal más abajo).
         let productosTablaSucia = false;
+        let productSearchModalSucia = true; // true al inicio: aún no se ha construido nunca
+        const searchProductModalEl = document.getElementById('searchProductModal');
 
         const renderProducts = (snapshot) => {
             // Avisar de inmediato a los suscriptores ligeros (dashboard) con
@@ -1638,14 +1646,37 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if(!productListTableBody) return;
-            if(productSearchModalList) productSearchModalList.innerHTML = '';
 
             snapshot.forEach(docSnap => {
-                const d = docSnap.data();
-                const id = docSnap.id;
+                localProductsMap.set(docSnap.id, docSnap.data());
+            });
 
-                localProductsMap.set(id, d);
+            // Buscador del punto de venta: si por casualidad ya está abierto
+            // cuando llega este snapshot (p. ej. una venta concurrente baja
+            // stock de un producto listado), se repinta de una vez para que
+            // no se quede desactualizado; si no, se deja pendiente.
+            productSearchModalSucia = true;
+            if (searchProductModalEl?.classList.contains('show')) {
+                pintarModalBusquedaProductos();
+            }
 
+            // Pestaña Productos visible ahora mismo: pintar la tabla de una
+            // vez. Si no, dejarla pendiente para cuando se entre a ella.
+            if ((window.location.hash || '#dashboard') === '#productos') {
+                pintarTablaProductos();
+            } else {
+                productosTablaSucia = true;
+            }
+        };
+
+        // Reconstruye la lista del buscador de productos del punto de venta
+        // (modal "Buscar producto" al registrar una venta) a partir de
+        // localProductsMap, ya poblado por renderProducts().
+        function pintarModalBusquedaProductos() {
+            if (!productSearchModalList) return;
+            productSearchModalList.innerHTML = '';
+
+            localProductsMap.forEach((d, id) => {
                 const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
 
                 const li = document.createElement('li');
@@ -1692,22 +1723,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     li.style.opacity = '0.5';
                     li.style.cursor = 'not-allowed';
                 }
-                if(productSearchModalList) productSearchModalList.appendChild(li);
+                productSearchModalList.appendChild(li);
             });
 
             // Aplicar ordenamiento al modal de búsqueda
             if (typeof applyProductModalFilters === 'function') {
                 applyProductModalFilters();
             }
+            productSearchModalSucia = false;
+        }
 
-            // Pestaña Productos visible ahora mismo: pintar la tabla de una
-            // vez. Si no, dejarla pendiente para cuando se entre a ella.
-            if ((window.location.hash || '#dashboard') === '#productos') {
-                pintarTablaProductos();
-            } else {
-                productosTablaSucia = true;
-            }
-        };
+        if (searchProductModalEl) {
+            searchProductModalEl.addEventListener('show.bs.modal', () => {
+                if (productSearchModalSucia) pintarModalBusquedaProductos();
+            });
+        }
 
         // Reconstruye la tabla de inventario (filas + códigos de barras) a
         // partir de localProductsMap, ya poblado por renderProducts().
