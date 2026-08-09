@@ -4788,6 +4788,13 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
   font-weight: 500;
 }
 
+/* Cifra de la última carga (localStorage), pintada de inmediato mientras
+   se confirma el dato real con Firestore — ver pintarCacheVentasRango()
+   en admin.js. Se quita en cuanto llega la confirmación real. */
+.db-valor-en-cache {
+  opacity: 0.55;
+}
+
 @media (max-width: 479.98px) {
   .db-compare-col { padding: 1rem 1.15rem 1.25rem; }
   .db-compare-kpi-val { font-size: 1.15rem; }

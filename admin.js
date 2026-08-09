@@ -7819,6 +7819,50 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         year: 'Ventas este año'
     };
 
+    // Última cifra confirmada por rango (Hoy/Semana/Mes/Año), para pintarla
+    // de inmediato al entrar mientras se espera la confirmación real de
+    // Firestore — en vez de mostrar "0" en Ventas/Ganancia/Mishelles Fábrica
+    // durante los varios segundos que puede tardar esa primera conexión en
+    // redes lentas. Los valores en caché se marcan con la clase
+    // 'db-valor-en-cache' (opacidad reducida) hasta que llega la
+    // confirmación real, que la quita.
+    const DASHBOARD_VENTAS_CACHE_KEY = 'mishellDashboardVentasCache_v1';
+    const DASHBOARD_VENTAS_CACHE_IDS = [
+        'db-ventas-hoy', 'db-ventas-count',
+        'db-ventas-mayoristas-hoy', 'db-ventas-mayoristas-count',
+        'db-boutique-ganancia',
+        'db-fabrica-ingresos', 'db-fabrica-ingresos-desglose',
+        'db-fabrica-gastos', 'db-fabrica-utilidad'
+    ];
+
+    function guardarCacheVentasRango(rango) {
+        try {
+            const valores = {};
+            DASHBOARD_VENTAS_CACHE_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) valores[id] = el.textContent;
+            });
+            const cache = JSON.parse(localStorage.getItem(DASHBOARD_VENTAS_CACHE_KEY) || '{}');
+            cache[rango] = valores;
+            localStorage.setItem(DASHBOARD_VENTAS_CACHE_KEY, JSON.stringify(cache));
+        } catch (e) { /* localStorage puede fallar (privado/lleno); no es crítico */ }
+    }
+
+    function pintarCacheVentasRango(rango) {
+        try {
+            const cache = JSON.parse(localStorage.getItem(DASHBOARD_VENTAS_CACHE_KEY) || '{}');
+            const valores = cache[rango];
+            if (!valores) return;
+            DASHBOARD_VENTAS_CACHE_IDS.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && valores[id] !== undefined) {
+                    el.textContent = valores[id];
+                    el.classList.add('db-valor-en-cache');
+                }
+            });
+        } catch (e) { /* ignorar */ }
+    }
+
     async function calcularVentasRango(rango = 'today') {
         console.log(`📊 Calculando ventas del período: ${rango}...`);
 
@@ -7829,6 +7873,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
         const tituloEl = document.getElementById('db-ventas-periodo-title');
         if (tituloEl) tituloEl.textContent = ETIQUETAS_RANGO_VENTAS[rango] || 'Ventas hoy';
+
+        // Mostrar de inmediato la última cifra confirmada para este rango
+        // (si hay) mientras se espera la respuesta real de Firestore.
+        pintarCacheVentasRango(rango);
 
         try {
             const { inicio, fin } = obtenerRangoFechas(rango);
@@ -8032,13 +8080,29 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         dbBoutiqueGananciaEl.textContent = formatoMoneda.format(valorPrendasVendidas);
                     }
 
-                    // "Ingresos totales" ya no se muestra en el Dashboard, pero
-                    // ingresosFabricaTotal se sigue calculando: lo necesita
-                    // "Utilidad neta" (dbFabricaUtilidadEl) justo abajo.
+                    const dbFabricaIngresosEl = document.getElementById('db-fabrica-ingresos');
+                    if (dbFabricaIngresosEl) dbFabricaIngresosEl.textContent = formatoMoneda.format(ingresosFabricaTotal);
+
+                    // Desglose de qué compone "Ingresos totales", para que no
+                    // se vea como un número suelto sin explicación.
+                    const dbFabricaIngresosDesgloseEl = document.getElementById('db-fabrica-ingresos-desglose');
+                    if (dbFabricaIngresosDesgloseEl) {
+                        const partesFabrica = [`Mayorista ${formatoMoneda.format(totalMayorista)}`];
+                        if (costoDetalRecuperado > 0) partesFabrica.push(`Costo detal ${formatoMoneda.format(costoDetalRecuperado)}`);
+                        if (ingresosManualesFabrica > 0) partesFabrica.push(`Manual ${formatoMoneda.format(ingresosManualesFabrica)}`);
+                        dbFabricaIngresosDesgloseEl.textContent = partesFabrica.join(' + ');
+                    }
+
                     const dbFabricaGastosEl = document.getElementById('db-fabrica-gastos');
                     if (dbFabricaGastosEl) dbFabricaGastosEl.textContent = formatoMoneda.format(gastosManualesFabrica);
                     const dbFabricaUtilidadEl = document.getElementById('db-fabrica-utilidad');
                     if (dbFabricaUtilidadEl) dbFabricaUtilidadEl.textContent = formatoMoneda.format(utilidadFabrica);
+
+                    // Ya llegó la confirmación real: quitar la marca de "valor en
+                    // caché" y guardar esta cifra como la nueva última confirmada
+                    // para este rango (para la próxima vez que se entre al Dashboard).
+                    DASHBOARD_VENTAS_CACHE_IDS.forEach(id => document.getElementById(id)?.classList.remove('db-valor-en-cache'));
+                    guardarCacheVentasRango(rango);
 
                     // Dona del comparativo: reparto de ventas Boutique (detal) vs Fábrica (mayorista)
                     actualizarGraficoComparativo(totalDineroRecibido, totalMayorista);
@@ -8049,6 +8113,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     marcarDashboardListo('ventasRango');
                     console.error("❌ Error al calcular ventas del período:", error);
                     dbVentasHoyEl.textContent = "Error";
+                    dbVentasHoyEl.classList.remove('db-valor-en-cache');
                     dbVentasHoyEl.classList.add('text-danger');
                 }
             );
@@ -8057,6 +8122,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             marcarDashboardListo('ventasRango');
             console.error("❌ Error fatal al configurar ventas del período:", error);
             dbVentasHoyEl.textContent = "Error";
+            dbVentasHoyEl.classList.remove('db-valor-en-cache');
             dbVentasHoyEl.classList.add('text-danger');
         }
     }
