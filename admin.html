@@ -413,14 +413,11 @@
                     </div>
                 </section>
 
-                <!-- ACCESOS RÁPIDOS + CATÁLOGO -->
+                <!-- ACCESOS RÁPIDOS -->
                 <section class="db-section">
                     <div class="db-panel db-quick-panel">
                         <div class="db-panel-head">
                             <span class="db-panel-title">Accesos rápidos</span>
-                            <button class="btn btn-sm btn-outline-secondary" id="btn-descargar-catalogo-pdf">
-                                <i class="bi bi-download me-1"></i>Catálogo PDF
-                            </button>
                         </div>
                         <div class="db2-quick">
                             <div class="db2-quick-item" onclick="document.querySelector('a[href=\'#pedidos-web\']').click()">
@@ -3754,18 +3751,14 @@
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
     <script type="module" src="auditoria.js?v=1.0.1"></script>
 
-    <!-- Script para generar catálogo en PDF -->
-    <script type="module" src="catalogoPDF.js?v=1.0.1"></script>
-
     <!-- chart.js se usa en el Dashboard, la sección que se ve al entrar al
          panel, así que se sigue cargando aquí con "defer" (no bloquea el
          parser ni la primera pintura). xlsx, jspdf, jsbarcode y html5-qrcode
          ya NO se cargan aquí: pesan ~1.7MB entre las cuatro y solo hacen
-         falta si el usuario exporta un Excel, genera un PDF, ve el
-         inventario o abre el escáner de cámara. admin.js expone
-         window.loadExternalLib(nombre), que las inyecta bajo demanda la
-         primera vez que se necesitan (ver admin.js, barcode-system.js y
-         catalogoPDF.js). -->
+         falta si el usuario exporta un Excel, genera un PDF (factura de
+         venta), ve el inventario o abre el escáner de cámara. admin.js
+         expone window.loadExternalLib(nombre), que las inyecta bajo demanda
+         la primera vez que se necesitan (ver admin.js y barcode-system.js). -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
     <!-- ═══════════════════════════════════════════════════════════════════
