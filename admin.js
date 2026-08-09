@@ -41,6 +41,45 @@ function normalizeColor(color) {
     return (c === '' || c === 'unico' || c === 'único') ? 'Único' : color.trim();
 }
 
+// Redimensiona/comprime fotos de producto antes de subirlas a Storage. Las
+// fotos tomadas con celular suelen pesar varios MB a resoluciones que la
+// tienda nunca necesita, y eso es lo que hace lentas las páginas públicas
+// (index/mayor cargan hasta 20 tarjetas con imagen por página). Si el
+// archivo ya es pequeño o no es una imagen soportada por <canvas>, se sube
+// tal cual.
+const PRODUCT_IMAGE_MAX_DIMENSION = 1600;
+const PRODUCT_IMAGE_JPEG_QUALITY = 0.82;
+const PRODUCT_IMAGE_SKIP_COMPRESSION_BELOW = 300 * 1024; // 300KB
+
+function compressProductImageFile(file) {
+    if (!file || !file.type?.startsWith('image/') || file.type === 'image/svg+xml') return Promise.resolve(file);
+    if (file.size <= PRODUCT_IMAGE_SKIP_COMPRESSION_BELOW) return Promise.resolve(file);
+
+    return new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            let { width, height } = img;
+            if (width > PRODUCT_IMAGE_MAX_DIMENSION || height > PRODUCT_IMAGE_MAX_DIMENSION) {
+                const scale = PRODUCT_IMAGE_MAX_DIMENSION / Math.max(width, height);
+                width = Math.round(width * scale);
+                height = Math.round(height * scale);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            URL.revokeObjectURL(url);
+            canvas.toBlob((blob) => {
+                if (!blob || blob.size >= file.size) { resolve(file); return; }
+                const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+                resolve(new File([blob], newName, { type: 'image/jpeg' }));
+            }, 'image/jpeg', PRODUCT_IMAGE_JPEG_QUALITY);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+    });
+}
+
 // Inicializar window.appContext lo antes posible con el último usuario
 // conocido en este dispositivo. Se prueba primero sessionStorage (recién
 // llegado desde login.html) y si no hay nada, el caché persistente en
@@ -1924,7 +1963,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Subir nuevas imágenes
                 const nuevasImgs = [];
                 for (let i = 0; i < cv.newFiles.length; i++) {
-                    const file = cv.newFiles[i];
+                    const file = await compressProductImageFile(cv.newFiles[i]);
                     const angulo = cv.newFileAngles[i] || 'frente';
                     const fileName = `${tenantId || 'tenant'}/productos/${productId}/color_${cv.id}_${Date.now()}_${i}_${file.name}`;
                     const storageRef = ref(storage, fileName);
@@ -2201,7 +2240,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const files = imagenInput.files;
                 if (files.length > 0) {
                     showToast("Subiendo imagen...", 'info');
-                    const firstFile = files[0];
+                    const firstFile = await compressProductImageFile(files[0]);
                     const fileName = `product_images/${Date.now()}-${firstFile.name}`;
                     const storageRef = ref(storage, fileName);
 
