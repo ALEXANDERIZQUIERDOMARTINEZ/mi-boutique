@@ -7998,6 +7998,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     let totalMayorista = 0;
                     let ventasMayoristaContadas = 0;
                     let valorPrendasVendidas = 0;
+                    let costoPrendasVendidas = 0;
                     let costoDetalRecuperado = 0;
 
                     snapshot.forEach(doc => {
@@ -8021,9 +8022,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             } else {
                                 ventasContadas++;
 
-                                // "Ganancia real": valor de venta completo de la prenda
-                                // (precio), sin restar ningún costo. Y, desde
-                                // FECHA_CORTE_DETAL, lo que le corresponde a Fábrica:
+                                // "Ganancia real": margen verdadero de la prenda (precio de
+                                // venta menos costo de compra), no el valor de venta completo.
+                                // Y, desde FECHA_CORTE_DETAL, lo que le corresponde a Fábrica:
                                 // - Prendas con proveedor "Mishelles Boutique": su Costo ($)
                                 //   es ingreso mayorista de Fábrica; el resto es de Boutique.
                                 // - Cualquier otro proveedor: se recupera el costo de compra
@@ -8041,6 +8042,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                                     const precio = parseFloat(item.precio || item.precioUnitario || 0);
                                     const cant = parseInt(item.cantidad || 1, 10);
                                     valorPrendasVendidas += precio * cant;
+                                    costoPrendasVendidas += costo * cant;
 
                                     if (contarCostoFabrica) {
                                         const esBoutique = item.productoId ? productEsBoutique.get(item.productoId) : false;
@@ -8104,11 +8106,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const ingresosFabricaTotal = totalMayorista + costoDetalRecuperado + ingresosManualesFabrica;
                     const utilidadFabrica = ingresosFabricaTotal - gastosManualesFabrica;
 
-                    // 🏷️ "Ganancia real": valor de venta completo de las prendas
-                    // vendidas al detal, sin restar ningún costo.
+                    // 🏷️ "Ganancia real": margen verdadero de las prendas vendidas al
+                    // detal (precio de venta menos costo de compra).
+                    const gananciaRealBoutique = valorPrendasVendidas - costoPrendasVendidas;
                     const dbBoutiqueGananciaEl = document.getElementById('db-boutique-ganancia');
                     if (dbBoutiqueGananciaEl) {
-                        dbBoutiqueGananciaEl.textContent = formatoMoneda.format(valorPrendasVendidas);
+                        dbBoutiqueGananciaEl.textContent = formatoMoneda.format(gananciaRealBoutique);
                     }
 
                     // "Ingresos totales" ya no se muestra en el Dashboard, pero
@@ -8129,7 +8132,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     // Dona del comparativo: reparto de ventas Boutique (detal) vs Fábrica (mayorista)
                     actualizarGraficoComparativo(totalDineroRecibido, totalMayorista);
 
-                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas) | Ganancia real (valor prendas): ${formatoMoneda.format(valorPrendasVendidas)} | Utilidad Fábrica: ${formatoMoneda.format(utilidadFabrica)}`);
+                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas) | Ganancia real (margen): ${formatoMoneda.format(gananciaRealBoutique)} | Utilidad Fábrica: ${formatoMoneda.format(utilidadFabrica)}`);
                 },
                 (error) => {
                     marcarDashboardListo('ventasRango');
@@ -8463,7 +8466,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             stock: p.stock,
             precioDetal: p.precioDetal,
             costoCompra: p.costoCompra
-        })).filter(p => p.stock > 0);
+        })).filter(p => p.stock > 0 && p.costoCompra > 0);
 
         productosConUtilidad.sort((a, b) => b.utilidadTotal - a.utilidadTotal);
         const top5 = productosConUtilidad.slice(0, 5);
@@ -8546,6 +8549,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 let valorPotencialDetal = 0;
                 let valorPotencialMayor = 0;
                 let totalUnidades = 0;
+                let productosSinCosto = 0;
                 const productos = [];
                 window.productosBajoStock = [];
                 productCostMapCache.clear();
@@ -8567,9 +8571,18 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const stockTotal = variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
 
                     inversionTotal += costoCompra * stockTotal;
-                    valorPotencialDetal += precioDetal * stockTotal;
-                    valorPotencialMayor += precioMayor * stockTotal;
                     totalUnidades += stockTotal;
+
+                    // Un producto sin costoCompra registrado infla artificialmente
+                    // la utilidad/margen potencial (todo su precio de venta se vería
+                    // como "ganancia"), así que se excluye de ese cálculo hasta que
+                    // se le complete el costo.
+                    if (costoCompra > 0) {
+                        valorPotencialDetal += precioDetal * stockTotal;
+                        valorPotencialMayor += precioMayor * stockTotal;
+                    } else if (stockTotal > 0) {
+                        productosSinCosto++;
+                    }
 
                     if (stockTotal > 0) {
                         productos.push({ nombre: producto.nombre || 'Sin nombre', costoCompra, precioDetal, precioMayor, stock: stockTotal });
@@ -8615,6 +8628,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     margenUtilidad,
                     totalUnidades,
                     totalProductos: snapshot.size,
+                    productosSinCosto,
                     productos
                 };
 
@@ -8629,13 +8643,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                 const dbMargenEl = document.getElementById('db-margen-utilidad');
                 if (dbMargenEl) {
-                    dbMargenEl.innerHTML = `<i class="bi bi-percent"></i> ${margenUtilidad.toFixed(1)}% de margen`;
+                    const avisoSinCosto = productosSinCosto > 0
+                        ? ` · ${productosSinCosto} sin costo registrado`
+                        : '';
+                    dbMargenEl.innerHTML = `<i class="bi bi-percent"></i> ${margenUtilidad.toFixed(1)}% de margen${avisoSinCosto}`;
                 }
 
                 PRODUCTOS_CACHE_IDS.forEach(id => document.getElementById(id)?.classList.remove('db-valor-en-cache'));
                 cachearDashboard('productos', PRODUCTOS_CACHE_IDS);
 
-                console.log(`✅ Productos: ${totalProductos} (${productosDisponibles} disponibles) | Bajo stock: ${bajoStockCount} | Inversión: ${formatoMoneda.format(inversionTotal)} | Utilidad potencial: ${formatoMoneda.format(utilidadPotencial)} (${margenUtilidad.toFixed(1)}%)`);
+                console.log(`✅ Productos: ${totalProductos} (${productosDisponibles} disponibles) | Bajo stock: ${bajoStockCount} | Inversión: ${formatoMoneda.format(inversionTotal)} | Utilidad potencial: ${formatoMoneda.format(utilidadPotencial)} (${margenUtilidad.toFixed(1)}%) | Sin costo registrado: ${productosSinCosto}`);
             });
         } catch (error) {
             marcarDashboardListo('productos');
