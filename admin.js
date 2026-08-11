@@ -1847,7 +1847,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // pestaña Productos, sin importar si la navegación vino del rail de
         // escritorio o de la barra inferior móvil.
         alEntrarSeccion('#productos', () => { if (productosTablaSucia) pintarTablaProductos(); });
-        onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
+        onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); window.reportConnError?.('productos', e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
         
         // ─── GALERÍA POR COLOR ──────────────────────────────────────────────────
         // colorVariantsState: array de objetos {id, nombre, hex, imagenes (URLs ya guardadas), newFiles (File[])}
@@ -8137,6 +8137,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 (error) => {
                     marcarDashboardListo('ventasRango');
                     console.error("❌ Error al calcular ventas del período:", error);
+                    window.reportConnError?.('dashboard-ventas', error);
                     dbVentasHoyEl.textContent = "Error";
                     dbVentasHoyEl.classList.remove('db-valor-en-cache');
                     dbVentasHoyEl.classList.add('text-danger');
@@ -8146,6 +8147,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         } catch (error) {
             marcarDashboardListo('ventasRango');
             console.error("❌ Error fatal al configurar ventas del período:", error);
+            window.reportConnError?.('dashboard-ventas', error);
             dbVentasHoyEl.textContent = "Error";
             dbVentasHoyEl.classList.remove('db-valor-en-cache');
             dbVentasHoyEl.classList.add('text-danger');
@@ -8231,6 +8233,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 (error) => {
                     marcarDashboardListo('apartados');
                     console.error("❌ Error al calcular apartados activos:", error);
+                    window.reportConnError?.('dashboard-apartados', error);
                     dbApartadosVencerEl.textContent = "Error";
                     dbApartadosVencerEl.classList.remove('db-valor-en-cache');
                     dbApartadosVencerEl.classList.add('text-danger');
@@ -8240,6 +8243,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         } catch (error) {
             marcarDashboardListo('apartados');
             console.error("❌ Error fatal al configurar apartados:", error);
+            window.reportConnError?.('dashboard-apartados', error);
             dbApartadosVencerEl.textContent = "Error";
             dbApartadosVencerEl.classList.remove('db-valor-en-cache');
             dbApartadosVencerEl.classList.add('text-danger');
@@ -8657,6 +8661,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         } catch (error) {
             marcarDashboardListo('productos');
             console.error("❌ Error fatal al iniciar listener de productos:", error);
+            window.reportConnError?.('dashboard-productos', error);
         }
     }
 
