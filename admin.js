@@ -5,6 +5,7 @@ import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updat
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 // Import Auditoría (registro de quién crea/edita/elimina)
 import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js";
+import { resolveWholesaleGroup, getHybridTierInfo, isSurtidoGroup } from "./wholesale-tiers.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -2703,6 +2704,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             } else {
                                 cartItem.total = cartItem.cantidad * cartItem.precio;
                             }
+                            if (typeof window.recalcularPreciosMayoristas === 'function') window.recalcularPreciosMayoristas();
                             renderCarrito();
                             window.calcularTotalVentaGeneral();
                         }
@@ -3199,11 +3201,41 @@ document.addEventListener('DOMContentLoaded', () => {
     (() => {
          const salesForm = document.getElementById('form-venta'); const ventaClienteInput = document.getElementById('venta-cliente'); const tipoVentaSelect = document.getElementById('tipo-venta-select'); const tipoEntregaSelect = document.getElementById('tipo-entrega-select'); const ventaWhatsappCheckbox = document.getElementById('venta-whatsapp'); const ventaRepartidorSelect = document.getElementById('venta-repartidor'); const costoRutaInput = document.getElementById('costo-ruta'); const rutaPagadaCheckbox = document.getElementById('ruta-pagada-transferencia'); const ventaProductoInput = document.getElementById('venta-producto'); const ventaCarritoTbody = document.getElementById('venta-carrito'); const ventaObservaciones = document.getElementById('venta-observaciones'); const ventaDescuentoInput = document.getElementById('venta-descuento'); const ventaDescuentoTipo = document.getElementById('venta-descuento-tipo'); const pagoEfectivoInput = document.getElementById('pago-efectivo'); const pagoTransferenciaInput = document.getElementById('pago-transferencia'); const ventaTotalSpan = document.getElementById('venta-total'); const salesListTableBody = document.getElementById('lista-ventas-anteriores'); 
          
-         window.ventaItems = []; 
-         
+         window.ventaItems = [];
+
          if(!salesForm) { console.warn("Elementos de Ventas no encontrados."); return; }
-         
-         window.addEventListener('addItemToCart', (e) => { 
+
+         // Recalcula el precio unitario de cada línea del carrito mayorista según el
+         // escalón de cantidad (tabla de precios por volumen), combinando la cantidad
+         // total por grupo (y el "surtido" mezclable entre básicos) igual que mayor.js.
+         function recalcularPreciosMayoristas() {
+            if (!tipoVentaSelect || tipoVentaSelect.value !== 'mayorista') return;
+
+            const totalesPorGrupo = new Map();
+            let totalMixto = 0;
+            window.ventaItems.forEach(item => {
+                const prod = localProductsMap.get(item.productoId);
+                const grupo = prod ? resolveWholesaleGroup(prod, window.categoriesMap) : '';
+                if (!grupo) return;
+                totalesPorGrupo.set(grupo, (totalesPorGrupo.get(grupo) || 0) + item.cantidad);
+                if (isSurtidoGroup(grupo)) totalMixto += item.cantidad;
+            });
+
+            window.ventaItems.forEach(item => {
+                const prod = localProductsMap.get(item.productoId);
+                const grupo = prod ? resolveWholesaleGroup(prod, window.categoriesMap) : '';
+                if (!grupo) return;
+                const totalPropio = totalesPorGrupo.get(grupo) || item.cantidad;
+                const info = getHybridTierInfo(grupo, totalPropio, totalMixto);
+                if (info) {
+                    item.precio = info.precio;
+                    item.total = item.cantidad * item.precio;
+                }
+            });
+         }
+         window.recalcularPreciosMayoristas = recalcularPreciosMayoristas;
+
+         window.addEventListener('addItemToCart', (e) => {
             const { productId, nombre, precio, talla, color, nombreCompleto } = e.detail; 
             window.agregarItemAlCarrito(productId, nombre, 1, precio, talla, color, nombreCompleto); 
          });
@@ -3232,12 +3264,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     color,
                     imagenUrl: prod?.imagenUrl || ''
                 });
-            } 
-            renderCarrito(); 
-            window.calcularTotalVentaGeneral(); 
+            }
+            recalcularPreciosMayoristas();
+            renderCarrito();
+            window.calcularTotalVentaGeneral();
          }
-         
-         function quitarItemDelCarrito(index) { window.ventaItems.splice(index, 1); renderCarrito(); window.calcularTotalVentaGeneral(); }
+
+         function quitarItemDelCarrito(index) { window.ventaItems.splice(index, 1); recalcularPreciosMayoristas(); renderCarrito(); window.calcularTotalVentaGeneral(); }
          
          function renderCarrito() {
             if (!ventaCarritoTbody) return;
@@ -3283,7 +3316,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
          }
          
-         if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('change', (e) => { if (e.target.classList.contains('item-qty-input')) { const index = parseInt(e.target.dataset.index, 10); const newQty = parseInt(e.target.value, 10); if (newQty > 0 && window.ventaItems[index]) { window.ventaItems[index].cantidad = newQty; window.ventaItems[index].total = newQty * window.ventaItems[index].precio; renderCarrito(); window.calcularTotalVentaGeneral(); } } });
+         if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('change', (e) => { if (e.target.classList.contains('item-qty-input')) { const index = parseInt(e.target.dataset.index, 10); const newQty = parseInt(e.target.value, 10); if (newQty > 0 && window.ventaItems[index]) { window.ventaItems[index].cantidad = newQty; window.ventaItems[index].total = newQty * window.ventaItems[index].precio; recalcularPreciosMayoristas(); renderCarrito(); window.calcularTotalVentaGeneral(); } } });
          if(ventaCarritoTbody) ventaCarritoTbody.addEventListener('click', (e) => {
              e.preventDefault();
              if (e.target.closest('.btn-quitar-item')) { quitarItemDelCarrito(parseInt(e.target.closest('.btn-quitar-item').dataset.index, 10)); return; }
@@ -3292,6 +3325,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  if (window.ventaItems[index] && window.ventaItems[index].cantidad > 1) {
                      window.ventaItems[index].cantidad -= 1;
                      window.ventaItems[index].total = window.ventaItems[index].cantidad * window.ventaItems[index].precio;
+                     recalcularPreciosMayoristas();
                      renderCarrito(); window.calcularTotalVentaGeneral();
                  }
                  return;
@@ -3301,6 +3335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  if (window.ventaItems[index]) {
                      window.ventaItems[index].cantidad += 1;
                      window.ventaItems[index].total = window.ventaItems[index].cantidad * window.ventaItems[index].precio;
+                     recalcularPreciosMayoristas();
                      renderCarrito(); window.calcularTotalVentaGeneral();
                  }
                  return;
@@ -5312,6 +5347,36 @@ document.addEventListener('DOMContentLoaded', () => {
             return parseFloat(producto.precioDetal) || 0;
         }
 
+        // Igual que recalcularPreciosMayoristas() pero sobre editSaleItemsState: recalcula
+        // el precio unitario de cada línea según el escalón de cantidad total por grupo
+        // (con el "surtido" mezclable entre básicos), para que editar una venta mayorista
+        // no se quede pegada al precio del primer escalón (6X) al subir la cantidad.
+        function recalcularPreciosMayoristasEditSale() {
+            const tipoVenta = document.getElementById('edit-sale-tipo')?.value;
+            if (tipoVenta !== 'mayorista') return;
+
+            const totalesPorGrupo = new Map();
+            let totalMixto = 0;
+            editSaleItemsState.forEach(item => {
+                const prod = item.productoId ? localProductsMap.get(item.productoId) : null;
+                const grupo = prod ? resolveWholesaleGroup(prod, window.categoriesMap) : '';
+                if (!grupo) return;
+                const cantidad = parseInt(item.cantidad, 10) || 1;
+                totalesPorGrupo.set(grupo, (totalesPorGrupo.get(grupo) || 0) + cantidad);
+                if (isSurtidoGroup(grupo)) totalMixto += cantidad;
+            });
+
+            editSaleItemsState.forEach(item => {
+                const prod = item.productoId ? localProductsMap.get(item.productoId) : null;
+                const grupo = prod ? resolveWholesaleGroup(prod, window.categoriesMap) : '';
+                if (!grupo) return;
+                const cantidad = parseInt(item.cantidad, 10) || 1;
+                const totalPropio = totalesPorGrupo.get(grupo) || cantidad;
+                const info = getHybridTierInfo(grupo, totalPropio, totalMixto);
+                if (info) item.precio = info.precio;
+            });
+        }
+
         // Tallas únicas disponibles para un producto
         function obtenerTallasEditSale(producto) {
             if (!producto || !Array.isArray(producto.variaciones)) return [];
@@ -5445,6 +5510,8 @@ document.addEventListener('DOMContentLoaded', () => {
         function renderEditSaleProductos() {
             const container = document.getElementById('edit-sale-productos');
             if (!container) return;
+
+            recalcularPreciosMayoristasEditSale();
 
             if (!editSaleItemsState.length) {
                 container.innerHTML = `
@@ -5661,6 +5728,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Sincronizar precios finales con el tipo de venta seleccionado
                 editSaleItemsState.forEach(item => sincronizarItemConProductoEditSale(item));
+                recalcularPreciosMayoristasEditSale();
 
                 const itemsActualizados = editSaleItemsState.map(item => ({
                     productoId: item.productoId,
