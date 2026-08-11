@@ -7997,7 +7997,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     let ventasContadas = 0;
                     let totalMayorista = 0;
                     let ventasMayoristaContadas = 0;
-                    let valorPrendasVendidas = 0;
+                    let gananciaRealAcumulada = 0;
                     let costoDetalRecuperado = 0;
 
                     snapshot.forEach(doc => {
@@ -8021,13 +8021,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             } else {
                                 ventasContadas++;
 
-                                // "Ganancia real": valor de venta completo de la prenda
-                                // (precio), sin restar ningún costo. Y, desde
+                                // "Ganancia real": plata que realmente entra por la venta
+                                // (efectivo + transferencia, ya con cualquier descuento
+                                // aplicado), sin restar ningún costo. Y, desde
                                 // FECHA_CORTE_DETAL, lo que le corresponde a Fábrica:
                                 // - Prendas con proveedor "Mishelles Boutique": su Costo ($)
                                 //   es ingreso mayorista de Fábrica; el resto es de Boutique.
                                 // - Cualquier otro proveedor: se recupera el costo de compra
                                 //   como ingreso de Fábrica (comportamiento anterior).
+                                gananciaRealAcumulada += recibido;
+
                                 const fechaVenta = venta.timestamp?.toDate ? venta.timestamp.toDate() : null;
                                 const contarCostoFabrica = fechaVenta && fechaVenta >= FECHA_CORTE_DETAL;
                                 let aporteMayoristaVenta = 0;
@@ -8040,7 +8043,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                                     );
                                     const precio = parseFloat(item.precio || item.precioUnitario || 0);
                                     const cant = parseInt(item.cantidad || 1, 10);
-                                    valorPrendasVendidas += precio * cant;
 
                                     if (contarCostoFabrica) {
                                         const esBoutique = item.productoId ? productEsBoutique.get(item.productoId) : false;
@@ -8104,9 +8106,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const ingresosFabricaTotal = totalMayorista + costoDetalRecuperado + ingresosManualesFabrica;
                     const utilidadFabrica = ingresosFabricaTotal - gastosManualesFabrica;
 
-                    // 🏷️ "Ganancia real": suma de todas las ventas al detal (precio
-                    // de venta), sin restar ningún costo.
-                    const gananciaRealBoutique = valorPrendasVendidas;
+                    // 🏷️ "Ganancia real": plata que realmente entró por las ventas al
+                    // detal (ya con descuentos aplicados), sin restar ningún costo.
+                    const gananciaRealBoutique = gananciaRealAcumulada;
                     const dbBoutiqueGananciaEl = document.getElementById('db-boutique-ganancia');
                     if (dbBoutiqueGananciaEl) {
                         dbBoutiqueGananciaEl.textContent = formatoMoneda.format(gananciaRealBoutique);
@@ -8130,7 +8132,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     // Dona del comparativo: reparto de ventas Boutique (detal) vs Fábrica (mayorista)
                     actualizarGraficoComparativo(totalDineroRecibido, totalMayorista);
 
-                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas) | Ganancia real (valor prendas): ${formatoMoneda.format(gananciaRealBoutique)} | Utilidad Fábrica: ${formatoMoneda.format(utilidadFabrica)}`);
+                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas) | Ganancia real (plata recibida): ${formatoMoneda.format(gananciaRealBoutique)} | Utilidad Fábrica: ${formatoMoneda.format(utilidadFabrica)}`);
                 },
                 (error) => {
                     marcarDashboardListo('ventasRango');
