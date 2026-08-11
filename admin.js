@@ -7998,7 +7998,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     let totalMayorista = 0;
                     let ventasMayoristaContadas = 0;
                     let valorPrendasVendidas = 0;
-                    let costoPrendasVendidas = 0;
                     let costoDetalRecuperado = 0;
 
                     snapshot.forEach(doc => {
@@ -8022,9 +8021,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             } else {
                                 ventasContadas++;
 
-                                // "Ganancia real": margen verdadero de la prenda (precio de
-                                // venta menos costo de compra), no el valor de venta completo.
-                                // Y, desde FECHA_CORTE_DETAL, lo que le corresponde a Fábrica:
+                                // "Ganancia real": valor de venta completo de la prenda
+                                // (precio), sin restar ningún costo. Y, desde
+                                // FECHA_CORTE_DETAL, lo que le corresponde a Fábrica:
                                 // - Prendas con proveedor "Mishelles Boutique": su Costo ($)
                                 //   es ingreso mayorista de Fábrica; el resto es de Boutique.
                                 // - Cualquier otro proveedor: se recupera el costo de compra
@@ -8042,7 +8041,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                                     const precio = parseFloat(item.precio || item.precioUnitario || 0);
                                     const cant = parseInt(item.cantidad || 1, 10);
                                     valorPrendasVendidas += precio * cant;
-                                    costoPrendasVendidas += costo * cant;
 
                                     if (contarCostoFabrica) {
                                         const esBoutique = item.productoId ? productEsBoutique.get(item.productoId) : false;
@@ -8106,9 +8104,9 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const ingresosFabricaTotal = totalMayorista + costoDetalRecuperado + ingresosManualesFabrica;
                     const utilidadFabrica = ingresosFabricaTotal - gastosManualesFabrica;
 
-                    // 🏷️ "Ganancia real": margen verdadero de las prendas vendidas al
-                    // detal (precio de venta menos costo de compra).
-                    const gananciaRealBoutique = valorPrendasVendidas - costoPrendasVendidas;
+                    // 🏷️ "Ganancia real": suma de todas las ventas al detal (precio
+                    // de venta), sin restar ningún costo.
+                    const gananciaRealBoutique = valorPrendasVendidas;
                     const dbBoutiqueGananciaEl = document.getElementById('db-boutique-ganancia');
                     if (dbBoutiqueGananciaEl) {
                         dbBoutiqueGananciaEl.textContent = formatoMoneda.format(gananciaRealBoutique);
@@ -8132,7 +8130,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     // Dona del comparativo: reparto de ventas Boutique (detal) vs Fábrica (mayorista)
                     actualizarGraficoComparativo(totalDineroRecibido, totalMayorista);
 
-                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas) | Ganancia real (margen): ${formatoMoneda.format(gananciaRealBoutique)} | Utilidad Fábrica: ${formatoMoneda.format(utilidadFabrica)}`);
+                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Mayorista: ${formatoMoneda.format(totalMayorista)} (${ventasMayoristaContadas} ventas) | Ganancia real (valor prendas): ${formatoMoneda.format(gananciaRealBoutique)} | Utilidad Fábrica: ${formatoMoneda.format(utilidadFabrica)}`);
                 },
                 (error) => {
                     marcarDashboardListo('ventasRango');
