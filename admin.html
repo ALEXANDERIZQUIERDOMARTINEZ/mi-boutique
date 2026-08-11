@@ -35,6 +35,30 @@
     <header class="rail-topbar" id="railTopbar">
         <img src="icon.svg" alt="M" class="rail-topbar-logo">
         <span class="rail-topbar-section" id="mobile-section-title">Dashboard</span>
+        <div class="conn-status-wrap">
+            <button class="rail-topbar-dark-btn conn-status-btn" id="railConnStatusBtn" data-conn-target="railConnStatusDropdown" title="Estado de conexión" aria-haspopup="true" aria-expanded="false">
+                <i class="bi bi-wifi"></i>
+                <span class="conn-status-dot"></span>
+            </button>
+            <div class="admin-topbar-dropdown conn-status-dropdown" id="railConnStatusDropdown">
+                <div class="admin-topbar-dropdown-header">Estado de conexión</div>
+                <div class="conn-status-body">
+                    <div class="conn-status-row">
+                        <span class="conn-status-led" data-conn="led"></span>
+                        <span class="conn-status-label" data-conn="label">Comprobando…</span>
+                    </div>
+                    <div class="conn-status-metric">
+                        <span class="conn-status-metric-label">Ping</span>
+                        <span class="conn-status-metric-val" data-conn="ping">—</span>
+                    </div>
+                    <p class="conn-status-reason" data-conn="reason">Verificando la conexión…</p>
+                    <button type="button" class="btn btn-sm btn-outline-secondary conn-status-retry">
+                        <i class="bi bi-arrow-clockwise"></i> Verificar de nuevo
+                    </button>
+                    <div class="conn-status-updated" data-conn="updated"></div>
+                </div>
+            </div>
+        </div>
         <button class="rail-topbar-dark-btn" id="darkModeToggleMobile" title="Dark mode">
             <i class="bi bi-moon" id="darkModeIconMobile"></i>
         </button>
@@ -192,6 +216,30 @@
             <span class="admin-topbar-title" id="topbar-section-title">Dashboard</span>
         </div>
         <div class="admin-topbar-right">
+            <div class="conn-status-wrap">
+                <button class="admin-topbar-icon-btn conn-status-btn" id="topbarConnStatusBtn" data-conn-target="topbarConnStatusDropdown" title="Estado de conexión" aria-haspopup="true" aria-expanded="false">
+                    <i class="bi bi-wifi"></i>
+                    <span class="conn-status-dot"></span>
+                </button>
+                <div class="admin-topbar-dropdown conn-status-dropdown" id="topbarConnStatusDropdown">
+                    <div class="admin-topbar-dropdown-header">Estado de conexión</div>
+                    <div class="conn-status-body">
+                        <div class="conn-status-row">
+                            <span class="conn-status-led" data-conn="led"></span>
+                            <span class="conn-status-label" data-conn="label">Comprobando…</span>
+                        </div>
+                        <div class="conn-status-metric">
+                            <span class="conn-status-metric-label">Ping</span>
+                            <span class="conn-status-metric-val" data-conn="ping">—</span>
+                        </div>
+                        <p class="conn-status-reason" data-conn="reason">Verificando la conexión…</p>
+                        <button type="button" class="btn btn-sm btn-outline-secondary conn-status-retry">
+                            <i class="bi bi-arrow-clockwise"></i> Verificar de nuevo
+                        </button>
+                        <div class="conn-status-updated" data-conn="updated"></div>
+                    </div>
+                </div>
+            </div>
             <div class="admin-topbar-notif-wrap">
                 <button class="admin-topbar-icon-btn" id="topbar-notifications" title="Notificaciones">
                     <i class="bi bi-bell"></i>
@@ -3804,6 +3852,7 @@
                     if (userDropdown)  userDropdown.classList.remove('show');
                     if (notifBtn) notifBtn.classList.remove('active');
                     if (userBtn)  userBtn.classList.remove('active');
+                    if (window.closeConnStatusDropdowns) window.closeConnStatusDropdowns();
                 }
                 window.closeTopbarDropdowns = closeAll;
 
@@ -3860,6 +3909,7 @@
         });
     </script>
 
+    <script src="connection-status.js?v=1.0.0" defer></script>
     <script type="module" src="admin.js?v=3.5.2"></script>
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
     <script type="module" src="auditoria.js?v=1.0.1"></script>
