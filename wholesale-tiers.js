@@ -195,6 +195,29 @@ export function resolveWholesaleGroup(product, categoriesMap) {
     return detectGroupFromCategoryName(nombreCategoria);
 }
 
+// Respaldo cuando no hay override ni categoría reconocible (ej. producto sin
+// categoriaId, categoría con nombre atípico o borrada): busca a qué tabla
+// pertenece el Precio Mayor ya configurado a mano en el producto, comparándolo
+// contra los escalones de cada grupo. Así el carrito de ventas del admin igual
+// aplica los descuentos por cantidad aunque la detección automática falle.
+export function inferGroupFromMayorPrice(precioMayor) {
+    const pm = parseFloat(precioMayor) || 0;
+    if (pm <= 0) return '';
+    for (const [key, group] of Object.entries(WHOLESALE_TIER_GROUPS)) {
+        if (group.tiers.some(t => t.precio === pm)) return key;
+    }
+    return '';
+}
+
+// Resuelve el grupo con el mismo criterio de resolveWholesaleGroup, pero cayendo
+// a inferGroupFromMayorPrice como último respaldo antes de rendirse.
+export function resolveWholesaleGroupConRespaldo(product, categoriesMap) {
+    if (product?.grupoMayorista === 'ninguno') return '';
+    const grupo = resolveWholesaleGroup(product, categoriesMap);
+    if (grupo) return grupo;
+    return inferGroupFromMayorPrice(product?.precioMayor);
+}
+
 // HTML de las tarjetas de tablas de precios por cantidad, compartido entre
 // encargo.html y mayor.html (estilos .wtiers-* definidos en style.css).
 export function buildTiersTablesHtml() {

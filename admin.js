@@ -5,7 +5,7 @@ import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updat
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 // Import Auditoría (registro de quién crea/edita/elimina)
 import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js";
-import { resolveWholesaleGroup, getHybridTierInfo, isSurtidoGroup } from "./wholesale-tiers.js";
+import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup } from "./wholesale-tiers.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -3215,7 +3215,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let totalMixto = 0;
             window.ventaItems.forEach(item => {
                 const prod = localProductsMap.get(item.productoId);
-                const grupo = prod ? resolveWholesaleGroup(prod, window.categoriesMap) : '';
+                const grupo = prod ? resolveWholesaleGroupConRespaldo(prod, window.categoriesMap) : '';
                 if (!grupo) return;
                 totalesPorGrupo.set(grupo, (totalesPorGrupo.get(grupo) || 0) + item.cantidad);
                 if (isSurtidoGroup(grupo)) totalMixto += item.cantidad;
@@ -3223,7 +3223,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             window.ventaItems.forEach(item => {
                 const prod = localProductsMap.get(item.productoId);
-                const grupo = prod ? resolveWholesaleGroup(prod, window.categoriesMap) : '';
+                const grupo = prod ? resolveWholesaleGroupConRespaldo(prod, window.categoriesMap) : '';
                 if (!grupo) return;
                 const totalPropio = totalesPorGrupo.get(grupo) || item.cantidad;
                 const info = getHybridTierInfo(grupo, totalPropio, totalMixto);
@@ -5359,7 +5359,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let totalMixto = 0;
             editSaleItemsState.forEach(item => {
                 const prod = item.productoId ? localProductsMap.get(item.productoId) : null;
-                const grupo = prod ? resolveWholesaleGroup(prod, window.categoriesMap) : '';
+                const grupo = prod ? resolveWholesaleGroupConRespaldo(prod, window.categoriesMap) : '';
                 if (!grupo) return;
                 const cantidad = parseInt(item.cantidad, 10) || 1;
                 totalesPorGrupo.set(grupo, (totalesPorGrupo.get(grupo) || 0) + cantidad);
@@ -5368,7 +5368,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             editSaleItemsState.forEach(item => {
                 const prod = item.productoId ? localProductsMap.get(item.productoId) : null;
-                const grupo = prod ? resolveWholesaleGroup(prod, window.categoriesMap) : '';
+                const grupo = prod ? resolveWholesaleGroupConRespaldo(prod, window.categoriesMap) : '';
                 if (!grupo) return;
                 const cantidad = parseInt(item.cantidad, 10) || 1;
                 const totalPropio = totalesPorGrupo.get(grupo) || cantidad;
