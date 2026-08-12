@@ -5,7 +5,7 @@ import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updat
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 // Import Auditoría (registro de quién crea/edita/elimina)
 import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js";
-import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup } from "./wholesale-tiers.js";
+import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin } from "./wholesale-tiers.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -3226,7 +3226,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const grupo = prod ? resolveWholesaleGroupConRespaldo(prod, window.categoriesMap) : '';
                 if (!grupo) return;
                 const totalPropio = totalesPorGrupo.get(grupo) || item.cantidad;
-                const info = getHybridTierInfo(grupo, totalPropio, totalMixto);
+                // Al vender por mayor el precio mínimo siempre es el del primer escalón
+                // real (ej. 6X), aunque en esta venta solo vayan 1 o 2 prendas: el
+                // cliente ya es mayorista, no se le cobra el precio de vitrina.
+                const totalParaEscalon = Math.max(totalPropio, getFirstRealTierMin(grupo) || 0);
+                const totalMixtoParaEscalon = Math.max(totalMixto, getFirstRealTierMin(grupo) || 0);
+                const info = getHybridTierInfo(grupo, totalParaEscalon, totalMixtoParaEscalon);
                 if (info) {
                     item.precio = info.precio;
                     item.total = item.cantidad * item.precio;
@@ -5372,7 +5377,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!grupo) return;
                 const cantidad = parseInt(item.cantidad, 10) || 1;
                 const totalPropio = totalesPorGrupo.get(grupo) || cantidad;
-                const info = getHybridTierInfo(grupo, totalPropio, totalMixto);
+                // Igual que en recalcularPreciosMayoristas(): al vender por mayor el
+                // mínimo siempre es el precio del primer escalón real (ej. 6X).
+                const totalParaEscalon = Math.max(totalPropio, getFirstRealTierMin(grupo) || 0);
+                const totalMixtoParaEscalon = Math.max(totalMixto, getFirstRealTierMin(grupo) || 0);
+                const info = getHybridTierInfo(grupo, totalParaEscalon, totalMixtoParaEscalon);
                 if (info) item.precio = info.precio;
             });
         }
