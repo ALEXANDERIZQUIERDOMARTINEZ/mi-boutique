@@ -117,6 +117,18 @@ export function getPrimerEscalonMayorista() {
     return minimos.length ? Math.min(...minimos) : Infinity;
 }
 
+// Cantidad mínima del primer escalón REAL de un grupo (ignora el escalón min:1
+// de "vitrina" que solo existe para mostrar el precio en el catálogo). Para
+// bodys/vestidosLargos/vestidosCortos es 6; para los grupos elaborados que no
+// tienen escalón min:1 (ya arrancan en 6, 12, etc.) es el mínimo de su propio
+// primer escalón.
+export function getFirstRealTierMin(grupo) {
+    const group = WHOLESALE_TIER_GROUPS[grupo];
+    if (!group) return null;
+    const real = group.tiers.find(t => t.min > 1) || group.tiers[0];
+    return real.min;
+}
+
 // Precio/escalón real de un grupo combinando dos totales:
 // - totalPropio: cuántas prendas de ESA MISMA categoría hay en el pedido.
 // - totalMixto: cuántas prendas hay en total sumando los grupos "surtido" (bodys,
