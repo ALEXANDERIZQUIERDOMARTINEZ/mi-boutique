@@ -3814,18 +3814,19 @@ body.dark-mode .esp-empty { border-color: var(--border-subtle); }
 #lista-inventario-productos .badge { font-size: 0.68rem !important; padding: 0.22rem 0.4rem !important; }
 #lista-inventario-productos td:nth-child(4) { font-size: 0.73rem !important; line-height: 1.3; }
 
-/* Productos con muchas variaciones (talla/color) generaban una fila
-   gigante — el resto de columnas (Detal, Mayor, Stock, Promo...) quedaban
-   con mucho espacio vacío al estirarse a la misma altura. Se limita la
-   altura de esta celda con scroll interno para que la fila se mantenga
-   compacta sin importar cuántas variaciones tenga el producto. */
+/* Antes esta celda limitaba su alto con scroll interno para que la fila
+   no se estirara con productos de muchas variaciones (talla/color), pero
+   eso obligaba a hacer scroll vertical (dentro de la celda) y horizontal
+   (para leer cada badge) solo para ver todas las variaciones. Ahora la
+   celda crece libremente y las demás columnas se alinean arriba, así la
+   fila se estira lo necesario pero todo el contenido queda visible sin
+   scroll adicional. */
 #lista-inventario-productos .variaciones-cell {
-  max-height: 4.6rem;
-  overflow-y: auto;
-  padding-right: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
 }
-#lista-inventario-productos .variaciones-cell::-webkit-scrollbar { width: 5px; }
-#lista-inventario-productos .variaciones-cell::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+#lista-inventario-productos tr { vertical-align: top !important; }
 
 /* Desde tablet (≥768px) hay espacio suficiente para mostrar las 12 columnas
    completas sin necesidad de scroll horizontal: se reparte el ancho en %
