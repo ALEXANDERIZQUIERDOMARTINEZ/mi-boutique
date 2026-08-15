@@ -761,8 +761,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // ── Helpers ──────────────────────────────────────────────────────────
         function getFiltered(estado) {
-            return allOrders[estado].filter(({ order }) => {
-                const ms = !searchQuery || (order.clienteNombre || '').toLowerCase().includes(searchQuery) || (order.clienteCelular || '').includes(searchQuery);
+            return allOrders[estado].filter(({ id, order }) => {
+                const q = searchQuery.replace(/^#/, '');
+                const ms = !searchQuery
+                    || (order.clienteNombre || '').toLowerCase().includes(searchQuery)
+                    || (order.clienteCelular || '').includes(searchQuery)
+                    || id.toLowerCase().includes(q);
                 const mp = !filterPago || (order.metodoPagoSolicitado || '').toLowerCase() === filterPago.toLowerCase();
                 return ms && mp;
             });
