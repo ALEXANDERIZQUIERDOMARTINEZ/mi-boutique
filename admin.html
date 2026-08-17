@@ -819,9 +819,6 @@
                     <div class="tbl-wrap">
                         <div class="tbl-head">
                             <span class="tbl-title"><i class="bi bi-boxes"></i>Inventario de productos</span>
-                            <button type="button" id="btn-abrir-reset-inventario" class="btn btn-sm btn-outline-danger ms-auto" data-bs-toggle="modal" data-bs-target="#resetInventarioModal">
-                                <i class="bi bi-exclamation-octagon me-1"></i>Poner inventario en 0
-                            </button>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
@@ -3083,46 +3080,6 @@
                     </button>
                     <button type="button" class="btn btn-danger" id="btn-confirm-delete-sale" disabled>
                         <i class="bi bi-trash me-1"></i>Eliminar Definitivamente
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════════
-         MODAL: PONER TODO EL INVENTARIO EN 0
-         ═══════════════════════════════════════════════════════════════════ -->
-    <div class="modal fade" id="resetInventarioModal" tabindex="-1" aria-labelledby="resetInventarioModalTitle" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h1 class="modal-title fs-5" id="resetInventarioModalTitle">
-                        <i class="bi bi-exclamation-octagon me-2"></i>Poner todo el inventario en 0
-                    </h1>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        <strong>¡ATENCIÓN!</strong> Esta acción dejará el stock de <strong>todas las variaciones de todos los productos</strong> en 0 unidades. No se puede deshacer.
-                    </div>
-                    <p class="mb-2">Se afectarán <strong id="reset-inventario-total-productos">0</strong> productos.</p>
-
-                    <div class="mb-3">
-                        <label for="reset-inventario-confirm-text" class="form-label">
-                            Escribe <strong>PONER EN 0</strong> para confirmar:
-                        </label>
-                        <input type="text" class="form-control" id="reset-inventario-confirm-text"
-                               placeholder="PONER EN 0" autocomplete="off">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle me-1"></i>Cancelar
-                    </button>
-                    <button type="button" class="btn btn-danger" id="btn-confirm-reset-inventario" disabled>
-                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" style="display: none;" id="reset-inventario-spinner"></span>
-                        <i class="bi bi-arrow-counterclockwise me-1"></i>Poner todo en 0
                     </button>
                 </div>
             </div>
