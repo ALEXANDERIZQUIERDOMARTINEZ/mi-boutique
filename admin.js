@@ -428,15 +428,26 @@ function alEntrarSeccion(hash, cb) {
 // ========================================================================
 // --- FUNCIÓN GLOBAL: ACTUALIZAR STOCK ---
 // ========================================================================
+// Compara talla/color tolerando diferencias de mayúsculas/tildes/espacios, para
+// no perder la coincidencia con la variación real por una diferencia de formato
+// entre el origen del item (venta manual, pedido web detal o mayorista) y como
+// quedó guardada la variación del producto.
+function coincideVariacion(valorGuardado, valorItem) {
+    const norm = v => (v || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    return norm(valorGuardado) === norm(valorItem);
+}
+
 async function actualizarStock(itemsVendido, accion = 'restar') {
     if (!itemsVendido || itemsVendido.length === 0) return;
 
     const batch = writeBatch(db);
     let productosParaActualizar = new Map();
+    const itemsOmitidos = [];
 
     for (const item of itemsVendido) {
         if (!item.productoId) {
             console.warn("Item en carrito sin productoId, omitiendo stock:", item);
+            itemsOmitidos.push(item.nombre || item.nombreCompleto || 'producto sin ID');
             continue;
         }
 
@@ -444,6 +455,7 @@ async function actualizarStock(itemsVendido, accion = 'restar') {
             const productoActual = localProductsMap.get(item.productoId);
             if (!productoActual) {
                 console.error(`Producto ${item.productoId} no encontrado en localProductsMap. Omitiendo stock.`);
+                itemsOmitidos.push(item.nombre || item.nombreCompleto || item.productoId);
                 continue;
             }
             productosParaActualizar.set(item.productoId, JSON.parse(JSON.stringify(productoActual.variaciones)));
@@ -453,7 +465,7 @@ async function actualizarStock(itemsVendido, accion = 'restar') {
         let variacionEncontrada = false;
 
         let nuevasVariaciones = variaciones.map(v => {
-            if (v.talla === item.talla && v.color === item.color) {
+            if (coincideVariacion(v.talla, item.talla) && coincideVariacion(v.color, item.color)) {
                 variacionEncontrada = true;
                 const stockActual = parseInt(v.stock, 10) || 0;
                 const cantidad = parseInt(item.cantidad, 10);
@@ -471,6 +483,7 @@ async function actualizarStock(itemsVendido, accion = 'restar') {
             productosParaActualizar.set(item.productoId, nuevasVariaciones);
         } else {
             console.warn(`No se encontró la variación ${item.talla}/${item.color} para el producto ${item.productoId}`);
+            itemsOmitidos.push(item.nombre || item.nombreCompleto || item.productoId);
         }
     }
 
@@ -482,6 +495,9 @@ async function actualizarStock(itemsVendido, accion = 'restar') {
     try {
         await batch.commit();
         console.log(`Stock actualizado (acción: ${accion}) correctamente.`);
+        if (itemsOmitidos.length > 0) {
+            showToast(`Venta guardada, pero el inventario NO se ajustó para: ${itemsOmitidos.join(', ')}. Revísalo manualmente.`, 'error');
+        }
     } catch (error) {
         console.error("Error al actualizar stock en batch:", error);
         showToast('Venta guardada, pero falló la actualización de stock.', 'error');
@@ -1009,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (vc) vc.value = orderData.clienteNombre;
             if (vcel) vcel.value = orderData.clienteCelular;
             if (vdir) vdir.value = orderData.clienteDireccion;
-            const tvs = document.getElementById('tipo-venta-select'); if (tvs) tvs.value = 'detal';
+            const tvs = document.getElementById('tipo-venta-select'); if (tvs) tvs.value = orderData.tipoVenta === 'Mayorista' ? 'mayorista' : 'detal';
             const vwc = document.getElementById('venta-whatsapp'); if (vwc) vwc.checked = false;
             const vobs = document.getElementById('venta-observaciones');
             if (vobs) {
