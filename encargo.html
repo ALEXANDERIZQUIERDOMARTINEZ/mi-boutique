@@ -305,6 +305,147 @@
   .encargo-add-color:hover {
     text-decoration: underline;
   }
+
+  /* ── Catálogo de colores reales por referencia (variantes_color/variaciones
+     registradas en admin) — reemplaza el campo de texto libre cuando la
+     prenda ya tiene colores dados de alta, para que el cliente elija de lo
+     que realmente manejamos en vez de adivinar un nombre. ─────────────── */
+  .encargo-swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .encargo-swatch-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-sm);
+    background: #fff;
+    padding: 6px 7px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .encargo-swatch-btn.is-selected {
+    border-color: var(--color-primario);
+    background: #fff5f9;
+  }
+  .encargo-swatch-circle {
+    width: 24px;
+    height: 24px;
+  }
+  .encargo-swatch-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--color-texto);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .encargo-swatch-btn.is-selected .encargo-swatch-name {
+    color: var(--color-primario-oscuro);
+  }
+  .encargo-swatch-add {
+    flex-shrink: 0;
+    color: var(--color-texto-secundario);
+    font-size: 0.78rem;
+  }
+  .encargo-swatch-badge {
+    flex-shrink: 0;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--color-primario);
+    color: #fff;
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+  }
+  .encargo-swatch-hint {
+    font-size: 0.78rem;
+    color: var(--color-texto-secundario);
+    text-align: center;
+    padding: 8px 4px 0;
+    margin: 0;
+  }
+  .encargo-selected-label {
+    font-size: 0.8rem;
+    color: var(--color-texto-secundario);
+    font-weight: 600;
+    margin-top: 10px;
+  }
+  .encargo-selected-label.is-warning {
+    color: #c62828;
+  }
+  .encargo-selected-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .encargo-selected-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-sm);
+    background: var(--color-fondo-secundario);
+    padding: 6px 7px;
+  }
+  .encargo-selected-swatch {
+    width: 18px;
+    height: 18px;
+  }
+  .encargo-selected-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-texto);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .encargo-qty-stepper {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .encargo-qty-btn {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border: 1px solid var(--color-borde);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--color-texto);
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .encargo-qty-btn:hover:not(:disabled) {
+    background: var(--color-fondo-secundario);
+  }
+  .encargo-qty-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .encargo-qty-stepper .encargo-color-qty {
+    width: 38px;
+    flex-shrink: 0;
+    padding: 4px 2px;
+  }
+
   .encargo-empty {
     max-width: 480px;
     margin: 56px auto;
@@ -661,7 +802,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
-<script type="module" src="encargo.js?v=2.3.1"></script>
+<script type="module" src="encargo.js?v=2.4.0"></script>
 
 </body>
 </html>

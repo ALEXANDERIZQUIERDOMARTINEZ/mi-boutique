@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { initializeFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml } from './wholesale-tiers.js';
+import { getColorHex, getColorSwatchStyle, formatColorLabel } from './color-utils.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -184,6 +185,80 @@ function renderOrderSummary() {
     orderSummaryEl.innerHTML = `${gruposHtml}<div class="encargo-summary-total"><span>Total (${totalUnidades} und.)</span><strong>${formatoMoneda.format(total)}</strong></div>`;
 }
 
+// Colores reales que manejamos para esta referencia (registrados en admin al
+// crear/editar el producto): nombres únicos tomados de las variaciones y de
+// la galería por color, sin importar el stock (bajo encargo se manda a hacer,
+// no se vende de lo que ya hay). Si una prenda no tiene nada registrado
+// todavía, renderProducts() se cae al campo de texto libre de siempre.
+function getColoresRegistrados(p) {
+    const nombres = [];
+    const vistos = new Set();
+    const agregar = (nombreCrudo) => {
+        const nombre = (nombreCrudo || '').trim();
+        if (!nombre) return;
+        const key = nombre.toLowerCase();
+        if (vistos.has(key)) return;
+        vistos.add(key);
+        nombres.push(nombre);
+    };
+    (p.variaciones || []).forEach(v => agregar(v.color));
+    (p.variantes_color || []).forEach(vc => agregar(vc.nombre));
+    return nombres;
+}
+
+function getSwatchStyle(p, colorName) {
+    const vc = (p.variantes_color || []).find(v => (v.nombre || '').toLowerCase().trim() === (colorName || '').toLowerCase().trim());
+    return vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(colorName)};`;
+}
+
+// Grilla de colores reales: tocar un color lo agrega (cantidad 1) o lo quita
+// si ya estaba elegido. Debajo, la lista de colores elegidos con su cantidad
+// ajustable — así el cliente compra directamente de lo que existe, sin
+// escribir un nombre de color que quizá no manejamos.
+function buildSwatchFlowHtml(p, colores, filas, totalProducto) {
+    const seleccion = new Map(filas.map((f, idx) => [f.color, { idx, cantidad: parseInt(f.cantidad, 10) || 0 }]));
+    const swatchesHtml = colores.map(color => {
+        const sel = seleccion.get(color);
+        const style = getSwatchStyle(p, color);
+        return `
+            <button type="button" class="encargo-swatch-btn${sel ? ' is-selected' : ''}" data-id="${p.id}" data-color="${color.replace(/"/g, '&quot;')}">
+                <span class="color-swatch-circle encargo-swatch-circle" style="${style}"></span>
+                <span class="encargo-swatch-name">${formatColorLabel(color)}</span>
+                ${sel ? `<span class="encargo-swatch-badge">${sel.cantidad}</span>` : '<i class="bi bi-plus-lg encargo-swatch-add"></i>'}
+            </button>
+        `;
+    }).join('');
+
+    let selectedHtml;
+    if (filas.length > 0) {
+        const esValida = totalProducto >= MIN_POR_PRENDA;
+        const itemsHtml = filas.map((f, idx) => {
+            const cantidad = parseInt(f.cantidad, 10) || 0;
+            const style = getSwatchStyle(p, f.color);
+            return `
+                <div class="encargo-selected-item">
+                    <span class="color-swatch-circle encargo-selected-swatch" style="${style}"></span>
+                    <span class="encargo-selected-name">${formatColorLabel(f.color)}</span>
+                    <div class="encargo-qty-stepper">
+                        <button type="button" class="encargo-qty-btn encargo-qty-minus" data-id="${p.id}" data-idx="${idx}" ${cantidad <= 1 ? 'disabled' : ''}>−</button>
+                        <input type="number" min="1" class="encargo-color-qty" data-id="${p.id}" data-idx="${idx}" value="${cantidad}">
+                        <button type="button" class="encargo-qty-btn encargo-qty-plus" data-id="${p.id}" data-idx="${idx}">+</button>
+                    </div>
+                    <button type="button" class="encargo-color-remove" data-id="${p.id}" data-idx="${idx}" aria-label="Quitar ${formatColorLabel(f.color)}">×</button>
+                </div>
+            `;
+        }).join('');
+        selectedHtml = `
+            <div class="encargo-card-toggle-label${esValida ? '' : ' is-warning'} encargo-selected-label">${esValida ? `Total: ${totalProducto} unidades` : `Mínimo ${MIN_POR_PRENDA} unidades en total`}</div>
+            <div class="encargo-selected-list">${itemsHtml}</div>
+        `;
+    } else {
+        selectedHtml = `<p class="encargo-swatch-hint">👆 Toca un color para agregarlo</p>`;
+    }
+
+    return `<div class="encargo-swatch-grid">${swatchesHtml}</div>${selectedHtml}`;
+}
+
 function renderTiersTables() {
     if (!tiersTablesEl) return;
     tiersTablesEl.innerHTML = buildTiersTablesHtml();
@@ -301,8 +376,11 @@ function renderProducts() {
             precioHtml = `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${buildTierHint(p)}</span>`;
         }
 
+        const coloresRegistrados = getColoresRegistrados(p);
         let bodyExtra;
-        if (filas.length === 0) {
+        if (coloresRegistrados.length > 0) {
+            bodyExtra = buildSwatchFlowHtml(p, coloresRegistrados, filas, totalProducto);
+        } else if (filas.length === 0) {
             bodyExtra = `<button type="button" class="encargo-add-btn" data-id="${p.id}"><i class="bi bi-plus-circle"></i> Elegir esta prenda</button>`;
         } else {
             const colapsada = tarjetasColapsadas.has(p.id);
@@ -389,6 +467,46 @@ if (gridEl) {
             detalleColores.set(addBtn.dataset.id, [{ color: '', cantidad: MIN_POR_PRENDA }]);
             renderProducts();
             updateProgress();
+            return;
+        }
+        const swatchBtn = e.target.closest('.encargo-swatch-btn');
+        if (swatchBtn) {
+            const id = swatchBtn.dataset.id;
+            const color = swatchBtn.dataset.color;
+            const filas = detalleColores.get(id) || [];
+            const idxExistente = filas.findIndex(f => f.color === color);
+            if (idxExistente >= 0) {
+                filas.splice(idxExistente, 1);
+                if (filas.length === 0) detalleColores.delete(id);
+                else detalleColores.set(id, filas);
+            } else {
+                filas.push({ color, cantidad: 1 });
+                detalleColores.set(id, filas);
+            }
+            renderProducts();
+            updateProgress();
+            return;
+        }
+        const qtyMinusBtn = e.target.closest('.encargo-qty-minus');
+        if (qtyMinusBtn) {
+            const filas = detalleColores.get(qtyMinusBtn.dataset.id);
+            const idx = parseInt(qtyMinusBtn.dataset.idx, 10);
+            if (filas && filas[idx]) {
+                filas[idx].cantidad = Math.max(1, (parseInt(filas[idx].cantidad, 10) || 1) - 1);
+                renderProducts();
+                updateProgress();
+            }
+            return;
+        }
+        const qtyPlusBtn = e.target.closest('.encargo-qty-plus');
+        if (qtyPlusBtn) {
+            const filas = detalleColores.get(qtyPlusBtn.dataset.id);
+            const idx = parseInt(qtyPlusBtn.dataset.idx, 10);
+            if (filas && filas[idx]) {
+                filas[idx].cantidad = (parseInt(filas[idx].cantidad, 10) || 0) + 1;
+                renderProducts();
+                updateProgress();
+            }
             return;
         }
         const addColorBtn = e.target.closest('.encargo-add-color');
