@@ -437,11 +437,23 @@ function coincideVariacion(valorGuardado, valorItem) {
     return norm(valorGuardado) === norm(valorItem);
 }
 
+// Stock total de un producto: si tiene variaciones (talla/color) es la suma de
+// sus variaciones; si no tiene (producto simple, ej. "sin talla/color"), el
+// stock vive en el campo plano `stock` del producto.
+function obtenerStockTotalProducto(producto) {
+    if (!producto) return 0;
+    if (Array.isArray(producto.variaciones) && producto.variaciones.length > 0) {
+        return producto.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+    }
+    return parseInt(producto.stock, 10) || 0;
+}
+
 async function actualizarStock(itemsVendido, accion = 'restar') {
     if (!itemsVendido || itemsVendido.length === 0) return;
 
     const batch = writeBatch(db);
     let productosParaActualizar = new Map();
+    const stockPlanoDeltas = new Map(); // productoId -> delta de unidades (productos sin variaciones)
     const itemsOmitidos = [];
 
     for (const item of itemsVendido) {
@@ -451,13 +463,24 @@ async function actualizarStock(itemsVendido, accion = 'restar') {
             continue;
         }
 
+        const productoActual = localProductsMap.get(item.productoId);
+        if (!productoActual) {
+            console.error(`Producto ${item.productoId} no encontrado en localProductsMap. Omitiendo stock.`);
+            itemsOmitidos.push(item.nombre || item.nombreCompleto || item.productoId);
+            continue;
+        }
+
+        const cantidad = parseInt(item.cantidad, 10) || 0;
+
+        // Producto sin talla/color: el stock vive en el campo plano `stock`,
+        // no en `variaciones` (que queda vacío para este tipo de producto).
+        if (!Array.isArray(productoActual.variaciones) || productoActual.variaciones.length === 0) {
+            const signo = accion === 'restar' ? -1 : 1;
+            stockPlanoDeltas.set(item.productoId, (stockPlanoDeltas.get(item.productoId) || 0) + signo * cantidad);
+            continue;
+        }
+
         if (!productosParaActualizar.has(item.productoId)) {
-            const productoActual = localProductsMap.get(item.productoId);
-            if (!productoActual) {
-                console.error(`Producto ${item.productoId} no encontrado en localProductsMap. Omitiendo stock.`);
-                itemsOmitidos.push(item.nombre || item.nombreCompleto || item.productoId);
-                continue;
-            }
             productosParaActualizar.set(item.productoId, JSON.parse(JSON.stringify(productoActual.variaciones)));
         }
 
@@ -468,7 +491,6 @@ async function actualizarStock(itemsVendido, accion = 'restar') {
             if (coincideVariacion(v.talla, item.talla) && coincideVariacion(v.color, item.color)) {
                 variacionEncontrada = true;
                 const stockActual = parseInt(v.stock, 10) || 0;
-                const cantidad = parseInt(item.cantidad, 10);
 
                 if (accion === 'restar') {
                     v.stock = stockActual - cantidad;
@@ -490,6 +512,13 @@ async function actualizarStock(itemsVendido, accion = 'restar') {
     productosParaActualizar.forEach((nuevasVariaciones, productoId) => {
         const productRef = doc(db, 'productos', productoId);
         batch.update(productRef, { variaciones: nuevasVariaciones });
+    });
+
+    stockPlanoDeltas.forEach((delta, productoId) => {
+        if (!delta) return;
+        const productoActual = localProductsMap.get(productoId);
+        const stockActual = parseInt(productoActual?.stock, 10) || 0;
+        batch.update(doc(db, 'productos', productoId), { stock: stockActual + delta });
     });
 
     try {
@@ -530,8 +559,21 @@ async function reconciliarStockEdicionVenta(itemsOriginales, itemsNuevos) {
 
     deltas.forEach((porVariacion, productoId) => {
         const producto = localProductsMap.get(productoId);
-        if (!producto || !Array.isArray(producto.variaciones)) {
+        if (!producto) {
             console.warn(`Producto ${productoId} no encontrado en localProductsMap. Omitiendo ajuste de stock.`);
+            return;
+        }
+
+        // Producto sin talla/color: el stock vive en el campo plano `stock`,
+        // así que el delta se aplica de una vez sin distinguir variación.
+        if (!Array.isArray(producto.variaciones) || producto.variaciones.length === 0) {
+            let deltaTotal = 0;
+            porVariacion.forEach(delta => { deltaTotal += delta; });
+            if (deltaTotal) {
+                const stockActual = parseInt(producto.stock, 10) || 0;
+                batch.update(doc(db, 'productos', productoId), { stock: stockActual + deltaTotal });
+                huboCambios = true;
+            }
             return;
         }
 
@@ -1701,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', () => {
             productSearchModalList.innerHTML = '';
 
             localProductsMap.forEach((d, id) => {
-                const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
+                const stockTotal = obtenerStockTotalProducto(d);
 
                 const li = document.createElement('li');
                 li.className = 'list-group-item list-group-item-action product-search-item';
@@ -1782,7 +1824,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadExternalLib('jsbarcode');
 
             localProductsMap.forEach((d, id) => {
-                const stockTotal = d.variaciones ? d.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) : 0;
+                const stockTotal = obtenerStockTotalProducto(d);
                 const defaultImgTabla = 'https://placehold.co/60x80/f0f0f0/cccccc?text=Foto';
                 const imagenUrl = d.imagenUrl || defaultImgTabla;
 
@@ -2777,6 +2819,18 @@ document.addEventListener('DOMContentLoaded', () => {
             stockDisplay.style.display = 'none';
             addBtn.disabled = true;
 
+            // Producto sin talla/color: no hay variaciones que elegir, se agrega directo.
+            if (!Array.isArray(product.variaciones) || product.variaciones.length === 0) {
+                optionsContainer.innerHTML = '<p class="text-muted mb-0">Este producto no maneja tallas ni colores.</p>';
+                stockDisplay.style.display = 'block';
+                stockDisplay.classList.remove('alert-danger');
+                stockDisplay.classList.add('alert-success');
+                stockDisplay.querySelector('span').textContent = obtenerStockTotalProducto(product);
+                addBtn.disabled = false;
+                selectVariationModalInstance.show();
+                return;
+            }
+
             // ✅ FILTRAR: Solo mostrar tallas y colores que tengan stock disponible
             const variacionesConStock = product.variaciones.filter(v => (parseInt(v.stock, 10) || 0) > 0);
             const tallas = [...new Set(variacionesConStock.map(v => v.talla || ''))];
@@ -2893,10 +2947,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const productId = document.getElementById('variation-product-id').value;
                 const nombre = document.getElementById('variation-product-name').value;
                 const precio = parseFloat(document.getElementById('variation-product-price').value);
-                const talla = document.getElementById('select-talla').value;
-                const color = document.getElementById('select-color').value;
+                const product = localProductsMap.get(productId);
+                const tieneVariaciones = Array.isArray(product?.variaciones) && product.variaciones.length > 0;
+                const selectTallaEl = document.getElementById('select-talla');
+                const selectColorEl = document.getElementById('select-color');
+                const talla = tieneVariaciones ? selectTallaEl.value : '';
+                const color = tieneVariaciones ? selectColorEl.value : '';
 
-                if (!productId || !nombre || !precio || talla === '' || color === '') {
+                if (!productId || !nombre || !precio || (tieneVariaciones && (talla === '' || color === ''))) {
                     showToast("Error: Faltan datos", "error");
                     return;
                 }
@@ -2908,7 +2966,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     precio,
                     talla,
                     color,
-                    `${nombre} (${talla}/${color})`
+                    tieneVariaciones ? `${nombre} (${talla}/${color})` : nombre
                 );
 
                 // Registrar lo agregado y dejar el modal abierto para poder
@@ -2920,7 +2978,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     variationAddedItems.push({ talla, color, cantidad: 1 });
                 }
                 renderVariationAddedList();
-                showToast(`"${nombre}" (${normalizeTalla(talla)}/${normalizeColor(color)}) agregado`, "success");
+                showToast(tieneVariaciones ? `"${nombre}" (${normalizeTalla(talla)}/${normalizeColor(color)}) agregado` : `"${nombre}" agregado`, "success");
+
+                if (!tieneVariaciones) return;
 
                 // Reiniciar la selección de color para permitir agregar otro color rápidamente.
                 const selectColor = document.getElementById('select-color');
@@ -2997,9 +3057,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const supplierName = (product.proveedor || '').trim(); // Usar proveedor en vez de proveedorId
 
                 // Calcular stock total del producto
-                const stockTotal = product.variaciones
-                    ? product.variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0)
-                    : 0;
+                const stockTotal = obtenerStockTotalProducto(product);
 
                 const matchesSearch = productName.includes(searchVal) || productCode.includes(searchVal);
                 const matchesCategory = (categoryVal === '' || categoryId === categoryVal);
@@ -8669,7 +8727,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     productEsBoutiqueCache.set(productoId, esProveedorBoutique(producto));
 
                     const variaciones = producto.variaciones || [];
-                    const stockTotal = variaciones.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+                    const stockTotal = obtenerStockTotalProducto(producto);
 
                     inversionTotal += costoCompra * stockTotal;
                     totalUnidades += stockTotal;
