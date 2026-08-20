@@ -3711,7 +3711,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${!estaAnulada && puedeHacer('ventas_editar') ? `<button class="btn btn-action btn-action-edit btn-edit-sale" title="Editar"><i class="bi bi-pencil-square"></i><span class="btn-action-text">Editar</span></button>` : ''}
                         ${d.tipoVenta === 'apartado' && !estaAnulada ? `<button class="btn btn-action btn-action-warning btn-manage-apartado" title="Gestionar apartado"><i class="bi bi-calendar-heart"></i><span class="btn-action-text">Abonar</span></button>` : ''}
                         ${puedeHacer('ventas_anular') ? `<button class="btn btn-action btn-action-danger btn-cancel-sale" title="Anular venta" ${estaAnulada ? 'disabled' : ''}><i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span></button>` : ''}
-                        ${!estaAnulada && puedeHacer('ventas_eliminar') ? `<button class="btn btn-action btn-action-delete btn-delete-sale" title="Eliminar"><i class="bi bi-trash"></i></button>` : ''}
+                        ${puedeHacer('ventas_eliminar') ? `<button class="btn btn-action btn-action-delete btn-delete-sale" title="Eliminar"><i class="bi bi-trash"></i></button>` : ''}
                     </div>`;
                 salesListTableBody.appendChild(card);
             });
@@ -4290,10 +4290,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             ['pendiente', 'aceptado', 'rechazado'].forEach(estado => {
-                const q = query(cotizacionesCollection, where('estado', '==', estado), orderBy('timestamp', 'desc'), limit(50));
+                // Sin orderBy en la query: combinar where('estado', ...) con
+                // orderBy('timestamp', ...) exige un índice compuesto en Firestore que
+                // nunca se creó para esta colección (a diferencia de pedidosWeb, que sí
+                // lo tiene), así que la consulta fallaba siempre con "failed-precondition"
+                // y se veía como "No se pudieron cargar las cotizaciones". Se ordena acá
+                // mismo, del lado del cliente, para no depender de ese índice.
+                const q = query(cotizacionesCollection, where('estado', '==', estado), limit(50));
                 onSnapshot(q, snapshot => {
                     cqOrders[estado] = [];
                     snapshot.forEach(d => cqOrders[estado].push({ id: d.id, order: d.data() }));
+                    cqOrders[estado].sort((a, b) => (b.order.timestamp?.toMillis?.() || 0) - (a.order.timestamp?.toMillis?.() || 0));
                     if (cqLoading) cqLoading.style.display = 'none';
                     const badge = document.getElementById(`cq-badge-${estado}`);
                     if (badge) badge.textContent = cqOrders[estado].length;
@@ -5993,8 +6000,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const ventaData = ventaSnap.data();
 
-                // Revertir stock de productos (devolver al inventario)
-                if (ventaData.items && Array.isArray(ventaData.items)) {
+                // Revertir stock de productos (devolver al inventario). Si la venta ya
+                // estaba Anulada/Cancelada, el stock ya se repuso al anularla — repetirlo
+                // aquí lo duplicaría. Tampoco aplica si era una venta por catálogo externo,
+                // que nunca descontó stock al crearse.
+                const yaSeRepusoStock = ventaData.estado === 'Anulada' || ventaData.estado === 'Cancelada';
+                if (!yaSeRepusoStock && !ventaData.esCatalogoExterno && ventaData.items && Array.isArray(ventaData.items)) {
                     for (const item of ventaData.items) {
                         if (!item.productoId) continue;
                         const prodRef = doc(db, 'productos', item.productoId);
