@@ -1054,16 +1054,28 @@ document.addEventListener('DOMContentLoaded', () => {
         async function handleAcceptOrder(orderId) {
             try {
                 const orderRef = doc(db, 'pedidosWeb', orderId);
-                const orderSnap = await getDoc(orderRef);
-                if (!orderSnap.exists()) { showToast('Pedido no encontrado', 'error'); return; }
-                const orderData = orderSnap.data();
+                // El pedido ya está en memoria: llegó por el onSnapshot de 'pendiente'
+                // que dibujó la tarjeta en la que el usuario acaba de hacer clic. Evitar
+                // el getDoc y no esperar a que el updateDoc confirme en el servidor antes
+                // de llevar al usuario al formulario de venta: eran dos round-trips de
+                // red seguidos (getDoc + updateDoc) que hacían sentir el "Aceptar" lento
+                // aunque no hubiera ningún trabajo pesado de por medio.
+                const cached = allOrders.pendiente.find(o => o.id === orderId);
+                let orderData = cached?.order;
+                if (!orderData) {
+                    const orderSnap = await getDoc(orderRef);
+                    if (!orderSnap.exists()) { showToast('Pedido no encontrado', 'error'); return; }
+                    orderData = orderSnap.data();
+                }
                 const subtotal = orderData.subtotalProductos || orderData.totalPedido || 0;
-                await updateDoc(orderRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp(), totalPedido: subtotal });
                 await preFillSalesForm(orderData, orderId, 0, subtotal);
                 showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
                 if (window.adminShowSection) { window.adminShowSection('#ventas'); window.adminMarkActive('#ventas'); }
                 const btn = document.getElementById('toggle-sales-form-view-btn');
                 if (btn) btn.click();
+
+                updateDoc(orderRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp(), totalPedido: subtotal })
+                    .catch(err => { console.error('Error al marcar pedido como aceptado:', err); showToast('El pedido pasó al formulario, pero no se pudo marcar como aceptado. Verifica tu conexión.', 'error'); });
             } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
         }
 
