@@ -433,7 +433,15 @@ function alEntrarSeccion(hash, cb) {
 // entre el origen del item (venta manual, pedido web detal o mayorista) y como
 // quedó guardada la variación del producto.
 function coincideVariacion(valorGuardado, valorItem) {
-    const norm = v => (v || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    const norm = v => {
+        const n = (v || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+        // "Unica"/"Unico" (prenda sin talla o color real, como se guarda al
+        // crear el producto) y vacio/null (como llega desde mayor.js para
+        // esos mismos casos) son la misma variacion: sin esto, un pedido
+        // mayorista de una prenda de talla unica nunca hacia match y el
+        // stock quedaba intacto sin avisar de forma visible.
+        return (n === 'unica' || n === 'unico') ? '' : n;
+    };
     return norm(valorGuardado) === norm(valorItem);
 }
 
@@ -583,7 +591,7 @@ async function reconciliarStockEdicionVenta(itemsOriginales, itemsNuevos) {
         porVariacion.forEach((delta, clave) => {
             if (!delta) return;
             const [talla, color] = clave.split('|');
-            const variacion = nuevasVariaciones.find(v => (v.talla || '') === talla && (v.color || '') === color);
+            const variacion = nuevasVariaciones.find(v => coincideVariacion(v.talla, talla) && coincideVariacion(v.color, color));
             if (variacion) {
                 variacion.stock = (parseInt(variacion.stock, 10) || 0) + delta;
                 productoTuvoCambio = true;
@@ -5988,26 +5996,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Revertir stock de productos (devolver al inventario)
                 if (ventaData.items && Array.isArray(ventaData.items)) {
                     for (const item of ventaData.items) {
-                        const prodRef = doc(db, 'productos', item.id);
+                        if (!item.productoId) continue;
+                        const prodRef = doc(db, 'productos', item.productoId);
                         const prodSnap = await getDoc(prodRef);
 
                         if (prodSnap.exists()) {
                             const prodData = prodSnap.data();
 
-                            if (item.talla && item.color) {
+                            if (Array.isArray(prodData.variaciones) && prodData.variaciones.length > 0) {
                                 // Producto con variaciones
-                                const variaciones = prodData.variaciones || [];
+                                const variaciones = prodData.variaciones;
                                 const varIndex = variaciones.findIndex(v =>
-                                    v.talla === item.talla && v.color === item.color
+                                    coincideVariacion(v.talla, item.talla) && coincideVariacion(v.color, item.color)
                                 );
 
                                 if (varIndex !== -1) {
-                                    variaciones[varIndex].stock += parseFloat(item.cantidad) || 0;
+                                    variaciones[varIndex].stock = (parseInt(variaciones[varIndex].stock, 10) || 0) + (parseFloat(item.cantidad) || 0);
                                     await updateDoc(prodRef, { variaciones: variaciones });
                                 }
                             } else {
-                                // Producto simple
-                                const nuevoStock = (prodData.stock || 0) + (parseFloat(item.cantidad) || 0);
+                                // Producto simple (sin talla/color)
+                                const nuevoStock = (parseInt(prodData.stock, 10) || 0) + (parseFloat(item.cantidad) || 0);
                                 await updateDoc(prodRef, { stock: nuevoStock });
                             }
                         }
