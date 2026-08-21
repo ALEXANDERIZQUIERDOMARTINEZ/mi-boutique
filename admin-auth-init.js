@@ -101,14 +101,6 @@ function aplicarPermisosNav() {
         el.style.display = permitido ? '' : 'none';
     });
 
-    // Módulo de negocio (Tienda / Fábrica): Sistema ve ambos; el resto de
-    // usuarios solo ve los enlaces de su negocio aprobado.
-    document.querySelectorAll('[data-modulo]').forEach(el => {
-        const modulo = el.getAttribute('data-modulo');
-        const permitido = ctx.isSuperAdmin || ctx.modulo === modulo;
-        if (!permitido) el.style.display = 'none';
-    });
-
     // Ocultar grupos del rail que se quedaron sin ningún enlace visible
     document.querySelectorAll('.rail-group').forEach(grupo => {
         const links = Array.from(grupo.querySelectorAll('.rail-link'));
@@ -139,7 +131,6 @@ function construirAppContext(usuario) {
         rol: usuario.rol,
         permisos: usuario.permisos || {},
         tenantId: usuario.tenantId ?? null,
-        modulo: usuario.negocio || 'tienda',
         isSuperAdmin: usuario.rol === 'SUPER_ADMIN'
     };
 }
