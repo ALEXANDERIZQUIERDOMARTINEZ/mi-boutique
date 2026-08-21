@@ -2736,7 +2736,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const target = e.target.closest('.product-search-item');
                 if (target && !target.classList.contains('disabled')) {
                     const productId = target.dataset.productId;
-                    openVariationModal(productId); 
+                    const searchProductModalEl = document.getElementById('searchProductModal');
+                    if (searchProductModalEl) {
+                        searchProductModalEl.addEventListener('hidden.bs.modal', () => {
+                            openVariationModal(productId);
+                        }, { once: true });
+                    }
                     searchProductModalInstance.hide();
                 }
             });
