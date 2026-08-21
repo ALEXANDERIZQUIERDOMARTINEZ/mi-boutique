@@ -124,6 +124,9 @@
                 <a class="rail-link" href="#etiquetas" data-tooltip="Etiquetas" data-permiso="productos_ver">
                     <i class="bi bi-upc-scan"></i><span>Etiquetas</span>
                 </a>
+                <a class="rail-link" href="#productos-fabrica" data-tooltip="Productos Fábrica" data-permiso="inventario_fabrica_gestionar">
+                    <i class="bi bi-grid-3x3-gap"></i><span>Productos Fábrica</span>
+                </a>
                 <a class="rail-link" href="#inventario-fabrica" data-tooltip="Inventario Fábrica" data-permiso="inventario_fabrica_gestionar">
                     <i class="bi bi-boxes"></i><span>Inventario Fábrica</span>
                 </a>
@@ -1824,6 +1827,77 @@
             <!-- ═══════════════════════════════════════════════════════════════════
                  SECCIÓN: INVENTARIO FÁBRICA — Hilazas, Hilos y Telas
                  ═══════════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="productos-fabrica">
+
+                <!-- ── Encabezado ── -->
+                <div class="fin2-page-header">
+                    <div>
+                        <h1 class="fin2-page-title"><i class="bi bi-grid-3x3-gap"></i> Productos Fábrica</h1>
+                        <p class="fin2-page-subtitle">Catálogo propio de Fábrica — sin depender del catálogo de Boutique</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary btn-sm" id="prodfab-btn-nuevo">
+                            <i class="bi bi-plus-circle me-1"></i> Nuevo producto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── Búsqueda y filtros ── -->
+                <div class="inv-filters-block">
+                    <div class="inv-filters-grid">
+                        <div class="inv-search-wrap">
+                            <span class="inv-search-icon"><i class="bi bi-search"></i></span>
+                            <input type="search" id="prodfab-search" class="inv-search-input" placeholder="Buscar por nombre...">
+                        </div>
+                        <div class="inv-filters-row2">
+                            <select class="form-select form-select-sm" id="prodfab-filter-categoria" style="max-width:220px;">
+                                <option value="">Todas las categorías</option>
+                            </select>
+                            <label class="inv-toggle-label" for="prodfab-filter-bajo-stock">
+                                <i class="bi bi-exclamation-triangle text-warning"></i> Solo bajo stock
+                                <div class="form-check form-switch ms-1 mb-0">
+                                    <input class="form-check-input" type="checkbox" id="prodfab-filter-bajo-stock">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Tabla ── -->
+                <div class="fin2-table-card">
+                    <div class="fin2-table-header">
+                        <div>
+                            <span class="fin2-table-title">
+                                <i class="bi bi-list-ul"></i> Productos
+                            </span>
+                        </div>
+                    </div>
+                    <div class="fin2-table-wrapper">
+                        <table class="fin2-table">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Nombre</th>
+                                    <th>Categoría</th>
+                                    <th>Grupo mayorista</th>
+                                    <th class="text-end">P. Mayor</th>
+                                    <th>Variaciones (stock)</th>
+                                    <th class="text-end">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prodfab-tabla-body">
+                                <tr>
+                                    <td colspan="7" class="fin2-empty-state">
+                                        <i class="bi bi-inbox"></i>
+                                        <span>Cargando...</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <div class="tab-pane fade" id="inventario-fabrica">
 
                 <!-- ── Encabezado ── -->
@@ -3869,7 +3943,8 @@
     </script>
 
     <script src="connection-status.js?v=1.0.0" defer></script>
-    <script type="module" src="admin.js?v=3.5.8"></script>
+    <script type="module" src="admin.js?v=3.5.9"></script>
+    <script type="module" src="admin-fabrica.js?v=1.1.0"></script>
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
     <script type="module" src="auditoria.js?v=1.0.1"></script>
 
@@ -3940,7 +4015,102 @@
         </div>
     </div>
 
-    <!-- Modal: Nuevo/Editar material de Inventario Fábrica -->
+    <!-- Modal: Nuevo/Editar producto de Fábrica -->
+    <div class="modal fade" id="prodFabModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form id="prodFabForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="prodFabModalTitle">Nuevo producto</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="prodfab-id" value="">
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="prodfab-nombre" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Código</label>
+                                <input type="text" class="form-control" id="prodfab-codigo" placeholder="Autogenerado" readonly disabled>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" id="prodfab-descripcion" rows="2"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Categoría</label>
+                                <select class="form-select" id="prodfab-categoria"><option value="">Selecciona...</option></select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Grupo mayorista</label>
+                                <select class="form-select" id="prodfab-grupo-mayorista"><option value="">Sin grupo (precio fijo)</option></select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Costo ($)</label>
+                                <input type="number" class="form-control" id="prodfab-costo" step="0.01" min="0" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Precio mayor ($)</label>
+                                <input type="number" class="form-control" id="prodfab-precio-mayor" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Imagen</label>
+                            <input type="file" class="form-control" id="prodfab-imagen" accept="image/*">
+                            <img id="prodfab-imagen-preview" src="" alt="" style="display:none;max-height:80px;margin-top:8px;border-radius:6px;">
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="prodfab-visible" checked>
+                            <label class="form-check-label" for="prodfab-visible">Visible</label>
+                        </div>
+                        <hr class="my-3">
+                        <h6 class="mb-2">Variaciones (talla / color / stock)</h6>
+                        <div class="row align-items-center mb-2 variation-row d-none" id="variation-template-fabrica">
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" name="prodfab_variation_talla[]" placeholder="Talla"></div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" name="prodfab_variation_color[]" placeholder="Color"></div>
+                            <div class="col-md-3"><input type="number" class="form-control form-control-sm" name="prodfab_variation_stock[]" min="0" value="1" placeholder="Stock"></div>
+                            <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-variation-fabrica-btn p-1"><i class="bi bi-trash3"></i></button></div>
+                        </div>
+                        <div id="prodfab-variaciones-container"></div>
+                        <button type="button" id="prodfab-add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-plus-lg"></i> Añadir</button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="prodfab-btn-guardar">
+                            <span class="save-text">Guardar</span>
+                            <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de producto de Fábrica -->
+    <div class="modal fade" id="prodFabDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Seguro que quieres eliminar este producto? Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="prodfab-confirm-delete-btn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="invfabModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
