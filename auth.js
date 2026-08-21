@@ -289,6 +289,12 @@ export class AuthManager {
                         nombre: userData.nombre,
                         rol: userData.rol,
                         tenantId: userData.tenantId ?? null,
+                        // Negocio/módulo (Tienda o Fábrica) aprobado para este usuario por
+                        // Sistema (panel-negocios.html). Las cuentas creadas antes de este
+                        // campo existir (o sin aprobación explícita) caen en 'tienda' por
+                        // ser el negocio original — así ningún usuario existente pierde
+                        // acceso al desplegar esto; SUPER_ADMIN no usa este campo, ve ambos.
+                        negocio: userData.negocioAprobado || 'tienda',
                         permisos: userData.permisos || {}
                     };
 

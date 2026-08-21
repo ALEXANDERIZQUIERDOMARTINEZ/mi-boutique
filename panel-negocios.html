@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script>
+        // Igual que en login.html/admin.html: si este dispositivo no tiene
+        // una sesión cacheada de Sistema (SUPER_ADMIN), no tiene sentido
+        // descargar Bootstrap ni el SDK de Firebase para terminar
+        // redirigiendo. La verificación real (¿sigue autenticado?, ¿sigue
+        // siendo SUPER_ADMIN?) ocurre siempre más abajo contra Firebase.
+        try {
+            const cache = JSON.parse(localStorage.getItem('mishellAdminUserCache'));
+            if (cache && cache.rol !== 'SUPER_ADMIN') {
+                location.replace('admin.html');
+            } else if (!cache) {
+                location.replace('login.html');
+            }
+        } catch (e) {
+            // Caché corrupto: se ignora y se deja que la verificación real decida
+        }
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <title>Aprobar Negocios - MISHELL'ES</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <meta name="theme-color" content="#D988B9">
+
+    <style>
+        :root {
+            --primary-color: #D988B9;
+            --primary-dark: #c76fa5;
+        }
+
+        body {
+            background: #f7f5f6;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding-bottom: 40px;
+        }
+
+        .pn-topbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: #fff;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(90, 30, 60, 0.2);
+        }
+
+        .pn-topbar h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .pn-topbar small {
+            opacity: .85;
+        }
+
+        .pn-topbar-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .pn-container {
+            max-width: 980px;
+            margin: 28px auto 0;
+            padding: 0 16px;
+        }
+
+        .pn-intro {
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px 24px;
+            box-shadow: 0 4px 15px rgba(90, 30, 60, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .pn-intro h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #2d1b26;
+            margin-bottom: 6px;
+        }
+
+        .pn-intro p {
+            color: #6c757d;
+            font-size: .9rem;
+            margin: 0;
+        }
+
+        .pn-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(90, 30, 60, 0.08);
+            overflow: hidden;
+        }
+
+        table.pn-table {
+            width: 100%;
+            margin: 0;
+        }
+
+        .pn-table th {
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            color: #8a7a85;
+            background: #fdfbfc;
+            border-bottom: 2px solid #eee0e8;
+            padding: 12px 16px;
+        }
+
+        .pn-table td {
+            padding: 12px 16px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f2e9ef;
+        }
+
+        .pn-user-nombre {
+            font-weight: 600;
+            color: #2d1b26;
+        }
+
+        .pn-user-email {
+            font-size: .8rem;
+            color: #8a7a85;
+        }
+
+        .pn-rol-badge {
+            font-size: .72rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: #f4e3ee;
+            color: var(--primary-dark);
+        }
+
+        .pn-negocio-select {
+            border: 2px solid #eee0e8;
+            border-radius: 10px;
+            padding: 6px 10px;
+            font-size: .85rem;
+            min-width: 160px;
+        }
+
+        .pn-negocio-select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .pn-guardando {
+            font-size: .78rem;
+            color: #28a745;
+            margin-left: 8px;
+            opacity: 0;
+            transition: opacity .2s ease;
+        }
+
+        .pn-guardando.visible {
+            opacity: 1;
+        }
+
+        .pn-empty, .pn-loading {
+            text-align: center;
+            padding: 40px 16px;
+            color: #8a7a85;
+        }
+
+        #pn-auth-gate {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="pn-auth-gate">
+        <div class="spinner-border" style="color:#D988B9;" role="status"></div>
+        <span style="color:#6c757d;font-size:.9rem;">Verificando sesión…</span>
+    </div>
+
+    <header class="pn-topbar">
+        <div>
+            <h1><i class="bi bi-shield-check"></i> Aprobar Negocios</h1>
+            <small>Elige a qué negocio (módulo) entra cada usuario al iniciar sesión</small>
+        </div>
+        <div class="pn-topbar-actions">
+            <a href="admin.html" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-box-arrow-in-right"></i> Ir al panel operativo
+            </a>
+            <button type="button" class="btn btn-outline-light btn-sm" id="pn-logout-btn">
+                <i class="bi bi-box-arrow-right"></i> Salir
+            </button>
+        </div>
+    </header>
+
+    <div class="pn-container">
+        <div class="pn-intro">
+            <h2>¿Qué hace este panel?</h2>
+            <p>
+                Cada usuario (excepto Sistema) queda asignado a un solo negocio: <strong>Mishell's Boutique</strong>
+                (la tienda) o <strong>Mishell's Fábrica</strong>. Al iniciar sesión entra directo a ese módulo, con
+                sus propios productos y finanzas, sin ver los del otro negocio. Aquí apruebas o cambias a cuál
+                negocio pertenece cada usuario.
+            </p>
+        </div>
+
+        <div class="pn-card">
+            <div class="pn-loading" id="pn-loading">
+                <div class="spinner-border spinner-border-sm" style="color:#D988B9;"></div>
+                Cargando usuarios...
+            </div>
+            <table class="pn-table" id="pn-table" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Negocio aprobado</th>
+                    </tr>
+                </thead>
+                <tbody id="pn-tbody"></tbody>
+            </table>
+            <div class="pn-empty" id="pn-empty" style="display:none;">No hay usuarios registrados todavía.</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { initializeFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
+            authDomain: "mishell-boutique-admin.firebaseapp.com",
+            projectId: "mishell-boutique-admin",
+            storageBucket: "mishell-boutique-admin.firebasestorage.app",
+            messagingSenderId: "399662956877",
+            appId: "1:399662956877:web:084236f5bb3cf6f0a8f704",
+            measurementId: "G-TZ3WQ8LSXH"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+
+        const USER_CACHE_KEY = 'mishellAdminUserCache';
+
+        const gate = document.getElementById('pn-auth-gate');
+        const tabla = document.getElementById('pn-table');
+        const tbody = document.getElementById('pn-tbody');
+        const loading = document.getElementById('pn-loading');
+        const empty = document.getElementById('pn-empty');
+        const logoutBtn = document.getElementById('pn-logout-btn');
+
+        const NEGOCIOS = [
+            { valor: 'tienda', nombre: "Mishell's Boutique (Tienda)" },
+            { valor: 'fabrica', nombre: "Mishell's Fábrica" }
+        ];
+
+        logoutBtn.addEventListener('click', async () => {
+            await signOut(auth);
+            localStorage.removeItem(USER_CACHE_KEY);
+            window.location.href = 'login.html';
+        });
+
+        function renderFila(uid, data, esYo) {
+            const tr = document.createElement('tr');
+
+            const tdUsuario = document.createElement('td');
+            tdUsuario.innerHTML = `
+                <div class="pn-user-nombre">${data.nombre || '(Sin nombre)'}</div>
+                <div class="pn-user-email">${data.email || ''}</div>
+            `;
+            tr.appendChild(tdUsuario);
+
+            const tdRol = document.createElement('td');
+            const rolNombre = data.rol === 'SUPER_ADMIN' ? 'Sistema' : (data.rol || '—');
+            tdRol.innerHTML = `<span class="pn-rol-badge">${rolNombre}</span>`;
+            tr.appendChild(tdRol);
+
+            const tdNegocio = document.createElement('td');
+            if (data.rol === 'SUPER_ADMIN') {
+                tdNegocio.innerHTML = '<span class="text-muted small">Acceso total (no aplica)</span>';
+            } else {
+                const select = document.createElement('select');
+                select.className = 'pn-negocio-select';
+                select.innerHTML = NEGOCIOS.map(n =>
+                    `<option value="${n.valor}">${n.nombre}</option>`
+                ).join('');
+                select.value = data.negocioAprobado || 'tienda';
+
+                const guardando = document.createElement('span');
+                guardando.className = 'pn-guardando';
+                guardando.innerHTML = '<i class="bi bi-check-circle"></i> Guardado';
+
+                select.addEventListener('change', async () => {
+                    select.disabled = true;
+                    try {
+                        await updateDoc(doc(db, 'usuarios', uid), { negocioAprobado: select.value });
+                        guardando.classList.add('visible');
+                        setTimeout(() => guardando.classList.remove('visible'), 2000);
+                    } catch (error) {
+                        console.error('No se pudo guardar el negocio aprobado:', error);
+                        alert('No se pudo guardar el cambio: ' + error.message);
+                    } finally {
+                        select.disabled = false;
+                    }
+                });
+
+                tdNegocio.appendChild(select);
+                tdNegocio.appendChild(guardando);
+            }
+            tr.appendChild(tdNegocio);
+
+            return tr;
+        }
+
+        async function cargarUsuarios(uidActual) {
+            try {
+                const snapshot = await getDocs(collection(db, 'usuarios'));
+                loading.style.display = 'none';
+
+                if (snapshot.empty) {
+                    empty.style.display = 'block';
+                    return;
+                }
+
+                const usuarios = snapshot.docs
+                    .map(d => ({ uid: d.id, ...d.data() }))
+                    .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+                usuarios.forEach(u => {
+                    tbody.appendChild(renderFila(u.uid, u, u.uid === uidActual));
+                });
+
+                tabla.style.display = 'table';
+            } catch (error) {
+                console.error('Error al cargar usuarios:', error);
+                loading.innerHTML = 'No se pudo cargar la lista de usuarios. Recarga la página.';
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                localStorage.removeItem(USER_CACHE_KEY);
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+                if (!userDoc.exists() || userDoc.data().rol !== 'SUPER_ADMIN') {
+                    // No autorizado para este panel: si es un usuario válido
+                    // del sistema lo mandamos a su panel operativo normal, no
+                    // a login (para no cerrarle una sesión que sí es válida).
+                    window.location.href = userDoc.exists() ? 'admin.html' : 'login.html';
+                    return;
+                }
+
+                gate.remove();
+                await cargarUsuarios(user.uid);
+            } catch (error) {
+                console.error('Error verificando sesión de Sistema:', error);
+                gate.innerHTML = `
+                    <span style="font-size:2rem;">⚠️</span>
+                    <span style="color:#495057;font-size:.95rem;text-align:center;max-width:320px;padding:0 16px;">
+                        No se pudo verificar tu sesión. Revisa tu conexión e inténtalo de nuevo.
+                    </span>
+                    <button type="button" onclick="location.reload()" style="background:#D988B9;color:#fff;border:none;border-radius:6px;padding:8px 20px;font-size:.9rem;">
+                        Reintentar
+                    </button>
+                `;
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
