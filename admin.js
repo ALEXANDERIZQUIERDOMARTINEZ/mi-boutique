@@ -25,10 +25,10 @@ const app = initializeApp(firebaseConfig);
 // navegadores in-app que bloquean WebSockets (ver mismo fix en app.js).
 // auth.js / admin-auth-init.js reutilizan esta misma instancia (mismo
 // `app`), así que heredan esta configuración sin repetirla.
-export const db = initializeFirestore(app, {
+const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
 });
-export const storage = getStorage(app);
+const storage = getStorage(app);
 console.log("Firebase Initialized!");
 
 // Detecta el tenant desde la URL y aplica su branding si ya existe en
@@ -58,7 +58,7 @@ const PRODUCT_IMAGE_MAX_DIMENSION = 1600;
 const PRODUCT_IMAGE_JPEG_QUALITY = 0.82;
 const PRODUCT_IMAGE_SKIP_COMPRESSION_BELOW = 300 * 1024; // 300KB
 
-export function compressProductImageFile(file) {
+function compressProductImageFile(file) {
     if (!file || !file.type?.startsWith('image/') || file.type === 'image/svg+xml') return Promise.resolve(file);
     if (file.size <= PRODUCT_IMAGE_SKIP_COMPRESSION_BELOW) return Promise.resolve(file);
 
@@ -340,7 +340,7 @@ function openWhatsApp(url) {
 
 // --- Helper: Show Toast Notification ---
 let bsToast = null;
-export function showToast(message, type = 'success', title = 'Notificación') {
+function showToast(message, type = 'success', title = 'Notificación') {
     const liveToastEl = document.getElementById('liveToast');
     const toastBodyEl = document.getElementById('toast-body');
     const toastIconEl = document.getElementById('toast-icon');
