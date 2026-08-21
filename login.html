@@ -6,12 +6,20 @@
         // Si este dispositivo ya tiene una sesión guardada, saltar la pantalla
         // de login por completo en vez de descargar el formulario, Bootstrap y
         // el SDK de Firebase Auth solo para, un instante después, redirigir a
-        // donde ya sabemos que va a terminar. admin.html hace su propia
-        // verificación real contra Firebase (auth.js) y devuelve aquí si la
-        // sesión ya no es válida — limpiando este caché antes de hacerlo, así
-        // que no hay riesgo de quedar en un ciclo de redirecciones.
-        if (localStorage.getItem('mishellAdminUserCache')) {
-            location.replace('admin.html');
+        // donde ya sabemos que va a terminar. admin.html/panel-negocios.html
+        // hacen su propia verificación real contra Firebase (auth.js) y
+        // devuelven aquí si la sesión ya no es válida — limpiando este caché
+        // antes de hacerlo, así que no hay riesgo de quedar en un ciclo de
+        // redirecciones. Sistema (SUPER_ADMIN) entra directo a su panel de
+        // aprobación de negocios; el resto entra al panel operativo, que ya
+        // filtra el menú según el negocio (Tienda/Fábrica) aprobado.
+        try {
+            const cache = JSON.parse(localStorage.getItem('mishellAdminUserCache'));
+            if (cache) {
+                location.replace(cache.rol === 'SUPER_ADMIN' ? 'panel-negocios.html' : 'admin.html');
+            }
+        } catch (e) {
+            // Caché corrupto: se ignora y se deja cargar el formulario normal
         }
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
@@ -585,8 +593,11 @@
                 // Recordar a este usuario en el directorio local del dispositivo
                 upsertDirectorioCache(user.uid, userData.nombre, user.email);
 
-                // Redirect to admin panel
-                window.location.href = 'admin.html';
+                // Sistema (SUPER_ADMIN) entra a su panel de aprobación de
+                // negocios; el resto entra al panel operativo (Mishell's
+                // Boutique o Mishell's Fábrica), que se autofiltra según el
+                // negocio que tenga aprobado (admin-auth-init.js).
+                window.location.href = userData.rol === 'SUPER_ADMIN' ? 'panel-negocios.html' : 'admin.html';
 
             } catch (error) {
                 console.error('Login error:', error);
@@ -636,8 +647,15 @@
         // a re-loguearse cada vez. admin.html hace su propia verificación
         // completa (auth.js) y reconstruye ese caché, así que basta con
         // saber que hay un usuario autenticado para redirigir.
-        auth.onAuthStateChanged((user) => {
-            if (user) {
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) return;
+            try {
+                const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+                const rol = userDoc.exists() ? userDoc.data().rol : null;
+                window.location.href = rol === 'SUPER_ADMIN' ? 'panel-negocios.html' : 'admin.html';
+            } catch (e) {
+                // Sin poder confirmar el rol, se manda al panel operativo por
+                // defecto; admin.html hace su propia verificación completa.
                 window.location.href = 'admin.html';
             }
         });
