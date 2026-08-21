@@ -149,6 +149,10 @@ window.loadExternalLib = loadExternalLib;
 // el guard de autenticación (auth.js / usuarios.js / admin-auth-init.js)
 window.db = db;
 window.firebaseApp = app;
+// Declara ante auth.js a qué tenant pertenece ESTA página, para que el
+// login rechace a quien no tenga acceso concedido a Boutique (ver
+// verificación de tenant en auth.js AuthManager.init()).
+window.expectedTenantId = 'boutique';
 window.firebaseConfig = firebaseConfig;
 window.collection = collection;
 window.getDocs = getDocs;
