@@ -5,6 +5,7 @@ import { initializeFirestore, collection, addDoc, onSnapshot, query, where, orde
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
 import { WHOLESALE_TIER_GROUPS, getHybridTierPrice, getBaseTierPrice, resolveWholesaleGroup, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js';
+import { resolveTenant } from './src/core/tenant-resolver.js';
 
 // *** CONFIGURACIÓN DE FIREBASE ***
 const firebaseConfig = {
@@ -32,6 +33,12 @@ const app = initializeApp(firebaseConfig);
 const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
 });
+
+// Detecta el tenant desde la URL y aplica su branding si ya existe en
+// Firestore. No bloquea ni afecta el resto de la carga: mientras no haya
+// tenants migrados, esto no hace nada (ver src/core/tenant-resolver.js).
+resolveTenant(db);
+
 const productsCollection = collection(db, 'productos');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const promocionesCollection = collection(db, 'promociones');

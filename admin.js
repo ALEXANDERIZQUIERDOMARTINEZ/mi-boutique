@@ -6,6 +6,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 // Import Auditoría (registro de quién crea/edita/elimina)
 import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js";
 import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin } from "./wholesale-tiers.js";
+import { resolveTenant } from "./src/core/tenant-resolver.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -29,6 +30,11 @@ const db = initializeFirestore(app, {
 });
 const storage = getStorage(app);
 console.log("Firebase Initialized!");
+
+// Detecta el tenant desde la URL y aplica su branding si ya existe en
+// Firestore. No bloquea ni afecta el resto de la carga: mientras no haya
+// tenants migrados, esto no hace nada (ver src/core/tenant-resolver.js).
+resolveTenant(db);
 
 // Normaliza los valores de talla/color para prendas sin variación real: sin
 // importar cómo se haya escrito ('unica', 'Unica', 'única', vacío...), siempre
