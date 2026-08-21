@@ -2740,7 +2740,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const target = e.target.closest('.product-search-item');
                 if (target && !target.classList.contains('disabled')) {
                     const productId = target.dataset.productId;
-                    openVariationModal(productId); 
+                    const searchProductModalEl = document.getElementById('searchProductModal');
+                    if (searchProductModalEl) {
+                        searchProductModalEl.addEventListener('hidden.bs.modal', () => {
+                            openVariationModal(productId);
+                        }, { once: true });
+                    }
                     searchProductModalInstance.hide();
                 }
             });
@@ -5196,10 +5201,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // Cerrar modal de detalles y abrir modal de contraseña
+                // Cerrar modal de detalles y abrir modal de contraseña. Se espera a
+                // que termine de ocultarse el primero (hidden.bs.modal) antes de
+                // abrir el segundo: mostrar ambos a la vez dejaba a Bootstrap con
+                // dos backdrops en transición, y el que se cerraba a veces borraba
+                // también el del modal nuevo — ese backdrop huérfano se quedaba
+                // sobre toda la página bloqueando cualquier clic hasta recargar
+                // (mismo bug ya resuelto en generarYMostrarFactura).
+                const viewSaleModalEl = document.getElementById('viewSaleModal');
+                const deletePasswordModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteConfirmPassword'));
+                if (viewSaleModalEl) {
+                    viewSaleModalEl.addEventListener('hidden.bs.modal', () => deletePasswordModal.show(), { once: true });
+                }
                 viewSaleModalInstance.hide();
-                const deletePasswordModal = new bootstrap.Modal(document.getElementById('deleteConfirmPassword'));
-                deletePasswordModal.show();
             });
         }
 
