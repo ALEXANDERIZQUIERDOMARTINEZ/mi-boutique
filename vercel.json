@@ -12,6 +12,28 @@
       "permanent": true
     }
   ],
+  "rewrites": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "fabrica.mishelles.store"
+        }
+      ],
+      "destination": "/admin-fabrica.html"
+    },
+    {
+      "source": "/admin.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "fabrica.mishelles.store"
+        }
+      ],
+      "destination": "/admin-fabrica.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)\\.(js|css)",

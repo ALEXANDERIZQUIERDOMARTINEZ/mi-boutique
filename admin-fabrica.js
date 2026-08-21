@@ -2,24 +2,96 @@
  * MISHELLES FÁBRICA — Productos, Gastos/Ingresos e Inventario (hilazas,
  * hilos, telas)
  *
- * Las secciones de gastos/ingresos e inventario de materia prima se
- * extrajeron de admin.js como primer paso hacia dos bundles independientes
- * (uno por tenant); "Productos Fábrica" es la primera pieza construida
- * directamente aquí, con su propia colección `productosFabrica` — no
- * comparte catálogo con Boutique. No importa nada de la parte de ventas al
- * detal, clientes o pedidos web de Boutique — solo reutiliza `db`,
- * `showToast`, `storage` y `compressProductImageFile` desde admin.js
- * (utilidades técnicas neutrales, no lógica de negocio) porque ambos
- * archivos siguen cargando en la misma página mientras Boutique y Fábrica
- * comparten un solo admin.html.
+ * Bundle 100% independiente: se carga desde admin-fabrica.html, su propia
+ * página, no desde el admin.html de Boutique. No importa nada de admin.js
+ * (ni datos ni utilidades) — tiene su propia inicialización de Firebase y
+ * sus propias funciones de utilidad, aunque el proyecto de Firebase de
+ * fondo sea el mismo mientras no exista una migración de datos separada.
  */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
-    collection, getDocs, query, where, orderBy, doc, getDoc, deleteDoc,
-    updateDoc, addDoc, serverTimestamp, Timestamp
+    initializeFirestore, collection, getDocs, query, where, orderBy, doc,
+    getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
-import { db, showToast, storage, compressProductImageFile } from "./admin.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 import { WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
+    authDomain: "mishell-boutique-admin.firebaseapp.com",
+    projectId: "mishell-boutique-admin",
+    storageBucket: "mishell-boutique-admin.firebasestorage.app",
+    messagingSenderId: "399662956877",
+    appId: "1:399662956877:web:084236f5bb3cf6f0a8f704"
+};
+
+const app = initializeApp(firebaseConfig);
+export const db = initializeFirestore(app, {
+    experimentalAutoDetectLongPolling: true
+});
+export const storage = getStorage(app);
+window.db = db;
+window.firebaseApp = app;
+// Declara ante auth.js a qué tenant pertenece ESTA página, para que el
+// login rechace a quien no tenga acceso concedido a Fábrica (ver
+// verificación de tenant en auth.js AuthManager.init()).
+window.expectedTenantId = 'fabrica';
+console.log("Fábrica: Firebase inicializado");
+
+// --- Utilidad de imagen: misma lógica que admin.js, copiada (no importada)
+// para que este archivo no dependa de ningún otro bundle de Boutique. ---
+const PRODUCT_IMAGE_MAX_DIMENSION = 1600;
+const PRODUCT_IMAGE_JPEG_QUALITY = 0.82;
+const PRODUCT_IMAGE_SKIP_COMPRESSION_BELOW = 300 * 1024; // 300KB
+
+export function compressProductImageFile(file) {
+    if (!file || !file.type?.startsWith('image/') || file.type === 'image/svg+xml') return Promise.resolve(file);
+    if (file.size <= PRODUCT_IMAGE_SKIP_COMPRESSION_BELOW) return Promise.resolve(file);
+
+    return new Promise((resolve) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+            let { width, height } = img;
+            if (width > PRODUCT_IMAGE_MAX_DIMENSION || height > PRODUCT_IMAGE_MAX_DIMENSION) {
+                const scale = PRODUCT_IMAGE_MAX_DIMENSION / Math.max(width, height);
+                width = Math.round(width * scale);
+                height = Math.round(height * scale);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            URL.revokeObjectURL(url);
+            canvas.toBlob((blob) => {
+                if (!blob || blob.size >= file.size) { resolve(file); return; }
+                const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+                resolve(new File([blob], newName, { type: 'image/jpeg' }));
+            }, 'image/jpeg', PRODUCT_IMAGE_JPEG_QUALITY);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+        img.src = url;
+    });
+}
+
+// --- Helper: Show Toast Notification (misma lógica que admin.js, copiada) ---
+let bsToast = null;
+export function showToast(message, type = 'success', title = 'Notificación') {
+    const liveToastEl = document.getElementById('liveToast');
+    const toastBodyEl = document.getElementById('toast-body');
+    const toastIconEl = document.getElementById('toast-icon');
+
+    if (liveToastEl && toastBodyEl) {
+        if (!bsToast) { try { bsToast = new bootstrap.Toast(liveToastEl, { delay: 3500 }); } catch (e) { console.error("Toast init error", e); return; } }
+        liveToastEl.className = 'toast';
+        const typeMap = { success: 'toast-success', error: 'toast-error', warning: 'toast-warning', info: 'toast-info' };
+        const iconMap = { success: 'bi-check-circle-fill', error: 'bi-x-circle-fill', warning: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
+        liveToastEl.classList.add(typeMap[type] || 'toast-success');
+        if (toastIconEl) toastIconEl.innerHTML = `<i class="bi ${iconMap[type] || iconMap.success}"></i>`;
+        toastBodyEl.textContent = message;
+        bsToast.show();
+    } else { console.warn("Toast elements not found:", message); alert(`${type.toUpperCase()}: ${message}`); }
+}
+window.showToast = showToast;
 
 const fabricaCollection = collection(db, 'movimientosFabrica');
 const inventarioFabricaCollection = collection(db, 'inventarioFabrica');

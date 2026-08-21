@@ -273,6 +273,25 @@ export class AuthManager {
                         return;
                     }
 
+                    // Verificar que el usuario tiene acceso a ESTE panel. Cada
+                    // página declara qué tenant es la suya en
+                    // window.expectedTenantId (admin.js → 'boutique',
+                    // admin-fabrica.js → 'fabrica') antes de llamar a init().
+                    // Un usuario sin tenantId se trata como 'boutique' — así
+                    // ninguna cuenta existente queda bloqueada del panel de
+                    // siempre solo por no tener el campo todavía. Super Admin
+                    // se salta esta validación: tiene acceso a todo.
+                    const tenantEsperado = window.expectedTenantId || null;
+                    if (tenantEsperado && userData.rol !== 'SUPER_ADMIN') {
+                        const tenantUsuario = userData.tenantId || 'boutique';
+                        if (tenantUsuario !== tenantEsperado) {
+                            await this.logout();
+                            alert('Tu usuario no tiene acceso a este panel.');
+                            rejectOnce('Wrong tenant');
+                            return;
+                        }
+                    }
+
                     // Verificar que nadie haya cerrado todas las sesiones después
                     // de que este dispositivo inició sesión
                     if (!sesionVigente) {
@@ -325,7 +344,19 @@ export class AuthManager {
     getCachedUser() {
         try {
             const raw = localStorage.getItem(USER_CACHE_KEY);
-            return raw ? JSON.parse(raw) : null;
+            if (!raw) return null;
+            const cached = JSON.parse(raw);
+            // No pintar de inmediato un usuario cacheado de OTRO tenant (p.ej.
+            // alguien que ya inició sesión en Boutique abre admin-fabrica.html
+            // en el mismo dispositivo): la verificación real de abajo lo
+            // rechazaría igual, pero sin este filtro se alcanzaría a mostrar
+            // el panel equivocado un instante antes de esa verificación.
+            const tenantEsperado = window.expectedTenantId || null;
+            if (tenantEsperado && cached.rol !== 'SUPER_ADMIN') {
+                const tenantCache = cached.tenantId || 'boutique';
+                if (tenantCache !== tenantEsperado) return null;
+            }
+            return cached;
         } catch (error) {
             console.warn('No se pudo leer el caché de usuario:', error);
             return null;
