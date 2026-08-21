@@ -28,7 +28,7 @@ const app = initializeApp(firebaseConfig);
 export const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
 });
-const storage = getStorage(app);
+export const storage = getStorage(app);
 console.log("Firebase Initialized!");
 
 // Detecta el tenant desde la URL y aplica su branding si ya existe en
@@ -58,7 +58,7 @@ const PRODUCT_IMAGE_MAX_DIMENSION = 1600;
 const PRODUCT_IMAGE_JPEG_QUALITY = 0.82;
 const PRODUCT_IMAGE_SKIP_COMPRESSION_BELOW = 300 * 1024; // 300KB
 
-function compressProductImageFile(file) {
+export function compressProductImageFile(file) {
     if (!file || !file.type?.startsWith('image/') || file.type === 'image/svg+xml') return Promise.resolve(file);
     if (file.size <= PRODUCT_IMAGE_SKIP_COMPRESSION_BELOW) return Promise.resolve(file);
 
