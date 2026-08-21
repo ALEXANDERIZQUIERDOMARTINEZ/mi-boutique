@@ -367,20 +367,11 @@
                     </div>
                 </section>
 
-                <!-- DOS EMPRESAS: Mishelles Boutique / Mishelles Fábrica -->
+                <!-- VENTAS BOUTIQUE -->
                 <section class="db-section">
                     <div class="db-panel db-compare">
                         <div class="db-panel-head">
-                            <span class="db-panel-title">Comparativo por empresa</span>
-                        </div>
-                        <div class="db-compare-split">
-                            <div class="db-compare-split-chart">
-                                <canvas id="db-compare-chart"></canvas>
-                            </div>
-                            <div class="db-compare-split-legend">
-                                <span class="db-compare-split-item"><span class="db-compare-split-dot" style="background:#D988B9;"></span>Boutique</span>
-                                <span class="db-compare-split-item"><span class="db-compare-split-dot" style="background:#2a78d6;"></span>Fábrica</span>
-                            </div>
+                            <span class="db-panel-title">Ventas</span>
                         </div>
                         <div class="db-compare-grid">
                             <div class="db-compare-col db-compare-col--boutique">
@@ -402,28 +393,6 @@
                                         <span class="db-compare-kpi-label">Utilidad potencial</span>
                                         <span class="db-compare-kpi-val" id="db-utilidad-potencial">$0</span>
                                         <span class="db-compare-kpi-sub" id="db-margen-utilidad">0% de margen</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="db-compare-divider" aria-hidden="true"></div>
-                            <div class="db-compare-col db-compare-col--fabrica">
-                                <div class="db-compare-col-head">
-                                    <span class="db-compare-name"><i class="bi bi-buildings"></i> Mishelles Fábrica</span>
-                                    <a class="db-panel-link" href="#fabrica">Ver detalle <i class="bi bi-arrow-right"></i></a>
-                                </div>
-                                <div class="db-compare-kpis">
-                                    <div class="db-compare-kpi">
-                                        <span class="db-compare-kpi-label">Ventas mayoristas</span>
-                                        <span class="db-compare-kpi-val" id="db-ventas-mayoristas-hoy">$0</span>
-                                        <span class="db-compare-kpi-sub" id="db-ventas-mayoristas-count">0 ventas</span>
-                                    </div>
-                                    <div class="db-compare-kpi">
-                                        <span class="db-compare-kpi-label">Gastos</span>
-                                        <span class="db-compare-kpi-val" id="db-fabrica-gastos">$0</span>
-                                    </div>
-                                    <div class="db-compare-kpi">
-                                        <span class="db-compare-kpi-label">Utilidad neta</span>
-                                        <span class="db-compare-kpi-val" id="db-fabrica-utilidad">$0</span>
                                     </div>
                                 </div>
                             </div>
@@ -503,16 +472,6 @@
                                     </div>
                                 </div>
                                 <div class="db-trend-summary" id="db-trend-summary">
-                                    <div class="db-trend-summary-item">
-                                        <span class="db-trend-summary-dot" style="background: var(--boutique-accent)"></span>
-                                        <span class="db-trend-summary-label">Boutique</span>
-                                        <span class="db-trend-summary-value" id="db-trend-total-boutique">$0</span>
-                                    </div>
-                                    <div class="db-trend-summary-item">
-                                        <span class="db-trend-summary-dot" style="background: var(--fabrica-accent)"></span>
-                                        <span class="db-trend-summary-label">Fábrica</span>
-                                        <span class="db-trend-summary-value" id="db-trend-total-fabrica">$0</span>
-                                    </div>
                                     <div class="db-trend-summary-item db-trend-summary-item--total">
                                         <span class="db-trend-summary-label">Total</span>
                                         <span class="db-trend-summary-value" id="db-trend-total-suma">$0</span>
@@ -1457,7 +1416,7 @@
                 <div class="fin2-page-header">
                     <div>
                         <h1 class="fin2-page-title"><i class="bi bi-graph-up-arrow"></i> Mishelles Boutique</h1>
-                        <p class="fin2-page-subtitle">Ganancia de ventas al detal (precio venta − costo) menos gastos operativos. Lo mayorista es de Mishelles Fábrica.</p>
+                        <p class="fin2-page-subtitle">Ventas al detal recibidas en el período, sin repartir con Fábrica.</p>
                     </div>
                     <div class="d-flex align-items-center flex-wrap gap-2">
                         <span class="fin2-active-period" id="fin2-period-badge">Mes actual</span>
@@ -1703,7 +1662,7 @@
                 <div class="fin2-page-header">
                     <div>
                         <h1 class="fin2-page-title"><i class="bi bi-buildings"></i> Mishelles Fábrica</h1>
-                        <p class="fin2-page-subtitle">100% de ventas mayoristas + costo recuperado de ventas al detal, menos gastos</p>
+                        <p class="fin2-page-subtitle">Ingresos y gastos registrados a mano para Fábrica, menos gastos</p>
                     </div>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-success btn-sm" id="fab-btn-nuevo-ingreso">
@@ -3910,7 +3869,7 @@
     </script>
 
     <script src="connection-status.js?v=1.0.0" defer></script>
-    <script type="module" src="admin.js?v=3.5.7"></script>
+    <script type="module" src="admin.js?v=3.5.8"></script>
     <script type="module" src="admin-auth-init.js?v=1.0.0"></script>
     <script type="module" src="auditoria.js?v=1.0.1"></script>
 
