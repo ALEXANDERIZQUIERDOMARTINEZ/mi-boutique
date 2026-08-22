@@ -10,6 +10,40 @@
       ],
       "destination": "https://mishelles.store/:path*",
       "permanent": true
+    },
+    {
+      "source": "/mayor.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "mishelles.store"
+        }
+      ],
+      "destination": "https://fabrica.mishelles.store/",
+      "permanent": true
+    },
+    {
+      "source": "/encargo.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "mishelles.store"
+        }
+      ],
+      "destination": "https://fabrica.mishelles.store/encargo.html",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "fabrica.mishelles.store"
+        }
+      ],
+      "destination": "/mayor.html"
     }
   ],
   "headers": [

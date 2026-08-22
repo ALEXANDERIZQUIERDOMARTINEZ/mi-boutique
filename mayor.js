@@ -1167,7 +1167,10 @@ if (waBtn) {
         const codigoPedido = pedidoDocRef.id.substring(0, 8).toUpperCase();
 
         setDoc(pedidoDocRef, {
-            tenantId: window.appContext?.tenantId || null,
+            // mayor.html es la tienda mayorista de Fábrica — no depende de
+            // window.appContext (no existe en esta página pública, sin
+            // sesión), va fijo.
+            tenantId: 'fabrica',
             clienteNombre: 'Cliente General',
             clienteCedula: '',
             clienteCelular: '',
