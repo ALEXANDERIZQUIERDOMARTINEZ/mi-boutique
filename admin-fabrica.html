@@ -1116,6 +1116,25 @@
                 markActive(h);
             });
         });
+
+        // Salvavidas contra el backdrop huérfano de Bootstrap: si dos
+        // modales transicionan casi al mismo tiempo (cerrar uno y abrir
+        // otro rápido — p.ej. elegir cliente y de inmediato abrir "Buscar
+        // producto" en Registrar Venta), a veces queda un .modal-backdrop
+        // sin ningún modal encima, bloqueando toda la página (fondo
+        // borroso, ningún clic responde) sin ningún error visible hasta
+        // recargar. Mismo bug ya documentado puntualmente en admin.js
+        // (generarYMostrarFactura) — aquí se cubre de forma general: si
+        // después de que un modal termina de ocultarse no queda ningún
+        // modal visible, se limpia cualquier backdrop/estado que haya
+        // quedado pegado.
+        document.addEventListener('hidden.bs.modal', function() {
+            if (document.querySelector('.modal.show')) return;
+            document.querySelectorAll('.modal-backdrop').forEach(function(el) { el.remove(); });
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        });
     </script>
 
     <!-- ══ Colapsar sidebar + Dark mode + Logout — misma lógica que admin.html, recortada ══ -->
