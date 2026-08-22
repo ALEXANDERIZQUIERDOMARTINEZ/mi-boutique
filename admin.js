@@ -2416,7 +2416,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast('Cada color debe tener un nombre.', 'warning');
                     throw new Error('Color sin nombre');
                 }
-                const tenantId = window.appContext?.tenantId || 'tenant';
+                const tenantId = window.expectedTenantId;
                 const tempProductId = productId || ('temp_' + Date.now());
                 if (colorVariantsState.length > 0) {
                     const hasNewFiles = colorVariantsState.some(cv => cv.newFiles.length > 0);
@@ -3923,7 +3923,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 estado: tipoVentaSelect.value === 'apartado' ? 'Pendiente' : 'Completada',
                 esCatalogoExterno: esCatalogo, // Flag para identificar ventas por catálogo
                 timestamp: serverTimestamp(),
-                tenantId: window.appContext?.tenantId || null
+                tenantId: window.expectedTenantId
             };
             
             if (ventaData.tipoVenta === 'apartado') {
@@ -4164,7 +4164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     total: totalCalculado,
                     estado: 'pendiente',
                     timestamp: serverTimestamp(),
-                    tenantId: window.appContext?.tenantId || null
+                    tenantId: window.expectedTenantId
                 };
 
                 try {
@@ -4624,7 +4624,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return ventaData.numeroFactura;
             }
 
-            const tenantId = ventaData.tenantId ?? window.appContext?.tenantId ?? null;
+            const tenantId = ventaData.tenantId ?? window.expectedTenantId;
             const contadorRef = doc(db, 'contadores', `facturas_${tenantId || 'default'}`);
 
             const numero = await runTransaction(db, async (tx) => {
@@ -9998,7 +9998,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         try {
             // Cargar ventas, productos y movimientos manuales (ingresos/gastos
             // operativos de Boutique) en paralelo
-            const tenantId = window.appContext?.tenantId || null;
+            const tenantId = window.expectedTenantId;
             const movClauses = [orderBy('timestamp', 'desc')];
             if (tenantId) movClauses.unshift(where('tenantId', '==', tenantId));
 
@@ -10363,7 +10363,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     concepto,
                     monto,
                     fecha: Timestamp.fromDate(fecha),
-                    tenantId: window.appContext?.tenantId || null
+                    tenantId: window.expectedTenantId
                 };
 
                 if (id) {

@@ -212,7 +212,7 @@ const categoriasCollection = collection(db, 'categorias');
 
     async function cargarProductos() {
         try {
-            const tenantId = window.appContext?.tenantId || null;
+            const tenantId = window.expectedTenantId;
             const clauses = [orderBy('nombre')];
             if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
             const snapshot = await getDocs(query(productosFabricaCollection, ...clauses));
@@ -371,7 +371,7 @@ const categoriasCollection = collection(db, 'categorias');
                 visible: visibleCheckbox.checked,
                 imagenUrl,
                 variaciones: leerVariacionesDelForm(),
-                tenantId: window.appContext?.tenantId || null
+                tenantId: window.expectedTenantId
             };
 
             if (id) {
@@ -746,7 +746,7 @@ const categoriasCollection = collection(db, 'categorias');
         if (resultadosDiv) resultadosDiv.style.display = 'none';
 
         try {
-            const tenantId = window.appContext?.tenantId || null;
+            const tenantId = window.expectedTenantId;
             const clauses = [orderBy('timestamp', 'desc')];
             if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
 
@@ -1007,7 +1007,7 @@ const categoriasCollection = collection(db, 'categorias');
                 concepto,
                 monto,
                 fecha: Timestamp.fromDate(fecha),
-                tenantId: window.appContext?.tenantId || null
+                tenantId: window.expectedTenantId
             };
 
             if (id) {
@@ -1135,7 +1135,7 @@ const categoriasCollection = collection(db, 'categorias');
 
     async function cargarInventario() {
         try {
-            const tenantId = window.appContext?.tenantId || null;
+            const tenantId = window.expectedTenantId;
             const clauses = [orderBy('nombre')];
             if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
             const snapshot = await getDocs(query(inventarioFabricaCollection, ...clauses));
@@ -1259,7 +1259,7 @@ const categoriasCollection = collection(db, 'categorias');
                 stockMinimo: stockMinInput.value ? parseFloat(stockMinInput.value) : 0,
                 proveedor: proveedorInput.value.trim(),
                 notas: notasInput.value.trim(),
-                tenantId: window.appContext?.tenantId || null
+                tenantId: window.expectedTenantId
             };
 
             if (id) {
