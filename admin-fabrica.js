@@ -363,10 +363,14 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         `).join('');
     }
 
-    document.getElementById('fvSearchClientModal')?.addEventListener('show.bs.modal', async () => {
+    document.getElementById('fvSearchClientModal')?.addEventListener('show.bs.modal', () => {
         clientListEl.innerHTML = `<li class="list-group-item text-center text-muted">Cargando...</li>`;
-        const lista = await cargarClientesCache();
-        renderClientList(lista);
+        cargarClientesCache()
+            .then((lista) => renderClientList(lista))
+            .catch((error) => {
+                console.error('Error al cargar clientes para Registrar Venta:', error);
+                clientListEl.innerHTML = `<li class="list-group-item text-center text-danger">No se pudo cargar: ${error.message}</li>`;
+            });
     });
 
     clientSearchInput?.addEventListener('input', async () => {
@@ -444,12 +448,26 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }).join('');
     }
 
-    document.getElementById('fvSearchProductModal')?.addEventListener('show.bs.modal', async () => {
+    // El catálogo se precarga al entrar a la sección (ver más abajo), así
+    // que abrir el modal no depende de ninguna llamada async en ese
+    // instante — solo pinta lo que ya está en memoria. Si por lo que sea
+    // todavía no hay nada cargado (p.ej. se abrió el modal antes de que
+    // terminara de cargar), lo intenta una vez más aquí, con manejo de
+    // error visible en vez de dejar "Cargando..." para siempre.
+    document.getElementById('fvSearchProductModal')?.addEventListener('show.bs.modal', () => {
         stepListEl.style.display = '';
         stepVariationEl.style.display = 'none';
+        if (productosCache.length > 0) {
+            renderProductList(productosCache);
+            return;
+        }
         productListEl.innerHTML = `<li class="list-group-item text-center text-muted">Cargando...</li>`;
-        await cargarProductosCache();
-        renderProductList(productosCache);
+        cargarProductosCache()
+            .then(() => renderProductList(productosCache))
+            .catch((error) => {
+                console.error('Error al cargar catálogo para Registrar Venta:', error);
+                productListEl.innerHTML = `<li class="list-group-item text-center text-danger">No se pudo cargar el catálogo: ${error.message}</li>`;
+            });
     });
 
     productSearchInput?.addEventListener('input', () => {
@@ -627,6 +645,23 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             submitBtn.disabled = false;
         }
     });
+
+    // Precargar el catálogo al entrar a la sección — así, cuando el
+    // usuario abra "Buscar producto", el modal solo tiene que pintar
+    // datos que ya están en memoria (ver el listener show.bs.modal más
+    // arriba), sin depender de ninguna llamada async justo en ese
+    // instante.
+    let registrarVentaYaPrecargado = false;
+    function precargarSiCorresponde() {
+        if ((window.location.hash || '') !== '#registrar-venta') return;
+        registrarVentaYaPrecargado = true;
+        cargarProductosCache().catch((error) => {
+            console.error('Error al precargar catálogo de Registrar Venta:', error);
+        });
+    }
+    window.addEventListener('hashchange', precargarSiCorresponde);
+    window.addEventListener('admin:section-shown', precargarSiCorresponde);
+    if (!registrarVentaYaPrecargado) precargarSiCorresponde();
 
     renderCarrito();
 })();
