@@ -3447,7 +3447,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     ciudad: ciudad,
                     barrio: barrio || '',
                     direccion: direccion,
-                    ultimaCompra: serverTimestamp()
+                    ultimaCompra: serverTimestamp(),
+                    tenantId: 'boutique'
                 });
                 clientId = newClientRef.id;
             }
@@ -3483,7 +3484,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 notificadoBot: false,
                 timestamp: serverTimestamp(),
                 origen: "web",
-                tipoVenta: isWholesaleActive ? "Mayorista" : "Detal"
+                tipoVenta: isWholesaleActive ? "Mayorista" : "Detal",
+                tenantId: 'boutique'
             };
 
             const docRef = await addDoc(webOrdersCollection, pedidoData);
