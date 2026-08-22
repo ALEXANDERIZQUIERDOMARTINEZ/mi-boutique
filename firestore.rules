@@ -154,10 +154,17 @@ service cloud.firestore {
                       hasRequiredTenantId() &&
                       isCreatingWithCorrectTenant();
 
-      // Actualizar: Solo del mismo tenant, sin cambiar tenantId
-      allow update: if hasPermission('productos_editar') &&
-                      belongsToTenant(resource.data.tenantId) &&
-                      isNotChangingTenant();
+      // Actualizar: edición completa del catálogo (productos_editar), o
+      // solo bajar el stock al registrar una venta (ventas_crear) — el
+      // Vendedor no tiene productos_editar, pero SÍ necesita poder
+      // descontar stock al vender, sin que eso le dé permiso de tocar
+      // precio/nombre/etc. Se restringe a que el único campo que cambie
+      // sea variaciones.
+      allow update: if belongsToTenant(resource.data.tenantId) &&
+                      isNotChangingTenant() &&
+                      (hasPermission('productos_editar') ||
+                       (hasPermission('ventas_crear') &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['variaciones'])));
 
       // Eliminar: Solo del mismo tenant
       allow delete: if hasPermission('productos_eliminar') &&
@@ -469,10 +476,18 @@ service cloud.firestore {
       // sesión) lo necesita — mismo criterio que productos de Boutique.
       allow read: if true;
 
-      allow create, update, delete: if hasPermission('inventario_fabrica_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
-                                      (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (resource == null || request.resource == null || isNotChangingTenant());
+      allow create, delete: if hasPermission('inventario_fabrica_gestionar') &&
+                              (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                              (request.resource == null || isCreatingWithCorrectTenant());
+
+      // Igual que productos de Boutique: gestión completa del catálogo, o
+      // solo bajar stock al registrar una venta de mostrador — restringido
+      // a que el único campo que cambie sea variaciones.
+      allow update: if belongsToTenant(resource.data.tenantId) &&
+                      isNotChangingTenant() &&
+                      (hasPermission('inventario_fabrica_gestionar') ||
+                       (hasPermission('ventas_crear') &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['variaciones'])));
     }
 
     // ═══════════════════════════════════════════════════════════════════

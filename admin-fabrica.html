@@ -60,6 +60,12 @@
                 </a>
             </div>
             <div class="rail-group">
+                <span class="rail-group-label">Ventas</span>
+                <a class="rail-link" href="#registrar-venta" data-tooltip="Registrar Venta" data-permiso="ventas_crear">
+                    <i class="bi bi-plus-circle"></i><span>Registrar Venta</span>
+                </a>
+            </div>
+            <div class="rail-group">
                 <span class="rail-group-label">Catálogo</span>
                 <a class="rail-link" href="#productos-fabrica" data-tooltip="Productos" data-permiso="inventario_fabrica_gestionar">
                     <i class="bi bi-grid-3x3-gap"></i><span>Productos</span>
@@ -225,6 +231,208 @@
                     </div>
                 </div>
             </section>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             SECCIÓN: REGISTRAR VENTA — venta de mostrador propia de Fábrica.
+             Versión más simple que la de Boutique a propósito: sin apartados,
+             sin domicilio/repartidor, sin cotizaciones ni escáner de código
+             de barras (esos módulos quedaron excluidos del negocio de
+             Fábrica). El precio de línea es editable porque productosFabrica
+             solo tiene precioMayor, no un precio detal aparte.
+             ═══════════════════════════════════════════════════════════════════ -->
+        <div class="tab-pane fade" id="registrar-venta">
+            <div class="sv-header">
+                <h1 class="sv-title">Registrar Venta</h1>
+            </div>
+
+            <form id="fvForm" class="sv-form">
+                <!-- Cliente -->
+                <div class="sv-section">
+                    <div class="sv-section-header">
+                        <i class="bi bi-person-circle"></i>
+                        <span>Cliente</span>
+                    </div>
+                    <div class="sv-section-body">
+                        <input type="hidden" id="fv-cliente-id">
+                        <div class="input-group">
+                            <input type="text" id="fv-cliente-nombre" class="form-control sv-client-input"
+                                   placeholder="Buscar o seleccionar cliente..."
+                                   readonly data-bs-toggle="modal" data-bs-target="#fvSearchClientModal"
+                                   style="cursor:pointer;">
+                            <button class="btn sv-btn-add-client" type="button"
+                                    data-bs-toggle="modal" data-bs-target="#fvAddClientModal" title="Nuevo cliente">
+                                <i class="bi bi-person-plus-fill"></i>
+                            </button>
+                        </div>
+                        <div class="sv-client-meta">
+                            <input type="text" id="fv-cliente-celular" class="form-control form-control-sm" placeholder="Celular" readonly disabled>
+                            <input type="text" id="fv-cliente-direccion" class="form-control form-control-sm" placeholder="Dirección" readonly disabled>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agregar productos -->
+                <div class="sv-section">
+                    <div class="sv-section-header">
+                        <i class="bi bi-bag-plus-fill"></i>
+                        <span>Agregar Productos</span>
+                    </div>
+                    <div class="sv-section-body">
+                        <button type="button" class="sv-btn-search-product btn w-100" data-bs-toggle="modal" data-bs-target="#fvSearchProductModal">
+                            <i class="bi bi-search me-2"></i>Buscar producto en catálogo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Carrito -->
+                <div class="sv-cart">
+                    <div class="sv-cart-header">
+                        <div class="sv-cart-title"><i class="bi bi-cart3"></i><span>Carrito</span></div>
+                        <span class="sv-cart-count" id="fv-items-count">0 items</span>
+                    </div>
+                    <div id="fv-carrito" class="sv-cart-body">
+                        <div class="vf-cart-empty">
+                            <i class="bi bi-cart-x fs-4 d-block mb-1"></i>
+                            <small>Aún no has agregado productos</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pago -->
+                <div class="sv-payment">
+                    <div class="sv-notes-discount">
+                        <textarea id="fv-observaciones" class="form-control form-control-sm" rows="2" placeholder="Observaciones de la venta..."></textarea>
+                        <div class="sv-discount-wrap">
+                            <label class="sv-field-label">Descuento</label>
+                            <div class="sv-discount-row">
+                                <input type="text" inputmode="numeric" id="fv-descuento" class="form-control form-control-sm" value="0">
+                                <select class="form-select form-select-sm" id="fv-descuento-tipo">
+                                    <option value="fijo">$ Fijo</option>
+                                    <option value="porcentaje">%</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sv-total-bar">
+                        <span class="sv-total-label">Total a cobrar</span>
+                        <span id="fv-total" class="sv-total-amount">$0</span>
+                    </div>
+
+                    <div class="sv-pay-input">
+                        <div class="input-group input-group-sm mb-2">
+                            <span class="input-group-text">💵 Efectivo</span>
+                            <input type="text" inputmode="numeric" id="fv-pago-efectivo" class="form-control" placeholder="0" value="0">
+                        </div>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">🏦 Transferencia</span>
+                            <input type="text" inputmode="numeric" id="fv-pago-transferencia" class="form-control" placeholder="0" value="0">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="sv-submit-btn">
+                        <i class="bi bi-check-circle-fill"></i> Registrar Venta
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Modal: Buscar/crear cliente -->
+        <div class="modal fade" id="fvSearchClientModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5">Buscar Cliente</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="search" class="form-control mb-3" id="fv-client-search" placeholder="Buscar por nombre o cédula...">
+                        <ul class="list-group search-modal-list" id="fv-client-list"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Nuevo cliente -->
+        <div class="modal fade" id="fvAddClientModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5">Nuevo Cliente</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="fvFormAddClient">
+                            <div class="mb-3">
+                                <label class="form-label">Cédula</label>
+                                <input type="text" class="form-control" id="fv-new-cliente-cedula">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="fv-new-cliente-nombre" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Celular</label>
+                                <input type="tel" class="form-control" id="fv-new-cliente-celular" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Dirección</label>
+                                <input type="text" class="form-control" id="fv-new-cliente-direccion">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" form="fvFormAddClient" class="btn btn-primary">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Buscar producto + elegir variación -->
+        <div class="modal fade" id="fvSearchProductModal" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-fullscreen-md-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="fvSearchProductModalTitle">Buscar Producto</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Paso 1: lista de productos -->
+                        <div id="fv-product-step-list">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="search" class="form-control" id="fv-product-search" placeholder="Nombre o código...">
+                            </div>
+                            <ul class="list-group search-modal-list" id="fv-product-list"></ul>
+                        </div>
+                        <!-- Paso 2: elegir variación + cantidad (mismo modal, se intercambia el contenido) -->
+                        <div id="fv-product-step-variation" style="display:none;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="fv-product-back-btn">
+                                <i class="bi bi-arrow-left"></i> Volver a la lista
+                            </button>
+                            <h6 id="fv-variation-product-name" class="mb-3"></h6>
+                            <div id="fv-variation-options" class="d-flex flex-wrap gap-2 mb-3"></div>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-6">
+                                    <label class="form-label small">Precio unitario</label>
+                                    <input type="text" inputmode="numeric" class="form-control form-control-sm" id="fv-variation-precio">
+                                </div>
+                                <div class="col-3">
+                                    <label class="form-label small">Cantidad</label>
+                                    <input type="number" min="1" value="1" class="form-control form-control-sm" id="fv-variation-cantidad">
+                                </div>
+                                <div class="col-3">
+                                    <button type="button" class="btn btn-primary btn-sm w-100" id="fv-variation-add-btn">
+                                        <i class="bi bi-plus-lg"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════
@@ -805,7 +1013,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.3.0"></script>
+    <script type="module" src="admin-fabrica.js?v=1.4.0"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.1.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->
