@@ -55,8 +55,13 @@ service cloud.firestore {
     }
 
     // Verifica si el documento que se está creando tiene el tenantId correcto
+    // Super Admin no tiene tenantId propio (no pertenece a ninguna
+    // empresa), así que esta comparación nunca puede dar verdadero para
+    // él sin un atajo — igual que hasPermission() y belongsToTenant(),
+    // se le deja crear con cualquier tenantId que el cliente ya validó
+    // (window.expectedTenantId, fijo por página).
     function isCreatingWithCorrectTenant() {
-      return request.resource.data.tenantId == getUserData().tenantId;
+      return isSuperAdmin() || request.resource.data.tenantId == getUserData().tenantId;
     }
 
     // Verifica que no se intente cambiar el tenantId en una actualización
@@ -225,6 +230,7 @@ service cloud.firestore {
       allow create: if isActiveUser() &&
                       request.resource.data.usuarioId == request.auth.uid &&
                       (!('tenantId' in request.resource.data) ||
+                       isSuperAdmin() ||
                        request.resource.data.tenantId == getUserData().tenantId);
 
       // Es un log inmutable: nunca se edita ni se elimina
