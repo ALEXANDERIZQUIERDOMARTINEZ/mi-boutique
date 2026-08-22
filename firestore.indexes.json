@@ -15,6 +15,14 @@
         { "fieldPath": "tenantId", "order": "ASCENDING" },
         { "fieldPath": "nombre", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "ventas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
