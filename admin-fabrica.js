@@ -11,7 +11,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
     initializeFirestore, collection, getDocs, query, where, orderBy, doc,
-    getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp
+    getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 import { WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js";
@@ -245,6 +245,390 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     window.addEventListener('hashchange', cargarDashboardSiCorresponde);
     window.addEventListener('admin:section-shown', cargarDashboardSiCorresponde);
     if (!dashboardYaCargado) cargarDashboardSiCorresponde();
+})();
+
+// ========================================================================
+// ✅ SECCIÓN: REGISTRAR VENTA — venta de mostrador propia de Fábrica.
+// Versión deliberadamente más simple que la de Boutique: sin apartados, sin
+// domicilio/repartidor, sin cotizaciones ni escáner (excluidos del negocio
+// de Fábrica). El precio de línea es editable porque productosFabrica solo
+// tiene precioMayor, no un precio de detal aparte.
+// ========================================================================
+(() => {
+    const form = document.getElementById('fvForm');
+    if (!form) return;
+
+    const clientesCollection = collection(db, 'clientes');
+
+    let carrito = [];
+    let clienteSeleccionado = null;
+    let productosCache = [];
+    let clientesCache = null;
+    let productoEnVariacion = null;
+
+    const clienteIdInput = document.getElementById('fv-cliente-id');
+    const clienteNombreInput = document.getElementById('fv-cliente-nombre');
+    const clienteCelularInput = document.getElementById('fv-cliente-celular');
+    const clienteDireccionInput = document.getElementById('fv-cliente-direccion');
+    const carritoEl = document.getElementById('fv-carrito');
+    const itemsCountEl = document.getElementById('fv-items-count');
+    const totalEl = document.getElementById('fv-total');
+    const descuentoInput = document.getElementById('fv-descuento');
+    const descuentoTipoSelect = document.getElementById('fv-descuento-tipo');
+    const pagoEfectivoInput = document.getElementById('fv-pago-efectivo');
+    const pagoTransferenciaInput = document.getElementById('fv-pago-transferencia');
+    const observacionesInput = document.getElementById('fv-observaciones');
+
+    function limpiarNumero(v) {
+        return parseFloat((v || '0').toString().replace(/[^\d.-]/g, '')) || 0;
+    }
+
+    function normalizarVariacion(v) {
+        const n = (v || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+        return (n === 'unica' || n === 'unico') ? '' : n;
+    }
+
+    function calcularSubtotal() {
+        return carrito.reduce((sum, item) => sum + item.total, 0);
+    }
+
+    function calcularTotal() {
+        const subtotal = calcularSubtotal();
+        const descuentoVal = limpiarNumero(descuentoInput.value);
+        const descuento = descuentoTipoSelect.value === 'porcentaje'
+            ? subtotal * (descuentoVal / 100)
+            : descuentoVal;
+        return Math.max(0, subtotal - descuento);
+    }
+
+    function renderCarrito() {
+        if (carrito.length === 0) {
+            carritoEl.innerHTML = `<div class="vf-cart-empty"><i class="bi bi-cart-x fs-4 d-block mb-1"></i><small>Aún no has agregado productos</small></div>`;
+        } else {
+            carritoEl.innerHTML = carrito.map((item, idx) => `
+                <div class="sv-cart-item">
+                    <div class="sv-cart-item-info">
+                        <span class="sv-cart-item-name">${item.nombre}</span>
+                        <span class="sv-cart-item-sub">${[item.talla, item.color].filter(x => x && normalizarVariacion(x) !== '').join(' / ') || 'Única'} · x${item.cantidad}</span>
+                    </div>
+                    <div class="sv-cart-item-actions">
+                        <span class="sv-cart-item-total">${formatoMonedaDashboard.format(item.total)}</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger fv-remove-item" data-idx="${idx}"><i class="bi bi-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        itemsCountEl.textContent = `${carrito.length} ${carrito.length === 1 ? 'item' : 'items'}`;
+        totalEl.textContent = formatoMonedaDashboard.format(calcularTotal());
+    }
+
+    carritoEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('.fv-remove-item');
+        if (!btn) return;
+        carrito.splice(parseInt(btn.dataset.idx, 10), 1);
+        renderCarrito();
+    });
+
+    [descuentoInput, descuentoTipoSelect].forEach(el => el.addEventListener('input', renderCarrito));
+
+    // ── Cliente ──────────────────────────────────────────────────────────
+    function seleccionarCliente(cliente) {
+        clienteSeleccionado = cliente;
+        clienteIdInput.value = cliente?.id || '';
+        clienteNombreInput.value = cliente?.nombre || '';
+        clienteCelularInput.value = cliente?.celular || '';
+        clienteDireccionInput.value = cliente?.direccion || '';
+    }
+
+    const clientSearchInput = document.getElementById('fv-client-search');
+    const clientListEl = document.getElementById('fv-client-list');
+
+    async function cargarClientesCache() {
+        if (clientesCache) return clientesCache;
+        const snap = await getDocs(query(clientesCollection, where('tenantId', '==', 'fabrica')));
+        clientesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        return clientesCache;
+    }
+
+    function renderClientList(lista) {
+        if (!lista.length) {
+            clientListEl.innerHTML = `<li class="list-group-item text-center text-muted">Sin resultados</li>`;
+            return;
+        }
+        clientListEl.innerHTML = lista.map(c => `
+            <li class="list-group-item fv-client-item" style="cursor:pointer;" data-id="${c.id}">
+                <strong>${c.nombre || 'Sin nombre'}</strong>
+                <div class="text-muted small">${c.cedula || ''}${c.celular ? ' · ' + c.celular : ''}</div>
+            </li>
+        `).join('');
+    }
+
+    document.getElementById('fvSearchClientModal')?.addEventListener('show.bs.modal', async () => {
+        clientListEl.innerHTML = `<li class="list-group-item text-center text-muted">Cargando...</li>`;
+        const lista = await cargarClientesCache();
+        renderClientList(lista);
+    });
+
+    clientSearchInput?.addEventListener('input', async () => {
+        const termino = clientSearchInput.value.trim().toLowerCase();
+        const lista = await cargarClientesCache();
+        const filtrada = !termino ? lista : lista.filter(c =>
+            (c.nombre || '').toLowerCase().includes(termino) || (c.cedula || '').includes(termino)
+        );
+        renderClientList(filtrada);
+    });
+
+    clientListEl?.addEventListener('click', (e) => {
+        const item = e.target.closest('.fv-client-item');
+        if (!item) return;
+        const cliente = (clientesCache || []).find(c => c.id === item.dataset.id);
+        if (cliente) seleccionarCliente(cliente);
+        bootstrap.Modal.getInstance(document.getElementById('fvSearchClientModal'))?.hide();
+    });
+
+    document.getElementById('fvFormAddClient')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nombre = document.getElementById('fv-new-cliente-nombre').value.trim();
+        const celular = document.getElementById('fv-new-cliente-celular').value.trim();
+        const cedula = document.getElementById('fv-new-cliente-cedula').value.trim();
+        const direccion = document.getElementById('fv-new-cliente-direccion').value.trim();
+        if (!nombre || !celular) { showToast('Nombre y celular son requeridos', 'warning'); return; }
+
+        try {
+            const docRef = await addDoc(clientesCollection, {
+                nombre, celular, cedula, direccion,
+                tenantId: 'fabrica',
+                ultimaCompra: serverTimestamp()
+            });
+            const nuevoCliente = { id: docRef.id, nombre, celular, cedula, direccion };
+            if (clientesCache) clientesCache.unshift(nuevoCliente);
+            seleccionarCliente(nuevoCliente);
+            bootstrap.Modal.getInstance(document.getElementById('fvAddClientModal'))?.hide();
+            e.target.reset();
+            showToast('Cliente agregado', 'success');
+        } catch (error) {
+            console.error('Error al crear cliente:', error);
+            showToast('No se pudo crear el cliente: ' + error.message, 'error');
+        }
+    });
+
+    // ── Productos ────────────────────────────────────────────────────────
+    const productListEl = document.getElementById('fv-product-list');
+    const productSearchInput = document.getElementById('fv-product-search');
+    const stepListEl = document.getElementById('fv-product-step-list');
+    const stepVariationEl = document.getElementById('fv-product-step-variation');
+
+    async function cargarProductosCache() {
+        const snap = await getDocs(productosFabricaCollection);
+        productosCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    }
+
+    function renderProductList(lista) {
+        if (!lista.length) {
+            productListEl.innerHTML = `<li class="list-group-item text-center text-muted">Sin resultados</li>`;
+            return;
+        }
+        productListEl.innerHTML = lista.map(p => {
+            const stock = (p.variaciones || []).reduce((s, v) => s + (parseInt(v.stock, 10) || 0), 0);
+            return `
+                <li class="list-group-item fv-product-item" style="cursor:pointer;" data-id="${p.id}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${p.nombre || 'Sin nombre'}</strong>
+                            <div class="text-muted small">${p.codigo || ''} · Stock: ${stock}</div>
+                        </div>
+                        <span>${formatoMonedaDashboard.format(parseFloat(p.precioMayor) || 0)}</span>
+                    </div>
+                </li>
+            `;
+        }).join('');
+    }
+
+    document.getElementById('fvSearchProductModal')?.addEventListener('show.bs.modal', async () => {
+        stepListEl.style.display = '';
+        stepVariationEl.style.display = 'none';
+        productListEl.innerHTML = `<li class="list-group-item text-center text-muted">Cargando...</li>`;
+        await cargarProductosCache();
+        renderProductList(productosCache);
+    });
+
+    productSearchInput?.addEventListener('input', () => {
+        const termino = productSearchInput.value.trim().toLowerCase();
+        const filtrada = !termino ? productosCache : productosCache.filter(p =>
+            (p.nombre || '').toLowerCase().includes(termino) || (p.codigo || '').toLowerCase().includes(termino)
+        );
+        renderProductList(filtrada);
+    });
+
+    productListEl?.addEventListener('click', (e) => {
+        const item = e.target.closest('.fv-product-item');
+        if (!item) return;
+        const producto = productosCache.find(p => p.id === item.dataset.id);
+        if (producto) abrirPasoVariacion(producto);
+    });
+
+    // Unidades del mismo producto/variación que ya están en el carrito —
+    // para no dejar agregar más de lo que de verdad queda disponible
+    // cuando se agrega la misma prenda dos veces en la misma venta.
+    function cantidadYaEnCarrito(productoId, talla, color) {
+        return carrito
+            .filter(item => item.productoId === productoId &&
+                normalizarVariacion(item.talla) === normalizarVariacion(talla) &&
+                normalizarVariacion(item.color) === normalizarVariacion(color))
+            .reduce((sum, item) => sum + item.cantidad, 0);
+    }
+
+    function abrirPasoVariacion(producto) {
+        productoEnVariacion = producto;
+        stepListEl.style.display = 'none';
+        stepVariationEl.style.display = '';
+        document.getElementById('fv-variation-product-name').textContent = producto.nombre || '';
+        document.getElementById('fv-variation-precio').value = producto.precioMayor || 0;
+        document.getElementById('fv-variation-cantidad').value = 1;
+
+        const variaciones = producto.variaciones || [];
+        const opcionesEl = document.getElementById('fv-variation-options');
+        opcionesEl.innerHTML = variaciones.map((v, idx) => {
+            const stock = parseInt(v.stock, 10) || 0;
+            const disponible = stock - cantidadYaEnCarrito(producto.id, v.talla, v.color);
+            const etiqueta = [v.talla, v.color].filter(x => x && normalizarVariacion(x) !== '').join(' / ') || 'Única';
+            return `
+                <button type="button" class="btn btn-sm ${idx === 0 ? 'btn-primary' : 'btn-outline-secondary'} fv-variation-chip"
+                        data-idx="${idx}" ${disponible <= 0 ? 'disabled' : ''}>
+                    ${etiqueta} (${Math.max(0, disponible)})
+                </button>
+            `;
+        }).join('');
+        opcionesEl.dataset.selectedIdx = variaciones.length ? '0' : '';
+    }
+
+    document.getElementById('fv-variation-options')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.fv-variation-chip');
+        if (!btn || btn.disabled) return;
+        document.querySelectorAll('.fv-variation-chip').forEach(b => b.classList.replace('btn-primary', 'btn-outline-secondary'));
+        btn.classList.replace('btn-outline-secondary', 'btn-primary');
+        document.getElementById('fv-variation-options').dataset.selectedIdx = btn.dataset.idx;
+    });
+
+    document.getElementById('fv-product-back-btn')?.addEventListener('click', () => {
+        stepVariationEl.style.display = 'none';
+        stepListEl.style.display = '';
+    });
+
+    document.getElementById('fv-variation-add-btn')?.addEventListener('click', () => {
+        if (!productoEnVariacion) return;
+        const variaciones = productoEnVariacion.variaciones || [];
+        const idx = parseInt(document.getElementById('fv-variation-options').dataset.selectedIdx, 10);
+        const variacion = variaciones[idx] || null;
+        const cantidad = parseInt(document.getElementById('fv-variation-cantidad').value, 10) || 0;
+        const precio = limpiarNumero(document.getElementById('fv-variation-precio').value);
+
+        if (variaciones.length && !variacion) { showToast('Selecciona una variación', 'warning'); return; }
+        if (cantidad <= 0) { showToast('La cantidad debe ser mayor a 0', 'warning'); return; }
+
+        if (variacion) {
+            const stock = parseInt(variacion.stock, 10) || 0;
+            const disponible = stock - cantidadYaEnCarrito(productoEnVariacion.id, variacion.talla, variacion.color);
+            if (cantidad > disponible) { showToast(`Solo hay ${Math.max(0, disponible)} unidades disponibles`, 'warning'); return; }
+        }
+
+        carrito.push({
+            productoId: productoEnVariacion.id,
+            codigo: productoEnVariacion.codigo || '',
+            nombre: productoEnVariacion.nombre || '',
+            talla: variacion?.talla || '',
+            color: variacion?.color || '',
+            cantidad,
+            precio,
+            total: precio * cantidad
+        });
+        renderCarrito();
+        bootstrap.Modal.getInstance(document.getElementById('fvSearchProductModal'))?.hide();
+        showToast('Producto agregado al carrito', 'success');
+    });
+
+    // ── Guardar venta ────────────────────────────────────────────────────
+    async function actualizarStockFabrica(items) {
+        if (!items.length) return;
+        const batch = writeBatch(db);
+        const porProducto = new Map();
+
+        for (const item of items) {
+            if (!item.productoId) continue;
+            const producto = productosCache.find(p => p.id === item.productoId);
+            if (!producto) continue;
+            if (!porProducto.has(item.productoId)) {
+                porProducto.set(item.productoId, JSON.parse(JSON.stringify(producto.variaciones || [])));
+            }
+            const variaciones = porProducto.get(item.productoId);
+            const encontrada = variaciones.find(v =>
+                normalizarVariacion(v.talla) === normalizarVariacion(item.talla) &&
+                normalizarVariacion(v.color) === normalizarVariacion(item.color)
+            );
+            if (encontrada) {
+                encontrada.stock = (parseInt(encontrada.stock, 10) || 0) - item.cantidad;
+            }
+        }
+
+        porProducto.forEach((variaciones, productoId) => {
+            batch.update(doc(db, 'productosFabrica', productoId), { variaciones });
+        });
+        await batch.commit();
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (carrito.length === 0) { showToast('Agrega al menos un producto', 'warning'); return; }
+
+        const total = calcularTotal();
+        const pagoEfectivo = limpiarNumero(pagoEfectivoInput.value);
+        const pagoTransferencia = limpiarNumero(pagoTransferenciaInput.value);
+        if (pagoEfectivo + pagoTransferencia < total) {
+            showToast('El pago no cubre el total', 'warning');
+            return;
+        }
+
+        const submitBtn = form.querySelector('.sv-submit-btn');
+        submitBtn.disabled = true;
+        try {
+            const ventaData = {
+                clienteId: clienteSeleccionado?.id || null,
+                clienteNombre: clienteSeleccionado?.nombre || 'Cliente General',
+                clienteCelular: clienteSeleccionado?.celular || '',
+                clienteDireccion: clienteSeleccionado?.direccion || '',
+                items: carrito,
+                observaciones: observacionesInput.value.trim(),
+                descuento: limpiarNumero(descuentoInput.value),
+                descuentoTipo: descuentoTipoSelect.value,
+                pagoEfectivo,
+                pagoTransferencia,
+                totalVenta: total,
+                estado: 'Completada',
+                origen: 'mostrador',
+                timestamp: serverTimestamp(),
+                tenantId: window.expectedTenantId
+            };
+
+            await addDoc(ventasCollection, ventaData);
+            await actualizarStockFabrica(carrito);
+
+            showToast('Venta registrada', 'success');
+            carrito = [];
+            seleccionarCliente(null);
+            observacionesInput.value = '';
+            descuentoInput.value = '0';
+            pagoEfectivoInput.value = '0';
+            pagoTransferenciaInput.value = '0';
+            renderCarrito();
+        } catch (error) {
+            console.error('Error al registrar venta de fábrica:', error);
+            showToast('No se pudo registrar la venta: ' + error.message, 'error');
+        } finally {
+            submitBtn.disabled = false;
+        }
+    });
+
+    renderCarrito();
 })();
 
 // ========================================================================
