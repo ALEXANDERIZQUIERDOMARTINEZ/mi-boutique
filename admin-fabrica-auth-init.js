@@ -62,7 +62,7 @@ function aplicarPermisosNav() {
         }
     });
 
-    const hashActual = window.location.hash || '#productos-fabrica';
+    const hashActual = window.location.hash || '#dashboard';
     const linkActivo = document.querySelector('.rail-link[href="' + hashActual + '"]');
     if (!linkActivo || linkActivo.style.display === 'none') {
         const primerVisible = Array.from(document.querySelectorAll('.rail-link[href^="#"]'))
