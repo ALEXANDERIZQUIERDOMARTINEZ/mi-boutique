@@ -459,8 +459,9 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════
 
     match /productosFabrica/{productoId} {
-      allow read: if hasPermission('inventario_fabrica_gestionar') &&
-                    belongsToTenant(resource.data.tenantId);
+      // Lectura pública: mayor.html (catálogo mayorista de Fábrica, sin
+      // sesión) lo necesita — mismo criterio que productos de Boutique.
+      allow read: if true;
 
       allow create, update, delete: if hasPermission('inventario_fabrica_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&

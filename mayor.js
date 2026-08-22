@@ -19,7 +19,10 @@ const app = initializeApp(firebaseConfig);
 const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
 });
-const productsCollection = collection(db, 'productos');
+// Catálogo propio de Fábrica — no lee el productos de Boutique. Las
+// categorías sí se comparten (colección de solo lectura, sin datos por
+// tenant) igual que en admin-fabrica.js.
+const productsCollection = collection(db, 'productosFabrica');
 const categoriesCollection = collection(db, 'categorias');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 
@@ -31,11 +34,6 @@ const ASESORES = {
     alexander: { nombre: 'Alexander Izquierdo', numero: '573017850041' }
 };
 
-// Solo las prendas de proveedor "Mishelles Boutique" entran al catálogo de
-// venta al por mayor — el resto de proveedores queda restringido al detal.
-function esProveedorBoutique(p) {
-    return (p?.proveedor || '').trim().toLowerCase() === 'mishelles boutique';
-}
 const MIN_POR_PRENDA = 6;
 const PRODUCTS_PER_PAGE = 30;
 // A partir de aquí una prenda se marca como "poca disponibilidad" en su badge
@@ -1372,7 +1370,6 @@ onSnapshot(productsCollection, (snapshot) => {
     snapshot.forEach(docSnap => {
         const data = docSnap.data();
         if (data.visible === false) return;
-        if (!esProveedorBoutique(data)) return;
         allProducts.push({ id: docSnap.id, ...data });
     });
     renderCategoryFilterButtons();
