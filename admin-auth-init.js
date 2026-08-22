@@ -7,6 +7,7 @@
 
 import { AuthManager } from './auth.js';
 import { initUsuariosManager } from './usuarios.js';
+import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js';
 
 function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
@@ -148,6 +149,10 @@ function renderizarSesion(authManager, usuario) {
         console.error('admin-auth-init: firebaseApp/db no están disponibles. ¿Falló admin.js?');
         return;
     }
+
+    // Logo/nombre/color de la marca de este panel — no depende de que la
+    // sesión termine de verificarse, es lectura pública (igual que planes).
+    obtenerMarcaTenant(window.db, window.expectedTenantId || 'boutique').then(aplicarMarcaEnPanel);
 
     const authManager = new AuthManager(window.firebaseApp);
     window.authManager = authManager;

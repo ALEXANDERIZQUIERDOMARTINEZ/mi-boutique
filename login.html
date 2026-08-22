@@ -3,19 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        // Si este dispositivo ya tiene una sesión guardada, saltar la pantalla
-        // de login por completo en vez de descargar el formulario, Bootstrap y
-        // el SDK de Firebase Auth solo para, un instante después, redirigir a
-        // donde ya sabemos que va a terminar. admin.html hace su propia
-        // verificación real contra Firebase (auth.js) y devuelve aquí si la
+        // Si este dispositivo ya tiene una sesión guardada de un usuario con
+        // UNA sola empresa conocida, saltar directo a su panel en vez de
+        // descargar el formulario, Bootstrap y el SDK de Firebase Auth solo
+        // para, un instante después, redirigir a donde ya sabemos que va a
+        // terminar. admin.html/admin-fabrica.html hacen su propia
+        // verificación real contra Firebase (auth.js) y devuelven aquí si la
         // sesión ya no es válida — limpiando este caché antes de hacerlo, así
         // que no hay riesgo de quedar en un ciclo de redirecciones.
-        if (localStorage.getItem('mishellAdminUserCache')) {
-            location.replace('admin.html');
-        }
+        // Super Admin (varias empresas posibles) NO se salta esto: siempre
+        // ve el selector para elegir a cuál empresa entrar.
+        try {
+            var cacheCruda = localStorage.getItem('mishellAdminUserCache');
+            if (cacheCruda) {
+                var cache = JSON.parse(cacheCruda);
+                // Duplica PANEL_POR_TENANT de tenant-branding.js a propósito:
+                // este script corre antes de que cargue nada de Firebase/ES
+                // modules, así que no puede importarlo. Si se agrega una
+                // empresa nueva con panel propio, actualizar ambos lugares.
+                var PANEL_POR_TENANT = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
+                var panel = PANEL_POR_TENANT[cache.tenantId || 'boutique'];
+                if (cache.rol !== 'SUPER_ADMIN' && panel) {
+                    location.replace(panel);
+                }
+            }
+        } catch (e) { /* caché corrupta: seguir al login normal */ }
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-    <title>Login - MISHELL'ES BOUTIQUE Admin</title>
+    <title>AMEI GROUP · Acceso</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -245,6 +260,55 @@
             }
         }
 
+        .empresa-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border: 2px solid #eee0e8;
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fdfbfc;
+        }
+
+        .empresa-item:hover:not(.empresa-item--disabled) {
+            border-color: var(--empresa-color, var(--primary-color));
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+            transform: translateY(-1px);
+        }
+
+        .empresa-item--disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .empresa-item-logo {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            object-fit: cover;
+            flex: none;
+            background: var(--empresa-color, var(--primary-color));
+        }
+
+        .empresa-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .empresa-item-nombre {
+            font-weight: 700;
+            color: #2d1b26;
+            font-size: 0.98rem;
+        }
+
+        .empresa-item-sub {
+            font-size: 0.78rem;
+            color: #8a7a85;
+        }
+
         /* En pantallas muy bajas (celular en horizontal) evitamos que la
            tarjeta se corte: dejamos de centrar verticalmente y permitimos
            scroll natural del body */
@@ -262,13 +326,13 @@
 </head>
 <body>
     <div class="login-container">
-        <div class="login-card">
+        <div class="login-card" id="login-card">
             <div class="logo-section">
                 <div class="logo-badge">
-                    <i class="bi bi-shop"></i>
+                    <i class="bi bi-buildings"></i>
                 </div>
-                <h1>Mishell's Boutique</h1>
-                <p>Panel de Administración</p>
+                <h1>AMEI GROUP</h1>
+                <p>Inicia sesión para continuar</p>
             </div>
 
             <form id="loginForm">
@@ -342,12 +406,32 @@
                 </div>
             </form>
         </div>
+
+        <!-- Selector de empresa: aparece después de iniciar sesión, con la
+             marca de cada empresa a la que este usuario tiene acceso.
+             Nunca se elige "de una lista de datos ajenos" — solo se pintan
+             las empresas que su tenantId (o, si es Super Admin, todas las
+             que existen) le permiten entrar. -->
+        <div class="login-card" id="empresa-card" style="display:none;">
+            <div class="logo-section">
+                <div class="logo-badge">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+                <h1 id="empresa-saludo">¡Bienvenido!</h1>
+                <p>Elige la empresa a la que quieres entrar</p>
+            </div>
+            <div id="empresa-lista"></div>
+            <button type="button" class="btn btn-link w-100 mt-2" id="btn-cambiar-cuenta">
+                <i class="bi bi-arrow-left"></i> Usar otra cuenta
+            </button>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
         import { initializeFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { obtenerMarcaTenant, obtenerTodasLasMarcas, PANEL_POR_TENANT } from './tenant-branding.js';
 
         // Firebase configuration
         const firebaseConfig = {
@@ -384,6 +468,11 @@
         const manualEmailGroup = document.getElementById('manual-email-group');
         const manualEmailInput = document.getElementById('email');
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        const loginCard = document.getElementById('login-card');
+        const empresaCard = document.getElementById('empresa-card');
+        const empresaSaludo = document.getElementById('empresa-saludo');
+        const empresaLista = document.getElementById('empresa-lista');
+        const btnCambiarCuenta = document.getElementById('btn-cambiar-cuenta');
 
         // ─── Directorio de usuarios (solo nombre + correo, sin rol ni
         // permisos) para el selector. Se guarda en Firestore en
@@ -523,6 +612,107 @@
             }
         });
 
+        // ─── Selector de empresa (post-login) ──────────────────────────────
+        // Verifica el usuario en Firestore (igual que antes) y, si es válido,
+        // pinta el selector con las empresas a las que tiene acceso en vez de
+        // saltar directo a admin.html — un usuario normal solo ve la suya
+        // (y de hecho ni ve el selector si es una sola), Super Admin ve todas.
+        async function manejarUsuarioAutenticado(user, { mostrarErroresDeForm = false } = {}) {
+            const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+
+            if (!userDoc.exists()) {
+                await signOut(auth);
+                if (mostrarErroresDeForm) showError('Usuario no autorizado para acceder al panel de administración');
+                return false;
+            }
+
+            const userData = userDoc.data();
+
+            if (!userData.activo) {
+                await signOut(auth);
+                if (mostrarErroresDeForm) showError('Tu cuenta está desactivada. Contacta al administrador');
+                return false;
+            }
+
+            sessionStorage.setItem('adminUser', JSON.stringify({
+                uid: user.uid,
+                email: user.email,
+                nombre: userData.nombre,
+                rol: userData.rol,
+                permisos: userData.permisos || {},
+                tenantId: userData.tenantId ?? null
+            }));
+
+            upsertDirectorioCache(user.uid, userData.nombre, user.email);
+
+            await mostrarSelectorEmpresa(userData);
+            return true;
+        }
+
+        async function mostrarSelectorEmpresa(userData) {
+            loginCard.style.display = 'none';
+            empresaCard.style.display = 'block';
+            const primerNombre = (userData.nombre || '').trim().split(' ')[0];
+            empresaSaludo.textContent = primerNombre ? `¡Hola, ${primerNombre}!` : '¡Bienvenido!';
+            empresaLista.innerHTML = `<div class="text-center py-3"><div class="spinner-border spinner-border-sm" style="color:var(--primary-color);"></div></div>`;
+
+            const esSuperAdmin = userData.rol === 'SUPER_ADMIN';
+            const empresas = esSuperAdmin
+                ? await obtenerTodasLasMarcas(db)
+                : [await obtenerMarcaTenant(db, userData.tenantId || 'boutique')];
+
+            // Usuario normal con una sola empresa conocida: no hace falta
+            // que elija nada, se entra directo. El selector es para cuando
+            // de verdad hay más de una opción (Super Admin).
+            if (!esSuperAdmin && empresas.length === 1 && PANEL_POR_TENANT[empresas[0].id]) {
+                window.location.href = PANEL_POR_TENANT[empresas[0].id];
+                return;
+            }
+
+            empresaLista.innerHTML = empresas.map(emp => {
+                const panel = PANEL_POR_TENANT[emp.id];
+                const disponible = !!panel;
+                return `
+                    <div class="empresa-item ${disponible ? '' : 'empresa-item--disabled'}"
+                         style="--empresa-color:${emp.color}" data-panel="${panel || ''}">
+                        <img class="empresa-item-logo" src="${emp.logoUrl || 'icon.svg'}" alt="">
+                        <div class="empresa-item-info">
+                            <div class="empresa-item-nombre">${emp.nombre}</div>
+                            <div class="empresa-item-sub">${disponible ? 'Entrar al panel' : 'Próximamente'}</div>
+                        </div>
+                        ${disponible ? '<i class="bi bi-chevron-right" style="color:#a08a99;"></i>' : ''}
+                    </div>
+                `;
+            }).join('');
+
+            if (esSuperAdmin) {
+                empresaLista.insertAdjacentHTML('beforeend', `
+                    <div class="empresa-item" style="--empresa-color:#2d1b26" data-panel="super-admin.html">
+                        <span class="empresa-item-logo d-flex align-items-center justify-content-center" style="background:#2d1b26;">
+                            <i class="bi bi-shield-check" style="color:#fff;"></i>
+                        </span>
+                        <div class="empresa-item-info">
+                            <div class="empresa-item-nombre">Super Admin</div>
+                            <div class="empresa-item-sub">Gestionar empresas y accesos</div>
+                        </div>
+                        <i class="bi bi-chevron-right" style="color:#a08a99;"></i>
+                    </div>
+                `);
+            }
+        }
+
+        empresaLista.addEventListener('click', (e) => {
+            const item = e.target.closest('.empresa-item:not(.empresa-item--disabled)');
+            if (!item || !item.dataset.panel) return;
+            window.location.href = item.dataset.panel;
+        });
+
+        btnCambiarCuenta.addEventListener('click', async () => {
+            await signOut(auth);
+            empresaCard.style.display = 'none';
+            loginCard.style.display = 'block';
+        });
+
         // Handle form submission
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -545,48 +735,13 @@
             try {
                 // Sign in with Firebase Auth
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                const user = userCredential.user;
 
-                // Check if user exists in 'usuarios' collection
-                const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
-
-                if (!userDoc.exists()) {
-                    // User not found in database
-                    await auth.signOut();
-                    showError('Usuario no autorizado para acceder al panel de administración');
+                const exito = await manejarUsuarioAutenticado(userCredential.user, { mostrarErroresDeForm: true });
+                if (!exito) {
                     loginBtn.disabled = false;
                     loginBtnText.style.display = 'inline';
                     loginSpinner.style.display = 'none';
-                    return;
                 }
-
-                const userData = userDoc.data();
-
-                // Check if user is active
-                if (!userData.activo) {
-                    await auth.signOut();
-                    showError('Tu cuenta está desactivada. Contacta al administrador');
-                    loginBtn.disabled = false;
-                    loginBtnText.style.display = 'inline';
-                    loginSpinner.style.display = 'none';
-                    return;
-                }
-
-                // Store user data in sessionStorage
-                sessionStorage.setItem('adminUser', JSON.stringify({
-                    uid: user.uid,
-                    email: user.email,
-                    nombre: userData.nombre,
-                    rol: userData.rol,
-                    permisos: userData.permisos || {},
-                    tenantId: userData.tenantId ?? null
-                }));
-
-                // Recordar a este usuario en el directorio local del dispositivo
-                upsertDirectorioCache(user.uid, userData.nombre, user.email);
-
-                // Redirect to admin panel
-                window.location.href = 'admin.html';
 
             } catch (error) {
                 console.error('Login error:', error);
@@ -629,16 +784,16 @@
         });
 
         // Si Firebase ya tiene una sesión activa (persistida de una vez
-        // anterior), entrar directo al panel sin pedir credenciales de
-        // nuevo. No depender de sessionStorage aquí: se vacía cada vez que
-        // se cierra la pestaña/app, así que en el celular casi siempre
-        // estaría vacío aunque la sesión siga siendo válida — eso obligaba
-        // a re-loguearse cada vez. admin.html hace su propia verificación
-        // completa (auth.js) y reconstruye ese caché, así que basta con
-        // saber que hay un usuario autenticado para redirigir.
+        // anterior) y no se saltó ya el login por completo (el script del
+        // <head>, que solo aplica a quien tiene una única empresa conocida),
+        // mostrar el selector directo sin pedir credenciales de nuevo. No
+        // depender de sessionStorage aquí: se vacía cada vez que se cierra
+        // la pestaña/app, así que en el celular casi siempre estaría vacío
+        // aunque la sesión siga siendo válida — eso obligaba a re-loguearse
+        // cada vez.
         auth.onAuthStateChanged((user) => {
             if (user) {
-                window.location.href = 'admin.html';
+                manejarUsuarioAutenticado(user);
             }
         });
     </script>

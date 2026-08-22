@@ -70,21 +70,35 @@ async function cargarEmpresas() {
         const snapshot = await getDocs(query(tenantsCollection, orderBy('nombre')));
         const tenants = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        document.getElementById('stat-empresas').textContent = tenants.length + (tenants.some(t => t.id === 'boutique') ? 0 : 1);
+        // Boutique existe desde antes de que existiera esta colección — se
+        // muestra igual aunque no tenga documento propio todavía, para que
+        // también se le pueda poner logo/color desde aquí.
+        const listaCompleta = tenants.some(t => t.id === 'boutique')
+            ? tenants
+            : [{ id: 'boutique', nombre: NOMBRE_TENANT_CONOCIDO.boutique, estado: 'activo' }, ...tenants];
 
-        if (!tenants.length) {
-            cont.innerHTML = `<div class="alert alert-info">Todavía no has creado ninguna empresa aquí. Boutique existe desde antes y no necesita este registro para funcionar — créala aquí solo si quieres darle branding/plan propios más adelante.</div>`;
-            return;
-        }
+        document.getElementById('stat-empresas').textContent = listaCompleta.length;
 
-        cont.innerHTML = tenants.map(t => `
+        cont.innerHTML = listaCompleta.map(t => `
             <div class="card tenant-card mb-3">
                 <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-1">${t.nombre || t.id}</h5>
-                        <span class="tenant-pill text-muted">tenantId: ${t.id}</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <span style="width:36px;height:36px;border-radius:8px;flex:none;background:${t.colorPrimario || '#D988B9'};"></span>
+                        <div>
+                            <h5 class="mb-1">${t.nombre || t.id}</h5>
+                            <span class="tenant-pill text-muted">tenantId: ${t.id}</span>
+                        </div>
                     </div>
-                    <span class="badge bg-success">${t.estado || 'activo'}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-success">${t.estado || 'activo'}</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary btn-editar-empresa"
+                                data-id="${t.id}" data-nombre="${(t.nombre || '').replace(/"/g, '&quot;')}"
+                                data-nombre-corto="${(t.nombreCorto || '').replace(/"/g, '&quot;')}"
+                                data-logo="${(t.logoUrl || '').replace(/"/g, '&quot;')}"
+                                data-color="${t.colorPrimario || '#D988B9'}">
+                            <i class="bi bi-pencil"></i> Editar
+                        </button>
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -97,6 +111,9 @@ async function cargarEmpresas() {
 async function crearEmpresa() {
     const nombre = document.getElementById('empresa-nombre').value.trim();
     const slug = document.getElementById('empresa-slug').value.trim().toLowerCase();
+    const nombreCorto = document.getElementById('empresa-nombre-corto').value.trim();
+    const logoUrl = document.getElementById('empresa-logo').value.trim();
+    const colorPrimario = document.getElementById('empresa-color').value;
 
     if (!nombre || !slug) {
         showToast('Nombre e identificador son requeridos.', 'error');
@@ -112,6 +129,9 @@ async function crearEmpresa() {
     try {
         await setDoc(doc(db, 'tenants', slug), {
             nombre,
+            nombreCorto: nombreCorto || null,
+            logoUrl: logoUrl || null,
+            colorPrimario: colorPrimario || null,
             slug,
             estado: 'activo',
             createdAt: serverTimestamp()
@@ -128,6 +148,56 @@ async function crearEmpresa() {
         btn.disabled = false;
     }
 }
+
+async function guardarEdicionEmpresa() {
+    const id = document.getElementById('editar-empresa-id').value;
+    const nombre = document.getElementById('editar-empresa-nombre').value.trim();
+    const nombreCorto = document.getElementById('editar-empresa-nombre-corto').value.trim();
+    const logoUrl = document.getElementById('editar-empresa-logo').value.trim();
+    const colorPrimario = document.getElementById('editar-empresa-color').value;
+
+    if (!id || !nombre) {
+        showToast('Falta el nombre de la empresa.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('btn-guardar-edicion-empresa');
+    btn.disabled = true;
+    try {
+        // merge:true porque Boutique puede no tener documento todavía —
+        // esto lo crea la primera vez que se le pone logo/color.
+        await setDoc(doc(db, 'tenants', id), {
+            nombre,
+            nombreCorto: nombreCorto || null,
+            logoUrl: logoUrl || null,
+            colorPrimario: colorPrimario || null,
+            slug: id,
+            estado: 'activo',
+            updatedAt: serverTimestamp()
+        }, { merge: true });
+        showToast(`Marca de "${nombre}" actualizada.`);
+        bootstrap.Modal.getInstance(document.getElementById('modalEditarEmpresa'))?.hide();
+        await cargarEmpresas();
+    } catch (error) {
+        console.error('Error al editar empresa:', error);
+        showToast(error.message, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-editar-empresa');
+    if (!btn) return;
+    document.getElementById('editar-empresa-id').value = btn.dataset.id;
+    document.getElementById('editar-empresa-nombre').value = btn.dataset.nombre;
+    document.getElementById('editar-empresa-nombre-corto').value = btn.dataset.nombreCorto;
+    document.getElementById('editar-empresa-logo').value = btn.dataset.logo;
+    document.getElementById('editar-empresa-color').value = btn.dataset.color;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarEmpresa')).show();
+});
+
+document.getElementById('btn-guardar-edicion-empresa')?.addEventListener('click', guardarEdicionEmpresa);
 
 // ── Usuarios y acceso ────────────────────────────────────────────────────
 

@@ -72,8 +72,13 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════
 
     match /tenants/{tenantId} {
-      // Solo Super Admins pueden gestionar tenants
-      allow read, create, update: if isSuperAdmin();
+      // Lectura pública: nombre, logo y color de marca (nada sensible),
+      // los necesita el selector de empresa del login antes de que se
+      // sepa a cuál empresa pertenece quien está entrando.
+      allow read: if true;
+
+      // Solo Super Admins pueden crear/editar tenants
+      allow create, update: if isSuperAdmin();
 
       // NUNCA eliminar tenants (usar estado "cancelado")
       allow delete: if false;

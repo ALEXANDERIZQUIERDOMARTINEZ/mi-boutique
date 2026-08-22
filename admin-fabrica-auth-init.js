@@ -5,13 +5,10 @@
  * pero sin conectar el panel de Usuarios — admin-fabrica.html todavía no
  * tiene esa pestaña (es el siguiente paso pendiente: que el Admin de
  * Fábrica pueda crear sus propios usuarios).
- *
- * TODO: cuando exista el chequeo de tenantId en auth.js, esta página deja
- * de aceptar a cualquier usuario válido y solo entra quien tenga acceso
- * concedido al tenant "fabrica".
  */
 
 import { AuthManager } from './auth.js';
+import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js';
 
 function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
@@ -103,6 +100,10 @@ function renderizarSesion(authManager, usuario) {
         console.error('admin-fabrica-auth-init: firebaseApp/db no están disponibles. ¿Falló admin-fabrica.js?');
         return;
     }
+
+    // Logo/nombre/color de la marca de este panel — no depende de que la
+    // sesión termine de verificarse, es lectura pública (igual que planes).
+    obtenerMarcaTenant(window.db, window.expectedTenantId || 'fabrica').then(aplicarMarcaEnPanel);
 
     const authManager = new AuthManager(window.firebaseApp);
     window.authManager = authManager;
