@@ -26,9 +26,17 @@ service cloud.firestore {
       return isRegisteredUser() && getUserData().activo == true;
     }
 
-    // Verifica si el usuario tiene un permiso específico
+    // Verifica si el usuario tiene un permiso específico. Super Admin
+    // siempre pasa, sin importar qué tenga guardado en su propio mapa de
+    // permisos — igual que en el cliente (auth.js: hasPermission() ahí
+    // también hace isSuperAdmin() ? true : ...). Sin este atajo, una cuenta
+    // Super Admin creada antes de que existiera un permiso nuevo (p.ej.
+    // inventario_fabrica_gestionar, agregado con el módulo de Fábrica)
+    // queda bloqueada de ese módulo para siempre por no tener esa llave
+    // en su documento — aunque su rol sea SUPER_ADMIN.
     function hasPermission(permission) {
-      return isActiveUser() && getUserData().permisos[permission] == true;
+      return isActiveUser() &&
+             (getUserData().rol == 'SUPER_ADMIN' || getUserData().permisos[permission] == true);
     }
 
     // ═══════════════════════════════════════════════════════════════════
