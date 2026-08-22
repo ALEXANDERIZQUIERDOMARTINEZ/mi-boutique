@@ -391,6 +391,32 @@ service cloud.firestore {
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // COLECCIONES LEGACY - datos de antes de que existiera tenantId,
+    // solo se leen desde los botones de exportar/backup de Boutique.
+    // No se escribe en ellas desde la app; no aplica belongsToTenant
+    // porque los documentos no tienen ese campo.
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /finanzas/{movimientoId} {
+      allow read: if hasPermission('finanzas_ver');
+      allow write: if false;
+    }
+
+    match /pedidos/{pedidoId} {
+      allow read: if hasPermission('pedidos_web_ver');
+      allow write: if false;
+    }
+
+    // Barrios sugeridos desde el checkout público (app.js) cuando el
+    // cliente escribe uno que no está en la lista predefinida. Sin
+    // tenantId — es de la tienda pública de Boutique, igual que antes.
+    match /barrios/{barrioId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // REGLAS DE FÁBRICA - SEGMENTO APARTE (gastos vs. ingresos propios)
     // ═══════════════════════════════════════════════════════════════════
 
