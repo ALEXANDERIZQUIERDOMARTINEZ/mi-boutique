@@ -373,7 +373,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('proveedores_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -389,7 +389,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('repartidores_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -403,7 +403,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('finanzas_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -443,7 +443,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('fabrica_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -457,7 +457,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('inventario_fabrica_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -472,7 +472,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('inventario_fabrica_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -486,7 +486,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('finanzas_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -500,7 +500,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('cierres_caja') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -533,7 +533,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('finanzas_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -547,7 +547,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('promociones_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     match /promocionesGlobales/{promoId} {
@@ -557,7 +557,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('promociones_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -571,7 +571,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('productos_editar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     match /liquidaciones/{liquidacionId} {
@@ -581,7 +581,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('repartidores_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     match /abonos/{abonoId} {
@@ -591,7 +591,7 @@ service cloud.firestore {
       allow create, update, delete: if hasPermission('apartados_gestionar') &&
                                       (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
-                                      (request.resource == null || isNotChangingTenant());
+                                      (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     match /historial_cargues/{cargueId} {
