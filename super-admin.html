@@ -168,11 +168,65 @@
               <input type="text" class="form-control" id="empresa-slug" placeholder="Ej: fabrica" pattern="[a-z0-9-]+" required>
               <small class="text-muted">Solo minúsculas, números y guiones — es el mismo valor que <code>window.expectedTenantId</code> declara en cada admin.html.</small>
             </div>
+            <div class="mb-3">
+              <label class="form-label">Nombre corto (para el menú lateral del panel)</label>
+              <input type="text" class="form-control" id="empresa-nombre-corto" placeholder="Ej: Fábrica">
+            </div>
+            <div class="row g-3">
+              <div class="col-7">
+                <label class="form-label">Logo (URL de imagen)</label>
+                <input type="url" class="form-control" id="empresa-logo" placeholder="https://...">
+                <small class="text-muted">Vacío = usa el logo genérico.</small>
+              </div>
+              <div class="col-5">
+                <label class="form-label">Color de marca</label>
+                <input type="color" class="form-control form-control-color w-100" id="empresa-color" value="#5b6b8c">
+              </div>
+            </div>
           </form>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-primary" id="btn-guardar-empresa">Crear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Editar Empresa (nombre, marca y color; el identificador no se puede cambiar) -->
+  <div class="modal fade" id="modalEditarEmpresa" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar empresa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-editar-empresa">
+            <input type="hidden" id="editar-empresa-id">
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control" id="editar-empresa-nombre" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nombre corto (para el menú lateral del panel)</label>
+              <input type="text" class="form-control" id="editar-empresa-nombre-corto">
+            </div>
+            <div class="row g-3">
+              <div class="col-7">
+                <label class="form-label">Logo (URL de imagen)</label>
+                <input type="url" class="form-control" id="editar-empresa-logo" placeholder="https://...">
+              </div>
+              <div class="col-5">
+                <label class="form-label">Color de marca</label>
+                <input type="color" class="form-control form-control-color w-100" id="editar-empresa-color">
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btn-guardar-edicion-empresa">Guardar cambios</button>
         </div>
       </div>
     </div>
