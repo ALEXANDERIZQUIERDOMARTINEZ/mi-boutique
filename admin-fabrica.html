@@ -64,6 +64,9 @@
                 <a class="rail-link" href="#registrar-venta" data-tooltip="Registrar Venta" data-permiso="ventas_crear">
                     <i class="bi bi-plus-circle"></i><span>Registrar Venta</span>
                 </a>
+                <a class="rail-link" href="#clientes-fabrica" data-tooltip="Clientes" data-permiso="clientes_ver">
+                    <i class="bi bi-people"></i><span>Clientes</span>
+                </a>
             </div>
             <div class="rail-group">
                 <span class="rail-group-label">Catálogo</span>
@@ -705,6 +708,41 @@
             </div><!-- /fab-resultados -->
         </div>
 
+        <!-- ══ CLIENTES ══ -->
+        <div class="tab-pane fade" id="clientes-fabrica">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h1 class="h2 mb-0"><i class="bi bi-people me-2"></i>Clientes</h1>
+                <button class="btn btn-primary" id="clifab-btn-nuevo">
+                    <i class="bi bi-plus-lg me-2"></i>Nuevo
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-white border-0 pt-3">
+                    <input type="search" class="form-control" id="clifab-search" placeholder="Buscar por nombre, cédula/NIT o celular...">
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="px-4">Nombre</th>
+                                    <th>Cédula/NIT</th>
+                                    <th>Celular</th>
+                                    <th>Dirección</th>
+                                    <th>Última compra</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clifab-tabla-body">
+                                <tr><td colspan="6" class="text-center text-muted py-5">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ══ USUARIOS ══ -->
         <div class="tab-pane fade" id="usuarios">
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
@@ -772,6 +810,145 @@
             <span>Más</span>
         </button>
     </nav>
+
+    <!-- Modal: Nuevo/editar cliente -->
+    <div class="modal fade" id="clifabModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="clifabModalTitle">Nuevo Cliente</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="clifabForm">
+                        <input type="hidden" id="clifab-id">
+                        <div class="mb-3">
+                            <label for="clifab-cedula" class="form-label">Cédula/NIT:</label>
+                            <input type="text" class="form-control" id="clifab-cedula">
+                        </div>
+                        <div class="mb-3">
+                            <label for="clifab-nombre" class="form-label">Nombre:</label>
+                            <input type="text" class="form-control" id="clifab-nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="clifab-celular" class="form-label">Celular:</label>
+                            <input type="tel" class="form-control" id="clifab-celular" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="clifab-direccion" class="form-label">Dirección:</label>
+                            <input type="text" class="form-control" id="clifab-direccion">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="clifabForm" class="btn btn-primary" id="clifab-btn-guardar">
+                        <i class="bi bi-save me-2"></i>Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de cliente -->
+    <div class="modal fade" id="clifabDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5 text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar Cliente</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar a:</p>
+                    <p><strong id="clifab-delete-name"></strong></p>
+                    <small class="text-muted">Esta acción no se puede deshacer.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="clifab-confirm-delete-btn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Historial de compras de un cliente -->
+    <div class="modal fade" id="clifabHistoryModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-clock-history me-2"></i>Historial de Compras - <span id="clifab-history-name"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-cash-stack text-success" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Total Comprado</h6>
+                                    <h4 class="mb-0 text-success" id="clifab-total-spent">$0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-cart-check text-primary" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Total Compras</h6>
+                                    <h4 class="mb-0 text-primary" id="clifab-total-purchases">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-calendar-event text-info" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Última Compra</h6>
+                                    <h6 class="mb-0 text-info" id="clifab-last-purchase">-</h6>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-graph-up text-warning" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Ticket Promedio</h6>
+                                    <h4 class="mb-0 text-warning" id="clifab-avg-ticket">$0</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Productos</th>
+                                    <th>Total</th>
+                                    <th>Método Pago</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clifab-history-list">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal: Nuevo/editar usuario -->
     <div class="modal fade" id="usuarioModal" tabindex="-1" aria-labelledby="usuarioModalTitle" aria-hidden="true">
@@ -1219,7 +1396,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.6.0"></script>
+    <script type="module" src="admin-fabrica.js?v=1.7.0"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.2.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->

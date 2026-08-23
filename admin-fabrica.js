@@ -867,6 +867,235 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 })();
 
 // ========================================================================
+// ✅ SECCIÓN: CLIENTES — clientes mayoristas propios de Fábrica. Misma
+// colección compartida 'clientes' que usa Registrar Venta, filtrada por
+// tenantId === 'fabrica' (igual que ya hace la búsqueda de cliente ahí).
+// ========================================================================
+(() => {
+    const tbody = document.getElementById('clifab-tabla-body');
+    const form = document.getElementById('clifabForm');
+    if (!tbody || !form) return;
+
+    const clientesCollection = collection(db, 'clientes');
+    const searchInput = document.getElementById('clifab-search');
+    const btnNuevo = document.getElementById('clifab-btn-nuevo');
+    const modalTitle = document.getElementById('clifabModalTitle');
+    const idInput = document.getElementById('clifab-id');
+    const cedulaInput = document.getElementById('clifab-cedula');
+    const nombreInput = document.getElementById('clifab-nombre');
+    const celularInput = document.getElementById('clifab-celular');
+    const direccionInput = document.getElementById('clifab-direccion');
+    const btnConfirmDelete = document.getElementById('clifab-confirm-delete-btn');
+
+    let clientes = [];
+    let idPendienteEliminar = null;
+
+    function getModal(id) {
+        const el = document.getElementById(id);
+        return bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el);
+    }
+
+    function renderTabla() {
+        const texto = (searchInput.value || '').trim().toLowerCase();
+        const filtrados = clientes.filter(c => {
+            if (!texto) return true;
+            return (c.nombre || '').toLowerCase().includes(texto) ||
+                   (c.cedula || '').toLowerCase().includes(texto) ||
+                   (c.celular || '').toLowerCase().includes(texto);
+        });
+
+        if (!filtrados.length) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-5">No hay clientes registrados</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtrados.map(c => `
+            <tr data-id="${c.id}">
+                <td class="px-4">${c.nombre || ''}</td>
+                <td>${c.cedula || '-'}</td>
+                <td>${c.celular || '-'}</td>
+                <td>${c.direccion || '-'}</td>
+                <td>${c.ultimaCompra?.toDate ? c.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-secondary clifab-btn-historial" title="Historial de compras"><i class="bi bi-clock-history"></i></button>
+                    <button class="btn btn-sm btn-outline-primary clifab-btn-editar" title="Editar"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger clifab-btn-eliminar" title="Eliminar"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>`).join('');
+    }
+
+    async function cargarClientes() {
+        try {
+            const snap = await getDocs(query(clientesCollection, where('tenantId', '==', 'fabrica'), orderBy('nombre')));
+            clientes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderTabla();
+        } catch (error) {
+            console.error('Error al cargar clientes de fábrica:', error);
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-5">Error al cargar: ${error.message}</td></tr>`;
+        }
+    }
+
+    searchInput.addEventListener('input', renderTabla);
+
+    function abrirModalNuevo() {
+        form.reset();
+        idInput.value = '';
+        modalTitle.textContent = 'Nuevo Cliente';
+        getModal('clifabModal').show();
+    }
+    btnNuevo.addEventListener('click', abrirModalNuevo);
+
+    tbody.addEventListener('click', (e) => {
+        const tr = e.target.closest('tr');
+        if (!tr) return;
+        const cliente = clientes.find(c => c.id === tr.dataset.id);
+        if (!cliente) return;
+
+        if (e.target.closest('.clifab-btn-editar')) {
+            idInput.value = cliente.id;
+            cedulaInput.value = cliente.cedula || '';
+            nombreInput.value = cliente.nombre || '';
+            celularInput.value = cliente.celular || '';
+            direccionInput.value = cliente.direccion || '';
+            modalTitle.textContent = 'Editar Cliente';
+            getModal('clifabModal').show();
+        }
+
+        if (e.target.closest('.clifab-btn-eliminar')) {
+            idPendienteEliminar = cliente.id;
+            document.getElementById('clifab-delete-name').textContent = cliente.nombre || '';
+            getModal('clifabDeleteModal').show();
+        }
+
+        if (e.target.closest('.clifab-btn-historial')) {
+            mostrarHistorialCliente(cliente.nombre || '');
+        }
+    });
+
+    if (btnConfirmDelete) {
+        btnConfirmDelete.addEventListener('click', async () => {
+            if (!idPendienteEliminar) return;
+            try {
+                await deleteDoc(doc(db, 'clientes', idPendienteEliminar));
+                showToast('Cliente eliminado', 'success');
+                getModal('clifabDeleteModal').hide();
+                idPendienteEliminar = null;
+                cargarClientes();
+            } catch (error) {
+                console.error('Error al eliminar cliente:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        });
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nombre = nombreInput.value.trim();
+        const celular = celularInput.value.trim();
+        if (!nombre || !celular) {
+            showToast('Nombre y celular son requeridos', 'warning');
+            return;
+        }
+
+        const id = idInput.value;
+        const datos = {
+            nombre,
+            cedula: cedulaInput.value.trim(),
+            celular,
+            direccion: direccionInput.value.trim()
+        };
+
+        try {
+            if (id) {
+                await updateDoc(doc(db, 'clientes', id), datos);
+                showToast('Cliente actualizado', 'success');
+            } else {
+                await addDoc(clientesCollection, { ...datos, tenantId: 'fabrica', ultimaCompra: null });
+                showToast('Cliente guardado', 'success');
+            }
+            getModal('clifabModal').hide();
+            form.reset();
+            cargarClientes();
+        } catch (error) {
+            console.error('Error al guardar cliente:', error);
+            showToast(`Error: ${error.message}`, 'error');
+        }
+    });
+
+    async function mostrarHistorialCliente(clienteNombre) {
+        getModal('clifabHistoryModal').show();
+        document.getElementById('clifab-history-name').textContent = clienteNombre;
+        const historyList = document.getElementById('clifab-history-list');
+        historyList.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></td></tr>`;
+
+        try {
+            const q = query(ventasCollection, where('tenantId', '==', 'fabrica'), where('clienteNombre', '==', clienteNombre));
+            const snap = await getDocs(q);
+
+            if (snap.empty) {
+                historyList.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">Este cliente no tiene compras registradas</td></tr>`;
+                document.getElementById('clifab-total-spent').textContent = '$0';
+                document.getElementById('clifab-total-purchases').textContent = '0';
+                document.getElementById('clifab-last-purchase').textContent = '-';
+                document.getElementById('clifab-avg-ticket').textContent = '$0';
+                return;
+            }
+
+            const ventas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            ventas.sort((a, b) => {
+                const fa = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(0);
+                const fb = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(0);
+                return fb - fa;
+            });
+
+            const totalGastado = ventas.reduce((s, v) => s + (v.totalVenta || 0), 0);
+            const totalCompras = ventas.length;
+            const ticketPromedio = totalCompras > 0 ? totalGastado / totalCompras : 0;
+            const fechaUltima = ventas[0]?.timestamp?.toDate ? ventas[0].timestamp.toDate() : null;
+
+            document.getElementById('clifab-total-spent').textContent = formatoMonedaDashboard.format(totalGastado);
+            document.getElementById('clifab-total-purchases').textContent = totalCompras;
+            document.getElementById('clifab-last-purchase').textContent = fechaUltima ? fechaUltima.toLocaleDateString('es-CO') : '-';
+            document.getElementById('clifab-avg-ticket').textContent = formatoMonedaDashboard.format(ticketPromedio);
+
+            historyList.innerHTML = ventas.map(venta => {
+                const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate().toLocaleDateString('es-CO') : '-';
+                const productos = venta.items?.length || 0;
+                const productosTexto = productos === 1 ? '1 producto' : `${productos} productos`;
+                let metodoPago = 'Transferencia';
+                if (venta.pagoEfectivo > 0 && venta.pagoTransferencia > 0) metodoPago = 'Mixto';
+                else if (venta.pagoEfectivo > 0) metodoPago = 'Efectivo';
+                const estado = venta.estado || 'Completada';
+                const estadoBadge = estado === 'Pendiente' ? 'bg-warning' : ((estado === 'Anulada' || estado === 'Cancelada') ? 'bg-danger' : 'bg-success');
+                return `
+                    <tr>
+                        <td>${fecha}</td>
+                        <td>${productosTexto}</td>
+                        <td class="fw-bold">${formatoMonedaDashboard.format(venta.totalVenta || 0)}</td>
+                        <td>${metodoPago}</td>
+                        <td><span class="badge ${estadoBadge}">${estado}</span></td>
+                    </tr>`;
+            }).join('');
+        } catch (error) {
+            console.error('Error al cargar historial de cliente:', error);
+            historyList.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">Error al cargar historial</td></tr>`;
+        }
+    }
+
+    const tabLink = document.querySelector('a[href="#clientes-fabrica"]');
+    if (tabLink) tabLink.addEventListener('click', cargarClientes);
+    window.addEventListener('hashchange', () => {
+        if ((window.location.hash || '') === '#clientes-fabrica') cargarClientes();
+    });
+    window.addEventListener('admin:section-shown', (e) => {
+        if (e.detail && e.detail.hash === '#clientes-fabrica') cargarClientes();
+    });
+    if ((window.location.hash || '') === '#clientes-fabrica') cargarClientes();
+
+    console.log("✅ Módulo Clientes Fábrica inicializado");
+})();
+
+// ========================================================================
 // ✅ SECCIÓN: PRODUCTOS FÁBRICA — catálogo propio, independiente de Boutique
 // ========================================================================
 (() => {
