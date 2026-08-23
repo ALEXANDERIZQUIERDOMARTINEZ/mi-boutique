@@ -3697,14 +3697,17 @@ body.dark-mode .esp-empty { border-color: var(--border-subtle); }
   .fin2-table-title { font-size: 0.82rem; }
   .fin2-table thead th { padding: 0.55rem 0.7rem; font-size: 0.67rem; }
   .fin2-table td { padding: 0.6rem 0.7rem; font-size: 0.8rem; }
-  /* Ocultar Costo y Precio venta en móvil — quedan: Producto, Cant, Util/und, Util total */
-  .fin2-table thead th:nth-child(2),
-  .fin2-table tbody td:nth-child(2),
-  .fin2-table thead th:nth-child(3),
-  .fin2-table tbody td:nth-child(3) { display: none; }
+  /* Ocultar Costo y Precio venta en móvil — quedan: Producto, Cant, Util/und, Util total.
+     Solo aplica a la tabla "Detalle por producto" de Finanzas: las demás tablas
+     .fin2-table (Productos Fábrica, Inventario, Movimientos, etc.) tienen columnas
+     distintas y no deben perder su Nombre/Foto en móvil. */
+  .fin2-table-detalle-producto thead th:nth-child(2),
+  .fin2-table-detalle-producto tbody td:nth-child(2),
+  .fin2-table-detalle-producto thead th:nth-child(3),
+  .fin2-table-detalle-producto tbody td:nth-child(3) { display: none; }
   .fin2-table tfoot td { padding: 0.6rem 0.7rem; font-size: 0.8rem; }
   /* Footer: ocultar col de Costo y Precio también */
-  .fin2-tfoot-row td:nth-child(2) { display: none; }
+  .fin2-table-detalle-producto .fin2-tfoot-row td:nth-child(2) { display: none; }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
