@@ -228,8 +228,11 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════
 
     match /auditoria/{logId} {
-      // Leer: solo quien tenga el permiso explícito de auditoría
-      allow read: if hasPermission('auditoria_ver');
+      // Leer: solo quien tenga el permiso explícito de auditoría, y solo del
+      // propio tenant (los registros sin tenantId son de antes de que
+      // existiera Fábrica, se tratan como visibles para compatibilidad)
+      allow read: if hasPermission('auditoria_ver') &&
+                    (!resource.data.keys().hasAny(['tenantId']) || belongsToTenant(resource.data.tenantId));
 
       // Crear: cualquier usuario activo puede dejar su propio registro,
       // pero solo puede firmarlo como sí mismo (no puede suplantar a otro
@@ -356,15 +359,10 @@ service cloud.firestore {
       // para el filtro por categoría — mismo criterio que productos.
       allow read: if true;
 
-      // Crear: Con tenantId correcto
-      allow create: if hasPermission('categorias_gestionar') &&
-                      hasRequiredTenantId() &&
-                      isCreatingWithCorrectTenant();
-
-      // Actualizar y eliminar: Solo del mismo tenant
-      allow update, delete: if hasPermission('categorias_gestionar') &&
-                              belongsToTenant(resource.data.tenantId) &&
-                              isNotChangingTenant();
+      // Taxonomía compartida entre TODOS los tenants a propósito (Boutique y
+      // Fábrica usan la misma lista de categorías) — los documentos nunca
+      // llevan tenantId, así que basta el permiso, sin validar tenant.
+      allow create, update, delete: if hasPermission('categorias_gestionar');
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -615,6 +613,17 @@ service cloud.firestore {
                     belongsToTenant(resource.data.tenantId);
 
       allow create: if hasPermission('productos_importar') &&
+                      hasRequiredTenantId() &&
+                      isCreatingWithCorrectTenant();
+
+      allow update, delete: if isSuperAdmin();
+    }
+
+    match /historial_cargues_fabrica/{cargueId} {
+      allow read: if hasPermission('inventario_fabrica_gestionar') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      allow create: if hasPermission('inventario_fabrica_gestionar') &&
                       hasRequiredTenantId() &&
                       isCreatingWithCorrectTenant();
 

@@ -64,6 +64,9 @@
                 <a class="rail-link" href="#registrar-venta" data-tooltip="Registrar Venta" data-permiso="ventas_crear">
                     <i class="bi bi-plus-circle"></i><span>Registrar Venta</span>
                 </a>
+                <a class="rail-link" href="#clientes-fabrica" data-tooltip="Clientes" data-permiso="clientes_ver">
+                    <i class="bi bi-people"></i><span>Clientes</span>
+                </a>
             </div>
             <div class="rail-group">
                 <span class="rail-group-label">Catálogo</span>
@@ -73,11 +76,31 @@
                 <a class="rail-link" href="#inventario-fabrica" data-tooltip="Inventario" data-permiso="inventario_fabrica_gestionar">
                     <i class="bi bi-boxes"></i><span>Inventario (materia prima)</span>
                 </a>
+                <a class="rail-link" href="#categorias-fabrica" data-tooltip="Categorías" data-permiso="categorias_gestionar">
+                    <i class="bi bi-tags"></i><span>Categorías</span>
+                </a>
+                <a class="rail-link" href="#cargue-masivo-fabrica" data-tooltip="Cargue Masivo" data-permiso="inventario_fabrica_gestionar">
+                    <i class="bi bi-file-earmark-excel"></i><span>Cargue Masivo</span>
+                </a>
+                <a class="rail-link" href="#etiquetas-fabrica" data-tooltip="Etiquetas" data-permiso="inventario_fabrica_gestionar">
+                    <i class="bi bi-upc-scan"></i><span>Etiquetas</span>
+                </a>
             </div>
             <div class="rail-group">
                 <span class="rail-group-label">Finanzas</span>
                 <a class="rail-link" href="#fabrica" data-tooltip="Gastos e Ingresos" data-permiso="fabrica_gestionar">
                     <i class="bi bi-cash-coin"></i><span>Gastos e Ingresos</span>
+                </a>
+            </div>
+
+            <!-- Configuración: cuenta, sistema y accesos -->
+            <div class="rail-group">
+                <span class="rail-group-label">Configuración</span>
+                <a class="rail-link" href="#usuarios" data-tooltip="Usuarios" data-permiso="usuarios_ver">
+                    <i class="bi bi-person-badge"></i><span>Usuarios</span>
+                </a>
+                <a class="rail-link" href="#auditoria" data-tooltip="Auditoría" data-permiso="auditoria_ver">
+                    <i class="bi bi-clock-history"></i><span>Auditoría</span>
                 </a>
             </div>
         </nav>
@@ -697,6 +720,464 @@
             </div><!-- /fab-resultados -->
         </div>
 
+        <!-- ══ ETIQUETAS ══ -->
+        <div class="tab-pane fade" id="etiquetas-fabrica">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1 class="h2 mb-0">Etiquetas de Productos</h1>
+            </div>
+            <p class="text-muted mb-3">Genera e imprime etiquetas con código QR para pegar en cada producto. El QR codifica la referencia del producto.</p>
+
+            <div class="card mb-3">
+                <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Configuración de la etiqueta</h3></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="etqfab-tamano" class="form-label">Tamaño de etiqueta:</label>
+                            <select class="form-select" id="etqfab-tamano">
+                                <option value="50x25x3">50 × 25 mm — 3 por fila (hoja adhesiva)</option>
+                                <option value="40x30x3">40 × 30 mm — 3 por fila (hoja adhesiva)</option>
+                                <option value="30x20x4">30 × 20 mm — 4 por fila (hoja adhesiva)</option>
+                                <option value="50x25x1">50 × 25 mm — 1 por fila (rollo térmico)</option>
+                                <option value="40x25x1">40 × 25 mm — 1 por fila (rollo térmico)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label d-block">Incluir en la etiqueta:</label>
+                            <div class="d-flex flex-wrap gap-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="etqfab-campo-nombre" checked>
+                                    <label class="form-check-label" for="etqfab-campo-nombre">Nombre</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="etqfab-campo-referencia" checked>
+                                    <label class="form-check-label" for="etqfab-campo-referencia">Referencia</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="etqfab-campo-talla" checked>
+                                    <label class="form-check-label" for="etqfab-campo-talla">Talla / Color</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="etqfab-campo-precio" checked>
+                                    <label class="form-check-label" for="etqfab-campo-precio">Precio</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="inv-filters-block">
+                <div class="inv-filters-grid">
+                    <div class="inv-search-wrap">
+                        <span class="inv-search-icon"><i class="bi bi-search"></i></span>
+                        <input type="search" id="etqfab-search" class="inv-search-input" placeholder="Buscar por nombre o referencia...">
+                    </div>
+                    <select id="etqfab-filter-categoria" class="inv-select">
+                        <option value="">Todas las categorías</option>
+                    </select>
+                    <div class="inv-filters-row2">
+                        <button type="button" id="etqfab-select-all-btn" class="inv-clear-btn"><i class="bi bi-check2-square me-1"></i>Seleccionar todo</button>
+                        <button type="button" id="etqfab-clear-selection-btn" class="inv-clear-btn"><i class="bi bi-x-circle me-1"></i>Limpiar selección</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tbl-wrap">
+                <div class="tbl-head">
+                    <span class="tbl-title"><i class="bi bi-qr-code"></i>Selecciona productos y cantidades</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:36px;"><input type="checkbox" class="form-check-input" id="etqfab-check-header"></th>
+                                <th>Producto</th>
+                                <th>Referencia</th>
+                                <th>Precio</th>
+                                <th>Tallas / Colores (cantidad de etiquetas)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="etqfab-tabla-body">
+                            <tr><td colspan="5" class="text-center text-muted">Cargando productos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 mb-4 p-3 bg-white border rounded">
+                <span class="fw-bold"><span id="etqfab-contador">0</span> etiqueta(s) seleccionada(s)</span>
+                <button type="button" class="btn btn-primary" id="etqfab-btn-imprimir" disabled>
+                    <i class="bi bi-printer me-1"></i>Imprimir Etiquetas
+                </button>
+            </div>
+        </div>
+
+        <!-- ══ CARGUE MASIVO ══ -->
+        <div class="tab-pane fade" id="cargue-masivo-fabrica">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0"><i class="bi bi-file-earmark-excel me-2"></i>Cargue Masivo de Productos</h1>
+            </div>
+
+            <!-- PASO 1: SUBIR ARCHIVO -->
+            <div id="cmfab-paso-subir" class="cargue-paso active">
+                <div class="card shadow-sm">
+                    <div class="card-body p-5 text-center">
+                        <div class="mb-4"><i class="bi bi-cloud-upload text-primary" style="font-size: 4rem;"></i></div>
+                        <h3 class="mb-3">Paso 1: Subir Archivo Excel</h3>
+                        <p class="text-muted mb-4">
+                            Sube un archivo .xlsx o .csv con tus productos.
+                            La primera fila debe contener los encabezados obligatorios.
+                        </p>
+                        <div class="alert alert-info text-start mb-4">
+                            <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Formato del Excel</h6>
+                            <p class="mb-2"><strong>Columnas obligatorias (primera fila):</strong></p>
+                            <code class="d-block bg-white p-2 rounded mb-2">
+                                nombre | categoria | precio_mayor | talla | color | cantidad
+                            </code>
+                            <p class="mb-2 mt-2"><strong>Columnas opcionales:</strong></p>
+                            <code class="d-block bg-white p-2 rounded mb-3">
+                                codigo | descripcion | costo | grupo_mayorista
+                            </code>
+                            <div class="alert alert-success mb-2">
+                                <strong>✨ Campo CÓDIGO (Recomendado)</strong>
+                                <small class="d-block mt-1">
+                                    • Incluye el <strong>código</strong> del producto existente para actualizar sus variaciones<br>
+                                    • Si incluyes código, NO se crearán duplicados<br>
+                                    • Puedes encontrar el código en la lista de productos<br>
+                                    • Si no incluyes código, el sistema lo generará automáticamente
+                                </small>
+                            </div>
+                            <small class="text-muted d-block">
+                                • Si no incluyes <strong>costo</strong>, se calculará automáticamente como el 50% del precio_mayor<br>
+                                • Si no incluyes <strong>descripcion</strong>, quedará vacía<br>
+                                • Cada fila representa una variación del producto<br>
+                                • Los campos vacíos en talla/color se permiten para productos sin variaciones<br>
+                                • Los nombres de columnas no distinguen mayúsculas/minúsculas
+                            </small>
+                        </div>
+                        <input type="file" id="cmfab-input-archivo" accept=".xlsx,.xls,.csv" style="display: none;">
+                        <button type="button" class="btn btn-primary btn-lg" id="cmfab-btn-seleccionar-archivo">
+                            <i class="bi bi-folder2-open me-2"></i>Seleccionar Archivo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 2: VISTA PREVIA Y EDICIÓN -->
+            <div id="cmfab-paso-vista-previa" class="cargue-paso" style="display: none;">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-table me-2"></i>Paso 2: Vista Previa y Validación</h5>
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary me-2" id="cmfab-btn-cancelar">
+                                <i class="bi bi-x-circle me-1"></i>Cancelar
+                            </button>
+                            <button type="button" class="btn btn-success" id="cmfab-btn-procesar-datos" disabled>
+                                <i class="bi bi-check-circle me-1"></i>Procesar Datos
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-3 bg-light border-bottom">
+                            <div class="row">
+                                <div class="col-md-3"><small class="text-muted d-block">Archivo:</small><strong id="cmfab-nombre-archivo">-</strong></div>
+                                <div class="col-md-3"><small class="text-muted d-block">Total Filas:</small><strong id="cmfab-total-filas">0</strong></div>
+                                <div class="col-md-3"><small class="text-muted d-block">Filas Válidas:</small><strong class="text-success" id="cmfab-filas-validas">0</strong></div>
+                                <div class="col-md-3"><small class="text-muted d-block">Filas con Errores:</small><strong class="text-danger" id="cmfab-filas-errores">0</strong></div>
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="max-height: 600px; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;">
+                            <table class="table table-hover table-sm mb-0" id="cmfab-tabla-vista-previa">
+                                <thead class="sticky-top bg-white" style="top: 0; z-index: 10;">
+                                    <tr>
+                                        <th width="40">#</th>
+                                        <th>Nombre</th>
+                                        <th>Descripción</th>
+                                        <th>Categoría</th>
+                                        <th width="100">Costo</th>
+                                        <th width="100">P. Mayor</th>
+                                        <th width="80">Talla</th>
+                                        <th width="80">Color</th>
+                                        <th width="80">Cantidad</th>
+                                        <th width="60">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cmfab-tbody-vista-previa"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 3: CONFIRMACIÓN Y DUPLICADOS -->
+            <div id="cmfab-paso-confirmacion" class="cargue-paso" style="display: none;">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Paso 3: Confirmación y Duplicados</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-4">
+                            <h6 class="alert-heading">Resumen de Productos Procesados</h6>
+                            <div class="row mt-3">
+                                <div class="col-md-4"><small class="text-muted d-block">Total Productos:</small><strong id="cmfab-resumen-total-productos">0</strong></div>
+                                <div class="col-md-4"><small class="text-muted d-block">Total Variaciones:</small><strong id="cmfab-resumen-total-variaciones">0</strong></div>
+                                <div class="col-md-4"><small class="text-muted d-block">Total Unidades:</small><strong id="cmfab-resumen-total-unidades">0</strong></div>
+                            </div>
+                        </div>
+
+                        <div id="cmfab-seccion-advertencias" style="display: none;">
+                            <div class="alert alert-danger">
+                                <h6 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>⚠️ Advertencia: Posibles Duplicados</h6>
+                                <p class="mb-0">Los siguientes productos del Excel tienen el mismo nombre que productos existentes, pero diferente categoría:</p>
+                            </div>
+                            <div id="cmfab-lista-advertencias" class="mb-4"></div>
+                        </div>
+
+                        <div id="cmfab-seccion-duplicados" style="display: none;">
+                            <div class="alert alert-warning">
+                                <h6 class="alert-heading"><i class="bi bi-exclamation-circle me-2"></i>Productos Duplicados Detectados</h6>
+                                <p class="mb-0">Los siguientes productos ya existen en el catálogo. Selecciona una acción:</p>
+                            </div>
+                            <div id="cmfab-lista-duplicados" class="mb-4"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary" id="cmfab-btn-volver-edicion">
+                                <i class="bi bi-arrow-left me-1"></i>Volver a Editar
+                            </button>
+                            <button type="button" class="btn btn-success btn-lg" id="cmfab-btn-confirmar-carga">
+                                <i class="bi bi-check-circle me-2"></i>Confirmar Carga al Inventario
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LOADER ANIMADO -->
+            <div id="cmfab-loader" class="cargue-loader" style="display: none;">
+                <div class="loader-content">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 4rem; height: 4rem;">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <h4 id="cmfab-loader-mensaje">Procesando...</h4>
+                    <div class="progress mt-3" style="height: 30px; width: 300px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="cmfab-loader-progreso" style="width: 0%;">
+                            <span id="cmfab-loader-porcentaje">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ CATEGORÍAS ══ -->
+        <div class="tab-pane fade" id="categorias-fabrica">
+            <h1 class="h2"><i class="bi bi-tags me-2"></i>Categorías</h1>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Agregar</h3></div>
+                        <div class="card-body">
+                            <form id="catfab-form">
+                                <div class="mb-3">
+                                    <label for="catfab-nombre" class="form-label">Nombre:</label>
+                                    <input type="text" id="catfab-nombre" class="form-control" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Guardar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Existentes</h3></div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush" id="catfab-lista">
+                                <li class="list-group-item text-muted">Cargando...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ CLIENTES ══ -->
+        <div class="tab-pane fade" id="clientes-fabrica">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h1 class="h2 mb-0"><i class="bi bi-people me-2"></i>Clientes</h1>
+                <button class="btn btn-primary" id="clifab-btn-nuevo">
+                    <i class="bi bi-plus-lg me-2"></i>Nuevo
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-white border-0 pt-3">
+                    <input type="search" class="form-control" id="clifab-search" placeholder="Buscar por nombre, cédula/NIT o celular...">
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="px-4">Nombre</th>
+                                    <th>Cédula/NIT</th>
+                                    <th>Celular</th>
+                                    <th>Dirección</th>
+                                    <th>Última compra</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clifab-tabla-body">
+                                <tr><td colspan="6" class="text-center text-muted py-5">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ USUARIOS ══ -->
+        <div class="tab-pane fade" id="usuarios">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h1 class="h2 mb-0"><i class="bi bi-person-badge me-2"></i>Usuarios</h1>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-danger" id="btn-cerrar-todas-sesiones" data-roles="ADMIN,SUPER_ADMIN" title="Fuerza a todos los usuarios (incluido tú) a volver a iniciar sesión, incluso en dispositivos ya conectados">
+                        <i class="bi bi-shield-lock me-2"></i>Cerrar todas las sesiones
+                    </button>
+                    <button class="btn btn-primary" id="btn-add-usuario">
+                        <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-white border-0 pt-3">
+                    <input type="search" class="form-control" id="search-usuarios" placeholder="Buscar por nombre, correo o rol...">
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="px-4">Nombre</th>
+                                    <th>Correo</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th>Último acceso</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usuarios-table-body">
+                                <tr><td colspan="6" class="text-center text-muted py-5">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ AUDITORÍA ══ -->
+        <div class="tab-pane fade" id="auditoria">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0"><i class="bi bi-clock-history me-2"></i>Auditoría</h1>
+                <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Historial de quién hizo qué y cuándo</small>
+            </div>
+
+            <div class="alert alert-info d-flex align-items-start mb-4">
+                <i class="bi bi-lightbulb-fill fs-4 me-3"></i>
+                <div>
+                    <h6 class="alert-heading mb-2">¿Para qué sirve esta sección?</h6>
+                    <p class="mb-0 small">
+                        Aquí queda registrado quién creó, editó, eliminó o anuló cada producto, venta o usuario.
+                        Usa los filtros para ver solo lo que necesitas: por ejemplo, quién agregó o eliminó un
+                        producto, quién registró una venta, o quién editó un usuario.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Módulo</label>
+                            <select id="auditoria-filtro-modulo" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                <option value="producto">Productos</option>
+                                <option value="venta">Ventas</option>
+                                <option value="usuario">Usuarios</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Acción</label>
+                            <select id="auditoria-filtro-accion" class="form-select form-select-sm">
+                                <option value="">Todas</option>
+                                <option value="crear">Creación</option>
+                                <option value="editar">Edición</option>
+                                <option value="eliminar">Eliminación</option>
+                                <option value="anular">Anulación</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Usuario</label>
+                            <select id="auditoria-filtro-usuario" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Desde</label>
+                            <input type="date" id="auditoria-filtro-desde" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Hasta</label>
+                            <input type="date" id="auditoria-filtro-hasta" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <label class="form-label small mb-1">Buscar</label>
+                            <input type="text" id="auditoria-filtro-busqueda" class="form-control form-control-sm" placeholder="Producto, cliente...">
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="button" id="auditoria-btn-filtrar" class="btn btn-sm btn-primary">
+                            <i class="bi bi-funnel me-1"></i>Filtrar
+                        </button>
+                        <button type="button" id="auditoria-btn-limpiar" class="btn btn-sm btn-outline-secondary">
+                            Limpiar
+                        </button>
+                        <button type="button" id="auditoria-btn-exportar" class="btn btn-sm btn-outline-success ms-auto">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Exportar a Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Usuario</th>
+                                    <th>Acción</th>
+                                    <th>Módulo</th>
+                                    <th>Elemento</th>
+                                    <th>Detalle</th>
+                                    <th class="text-center">Más</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditoria-tabla-body">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-center border-0 pb-4">
+                    <button type="button" id="auditoria-btn-cargar-mas" class="btn btn-sm btn-outline-primary" style="display:none;">
+                        Cargar más registros
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div><!-- /tab-content -->
 
     </div><!-- /admin-content-wrapper -->
@@ -724,6 +1205,304 @@
             <span>Más</span>
         </button>
     </nav>
+
+    <!-- Modal: Detalle de un registro de Auditoría -->
+    <div class="modal fade" id="auditoriaDetalleModal" tabindex="-1" aria-labelledby="auditoriaDetalleModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="auditoriaDetalleModalTitle"><i class="bi bi-clock-history me-2"></i>Detalle del registro</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="auditoria-detalle-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Editar categoría -->
+    <div class="modal fade" id="catfabEditModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5">Editar Categoría</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="catfab-edit-form">
+                        <input type="hidden" id="catfab-edit-id">
+                        <div class="mb-3">
+                            <label for="catfab-edit-nombre" class="form-label">Nuevo Nombre:</label>
+                            <input type="text" id="catfab-edit-nombre" class="form-control" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="catfab-edit-form" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de categoría -->
+    <div class="modal fade" id="catfabDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5 text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar Categoría</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar:</p>
+                    <p><strong id="catfab-delete-name"></strong></p>
+                    <small class="text-muted">Esta acción no se puede deshacer.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="catfab-confirm-delete-btn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Nuevo/editar cliente -->
+    <div class="modal fade" id="clifabModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="clifabModalTitle">Nuevo Cliente</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="clifabForm">
+                        <input type="hidden" id="clifab-id">
+                        <div class="mb-3">
+                            <label for="clifab-cedula" class="form-label">Cédula/NIT:</label>
+                            <input type="text" class="form-control" id="clifab-cedula">
+                        </div>
+                        <div class="mb-3">
+                            <label for="clifab-nombre" class="form-label">Nombre:</label>
+                            <input type="text" class="form-control" id="clifab-nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="clifab-celular" class="form-label">Celular:</label>
+                            <input type="tel" class="form-control" id="clifab-celular" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="clifab-direccion" class="form-label">Dirección:</label>
+                            <input type="text" class="form-control" id="clifab-direccion">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="clifabForm" class="btn btn-primary" id="clifab-btn-guardar">
+                        <i class="bi bi-save me-2"></i>Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de cliente -->
+    <div class="modal fade" id="clifabDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5 text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar Cliente</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar a:</p>
+                    <p><strong id="clifab-delete-name"></strong></p>
+                    <small class="text-muted">Esta acción no se puede deshacer.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="clifab-confirm-delete-btn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Historial de compras de un cliente -->
+    <div class="modal fade" id="clifabHistoryModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-clock-history me-2"></i>Historial de Compras - <span id="clifab-history-name"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-cash-stack text-success" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Total Comprado</h6>
+                                    <h4 class="mb-0 text-success" id="clifab-total-spent">$0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-cart-check text-primary" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Total Compras</h6>
+                                    <h4 class="mb-0 text-primary" id="clifab-total-purchases">0</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-calendar-event text-info" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Última Compra</h6>
+                                    <h6 class="mb-0 text-info" id="clifab-last-purchase">-</h6>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <i class="bi bi-graph-up text-warning" style="font-size: 2rem;"></i>
+                                    <h6 class="mt-2 mb-1 text-muted">Ticket Promedio</h6>
+                                    <h4 class="mb-0 text-warning" id="clifab-avg-ticket">$0</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Productos</th>
+                                    <th>Total</th>
+                                    <th>Método Pago</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clifab-history-list">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Nuevo/editar usuario -->
+    <div class="modal fade" id="usuarioModal" tabindex="-1" aria-labelledby="usuarioModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="usuarioModalTitle"><i class="bi bi-person-plus me-2"></i>Nuevo Usuario</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-usuario">
+                        <input type="hidden" id="usuario-mode" value="add">
+                        <input type="hidden" id="usuario-id" value="">
+
+                        <div class="mb-3">
+                            <label for="usuario-nombre" class="form-label">Nombre:</label>
+                            <input type="text" class="form-control" id="usuario-nombre" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="usuario-email" class="form-label">Correo electrónico:</label>
+                            <input type="email" class="form-control" id="usuario-email" required>
+                        </div>
+
+                        <div class="mb-3" id="password-group">
+                            <label for="usuario-password" class="form-label">Contraseña:</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="usuario-password" minlength="6">
+                                <button class="btn btn-outline-secondary" type="button" id="toggle-password"><i class="bi bi-eye"></i></button>
+                            </div>
+                            <small class="text-muted">Mínimo 6 caracteres.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="usuario-rol" class="form-label">Rol:</label>
+                            <select class="form-select" id="usuario-rol" required>
+                                <option value="">Selecciona un rol...</option>
+                                <option value="SUPER_ADMIN">Sistema (Super Administrador)</option>
+                                <option value="ADMIN">Administrador</option>
+                                <option value="VENDEDOR">Vendedor (registra ventas)</option>
+                                <option value="INVENTARIO">Inventario (registra productos)</option>
+                                <option value="CONTADOR">Contador</option>
+                                <option value="REPARTIDOR">Repartidor</option>
+                                <option value="VISUALIZADOR">Visualizador (solo lectura)</option>
+                                <option value="PERSONALIZADO">Personalizado</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3" id="rol-description" style="display:none;">
+                            <div class="alert alert-secondary mb-0">
+                                <ul class="mb-0 small" id="rol-description-list">
+                                    <li>Selecciona un rol para ver su descripción</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="permisos-personalizados" style="display:none;">
+                            <label class="form-label">Módulos a los que tiene acceso:</label>
+                            <div id="permisos-personalizados-lista" class="border rounded p-3" style="max-height:320px; overflow-y:auto;"></div>
+                        </div>
+
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="usuario-activo" checked>
+                            <label class="form-check-label" for="usuario-activo">Usuario activo</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-usuario" class="btn btn-primary" id="btn-save-usuario">
+                        <i class="bi bi-save me-2"></i>Guardar Usuario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de usuario -->
+    <div class="modal fade" id="deleteUsuarioModal" tabindex="-1" aria-labelledby="deleteUsuarioModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5 text-danger" id="deleteUsuarioModalTitle"><i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar Usuario</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar a:</p>
+                    <p><strong id="delete-usuario-name"></strong></p>
+                    <small class="text-muted">Esta acción no se puede deshacer. El usuario perderá acceso al panel de inmediato.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-usuario">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
         <!-- Modal: Buscar/crear cliente -->
         <div class="modal fade" id="fvSearchClientModal" tabindex="-1">

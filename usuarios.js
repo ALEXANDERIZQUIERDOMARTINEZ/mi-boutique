@@ -7,7 +7,12 @@ import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/9.6
 import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js';
-import { registrarAuditoria } from './auditoria.js';
+// La versión debe coincidir con el <script type="module" src="auditoria.js?v=..."> de
+// admin.html / admin-fabrica.html: un specifier de import distinto (con o sin query
+// string distinta) hace que el navegador cargue auditoria.js como un módulo aparte,
+// con su propio estado y sus propios listeners de 'adminAuthReady' — eso duplicaba
+// filas y manejadores de clic en la sección Auditoría.
+import { registrarAuditoria } from './auditoria.js?v=1.0.1';
 
 // Referencias globales
 let usuariosCollection;
@@ -99,11 +104,22 @@ const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
  * dispositivo, no solo en el que lo generó, y también en localStorage como
  * caché rápida. Solo se ejecuta si el usuario actual pudo leer la colección
  * 'usuarios' (ya filtrado por las Security Rules).
+ *
+ * Este mismo módulo se usa desde admin.html (Boutique) y admin-fabrica.html
+ * (Fábrica), y el documento config/directorio_usuarios es ÚNICO y
+ * compartido entre ambos paneles (login.html es la misma página para
+ * cualquier empresa). loadUsuarios() solo trae los usuarios del tenant de
+ * quien tiene la sesión abierta (así lo filtran las Security Rules), así
+ * que NUNCA se puede sobrescribir el documento completo — eso borraría el
+ * directorio del otro tenant. Se guarda como un mapa por tenantId y se
+ * fusiona con lo que ya había, preservando el formato antiguo (un arreglo
+ * plano, de antes de que existiera Fábrica) como el bucket "boutique".
  */
 async function actualizarDirectorioLocal(usuarios) {
     const directorio = usuarios
         .filter(u => u.activo)
         .map(u => ({ uid: u.id, nombre: u.nombre, email: u.email }));
+    const tenantId = window.expectedTenantId || 'boutique';
 
     try {
         localStorage.setItem(DIRECTORIO_KEY, JSON.stringify(directorio));
@@ -112,8 +128,14 @@ async function actualizarDirectorioLocal(usuarios) {
     }
 
     try {
-        await setDoc(doc(db, 'config', 'directorio_usuarios'), {
-            usuarios: directorio,
+        const ref = doc(db, 'config', 'directorio_usuarios');
+        const actual = await getDoc(ref);
+        const dataActual = actual.exists() ? actual.data().usuarios : null;
+        const porTenant = Array.isArray(dataActual) ? { boutique: dataActual } : (dataActual || {});
+        porTenant[tenantId] = directorio;
+
+        await setDoc(ref, {
+            usuarios: porTenant,
             updatedAt: serverTimestamp()
         });
     } catch (e) {

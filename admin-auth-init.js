@@ -6,7 +6,11 @@
  */
 
 import { AuthManager } from './auth.js';
-import { initUsuariosManager } from './usuarios.js';
+// Versionado por lo mismo que auditoria.js más abajo: usuarios.js no tiene
+// ninguna otra referencia versionada en el proyecto, así que Vercel puede
+// servir una copia vieja en caché (max-age=3600) hasta una hora después de
+// cada cambio. Bump este número cuando usuarios.js cambie.
+import { initUsuariosManager } from './usuarios.js?v=1.1.0';
 import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js';
 
 function ocultarGate() {

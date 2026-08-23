@@ -531,7 +531,13 @@
 
         // 2) Confirmar contra Firestore (fuente real, funciona en cualquier dispositivo)
         getDoc(DIRECTORIO_DOC).then(snap => {
-            const usuarios = snap.exists() ? (snap.data().usuarios || []) : [];
+            // El documento guarda un mapa por tenantId ({ boutique: [...], fabrica: [...] })
+            // desde que existe más de una empresa — este selector es el mismo para
+            // cualquier empresa, así que se combinan todos los tenants en una sola
+            // lista. Se conserva el formato antiguo (arreglo plano) por compatibilidad
+            // con lo que ya hubiera guardado antes de esa migración.
+            const data = snap.exists() ? snap.data().usuarios : null;
+            const usuarios = Array.isArray(data) ? data : Object.values(data || {}).flat();
             localStorage.setItem(DIRECTORIO_KEY, JSON.stringify(usuarios));
             poblarUserSelect(usuarios, { esDefinitivo: true });
         }).catch(error => {
