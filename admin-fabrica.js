@@ -128,10 +128,10 @@ const ventasCollection = collection(db, 'ventas');
 const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 // ========================================================================
-// ✅ SECCIÓN: DASHBOARD FÁBRICA — misma estructura que el de Boutique, pero
-// leyendo solo lo propio de Fábrica (productosFabrica, ventas con
-// tenantId === 'fabrica'). Sin Apartados/Promociones/Repartidores: no
-// aplican al negocio de Fábrica.
+// ✅ SECCIÓN: DASHBOARD FÁBRICA — pantalla de inicio estilo app móvil (saludo
+// + cuadrícula de accesos directos). Solo pinta la fecha del saludo; la
+// navegación de las tarjetas la maneja el script inline de
+// admin-fabrica.html (showSection/markActive), igual que el sidebar.
 // ========================================================================
 (() => {
     const dashboardDateEl = document.getElementById('dashboard-date');
@@ -140,137 +140,6 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     dashboardDateEl.textContent = new Date().toLocaleDateString('es-CO', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
-
-    const STOCK_MINIMO_DASHBOARD = 2; // mismo criterio que el Dashboard de Boutique
-
-    function stockTotalProducto(producto) {
-        return (producto.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-    }
-
-    async function calcularProductosFabrica() {
-        try {
-            const snapshot = await getDocs(productosFabricaCollection);
-            let totalProductos = 0, disponibles = 0, inversionTotal = 0, valorPotencialMayor = 0, totalUnidades = 0, bajoStockCount = 0;
-
-            snapshot.forEach(docSnap => {
-                const producto = docSnap.data();
-                totalProductos++;
-                if (producto.visible) disponibles++;
-
-                const costoCompra = parseFloat(producto.costoCompra) || 0;
-                const precioMayor = parseFloat(producto.precioMayor) || 0;
-                const stock = stockTotalProducto(producto);
-
-                inversionTotal += costoCompra * stock;
-                valorPotencialMayor += precioMayor * stock;
-                totalUnidades += stock;
-
-                if (producto.visible && stock > 0 && stock <= STOCK_MINIMO_DASHBOARD) bajoStockCount++;
-            });
-
-            document.getElementById('fdb-total-productos').textContent = totalProductos;
-            document.getElementById('fdb-productos-disponibles').textContent = `${disponibles} disponibles`;
-
-            const bajoStockEl = document.getElementById('fdb-bajo-stock');
-            bajoStockEl.textContent = bajoStockCount;
-            bajoStockEl.classList.remove('text-warning', 'text-success');
-            bajoStockEl.classList.add(bajoStockCount > 0 ? 'text-warning' : 'text-success');
-
-            document.getElementById('fdb-inversion-inventario').textContent = formatoMonedaDashboard.format(inversionTotal);
-            document.getElementById('fdb-inventario-unidades').textContent = `${totalUnidades} unidades`;
-
-            // "Utilidad potencial": lo que se ganaría si se vendiera todo el
-            // stock actual al precio mayorista, menos lo que costó producirlo.
-            const utilidadPotencial = valorPotencialMayor - inversionTotal;
-            const margen = inversionTotal > 0 ? (utilidadPotencial / inversionTotal) * 100 : 0;
-            document.getElementById('fdb-utilidad-potencial').textContent = formatoMonedaDashboard.format(utilidadPotencial);
-            document.getElementById('fdb-margen-utilidad').innerHTML = `<i class="bi bi-percent"></i> ${margen.toFixed(1)}% de margen`;
-        } catch (error) {
-            console.error('Error al calcular productos del dashboard de fábrica:', error);
-        }
-    }
-
-    function obtenerRangoFechasDashboard(rango) {
-        const inicio = new Date();
-        inicio.setHours(0, 0, 0, 0);
-        if (rango === 'week') {
-            const dia = inicio.getDay();
-            inicio.setDate(inicio.getDate() - (dia === 0 ? 6 : dia - 1));
-        } else if (rango === 'month') {
-            inicio.setDate(1);
-        } else if (rango === 'year') {
-            inicio.setMonth(0, 1);
-        }
-        const fin = new Date();
-        fin.setDate(fin.getDate() + 1);
-        fin.setHours(0, 0, 0, 0);
-        return { inicio, fin };
-    }
-
-    const ETIQUETAS_RANGO_DASHBOARD = {
-        today: 'Ventas hoy', week: 'Ventas esta semana', month: 'Ventas este mes', year: 'Ventas este año'
-    };
-
-    async function calcularVentasFabrica(rango) {
-        const tituloEl = document.getElementById('fdb-ventas-periodo-title');
-        if (tituloEl) tituloEl.textContent = ETIQUETAS_RANGO_DASHBOARD[rango] || 'Ventas hoy';
-
-        try {
-            const { inicio, fin } = obtenerRangoFechasDashboard(rango);
-            // Solo lo propio de Fábrica: tenantId === 'fabrica'. Necesita el
-            // mismo índice compuesto (tenantId + timestamp) que
-            // productosFabrica/inventarioFabrica — si Firestore lo pide, es
-            // normal, se crea igual desde el link que da la consola.
-            const q = query(
-                ventasCollection,
-                where('tenantId', '==', 'fabrica'),
-                where('timestamp', '>=', Timestamp.fromDate(inicio)),
-                where('timestamp', '<', Timestamp.fromDate(fin)),
-                orderBy('timestamp', 'desc')
-            );
-            const snapshot = await getDocs(q);
-
-            let totalRecibido = 0;
-            let ventasContadas = 0;
-            snapshot.forEach(docSnap => {
-                const venta = docSnap.data();
-                const estado = venta.estado || '';
-                if (estado === 'Anulada' || estado === 'Cancelada') return;
-                totalRecibido += (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
-                ventasContadas++;
-            });
-
-            document.getElementById('fdb-ventas-periodo').textContent = formatoMonedaDashboard.format(totalRecibido);
-            document.getElementById('fdb-ventas-count').textContent = `${ventasContadas} ${ventasContadas === 1 ? 'venta' : 'ventas'}`;
-            // "Ganancia real": plata que realmente entró (efectivo + transferencia),
-            // sin restar costos — mismo criterio que el Dashboard de Boutique.
-            document.getElementById('fdb-ganancia-real').textContent = formatoMonedaDashboard.format(totalRecibido);
-        } catch (error) {
-            console.error('Error al calcular ventas del dashboard de fábrica:', error);
-            const el = document.getElementById('fdb-ventas-periodo');
-            if (el) el.textContent = 'Error';
-        }
-    }
-
-    document.querySelectorAll('#dashboard .db2-range-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('#dashboard .db2-range-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            calcularVentasFabrica(btn.dataset.range);
-        });
-    });
-
-    let dashboardYaCargado = false;
-    function cargarDashboardSiCorresponde() {
-        if ((window.location.hash || '#dashboard') !== '#dashboard') return;
-        dashboardYaCargado = true;
-        calcularProductosFabrica();
-        calcularVentasFabrica('today');
-    }
-
-    window.addEventListener('hashchange', cargarDashboardSiCorresponde);
-    window.addEventListener('admin:section-shown', cargarDashboardSiCorresponde);
-    if (!dashboardYaCargado) cargarDashboardSiCorresponde();
 })();
 
 // ========================================================================

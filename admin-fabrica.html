@@ -178,80 +178,69 @@
     <div class="tab-content">
 
         <!-- ═══════════════════════════════════════════════════════════════════
-             SECCIÓN: DASHBOARD FÁBRICA — misma estructura visual que el de
-             Boutique (reutiliza las mismas clases de admin-styles.css), sin
-             Apartados/Promociones/Repartidores porque no aplican al negocio
-             de Fábrica.
+             SECCIÓN: DASHBOARD FÁBRICA — pantalla de inicio estilo app móvil:
+             tarjeta de saludo + cuadrícula de accesos directos a cada sección
+             (mismo destino que los enlaces del sidebar, reutilizando
+             showSection()/markActive()). Usa clases propias (.db-greeting-*,
+             .db-menu-*) que no tocan .db-stat-strip/.db-compare de
+             admin-styles.css porque admin.html (Boutique) sigue usándolas.
              ═══════════════════════════════════════════════════════════════════ -->
         <div class="tab-pane fade show active" id="dashboard">
-            <div class="db-head">
-                <div class="db-head-left">
-                    <span class="db-eyebrow">Panel general</span>
-                    <h1 class="db-title">Dashboard</h1>
-                    <span class="db-date" id="dashboard-date"></span>
-                </div>
-                <div class="db2-time-range">
-                    <button class="db2-range-btn active" data-range="today">Hoy</button>
-                    <button class="db2-range-btn" data-range="week">Semana</button>
-                    <button class="db2-range-btn" data-range="month">Mes</button>
-                    <button class="db2-range-btn" data-range="year">Año</button>
-                </div>
-            </div>
-
             <section class="db-section">
-                <div class="db-panel db-stat-strip">
-                    <div class="db-stat">
-                        <div class="db-stat-icon fin2-skpi-icon--blue"><i class="bi bi-boxes"></i></div>
-                        <div class="db-stat-body">
-                            <div class="db-stat-val" id="fdb-total-productos">0</div>
-                            <div class="db-stat-name">Productos</div>
-                            <div class="db-stat-sub" id="fdb-productos-disponibles">0 disponibles</div>
-                        </div>
+                <div class="db-greeting-card">
+                    <div class="db-greeting-avatar">
+                        <img src="icon.svg" alt="Mishell's Fábrica">
                     </div>
-                    <div class="db-stat">
-                        <div class="db-stat-icon fin2-skpi-icon--amber"><i class="bi bi-exclamation-triangle-fill"></i></div>
-                        <div class="db-stat-body">
-                            <div class="db-stat-val" id="fdb-bajo-stock">0</div>
-                            <div class="db-stat-name">Bajo stock</div>
-                            <div class="db-stat-sub">2 unidades o menos</div>
-                        </div>
-                    </div>
-                    <div class="db-stat">
-                        <div class="db-stat-icon fin2-skpi-icon--slate"><i class="bi bi-box-seam-fill"></i></div>
-                        <div class="db-stat-body">
-                            <div class="db-stat-val" id="fdb-inversion-inventario">$0</div>
-                            <div class="db-stat-name">Inversión inventario</div>
-                            <div class="db-stat-sub" id="fdb-inventario-unidades">0 unidades</div>
-                        </div>
+                    <div class="db-greeting-body">
+                        <span class="db-greeting-hello">Hola, <span id="db-greeting-name">Administrador</span> 👋</span>
+                        <span class="db-greeting-store">Mishell's Fábrica</span>
+                        <span class="db-greeting-date" id="dashboard-date"></span>
                     </div>
                 </div>
             </section>
 
             <section class="db-section">
-                <div class="db-panel db-compare">
-                    <div class="db-panel-head">
-                        <span class="db-panel-title">Ventas</span>
-                    </div>
-                    <div class="db-compare-grid">
-                        <div class="db-compare-col">
-                            <div class="db-compare-kpis">
-                                <div class="db-compare-kpi">
-                                    <span class="db-compare-kpi-label" id="fdb-ventas-periodo-title">Ventas hoy</span>
-                                    <span class="db-compare-kpi-val" id="fdb-ventas-periodo">$0</span>
-                                    <span class="db-compare-kpi-sub" id="fdb-ventas-count">0 ventas</span>
-                                </div>
-                                <div class="db-compare-kpi">
-                                    <span class="db-compare-kpi-label">Ganancia real</span>
-                                    <span class="db-compare-kpi-val" id="fdb-ganancia-real">$0</span>
-                                </div>
-                                <div class="db-compare-kpi">
-                                    <span class="db-compare-kpi-label">Utilidad potencial</span>
-                                    <span class="db-compare-kpi-val" id="fdb-utilidad-potencial">$0</span>
-                                    <span class="db-compare-kpi-sub" id="fdb-margen-utilidad">0% de margen</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="db-menu-grid">
+                    <a href="#registrar-venta" class="db-menu-tile" data-permiso="ventas_crear">
+                        <span class="db-menu-tile-icon fin2-skpi-icon--green"><i class="bi bi-plus-circle"></i></span>
+                        <span class="db-menu-tile-label">Registrar Venta</span>
+                    </a>
+                    <a href="#clientes-fabrica" class="db-menu-tile" data-permiso="clientes_ver">
+                        <span class="db-menu-tile-icon fin2-skpi-icon--amber"><i class="bi bi-people"></i></span>
+                        <span class="db-menu-tile-label">Clientes</span>
+                    </a>
+                    <a href="#productos-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
+                        <span class="db-menu-tile-icon fin2-skpi-icon--purple"><i class="bi bi-grid-3x3-gap"></i></span>
+                        <span class="db-menu-tile-label">Productos</span>
+                    </a>
+                    <a href="#inventario-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
+                        <span class="db-menu-tile-icon fin2-skpi-icon--blue"><i class="bi bi-boxes"></i></span>
+                        <span class="db-menu-tile-label">Inventario</span>
+                    </a>
+                    <a href="#categorias-fabrica" class="db-menu-tile" data-permiso="categorias_gestionar">
+                        <span class="db-menu-tile-icon fin2-skpi-icon--pink"><i class="bi bi-tags"></i></span>
+                        <span class="db-menu-tile-label">Categorías</span>
+                    </a>
+                    <a href="#cargue-masivo-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
+                        <span class="db-menu-tile-icon fin2-skpi-icon--slate"><i class="bi bi-file-earmark-excel"></i></span>
+                        <span class="db-menu-tile-label">Cargue Masivo</span>
+                    </a>
+                    <a href="#etiquetas-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
+                        <span class="db-menu-tile-icon fin2-skpi-icon--green"><i class="bi bi-upc-scan"></i></span>
+                        <span class="db-menu-tile-label">Etiquetas</span>
+                    </a>
+                    <a href="#fabrica" class="db-menu-tile" data-permiso="fabrica_gestionar">
+                        <span class="db-menu-tile-icon fin2-skpi-icon--fabrica"><i class="bi bi-cash-coin"></i></span>
+                        <span class="db-menu-tile-label">Gastos e Ingresos</span>
+                    </a>
+                    <a href="#usuarios" class="db-menu-tile" data-permiso="usuarios_ver">
+                        <span class="db-menu-tile-icon fin2-skpi-icon--purple"><i class="bi bi-person-badge"></i></span>
+                        <span class="db-menu-tile-label">Usuarios</span>
+                    </a>
+                    <a href="#auditoria" class="db-menu-tile" data-permiso="auditoria_ver">
+                        <span class="db-menu-tile-icon fin2-skpi-icon--slate"><i class="bi bi-clock-history"></i></span>
+                        <span class="db-menu-tile-label">Auditoría</span>
+                    </a>
                 </div>
             </section>
         </div>
@@ -1898,7 +1887,7 @@
             window.adminShowSection = showSection;
             window.adminMarkActive  = markActive;
 
-            document.querySelectorAll('.rail-link[href^="#"]').forEach(function(link) {
+            document.querySelectorAll('.rail-link[href^="#"], .db-menu-tile[href^="#"]').forEach(function(link) {
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
                     var hash = this.getAttribute('href');
