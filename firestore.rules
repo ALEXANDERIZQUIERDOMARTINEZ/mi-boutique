@@ -616,6 +616,17 @@ service cloud.firestore {
       allow update, delete: if isSuperAdmin();
     }
 
+    match /historial_cargues_fabrica/{cargueId} {
+      allow read: if hasPermission('inventario_fabrica_gestionar') &&
+                    belongsToTenant(resource.data.tenantId);
+
+      allow create: if hasPermission('inventario_fabrica_gestionar') &&
+                      hasRequiredTenantId() &&
+                      isCreatingWithCorrectTenant();
+
+      allow update, delete: if isSuperAdmin();
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     // AUDIT LOGS - SOLO SUPER ADMINS
     // ═══════════════════════════════════════════════════════════════════

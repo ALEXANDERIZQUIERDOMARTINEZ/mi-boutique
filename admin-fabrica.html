@@ -79,6 +79,9 @@
                 <a class="rail-link" href="#categorias-fabrica" data-tooltip="Categorías" data-permiso="categorias_gestionar">
                     <i class="bi bi-tags"></i><span>Categorías</span>
                 </a>
+                <a class="rail-link" href="#cargue-masivo-fabrica" data-tooltip="Cargue Masivo" data-permiso="inventario_fabrica_gestionar">
+                    <i class="bi bi-file-earmark-excel"></i><span>Cargue Masivo</span>
+                </a>
             </div>
             <div class="rail-group">
                 <span class="rail-group-label">Finanzas</span>
@@ -709,6 +712,163 @@
                 </div>
 
             </div><!-- /fab-resultados -->
+        </div>
+
+        <!-- ══ CARGUE MASIVO ══ -->
+        <div class="tab-pane fade" id="cargue-masivo-fabrica">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0"><i class="bi bi-file-earmark-excel me-2"></i>Cargue Masivo de Productos</h1>
+            </div>
+
+            <!-- PASO 1: SUBIR ARCHIVO -->
+            <div id="cmfab-paso-subir" class="cargue-paso active">
+                <div class="card shadow-sm">
+                    <div class="card-body p-5 text-center">
+                        <div class="mb-4"><i class="bi bi-cloud-upload text-primary" style="font-size: 4rem;"></i></div>
+                        <h3 class="mb-3">Paso 1: Subir Archivo Excel</h3>
+                        <p class="text-muted mb-4">
+                            Sube un archivo .xlsx o .csv con tus productos.
+                            La primera fila debe contener los encabezados obligatorios.
+                        </p>
+                        <div class="alert alert-info text-start mb-4">
+                            <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Formato del Excel</h6>
+                            <p class="mb-2"><strong>Columnas obligatorias (primera fila):</strong></p>
+                            <code class="d-block bg-white p-2 rounded mb-2">
+                                nombre | categoria | precio_mayor | talla | color | cantidad
+                            </code>
+                            <p class="mb-2 mt-2"><strong>Columnas opcionales:</strong></p>
+                            <code class="d-block bg-white p-2 rounded mb-3">
+                                codigo | descripcion | costo | grupo_mayorista
+                            </code>
+                            <div class="alert alert-success mb-2">
+                                <strong>✨ Campo CÓDIGO (Recomendado)</strong>
+                                <small class="d-block mt-1">
+                                    • Incluye el <strong>código</strong> del producto existente para actualizar sus variaciones<br>
+                                    • Si incluyes código, NO se crearán duplicados<br>
+                                    • Puedes encontrar el código en la lista de productos<br>
+                                    • Si no incluyes código, el sistema lo generará automáticamente
+                                </small>
+                            </div>
+                            <small class="text-muted d-block">
+                                • Si no incluyes <strong>costo</strong>, se calculará automáticamente como el 50% del precio_mayor<br>
+                                • Si no incluyes <strong>descripcion</strong>, quedará vacía<br>
+                                • Cada fila representa una variación del producto<br>
+                                • Los campos vacíos en talla/color se permiten para productos sin variaciones<br>
+                                • Los nombres de columnas no distinguen mayúsculas/minúsculas
+                            </small>
+                        </div>
+                        <input type="file" id="cmfab-input-archivo" accept=".xlsx,.xls,.csv" style="display: none;">
+                        <button type="button" class="btn btn-primary btn-lg" id="cmfab-btn-seleccionar-archivo">
+                            <i class="bi bi-folder2-open me-2"></i>Seleccionar Archivo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 2: VISTA PREVIA Y EDICIÓN -->
+            <div id="cmfab-paso-vista-previa" class="cargue-paso" style="display: none;">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0"><i class="bi bi-table me-2"></i>Paso 2: Vista Previa y Validación</h5>
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary me-2" id="cmfab-btn-cancelar">
+                                <i class="bi bi-x-circle me-1"></i>Cancelar
+                            </button>
+                            <button type="button" class="btn btn-success" id="cmfab-btn-procesar-datos" disabled>
+                                <i class="bi bi-check-circle me-1"></i>Procesar Datos
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-3 bg-light border-bottom">
+                            <div class="row">
+                                <div class="col-md-3"><small class="text-muted d-block">Archivo:</small><strong id="cmfab-nombre-archivo">-</strong></div>
+                                <div class="col-md-3"><small class="text-muted d-block">Total Filas:</small><strong id="cmfab-total-filas">0</strong></div>
+                                <div class="col-md-3"><small class="text-muted d-block">Filas Válidas:</small><strong class="text-success" id="cmfab-filas-validas">0</strong></div>
+                                <div class="col-md-3"><small class="text-muted d-block">Filas con Errores:</small><strong class="text-danger" id="cmfab-filas-errores">0</strong></div>
+                            </div>
+                        </div>
+                        <div class="table-responsive" style="max-height: 600px; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;">
+                            <table class="table table-hover table-sm mb-0" id="cmfab-tabla-vista-previa">
+                                <thead class="sticky-top bg-white" style="top: 0; z-index: 10;">
+                                    <tr>
+                                        <th width="40">#</th>
+                                        <th>Nombre</th>
+                                        <th>Descripción</th>
+                                        <th>Categoría</th>
+                                        <th width="100">Costo</th>
+                                        <th width="100">P. Mayor</th>
+                                        <th width="80">Talla</th>
+                                        <th width="80">Color</th>
+                                        <th width="80">Cantidad</th>
+                                        <th width="60">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cmfab-tbody-vista-previa"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 3: CONFIRMACIÓN Y DUPLICADOS -->
+            <div id="cmfab-paso-confirmacion" class="cargue-paso" style="display: none;">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Paso 3: Confirmación y Duplicados</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-4">
+                            <h6 class="alert-heading">Resumen de Productos Procesados</h6>
+                            <div class="row mt-3">
+                                <div class="col-md-4"><small class="text-muted d-block">Total Productos:</small><strong id="cmfab-resumen-total-productos">0</strong></div>
+                                <div class="col-md-4"><small class="text-muted d-block">Total Variaciones:</small><strong id="cmfab-resumen-total-variaciones">0</strong></div>
+                                <div class="col-md-4"><small class="text-muted d-block">Total Unidades:</small><strong id="cmfab-resumen-total-unidades">0</strong></div>
+                            </div>
+                        </div>
+
+                        <div id="cmfab-seccion-advertencias" style="display: none;">
+                            <div class="alert alert-danger">
+                                <h6 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>⚠️ Advertencia: Posibles Duplicados</h6>
+                                <p class="mb-0">Los siguientes productos del Excel tienen el mismo nombre que productos existentes, pero diferente categoría:</p>
+                            </div>
+                            <div id="cmfab-lista-advertencias" class="mb-4"></div>
+                        </div>
+
+                        <div id="cmfab-seccion-duplicados" style="display: none;">
+                            <div class="alert alert-warning">
+                                <h6 class="alert-heading"><i class="bi bi-exclamation-circle me-2"></i>Productos Duplicados Detectados</h6>
+                                <p class="mb-0">Los siguientes productos ya existen en el catálogo. Selecciona una acción:</p>
+                            </div>
+                            <div id="cmfab-lista-duplicados" class="mb-4"></div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-outline-secondary" id="cmfab-btn-volver-edicion">
+                                <i class="bi bi-arrow-left me-1"></i>Volver a Editar
+                            </button>
+                            <button type="button" class="btn btn-success btn-lg" id="cmfab-btn-confirmar-carga">
+                                <i class="bi bi-check-circle me-2"></i>Confirmar Carga al Inventario
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LOADER ANIMADO -->
+            <div id="cmfab-loader" class="cargue-loader" style="display: none;">
+                <div class="loader-content">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 4rem; height: 4rem;">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <h4 id="cmfab-loader-mensaje">Procesando...</h4>
+                    <div class="progress mt-3" style="height: 30px; width: 300px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="cmfab-loader-progreso" style="width: 0%;">
+                            <span id="cmfab-loader-porcentaje">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- ══ CATEGORÍAS ══ -->
@@ -1476,7 +1636,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.8.0"></script>
+    <script type="module" src="admin-fabrica.js?v=1.9.0"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.2.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->
