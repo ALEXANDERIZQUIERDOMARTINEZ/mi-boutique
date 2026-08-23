@@ -701,6 +701,30 @@
 
     </div><!-- /admin-content-wrapper -->
 
+    <!-- ══ BOTTOM NAVIGATION — solo móvil ══ -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Navegación principal">
+        <a class="mbn-item active" href="#dashboard" data-section="#dashboard" data-permiso="dashboard_ver">
+            <i class="bi bi-grid-1x2"></i>
+            <span>Inicio</span>
+        </a>
+        <a class="mbn-item" href="#registrar-venta" data-section="#registrar-venta" data-permiso="ventas_crear">
+            <i class="bi bi-plus-circle"></i>
+            <span>Venta</span>
+        </a>
+        <a class="mbn-item" href="#productos-fabrica" data-section="#productos-fabrica" data-permiso="inventario_fabrica_gestionar">
+            <i class="bi bi-grid"></i>
+            <span>Productos</span>
+        </a>
+        <a class="mbn-item" href="#inventario-fabrica" data-section="#inventario-fabrica" data-permiso="inventario_fabrica_gestionar">
+            <i class="bi bi-boxes"></i>
+            <span>Inventario</span>
+        </a>
+        <button class="mbn-item" id="mbnMore" type="button">
+            <i class="bi bi-list"></i>
+            <span>Más</span>
+        </button>
+    </nav>
+
         <!-- Modal: Buscar/crear cliente -->
         <div class="modal fade" id="fvSearchClientModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -1084,6 +1108,9 @@
                 if (topbarTitle && title) topbarTitle.textContent = title;
                 var mobileTitle = document.getElementById('mobile-section-title');
                 if (mobileTitle && title) mobileTitle.textContent = title;
+                document.querySelectorAll('.mbn-item[data-section]').forEach(function(item) {
+                    item.classList.toggle('active', item.getAttribute('data-section') === h);
+                });
             }
 
             window.adminShowSection = showSection;
@@ -1099,11 +1126,27 @@
                 });
             });
 
+            function openRail() {
+                if (rail)    rail.classList.add('open');
+                if (overlay) overlay.classList.add('show');
+            }
             function closeRail() {
                 if (rail)    rail.classList.remove('open');
                 if (overlay) overlay.classList.remove('show');
             }
             if (overlay) overlay.addEventListener('click', closeRail);
+
+            document.querySelectorAll('.mbn-item[data-section]').forEach(function(item) {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var hash = this.getAttribute('data-section');
+                    showSection(hash);
+                    markActive(hash);
+                });
+            });
+
+            var mbnMore = document.getElementById('mbnMore');
+            if (mbnMore) mbnMore.addEventListener('click', openRail);
 
             var initHash = window.location.hash || '#dashboard';
             showSection(initHash);
