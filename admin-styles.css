@@ -3547,18 +3547,6 @@ body.dark-mode .esp-empty { border-color: var(--border-subtle); }
 .fin2-table td { padding: 0.75rem 1rem; color: var(--text-primary); }
 .fin2-td-nombre { font-weight: 600; }
 .fin2-td-num { font-variant-numeric: tabular-nums; }
-
-/* Columna "Producto" (foto + nombre) fija a la izquierda al hacer scroll
-   horizontal en la tabla de Productos Fábrica, para identificar el
-   producto sin depender de qué tanto se haya desplazado la tabla. */
-.prodfab-table .prodfab-col-producto {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background: var(--surface-raised);
-  min-width: 180px;
-}
-.prodfab-table thead .prodfab-col-producto { z-index: 2; }
 .fin2-table tfoot .fin2-tfoot-row {
   background: var(--surface-base);
   border-top: 2px solid var(--border-default);

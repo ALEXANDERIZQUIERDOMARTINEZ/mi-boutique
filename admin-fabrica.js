@@ -1974,7 +1974,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
         if (!filtrados.length) {
             tbody.innerHTML = `<tr>
-                <td colspan="6" class="fin2-empty-state">
+                <td colspan="7" class="fin2-empty-state">
                     <i class="bi bi-inbox"></i>
                     <span>No hay productos registrados</span>
                 </td>
@@ -1989,12 +1989,8 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             const grupo = p.grupoMayorista ? (WHOLESALE_TIER_GROUPS[p.grupoMayorista]?.label || p.grupoMayorista) : '—';
             const imgSrc = p.imagenUrl || 'https://placehold.co/60x60/f5e8ed/D988B9?text=%20';
             return `<tr>
-                <td class="prodfab-col-producto">
-                    <div class="d-flex align-items-center gap-2">
-                        <img src="${imgSrc}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;">
-                        <span>${p.nombre || ''}${p.visible === false ? ' <span class="badge bg-secondary">Oculto</span>' : ''}</span>
-                    </div>
-                </td>
+                <td><img src="${imgSrc}" alt="${p.nombre || ''}" class="table-product-img"></td>
+                <td class="product-name">${p.nombre || ''}${p.visible === false ? ' <span class="badge bg-secondary">Oculto</span>' : ''}<small class="text-muted d-block">Código: ${p.codigo || p.id.substring(0, 6)}</small></td>
                 <td>${categoriasMap.get(p.categoriaId) || '—'}</td>
                 <td>${grupo}</td>
                 <td class="text-end">${(p.precioMayor || 0).toLocaleString('es-CO')}</td>
@@ -2023,7 +2019,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         } catch (error) {
             console.error('Error al cargar productos de fábrica:', error);
             tbody.innerHTML = `<tr>
-                <td colspan="6" class="fin2-empty-state fin2-negative-text">
+                <td colspan="7" class="fin2-empty-state fin2-negative-text">
                     <i class="bi bi-exclamation-triangle"></i>
                     <span>Error al cargar: ${error.message}</span>
                 </td>
