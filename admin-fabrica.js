@@ -283,6 +283,12 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         return parseFloat((v || '0').toString().replace(/[^\d.-]/g, '')) || 0;
     }
 
+    function puedeHacer(permiso) {
+        if (!window.appContext) return true; // sin contexto = acceso directo, permitir
+        if (window.appContext.isSuperAdmin) return true;
+        return window.appContext.permisos?.[permiso] === true;
+    }
+
     function normalizarVariacion(v) {
         const n = (v || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
         return (n === 'unica' || n === 'unico') ? '' : n;
@@ -566,15 +572,19 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     });
 
     // ── Guardar venta ────────────────────────────────────────────────────
-    async function actualizarStockFabrica(items) {
+    async function actualizarStockFabrica(items, accion = 'restar') {
         if (!items.length) return;
         const batch = writeBatch(db);
         const porProducto = new Map();
+        const itemsOmitidos = [];
 
         for (const item of items) {
             if (!item.productoId) continue;
             const producto = productosCache.find(p => p.id === item.productoId);
-            if (!producto) continue;
+            if (!producto) {
+                itemsOmitidos.push(item.nombre || item.productoId);
+                continue;
+            }
             if (!porProducto.has(item.productoId)) {
                 porProducto.set(item.productoId, JSON.parse(JSON.stringify(producto.variaciones || [])));
             }
@@ -584,7 +594,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 normalizarVariacion(v.color) === normalizarVariacion(item.color)
             );
             if (encontrada) {
-                encontrada.stock = (parseInt(encontrada.stock, 10) || 0) - item.cantidad;
+                const signo = accion === 'restar' ? -1 : 1;
+                encontrada.stock = (parseInt(encontrada.stock, 10) || 0) + signo * item.cantidad;
+            } else {
+                itemsOmitidos.push(item.nombre || item.productoId);
             }
         }
 
@@ -592,6 +605,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             batch.update(doc(db, 'productosFabrica', productoId), { variaciones });
         });
         await batch.commit();
+
+        if (itemsOmitidos.length) {
+            console.warn('Stock no ajustado para:', itemsOmitidos);
+            showToast(`El stock no se ajustó para: ${itemsOmitidos.join(', ')}. Revísalo manualmente.`, 'error');
+        }
     }
 
     form.addEventListener('submit', async (e) => {
@@ -708,6 +726,50 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
     }
 
+    async function anularVentaFabrica(ventaId) {
+        if (!ventaId) return;
+        if (!puedeHacer('ventas_anular')) {
+            showToast('No tienes permisos para anular ventas.', 'error');
+            return;
+        }
+        if (!confirm('¿Estás seguro de que quieres ANULAR esta venta?\nEsta acción repondrá el stock y marcará la venta como "Anulada".')) {
+            return;
+        }
+
+        const ventaRef = doc(db, 'ventas', ventaId);
+        try {
+            const ventaSnap = await getDoc(ventaRef);
+            if (!ventaSnap.exists()) {
+                showToast('Error: No se encontró la venta.', 'error');
+                return;
+            }
+            const ventaData = ventaSnap.data();
+            if (ventaData.estado === 'Anulada' || ventaData.estado === 'Cancelada') {
+                showToast('Esta venta ya ha sido anulada.', 'info');
+                return;
+            }
+
+            await actualizarStockFabrica(ventaData.items || [], 'sumar');
+            await updateDoc(ventaRef, { estado: 'Anulada' });
+
+            showToast('Venta anulada y stock repuesto.', 'info');
+
+            const idx = todasLasVentas.findIndex(v => v.id === ventaId);
+            if (idx !== -1) todasLasVentas[idx].estado = 'Anulada';
+            aplicarFiltrosHistorial();
+        } catch (error) {
+            console.error('Error al anular la venta de fábrica:', error);
+            showToast('Error al anular la venta: ' + error.message, 'error');
+        }
+    }
+
+    document.getElementById('fv-lista-ventas')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-cancel-sale-fabrica');
+        if (!btn) return;
+        const id = btn.closest('.venta-card')?.dataset.id;
+        if (id) anularVentaFabrica(id);
+    });
+
     function aplicarFiltrosHistorial() {
         const listaEl = document.getElementById('fv-lista-ventas');
         const termino = (document.getElementById('fv-filtro-buscar-ventas')?.value || '').trim().toLowerCase();
@@ -761,12 +823,16 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             }).join('')
             : '<span class="text-muted small">Sin productos registrados</span>';
 
+        const estado = v.estado || 'Completada';
+        const estaAnulada = (estado === 'Anulada' || estado === 'Cancelada');
+        const estadoBadgeClass = estaAnulada ? 'bg-danger' : 'bg-success';
+
         return `
-            <div class="venta-card">
+            <div class="venta-card" data-id="${v.id}">
                 <div class="venta-card-head">
                     <div class="venta-card-meta-top">
                         <span class="venta-card-fecha"><i class="bi bi-clock me-1"></i>${fecha}</span>
-                        <span class="badge bg-success">${v.estado || 'Completada'}</span>
+                        <span class="badge ${estadoBadgeClass}">${estado}</span>
                     </div>
                     <div class="venta-card-cliente-row">
                         <span class="venta-card-cliente"><i class="bi bi-person-fill me-1"></i>${v.clienteNombre || 'Cliente General'}</span>
@@ -782,6 +848,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                         <span class="venta-card-total">${formatoMonedaDashboard.format(v.totalVenta || 0)}</span>
                     </div>
                 </div>
+                ${puedeHacer('ventas_anular') ? `
+                <div class="venta-card-actions">
+                    <button class="btn btn-action btn-action-danger btn-cancel-sale-fabrica" title="Anular venta" ${estaAnulada ? 'disabled' : ''}><i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span></button>
+                </div>` : ''}
             </div>`;
     }
 
