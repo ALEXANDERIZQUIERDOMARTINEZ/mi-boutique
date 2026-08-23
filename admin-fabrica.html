@@ -99,6 +99,9 @@
                 <a class="rail-link" href="#usuarios" data-tooltip="Usuarios" data-permiso="usuarios_ver">
                     <i class="bi bi-person-badge"></i><span>Usuarios</span>
                 </a>
+                <a class="rail-link" href="#auditoria" data-tooltip="Auditoría" data-permiso="auditoria_ver">
+                    <i class="bi bi-clock-history"></i><span>Auditoría</span>
+                </a>
             </div>
         </nav>
 
@@ -1072,6 +1075,109 @@
             </div>
         </div>
 
+        <!-- ══ AUDITORÍA ══ -->
+        <div class="tab-pane fade" id="auditoria">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 mb-0"><i class="bi bi-clock-history me-2"></i>Auditoría</h1>
+                <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Historial de quién hizo qué y cuándo</small>
+            </div>
+
+            <div class="alert alert-info d-flex align-items-start mb-4">
+                <i class="bi bi-lightbulb-fill fs-4 me-3"></i>
+                <div>
+                    <h6 class="alert-heading mb-2">¿Para qué sirve esta sección?</h6>
+                    <p class="mb-0 small">
+                        Aquí queda registrado quién creó, editó, eliminó o anuló cada producto, venta o usuario.
+                        Usa los filtros para ver solo lo que necesitas: por ejemplo, quién agregó o eliminó un
+                        producto, quién registró una venta, o quién editó un usuario.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Módulo</label>
+                            <select id="auditoria-filtro-modulo" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                <option value="producto">Productos</option>
+                                <option value="venta">Ventas</option>
+                                <option value="usuario">Usuarios</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Acción</label>
+                            <select id="auditoria-filtro-accion" class="form-select form-select-sm">
+                                <option value="">Todas</option>
+                                <option value="crear">Creación</option>
+                                <option value="editar">Edición</option>
+                                <option value="eliminar">Eliminación</option>
+                                <option value="anular">Anulación</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Usuario</label>
+                            <select id="auditoria-filtro-usuario" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Desde</label>
+                            <input type="date" id="auditoria-filtro-desde" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <label class="form-label small mb-1">Hasta</label>
+                            <input type="date" id="auditoria-filtro-hasta" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-12 col-md-2">
+                            <label class="form-label small mb-1">Buscar</label>
+                            <input type="text" id="auditoria-filtro-busqueda" class="form-control form-control-sm" placeholder="Producto, cliente...">
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="button" id="auditoria-btn-filtrar" class="btn btn-sm btn-primary">
+                            <i class="bi bi-funnel me-1"></i>Filtrar
+                        </button>
+                        <button type="button" id="auditoria-btn-limpiar" class="btn btn-sm btn-outline-secondary">
+                            Limpiar
+                        </button>
+                        <button type="button" id="auditoria-btn-exportar" class="btn btn-sm btn-outline-success ms-auto">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Exportar a Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Usuario</th>
+                                    <th>Acción</th>
+                                    <th>Módulo</th>
+                                    <th>Elemento</th>
+                                    <th>Detalle</th>
+                                    <th class="text-center">Más</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditoria-tabla-body">
+                                <tr><td colspan="7" class="text-center text-muted py-4">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-center border-0 pb-4">
+                    <button type="button" id="auditoria-btn-cargar-mas" class="btn btn-sm btn-outline-primary" style="display:none;">
+                        Cargar más registros
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div><!-- /tab-content -->
 
     </div><!-- /admin-content-wrapper -->
@@ -1099,6 +1205,22 @@
             <span>Más</span>
         </button>
     </nav>
+
+    <!-- Modal: Detalle de un registro de Auditoría -->
+    <div class="modal fade" id="auditoriaDetalleModal" tabindex="-1" aria-labelledby="auditoriaDetalleModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="auditoriaDetalleModalTitle"><i class="bi bi-clock-history me-2"></i>Detalle del registro</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="auditoria-detalle-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal: Editar categoría -->
     <div class="modal fade" id="catfabEditModal" tabindex="-1" aria-hidden="true">
@@ -1732,7 +1854,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
     <script type="module" src="admin-fabrica.js?v=1.10.0"></script>
-    <script type="module" src="admin-fabrica-auth-init.js?v=1.2.0"></script>
+    <script type="module" src="admin-fabrica-auth-init.js?v=1.3.0"></script>
+    <script type="module" src="auditoria.js?v=1.0.1"></script>
     <script src="etiquetas-fabrica.js?v=1.0.0" defer></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->

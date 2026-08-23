@@ -3,8 +3,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase
 import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 // Import Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
-// Import Auditoría (registro de quién crea/edita/elimina)
-import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js";
+// Import Auditoría (registro de quién crea/edita/elimina). La versión debe
+// coincidir con el <script type="module" src="auditoria.js?v=..."> de
+// admin.html y con el import de usuarios.js: un specifier distinto hace que
+// el navegador cargue auditoria.js como un módulo aparte, con su propio
+// estado y sus propios listeners de 'adminAuthReady' — duplicaba filas y
+// manejadores de clic en la sección Auditoría.
+import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js?v=1.0.1";
 import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin } from "./wholesale-tiers.js";
 import { resolveTenant } from "./src/core/tenant-resolver.js";
 

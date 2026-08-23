@@ -228,8 +228,11 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════
 
     match /auditoria/{logId} {
-      // Leer: solo quien tenga el permiso explícito de auditoría
-      allow read: if hasPermission('auditoria_ver');
+      // Leer: solo quien tenga el permiso explícito de auditoría, y solo del
+      // propio tenant (los registros sin tenantId son de antes de que
+      // existiera Fábrica, se tratan como visibles para compatibilidad)
+      allow read: if hasPermission('auditoria_ver') &&
+                    (!resource.data.keys().hasAny(['tenantId']) || belongsToTenant(resource.data.tenantId));
 
       // Crear: cualquier usuario activo puede dejar su propio registro,
       // pero solo puede firmarlo como sí mismo (no puede suplantar a otro
