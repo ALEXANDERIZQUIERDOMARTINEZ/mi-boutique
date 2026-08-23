@@ -80,6 +80,14 @@
                     <i class="bi bi-cash-coin"></i><span>Gastos e Ingresos</span>
                 </a>
             </div>
+
+            <!-- Configuración: cuenta, sistema y accesos -->
+            <div class="rail-group">
+                <span class="rail-group-label">Configuración</span>
+                <a class="rail-link" href="#usuarios" data-tooltip="Usuarios" data-permiso="usuarios_ver">
+                    <i class="bi bi-person-badge"></i><span>Usuarios</span>
+                </a>
+            </div>
         </nav>
 
         <!-- Pie del sidebar: Dark mode + Perfil -->
@@ -697,6 +705,46 @@
             </div><!-- /fab-resultados -->
         </div>
 
+        <!-- ══ USUARIOS ══ -->
+        <div class="tab-pane fade" id="usuarios">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h1 class="h2 mb-0"><i class="bi bi-person-badge me-2"></i>Usuarios</h1>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-danger" id="btn-cerrar-todas-sesiones" data-roles="ADMIN,SUPER_ADMIN" title="Fuerza a todos los usuarios (incluido tú) a volver a iniciar sesión, incluso en dispositivos ya conectados">
+                        <i class="bi bi-shield-lock me-2"></i>Cerrar todas las sesiones
+                    </button>
+                    <button class="btn btn-primary" id="btn-add-usuario">
+                        <i class="bi bi-person-plus me-2"></i>Nuevo Usuario
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-white border-0 pt-3">
+                    <input type="search" class="form-control" id="search-usuarios" placeholder="Buscar por nombre, correo o rol...">
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="px-4">Nombre</th>
+                                    <th>Correo</th>
+                                    <th>Rol</th>
+                                    <th>Estado</th>
+                                    <th>Último acceso</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usuarios-table-body">
+                                <tr><td colspan="6" class="text-center text-muted py-5">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div><!-- /tab-content -->
 
     </div><!-- /admin-content-wrapper -->
@@ -724,6 +772,103 @@
             <span>Más</span>
         </button>
     </nav>
+
+    <!-- Modal: Nuevo/editar usuario -->
+    <div class="modal fade" id="usuarioModal" tabindex="-1" aria-labelledby="usuarioModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="usuarioModalTitle"><i class="bi bi-person-plus me-2"></i>Nuevo Usuario</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-usuario">
+                        <input type="hidden" id="usuario-mode" value="add">
+                        <input type="hidden" id="usuario-id" value="">
+
+                        <div class="mb-3">
+                            <label for="usuario-nombre" class="form-label">Nombre:</label>
+                            <input type="text" class="form-control" id="usuario-nombre" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="usuario-email" class="form-label">Correo electrónico:</label>
+                            <input type="email" class="form-control" id="usuario-email" required>
+                        </div>
+
+                        <div class="mb-3" id="password-group">
+                            <label for="usuario-password" class="form-label">Contraseña:</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="usuario-password" minlength="6">
+                                <button class="btn btn-outline-secondary" type="button" id="toggle-password"><i class="bi bi-eye"></i></button>
+                            </div>
+                            <small class="text-muted">Mínimo 6 caracteres.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="usuario-rol" class="form-label">Rol:</label>
+                            <select class="form-select" id="usuario-rol" required>
+                                <option value="">Selecciona un rol...</option>
+                                <option value="SUPER_ADMIN">Sistema (Super Administrador)</option>
+                                <option value="ADMIN">Administrador</option>
+                                <option value="VENDEDOR">Vendedor (registra ventas)</option>
+                                <option value="INVENTARIO">Inventario (registra productos)</option>
+                                <option value="CONTADOR">Contador</option>
+                                <option value="REPARTIDOR">Repartidor</option>
+                                <option value="VISUALIZADOR">Visualizador (solo lectura)</option>
+                                <option value="PERSONALIZADO">Personalizado</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3" id="rol-description" style="display:none;">
+                            <div class="alert alert-secondary mb-0">
+                                <ul class="mb-0 small" id="rol-description-list">
+                                    <li>Selecciona un rol para ver su descripción</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="permisos-personalizados" style="display:none;">
+                            <label class="form-label">Módulos a los que tiene acceso:</label>
+                            <div id="permisos-personalizados-lista" class="border rounded p-3" style="max-height:320px; overflow-y:auto;"></div>
+                        </div>
+
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="usuario-activo" checked>
+                            <label class="form-check-label" for="usuario-activo">Usuario activo</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" form="form-usuario" class="btn btn-primary" id="btn-save-usuario">
+                        <i class="bi bi-save me-2"></i>Guardar Usuario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de usuario -->
+    <div class="modal fade" id="deleteUsuarioModal" tabindex="-1" aria-labelledby="deleteUsuarioModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5 text-danger" id="deleteUsuarioModalTitle"><i class="bi bi-exclamation-triangle-fill me-2"></i>Eliminar Usuario</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar a:</p>
+                    <p><strong id="delete-usuario-name"></strong></p>
+                    <small class="text-muted">Esta acción no se puede deshacer. El usuario perderá acceso al panel de inmediato.</small>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-usuario">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
         <!-- Modal: Buscar/crear cliente -->
         <div class="modal fade" id="fvSearchClientModal" tabindex="-1">
@@ -1075,7 +1220,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
     <script type="module" src="admin-fabrica.js?v=1.6.0"></script>
-    <script type="module" src="admin-fabrica-auth-init.js?v=1.1.0"></script>
+    <script type="module" src="admin-fabrica-auth-init.js?v=1.2.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->
     <script>

@@ -1,13 +1,14 @@
 /**
  * admin-fabrica-auth-init.js - Guard de acceso para admin-fabrica.html
- * Misma lógica que admin-auth-init.js (verifica sesión real contra
- * Firestore, no solo sessionStorage, y oculta secciones según permisos),
- * pero sin conectar el panel de Usuarios — admin-fabrica.html todavía no
- * tiene esa pestaña (es el siguiente paso pendiente: que el Admin de
- * Fábrica pueda crear sus propios usuarios).
+ * Misma lógica que admin-auth-init.js: verifica sesión real contra
+ * Firestore (no solo sessionStorage), oculta secciones según permisos, y
+ * conecta el panel de gestión de Usuarios (usuarios.js) — ese módulo ya
+ * filtra por tenant a nivel de Security Rules, así que se reutiliza tal
+ * cual, sin cambios, igual que en Boutique.
  */
 
 import { AuthManager } from './auth.js';
+import { initUsuariosManager } from './usuarios.js';
 import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js';
 
 function ocultarGate() {
@@ -32,6 +33,34 @@ function mostrarErrorGate() {
 }
 
 const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
+
+/**
+ * Conecta el botón "Cerrar todas las sesiones" (visible solo para
+ * Administrador/Sistema vía data-roles) con AuthManager.invalidarTodasLasSesiones.
+ */
+function configurarCierreSesionesGlobal(authManager) {
+    const btn = document.getElementById('btn-cerrar-todas-sesiones');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+        const confirmado = confirm(
+            'Esto cerrará la sesión de TODOS los usuarios en TODOS los dispositivos ' +
+            '(incluida la tuya) y tendrán que volver a iniciar sesión con su contraseña. ¿Continuar?'
+        );
+        if (!confirmado) return;
+
+        btn.disabled = true;
+        try {
+            await authManager.invalidarTodasLasSesiones();
+            if (typeof window.showToast === 'function') {
+                window.showToast('Todas las sesiones se están cerrando...', 'success');
+            }
+        } catch (error) {
+            console.error('Error al cerrar todas las sesiones:', error);
+            alert('No se pudo cerrar las sesiones: ' + error.message);
+            btn.disabled = false;
+        }
+    });
+}
 
 function recordarUsuarioEnDirectorio(usuario) {
     try {
@@ -113,12 +142,19 @@ function renderizarSesion(authManager, usuario) {
         authManager.currentUser = usuarioCache;
         authManager.userPermissions = usuarioCache.permisos || {};
         renderizarSesion(authManager, usuarioCache);
+        initUsuariosManager(window.db, authManager);
+        configurarCierreSesionesGlobal(authManager);
         ocultarGate();
     }
 
     try {
         const usuario = await authManager.init();
         renderizarSesion(authManager, usuario);
+
+        if (!usuarioCache) {
+            initUsuariosManager(window.db, authManager);
+            configurarCierreSesionesGlobal(authManager);
+        }
         authManager.escucharInvalidacionSesiones();
         ocultarGate();
     } catch (error) {
