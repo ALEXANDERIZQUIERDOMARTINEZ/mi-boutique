@@ -727,6 +727,14 @@ body.dark-mode .mbn-item.active { color: var(--brand-400); }
   touch-action: pan-y pinch-zoom;
 }
 
+/* Al cambiar de pestaña se actualiza el hash (history.replaceState), y el
+   navegador puede llevar el scroll hasta el elemento con ese id — sin esto,
+   su borde superior queda tapado detrás del topbar fijo/sticky. */
+.tab-pane { scroll-margin-top: calc(52px + env(safe-area-inset-top, 0px)); }
+@media (min-width: 992px) {
+  .tab-pane { scroll-margin-top: 58px; }
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    DESKTOP TOPBAR — Glass integrated header
    ───────────────────────────────────────────────────────────────────────── */
