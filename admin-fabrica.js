@@ -440,12 +440,16 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
         productListEl.innerHTML = lista.map(p => {
             const stock = (p.variaciones || []).reduce((s, v) => s + (parseInt(v.stock, 10) || 0), 0);
+            const imgSrc = p.imagenUrl || 'https://placehold.co/60x60/f5e8ed/D988B9?text=%20';
             return `
                 <li class="list-group-item fv-product-item" style="cursor:pointer;" data-id="${p.id}">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>${p.nombre || 'Sin nombre'}</strong>
-                            <div class="text-muted small">${p.codigo || ''} · Stock: ${stock}</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="${imgSrc}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;">
+                            <div>
+                                <strong>${p.nombre || 'Sin nombre'}</strong>
+                                <div class="text-muted small">${p.codigo || ''} · Stock: ${stock}</div>
+                            </div>
                         </div>
                         <span>${formatoMonedaDashboard.format(parseFloat(p.precioMayor) || 0)}</span>
                     </div>
@@ -507,6 +511,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         stepListEl.style.display = 'none';
         stepVariationEl.style.display = '';
         document.getElementById('fv-variation-product-name').textContent = producto.nombre || '';
+        document.getElementById('fv-variation-product-img').src = producto.imagenUrl || 'https://placehold.co/60x60/f5e8ed/D988B9?text=%20';
         document.getElementById('fv-variation-precio').value = producto.precioMayor || 0;
         document.getElementById('fv-variation-cantidad').value = 1;
 
