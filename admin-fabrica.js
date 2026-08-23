@@ -623,6 +623,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 totalVenta: total,
                 estado: 'Completada',
                 origen: 'mostrador',
+                tipoVenta: 'mayorista', // en Fábrica todo lo que se vende es mayorista
                 timestamp: serverTimestamp(),
                 tenantId: window.expectedTenantId
             };
@@ -638,6 +639,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             pagoEfectivoInput.value = '0';
             pagoTransferenciaInput.value = '0';
             renderCarrito();
+            historialCargado = false; // para que el Historial la recargue con la venta nueva
         } catch (error) {
             console.error('Error al registrar venta de fábrica:', error);
             showToast('No se pudo registrar la venta: ' + error.message, 'error');
@@ -662,6 +664,134 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     window.addEventListener('hashchange', precargarSiCorresponde);
     window.addEventListener('admin:section-shown', precargarSiCorresponde);
     if (!registrarVentaYaPrecargado) precargarSiCorresponde();
+
+    // ── Nueva Venta / Historial ──────────────────────────────────────────
+    // Historial de solo lectura por ahora: ver las ventas ya registradas,
+    // sin editar ni anular todavía (eso queda para más adelante, igual que
+    // en Boutique donde sí existe esa gestión completa).
+    const formViewEl = document.getElementById('fv-sales-form-view');
+    const listViewEl = document.getElementById('fv-sales-list-view');
+    const btnFormView = document.getElementById('fv-toggle-form-view-btn');
+    const btnListView = document.getElementById('fv-toggle-list-view-btn');
+    let historialCargado = false;
+    let todasLasVentas = [];
+
+    function mostrarVistaFormulario() {
+        formViewEl.style.display = '';
+        listViewEl.style.display = 'none';
+        btnFormView.classList.add('active');
+        btnListView.classList.remove('active');
+    }
+
+    function mostrarVistaHistorial() {
+        formViewEl.style.display = 'none';
+        listViewEl.style.display = '';
+        btnListView.classList.add('active');
+        btnFormView.classList.remove('active');
+        if (!historialCargado) cargarHistorialVentas();
+    }
+
+    btnFormView?.addEventListener('click', mostrarVistaFormulario);
+    btnListView?.addEventListener('click', mostrarVistaHistorial);
+
+    async function cargarHistorialVentas() {
+        historialCargado = true;
+        const listaEl = document.getElementById('fv-lista-ventas');
+        try {
+            const q = query(ventasCollection, where('tenantId', '==', 'fabrica'), orderBy('timestamp', 'desc'));
+            const snap = await getDocs(q);
+            todasLasVentas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            aplicarFiltrosHistorial();
+        } catch (error) {
+            console.error('Error al cargar historial de ventas de fábrica:', error);
+            listaEl.innerHTML = `<div class="ventas-empty-state"><i class="bi bi-exclamation-triangle fs-2 d-block mb-2 text-danger"></i><p class="text-danger mb-0">No se pudo cargar: ${error.message}</p></div>`;
+        }
+    }
+
+    function aplicarFiltrosHistorial() {
+        const listaEl = document.getElementById('fv-lista-ventas');
+        const termino = (document.getElementById('fv-filtro-buscar-ventas')?.value || '').trim().toLowerCase();
+        const fechaFiltro = document.getElementById('fv-filtro-fecha-ventas')?.value || '';
+
+        const filtradas = todasLasVentas.filter(v => {
+            if (termino) {
+                const clienteMatch = (v.clienteNombre || '').toLowerCase().includes(termino);
+                const productoMatch = (v.items || []).some(i => (i.nombre || '').toLowerCase().includes(termino));
+                if (!clienteMatch && !productoMatch) return false;
+            }
+            if (fechaFiltro && v.timestamp?.toDate) {
+                const fechaVenta = v.timestamp.toDate().toISOString().slice(0, 10);
+                if (fechaVenta !== fechaFiltro) return false;
+            }
+            return true;
+        });
+
+        if (!filtradas.length) {
+            listaEl.innerHTML = `<div class="ventas-empty-state"><i class="bi bi-search fs-2 d-block mb-2 text-muted"></i><p class="text-muted mb-0">No se encontraron ventas</p></div>`;
+            return;
+        }
+
+        listaEl.innerHTML = filtradas.map(renderVentaCard).join('');
+    }
+
+    function renderVentaCard(v) {
+        const fecha = v.timestamp?.toDate ? v.timestamp.toDate().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A';
+
+        const pagoPartes = [];
+        if (v.pagoEfectivo > 0) pagoPartes.push('<span class="venta-pago-badge efec"><i class="bi bi-cash-coin"></i> Efectivo</span>');
+        if (v.pagoTransferencia > 0) pagoPartes.push('<span class="venta-pago-badge transf"><i class="bi bi-bank"></i> Transfer.</span>');
+        const pagoHtml = pagoPartes.length ? pagoPartes.join('') : '<span class="text-muted small">-</span>';
+
+        const productosHtml = (v.items || []).length
+            ? v.items.map(item => {
+                const variacion = [item.talla, item.color].filter(x => x && normalizarVariacion(x) !== '').join(' · ');
+                const precioNum = parseFloat(item.precio) || 0;
+                return `
+                    <div class="venta-prod-row">
+                        <div class="venta-prod-img-placeholder"><i class="bi bi-image"></i></div>
+                        <div class="venta-prod-info">
+                            <div class="venta-prod-name">${item.nombre || 'Producto'}</div>
+                            <div class="venta-prod-detail">
+                                ${variacion ? `<span>${variacion}</span> · ` : ''}
+                                <span>x${item.cantidad || 0}</span>
+                                ${precioNum > 0 ? ` · <span class="text-primary fw-semibold">${formatoMonedaDashboard.format(precioNum)} c/u</span>` : ''}
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('')
+            : '<span class="text-muted small">Sin productos registrados</span>';
+
+        return `
+            <div class="venta-card">
+                <div class="venta-card-head">
+                    <div class="venta-card-meta-top">
+                        <span class="venta-card-fecha"><i class="bi bi-clock me-1"></i>${fecha}</span>
+                        <span class="badge bg-success">${v.estado || 'Completada'}</span>
+                    </div>
+                    <div class="venta-card-cliente-row">
+                        <span class="venta-card-cliente"><i class="bi bi-person-fill me-1"></i>${v.clienteNombre || 'Cliente General'}</span>
+                        <span class="badge bg-info text-dark">Mayor.</span>
+                    </div>
+                </div>
+                <div class="venta-card-products">${productosHtml}</div>
+                <div class="venta-card-foot">
+                    <div class="venta-card-foot-left">
+                        <div class="venta-card-pago">${pagoHtml}</div>
+                    </div>
+                    <div class="venta-card-foot-right">
+                        <span class="venta-card-total">${formatoMonedaDashboard.format(v.totalVenta || 0)}</span>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    document.getElementById('fv-filtro-buscar-ventas')?.addEventListener('input', aplicarFiltrosHistorial);
+    document.getElementById('fv-filtro-fecha-ventas')?.addEventListener('input', aplicarFiltrosHistorial);
+    document.getElementById('fv-btn-limpiar-filtro-ventas')?.addEventListener('click', () => {
+        document.getElementById('fv-filtro-buscar-ventas').value = '';
+        document.getElementById('fv-filtro-fecha-ventas').value = '';
+        aplicarFiltrosHistorial();
+    });
 
     renderCarrito();
 })();
