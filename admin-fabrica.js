@@ -40,10 +40,13 @@ window.expectedTenantId = 'fabrica';
 console.log("Fábrica: Firebase inicializado");
 
 // --- Carga perezosa de librerías externas pesadas (mismo patrón que
-// admin.js): solo se inyectan cuando de verdad se necesitan (p.ej. Cargue
-// Masivo necesita 'xlsx'), y la promesa se cachea para no duplicar el <script>. ---
+// admin.js): solo se inyectan cuando de verdad se necesitan (Cargue Masivo
+// necesita 'xlsx', Etiquetas necesita 'qrcode'), y la promesa se cachea para
+// no duplicar el <script>. Expuesta en window porque etiquetas-fabrica.js
+// es un script global aparte (no módulo), igual que en Boutique. ---
 const EXTERNAL_LIB_URLS = {
-    xlsx: 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js'
+    xlsx: 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js',
+    qrcode: 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
 };
 const _externalLibPromises = {};
 function loadExternalLib(name) {
@@ -59,6 +62,7 @@ function loadExternalLib(name) {
     });
     return _externalLibPromises[name];
 }
+window.loadExternalLib = loadExternalLib;
 
 // --- Utilidad de imagen: misma lógica que admin.js, copiada (no importada)
 // para que este archivo no dependa de ningún otro bundle de Boutique. ---
@@ -2001,6 +2005,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
             const snapshot = await getDocs(query(productosFabricaCollection, ...clauses));
             productos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            // Expuesto en window para que etiquetas-fabrica.js (script global,
+            // no módulo) pueda leer el catálogo ya cargado sin duplicar la
+            // consulta — mismo patrón que window.localProductsMap en Boutique.
+            window.fabricaProductsMap = new Map(productos.map(p => [p.id, p]));
+            window.fabricaCategoriasMap = categoriasMap;
             renderTabla();
         } catch (error) {
             console.error('Error al cargar productos de fábrica:', error);
