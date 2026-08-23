@@ -11,7 +11,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
     initializeFirestore, collection, getDocs, query, where, orderBy, doc,
-    getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch
+    getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch,
+    onSnapshot
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 import { WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js";
@@ -864,6 +865,136 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     });
 
     renderCarrito();
+})();
+
+// ========================================================================
+// ✅ SECCIÓN: CATEGORÍAS — taxonomía COMPARTIDA con Boutique a propósito
+// (misma colección 'categorias', sin tenantId: ambos negocios usan la
+// misma lista, igual que ya la lee en modo solo-lectura Productos Fábrica).
+// ========================================================================
+(() => {
+    const list = document.getElementById('catfab-lista');
+    const form = document.getElementById('catfab-form');
+    if (!list || !form) return;
+
+    const nombreInput = document.getElementById('catfab-nombre');
+    const editForm = document.getElementById('catfab-edit-form');
+    const editIdInput = document.getElementById('catfab-edit-id');
+    const editNombreInput = document.getElementById('catfab-edit-nombre');
+    const btnConfirmDelete = document.getElementById('catfab-confirm-delete-btn');
+
+    let idPendienteEliminar = null;
+
+    function getModal(id) {
+        const el = document.getElementById(id);
+        return bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el);
+    }
+
+    async function checkDuplicado(nombre, idActual = null) {
+        const q = query(categoriasCollection, where('nombreLower', '==', nombre.toLowerCase()));
+        const snap = await getDocs(q);
+        return snap.docs.some(d => d.id !== idActual);
+    }
+
+    function render(snapshot) {
+        if (snapshot.empty) {
+            list.innerHTML = '<li class="list-group-item text-muted">No hay categorías.</li>';
+            return;
+        }
+        list.innerHTML = '';
+        snapshot.forEach(docSnap => {
+            const d = docSnap.data();
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.dataset.id = docSnap.id;
+            li.innerHTML = `<span class="catfab-nombre">${d.nombre}</span>
+                <div class="action-buttons">
+                    <button class="btn btn-action btn-action-edit me-1 catfab-btn-editar"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button>
+                    <button class="btn btn-action btn-action-delete catfab-btn-eliminar"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button>
+                </div>`;
+            list.appendChild(li);
+        });
+    }
+
+    onSnapshot(query(categoriasCollection, orderBy('nombre')), render, (error) => {
+        console.error('Error al cargar categorías:', error);
+        list.innerHTML = '<li class="list-group-item text-danger">Error al cargar.</li>';
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nombre = nombreInput.value.trim();
+        if (!nombre) return;
+        if (await checkDuplicado(nombre)) {
+            showToast('Ya existe una categoría con ese nombre.', 'warning');
+            return;
+        }
+        try {
+            await addDoc(categoriasCollection, { nombre, nombreLower: nombre.toLowerCase() });
+            showToast('Categoría guardada', 'success');
+            nombreInput.value = '';
+        } catch (error) {
+            console.error('Error al guardar categoría:', error);
+            showToast(`Error: ${error.message}`, 'error');
+        }
+    });
+
+    list.addEventListener('click', (e) => {
+        const li = e.target.closest('li');
+        if (!li) return;
+        const id = li.dataset.id;
+        const nombreActual = li.querySelector('.catfab-nombre')?.textContent || '';
+
+        if (e.target.closest('.catfab-btn-editar')) {
+            editIdInput.value = id;
+            editNombreInput.value = nombreActual;
+            getModal('catfabEditModal').show();
+        }
+
+        if (e.target.closest('.catfab-btn-eliminar')) {
+            idPendienteEliminar = id;
+            document.getElementById('catfab-delete-name').textContent = nombreActual;
+            getModal('catfabDeleteModal').show();
+        }
+    });
+
+    if (editForm) {
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = editIdInput.value;
+            const nombre = editNombreInput.value.trim();
+            if (!id || !nombre) return;
+            if (await checkDuplicado(nombre, id)) {
+                showToast('Ya existe otra categoría con ese nombre.', 'warning');
+                return;
+            }
+            try {
+                await updateDoc(doc(db, 'categorias', id), { nombre, nombreLower: nombre.toLowerCase() });
+                showToast('Categoría actualizada', 'success');
+                getModal('catfabEditModal').hide();
+            } catch (error) {
+                console.error('Error al actualizar categoría:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        });
+    }
+
+    if (btnConfirmDelete) {
+        btnConfirmDelete.addEventListener('click', async () => {
+            if (!idPendienteEliminar) return;
+            try {
+                await deleteDoc(doc(db, 'categorias', idPendienteEliminar));
+                showToast('Categoría eliminada', 'success');
+                getModal('catfabDeleteModal').hide();
+                idPendienteEliminar = null;
+            } catch (error) {
+                console.error('Error al eliminar categoría:', error);
+                showToast(`Error: ${error.message}`, 'error');
+            }
+        });
+    }
+
+    console.log("✅ Módulo Categorías Fábrica inicializado");
 })();
 
 // ========================================================================

@@ -356,15 +356,10 @@ service cloud.firestore {
       // para el filtro por categoría — mismo criterio que productos.
       allow read: if true;
 
-      // Crear: Con tenantId correcto
-      allow create: if hasPermission('categorias_gestionar') &&
-                      hasRequiredTenantId() &&
-                      isCreatingWithCorrectTenant();
-
-      // Actualizar y eliminar: Solo del mismo tenant
-      allow update, delete: if hasPermission('categorias_gestionar') &&
-                              belongsToTenant(resource.data.tenantId) &&
-                              isNotChangingTenant();
+      // Taxonomía compartida entre TODOS los tenants a propósito (Boutique y
+      // Fábrica usan la misma lista de categorías) — los documentos nunca
+      // llevan tenantId, así que basta el permiso, sin validar tenant.
+      allow create, update, delete: if hasPermission('categorias_gestionar');
     }
 
     // ═══════════════════════════════════════════════════════════════════
