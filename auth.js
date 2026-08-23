@@ -495,7 +495,7 @@ export class AuthManager {
         if (!usuario) return;
         const roleName = ROLES[usuario.rol]?.nombre || usuario.rol;
 
-        const nameTargets = ['currentUserInfo', 'rail-admin-name', 'topbar-admin-name', 'topbar-dropdown-name'];
+        const nameTargets = ['currentUserInfo', 'rail-admin-name', 'topbar-admin-name', 'topbar-dropdown-name', 'db-greeting-name'];
         nameTargets.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.textContent = usuario.nombre;

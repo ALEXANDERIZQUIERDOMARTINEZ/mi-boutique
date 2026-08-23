@@ -1401,6 +1401,105 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   font-weight: 500;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   DASHBOARD FÁBRICA — pantalla de inicio estilo app móvil: tarjeta de
+   saludo + cuadrícula de accesos directos. Solo la usa admin-fabrica.html;
+   no reemplaza .db-head/.db-stat-strip/.db-compare que sigue usando el
+   Dashboard de Boutique en admin.html.
+   ───────────────────────────────────────────────────────────────────────── */
+.db-greeting-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, var(--brand-400), var(--brand-600));
+  box-shadow: var(--shadow-md);
+}
+
+.db-greeting-avatar {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+.db-greeting-avatar img { width: 100%; height: 100%; object-fit: contain; }
+
+.db-greeting-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+
+.db-greeting-hello {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.2px;
+}
+
+.db-greeting-store {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+}
+
+.db-greeting-date {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.7);
+  text-transform: capitalize;
+}
+
+.db-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+}
+@media (min-width: 576px) {
+  .db-menu-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 992px) {
+  .db-menu-grid { grid-template-columns: repeat(5, 1fr); }
+}
+
+.db-menu-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 1.1rem;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+  transition: box-shadow var(--duration-base) var(--ease-out), transform var(--duration-fast) ease;
+}
+.db-menu-tile:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.db-menu-tile-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.db-menu-tile-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
 /* Time range selector */
 .db2-time-range {
   display: flex;
