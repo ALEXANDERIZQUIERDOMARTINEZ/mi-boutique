@@ -155,15 +155,15 @@ service cloud.firestore {
                       isCreatingWithCorrectTenant();
 
       // Actualizar: edición completa del catálogo (productos_editar), o
-      // solo bajar el stock al registrar una venta (ventas_crear) — el
-      // Vendedor no tiene productos_editar, pero SÍ necesita poder
-      // descontar stock al vender, sin que eso le dé permiso de tocar
-      // precio/nombre/etc. Se restringe a que el único campo que cambie
-      // sea variaciones.
+      // solo tocar el stock al registrar (ventas_crear) o anular
+      // (ventas_anular) una venta — ninguno de los dos implica
+      // productos_editar, pero SÍ necesitan poder ajustar stock al vender o
+      // reponerlo al anular, sin que eso dé permiso de tocar precio/nombre/etc.
+      // Se restringe a que el único campo que cambie sea variaciones.
       allow update: if belongsToTenant(resource.data.tenantId) &&
                       isNotChangingTenant() &&
                       (hasPermission('productos_editar') ||
-                       (hasPermission('ventas_crear') &&
+                       ((hasPermission('ventas_crear') || hasPermission('ventas_anular')) &&
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['variaciones'])));
 
       // Eliminar: Solo del mismo tenant
@@ -481,12 +481,13 @@ service cloud.firestore {
                               (request.resource == null || isCreatingWithCorrectTenant());
 
       // Igual que productos de Boutique: gestión completa del catálogo, o
-      // solo bajar stock al registrar una venta de mostrador — restringido
-      // a que el único campo que cambie sea variaciones.
+      // solo tocar stock al registrar (ventas_crear) o anular (ventas_anular)
+      // una venta de mostrador — restringido a que el único campo que
+      // cambie sea variaciones.
       allow update: if belongsToTenant(resource.data.tenantId) &&
                       isNotChangingTenant() &&
                       (hasPermission('inventario_fabrica_gestionar') ||
-                       (hasPermission('ventas_crear') &&
+                       ((hasPermission('ventas_crear') || hasPermission('ventas_anular')) &&
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['variaciones'])));
     }
 
