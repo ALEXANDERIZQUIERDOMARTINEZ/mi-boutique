@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Super Admin - Mishell's</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -280,11 +280,30 @@
         </div>
       </div>
     </div>
+
+    <!-- Bottom tab bar (móvil): navegación estilo app nativa -->
+    <nav class="sa-bottomnav">
+      <button type="button" class="sa-bottomnav-item active" data-bs-toggle="pill" data-bs-target="#dashboard" data-page-title="Dashboard">
+        <i class="bi bi-grid-1x2"></i> <span>Inicio</span>
+      </button>
+      <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#empresas" data-page-title="Empresas">
+        <i class="bi bi-building"></i> <span>Empresas</span>
+      </button>
+      <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#planes" data-page-title="Planes">
+        <i class="bi bi-collection"></i> <span>Planes</span>
+      </button>
+      <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#usuarios" data-page-title="Usuarios y acceso">
+        <i class="bi bi-people"></i> <span>Usuarios</span>
+      </button>
+      <button type="button" class="sa-bottomnav-item" id="sa-bottomnav-mas">
+        <i class="bi bi-three-dots"></i> <span>Más</span>
+      </button>
+    </nav>
   </div>
 
   <!-- Modal: Crear Empresa -->
   <div class="modal fade" id="modalCrearEmpresa" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-fullscreen-sm-down">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Nueva empresa</h5>
@@ -350,7 +369,7 @@
 
   <!-- Modal: Nuevo/Editar Plan -->
   <div class="modal fade" id="modalPlan" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-fullscreen-sm-down">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="modalPlanTitle">Nuevo plan</h5>
@@ -409,7 +428,7 @@
 
   <!-- Modal: Gestionar empresa (plan, módulos, estado, suscripción) -->
   <div class="modal fade" id="modalGestionarEmpresa" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-fullscreen-sm-down">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Gestionar <span id="gestion-empresa-nombre"></span></h5>
@@ -481,7 +500,7 @@
 
   <!-- Modal: Editar Empresa (nombre, marca y color; el identificador no se puede cambiar) -->
   <div class="modal fade" id="modalEditarEmpresa" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-fullscreen-sm-down">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Editar empresa</h5>
@@ -526,6 +545,12 @@
     (function () {
       const shell = document.getElementById('sa-shell');
       document.getElementById('sa-burger')?.addEventListener('click', () => shell.classList.toggle('sa-sidebar-open'));
+      document.getElementById('sa-bottomnav-mas')?.addEventListener('click', () => shell.classList.add('sa-sidebar-open'));
+      document.addEventListener('click', (e) => {
+        if (!shell.classList.contains('sa-sidebar-open')) return;
+        if (e.target.closest('.sa-sidebar') || e.target.closest('#sa-burger') || e.target.closest('#sa-bottomnav-mas')) return;
+        shell.classList.remove('sa-sidebar-open');
+      });
 
       const themeBtn = document.getElementById('sa-theme-toggle');
       const themeIcon = themeBtn?.querySelector('i');
@@ -549,20 +574,33 @@
       });
 
       const fechaEl = document.getElementById('sa-today-date');
-      if (fechaEl) {
-        fechaEl.textContent = new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+      function pintarFecha() {
+        if (!fechaEl) return;
+        const corta = window.innerWidth <= 480;
+        fechaEl.textContent = new Intl.DateTimeFormat('es-CO', corta
+          ? { day: 'numeric', month: 'short' }
+          : { day: 'numeric', month: 'long', year: 'numeric' }
+        ).format(new Date());
       }
+      pintarFecha();
+      window.addEventListener('resize', pintarFecha);
 
-      document.querySelectorAll('[data-page-title]').forEach(btn => {
+      // Sidebar y bottom-nav son dos grupos de tabs distintos para Bootstrap
+      // (cada uno solo controla el "active" de sus propios hermanos), así que
+      // se sincronizan a mano para que ambos reflejen la pestaña visible.
+      const disparadoresTab = document.querySelectorAll('[data-bs-toggle="pill"]');
+      disparadoresTab.forEach(btn => {
         btn.addEventListener('shown.bs.tab', () => {
-          document.getElementById('sa-page-title').textContent = btn.dataset.pageTitle;
+          const target = btn.dataset.bsTarget;
+          disparadoresTab.forEach(otro => otro.classList.toggle('active', otro.dataset.bsTarget === target));
+          if (btn.dataset.pageTitle) document.getElementById('sa-page-title').textContent = btn.dataset.pageTitle;
+          shell.classList.remove('sa-sidebar-open');
         });
       });
       document.querySelectorAll('.sa-link-empresas').forEach(a => {
         a.addEventListener('click', (e) => {
           e.preventDefault();
           bootstrap.Tab.getOrCreateInstance(document.querySelector('[data-bs-target="#empresas"]')).show();
-          document.getElementById('sa-page-title').textContent = 'Empresas';
         });
       });
 
