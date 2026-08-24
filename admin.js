@@ -154,10 +154,27 @@ window.loadExternalLib = loadExternalLib;
 // el guard de autenticación (auth.js / usuarios.js / admin-auth-init.js)
 window.db = db;
 window.firebaseApp = app;
-// Declara ante auth.js a qué tenant pertenece ESTA página, para que el
-// login rechace a quien no tenga acceso concedido a Boutique (ver
-// verificación de tenant en auth.js AuthManager.init()).
-window.expectedTenantId = 'boutique';
+// window.expectedTenantId YA NO es una empresa quemada en el archivo:
+// se resuelve en vivo a partir de window.appContext (que trae el tenantId
+// real del usuario, verificado contra Firestore por auth.js). Un usuario
+// normal SIEMPRE usa su propio tenantId, sin importar la URL — solo
+// Super Admin (que no pertenece a ninguna empresa) puede indicar a cuál
+// entrar, y únicamente vía el parámetro ?empresa= que login.html arma a
+// partir de la lista real de empresas, nunca escrito a mano por el
+// usuario normal. La aplicación real de esto la hace igual firestore.rules
+// del lado servidor — este valor solo filtra qué se consulta/etiqueta
+// desde el cliente.
+Object.defineProperty(window, 'expectedTenantId', {
+    configurable: true,
+    get() {
+        const ctx = window.appContext;
+        if (!ctx) return null;
+        if (ctx.isSuperAdmin) {
+            return new URLSearchParams(window.location.search).get('empresa') || null;
+        }
+        return ctx.tenantId ?? null;
+    }
+});
 window.firebaseConfig = firebaseConfig;
 window.collection = collection;
 window.getDocs = getDocs;

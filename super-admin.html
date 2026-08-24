@@ -166,7 +166,7 @@
             <div class="mb-3">
               <label class="form-label">Identificador (tenant)</label>
               <input type="text" class="form-control" id="empresa-slug" placeholder="Ej: fabrica" pattern="[a-z0-9-]+" required>
-              <small class="text-muted">Solo minúsculas, números y guiones — es el mismo valor que <code>window.expectedTenantId</code> declara en cada admin.html.</small>
+              <small class="text-muted">Solo minúsculas, números y guiones — es el mismo valor que se guarda en <code>usuarios/{uid}.tenantId</code> para cada persona de esta empresa.</small>
             </div>
             <div class="mb-3">
               <label class="form-label">Nombre corto (para el menú lateral del panel)</label>

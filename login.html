@@ -22,7 +22,12 @@
                 // modules, así que no puede importarlo. Si se agrega una
                 // empresa nueva con panel propio, actualizar ambos lugares.
                 var PANEL_POR_TENANT = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
-                var panel = PANEL_POR_TENANT[cache.tenantId || 'boutique'];
+                var tenantId = cache.tenantId || 'boutique';
+                var panel = PANEL_POR_TENANT[tenantId];
+                // admin.html es el panel único: necesita saber qué empresa
+                // cargar vía ?empresa=, ya que el archivo mismo no lo trae
+                // quemado. admin-fabrica.html (todavía sin migrar) no lo usa.
+                if (panel === 'admin.html') panel += '?empresa=' + encodeURIComponent(tenantId);
                 if (cache.rol !== 'SUPER_ADMIN' && panel) {
                     location.replace(panel);
                 }
@@ -433,6 +438,13 @@
         import { initializeFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
         import { obtenerMarcaTenant, obtenerTodasLasMarcas, PANEL_POR_TENANT } from './tenant-branding.js';
 
+        // admin.html es el panel único: no trae la empresa quemada, así que
+        // hay que decírsela por la URL. admin-fabrica.html (todavía sin
+        // migrar, ver Fase 3 del plan) sigue sin necesitarlo.
+        function urlPanel(tenantId, panel) {
+            return panel === 'admin.html' ? `${panel}?empresa=${encodeURIComponent(tenantId)}` : panel;
+        }
+
         // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -671,7 +683,7 @@
             // que elija nada, se entra directo. El selector es para cuando
             // de verdad hay más de una opción (Super Admin).
             if (!esSuperAdmin && empresas.length === 1 && PANEL_POR_TENANT[empresas[0].id]) {
-                window.location.href = PANEL_POR_TENANT[empresas[0].id];
+                window.location.href = urlPanel(empresas[0].id, PANEL_POR_TENANT[empresas[0].id]);
                 return;
             }
 
@@ -680,7 +692,7 @@
                 const disponible = !!panel;
                 return `
                     <div class="empresa-item ${disponible ? '' : 'empresa-item--disabled'}"
-                         style="--empresa-color:${emp.color}" data-panel="${panel || ''}">
+                         style="--empresa-color:${emp.color}" data-panel="${panel ? urlPanel(emp.id, panel) : ''}">
                         <img class="empresa-item-logo" src="${emp.logoUrl || 'icon.svg'}" alt="">
                         <div class="empresa-item-info">
                             <div class="empresa-item-nombre">${emp.nombre}</div>
