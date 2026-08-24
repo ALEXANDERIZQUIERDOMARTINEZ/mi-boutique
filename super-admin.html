@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="super-admin-styles.css?v=1.0.0">
+  <link rel="stylesheet" href="super-admin-styles.css?v=1.1.0">
 </head>
 <body class="sa-body">
 
@@ -280,26 +280,30 @@
         </div>
       </div>
     </div>
-
-    <!-- Bottom tab bar (móvil): navegación estilo app nativa -->
-    <nav class="sa-bottomnav">
-      <button type="button" class="sa-bottomnav-item active" data-bs-toggle="pill" data-bs-target="#dashboard" data-page-title="Dashboard">
-        <i class="bi bi-grid-1x2"></i> <span>Inicio</span>
-      </button>
-      <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#empresas" data-page-title="Empresas">
-        <i class="bi bi-building"></i> <span>Empresas</span>
-      </button>
-      <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#planes" data-page-title="Planes">
-        <i class="bi bi-collection"></i> <span>Planes</span>
-      </button>
-      <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#usuarios" data-page-title="Usuarios y acceso">
-        <i class="bi bi-people"></i> <span>Usuarios</span>
-      </button>
-      <button type="button" class="sa-bottomnav-item" id="sa-bottomnav-mas">
-        <i class="bi bi-three-dots"></i> <span>Más</span>
-      </button>
-    </nav>
   </div>
+
+  <!-- Bottom tab bar (móvil): navegación estilo app nativa.
+       Vive fuera de #sa-shell (que es display:flex) a propósito — Safari
+       en iOS tiene un bug conocido donde un position:fixed hijo directo de
+       un contenedor flex no se excluye del flujo del flex y termina mal
+       posicionado (pegado arriba en vez de abajo). -->
+  <nav class="sa-bottomnav">
+    <button type="button" class="sa-bottomnav-item active" data-bs-toggle="pill" data-bs-target="#dashboard" data-page-title="Dashboard">
+      <i class="bi bi-grid-1x2"></i> <span>Inicio</span>
+    </button>
+    <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#empresas" data-page-title="Empresas">
+      <i class="bi bi-building"></i> <span>Empresas</span>
+    </button>
+    <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#planes" data-page-title="Planes">
+      <i class="bi bi-collection"></i> <span>Planes</span>
+    </button>
+    <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#usuarios" data-page-title="Usuarios y acceso">
+      <i class="bi bi-people"></i> <span>Usuarios</span>
+    </button>
+    <button type="button" class="sa-bottomnav-item" id="sa-bottomnav-mas">
+      <i class="bi bi-three-dots"></i> <span>Más</span>
+    </button>
+  </nav>
 
   <!-- Modal: Crear Empresa -->
   <div class="modal fade" id="modalCrearEmpresa" tabindex="-1">
