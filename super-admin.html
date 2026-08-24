@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="super-admin-styles.css?v=1.2.0">
+  <link rel="stylesheet" href="super-admin-styles.css?v=1.3.0">
 </head>
 <body class="sa-body">
 
@@ -111,6 +111,12 @@
 
           <!-- ═══════ Dashboard ═══════ -->
           <div class="tab-pane fade show active" id="dashboard">
+
+            <div id="sa-dashboard-error" class="sa-dash-error" style="display:none;">
+              <i class="bi bi-exclamation-triangle"></i>
+              <span id="sa-dashboard-error-msg"></span>
+              <button type="button" id="sa-dashboard-error-retry" class="sa-dash-error-retry">Reintentar</button>
+            </div>
 
             <div class="sa-grid sa-stats-grid mb-3">
               <div class="sa-stat-card">
@@ -619,7 +625,7 @@
       });
     })();
   </script>
-  <script type="module" src="super-admin.js?v=2.0.0"></script>
+  <script type="module" src="super-admin.js?v=2.1.0"></script>
 
 </body>
 </html>

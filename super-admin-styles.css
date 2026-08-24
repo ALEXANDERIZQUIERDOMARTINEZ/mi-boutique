@@ -410,6 +410,23 @@ body.sa-body {
 .sa-badge-muted { background: var(--sa-bg); border: 1px dashed var(--sa-border-strong); color: var(--sa-text-tertiary); }
 .sa-badge-muted::before { background: var(--sa-text-tertiary); }
 
+/* ── Aviso de error del Dashboard (visible sin importar la pestaña donde
+   haya fallado la carga — antes solo se veía en "Empresas"/"Usuarios") ── */
+.sa-dash-error {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--sa-surface); border: 1px solid var(--sa-text);
+  border-radius: var(--sa-radius-md); padding: 12px 16px; margin-bottom: 16px;
+  font-size: .85rem;
+}
+.sa-dash-error i { font-size: 1.1rem; flex: none; }
+.sa-dash-error span { flex: 1; min-width: 200px; }
+.sa-dash-error-retry {
+  background: var(--sa-ink); color: var(--sa-on-ink); border: none;
+  border-radius: 8px; padding: 6px 14px; font-weight: 600; font-size: .8rem;
+  cursor: pointer; flex: none;
+}
+.sa-dash-error-retry:hover { background: var(--sa-ink-2); }
+
 /* ── CTA final ── */
 .sa-cta {
   background: var(--sa-ink); color: var(--sa-on-ink);
