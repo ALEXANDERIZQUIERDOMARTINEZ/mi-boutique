@@ -93,6 +93,14 @@ const BADGE_POR_ESTADO = {
     cancelado: 'bg-danger'
 };
 
+// ── Cache para el Dashboard: se rellena desde cargarEmpresas()/cargarUsuarios()
+// (que ya hacen estas consultas para sus propias pestañas) y se re-renderiza
+// sin duplicar lecturas a Firestore. Ver intentarRenderDashboard().
+let ultimaListaEmpresas = [];
+let ultimosPrivadosPorId = new Map();
+let ultimosUsuarios = [];
+const dashboardListo = { empresas: false, usuarios: false };
+
 async function cargarEmpresas() {
     const cont = document.getElementById('lista-empresas');
     try {
@@ -146,6 +154,11 @@ async function cargarEmpresas() {
                 </div>
             </div>`;
         }).join('');
+
+        ultimaListaEmpresas = listaCompleta;
+        ultimosPrivadosPorId = privadosPorId;
+        dashboardListo.empresas = true;
+        intentarRenderDashboard();
     } catch (error) {
         console.error('Error al cargar empresas:', error);
         cont.innerHTML = `<div class="alert alert-danger">Error al cargar empresas: ${error.message}</div>`;
@@ -639,6 +652,10 @@ async function cargarUsuarios() {
         document.getElementById('stat-sin-asignar').textContent =
             usuarios.filter(u => !u.tenantId && u.rol !== 'SUPER_ADMIN').length;
 
+        ultimosUsuarios = usuarios;
+        dashboardListo.usuarios = true;
+        intentarRenderDashboard();
+
         if (!usuarios.length) {
             tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No hay usuarios todavía.</td></tr>`;
             return;
@@ -704,6 +721,247 @@ document.addEventListener('click', async (e) => {
 
 document.getElementById('btn-guardar-empresa')?.addEventListener('click', crearEmpresa);
 
+// ── Dashboard ────────────────────────────────────────────────────────────
+// Todo lo que se pinta aquí sale de datos reales ya cargados (empresas,
+// planes, usuarios) — nada de históricos inventados. Por eso no hay gráfico
+// de tendencia de ingresos: no guardamos snapshots mensuales todavía: se
+// puede agregar el día que empecemos a registrar eso.
+
+const fmtMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+
+function fechaDe(timestamp) {
+    return timestamp?.toDate ? timestamp.toDate().getTime() : 0;
+}
+
+function formatFecha(timestamp) {
+    if (!timestamp?.toDate) return '—';
+    return timestamp.toDate().toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function iniciales(nombre) {
+    return (nombre || '').trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() || '').join('') || '—';
+}
+
+/**
+ * activo: estado='activo' y (sin vencimiento o vence en más de 30 días).
+ * por-vencer: estado='activo' y vence dentro de 30 días.
+ * vencida: la fecha de vencimiento ya pasó (sin importar el estado, salvo
+ * que ya esté suspendida/cancelada, que manda sobre todo lo demás).
+ * suspendida: estado='suspendido' o 'cancelado'.
+ */
+function categorizarEmpresa(tenant, priv) {
+    const estado = tenant?.estado || 'activo';
+    if (estado === 'suspendido' || estado === 'cancelado') return 'suspendida';
+    const fechaVenc = priv?.suscripcion?.fechaVencimiento;
+    if (fechaVenc?.toDate) {
+        const diffDias = (fechaVenc.toDate() - new Date()) / 86400000;
+        if (diffDias < 0) return 'vencida';
+        if (diffDias <= 30) return 'por-vencer';
+    }
+    return 'activo';
+}
+
+function badgeEstadoHtml(categoria) {
+    const mapa = {
+        activo: '<span class="sa-badge sa-badge-solid">Activa</span>',
+        'por-vencer': '<span class="sa-badge sa-badge-outline">Por vencer</span>',
+        vencida: '<span class="sa-badge sa-badge-muted">Vencida</span>',
+        suspendida: '<span class="sa-badge sa-badge-muted">Suspendida</span>'
+    };
+    return mapa[categoria] || mapa.activo;
+}
+
+function buildDonut(counts) {
+    const entradas = [
+        { key: 'activo', label: 'Activas', color: '#0a0a0a' },
+        { key: 'porVencer', label: 'Por vencer', color: '#595959' },
+        { key: 'vencida', label: 'Vencidas', color: '#a6a6a6' },
+        { key: 'suspendida', label: 'Suspendidas', color: '#d9d9d9' }
+    ];
+    const total = entradas.reduce((s, e) => s + (counts[e.key] || 0), 0);
+    const donutEl = document.getElementById('sa-donut');
+    if (!total) {
+        donutEl.style.setProperty('--sa-donut-bg', 'conic-gradient(#e6e6e6 0 100%)');
+    } else {
+        let acumulado = 0;
+        const stops = entradas.map(e => {
+            const valor = counts[e.key] || 0;
+            const inicio = acumulado / total * 360;
+            acumulado += valor;
+            const fin = acumulado / total * 360;
+            return `${e.color} ${inicio}deg ${fin}deg`;
+        }).join(', ');
+        donutEl.style.setProperty('--sa-donut-bg', `conic-gradient(${stops})`);
+    }
+    document.getElementById('sa-donut-total').textContent = total;
+    document.getElementById('sa-donut-legend').innerHTML = entradas.map(e => {
+        const valor = counts[e.key] || 0;
+        const pct = total ? Math.round(valor / total * 100) : 0;
+        return `<div class="sa-legend-item">
+            <span class="sa-legend-dot" style="background:${e.color}"></span>
+            <span class="sa-legend-name">${e.label}</span>
+            <strong>${valor} (${pct}%)</strong>
+        </div>`;
+    }).join('');
+}
+
+function renderIngresosPorPlan(conPriv) {
+    const cont = document.getElementById('ingresos-por-plan-list');
+    const porPlan = new Map(); // planId -> { nombre, total }
+    conPriv.forEach(({ tenant, priv }) => {
+        if ((tenant.estado || 'activo') !== 'activo' || !priv?.planId) return;
+        const plan = planesDisponibles.find(p => p.id === priv.planId);
+        if (!plan) return;
+        const precio = priv.suscripcion?.precio ?? plan.precio ?? 0;
+        const periodicidad = priv.suscripcion?.periodicidad || plan.periodicidad || 'mensual';
+        const mensual = periodicidad === 'anual' ? precio / 12 : precio;
+        const prev = porPlan.get(plan.id) || { nombre: plan.nombre, total: 0 };
+        prev.total += mensual;
+        porPlan.set(plan.id, prev);
+    });
+    const filas = Array.from(porPlan.values()).sort((a, b) => b.total - a.total);
+    if (!filas.length) {
+        cont.innerHTML = '<div class="sa-empty-inline">Sin suscripciones activas con plan todavía.</div>';
+        return;
+    }
+    const max = Math.max(...filas.map(f => f.total)) || 1;
+    cont.innerHTML = filas.map(f => `
+        <div class="sa-bar-row">
+            <div class="sa-bar-row-head"><span>${f.nombre}</span><span>${fmtMonedaDashboard.format(f.total)}/mes</span></div>
+            <div class="sa-bar-track"><div class="sa-bar-fill" style="width:${Math.max(4, f.total / max * 100)}%"></div></div>
+        </div>
+    `).join('');
+}
+
+function renderNuevasEmpresas(lista) {
+    const cont = document.getElementById('lista-nuevas-empresas');
+    const ordenado = [...lista].sort((a, b) => fechaDe(b.createdAt) - fechaDe(a.createdAt)).slice(0, 5);
+    if (!ordenado.length) {
+        cont.innerHTML = '<div class="sa-empty-inline">Sin empresas todavía.</div>';
+        return;
+    }
+    cont.innerHTML = ordenado.map(t => `
+        <div class="sa-list-item">
+            <div class="sa-avatar">${iniciales(t.nombre || t.id)}</div>
+            <div class="sa-list-item-body"><strong>${t.nombre || t.id}</strong><span>${t.id}</span></div>
+            <div class="sa-list-item-meta">${formatFecha(t.createdAt)}</div>
+        </div>
+    `).join('');
+}
+
+function renderEmpresasRecientesTabla(lista, privadosPorId, usuarios) {
+    const tbody = document.getElementById('tabla-empresas-recientes');
+    const ordenado = [...lista].sort((a, b) => fechaDe(b.createdAt) - fechaDe(a.createdAt)).slice(0, 6);
+    if (!ordenado.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="sa-empty-inline">Sin empresas todavía.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = ordenado.map(t => {
+        const priv = privadosPorId.get(t.id);
+        const plan = planesDisponibles.find(p => p.id === priv?.planId);
+        const categoria = categorizarEmpresa(t, priv);
+        const numUsuarios = usuarios.filter(u => u.tenantId === t.id).length;
+        const venc = priv?.suscripcion?.fechaVencimiento ? formatFecha(priv.suscripcion.fechaVencimiento) : '—';
+        const nombreEscapado = (t.nombre || '').replace(/"/g, '&quot;');
+        return `<tr>
+            <td>
+                <div class="sa-table-company">
+                    <div class="sa-avatar">${iniciales(t.nombre || t.id)}</div>
+                    <div><strong>${t.nombre || t.id}</strong><span>${t.id}</span></div>
+                </div>
+            </td>
+            <td>${plan ? plan.nombre : 'Sin plan'}</td>
+            <td>${badgeEstadoHtml(categoria)}</td>
+            <td>${numUsuarios}</td>
+            <td>${venc}</td>
+            <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-gestionar-empresa" data-id="${t.id}" data-nombre="${nombreEscapado}">Ver empresa</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function renderPorVencer(lista, privadosPorId) {
+    const cont = document.getElementById('lista-por-vencer');
+    const items = lista
+        .map(t => ({ t, priv: privadosPorId.get(t.id) }))
+        .filter(({ t, priv }) => categorizarEmpresa(t, priv) === 'por-vencer')
+        .sort((a, b) => fechaDe(a.priv.suscripcion.fechaVencimiento) - fechaDe(b.priv.suscripcion.fechaVencimiento));
+
+    if (!items.length) {
+        cont.innerHTML = '<div class="sa-empty-inline">Nada por vencer en los próximos 30 días.</div>';
+        return { count: 0, html: cont.innerHTML };
+    }
+
+    cont.innerHTML = items.map(({ t, priv }) => {
+        const dias = Math.max(0, Math.ceil((priv.suscripcion.fechaVencimiento.toDate() - new Date()) / 86400000));
+        const plan = planesDisponibles.find(p => p.id === priv.planId);
+        return `<div class="sa-list-item">
+            <div class="sa-avatar">${iniciales(t.nombre || t.id)}</div>
+            <div class="sa-list-item-body"><strong>${t.nombre || t.id}</strong><span>${plan ? plan.nombre : 'Sin plan'}</span></div>
+            <div class="sa-list-item-meta"><strong>${dias} día${dias === 1 ? '' : 's'}</strong>${formatFecha(priv.suscripcion.fechaVencimiento)}</div>
+        </div>`;
+    }).join('');
+
+    return { count: items.length, html: cont.innerHTML };
+}
+
+function actualizarNotificaciones(info) {
+    const badge = document.getElementById('sa-notif-badge');
+    const lista = document.getElementById('sa-notif-list');
+    const count = info?.count || 0;
+    if (count > 0) {
+        badge.style.display = 'flex';
+        badge.textContent = count > 9 ? '9+' : String(count);
+        lista.innerHTML = info.html;
+    } else {
+        badge.style.display = 'none';
+        lista.innerHTML = '<div class="sa-notif-empty">Nada por vencer en los próximos 30 días.</div>';
+    }
+}
+
+function renderDashboard(listaCompleta, privadosPorId, usuarios) {
+    const conPriv = listaCompleta.map(t => ({ tenant: t, priv: privadosPorId.get(t.id) }));
+
+    document.getElementById('stat-empresas').textContent = listaCompleta.filter(t => (t.estado || 'activo') === 'activo').length;
+    document.getElementById('stat-empresas-total-sub').textContent = `de ${listaCompleta.length} empresa${listaCompleta.length === 1 ? '' : 's'}`;
+
+    let suscripcionesActivas = 0;
+    let ingresosMensuales = 0;
+    conPriv.forEach(({ tenant, priv }) => {
+        if ((tenant.estado || 'activo') !== 'activo' || !priv?.planId) return;
+        suscripcionesActivas++;
+        const plan = planesDisponibles.find(p => p.id === priv.planId);
+        const precio = priv.suscripcion?.precio ?? plan?.precio ?? 0;
+        const periodicidad = priv.suscripcion?.periodicidad || plan?.periodicidad || 'mensual';
+        ingresosMensuales += periodicidad === 'anual' ? precio / 12 : precio;
+    });
+    document.getElementById('stat-suscripciones-activas').textContent = suscripcionesActivas;
+    document.getElementById('stat-ingresos-mensuales').textContent = fmtMonedaDashboard.format(ingresosMensuales);
+
+    const counts = { activo: 0, porVencer: 0, vencida: 0, suspendida: 0 };
+    conPriv.forEach(({ tenant, priv }) => {
+        const categoria = categorizarEmpresa(tenant, priv);
+        if (categoria === 'activo') counts.activo++;
+        else if (categoria === 'por-vencer') counts.porVencer++;
+        else if (categoria === 'vencida') counts.vencida++;
+        else counts.suspendida++;
+    });
+    document.getElementById('stat-por-vencer').textContent = counts.porVencer;
+    buildDonut(counts);
+
+    renderIngresosPorPlan(conPriv);
+    renderNuevasEmpresas(listaCompleta);
+    renderEmpresasRecientesTabla(listaCompleta, privadosPorId, usuarios);
+    actualizarNotificaciones(renderPorVencer(listaCompleta, privadosPorId));
+}
+
+function intentarRenderDashboard() {
+    if (dashboardListo.empresas && dashboardListo.usuarios) {
+        renderDashboard(ultimaListaEmpresas, ultimosPrivadosPorId, ultimosUsuarios);
+    }
+}
+
 // ── Auth guard: solo SUPER_ADMIN entra aquí ─────────────────────────────
 
 (async function initAuthGuard() {
@@ -725,6 +983,7 @@ document.getElementById('btn-guardar-empresa')?.addEventListener('click', crearE
 
         document.getElementById('nav-user-name').textContent = usuario.nombre || 'Super Admin';
         document.getElementById('nav-user-email').textContent = usuario.email || '';
+        document.getElementById('sa-user-avatar').textContent = iniciales(usuario.nombre || 'Super Admin');
 
         ocultarGate();
         await cargarEmpresas();
