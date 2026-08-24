@@ -451,10 +451,21 @@ service cloud.firestore {
       // para el filtro por categoría — mismo criterio que productos.
       allow read: if true;
 
-      // Taxonomía compartida entre TODOS los tenants a propósito (Boutique y
-      // Fábrica usan la misma lista de categorías) — los documentos nunca
-      // llevan tenantId, así que basta el permiso, sin validar tenant.
-      allow create, update, delete: if hasPermission('categorias_gestionar');
+      // Boutique y Fábrica comparten taxonomía a propósito (misma dueña) —
+      // esos documentos nunca llevan tenantId, y para ellos basta el
+      // permiso, sin validar tenant (comportamiento sin cambios). Una
+      // empresa nueva del SaaS sí necesita sus categorías propias y
+      // aisladas: si el documento SÍ trae tenantId, se valida como
+      // cualquier otra colección tenant-aware. Preparado para cuando se
+      // construya esa UI (hoy admin.js sigue leyendo categorias sin
+      // filtrar, es decir, sigue siendo compartida en la práctica).
+      allow create: if hasPermission('categorias_gestionar') &&
+                      (!('tenantId' in request.resource.data) || isCreatingWithCorrectTenant());
+      allow update: if hasPermission('categorias_gestionar') &&
+                      (!('tenantId' in resource.data) || belongsToTenant(resource.data.tenantId)) &&
+                      isNotChangingTenant();
+      allow delete: if hasPermission('categorias_gestionar') &&
+                      (!('tenantId' in resource.data) || belongsToTenant(resource.data.tenantId));
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -769,6 +780,33 @@ service cloud.firestore {
       allow read: if true;
       // Solo usuarios admin autenticados pueden escribir
       allow create, update: if isActiveUser();
+      allow delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // CONFIGURACIÓN POR EMPRESA (tenants/{tenantId}/config/{docId})
+    // ═══════════════════════════════════════════════════════════════════
+    // Contraparte aislada de config/{docId}: ese documento es GLOBAL y
+    // compartido por cualquier usuario activo de CUALQUIER empresa — bien
+    // para lo que de verdad es de toda la plataforma, pero mal para algo
+    // como "cerrar todas las sesiones", que hoy cualquier vendedor de
+    // Fábrica podría usar para desconectar a Boutique entera. Lo que se
+    // guarde aquí (empezando por 'seguridad') es siempre de UNA empresa.
+    match /tenants/{tenantId}/config/{docId} {
+      // 'pagos' es el único subdocumento pensado para lectura pública (el
+      // checkout sin sesión necesita el QR de esa empresa); el resto
+      // (seguridad, etc.) solo lo lee gente de esa misma empresa.
+      allow read: if docId == 'pagos' || belongsToTenant(tenantId);
+
+      // 'seguridad' (cerrar todas las sesiones) es más sensible que el
+      // resto: solo Administrador/Sistema de ESA empresa, igual que ya
+      // exige la UI (data-roles="ADMIN,SUPER_ADMIN" en admin.html) — antes
+      // esto no se validaba del lado servidor. El resto exige el permiso
+      // config_gestionar de esa empresa (mismo criterio que hoy).
+      allow create, update: if belongsToTenant(tenantId) &&
+                               (docId == 'seguridad'
+                                 ? (getUserData().rol == 'ADMIN' || isSuperAdmin())
+                                 : hasPermission('config_gestionar'));
       allow delete: if false;
     }
 

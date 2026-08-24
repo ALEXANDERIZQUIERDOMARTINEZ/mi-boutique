@@ -12993,9 +12993,18 @@ console.log("✅ Módulo de Promociones Globales inicializado");
 // --- CONFIGURACIÓN DE PAGOS: QR Nequi ---
 // ========================================================================
 
+// Antes vivía en config/pagos (un solo documento global para toda la
+// plataforma) — con más de una empresa, todas terminarían leyendo/
+// pisando el mismo QR de cobro. Ahora es por empresa:
+// tenants/{tenantId}/config/pagos (ver firestore.rules: lectura pública,
+// escritura solo con permiso config_gestionar de esa empresa).
+function pagosConfigRef() {
+    return doc(db, 'tenants', window.expectedTenantId || 'boutique', 'config', 'pagos');
+}
+
 async function loadNequiQrPreview() {
     try {
-        const snap = await getDoc(doc(db, 'config', 'pagos'));
+        const snap = await getDoc(pagosConfigRef());
         const emptyEl = document.getElementById('admin-qr-empty');
         const previewWrap = document.getElementById('admin-qr-preview-wrap');
         const previewImg = document.getElementById('admin-qr-preview');
@@ -13037,7 +13046,7 @@ window.adminSaveNequiQr = async function() {
             };
             img.src = url;
         });
-        await setDoc(doc(db, 'config', 'pagos'), { nequiQrBase64: base64 }, { merge: true });
+        await setDoc(pagosConfigRef(), { nequiQrBase64: base64 }, { merge: true });
         showToast('✅ QR de Nequi guardado correctamente', 'success');
         statusEl.style.display = 'none';
         input.value = '';

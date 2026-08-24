@@ -247,13 +247,15 @@ export class AuthManager {
                 }
 
                 try {
-                    // El doc de 'usuarios' y la verificación de sesión vigente son
-                    // lecturas independientes: se piden en paralelo para no pagar
-                    // dos idas y vueltas de red seguidas en conexiones lentas.
-                    const [userDoc, sesionVigente] = await Promise.all([
-                        getDoc(doc(this.db, 'usuarios', user.uid)),
-                        this.verificarSesionVigente(user)
-                    ]);
+                    // ANTES 'usuarios' y "sesión vigente" se pedían en paralelo
+                    // (una sola ida y vuelta de red). Ya no se puede: la
+                    // invalidación de sesiones vive por empresa
+                    // (tenants/{tenantId}/config/seguridad, ver más abajo) y
+                    // hasta no leer 'usuarios' no se sabe el tenantId de quién
+                    // se está verificando. Se paga una ida y vuelta extra a
+                    // cambio de que cerrar sesiones de una empresa ya no pueda
+                    // afectar a otra.
+                    const userDoc = await getDoc(doc(this.db, 'usuarios', user.uid));
 
                     if (!userDoc.exists()) {
                         // Usuario no autorizado
@@ -288,8 +290,8 @@ export class AuthManager {
                     // que el panel cargue con datos y luego cada escritura
                     // falle sin explicación; si la verificación no puede
                     // completarse (sin red, etc.) no bloquea el acceso por eso.
-                    if (userData.rol !== 'SUPER_ADMIN') {
-                        const tenantId = userData.tenantId || 'boutique';
+                    const tenantId = userData.rol === 'SUPER_ADMIN' ? null : (userData.tenantId || 'boutique');
+                    if (tenantId) {
                         const motivoBloqueo = await this.verificarEmpresaBloqueada(tenantId);
                         if (motivoBloqueo) {
                             await this.logout();
@@ -301,6 +303,7 @@ export class AuthManager {
 
                     // Verificar que nadie haya cerrado todas las sesiones después
                     // de que este dispositivo inició sesión
+                    const sesionVigente = await this.verificarSesionVigente(user, tenantId);
                     if (!sesionVigente) {
                         await this.logout();
                         alert('Tu sesión fue cerrada por un administrador. Vuelve a iniciar sesión.');
@@ -369,7 +372,13 @@ export class AuthManager {
     /**
      * Compara el momento en que Firebase Auth registró el último inicio de
      * sesión de este usuario (user.metadata.lastSignInTime, dato del propio
-     * servidor de Firebase) contra config/seguridad.invalidarSesionesEn.
+     * servidor de Firebase) contra
+     * tenants/{tenantId}/config/seguridad.invalidarSesionesEn — POR EMPRESA,
+     * no un documento global: antes vivía en config/seguridad (compartido
+     * por toda la plataforma), así que cualquier usuario activo de
+     * cualquier empresa podía invalidar las sesiones de TODAS las demás.
+     * tenantId null (Super Admin, no pertenece a ninguna empresa) no se
+     * verifica — ver llamada en init().
      * Antes esto se comparaba contra una marca de tiempo propia guardada en
      * localStorage, pero localStorage puede vaciarse solo (limpieza de
      * almacenamiento de Safari/iOS tras días sin interacción, modo privado,
@@ -382,9 +391,10 @@ export class AuthManager {
      * cuando ocurre un inicio de sesión real, así que no depende de que
      * localStorage sobreviva.
      */
-    async verificarSesionVigente(user) {
+    async verificarSesionVigente(user, tenantId) {
+        if (!tenantId) return true; // Super Admin: no aplica
         try {
-            const cfgDoc = await getDoc(doc(this.db, 'config', 'seguridad'));
+            const cfgDoc = await getDoc(doc(this.db, 'tenants', tenantId, 'config', 'seguridad'));
             const invalidarEn = cfgDoc.exists() ? cfgDoc.data().invalidarSesionesEn : null;
             if (!invalidarEn) return true; // nunca se ha usado "cerrar todas las sesiones"
 
@@ -432,12 +442,19 @@ export class AuthManager {
     }
 
     /**
-     * Escucha en vivo config/seguridad: si un administrador cierra todas las
-     * sesiones mientras esta pestaña sigue abierta, la cierra de inmediato
-     * sin esperar a que alguien recargue la página.
+     * Escucha en vivo tenants/{tenantId}/config/seguridad DE LA EMPRESA de
+     * este usuario: si su administrador cierra todas las sesiones mientras
+     * esta pestaña sigue abierta, la cierra de inmediato sin esperar a que
+     * alguien recargue la página. Super Admin no pertenece a ninguna
+     * empresa, no aplica.
      */
     escucharInvalidacionSesiones() {
-        onSnapshot(doc(this.db, 'config', 'seguridad'), (snap) => {
+        if (this.isSuperAdmin()) return; // no pertenece a ninguna empresa
+        // Igual que en init(): un usuario sin tenantId (cuentas de Boutique
+        // de antes de multi-tenant) se trata como 'boutique', no como "sin
+        // empresa" — si no, se quedarían sin este listener por completo.
+        const tenantId = this.currentUser?.tenantId || 'boutique';
+        onSnapshot(doc(this.db, 'tenants', tenantId, 'config', 'seguridad'), (snap) => {
             const invalidarEn = snap.exists() ? snap.data().invalidarSesionesEn : null;
             if (!invalidarEn) return;
             const loginEn = Date.parse(this.auth.currentUser?.metadata?.lastSignInTime || '');
@@ -449,13 +466,21 @@ export class AuthManager {
     }
 
     /**
-     * Cierra de golpe todas las sesiones abiertas (incluida la propia): marca
-     * en Firestore el momento actual, y cada dispositivo (pestaña abierta o
+     * Cierra de golpe todas las sesiones abiertas de ESTA empresa (incluida
+     * la propia): marca en tenants/{tenantId}/config/seguridad el momento
+     * actual, y cada dispositivo de esa misma empresa (pestaña abierta o
      * próxima carga) se compara contra esa marca y se desloguea si su login
-     * es anterior.
+     * es anterior. Antes esto vivía en un documento global compartido por
+     * toda la plataforma — cualquier usuario activo de cualquier empresa
+     * podía cerrar las sesiones de todas las demás.
      */
     async invalidarTodasLasSesiones() {
-        await setDoc(doc(this.db, 'config', 'seguridad'), { invalidarSesionesEn: serverTimestamp() }, { merge: true });
+        // window.expectedTenantId (admin.js) ya resuelve esto correctamente
+        // para los dos casos: un usuario normal (su propia empresa) y Super
+        // Admin viendo una empresa via ?empresa= (que no tiene tenantId
+        // propio) — se prefiere sobre this.currentUser.tenantId por eso.
+        const tenantId = window.expectedTenantId || this.currentUser?.tenantId || 'boutique';
+        await setDoc(doc(this.db, 'tenants', tenantId, 'config', 'seguridad'), { invalidarSesionesEn: serverTimestamp() }, { merge: true });
     }
 
     /**
