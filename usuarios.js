@@ -97,49 +97,27 @@ function setupEventListeners() {
 const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
 
 /**
- * Refresca el directorio de usuarios (nombre + correo, sin rol ni permisos)
- * que usa login.html para mostrar el selector de usuario sin escribir el
- * correo. Se guarda en config/directorio_usuarios (lectura pública ya
- * permitida por las Security Rules) para que aparezca en CUALQUIER
- * dispositivo, no solo en el que lo generó, y también en localStorage como
- * caché rápida. Solo se ejecuta si el usuario actual pudo leer la colección
- * 'usuarios' (ya filtrado por las Security Rules).
+ * Refresca en localStorage el directorio de usuarios (nombre + correo, sin
+ * rol ni permisos) que usa login.html para mostrar el selector de usuario
+ * sin escribir el correo — SOLO de este dispositivo/tenant.
  *
- * Este mismo módulo se usa desde admin.html (Boutique) y admin-fabrica.html
- * (Fábrica), y el documento config/directorio_usuarios es ÚNICO y
- * compartido entre ambos paneles (login.html es la misma página para
- * cualquier empresa). loadUsuarios() solo trae los usuarios del tenant de
- * quien tiene la sesión abierta (así lo filtran las Security Rules), así
- * que NUNCA se puede sobrescribir el documento completo — eso borraría el
- * directorio del otro tenant. Se guarda como un mapa por tenantId y se
- * fusiona con lo que ya había, preservando el formato antiguo (un arreglo
- * plano, de antes de que existiera Fábrica) como el bucket "boutique".
+ * Antes esto también se guardaba en config/directorio_usuarios (lectura
+ * pública) para que apareciera en cualquier dispositivo, incluso sin
+ * sesión — pero esa colección es compartida entre TODAS las empresas de la
+ * plataforma, así que cualquiera podía leer nombre y correo del personal
+ * de cualquier otra empresa sin necesitar sesión. Se quitó: el directorio
+ * ahora es solo una comodidad local por dispositivo (quien ya inició
+ * sesión ahí antes aparece en la lista; los demás usan su correo).
  */
-async function actualizarDirectorioLocal(usuarios) {
+function actualizarDirectorioLocal(usuarios) {
     const directorio = usuarios
         .filter(u => u.activo)
         .map(u => ({ uid: u.id, nombre: u.nombre, email: u.email }));
-    const tenantId = window.expectedTenantId || 'boutique';
 
     try {
         localStorage.setItem(DIRECTORIO_KEY, JSON.stringify(directorio));
     } catch (e) {
         console.warn('No se pudo actualizar la caché local del directorio de usuarios:', e);
-    }
-
-    try {
-        const ref = doc(db, 'config', 'directorio_usuarios');
-        const actual = await getDoc(ref);
-        const dataActual = actual.exists() ? actual.data().usuarios : null;
-        const porTenant = Array.isArray(dataActual) ? { boutique: dataActual } : (dataActual || {});
-        porTenant[tenantId] = directorio;
-
-        await setDoc(ref, {
-            usuarios: porTenant,
-            updatedAt: serverTimestamp()
-        });
-    } catch (e) {
-        console.warn('No se pudo actualizar el directorio público de usuarios:', e);
     }
 }
 

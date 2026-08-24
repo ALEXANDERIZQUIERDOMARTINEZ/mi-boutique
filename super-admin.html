@@ -63,6 +63,9 @@
           <a href="#empresas" class="list-group-item list-group-item-action" data-bs-toggle="pill">
             <i class="bi bi-shop"></i> Empresas
           </a>
+          <a href="#planes" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+            <i class="bi bi-collection"></i> Planes
+          </a>
           <a href="#usuarios" class="list-group-item list-group-item-action" data-bs-toggle="pill">
             <i class="bi bi-people"></i> Usuarios y acceso
           </a>
@@ -113,6 +116,23 @@
               </button>
             </div>
             <div id="lista-empresas">
+              <div class="text-center py-5">
+                <div class="spinner-border" role="status"></div>
+                <p class="mt-2">Cargando...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Planes -->
+          <div class="tab-pane fade" id="planes">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h2>Planes</h2>
+              <button class="btn btn-primary" id="btn-nuevo-plan">
+                <i class="bi bi-plus-circle"></i> Nuevo plan
+              </button>
+            </div>
+            <p class="text-muted">Cada plan define qué módulos incluye. Se asigna a una empresa desde "Empresas" → Gestionar.</p>
+            <div id="lista-planes">
               <div class="text-center py-5">
                 <div class="spinner-border" role="status"></div>
                 <p class="mt-2">Cargando...</p>
@@ -183,11 +203,164 @@
                 <input type="color" class="form-control form-control-color w-100" id="empresa-color" value="#5b6b8c">
               </div>
             </div>
+            <div class="mb-3 mt-3">
+              <label class="form-label">Plan</label>
+              <select class="form-select" id="empresa-plan">
+                <option value="">Sin plan (por ahora ve todos los módulos — asígnale uno luego desde "Gestionar")</option>
+              </select>
+            </div>
+            <hr>
+            <h6>Cuenta del administrador de esta empresa</h6>
+            <p class="text-muted small">Se crea junto con la empresa para que quede operativa de inmediato, sin tocar código.</p>
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control" id="empresa-admin-nombre" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Correo</label>
+              <input type="email" class="form-control" id="empresa-admin-email" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Contraseña temporal</label>
+              <input type="password" class="form-control" id="empresa-admin-password" minlength="6" required>
+              <small class="text-muted">Mínimo 6 caracteres. Pídele que la cambie al entrar.</small>
+            </div>
           </form>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" class="btn btn-primary" id="btn-guardar-empresa">Crear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Nuevo/Editar Plan -->
+  <div class="modal fade" id="modalPlan" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalPlanTitle">Nuevo plan</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-plan">
+            <input type="hidden" id="plan-id">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="plan-nombre" placeholder="Ej: Profesional" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Precio</label>
+                <input type="number" class="form-control" id="plan-precio" min="0" step="0.01">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Periodicidad</label>
+                <select class="form-select" id="plan-periodicidad">
+                  <option value="mensual">Mensual</option>
+                  <option value="anual">Anual</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3 mt-3">
+              <label class="form-label">Descripción</label>
+              <textarea class="form-control" id="plan-descripcion" rows="2"></textarea>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Máximo de usuarios</label>
+                <input type="number" class="form-control" id="plan-max-usuarios" min="0" placeholder="Sin límite">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Máximo de productos</label>
+                <input type="number" class="form-control" id="plan-max-productos" min="0" placeholder="Sin límite">
+              </div>
+            </div>
+            <hr>
+            <label class="form-label d-block">Módulos incluidos en este plan</label>
+            <div id="plan-modulos-lista" class="row row-cols-1 row-cols-md-2 g-2"></div>
+            <div class="form-check form-switch mt-3">
+              <input class="form-check-input" type="checkbox" id="plan-activo" checked>
+              <label class="form-check-label" for="plan-activo">Disponible para asignar a empresas nuevas</label>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btn-guardar-plan">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Gestionar empresa (plan, módulos, estado, suscripción) -->
+  <div class="modal fade" id="modalGestionarEmpresa" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Gestionar <span id="gestion-empresa-nombre"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="gestion-tenant-id">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Estado</label>
+              <select class="form-select" id="gestion-estado">
+                <option value="activo">Activo</option>
+                <option value="trial">Prueba (trial)</option>
+                <option value="suspendido">Suspendido</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+              <small class="text-muted">Suspendido/Cancelado bloquea todo el acceso de esta empresa de inmediato.</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Plan</label>
+              <select class="form-select" id="gestion-plan">
+                <option value="">Sin plan</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-4">
+              <label class="form-label">Vence</label>
+              <input type="date" class="form-control" id="gestion-fecha-vencimiento">
+              <small class="text-muted">Vacío = no vence.</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Precio suscripción</label>
+              <input type="number" class="form-control" id="gestion-precio" min="0" step="0.01">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Periodicidad</label>
+              <select class="form-select" id="gestion-periodicidad">
+                <option value="">—</option>
+                <option value="mensual">Mensual</option>
+                <option value="anual">Anual</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-6">
+              <label class="form-label">Máximo de usuarios</label>
+              <input type="number" class="form-control" id="gestion-max-usuarios" min="0" placeholder="Sin límite">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Máximo de productos</label>
+              <input type="number" class="form-control" id="gestion-max-productos" min="0" placeholder="Sin límite">
+            </div>
+          </div>
+          <hr>
+          <label class="form-label d-block">
+            Módulos habilitados
+            <small class="text-muted d-block fw-normal">Los del plan vienen marcados. Puedes agregar o quitar módulos como excepción para esta empresa.</small>
+          </label>
+          <div id="gestion-modulos-lista" class="row row-cols-1 row-cols-md-2 g-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btn-guardar-gestion-empresa">Guardar</button>
         </div>
       </div>
     </div>

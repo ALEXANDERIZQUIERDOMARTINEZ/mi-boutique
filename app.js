@@ -3104,7 +3104,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const qrImg = document.getElementById('nequi-qr-img');
             if (qrImg && !qrImg.dataset.loaded) {
                 try {
-                    const snap = await getDoc(doc(db, 'config', 'pagos'));
+                    // Antes config/pagos (global) — ahora por empresa (ver
+                    // mismo cambio en admin.js). Este checkout sigue siendo
+                    // solo de Boutique (app.js no resuelve tenant todavía),
+                    // así que se deja fijo aquí igual que el resto del
+                    // archivo (ver tenantId: 'boutique' más abajo).
+                    const snap = await getDoc(doc(db, 'tenants', 'boutique', 'config', 'pagos'));
                     const qrBase64 = snap.exists() ? snap.data().nequiQrBase64 : null;
                     if (qrBase64) {
                         qrImg.src = qrBase64;

@@ -487,15 +487,16 @@
         const btnCambiarCuenta = document.getElementById('btn-cambiar-cuenta');
 
         // ─── Directorio de usuarios (solo nombre + correo, sin rol ni
-        // permisos) para el selector. Se guarda en Firestore en
-        // config/directorio_usuarios — esa colección ya es de lectura
-        // pública en las Security Rules (la usa el QR de pagos), así que
-        // login.html puede leerlo sin sesión y mostrar la lista completa en
-        // cualquier dispositivo, no solo en los que ya iniciaron sesión ahí.
-        // localStorage se usa solo como caché para pintar algo de inmediato
-        // mientras se confirma la lista real contra Firestore.
+        // permisos) para el selector — SOLO de este dispositivo, tomado de
+        // quien ya inició sesión aquí antes (ver upsertDirectorioCache).
+        // Antes existía también un documento compartido en Firestore
+        // (config/directorio_usuarios, de lectura pública) que mostraba a
+        // TODOS los usuarios de TODAS las empresas de la plataforma en
+        // cualquier dispositivo, sin sesión — una fuga real entre empresas
+        // en un sistema que ahora vende suscripciones a distintos dueños.
+        // Se quitó: un dispositivo nuevo simplemente empieza en modo
+        // "usar correo" hasta que alguien inicie sesión ahí una vez.
         const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
-        const DIRECTORIO_DOC = doc(db, 'config', 'directorio_usuarios');
 
         function getDirectorioCache() {
             try {
@@ -513,7 +514,7 @@
             localStorage.setItem(DIRECTORIO_KEY, JSON.stringify(directorio));
         }
 
-        function poblarUserSelect(directorio, { esDefinitivo } = {}) {
+        function poblarUserSelect(directorio) {
             // Quitar las opciones de usuario pintadas antes (deja el placeholder y "otro")
             userSelect.querySelectorAll('option[data-email]').forEach(opt => opt.remove());
 
@@ -527,36 +528,19 @@
                 userSelect.insertBefore(opt, userSelect.querySelector('option[value="__other__"]'));
             });
 
-            // Si ya había algo elegido (o escrito en modo manual), no lo pisamos
+            // Si ya había algo elegido (o escrito en modo manual), no lo pisamos.
+            // Sin nada en la caché de este dispositivo: usar correo directamente
+            // (ya no hay un directorio compartido contra el cual confirmar).
             if (ordenado.some(u => u.uid === valorPrevio)) {
                 userSelect.value = valorPrevio;
-            } else if (esDefinitivo && ordenado.length === 0) {
-                // Solo tras confirmar contra Firestore: si de verdad no hay nadie, usar correo
+            } else if (ordenado.length === 0) {
                 userSelect.value = '__other__';
                 manualEmailGroup.style.display = 'block';
                 manualEmailInput.required = true;
             }
         }
 
-        // 1) Pintar de inmediato con lo que haya en caché (puede estar vacío o desactualizado)
         poblarUserSelect(getDirectorioCache());
-
-        // 2) Confirmar contra Firestore (fuente real, funciona en cualquier dispositivo)
-        getDoc(DIRECTORIO_DOC).then(snap => {
-            // El documento guarda un mapa por tenantId ({ boutique: [...], fabrica: [...] })
-            // desde que existe más de una empresa — este selector es el mismo para
-            // cualquier empresa, así que se combinan todos los tenants en una sola
-            // lista. Se conserva el formato antiguo (arreglo plano) por compatibilidad
-            // con lo que ya hubiera guardado antes de esa migración.
-            const data = snap.exists() ? snap.data().usuarios : null;
-            const usuarios = Array.isArray(data) ? data : Object.values(data || {}).flat();
-            localStorage.setItem(DIRECTORIO_KEY, JSON.stringify(usuarios));
-            poblarUserSelect(usuarios, { esDefinitivo: true });
-        }).catch(error => {
-            console.warn('No se pudo cargar el directorio de usuarios desde Firestore:', error);
-            // Si ya había algo en caché se deja tal cual; si no, no forzamos "otro"
-            // porque puede ser un problema de conexión, no que no haya usuarios.
-        });
 
         userSelect.addEventListener('change', () => {
             const esOtro = userSelect.value === '__other__';
