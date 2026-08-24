@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { initializeFirestore, collection, onSnapshot, setDoc, doc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroup, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getHybridTierInfo, resolveWholesaleGroupByCategory, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js';
 import { getColorHex, getColorSwatchStyle, formatColorLabel } from './color-utils.js';
 import { startGuideTour } from './guide-tour.js';
 
@@ -331,7 +331,7 @@ function ordenAlcanzaMinimo() {
 function totalPorGrupo(grupo) {
     let total = 0;
     allProducts.forEach(p => {
-        if (resolveWholesaleGroup(p, categoriesMap) === grupo) total += getCantidadProducto(p.id);
+        if (resolveWholesaleGroupByCategory(p, categoriesMap) === grupo) total += getCantidadProducto(p.id);
     });
     return total;
 }
@@ -342,7 +342,7 @@ function totalPorGrupo(grupo) {
 function totalSurtidoBasico() {
     let total = 0;
     allProducts.forEach(p => {
-        const grupo = resolveWholesaleGroup(p, categoriesMap);
+        const grupo = resolveWholesaleGroupByCategory(p, categoriesMap);
         if (isSurtidoGroup(grupo)) total += getCantidadProducto(p.id);
     });
     return total;
@@ -358,7 +358,7 @@ function totalSurtidoBasico() {
 // asume el mínimo (vitrina), para mostrar de una vez el precio al que se puede
 // llegar surtiendo 6 prendas.
 function getPrecioInfo(p) {
-    const grupo = resolveWholesaleGroup(p, categoriesMap);
+    const grupo = resolveWholesaleGroupByCategory(p, categoriesMap);
     if (!grupo || !WHOLESALE_TIER_GROUPS[grupo]) return null;
     const totalPropio = totalPorGrupo(grupo);
     const totalMixto = Math.max(MIN_POR_PRENDA, totalSurtidoBasico());
@@ -377,7 +377,7 @@ function getPrecioUnitario(p) {
 }
 
 function buildTierHint(p) {
-    const grupo = resolveWholesaleGroup(p, categoriesMap);
+    const grupo = resolveWholesaleGroupByCategory(p, categoriesMap);
     const group = WHOLESALE_TIER_GROUPS[grupo];
     if (!grupo || !group) return '';
     const info = getPrecioInfo(p);
@@ -648,7 +648,7 @@ function buildStockBadgeHtml(p) {
 }
 
 function buildCardPriceHtml(p) {
-    const grupo = resolveWholesaleGroup(p, categoriesMap);
+    const grupo = resolveWholesaleGroupByCategory(p, categoriesMap);
     const precioUnitario = getPrecioUnitario(p);
     if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
         return `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${buildTierHint(p)}</span>`;

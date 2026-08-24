@@ -190,6 +190,16 @@ export function detectGroupFromCategoryName(nombreCategoria) {
     return '';
 }
 
+// Resuelve el grupo de precio mayorista de un producto de FÁBRICA: siempre a
+// partir de su categoría, sin permitir overrides manuales por producto. Así el
+// precio que ve el cliente mayorista en mayor.html queda atado estrictamente
+// a la categoría asignada, sin que un grupoMayorista desalineado a mano pueda
+// mostrar una tabla de precios distinta a la de su categoría.
+export function resolveWholesaleGroupByCategory(product, categoriesMap) {
+    const nombreCategoria = categoriesMap?.get(product?.categoriaId) || '';
+    return detectGroupFromCategoryName(nombreCategoria);
+}
+
 // Resuelve el grupo de precio mayorista de un producto:
 // - grupoMayorista === 'ninguno': override explícito para IGNORAR la detección
 //   por categoría y usar siempre el Precio Mayor fijo del producto (ej. un
