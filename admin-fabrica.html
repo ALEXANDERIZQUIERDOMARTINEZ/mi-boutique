@@ -244,6 +244,80 @@
                     </a>
                 </div>
             </section>
+
+            <!-- ── Resumen financiero: inversión, bajo stock y utilidad — lo que
+                 mostraba el Dashboard anterior, debajo del saludo y accesos ── -->
+            <section class="db-section">
+                <div class="db-head">
+                    <div class="db-head-left">
+                        <span class="db-eyebrow">Resumen</span>
+                        <h1 class="db-title">Inversión y utilidad</h1>
+                    </div>
+                    <div class="db2-time-range">
+                        <button class="db2-range-btn active" data-range="today">Hoy</button>
+                        <button class="db2-range-btn" data-range="week">Semana</button>
+                        <button class="db2-range-btn" data-range="month">Mes</button>
+                        <button class="db2-range-btn" data-range="year">Año</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="db-section">
+                <div class="db-panel db-stat-strip">
+                    <div class="db-stat">
+                        <div class="db-stat-icon fin2-skpi-icon--blue"><i class="bi bi-boxes"></i></div>
+                        <div class="db-stat-body">
+                            <div class="db-stat-val" id="fdb-total-productos">0</div>
+                            <div class="db-stat-name">Productos</div>
+                            <div class="db-stat-sub" id="fdb-productos-disponibles">0 disponibles</div>
+                        </div>
+                    </div>
+                    <div class="db-stat">
+                        <div class="db-stat-icon fin2-skpi-icon--amber"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                        <div class="db-stat-body">
+                            <div class="db-stat-val" id="fdb-bajo-stock">0</div>
+                            <div class="db-stat-name">Bajo stock</div>
+                            <div class="db-stat-sub">2 unidades o menos</div>
+                        </div>
+                    </div>
+                    <div class="db-stat">
+                        <div class="db-stat-icon fin2-skpi-icon--slate"><i class="bi bi-box-seam-fill"></i></div>
+                        <div class="db-stat-body">
+                            <div class="db-stat-val" id="fdb-inversion-inventario">$0</div>
+                            <div class="db-stat-name">Inversión inventario</div>
+                            <div class="db-stat-sub" id="fdb-inventario-unidades">0 unidades</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="db-section">
+                <div class="db-panel db-compare">
+                    <div class="db-panel-head">
+                        <span class="db-panel-title">Ventas</span>
+                    </div>
+                    <div class="db-compare-grid">
+                        <div class="db-compare-col">
+                            <div class="db-compare-kpis">
+                                <div class="db-compare-kpi">
+                                    <span class="db-compare-kpi-label" id="fdb-ventas-periodo-title">Ventas hoy</span>
+                                    <span class="db-compare-kpi-val" id="fdb-ventas-periodo">$0</span>
+                                    <span class="db-compare-kpi-sub" id="fdb-ventas-count">0 ventas</span>
+                                </div>
+                                <div class="db-compare-kpi">
+                                    <span class="db-compare-kpi-label">Ganancia real</span>
+                                    <span class="db-compare-kpi-val" id="fdb-ganancia-real">$0</span>
+                                </div>
+                                <div class="db-compare-kpi">
+                                    <span class="db-compare-kpi-label">Utilidad potencial</span>
+                                    <span class="db-compare-kpi-val" id="fdb-utilidad-potencial">$0</span>
+                                    <span class="db-compare-kpi-sub" id="fdb-margen-utilidad">0% de margen</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════
@@ -1847,7 +1921,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.6.2"></script>
+    <script type="module" src="admin-fabrica.js?v=1.6.3"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.1.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->
