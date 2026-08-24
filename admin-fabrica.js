@@ -15,7 +15,7 @@ import {
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
-import { WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js";
+import { WHOLESALE_TIER_GROUPS, detectGroupFromCategoryName } from "./wholesale-tiers.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -1962,6 +1962,17 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             grupos.map(([clave, g]) => `<option value="${clave}">${g.label}</option>`).join('');
     }
 
+    // El grupo mayorista (y por lo tanto la tabla de precios que ve el
+    // cliente en mayor.html, ver resolveWholesaleGroupByCategory en
+    // wholesale-tiers.js) se deriva SIEMPRE de la categoría elegida — el
+    // campo es solo informativo, no editable a mano, para que el precio de
+    // fábrica quede atado estrictamente a la categoría del producto.
+    function sincronizarGrupoMayoristaConCategoria() {
+        const nombreCategoria = categoriasMap.get(categoriaSelect.value) || '';
+        grupoMayoristaSelect.value = detectGroupFromCategoryName(nombreCategoria);
+    }
+    categoriaSelect.addEventListener('change', sincronizarGrupoMayoristaConCategoria);
+
     function renderTabla() {
         const texto = (searchInput.value || '').trim().toLowerCase();
         const categoriaId = categoriaFilter.value;
@@ -1988,7 +1999,8 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             const variacionesTxt = (p.variaciones || []).length
                 ? p.variaciones.map(v => `${v.talla || '—'} / ${v.color || '—'} (${v.stock ?? 0})`).join(', ')
                 : 'Sin variaciones';
-            const grupo = p.grupoMayorista ? (WHOLESALE_TIER_GROUPS[p.grupoMayorista]?.label || p.grupoMayorista) : '—';
+            const grupoClave = detectGroupFromCategoryName(categoriasMap.get(p.categoriaId) || '');
+            const grupo = grupoClave ? (WHOLESALE_TIER_GROUPS[grupoClave]?.label || grupoClave) : '—';
             const imgSrc = p.imagenUrl || 'https://placehold.co/60x60/f5e8ed/D988B9?text=%20';
             return `<tr>
                 <td><img src="${imgSrc}" alt="${p.nombre || ''}" class="table-product-img"></td>
@@ -2066,6 +2078,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         imagenPreview.style.display = 'none';
         imagenPreview.src = '';
         visibleCheckbox.checked = true;
+        sincronizarGrupoMayoristaConCategoria();
         variacionesContainer.innerHTML = '';
         agregarFilaVariacion();
         modalTitle.textContent = 'Nuevo producto';
@@ -2087,7 +2100,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             nombreInput.value = p.nombre || '';
             descripcionInput.value = p.descripcion || '';
             categoriaSelect.value = p.categoriaId || '';
-            grupoMayoristaSelect.value = p.grupoMayorista || '';
+            sincronizarGrupoMayoristaConCategoria();
             costoInput.value = p.costoCompra || '';
             precioMayorInput.value = p.precioMayor || '';
             visibleCheckbox.checked = p.visible !== false;
