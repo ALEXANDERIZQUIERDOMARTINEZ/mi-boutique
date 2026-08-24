@@ -280,6 +280,25 @@ export class AuthManager {
                     // El aislamiento real de datos lo garantiza
                     // firestore.rules del lado servidor, no este cliente.
 
+                    // Verificar que la EMPRESA del usuario esté activa (no
+                    // suspendida/cancelada/vencida). Super Admin no pertenece
+                    // a ninguna empresa, se salta esto. El enforcement real
+                    // está en firestore.rules (tenantActivo(), ver Fase 1 del
+                    // SaaS multiempresa) — este chequeo es solo para no dejar
+                    // que el panel cargue con datos y luego cada escritura
+                    // falle sin explicación; si la verificación no puede
+                    // completarse (sin red, etc.) no bloquea el acceso por eso.
+                    if (userData.rol !== 'SUPER_ADMIN') {
+                        const tenantId = userData.tenantId || 'boutique';
+                        const motivoBloqueo = await this.verificarEmpresaBloqueada(tenantId);
+                        if (motivoBloqueo) {
+                            await this.logout();
+                            alert(motivoBloqueo);
+                            rejectOnce('Tenant blocked');
+                            return;
+                        }
+                    }
+
                     // Verificar que nadie haya cerrado todas las sesiones después
                     // de que este dispositivo inició sesión
                     if (!sesionVigente) {
@@ -376,6 +395,40 @@ export class AuthManager {
             console.warn('No se pudo verificar el estado de la sesión:', error);
             return true; // si falla la verificación, no bloquear el acceso por eso
         }
+    }
+
+    /**
+     * Devuelve un mensaje explicando por qué la empresa de este usuario está
+     * bloqueada (suspendida, cancelada, o con la suscripción vencida), o
+     * null si puede entrar. Espejo en el cliente de tenantActivo() en
+     * firestore.rules (Fase 1 del SaaS multiempresa) — el enforcement real
+     * es ese, esto solo evita un panel a medio cargar con errores confusos.
+     * Si algo falla al verificar (sin red, tenantsPrivado sin permiso
+     * todavía, etc.) no bloquea el acceso por eso — mismo criterio que
+     * verificarSesionVigente().
+     */
+    async verificarEmpresaBloqueada(tenantId) {
+        try {
+            const tenantDoc = await getDoc(doc(this.db, 'tenants', tenantId));
+            const estado = tenantDoc.exists() ? tenantDoc.data().estado : null;
+            if (estado === 'suspendido') return 'Tu empresa está suspendida. Contacta al administrador de la plataforma.';
+            if (estado === 'cancelado') return 'Tu empresa canceló su suscripción. Contacta al administrador de la plataforma.';
+        } catch (error) {
+            console.warn('No se pudo verificar el estado de la empresa:', error);
+            return null;
+        }
+
+        try {
+            const privDoc = await getDoc(doc(this.db, 'tenantsPrivado', tenantId));
+            const fechaVencimiento = privDoc.exists() ? privDoc.data()?.suscripcion?.fechaVencimiento : null;
+            if (fechaVencimiento && fechaVencimiento.toDate() < new Date()) {
+                return 'La suscripción de tu empresa venció. Contacta al administrador de la plataforma.';
+            }
+        } catch (error) {
+            console.warn('No se pudo verificar la vigencia de la suscripción:', error);
+        }
+
+        return null;
     }
 
     /**
