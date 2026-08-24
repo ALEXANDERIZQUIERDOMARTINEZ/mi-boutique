@@ -95,11 +95,12 @@ const BADGE_POR_ESTADO = {
 
 // ── Cache para el Dashboard: se rellena desde cargarEmpresas()/cargarUsuarios()
 // (que ya hacen estas consultas para sus propias pestañas) y se re-renderiza
-// sin duplicar lecturas a Firestore. Ver intentarRenderDashboard().
+// sin duplicar lecturas a Firestore. Cada una pinta el Dashboard con lo que
+// tenga apenas termina — no esperan una a la otra — para que un fallo en
+// una no deje a la otra congelada (ver mostrarErrorDashboard más abajo).
 let ultimaListaEmpresas = [];
 let ultimosPrivadosPorId = new Map();
 let ultimosUsuarios = [];
-const dashboardListo = { empresas: false, usuarios: false };
 
 async function cargarEmpresas() {
     const cont = document.getElementById('lista-empresas');
@@ -157,11 +158,12 @@ async function cargarEmpresas() {
 
         ultimaListaEmpresas = listaCompleta;
         ultimosPrivadosPorId = privadosPorId;
-        dashboardListo.empresas = true;
-        intentarRenderDashboard();
+        ocultarErrorDashboard();
+        renderDashboard(ultimaListaEmpresas, ultimosPrivadosPorId, ultimosUsuarios);
     } catch (error) {
         console.error('Error al cargar empresas:', error);
         cont.innerHTML = `<div class="alert alert-danger">Error al cargar empresas: ${error.message}</div>`;
+        mostrarErrorDashboard(`No se pudieron cargar las empresas: ${error.message}`);
     }
 }
 
@@ -653,8 +655,8 @@ async function cargarUsuarios() {
             usuarios.filter(u => !u.tenantId && u.rol !== 'SUPER_ADMIN').length;
 
         ultimosUsuarios = usuarios;
-        dashboardListo.usuarios = true;
-        intentarRenderDashboard();
+        ocultarErrorDashboard();
+        renderDashboard(ultimaListaEmpresas, ultimosPrivadosPorId, ultimosUsuarios);
 
         if (!usuarios.length) {
             tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">No hay usuarios todavía.</td></tr>`;
@@ -688,6 +690,7 @@ async function cargarUsuarios() {
     } catch (error) {
         console.error('Error al cargar usuarios:', error);
         tbody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-4">Error al cargar: ${error.message}</td></tr>`;
+        mostrarErrorDashboard(`No se pudieron cargar los usuarios: ${error.message}`);
     }
 }
 
@@ -956,11 +959,31 @@ function renderDashboard(listaCompleta, privadosPorId, usuarios) {
     actualizarNotificaciones(renderPorVencer(listaCompleta, privadosPorId));
 }
 
-function intentarRenderDashboard() {
-    if (dashboardListo.empresas && dashboardListo.usuarios) {
-        renderDashboard(ultimaListaEmpresas, ultimosPrivadosPorId, ultimosUsuarios);
-    }
+/**
+ * Aviso de error visible en el propio Dashboard, sin importar en qué
+ * pestaña haya fallado la carga (antes solo se veía dentro de "Empresas" o
+ * "Usuarios y acceso", así que si estabas viendo el Dashboard el fallo
+ * pasaba desapercibido y los contadores se quedaban pegados en 0/Cargando).
+ */
+function mostrarErrorDashboard(mensaje) {
+    const banner = document.getElementById('sa-dashboard-error');
+    if (!banner) return;
+    document.getElementById('sa-dashboard-error-msg').textContent = mensaje;
+    banner.style.display = 'flex';
 }
+function ocultarErrorDashboard() {
+    const banner = document.getElementById('sa-dashboard-error');
+    if (banner) banner.style.display = 'none';
+}
+document.getElementById('sa-dashboard-error-retry')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+        await Promise.all([cargarEmpresas(), cargarUsuarios()]);
+    } finally {
+        btn.disabled = false;
+    }
+});
 
 // ── Auth guard: solo SUPER_ADMIN entra aquí ─────────────────────────────
 
