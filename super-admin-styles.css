@@ -295,6 +295,11 @@ body.sa-body {
 .sa-bottomnav-item:active { background: var(--sa-surface-hover); }
 
 .sa-grid { display: grid; gap: 16px; }
+/* Los hijos de un grid no se encogen bajo el ancho de su contenido por
+   defecto (min-width:auto) — sin esto, una tabla ancha empuja la tarjeta
+   entera (y toda la fila) fuera de la pantalla en vez de scrollear solo
+   ella misma por dentro. */
+.sa-grid > * { min-width: 0; }
 .sa-stats-grid { grid-template-columns: repeat(5, 1fr); }
 .sa-dash-grid { grid-template-columns: 1.3fr 1fr 1fr; }
 .sa-dash-grid2 { grid-template-columns: 1.6fr 1fr; }
@@ -379,8 +384,8 @@ body.sa-body {
 .sa-empty-inline { padding: 20px 4px; text-align: center; color: var(--sa-text-tertiary); font-size: .82rem; }
 
 /* ── Tabla ── */
-.sa-table-wrap { overflow-x: auto; }
-.sa-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.sa-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.sa-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: .85rem; }
 .sa-table th {
   text-align: left; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em;
   color: var(--sa-text-tertiary); font-weight: 700; padding: 0 12px 10px; border-bottom: 1px solid var(--sa-border);
