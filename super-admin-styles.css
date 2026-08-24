@@ -72,7 +72,7 @@ body.sa-body {
 }
 
 /* ── Layout ── */
-.sa-shell { display: flex; min-height: 100vh; }
+.sa-shell { display: flex; min-height: 100vh; min-height: 100dvh; }
 
 .sa-sidebar {
   width: var(--sa-sidebar-w);
