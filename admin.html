@@ -126,6 +126,26 @@
                 </a>
             </div>
 
+            <!-- Fábrica: exclusivo de empresas con producción propia -->
+            <div class="rail-group">
+                <span class="rail-group-label">Fábrica</span>
+                <a class="rail-link" href="#productos-fabrica" data-tooltip="Productos Fábrica" data-permiso="inventario_fabrica_gestionar">
+                    <i class="bi bi-grid-3x3-gap"></i><span>Productos Fábrica</span>
+                </a>
+                <a class="rail-link" href="#cargue-masivo-fabrica" data-tooltip="Cargue Masivo Fábrica" data-permiso="inventario_fabrica_gestionar">
+                    <i class="bi bi-file-earmark-excel"></i><span>Cargue Masivo Fábrica</span>
+                </a>
+                <a class="rail-link" href="#etiquetas-fabrica" data-tooltip="Etiquetas Fábrica" data-permiso="inventario_fabrica_gestionar">
+                    <i class="bi bi-upc-scan"></i><span>Etiquetas Fábrica</span>
+                </a>
+                <a class="rail-link" href="#inventario-fabrica" data-tooltip="Inventario Fábrica" data-permiso="inventario_fabrica_gestionar">
+                    <i class="bi bi-boxes"></i><span>Inventario Fábrica</span>
+                </a>
+                <a class="rail-link" href="#fabrica" data-tooltip="Gastos e Ingresos" data-permiso="fabrica_gestionar">
+                    <i class="bi bi-cash-coin"></i><span>Gastos e Ingresos</span>
+                </a>
+            </div>
+
             <!-- Logística -->
             <div class="rail-group">
                 <span class="rail-group-label">Logística</span>
@@ -1371,6 +1391,581 @@
                 </div>
 
                 <p class="text-muted small mt-2 mb-0" id="tarifas-last-update"></p>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════════
+                 SECCIÓN: PRODUCTOS FÁBRICA — catálogo propio, independiente de Boutique
+                 (exclusivo: solo visible con permiso inventario_fabrica_gestionar)
+                 ═══════════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="productos-fabrica">
+
+                <!-- ── Encabezado ── -->
+                <div class="fin2-page-header">
+                    <div>
+                        <h1 class="fin2-page-title"><i class="bi bi-grid-3x3-gap"></i> Productos Fábrica</h1>
+                        <p class="fin2-page-subtitle">Catálogo propio de Fábrica — sin depender del catálogo de Boutique</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary btn-sm" id="prodfab-btn-nuevo">
+                            <i class="bi bi-plus-circle me-1"></i> Nuevo producto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── Búsqueda y filtros ── -->
+                <div class="inv-filters-block">
+                    <div class="inv-filters-grid">
+                        <div class="inv-search-wrap">
+                            <span class="inv-search-icon"><i class="bi bi-search"></i></span>
+                            <input type="search" id="prodfab-search" class="inv-search-input" placeholder="Buscar por nombre...">
+                        </div>
+                        <div class="inv-filters-row2">
+                            <select class="form-select form-select-sm" id="prodfab-filter-categoria" style="max-width:220px;">
+                                <option value="">Todas las categorías</option>
+                            </select>
+                            <label class="inv-toggle-label" for="prodfab-filter-bajo-stock">
+                                <i class="bi bi-exclamation-triangle text-warning"></i> Solo bajo stock
+                                <div class="form-check form-switch ms-1 mb-0">
+                                    <input class="form-check-input" type="checkbox" id="prodfab-filter-bajo-stock">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Tabla ── -->
+                <div class="fin2-table-card">
+                    <div class="fin2-table-header">
+                        <div>
+                            <span class="fin2-table-title">
+                                <i class="bi bi-list-ul"></i> Productos
+                            </span>
+                        </div>
+                    </div>
+                    <div class="fin2-table-wrapper">
+                        <table class="fin2-table">
+                            <thead>
+                                <tr>
+                                    <th>Foto</th>
+                                    <th>Nombre</th>
+                                    <th>Categoría</th>
+                                    <th>Grupo mayorista</th>
+                                    <th class="text-end">P. Mayor</th>
+                                    <th>Variaciones (stock)</th>
+                                    <th class="text-end">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prodfab-tabla-body">
+                                <tr>
+                                    <td colspan="7" class="fin2-empty-state">
+                                        <i class="bi bi-inbox"></i>
+                                        <span>Cargando...</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ CARGUE MASIVO FÁBRICA ══ -->
+            <div class="tab-pane fade" id="cargue-masivo-fabrica">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h2 mb-0"><i class="bi bi-file-earmark-excel me-2"></i>Cargue Masivo de Productos</h1>
+                </div>
+
+                <!-- PASO 1: SUBIR ARCHIVO -->
+                <div id="cmfab-paso-subir" class="cargue-paso active">
+                    <div class="card shadow-sm">
+                        <div class="card-body p-5 text-center">
+                            <div class="mb-4"><i class="bi bi-cloud-upload text-primary" style="font-size: 4rem;"></i></div>
+                            <h3 class="mb-3">Paso 1: Subir Archivo Excel</h3>
+                            <p class="text-muted mb-4">
+                                Sube un archivo .xlsx o .csv con tus productos.
+                                La primera fila debe contener los encabezados obligatorios.
+                            </p>
+                            <div class="alert alert-info text-start mb-4">
+                                <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Formato del Excel</h6>
+                                <p class="mb-2"><strong>Columnas obligatorias (primera fila):</strong></p>
+                                <code class="d-block bg-white p-2 rounded mb-2">
+                                    nombre | categoria | precio_mayor | talla | color | cantidad
+                                </code>
+                                <p class="mb-2 mt-2"><strong>Columnas opcionales:</strong></p>
+                                <code class="d-block bg-white p-2 rounded mb-3">
+                                    codigo | descripcion | costo | grupo_mayorista
+                                </code>
+                                <div class="alert alert-success mb-2">
+                                    <strong>✨ Campo CÓDIGO (Recomendado)</strong>
+                                    <small class="d-block mt-1">
+                                        • Incluye el <strong>código</strong> del producto existente para actualizar sus variaciones<br>
+                                        • Si incluyes código, NO se crearán duplicados<br>
+                                        • Puedes encontrar el código en la lista de productos<br>
+                                        • Si no incluyes código, el sistema lo generará automáticamente
+                                    </small>
+                                </div>
+                                <small class="text-muted d-block">
+                                    • Si no incluyes <strong>costo</strong>, se calculará automáticamente como el 50% del precio_mayor<br>
+                                    • Si no incluyes <strong>descripcion</strong>, quedará vacía<br>
+                                    • Cada fila representa una variación del producto<br>
+                                    • Los campos vacíos en talla/color se permiten para productos sin variaciones<br>
+                                    • Los nombres de columnas no distinguen mayúsculas/minúsculas
+                                </small>
+                            </div>
+                            <input type="file" id="cmfab-input-archivo" accept=".xlsx,.xls,.csv" style="display: none;">
+                            <button type="button" class="btn btn-primary btn-lg" id="cmfab-btn-seleccionar-archivo">
+                                <i class="bi bi-folder2-open me-2"></i>Seleccionar Archivo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 2: VISTA PREVIA Y EDICIÓN -->
+                <div id="cmfab-paso-vista-previa" class="cargue-paso" style="display: none;">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                            <h5 class="mb-0"><i class="bi bi-table me-2"></i>Paso 2: Vista Previa y Validación</h5>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary me-2" id="cmfab-btn-cancelar">
+                                    <i class="bi bi-x-circle me-1"></i>Cancelar
+                                </button>
+                                <button type="button" class="btn btn-success" id="cmfab-btn-procesar-datos" disabled>
+                                    <i class="bi bi-check-circle me-1"></i>Procesar Datos
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="p-3 bg-light border-bottom">
+                                <div class="row">
+                                    <div class="col-md-3"><small class="text-muted d-block">Archivo:</small><strong id="cmfab-nombre-archivo">-</strong></div>
+                                    <div class="col-md-3"><small class="text-muted d-block">Total Filas:</small><strong id="cmfab-total-filas">0</strong></div>
+                                    <div class="col-md-3"><small class="text-muted d-block">Filas Válidas:</small><strong class="text-success" id="cmfab-filas-validas">0</strong></div>
+                                    <div class="col-md-3"><small class="text-muted d-block">Filas con Errores:</small><strong class="text-danger" id="cmfab-filas-errores">0</strong></div>
+                                </div>
+                            </div>
+                            <div class="table-responsive" style="max-height: 600px; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;">
+                                <table class="table table-hover table-sm mb-0" id="cmfab-tabla-vista-previa">
+                                    <thead class="sticky-top bg-white" style="top: 0; z-index: 10;">
+                                        <tr>
+                                            <th width="40">#</th>
+                                            <th>Nombre</th>
+                                            <th>Descripción</th>
+                                            <th>Categoría</th>
+                                            <th width="100">Costo</th>
+                                            <th width="100">P. Mayor</th>
+                                            <th width="80">Talla</th>
+                                            <th width="80">Color</th>
+                                            <th width="80">Cantidad</th>
+                                            <th width="60">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cmfab-tbody-vista-previa"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 3: CONFIRMACIÓN Y DUPLICADOS -->
+                <div id="cmfab-paso-confirmacion" class="cargue-paso" style="display: none;">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white py-3">
+                            <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Paso 3: Confirmación y Duplicados</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info mb-4">
+                                <h6 class="alert-heading">Resumen de Productos Procesados</h6>
+                                <div class="row mt-3">
+                                    <div class="col-md-4"><small class="text-muted d-block">Total Productos:</small><strong id="cmfab-resumen-total-productos">0</strong></div>
+                                    <div class="col-md-4"><small class="text-muted d-block">Total Variaciones:</small><strong id="cmfab-resumen-total-variaciones">0</strong></div>
+                                    <div class="col-md-4"><small class="text-muted d-block">Total Unidades:</small><strong id="cmfab-resumen-total-unidades">0</strong></div>
+                                </div>
+                            </div>
+
+                            <div id="cmfab-seccion-advertencias" style="display: none;">
+                                <div class="alert alert-danger">
+                                    <h6 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>⚠️ Advertencia: Posibles Duplicados</h6>
+                                    <p class="mb-0">Los siguientes productos del Excel tienen el mismo nombre que productos existentes, pero diferente categoría:</p>
+                                </div>
+                                <div id="cmfab-lista-advertencias" class="mb-4"></div>
+                            </div>
+
+                            <div id="cmfab-seccion-duplicados" style="display: none;">
+                                <div class="alert alert-warning">
+                                    <h6 class="alert-heading"><i class="bi bi-exclamation-circle me-2"></i>Productos Duplicados Detectados</h6>
+                                    <p class="mb-0">Los siguientes productos ya existen en el catálogo. Selecciona una acción:</p>
+                                </div>
+                                <div id="cmfab-lista-duplicados" class="mb-4"></div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-outline-secondary" id="cmfab-btn-volver-edicion">
+                                    <i class="bi bi-arrow-left me-1"></i>Volver a Editar
+                                </button>
+                                <button type="button" class="btn btn-success btn-lg" id="cmfab-btn-confirmar-carga">
+                                    <i class="bi bi-check-circle me-2"></i>Confirmar Carga al Inventario
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOADER ANIMADO -->
+                <div id="cmfab-loader" class="cargue-loader" style="display: none;">
+                    <div class="loader-content">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 4rem; height: 4rem;">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <h4 id="cmfab-loader-mensaje">Procesando...</h4>
+                        <div class="progress mt-3" style="height: 30px; width: 300px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" id="cmfab-loader-progreso" style="width: 0%;">
+                                <span id="cmfab-loader-porcentaje">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══ ETIQUETAS FÁBRICA ══ -->
+            <div class="tab-pane fade" id="etiquetas-fabrica">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1 class="h2 mb-0">Etiquetas de Productos (Fábrica)</h1>
+                </div>
+                <p class="text-muted mb-3">Genera e imprime etiquetas con código QR para pegar en cada producto. El QR codifica la referencia del producto.</p>
+
+                <div class="card mb-3">
+                    <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0">Configuración de la etiqueta</h3></div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="etqfab-tamano" class="form-label">Tamaño de etiqueta:</label>
+                                <select class="form-select" id="etqfab-tamano">
+                                    <option value="50x25x3">50 × 25 mm — 3 por fila (hoja adhesiva)</option>
+                                    <option value="40x30x3">40 × 30 mm — 3 por fila (hoja adhesiva)</option>
+                                    <option value="30x20x4">30 × 20 mm — 4 por fila (hoja adhesiva)</option>
+                                    <option value="50x25x1">50 × 25 mm — 1 por fila (rollo térmico)</option>
+                                    <option value="40x25x1">40 × 25 mm — 1 por fila (rollo térmico)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label d-block">Incluir en la etiqueta:</label>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="etqfab-campo-nombre" checked>
+                                        <label class="form-check-label" for="etqfab-campo-nombre">Nombre</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="etqfab-campo-referencia" checked>
+                                        <label class="form-check-label" for="etqfab-campo-referencia">Referencia</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="etqfab-campo-talla" checked>
+                                        <label class="form-check-label" for="etqfab-campo-talla">Talla / Color</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="etqfab-campo-precio" checked>
+                                        <label class="form-check-label" for="etqfab-campo-precio">Precio</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="inv-filters-block">
+                    <div class="inv-filters-grid">
+                        <div class="inv-search-wrap">
+                            <span class="inv-search-icon"><i class="bi bi-search"></i></span>
+                            <input type="search" id="etqfab-search" class="inv-search-input" placeholder="Buscar por nombre o referencia...">
+                        </div>
+                        <select id="etqfab-filter-categoria" class="inv-select">
+                            <option value="">Todas las categorías</option>
+                        </select>
+                        <div class="inv-filters-row2">
+                            <button type="button" id="etqfab-select-all-btn" class="inv-clear-btn"><i class="bi bi-check2-square me-1"></i>Seleccionar todo</button>
+                            <button type="button" id="etqfab-clear-selection-btn" class="inv-clear-btn"><i class="bi bi-x-circle me-1"></i>Limpiar selección</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tbl-wrap">
+                    <div class="tbl-head">
+                        <span class="tbl-title"><i class="bi bi-qr-code"></i>Selecciona productos y cantidades</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:36px;"><input type="checkbox" class="form-check-input" id="etqfab-check-header"></th>
+                                    <th>Producto</th>
+                                    <th>Referencia</th>
+                                    <th>Precio</th>
+                                    <th>Tallas / Colores (cantidad de etiquetas)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="etqfab-tabla-body">
+                                <tr><td colspan="5" class="text-center text-muted">Cargando productos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 mb-4 p-3 bg-white border rounded">
+                    <span class="fw-bold"><span id="etqfab-contador">0</span> etiqueta(s) seleccionada(s)</span>
+                    <button type="button" class="btn btn-primary" id="etqfab-btn-imprimir" disabled>
+                        <i class="bi bi-printer me-1"></i>Imprimir Etiquetas
+                    </button>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════════
+                 SECCIÓN: INVENTARIO FÁBRICA — Hilazas, Hilos y Telas
+                 (exclusivo: solo visible con permiso inventario_fabrica_gestionar)
+                 ═══════════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="inventario-fabrica">
+
+                <!-- ── Encabezado ── -->
+                <div class="fin2-page-header">
+                    <div>
+                        <h1 class="fin2-page-title"><i class="bi bi-boxes"></i> Inventario Fábrica</h1>
+                        <p class="fin2-page-subtitle">Materia prima de producción: hilazas, hilos y telas</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary btn-sm" id="invfab-btn-nuevo">
+                            <i class="bi bi-plus-circle me-1"></i> Nuevo material
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── Filtros por tipo ── -->
+                <div class="fin2-filters-bar">
+                    <div class="fin2-filter-group">
+                        <button class="fin2-filter-btn active invfab-filter-btn" data-tipo="todos">Todos</button>
+                        <button class="fin2-filter-btn invfab-filter-btn" data-tipo="hilaza">Hilazas</button>
+                        <button class="fin2-filter-btn invfab-filter-btn" data-tipo="hilo">Hilos</button>
+                        <button class="fin2-filter-btn invfab-filter-btn" data-tipo="tela">Telas</button>
+                    </div>
+                </div>
+
+                <!-- ── Búsqueda y bajo stock ── -->
+                <div class="inv-filters-block">
+                    <div class="inv-filters-grid">
+                        <div class="inv-search-wrap">
+                            <span class="inv-search-icon"><i class="bi bi-search"></i></span>
+                            <input type="search" id="invfab-search" class="inv-search-input" placeholder="Buscar por nombre, color o proveedor...">
+                        </div>
+                        <div class="inv-filters-row2">
+                            <label class="inv-toggle-label" for="invfab-filter-bajo-stock">
+                                <i class="bi bi-exclamation-triangle text-warning"></i> Solo bajo stock
+                                <div class="form-check form-switch ms-1 mb-0">
+                                    <input class="form-check-input" type="checkbox" id="invfab-filter-bajo-stock">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Tabla ── -->
+                <div class="fin2-table-card">
+                    <div class="fin2-table-header">
+                        <div>
+                            <span class="fin2-table-title">
+                                <i class="bi bi-list-ul"></i> Materiales
+                            </span>
+                        </div>
+                    </div>
+                    <div class="fin2-table-wrapper">
+                        <table class="fin2-table">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Nombre</th>
+                                    <th>Color</th>
+                                    <th class="text-end">Cantidad</th>
+                                    <th class="text-end">Stock mínimo</th>
+                                    <th>Proveedor</th>
+                                    <th class="text-end">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invfab-tabla-body">
+                                <tr>
+                                    <td colspan="7" class="fin2-empty-state">
+                                        <i class="bi bi-inbox"></i>
+                                        <span>Cargando...</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════════
+                 SECCIÓN: FÁBRICA — Gastos vs. Ingresos (segmento propio, exclusivo)
+                 (exclusivo: solo visible con permiso fabrica_gestionar)
+                 ═══════════════════════════════════════════════════════════════════ -->
+            <div class="tab-pane fade" id="fabrica">
+
+                <!-- ── Encabezado ── -->
+                <div class="fin2-page-header">
+                    <div>
+                        <h1 class="fin2-page-title"><i class="bi bi-cash-coin"></i> Gastos e Ingresos</h1>
+                        <p class="fin2-page-subtitle">Ingresos y gastos registrados a mano para Fábrica, menos gastos</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success btn-sm" id="fab-btn-nuevo-ingreso">
+                            <i class="bi bi-plus-circle me-1"></i> Ingreso
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm" id="fab-btn-nuevo-gasto">
+                            <i class="bi bi-dash-circle me-1"></i> Gasto
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── Filtros de periodo ── -->
+                <div class="fin2-filters-bar">
+                    <div class="fin2-filter-group">
+                        <button class="fin2-filter-btn active fab-filter-btn" data-range="todo">Desde junio</button>
+                        <button class="fin2-filter-btn fab-filter-btn" data-range="hoy">Hoy</button>
+                        <button class="fin2-filter-btn fab-filter-btn" data-range="ayer">Ayer</button>
+                        <button class="fin2-filter-btn fab-filter-btn" data-range="semana">Esta semana</button>
+                        <button class="fin2-filter-btn fab-filter-btn" data-range="mes">Este mes</button>
+                        <button class="fin2-filter-btn fab-filter-btn" data-range="personalizado">
+                            <i class="bi bi-calendar3"></i> Rango
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── Rango personalizado ── -->
+                <div id="fab-custom-range" class="fin2-custom-range-bar" style="display:none;">
+                    <div class="fin2-date-field">
+                        <label class="fin2-date-label"><i class="bi bi-calendar-event"></i> Desde</label>
+                        <input type="date" id="fab-desde" class="fin2-date-input">
+                    </div>
+                    <div class="fin2-date-arrow"><i class="bi bi-arrow-right"></i></div>
+                    <div class="fin2-date-field">
+                        <label class="fin2-date-label"><i class="bi bi-calendar-check"></i> Hasta</label>
+                        <input type="date" id="fab-hasta" class="fin2-date-input">
+                    </div>
+                    <button id="fab-btn-calc" class="fin2-btn-apply">
+                        <i class="bi bi-search"></i> Calcular
+                    </button>
+                </div>
+
+                <!-- ── Loading ── -->
+                <div id="fab-loading" class="fin2-loading" style="display:none;">
+                    <div class="fin2-spinner"></div>
+                    <span>Calculando utilidad de la fábrica…</span>
+                </div>
+
+                <!-- ── Resultados ── -->
+                <div id="fab-resultados">
+
+                    <!-- KPI PRINCIPAL: UTILIDAD -->
+                    <div class="fin2-hero-kpi">
+                        <div class="fin2-hero-kpi-inner">
+                            <div class="fin2-hero-icon">
+                                <i class="bi bi-cash-coin"></i>
+                            </div>
+                            <div class="fin2-hero-content">
+                                <div class="fin2-hero-label">UTILIDAD FÁBRICA</div>
+                                <div class="fin2-hero-value" id="fab-utilidad-total">$0</div>
+                                <div class="fin2-hero-trend" id="fab-trend-badge">
+                                    <i class="bi bi-dash"></i> Sin movimientos
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KPIs secundarios -->
+                    <div class="fin2-secondary-kpis">
+                        <div class="fin2-skpi-card">
+                            <div class="fin2-skpi-icon fin2-skpi-icon--green">
+                                <i class="bi bi-arrow-down-circle"></i>
+                            </div>
+                            <div class="fin2-skpi-body">
+                                <div class="fin2-skpi-label">Total ingresos</div>
+                                <div class="fin2-skpi-val" id="fab-ingresos">$0</div>
+                            </div>
+                        </div>
+                        <div class="fin2-skpi-card">
+                            <div class="fin2-skpi-icon fin2-skpi-icon--amber">
+                                <i class="bi bi-arrow-up-circle"></i>
+                            </div>
+                            <div class="fin2-skpi-body">
+                                <div class="fin2-skpi-label">Total gastos</div>
+                                <div class="fin2-skpi-val" id="fab-gastos">$0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Desglose por concepto: cuánto fue cada ingreso/gasto -->
+                    <div class="fin2-table-card fin2-breakdown-card">
+                        <div class="fin2-table-header">
+                            <span class="fin2-table-title">
+                                <i class="bi bi-arrow-down-circle text-success"></i> Desglose de ingresos
+                            </span>
+                            <span class="fin2-table-count" id="fab-desglose-ingresos-count">0 conceptos</span>
+                        </div>
+                        <div class="fin2-breakdown-list" id="fab-desglose-ingresos"></div>
+                    </div>
+
+                    <div class="fin2-table-card fin2-breakdown-card">
+                        <div class="fin2-table-header">
+                            <span class="fin2-table-title">
+                                <i class="bi bi-arrow-up-circle text-danger"></i> Desglose de gastos
+                            </span>
+                            <span class="fin2-table-count" id="fab-desglose-gastos-count">0 conceptos</span>
+                        </div>
+                        <div class="fin2-breakdown-list" id="fab-desglose-gastos"></div>
+                    </div>
+
+                    <!-- Gráfica: Ingresos vs. Gastos en el tiempo -->
+                    <div class="fin2-chart-card">
+                        <div class="fin2-chart-header">
+                            <span class="fin2-chart-title">
+                                <i class="bi bi-graph-up"></i> Ingresos vs. Gastos
+                            </span>
+                            <span class="fin2-chart-subtitle" id="fab-chart-subtitle">por día</span>
+                        </div>
+                        <div class="fin2-chart-body">
+                            <canvas id="fab-lineas-chart" height="90"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de movimientos -->
+                    <div class="fin2-table-card">
+                        <div class="fin2-table-header">
+                            <div>
+                                <span class="fin2-table-title">
+                                    <i class="bi bi-list-ul"></i> Movimientos
+                                </span>
+                                <span class="fin2-table-count" id="fab-movs-count">0 movimientos</span>
+                            </div>
+                        </div>
+                        <div class="fin2-table-wrapper">
+                            <table class="fin2-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tipo</th>
+                                        <th>Concepto</th>
+                                        <th class="text-end">Monto</th>
+                                        <th class="text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fab-tabla-body">
+                                    <tr>
+                                        <td colspan="5" class="fin2-empty-state">
+                                            <i class="bi bi-inbox"></i>
+                                            <span>Aún no hay movimientos registrados</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div><!-- /fab-resultados -->
             </div>
 
             <!-- ═══════════════════════════════════════════════════════════════════
@@ -2762,6 +3357,243 @@
         </div>
     </div>
 
+    <!-- Modal: Nuevo/Editar producto de Fábrica -->
+    <div class="modal fade" id="prodFabModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form id="prodFabForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="prodFabModalTitle">Nuevo producto</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="prodfab-id" value="">
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="prodfab-nombre" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Código</label>
+                                <input type="text" class="form-control" id="prodfab-codigo" placeholder="Autogenerado" readonly disabled>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Descripción</label>
+                            <textarea class="form-control" id="prodfab-descripcion" rows="2"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Categoría</label>
+                                <select class="form-select" id="prodfab-categoria"><option value="">Selecciona...</option></select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Grupo mayorista</label>
+                                <select class="form-select" id="prodfab-grupo-mayorista"><option value="">Sin grupo (precio fijo)</option></select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Costo ($)</label>
+                                <input type="number" class="form-control" id="prodfab-costo" step="0.01" min="0" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Precio mayor ($)</label>
+                                <input type="number" class="form-control" id="prodfab-precio-mayor" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Imagen</label>
+                            <input type="file" class="form-control" id="prodfab-imagen" accept="image/*">
+                            <img id="prodfab-imagen-preview" src="" alt="" style="display:none;max-height:80px;margin-top:8px;border-radius:6px;">
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="prodfab-visible" checked>
+                            <label class="form-check-label" for="prodfab-visible">Visible</label>
+                        </div>
+                        <hr class="my-3">
+                        <h6 class="mb-2">Variaciones (talla / color / stock)</h6>
+                        <div class="row align-items-center mb-2 variation-row d-none" id="variation-template-fabrica">
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" name="prodfab_variation_talla[]" placeholder="Talla"></div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" name="prodfab_variation_color[]" placeholder="Color"></div>
+                            <div class="col-md-3"><input type="number" class="form-control form-control-sm" name="prodfab_variation_stock[]" min="0" value="1" placeholder="Stock"></div>
+                            <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-variation-fabrica-btn p-1"><i class="bi bi-trash3"></i></button></div>
+                        </div>
+                        <div id="prodfab-variaciones-container"></div>
+                        <button type="button" id="prodfab-add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-plus-lg"></i> Añadir</button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="prodfab-btn-guardar">
+                            <span class="save-text">Guardar</span>
+                            <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de producto de Fábrica -->
+    <div class="modal fade" id="prodFabDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar producto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Seguro que quieres eliminar este producto? Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="prodfab-confirm-delete-btn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Nuevo/Editar movimiento de Fábrica (Gastos e Ingresos) -->
+    <div class="modal fade" id="fabricaMovModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="fabricaMovForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="fabricaMovModalTitle">Nuevo Ingreso</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="fabricaMov-id" value="">
+                        <input type="hidden" id="fabricaMov-tipo" value="ingreso">
+                        <div class="mb-3">
+                            <label class="form-label">Concepto</label>
+                            <input type="text" class="form-control" id="fabricaMov-concepto" placeholder="Ej: Venta de tela, Pago de operarios..." required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Monto</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="fabricaMov-monto" placeholder="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date" class="form-control" id="fabricaMov-fecha" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="fabricaMov-btn-guardar">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de movimiento de Fábrica -->
+    <div class="modal fade" id="fabricaDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar movimiento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Seguro que quieres eliminar este movimiento? Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="fabrica-confirm-delete-btn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Nuevo/Editar material de Inventario Fábrica -->
+    <div class="modal fade" id="invfabModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="invfabForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="invfabModalTitle">Nuevo material</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="invfab-id" value="">
+                        <div class="mb-3">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" id="invfab-tipo" required>
+                                <option value="hilaza">Hilaza</option>
+                                <option value="hilo">Hilo</option>
+                                <option value="tela">Tela</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="invfab-nombre" placeholder="Ej: Hilaza algodón crudo" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Color</label>
+                                <input type="text" class="form-control" id="invfab-color" placeholder="Ej: Blanco">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Proveedor</label>
+                                <input type="text" class="form-control" id="invfab-proveedor" placeholder="Opcional">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Cantidad</label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="invfab-cantidad" placeholder="0" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Unidad</label>
+                                <select class="form-select" id="invfab-unidad">
+                                    <option value="metros">Metros</option>
+                                    <option value="yardas">Yardas</option>
+                                    <option value="rollos">Rollos</option>
+                                    <option value="conos">Conos</option>
+                                    <option value="kg">Kg</option>
+                                    <option value="libras">Libras</option>
+                                    <option value="unidades">Unidades</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Stock mínimo</label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="invfab-stock-minimo" placeholder="Opcional">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notas</label>
+                            <textarea class="form-control" id="invfab-notas" rows="2" placeholder="Opcional"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="invfab-btn-guardar">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar eliminación de material de Inventario Fábrica -->
+    <div class="modal fade" id="invfabDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar material</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Seguro que quieres eliminar este material? Esta acción no se puede deshacer.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="invfab-confirm-delete-btn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
 
     <!-- Modal de Gestión de Promociones -->
@@ -3778,6 +4610,11 @@
          barcode-system.js (generación/validación de EAN-13) y usa
          window.loadExternalLib() para JsBarcode/QRCode bajo demanda. -->
     <script src="etiquetas.js" defer></script>
+    <!-- etiquetas-fabrica.js: en admin-fabrica.html este script nunca se
+         incluía (bug preexistente — la sección Etiquetas Fábrica se quedaba
+         cargando para siempre). Al portar el módulo a admin.html se conecta
+         correctamente por primera vez. -->
+    <script src="etiquetas-fabrica.js" defer></script>
 
     <!-- DASHBOARD ANALYTICS CHARTS + SIDEBAR CONTROLS -->
     <script>
