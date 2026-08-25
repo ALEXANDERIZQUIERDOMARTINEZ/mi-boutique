@@ -345,31 +345,115 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         return Math.max(0, subtotal - descuento);
     }
 
+    // Cuántas unidades más se le pueden poner a una línea ya puesta en el
+    // carrito: lo que hay en stock, menos lo que otras líneas de la MISMA
+    // variación ya reservan (así no deja pasar del stock real al usar los
+    // botones +/- o escribir la cantidad a mano).
+    function maxCantidadParaItemCarrito(item) {
+        const producto = productosCache.find(p => p.id === item.productoId);
+        if (!producto) return Infinity;
+        const variacion = (producto.variaciones || []).find(v =>
+            normalizarVariacion(v.talla) === normalizarVariacion(item.talla) &&
+            normalizarVariacion(v.color) === normalizarVariacion(item.color)
+        );
+        if (!variacion) return Infinity;
+        const stock = parseInt(variacion.stock, 10) || 0;
+        const otrasLineas = cantidadYaEnCarrito(item.productoId, item.talla, item.color) - item.cantidad;
+        return Math.max(0, stock - otrasLineas);
+    }
+
+    // Mismo lenguaje visual que el carrito de Boutique (clases .vf-cart-item*
+    // ya definidas en style.css): foto, variación, stepper +/- de cantidad.
     function renderCarrito() {
         if (carrito.length === 0) {
             carritoEl.innerHTML = `<div class="vf-cart-empty"><i class="bi bi-cart-x fs-4 d-block mb-1"></i><small>Aún no has agregado productos</small></div>`;
         } else {
-            carritoEl.innerHTML = carrito.map((item, idx) => `
-                <div class="sv-cart-item">
-                    <div class="sv-cart-item-info">
-                        <span class="sv-cart-item-name">${item.nombre}</span>
-                        <span class="sv-cart-item-sub">${[item.talla, item.color].filter(x => x && normalizarVariacion(x) !== '').join(' / ') || 'Única'} · x${item.cantidad}</span>
+            carritoEl.innerHTML = carrito.map((item, idx) => {
+                const producto = productosCache.find(p => p.id === item.productoId);
+                const imgHtml = producto?.imagenUrl
+                    ? `<img src="${producto.imagenUrl}" alt="${item.nombre}" class="vf-cart-item-img" onerror="this.style.display='none'">`
+                    : `<div class="vf-cart-item-img-placeholder"><i class="bi bi-image"></i></div>`;
+                const variante = [item.talla, item.color].filter(x => x && normalizarVariacion(x) !== '').join(' / ');
+                return `
+                    <div class="vf-cart-item" data-idx="${idx}">
+                        ${imgHtml}
+                        <div class="vf-cart-item-info">
+                            <div class="vf-cart-item-name">${item.nombre}</div>
+                            ${variante ? `<div class="vf-cart-item-variant">${variante}</div>` : ''}
+                            <div class="vf-cart-item-unit">${formatoMonedaDashboard.format(item.precio)} c/u</div>
+                        </div>
+                        <div class="vf-cart-item-controls">
+                            <div class="vf-qty-control">
+                                <button type="button" class="vf-qty-btn fv-qty-minus" data-idx="${idx}">−</button>
+                                <input type="number" class="vf-qty-input fv-qty-input" value="${item.cantidad}" min="1" data-idx="${idx}">
+                                <button type="button" class="vf-qty-btn fv-qty-plus" data-idx="${idx}">+</button>
+                            </div>
+                            <div class="vf-cart-item-total">${formatoMonedaDashboard.format(item.total)}</div>
+                            <button type="button" class="vf-cart-item-remove fv-remove-item" data-idx="${idx}" title="Quitar">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="sv-cart-item-actions">
-                        <span class="sv-cart-item-total">${formatoMonedaDashboard.format(item.total)}</span>
-                        <button type="button" class="btn btn-sm btn-outline-danger fv-remove-item" data-idx="${idx}"><i class="bi bi-trash"></i></button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
         itemsCountEl.textContent = `${carrito.length} ${carrito.length === 1 ? 'item' : 'items'}`;
         totalEl.textContent = formatoMonedaDashboard.format(calcularTotal());
     }
 
     carritoEl.addEventListener('click', (e) => {
-        const btn = e.target.closest('.fv-remove-item');
-        if (!btn) return;
-        carrito.splice(parseInt(btn.dataset.idx, 10), 1);
+        const removeBtn = e.target.closest('.fv-remove-item');
+        if (removeBtn) {
+            carrito.splice(parseInt(removeBtn.dataset.idx, 10), 1);
+            renderCarrito();
+            return;
+        }
+        const minusBtn = e.target.closest('.fv-qty-minus');
+        if (minusBtn) {
+            const idx = parseInt(minusBtn.dataset.idx, 10);
+            const item = carrito[idx];
+            if (!item) return;
+            if (item.cantidad <= 1) {
+                carrito.splice(idx, 1);
+            } else {
+                item.cantidad -= 1;
+                item.total = item.cantidad * item.precio;
+            }
+            renderCarrito();
+            return;
+        }
+        const plusBtn = e.target.closest('.fv-qty-plus');
+        if (plusBtn) {
+            const idx = parseInt(plusBtn.dataset.idx, 10);
+            const item = carrito[idx];
+            if (!item) return;
+            const max = maxCantidadParaItemCarrito(item);
+            if (item.cantidad >= max) { showToast(`Solo hay ${max} unidades disponibles`, 'warning'); return; }
+            item.cantidad += 1;
+            item.total = item.cantidad * item.precio;
+            renderCarrito();
+        }
+    });
+
+    carritoEl.addEventListener('change', (e) => {
+        const input = e.target.closest('.fv-qty-input');
+        if (!input) return;
+        const idx = parseInt(input.dataset.idx, 10);
+        const item = carrito[idx];
+        if (!item) return;
+        let nuevaCantidad = parseInt(input.value, 10) || 0;
+        if (nuevaCantidad <= 0) {
+            carrito.splice(idx, 1);
+            renderCarrito();
+            return;
+        }
+        const max = maxCantidadParaItemCarrito(item);
+        if (nuevaCantidad > max) {
+            showToast(`Solo hay ${max} unidades disponibles`, 'warning');
+            nuevaCantidad = max;
+        }
+        item.cantidad = nuevaCantidad;
+        item.total = item.cantidad * item.precio;
         renderCarrito();
     });
 
