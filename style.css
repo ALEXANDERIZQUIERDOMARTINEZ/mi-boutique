@@ -3951,21 +3951,38 @@ body.dark-mode .sv-quote-btn {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   REGISTRAR VENTA (FÁBRICA) — retoque minimalista/rosado
+   REGISTRAR VENTA (FÁBRICA) — mismo lenguaje visual que el selector de
+   productos estilo "Treinta" (.fvps-*): tarjetas blancas redondeadas,
+   sin bordes duros en los campos (relleno claro en vez de línea gris),
+   iconos en placa rosa pastel, acentos en degradado de marca.
    #registrar-venta es exclusivo de admin-fabrica.html (Boutique usa
    #ventas), así que estas reglas no tocan la pantalla de Boutique aunque
-   compartan las mismas clases .sv-*. Objetivo: quitar las barras grises
-   de encabezado y unificar radios/tono rosa con el selector de productos
-   estilo "Treinta".
+   compartan las mismas clases .sv-*.
    ════════════════════════════════════════════════════════════════ */
+#registrar-venta .sv-tabs {
+    background: var(--brand-50, #fdf2f8);
+}
+
 #registrar-venta .sv-section-header {
     background: transparent;
     border-bottom: none;
-    padding: 14px 16px 2px;
+    padding: 14px 16px 4px;
+    gap: 10px;
+}
+
+#registrar-venta .sv-section-header i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--brand-50, #fdf2f8);
+    font-size: 0.85rem;
 }
 
 #registrar-venta .sv-section-body {
-    padding-top: 8px;
+    padding: 10px 16px 16px;
 }
 
 #registrar-venta .sv-section,
@@ -3976,23 +3993,92 @@ body.dark-mode .sv-quote-btn {
     box-shadow: 0 2px 12px rgba(190, 100, 160, 0.07);
 }
 
+#registrar-venta .sv-cart-header {
+    border-radius: 18px 18px 0 0;
+}
+
+#registrar-venta .sv-cart-title i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.6);
+    color: var(--brand-700, #a21caf);
+    font-size: 0.8rem;
+}
+
+/* Campos de formulario: relleno claro sin borde duro, en vez del
+   .form-control gris de Bootstrap — mismo tacto que .fvps-search-input
+   y .fvps-item-price-input del selector de productos. */
 #registrar-venta .sv-client-input,
 #registrar-venta .sv-client-meta .form-control,
-#registrar-venta .sv-btn-add-client {
+#registrar-venta .sv-notes-discount textarea.form-control,
+#registrar-venta .sv-discount-row .form-control,
+#registrar-venta .sv-discount-row .form-select {
+    background: #f8f5f7;
+    border: 1.5px solid transparent;
     border-radius: 12px;
+    color: #1a1a2e;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+#registrar-venta .sv-client-input:focus,
+#registrar-venta .sv-client-meta .form-control:focus,
+#registrar-venta .sv-notes-discount textarea.form-control:focus,
+#registrar-venta .sv-discount-row .form-control:focus,
+#registrar-venta .sv-discount-row .form-select:focus {
+    background: #fff;
+    border-color: var(--brand-300, #f9a8d4);
+    box-shadow: none;
+}
+
+#registrar-venta .sv-btn-add-client {
+    width: 44px;
+    border-radius: 12px;
+    background: var(--brand-50, #fdf2f8);
+    border: none;
+    color: var(--brand-600, #c026d3);
+}
+#registrar-venta .sv-btn-add-client:hover {
+    background: var(--brand-100, #fce7f3);
+    border: none;
+    color: var(--brand-700, #a21caf);
 }
 
 #registrar-venta .sv-btn-search-product {
     border-radius: 14px;
 }
 
+/* Efectivo / Transferencia: el input-group de Bootstrap (icono + campo)
+   se aplana a una sola píldora rellena, sin el recuadro gris por defecto. */
+#registrar-venta .sv-pay-input .input-group {
+    background: #f8f5f7;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1.5px solid transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+#registrar-venta .sv-pay-input .input-group:focus-within {
+    background: #fff;
+    border-color: var(--brand-300, #f9a8d4);
+}
+#registrar-venta .sv-pay-input .input-group-text {
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+#registrar-venta .sv-pay-input .form-control {
+    background: transparent;
+    border: none;
+    box-shadow: none !important;
+}
+
 #registrar-venta .sv-total-bar,
 #registrar-venta .sv-submit-btn {
     border-radius: 16px;
-}
-
-#registrar-venta .sv-cart-header {
-    border-radius: 18px 18px 0 0;
 }
 
 /* ════════════════════════════════════════════════════════════════
