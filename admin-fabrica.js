@@ -397,8 +397,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                         ${imgHtml}
                         <div class="vf-cart-item-info">
                             <div class="vf-cart-item-name">${item.nombre}</div>
-                            ${variante ? `<div class="vf-cart-item-variant">${variante}</div>` : ''}
-                            <div class="vf-cart-item-unit">${formatoMonedaDashboard.format(item.precio)} c/u</div>
+                            <div class="vf-cart-item-variant">${variante ? variante + ' · ' : ''}${formatoMonedaDashboard.format(item.precio)} c/u</div>
                         </div>
                         <div class="vf-cart-item-controls">
                             <div class="vf-qty-control">
