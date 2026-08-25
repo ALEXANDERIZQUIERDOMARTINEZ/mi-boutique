@@ -3951,6 +3951,51 @@ body.dark-mode .sv-quote-btn {
 }
 
 /* ════════════════════════════════════════════════════════════════
+   REGISTRAR VENTA (FÁBRICA) — retoque minimalista/rosado
+   #registrar-venta es exclusivo de admin-fabrica.html (Boutique usa
+   #ventas), así que estas reglas no tocan la pantalla de Boutique aunque
+   compartan las mismas clases .sv-*. Objetivo: quitar las barras grises
+   de encabezado y unificar radios/tono rosa con el selector de productos
+   estilo "Treinta".
+   ════════════════════════════════════════════════════════════════ */
+#registrar-venta .sv-section-header {
+    background: transparent;
+    border-bottom: none;
+    padding: 14px 16px 2px;
+}
+
+#registrar-venta .sv-section-body {
+    padding-top: 8px;
+}
+
+#registrar-venta .sv-section,
+#registrar-venta .sv-cart,
+#registrar-venta .sv-payment {
+    border-radius: 18px;
+    border-color: #f5e3ee;
+    box-shadow: 0 2px 12px rgba(190, 100, 160, 0.07);
+}
+
+#registrar-venta .sv-client-input,
+#registrar-venta .sv-client-meta .form-control,
+#registrar-venta .sv-btn-add-client {
+    border-radius: 12px;
+}
+
+#registrar-venta .sv-btn-search-product {
+    border-radius: 14px;
+}
+
+#registrar-venta .sv-total-bar,
+#registrar-venta .sv-submit-btn {
+    border-radius: 16px;
+}
+
+#registrar-venta .sv-cart-header {
+    border-radius: 18px 18px 0 0;
+}
+
+/* ════════════════════════════════════════════════════════════════
    CARRITO — clases vf-* usadas por renderCarrito() JS
    ════════════════════════════════════════════════════════════════ */
 
@@ -6422,7 +6467,8 @@ img, video, iframe, embed, object {
     align-items: center;
     gap: 10px;
     padding: calc(env(safe-area-inset-top, 0px) + 14px) 12px 14px;
-    background: linear-gradient(135deg, #FFDE3F 0%, #FFC93C 100%);
+    background: #fff;
+    border-bottom: 1px solid var(--brand-100, #fce7f3);
     flex-shrink: 0;
 }
 
@@ -6431,7 +6477,7 @@ img, video, iframe, embed, object {
     margin: 0;
     font-size: 1.05rem;
     font-weight: 800;
-    color: #1a1a2e;
+    color: var(--brand-800, #86198f);
     letter-spacing: -0.01em;
     white-space: nowrap;
     overflow: hidden;
@@ -6452,13 +6498,13 @@ img, video, iframe, embed, object {
     height: 38px;
     border-radius: 12px;
     border: none;
-    background: rgba(255, 255, 255, 0.55);
-    color: #1a1a2e;
+    background: var(--brand-50, #fdf2f8);
+    color: var(--brand-600, #c026d3);
     font-size: 1.05rem;
     flex-shrink: 0;
     transition: background 0.15s ease;
 }
-.fvps-icon-btn:hover { background: rgba(255, 255, 255, 0.8); }
+.fvps-icon-btn:hover { background: var(--brand-100, #fce7f3); }
 .fvps-icon-btn:active { transform: scale(0.94); }
 
 .fvps-search-bar {
@@ -6500,14 +6546,14 @@ img, video, iframe, embed, object {
     width: 100%;
     padding: 12px;
     background: #fff;
-    border: 1.5px solid #1a1a2e;
+    border: 1.5px solid var(--brand-300, #f9a8d4);
     border-radius: 14px;
     font-weight: 700;
     font-size: 0.95rem;
-    color: #1a1a2e;
+    color: var(--brand-700, #a21caf);
     transition: background 0.15s ease;
 }
-.fvps-new-product-btn:hover { background: #f6f6f6; }
+.fvps-new-product-btn:hover { background: var(--brand-50, #fdf2f8); }
 .fvps-new-product-btn:active { transform: scale(0.99); }
 
 .fvps-filters {
@@ -6523,17 +6569,17 @@ img, video, iframe, embed, object {
     width: 38px;
     height: 38px;
     border-radius: 12px;
-    border: 1.5px solid #e2e3e8;
+    border: 1px solid var(--brand-100, #fce7f3);
     background: #fff;
-    color: #1a1a2e;
+    color: var(--brand-600, #c026d3);
     flex-shrink: 0;
     font-size: 1rem;
     transition: all 0.15s ease;
 }
 .fvps-icon-chip--dark,
 .fvps-icon-chip.active {
-    background: #1a1a2e;
-    border-color: #1a1a2e;
+    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%));
+    border-color: transparent;
     color: #fff;
 }
 
@@ -6554,17 +6600,17 @@ img, video, iframe, embed, object {
     white-space: nowrap;
     padding: 8px 14px;
     border-radius: 999px;
-    border: 1.5px solid #e2e3e8;
+    border: 1px solid #e9e5ea;
     background: #fff;
-    color: #4b5563;
+    color: #6b7280;
     font-size: 0.82rem;
     font-weight: 700;
     flex-shrink: 0;
     transition: all 0.15s ease;
 }
 .fvps-chip.active {
-    background: #1a1a2e;
-    border-color: #1a1a2e;
+    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%));
+    border-color: transparent;
     color: #fff;
 }
 .fvps-chip-warning {
@@ -6695,8 +6741,8 @@ img, video, iframe, embed, object {
     pointer-events: none;
 }
 .fvps-stepper-btn--plus {
-    border-color: #1a1a2e;
-    background: #1a1a2e;
+    border-color: transparent;
+    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%));
     color: #fff;
 }
 
@@ -6714,16 +6760,17 @@ img, video, iframe, embed, object {
     gap: 6px;
     padding: 8px 12px;
     border-radius: 10px;
-    border: 1.5px solid #1a1a2e;
+    border: 1.5px solid var(--brand-300, #f9a8d4);
     background: #fff;
-    color: #1a1a2e;
+    color: var(--brand-700, #a21caf);
     font-size: 0.8rem;
     font-weight: 700;
     white-space: nowrap;
     flex-shrink: 0;
 }
 .fvps-choose-variant-btn.has-selection {
-    background: #1a1a2e;
+    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%));
+    border-color: transparent;
     color: #fff;
 }
 
