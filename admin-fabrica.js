@@ -310,7 +310,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     const clienteDireccionInput = document.getElementById('fv-cliente-direccion');
     const carritoEl = document.getElementById('fv-carrito');
     const itemsCountEl = document.getElementById('fv-items-count');
+    const subtotalEl = document.getElementById('fv-subtotal');
     const totalEl = document.getElementById('fv-total');
+    const cambioRowEl = document.getElementById('fv-cambio-row');
+    const cambioEl = document.getElementById('fv-cambio');
     const descuentoInput = document.getElementById('fv-descuento');
     const descuentoTipoSelect = document.getElementById('fv-descuento-tipo');
     const pagoEfectivoInput = document.getElementById('fv-pago-efectivo');
@@ -343,6 +346,21 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             ? subtotal * (descuentoVal / 100)
             : descuentoVal;
         return Math.max(0, subtotal - descuento);
+    }
+
+    // Fábrica admite pago dividido (efectivo + transferencia a la vez), así
+    // que el "cambio" es lo que sobra de esa suma sobre el total — se
+    // muestra solo cuando hay algo que devolver.
+    function actualizarCambio() {
+        const total = calcularTotal();
+        const pagado = limpiarNumero(pagoEfectivoInput.value) + limpiarNumero(pagoTransferenciaInput.value);
+        const cambio = pagado - total;
+        if (cambio > 0) {
+            cambioRowEl.style.display = '';
+            cambioEl.textContent = formatoMonedaDashboard.format(cambio);
+        } else {
+            cambioRowEl.style.display = 'none';
+        }
     }
 
     // Cuántas unidades más se le pueden poner a una línea ya puesta en el
@@ -398,7 +416,9 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             }).join('');
         }
         itemsCountEl.textContent = `${carrito.length} ${carrito.length === 1 ? 'item' : 'items'}`;
+        subtotalEl.textContent = formatoMonedaDashboard.format(calcularSubtotal());
         totalEl.textContent = formatoMonedaDashboard.format(calcularTotal());
+        actualizarCambio();
     }
 
     carritoEl.addEventListener('click', (e) => {
@@ -458,6 +478,21 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     });
 
     [descuentoInput, descuentoTipoSelect].forEach(el => el.addEventListener('input', renderCarrito));
+    [pagoEfectivoInput, pagoTransferenciaInput].forEach(el => el.addEventListener('input', actualizarCambio));
+
+    document.getElementById('fv-vaciar-carrito-btn')?.addEventListener('click', () => {
+        if (!carrito.length) return;
+        if (!confirm('¿Vaciar todo el carrito de esta venta?')) return;
+        carrito = [];
+        renderCarrito();
+    });
+
+    document.getElementById('fv-agregar-otro-btn')?.addEventListener('click', () => abrirPantallaProductos());
+
+    document.getElementById('fv-abrir-productos-barcode-btn')?.addEventListener('click', () => {
+        abrirPantallaProductos();
+        document.getElementById('fvps-barcode-btn')?.click();
+    });
 
     // ── Cliente ──────────────────────────────────────────────────────────
     function seleccionarCliente(cliente) {
@@ -1089,28 +1124,38 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     // en Boutique donde sí existe esa gestión completa).
     const formViewEl = document.getElementById('fv-sales-form-view');
     const listViewEl = document.getElementById('fv-sales-list-view');
-    const btnFormView = document.getElementById('fv-toggle-form-view-btn');
-    const btnListView = document.getElementById('fv-toggle-list-view-btn');
+    const toggleViewBtn = document.getElementById('fv-toggle-view-btn');
+    const viewTitleEl = document.getElementById('fv-view-title');
+    const viewSubtitleEl = document.getElementById('fv-view-subtitle');
+    const toggleViewIconEl = document.getElementById('fv-toggle-view-icon');
+    const toggleViewLabelEl = document.getElementById('fv-toggle-view-label');
     let historialCargado = false;
     let todasLasVentas = [];
 
     function mostrarVistaFormulario() {
         formViewEl.style.display = '';
         listViewEl.style.display = 'none';
-        btnFormView.classList.add('active');
-        btnListView.classList.remove('active');
+        viewTitleEl.textContent = 'Nueva venta';
+        viewSubtitleEl.textContent = 'Registra tu venta de forma rápida';
+        toggleViewIconEl.className = 'bi bi-clock-history';
+        toggleViewLabelEl.textContent = 'Historial';
     }
 
     function mostrarVistaHistorial() {
         formViewEl.style.display = 'none';
         listViewEl.style.display = '';
-        btnListView.classList.add('active');
-        btnFormView.classList.remove('active');
+        viewTitleEl.textContent = 'Historial de ventas';
+        viewSubtitleEl.textContent = 'Consulta y anula ventas registradas';
+        toggleViewIconEl.className = 'bi bi-plus-circle';
+        toggleViewLabelEl.textContent = 'Nueva venta';
         if (!historialCargado) cargarHistorialVentas();
     }
 
-    btnFormView?.addEventListener('click', mostrarVistaFormulario);
-    btnListView?.addEventListener('click', mostrarVistaHistorial);
+    toggleViewBtn?.addEventListener('click', () => {
+        const enHistorial = listViewEl.style.display !== 'none';
+        if (enHistorial) mostrarVistaFormulario();
+        else mostrarVistaHistorial();
+    });
 
     async function cargarHistorialVentas() {
         historialCargado = true;

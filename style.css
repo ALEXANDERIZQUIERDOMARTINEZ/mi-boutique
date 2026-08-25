@@ -3959,9 +3959,30 @@ body.dark-mode .sv-quote-btn {
    #ventas), así que estas reglas no tocan la pantalla de Boutique aunque
    compartan las mismas clases .sv-*.
    ════════════════════════════════════════════════════════════════ */
-#registrar-venta .sv-tabs {
-    background: var(--brand-50, #fdf2f8);
+/* ── Encabezado: título + subtítulo + botón Historial/Nueva venta ── */
+.sv-header-brand { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.sv-subtitle {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: 500;
 }
+.sv-header-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    border: none;
+    background: var(--brand-50, #fdf2f8);
+    color: var(--brand-700, #a21caf);
+    font-weight: 700;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+#registrar-venta .sv-header-action:hover { background: var(--brand-100, #fce7f3); }
 
 #registrar-venta .sv-section-header {
     background: transparent;
@@ -3986,27 +4007,10 @@ body.dark-mode .sv-quote-btn {
 }
 
 #registrar-venta .sv-section,
-#registrar-venta .sv-cart,
 #registrar-venta .sv-payment {
     border-radius: 18px;
     border-color: #f5e3ee;
     box-shadow: 0 2px 12px rgba(190, 100, 160, 0.07);
-}
-
-#registrar-venta .sv-cart-header {
-    border-radius: 18px 18px 0 0;
-}
-
-#registrar-venta .sv-cart-title i {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 7px;
-    background: rgba(255, 255, 255, 0.6);
-    color: var(--brand-700, #a21caf);
-    font-size: 0.8rem;
 }
 
 /* Campos de formulario: relleno claro sin borde duro, en vez del
@@ -4014,7 +4018,7 @@ body.dark-mode .sv-quote-btn {
    y .fvps-item-price-input del selector de productos. */
 #registrar-venta .sv-client-input,
 #registrar-venta .sv-client-meta .form-control,
-#registrar-venta .sv-notes-discount textarea.form-control,
+#registrar-venta .sv-payment textarea.form-control,
 #registrar-venta .sv-discount-row .form-control,
 #registrar-venta .sv-discount-row .form-select {
     background: #f8f5f7;
@@ -4025,7 +4029,7 @@ body.dark-mode .sv-quote-btn {
 }
 #registrar-venta .sv-client-input:focus,
 #registrar-venta .sv-client-meta .form-control:focus,
-#registrar-venta .sv-notes-discount textarea.form-control:focus,
+#registrar-venta .sv-payment textarea.form-control:focus,
 #registrar-venta .sv-discount-row .form-control:focus,
 #registrar-venta .sv-discount-row .form-select:focus {
     background: #fff;
@@ -4033,12 +4037,34 @@ body.dark-mode .sv-quote-btn {
     box-shadow: none;
 }
 
+/* Inputs con ícono a la izquierda (buscar cliente, celular, dirección) */
+.sv-input-icon-wrap { position: relative; flex: 1; min-width: 0; }
+.sv-input-icon-wrap .sv-input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+.sv-input-icon-wrap input.form-control { padding-left: 34px !important; }
+
+.sv-field-row { display: flex; gap: 8px; align-items: stretch; }
+
 #registrar-venta .sv-btn-add-client {
-    width: 44px;
+    width: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 14px;
     border-radius: 12px;
     background: var(--brand-50, #fdf2f8);
     border: none;
     color: var(--brand-600, #c026d3);
+    font-weight: 700;
+    font-size: 0.82rem;
+    white-space: nowrap;
 }
 #registrar-venta .sv-btn-add-client:hover {
     background: var(--brand-100, #fce7f3);
@@ -4046,37 +4072,190 @@ body.dark-mode .sv-quote-btn {
     color: var(--brand-700, #a21caf);
 }
 
+/* Botón "Buscar producto en catálogo": se ve como un campo de búsqueda,
+   pero es un botón (abre la pantalla completa del selector, no filtra en
+   línea) — mismo tacto visual que .fvps-search-input. */
+.sv-fake-search-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    padding: 0 14px;
+    background: #f8f5f7;
+    border: 1.5px solid transparent;
+    border-radius: 12px;
+    color: #9ca3af;
+    font-size: 0.88rem;
+    text-align: left;
+    transition: background 0.15s ease;
+}
+.sv-fake-search-input:hover { background: #f3eef1; }
+.sv-fake-search-input span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sv-btn-barcode {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    border: none;
+    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%));
+    color: #fff;
+    font-size: 1.1rem;
+}
+
+/* "Productos agregados" + Vaciar carrito, y la lista embebida */
+.sv-cart-subheader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 16px 0 8px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.sv-cart-count-inline {
+    display: inline-flex;
+    padding: 2px 8px;
+    margin-left: 6px;
+    background: var(--brand-50, #fdf2f8);
+    color: var(--brand-700, #a21caf);
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: normal;
+    vertical-align: middle;
+}
+.sv-btn-clear-cart {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: none;
+    background: transparent;
+    color: var(--brand-600, #c026d3);
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: normal;
+    padding: 2px 4px;
+    flex-shrink: 0;
+}
+.sv-btn-clear-cart:hover { color: var(--brand-800, #86198f); }
+
+#registrar-venta #fv-carrito {
+    background: #fff;
+    border: 1px solid #f0e9ee;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.sv-btn-add-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 11px;
+    border-radius: 14px;
+    border: 1.5px solid var(--brand-300, #f9a8d4);
+    background: transparent;
+    color: var(--brand-700, #a21caf);
+    font-weight: 700;
+    font-size: 0.88rem;
+    transition: background 0.15s ease;
+}
+.sv-btn-add-more:hover { background: var(--brand-50, #fdf2f8); }
+
+/* Resumen de venta: subtotal / descuento / total */
+.sv-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 0;
+    font-size: 0.9rem;
+    color: #374151;
+}
+.sv-summary-row--discount .sv-discount-row { width: 165px; flex-shrink: 0; }
+.sv-summary-divider { height: 1px; background: #f0e9ee; margin: 4px 0; }
+.sv-summary-row--total {
+    padding-top: 8px;
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: var(--brand-700, #a21caf);
+}
+
 #registrar-venta .sv-btn-search-product {
     border-radius: 14px;
 }
 
-/* Efectivo / Transferencia: el input-group de Bootstrap (icono + campo)
-   se aplana a una sola píldora rellena, sin el recuadro gris por defecto. */
-#registrar-venta .sv-pay-input .input-group {
+/* Efectivo / Transferencia: fila con ícono en placa, etiqueta y monto
+   editable alineado a la derecha — sin el input-group gris de Bootstrap. */
+.sv-pay-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
     background: #f8f5f7;
     border-radius: 12px;
-    overflow: hidden;
     border: 1.5px solid transparent;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
-#registrar-venta .sv-pay-input .input-group:focus-within {
+.sv-pay-row:focus-within {
     background: #fff;
     border-color: var(--brand-300, #f9a8d4);
 }
-#registrar-venta .sv-pay-input .input-group-text {
-    background: transparent;
-    border: none;
-    color: #6b7280;
-    font-weight: 700;
+.sv-pay-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--brand-50, #fdf2f8);
+    color: var(--brand-600, #c026d3);
     font-size: 0.85rem;
+    flex-shrink: 0;
 }
-#registrar-venta .sv-pay-input .form-control {
-    background: transparent;
+.sv-pay-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #4b5563;
+    flex-shrink: 0;
+}
+.sv-pay-row input.form-control {
+    flex: 1;
     border: none;
+    background: transparent;
+    text-align: right;
+    font-weight: 700;
+    color: #1a1a2e;
     box-shadow: none !important;
+    min-width: 0;
 }
 
-#registrar-venta .sv-total-bar,
+.sv-change-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--brand-50, #fdf2f8);
+    border-radius: 10px;
+    font-weight: 800;
+    color: var(--brand-700, #a21caf);
+    font-size: 0.9rem;
+    margin: 10px 0;
+}
+
+.sv-observaciones { margin-bottom: 12px; }
+
 #registrar-venta .sv-submit-btn {
     border-radius: 16px;
 }
