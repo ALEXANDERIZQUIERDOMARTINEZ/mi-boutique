@@ -292,7 +292,17 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     let clienteSeleccionado = null;
     let productosCache = [];
     let clientesCache = null;
-    let productoEnVariacion = null;
+    let productoEnSheet = null; // producto cuya hoja de variaciones está abierta
+
+    // ── Estado del selector de productos estilo "Treinta" ─────────────────
+    const seleccionProductos = new Map(); // clave `${productoId}::${talla}::${color}` -> {productoId, codigo, nombre, talla, color, cantidad, precio}
+    const precioOverride = new Map(); // productoId -> precio unitario editado a mano en esta sesión
+    let categoriasFvCache = null; // Map categoriaId -> nombre (para chips de filtro)
+    let fvModoEdicionPrecio = false;
+    let fvOrdenAscendente = true;
+    let fvFiltroActivo = 'todas'; // 'todas' | 'bajas' | categoriaId
+    let fvTerminoBusqueda = '';
+    const FV_UMBRAL_BAJO_STOCK = 2;
 
     const clienteIdInput = document.getElementById('fv-cliente-id');
     const clienteNombreInput = document.getElementById('fv-cliente-nombre');
@@ -450,78 +460,49 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
     });
 
-    // ── Productos ────────────────────────────────────────────────────────
+    // ── Productos: selector estilo "Treinta" (pantalla completa) ──────────
     const productListEl = document.getElementById('fv-product-list');
     const productSearchInput = document.getElementById('fv-product-search');
-    const stepListEl = document.getElementById('fv-product-step-list');
-    const stepVariationEl = document.getElementById('fv-product-step-variation');
+    const fvScreenEl = document.getElementById('fvProductScreen');
+    const fvSheetEl = document.getElementById('fv-product-step-variation');
+    const fvSheetBackdropEl = document.getElementById('fvps-sheet-backdrop');
+    const fvChipsEl = document.getElementById('fvps-chips');
 
     async function cargarProductosCache() {
         const snap = await getDocs(productosFabricaCollection);
         productosCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     }
 
-    function renderProductList(lista) {
-        if (!lista.length) {
-            productListEl.innerHTML = `<li class="list-group-item text-center text-muted">Sin resultados</li>`;
-            return;
-        }
-        productListEl.innerHTML = lista.map(p => {
-            const stock = (p.variaciones || []).reduce((s, v) => s + (parseInt(v.stock, 10) || 0), 0);
-            const imgSrc = p.imagenUrl || 'https://placehold.co/60x60/f5e8ed/D988B9?text=%20';
-            return `
-                <li class="list-group-item fv-product-item" style="cursor:pointer;" data-id="${p.id}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="d-flex align-items-center gap-2">
-                            <img src="${imgSrc}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0;">
-                            <div>
-                                <strong>${p.nombre || 'Sin nombre'}</strong>
-                                <div class="text-muted small">${p.codigo || ''} · Stock: ${stock}</div>
-                            </div>
-                        </div>
-                        <span>${formatoMonedaDashboard.format(parseFloat(p.precioMayor) || 0)}</span>
-                    </div>
-                </li>
-            `;
-        }).join('');
+    async function cargarCategoriasFvCache() {
+        if (categoriasFvCache) return categoriasFvCache;
+        const snap = await getDocs(categoriasCollection);
+        categoriasFvCache = new Map(snap.docs.map(d => [d.id, d.data().nombre || 'Sin nombre']));
+        return categoriasFvCache;
     }
 
-    // El catálogo se precarga al entrar a la sección (ver más abajo), así
-    // que abrir el modal no depende de ninguna llamada async en ese
-    // instante — solo pinta lo que ya está en memoria. Si por lo que sea
-    // todavía no hay nada cargado (p.ej. se abrió el modal antes de que
-    // terminara de cargar), lo intenta una vez más aquí, con manejo de
-    // error visible en vez de dejar "Cargando..." para siempre.
-    document.getElementById('fvSearchProductModal')?.addEventListener('show.bs.modal', () => {
-        stepListEl.style.display = '';
-        stepVariationEl.style.display = 'none';
-        if (productosCache.length > 0) {
-            renderProductList(productosCache);
-            return;
-        }
-        productListEl.innerHTML = `<li class="list-group-item text-center text-muted">Cargando...</li>`;
-        cargarProductosCache()
-            .then(() => renderProductList(productosCache))
-            .catch((error) => {
-                console.error('Error al cargar catálogo para Registrar Venta:', error);
-                productListEl.innerHTML = `<li class="list-group-item text-center text-danger">No se pudo cargar el catálogo: ${error.message}</li>`;
+    // Reconstruye las chips de categoría (después de las fijas "Todas" /
+    // "Unidades bajas") según las categorías que de verdad tienen productos.
+    function construirChipsCategoria() {
+        if (!fvChipsEl || !categoriasFvCache) return;
+        fvChipsEl.querySelectorAll('.fvps-chip[data-categoria]').forEach(el => el.remove());
+        const idsPresentes = new Set(productosCache.map(p => p.categoriaId).filter(Boolean));
+        Array.from(idsPresentes)
+            .map(id => [id, categoriasFvCache.get(id) || 'Sin categoría'])
+            .sort((a, b) => a[1].localeCompare(b[1]))
+            .forEach(([id, nombre]) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'fvps-chip';
+                btn.dataset.categoria = id;
+                btn.dataset.filter = id;
+                btn.textContent = nombre;
+                fvChipsEl.appendChild(btn);
             });
-    });
+    }
 
-    productSearchInput?.addEventListener('input', () => {
-        const termino = productSearchInput.value.trim().toLowerCase();
-        const filtrada = !termino ? productosCache : productosCache.filter(p =>
-            (p.nombre || '').toLowerCase().includes(termino) || (p.codigo || '').toLowerCase().includes(termino)
-        );
-        renderProductList(filtrada);
-    });
-
-    productListEl?.addEventListener('click', (e) => {
-        const item = e.target.closest('.fv-product-item');
-        if (!item) return;
-        const producto = productosCache.find(p => p.id === item.dataset.id);
-        if (producto) abrirPasoVariacion(producto);
-    });
+    function stockTotalFv(producto) {
+        return (producto.variaciones || []).reduce((s, v) => s + (parseInt(v.stock, 10) || 0), 0);
+    }
 
     // Unidades del mismo producto/variación que ya están en el carrito —
     // para no dejar agregar más de lo que de verdad queda disponible
@@ -534,75 +515,377 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             .reduce((sum, item) => sum + item.cantidad, 0);
     }
 
-    function abrirPasoVariacion(producto) {
-        productoEnVariacion = producto;
-        stepListEl.style.display = 'none';
-        stepVariationEl.style.display = '';
-        document.getElementById('fv-variation-product-name').textContent = producto.nombre || '';
-        document.getElementById('fv-variation-product-img').src = producto.imagenUrl || 'https://placehold.co/60x60/f5e8ed/D988B9?text=%20';
-        document.getElementById('fv-variation-precio').value = producto.precioMayor || 0;
-        document.getElementById('fv-variation-cantidad').value = 1;
+    function claveSeleccion(productoId, talla, color) {
+        return `${productoId}::${normalizarVariacion(talla)}::${normalizarVariacion(color)}`;
+    }
 
-        const variaciones = producto.variaciones || [];
-        const opcionesEl = document.getElementById('fv-variation-options');
-        opcionesEl.innerHTML = variaciones.map((v, idx) => {
-            const stock = parseInt(v.stock, 10) || 0;
-            const disponible = stock - cantidadYaEnCarrito(producto.id, v.talla, v.color);
-            const etiqueta = [v.talla, v.color].filter(x => x && normalizarVariacion(x) !== '').join(' / ') || 'Única';
+    function cantidadSeleccionada(productoId, talla, color) {
+        const entrada = seleccionProductos.get(claveSeleccion(productoId, talla, color));
+        return entrada ? entrada.cantidad : 0;
+    }
+
+    // Unidades que todavía se pueden agregar: lo que hay en stock, menos lo
+    // que ya está en el carrito de esta venta, menos lo que ya se marcó en
+    // esta misma sesión del selector (pero aún no se confirma).
+    function disponibleVariacion(producto, variacion) {
+        const stock = parseInt(variacion?.stock, 10) || 0;
+        const talla = variacion?.talla || '';
+        const color = variacion?.color || '';
+        return stock - cantidadYaEnCarrito(producto.id, talla, color) - cantidadSeleccionada(producto.id, talla, color);
+    }
+
+    function precioProducto(producto) {
+        return precioOverride.has(producto.id) ? precioOverride.get(producto.id) : (parseFloat(producto.precioMayor) || 0);
+    }
+
+    function productosFiltrados() {
+        let lista = productosCache.slice();
+        if (fvFiltroActivo === 'bajas') {
+            lista = lista.filter(p => stockTotalFv(p) <= FV_UMBRAL_BAJO_STOCK);
+        } else if (fvFiltroActivo && fvFiltroActivo !== 'todas') {
+            lista = lista.filter(p => p.categoriaId === fvFiltroActivo);
+        }
+        if (fvTerminoBusqueda) {
+            lista = lista.filter(p =>
+                (p.nombre || '').toLowerCase().includes(fvTerminoBusqueda) ||
+                (p.codigo || '').toLowerCase().includes(fvTerminoBusqueda)
+            );
+        }
+        lista.sort((a, b) => {
+            const cmp = (a.nombre || '').localeCompare(b.nombre || '');
+            return fvOrdenAscendente ? cmp : -cmp;
+        });
+        return lista;
+    }
+
+    function textoDisponibles(n) {
+        return `${n} disponible${n === 1 ? '' : 's'}`;
+    }
+
+    function placeholderImg(nombre) {
+        return `https://placehold.co/96x96/f5e8ed/D988B9?text=${encodeURIComponent((nombre || '?').charAt(0).toUpperCase())}`;
+    }
+
+    function renderProductList() {
+        if (!productosCache.length) {
+            productListEl.innerHTML = `<div class="fvps-empty">Cargando catálogo...</div>`;
+            return;
+        }
+        const lista = productosFiltrados();
+        if (!lista.length) {
+            productListEl.innerHTML = `<div class="fvps-empty">Sin resultados</div>`;
+            return;
+        }
+        productListEl.innerHTML = lista.map(p => {
+            const variaciones = p.variaciones || [];
+            const stock = stockTotalFv(p);
+            const precio = precioProducto(p);
+            const precioHtml = fvModoEdicionPrecio
+                ? `<input type="text" inputmode="numeric" class="fvps-item-price-input fv-price-override" data-id="${p.id}" value="${precio}">`
+                : `<span class="fvps-item-price">${formatoMonedaDashboard.format(precio)}</span>`;
+
+            let controlHtml;
+            if (variaciones.length <= 1) {
+                const variacion = variaciones[0] || { talla: '', color: '', stock };
+                const disponible = Math.max(0, disponibleVariacion(p, variacion));
+                const cantidad = cantidadSeleccionada(p.id, variacion.talla, variacion.color);
+                controlHtml = `
+                    <div class="fvps-stepper" data-producto-id="${p.id}" data-talla="${variacion.talla || ''}" data-color="${variacion.color || ''}">
+                        <button type="button" class="fvps-stepper-btn fv-qty-minus" ${cantidad <= 0 ? 'disabled' : ''} aria-label="Quitar uno"><i class="bi bi-dash"></i></button>
+                        <span class="fvps-stepper-qty">${cantidad}</span>
+                        <button type="button" class="fvps-stepper-btn fvps-stepper-btn--plus fv-qty-plus" ${disponible <= 0 ? 'disabled' : ''} aria-label="Agregar uno"><i class="bi bi-plus"></i></button>
+                    </div>
+                `;
+            } else {
+                const totalSeleccionado = variaciones.reduce((s, v) => s + cantidadSeleccionada(p.id, v.talla, v.color), 0);
+                controlHtml = `
+                    <button type="button" class="fvps-choose-variant-btn fv-choose-variant ${totalSeleccionado > 0 ? 'has-selection' : ''}" data-id="${p.id}">
+                        ${totalSeleccionado > 0 ? totalSeleccionado + ' sel.' : 'Elegir'} <i class="bi bi-chevron-right"></i>
+                    </button>
+                `;
+            }
+
+            const stockBadge = stock > 0
+                ? `<span class="fvps-item-stock${stock <= FV_UMBRAL_BAJO_STOCK ? ' fvps-item-stock--baja' : ''}">${textoDisponibles(stock)}</span>`
+                : `<span class="fvps-item-stock fvps-item-stock--out">Sin stock</span>`;
+
             return `
-                <button type="button" class="btn btn-sm ${idx === 0 ? 'btn-primary' : 'btn-outline-secondary'} fv-variation-chip"
-                        data-idx="${idx}" ${disponible <= 0 ? 'disabled' : ''}>
-                    ${etiqueta} (${Math.max(0, disponible)})
-                </button>
+                <div class="fvps-item" data-id="${p.id}">
+                    <img src="${p.imagenUrl || placeholderImg(p.nombre)}" alt="" class="fvps-item-img">
+                    <div class="fvps-item-info">
+                        <span class="fvps-item-name">${p.nombre || 'Sin nombre'}</span>
+                        ${stockBadge}
+                        ${precioHtml}
+                    </div>
+                    ${controlHtml}
+                </div>
             `;
         }).join('');
-        opcionesEl.dataset.selectedIdx = variaciones.length ? '0' : '';
+    }
+
+    function ajustarCantidad(producto, variacion, delta) {
+        const talla = variacion?.talla || '';
+        const color = variacion?.color || '';
+        const key = claveSeleccion(producto.id, talla, color);
+        const actual = seleccionProductos.get(key);
+        const cantidadActual = actual ? actual.cantidad : 0;
+
+        if (delta > 0 && disponibleVariacion(producto, variacion) <= 0) {
+            showToast('No hay más unidades disponibles', 'warning');
+            return;
+        }
+
+        const nuevaCantidad = cantidadActual + delta;
+        if (nuevaCantidad <= 0) {
+            seleccionProductos.delete(key);
+            return;
+        }
+        seleccionProductos.set(key, {
+            productoId: producto.id,
+            codigo: producto.codigo || '',
+            nombre: producto.nombre || '',
+            talla,
+            color,
+            cantidad: nuevaCantidad,
+            precio: precioProducto(producto)
+        });
+    }
+
+    function renderFooter() {
+        let count = 0;
+        let total = 0;
+        seleccionProductos.forEach((entrada) => {
+            count += entrada.cantidad;
+            total += entrada.cantidad * entrada.precio;
+        });
+        document.getElementById('fvps-footer-count').textContent = count;
+        document.getElementById('fvps-footer-total').textContent = formatoMonedaDashboard.format(total);
+        document.getElementById('fvps-footer').classList.toggle('has-items', count > 0);
+        document.getElementById('fvps-confirm-btn').disabled = count === 0;
+    }
+
+    // ── Hoja de variaciones (productos con más de una talla/color) ────────
+    function renderSheetVariaciones() {
+        const producto = productoEnSheet;
+        if (!producto) return;
+        const opcionesEl = document.getElementById('fv-variation-options');
+        opcionesEl.innerHTML = (producto.variaciones || []).map((v) => {
+            const disponible = Math.max(0, disponibleVariacion(producto, v));
+            const cantidad = cantidadSeleccionada(producto.id, v.talla, v.color);
+            const etiqueta = [v.talla, v.color].filter(x => x && normalizarVariacion(x) !== '').join(' / ') || 'Única';
+            return `
+                <div class="fvps-variation-row" data-talla="${v.talla || ''}" data-color="${v.color || ''}">
+                    <div class="fvps-variation-label">
+                        <strong>${etiqueta}</strong>
+                        <small>${textoDisponibles(disponible)}</small>
+                    </div>
+                    <div class="fvps-stepper">
+                        <button type="button" class="fvps-stepper-btn fv-sheet-qty-minus" ${cantidad <= 0 ? 'disabled' : ''} aria-label="Quitar uno"><i class="bi bi-dash"></i></button>
+                        <span class="fvps-stepper-qty">${cantidad}</span>
+                        <button type="button" class="fvps-stepper-btn fvps-stepper-btn--plus fv-sheet-qty-plus" ${disponible <= 0 ? 'disabled' : ''} aria-label="Agregar uno"><i class="bi bi-plus"></i></button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function abrirSheetVariaciones(producto) {
+        productoEnSheet = producto;
+        document.getElementById('fv-variation-product-name').textContent = producto.nombre || '';
+        document.getElementById('fv-variation-product-img').src = producto.imagenUrl || placeholderImg(producto.nombre);
+        renderSheetVariaciones();
+        fvSheetBackdropEl.classList.add('open');
+        fvSheetEl.classList.add('open');
+    }
+
+    function cerrarSheetVariaciones() {
+        fvSheetBackdropEl.classList.remove('open');
+        fvSheetEl.classList.remove('open');
+        productoEnSheet = null;
+        renderProductList();
+        renderFooter();
     }
 
     document.getElementById('fv-variation-options')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('.fv-variation-chip');
-        if (!btn || btn.disabled) return;
-        document.querySelectorAll('.fv-variation-chip').forEach(b => b.classList.replace('btn-primary', 'btn-outline-secondary'));
-        btn.classList.replace('btn-outline-secondary', 'btn-primary');
-        document.getElementById('fv-variation-options').dataset.selectedIdx = btn.dataset.idx;
+        const plus = e.target.closest('.fv-sheet-qty-plus');
+        const minus = e.target.closest('.fv-sheet-qty-minus');
+        if (!plus && !minus) return;
+        const row = e.target.closest('.fvps-variation-row');
+        const producto = productoEnSheet;
+        if (!producto || !row) return;
+        const variacion = (producto.variaciones || []).find(v =>
+            normalizarVariacion(v.talla) === normalizarVariacion(row.dataset.talla) &&
+            normalizarVariacion(v.color) === normalizarVariacion(row.dataset.color)
+        ) || { talla: row.dataset.talla, color: row.dataset.color };
+        ajustarCantidad(producto, variacion, plus ? 1 : -1);
+        renderSheetVariaciones();
+        renderFooter();
     });
 
-    document.getElementById('fv-product-back-btn')?.addEventListener('click', () => {
-        stepVariationEl.style.display = 'none';
-        stepListEl.style.display = '';
-    });
+    document.getElementById('fv-product-back-btn')?.addEventListener('click', cerrarSheetVariaciones);
+    fvSheetBackdropEl?.addEventListener('click', cerrarSheetVariaciones);
 
-    document.getElementById('fv-variation-add-btn')?.addEventListener('click', () => {
-        if (!productoEnVariacion) return;
-        const variaciones = productoEnVariacion.variaciones || [];
-        const idx = parseInt(document.getElementById('fv-variation-options').dataset.selectedIdx, 10);
-        const variacion = variaciones[idx] || null;
-        const cantidad = parseInt(document.getElementById('fv-variation-cantidad').value, 10) || 0;
-        const precio = limpiarNumero(document.getElementById('fv-variation-precio').value);
-
-        if (variaciones.length && !variacion) { showToast('Selecciona una variación', 'warning'); return; }
-        if (cantidad <= 0) { showToast('La cantidad debe ser mayor a 0', 'warning'); return; }
-
-        if (variacion) {
-            const stock = parseInt(variacion.stock, 10) || 0;
-            const disponible = stock - cantidadYaEnCarrito(productoEnVariacion.id, variacion.talla, variacion.color);
-            if (cantidad > disponible) { showToast(`Solo hay ${Math.max(0, disponible)} unidades disponibles`, 'warning'); return; }
+    // ── Lista principal: stepper directo, elegir variación o editar precio ──
+    productListEl?.addEventListener('click', (e) => {
+        const plus = e.target.closest('.fv-qty-plus');
+        const minus = e.target.closest('.fv-qty-minus');
+        if (plus || minus) {
+            const wrap = e.target.closest('.fvps-stepper');
+            const producto = productosCache.find(p => p.id === wrap.dataset.productoId);
+            if (!producto) return;
+            const variacion = (producto.variaciones || [])[0] || { talla: wrap.dataset.talla, color: wrap.dataset.color, stock: stockTotalFv(producto) };
+            ajustarCantidad(producto, variacion, plus ? 1 : -1);
+            renderProductList();
+            renderFooter();
+            return;
         }
+        const chooseBtn = e.target.closest('.fv-choose-variant');
+        if (chooseBtn) {
+            const producto = productosCache.find(p => p.id === chooseBtn.dataset.id);
+            if (producto) abrirSheetVariaciones(producto);
+        }
+    });
 
-        carrito.push({
-            productoId: productoEnVariacion.id,
-            codigo: productoEnVariacion.codigo || '',
-            nombre: productoEnVariacion.nombre || '',
-            talla: variacion?.talla || '',
-            color: variacion?.color || '',
-            cantidad,
-            precio,
-            total: precio * cantidad
+    productListEl?.addEventListener('input', (e) => {
+        const input = e.target.closest('.fv-price-override');
+        if (!input) return;
+        const productoId = input.dataset.id;
+        const valor = limpiarNumero(input.value);
+        precioOverride.set(productoId, valor);
+        seleccionProductos.forEach((entrada) => {
+            if (entrada.productoId === productoId) entrada.precio = valor;
+        });
+        renderFooter();
+    });
+
+    productSearchInput?.addEventListener('input', () => {
+        fvTerminoBusqueda = productSearchInput.value.trim().toLowerCase();
+        renderProductList();
+    });
+
+    document.getElementById('fvps-sort-btn')?.addEventListener('click', (e) => {
+        fvOrdenAscendente = !fvOrdenAscendente;
+        const icon = e.currentTarget.querySelector('i');
+        if (icon) icon.className = fvOrdenAscendente ? 'bi bi-sort-alpha-down' : 'bi bi-sort-alpha-up';
+        renderProductList();
+    });
+
+    document.getElementById('fvps-edit-price-btn')?.addEventListener('click', (e) => {
+        fvModoEdicionPrecio = !fvModoEdicionPrecio;
+        e.currentTarget.classList.toggle('active', fvModoEdicionPrecio);
+        renderProductList();
+    });
+
+    fvChipsEl?.addEventListener('click', (e) => {
+        const chip = e.target.closest('.fvps-chip');
+        if (!chip) return;
+        fvChipsEl.querySelectorAll('.fvps-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        fvFiltroActivo = chip.dataset.filter;
+        renderProductList();
+    });
+
+    document.getElementById('fvps-search-toggle-btn')?.addEventListener('click', () => {
+        const bar = document.getElementById('fvps-search-bar');
+        bar.classList.toggle('open');
+        if (bar.classList.contains('open')) productSearchInput.focus();
+    });
+
+    // Fábrica no tiene escáner de cámara (excluido del negocio, ver
+    // cabecera del módulo); el código de barra de un producto es su
+    // "codigo" de texto, así que este botón solo abre la búsqueda para
+    // escribirlo o pegarlo — funcionalmente equivalente a escanearlo.
+    document.getElementById('fvps-barcode-btn')?.addEventListener('click', () => {
+        const bar = document.getElementById('fvps-search-bar');
+        bar.classList.add('open');
+        productSearchInput.placeholder = 'Escribe o pega el código...';
+        productSearchInput.focus();
+    });
+
+    document.getElementById('fvps-new-product-btn')?.addEventListener('click', () => {
+        document.getElementById('prodfab-btn-nuevo')?.click();
+    });
+
+    // El modal de "Nuevo producto" (Bootstrap) restaura el scroll del body al
+    // cerrarse; si nuestra pantalla de selección sigue abierta detrás, hay
+    // que volver a bloquearlo para que no se pueda hacer scroll del fondo.
+    document.getElementById('prodFabModal')?.addEventListener('hidden.bs.modal', () => {
+        if (fvScreenEl.classList.contains('active')) document.body.style.overflow = 'hidden';
+    });
+
+    // Si se crea un producto nuevo desde el botón de arriba (reutiliza el
+    // modal de "Productos Fábrica"), refresca el catálogo del selector.
+    window.addEventListener('fabrica:producto-guardado', () => {
+        cargarProductosCache()
+            .then(() => {
+                construirChipsCategoria();
+                renderProductList();
+            })
+            .catch((error) => console.error('Error al refrescar catálogo de Registrar Venta:', error));
+    });
+
+    document.getElementById('fvps-confirm-btn')?.addEventListener('click', () => {
+        if (seleccionProductos.size === 0) return;
+        seleccionProductos.forEach((entrada) => {
+            carrito.push({
+                productoId: entrada.productoId,
+                codigo: entrada.codigo,
+                nombre: entrada.nombre,
+                talla: entrada.talla,
+                color: entrada.color,
+                cantidad: entrada.cantidad,
+                precio: entrada.precio,
+                total: entrada.precio * entrada.cantidad
+            });
         });
         renderCarrito();
-        bootstrap.Modal.getInstance(document.getElementById('fvSearchProductModal'))?.hide();
-        showToast('Producto agregado al carrito', 'success');
+        const cantidadAgregada = seleccionProductos.size;
+        seleccionProductos.clear();
+        precioOverride.clear();
+        renderFooter();
+        cerrarPantallaProductos();
+        showToast(cantidadAgregada > 1 ? 'Productos agregados al carrito' : 'Producto agregado al carrito', 'success');
     });
+
+    function abrirPantallaProductos() {
+        fvScreenEl.classList.add('active');
+        fvScreenEl.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        renderFooter();
+
+        const pintarConCategorias = () => {
+            if (categoriasFvCache) construirChipsCategoria();
+            else cargarCategoriasFvCache().then(construirChipsCategoria).catch(() => {});
+        };
+
+        if (productosCache.length > 0) {
+            renderProductList();
+            pintarConCategorias();
+            return;
+        }
+        productListEl.innerHTML = `<div class="fvps-empty">Cargando catálogo...</div>`;
+        cargarProductosCache()
+            .then(() => {
+                renderProductList();
+                pintarConCategorias();
+            })
+            .catch((error) => {
+                console.error('Error al cargar catálogo para Registrar Venta:', error);
+                productListEl.innerHTML = `<div class="fvps-empty">No se pudo cargar el catálogo: ${error.message}</div>`;
+            });
+    }
+
+    function cerrarPantallaProductos() {
+        fvScreenEl.classList.remove('active');
+        fvScreenEl.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        fvSheetBackdropEl.classList.remove('open');
+        fvSheetEl.classList.remove('open');
+        productoEnSheet = null;
+    }
+
+    document.getElementById('fv-abrir-productos-btn')?.addEventListener('click', abrirPantallaProductos);
+    document.getElementById('fvps-back-btn')?.addEventListener('click', cerrarPantallaProductos);
 
     // ── Guardar venta ────────────────────────────────────────────────────
     async function actualizarStockFabrica(items, accion = 'restar') {
@@ -2200,6 +2483,9 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             getModal('prodFabModal').hide();
             form.reset();
             cargarProductos();
+            // Avisa al selector de productos de Registrar Venta (si está
+            // abierto) para que refresque su catálogo con el producto nuevo.
+            window.dispatchEvent(new CustomEvent('fabrica:producto-guardado'));
         } catch (error) {
             console.error('Error al guardar producto de fábrica:', error);
             showToast(`Error: ${error.message}`, 'error');
