@@ -46,7 +46,7 @@
       "destination": "/mayor.html"
     },
     {
-      "source": "/",
+      "source": "^/$",
       "has": [
         {
           "type": "host",
