@@ -2420,6 +2420,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const mostrarFotoPrincipalCheckbox = document.getElementById('mostrar-foto-principal');
             let productData = { nombre: nombreProducto, codigo: codigoInput ? codigoInput.value.trim() : '', codigoBarras: codigoBarrasInput ? codigoBarrasInput.value.trim() : '', proveedor: proveedorInput.value.trim(), descripcion: descripcionInput.value.trim(), categoriaId: categoriaSelect.value, costoCompra: parseFloat(costoInput.value) || 0, precioDetal: parseFloat(detalInput.value) || 0, precioMayor: parseFloat(mayorInput.value) || 0, visible: visibleCheckbox.checked, bajoEncargo: bajoEncargoCheckbox ? bajoEncargoCheckbox.checked : false, grupoMayorista: grupoMayoristaSelect ? grupoMayoristaSelect.value : '', mostrarFotoPrincipal: mostrarFotoPrincipalCheckbox ? mostrarFotoPrincipalCheckbox.checked : true, timestamp: serverTimestamp(), variaciones: [], imagenUrl: null };
+            // Requerido por firestore.rules (hasRequiredTenantId()) al crear: sin este
+            // campo, addDoc() es rechazado con "Missing or insufficient permissions"
+            // para CUALQUIER usuario, Super Admin incluido, porque esa validación no
+            // tiene atajo de rol — corre antes de llegar a isCreatingWithCorrectTenant().
+            if (!productId) {
+                productData.tenantId = window.expectedTenantId ?? null;
+            }
 
             const variationRows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)');
             variationRows.forEach(row => { const talla = row.querySelector('[name="variation_talla[]"]').value.trim(); const color = row.querySelector('[name="variation_color[]"]').value.trim(); const stock = parseInt(row.querySelector('[name="variation_stock[]"]').value, 10) || 0; if (talla || color || stock > 0) { productData.variaciones.push({ talla, color, stock }); } });
@@ -12126,7 +12133,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 visible: false, // Oculto por defecto en tienda virtual
                 timestamp: serverTimestamp(),
                 stock: 0, // Se actualiza con variaciones
-                variaciones: []
+                variaciones: [],
+                // Requerido por firestore.rules (hasRequiredTenantId()) al crear —
+                // ver misma nota en el submit de #form-producto más arriba.
+                tenantId: window.expectedTenantId ?? null
             };
 
             // Crear producto
@@ -12184,7 +12194,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 usuario: 'Admin', // Puedes cambiar esto por el usuario actual
                 totalProductos: totalProductos,
                 totalVariaciones: totalVariaciones,
-                totalUnidades: totalUnidades
+                totalUnidades: totalUnidades,
+                // Requerido por firestore.rules (hasRequiredTenantId()) al crear —
+                // ver misma nota en guardarProductoFirestore() más arriba.
+                tenantId: window.expectedTenantId ?? null
             });
 
             console.log('✅ Historial de cargue guardado');
