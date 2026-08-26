@@ -1666,6 +1666,101 @@ body.dark-mode .toast-close:hover  { background: rgba(255,255,255,0.14); }
   transition: color var(--duration-fast) ease;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   DASHBOARD FÁBRICA — paleta propia en blanco y negro (misma línea que
+   #registrar-venta en style.css). .db-fabrica es la clase que lleva el
+   <div id="dashboard"> solo en admin-fabrica.html, así que estas reglas
+   no tocan el Dashboard de Boutique aunque compartan .db-greeting-card,
+   .db-menu-tile-icon, .db-stat-icon, .db-panel-link, etc.
+   ───────────────────────────────────────────────────────────────────────── */
+.db-fabrica .db-greeting-card {
+  background: #1a1a2e;
+}
+.db-fabrica .db-greeting-avatar {
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.4);
+}
+.db-fabrica .db-greeting-avatar span {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.db-fabrica .db-menu-tile-icon {
+  background: #f3f4f6 !important;
+  color: #1a1a2e !important;
+}
+
+.db-fabrica .db-stat-icon {
+  background: #1a1a2e !important;
+  color: #fff !important;
+  border-radius: 50%;
+}
+
+.db-fabrica .db-report-link {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.db-fabrica .db-report-link:hover { background: #000; color: #fff; }
+
+/* Actividad reciente — clases propias (.db-activity-item), no las
+   .activity-item que ya usa Boutique en el mismo .db-activity-feed. */
+.db-fabrica .db-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.db-fabrica .db-activity-item:last-child { border-bottom: none; }
+.db-fabrica .db-activity-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--neutral-100, #f3f4f6);
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+.db-fabrica .db-activity-body { flex: 1; min-width: 0; }
+.db-fabrica .db-activity-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.db-fabrica .db-activity-sub {
+  font-size: 0.74rem;
+  color: var(--text-tertiary);
+  margin-top: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.db-fabrica .db-activity-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  flex-shrink: 0;
+}
+.db-fabrica .db-activity-time {
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.db-fabrica .db-activity-amount {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  white-space: nowrap;
+}
+
 /* Period tabs (dentro de un .db-panel-head) */
 .db-period-tabs {
   display: flex;

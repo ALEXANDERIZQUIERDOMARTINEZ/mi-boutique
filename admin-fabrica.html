@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="style.css?v=1.9.2">
-    <link rel="stylesheet" href="admin-styles.css?v=2.5.5">
+    <link rel="stylesheet" href="admin-styles.css?v=2.5.6">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
@@ -186,12 +186,10 @@
              .db-menu-*) que no tocan .db-stat-strip/.db-compare de
              admin-styles.css porque admin.html (Boutique) sigue usándolas.
              ═══════════════════════════════════════════════════════════════════ -->
-        <div class="tab-pane fade show active" id="dashboard">
+        <div class="tab-pane fade show active db-fabrica" id="dashboard">
             <section class="db-section">
                 <div class="db-greeting-card">
-                    <div class="db-greeting-avatar">
-                        <img src="icon.svg" alt="Mishell's Fábrica">
-                    </div>
+                    <div class="db-greeting-avatar"><span>M</span></div>
                     <div class="db-greeting-body">
                         <span class="db-greeting-hello">Hola, <span id="db-greeting-name">Administrador</span> 👋</span>
                         <span class="db-greeting-store">Mishell's Fábrica</span>
@@ -295,6 +293,7 @@
                 <div class="db-panel db-compare">
                     <div class="db-panel-head">
                         <span class="db-panel-title">Ventas</span>
+                        <a href="#fabrica" class="db-panel-link db-report-link"><i class="bi bi-graph-up-arrow"></i> Ver reporte</a>
                     </div>
                     <div class="db-compare-grid">
                         <div class="db-compare-col">
@@ -315,6 +314,18 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="db-section">
+                <div class="db-panel db-activity-feed">
+                    <div class="db-panel-head">
+                        <span class="db-panel-title">Actividad Reciente</span>
+                        <a href="#registrar-venta" class="db-panel-link" id="fdb-ver-todo-actividad">Ver todo <i class="bi bi-chevron-right"></i></a>
+                    </div>
+                    <div id="fdb-actividad-reciente">
+                        <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
                     </div>
                 </div>
             </section>
