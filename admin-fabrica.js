@@ -12,7 +12,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase
 import {
     initializeFirestore, collection, getDocs, query, where, orderBy, limit, doc,
     getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch,
-    onSnapshot
+    onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup } from "./wholesale-tiers.js";
@@ -46,7 +46,8 @@ console.log("Fábrica: Firebase inicializado");
 // es un script global aparte (no módulo), igual que en Boutique. ---
 const EXTERNAL_LIB_URLS = {
     xlsx: 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js',
-    qrcode: 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
+    qrcode: 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
+    jspdf: 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
 };
 const _externalLibPromises = {};
 function loadExternalLib(name) {
@@ -1235,41 +1236,553 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
     }
 
-    // Arma el texto del comprobante de venta para enviarlo por WhatsApp al
-    // cliente (mismo estilo de mensaje que ya se usa en admin.js para
-    // pedidos/cotizaciones: negritas con asteriscos, un renglón por producto).
-    function construirMensajeComprobanteFabrica(datos) {
-        const lineas = datos.items.map((item, i) => {
-            const variante = [item.talla, item.color].filter(x => x && normalizarVariacion(x) !== '').join(' · ');
-            const precioUnit = formatoMonedaDashboard.format(parseFloat(item.precio) || 0);
-            return `${i + 1}. ${item.nombre}${variante ? ` (${variante})` : ''} x${item.cantidad} - ${precioUnit} c/u = ${formatoMonedaDashboard.format(item.total)}`;
+    // ── Factura de venta (PDF) ───────────────────────────────────────────
+    // Mismo patrón que admin.js de Boutique: numeración consecutiva por
+    // tenant (colecciones compartidas 'facturas'/'contadores', pero cada
+    // tenant tiene su propio documento de contador gracias a
+    // window.expectedTenantId), PDF con jsPDF, y modal de acciones
+    // (imprimir/WhatsApp/correo/descargar) tras confirmar que sí se quiere
+    // facturar la venta recién registrada.
+    const NEGOCIO_INFO_FABRICA = {
+        marca: "MISHELL'S FÁBRICA",
+        nombreLegal: 'Andrea Mishell Espitia Solano',
+        cedula: '1193211056',
+        direccion: 'Mz 35 Lote 14',
+        telefono: '3046084971'
+    };
+
+    function formatearNumeroFacturaFab(numero) {
+        return `FAC-${String(numero).padStart(4, '0')}`;
+    }
+
+    // Obtiene (o crea) el número consecutivo de factura de una venta. Se
+    // guarda en 'facturas/{ventaId}' (idempotente) y el consecutivo en
+    // 'contadores/facturas_{tenantId}' vía transacción atómica.
+    async function obtenerNumeroFacturaFab(ventaId, ventaData) {
+        if (ventaData.numeroFactura) return ventaData.numeroFactura;
+
+        const facturaRef = doc(db, 'facturas', ventaId);
+        const facturaSnap = await getDoc(facturaRef);
+        if (facturaSnap.exists()) {
+            ventaData.numeroFactura = facturaSnap.data().numero;
+            return ventaData.numeroFactura;
+        }
+
+        const tenantId = ventaData.tenantId ?? window.expectedTenantId;
+        const contadorRef = doc(db, 'contadores', `facturas_${tenantId || 'fabrica'}`);
+
+        const numero = await runTransaction(db, async (tx) => {
+            const contadorSnap = await tx.get(contadorRef);
+            const ultimo = contadorSnap.exists() ? (contadorSnap.data().ultimoNumero || 0) : 0;
+            const nuevo = ultimo + 1;
+            tx.set(contadorRef, { ultimoNumero: nuevo }, { merge: true });
+            tx.set(facturaRef, {
+                numero: nuevo,
+                ventaId,
+                tenantId,
+                clienteNombre: ventaData.clienteNombre || 'Cliente General',
+                totalVenta: ventaData.totalVenta || 0,
+                creadoEn: serverTimestamp()
+            });
+            return nuevo;
         });
-        const metodoLabel = { efectivo: 'Efectivo', transferencia: 'Transferencia', otro: 'Otro' }[datos.metodoPago] || datos.metodoPago;
 
-        let msg = `*Comprobante de venta*\nMishell's Fábrica\n\n`;
-        msg += `Cliente: ${datos.clienteNombre}\n\n`;
-        msg += `*Productos:*\n${lineas.join('\n')}\n\n`;
-        msg += `*Resumen:*\nSubtotal: ${formatoMonedaDashboard.format(datos.subtotal)}\n`;
-        if (datos.descuento > 0) msg += `Descuento: -${formatoMonedaDashboard.format(datos.descuento)}\n`;
-        msg += `*TOTAL: ${formatoMonedaDashboard.format(datos.total)}*\n\n`;
-        msg += `Método de pago: ${metodoLabel}\nRecibido: ${formatoMonedaDashboard.format(datos.recibido)}\n`;
-        if (datos.cambio > 0) msg += `Cambio: ${formatoMonedaDashboard.format(datos.cambio)}\n`;
-        msg += `\n¡Gracias por tu compra!`;
-        return msg;
+        ventaData.numeroFactura = numero;
+        return numero;
     }
 
-    // Tras registrar la venta, pregunta si se envía el comprobante por
-    // WhatsApp al cliente (si tiene celular registrado) y, de aceptar, abre
-    // WhatsApp con el mensaje ya armado.
-    function ofrecerEnvioComprobanteWhatsapp(datos) {
-        const celular = (datos.clienteCelular || '').replace(/\D/g, '');
-        if (!celular) return;
-        if (!confirm(`¿Enviar comprobante de venta a ${datos.clienteNombre} por WhatsApp?`)) return;
-        const mensaje = construirMensajeComprobanteFabrica(datos);
-        let tel = celular;
-        if (tel.startsWith('57')) tel = tel.substring(2);
-        openWhatsApp(`https://wa.me/57${tel}?text=${encodeURIComponent(mensaje)}`);
+    async function generarFacturaVentaPDFFab(ventaId, ventaData) {
+        await loadExternalLib('jspdf');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const PW = 210, PH = 297, M = 18;
+        const INK = [20, 20, 22], TEXT = [55, 54, 57], MUTED = [128, 127, 130],
+              SOFT = [168, 167, 170], LINE = [220, 219, 222], HAIRLINE = [235, 234, 237],
+              ROW_ALT = [247, 247, 248];
+        const ACCENT = [214, 64, 128], ACCENT_TINT = [253, 234, 244];
+
+        function dibujarBordePagina() {
+            pdf.setDrawColor(...LINE);
+            pdf.setLineWidth(0.3);
+            pdf.rect(8, 8, PW - 16, PH - 16);
+        }
+
+        const numeroFactura = await obtenerNumeroFacturaFab(ventaId, ventaData);
+        const folioTxt = formatearNumeroFacturaFab(numeroFactura);
+        const fecha = ventaData.timestamp?.toDate ? ventaData.timestamp.toDate() : new Date();
+        const vendedor = window.appContext?.nombre || null;
+
+        // ── Encabezado ──────────────────────────────────────────────────
+        pdf.setFillColor(...ACCENT);
+        pdf.rect(0, 0, PW, 3, 'F');
+        dibujarBordePagina();
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(19);
+        pdf.setTextColor(...INK);
+        pdf.text(NEGOCIO_INFO_FABRICA.marca, M, 16);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(...TEXT);
+        pdf.text(NEGOCIO_INFO_FABRICA.nombreLegal, M, 22.5);
+        pdf.setTextColor(...MUTED);
+        pdf.text(`C.C./NIT ${NEGOCIO_INFO_FABRICA.cedula}  ·  ${NEGOCIO_INFO_FABRICA.direccion}  ·  WhatsApp ${NEGOCIO_INFO_FABRICA.telefono}`, M, 27);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(...SOFT);
+        pdf.text('FACTURA DE VENTA', PW - M, 13, { align: 'right' });
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(17);
+        pdf.setTextColor(...ACCENT);
+        pdf.text(folioTxt, PW - M, 21.5, { align: 'right' });
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(...MUTED);
+        pdf.text(
+            fecha.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }),
+            PW - M, 27, { align: 'right' }
+        );
+
+        pdf.setDrawColor(...ACCENT);
+        pdf.setLineWidth(0.8);
+        pdf.line(M, 33, PW - M, 33);
+
+        // ── Cliente / detalles de la venta (dos columnas) ────────────────
+        const colClienteX = M;
+        const colDetalleX = PW / 2 + 8;
+        let y = 42;
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8);
+        pdf.setTextColor(...ACCENT);
+        pdf.text('FACTURAR A', colClienteX, y);
+        pdf.text('DETALLES DE LA VENTA', colDetalleX, y);
+        y += 5.5;
+
+        pdf.setDrawColor(...LINE);
+        pdf.setLineWidth(0.3);
+        pdf.line(colClienteX, y - 3, colClienteX + (PW / 2 - M - 4), y - 3);
+        pdf.line(colDetalleX, y - 3, PW - M, y - 3);
+        pdf.line(PW / 2, 39, PW / 2, y + 20);
+
+        const clienteInfo = [
+            [ventaData.clienteNombre || 'Cliente General', true],
+            ventaData.clienteDireccion ? [ventaData.clienteDireccion, false] : null,
+            ventaData.clienteCelular ? [`Tel: ${ventaData.clienteCelular}`, false] : null
+        ].filter(Boolean);
+
+        const detalleInfo = [
+            ['Tipo de venta:  MAYORISTA', false],
+            ['Recoge en fábrica', false],
+            vendedor ? [`Atendido por:  ${vendedor}`, false] : null
+        ].filter(Boolean);
+
+        const filas = Math.max(clienteInfo.length, detalleInfo.length);
+        pdf.setFontSize(9);
+        for (let i = 0; i < filas; i++) {
+            const yLinea = y + i * 5.2;
+            if (clienteInfo[i]) {
+                const [texto, esNombre] = clienteInfo[i];
+                pdf.setFont('helvetica', esNombre ? 'bold' : 'normal');
+                pdf.setTextColor(...(esNombre ? INK : TEXT));
+                pdf.text(texto, colClienteX, yLinea);
+            }
+            if (detalleInfo[i]) {
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(...TEXT);
+                pdf.text(detalleInfo[i][0], colDetalleX, yLinea);
+            }
+        }
+        y += filas * 5.2 + 8;
+
+        pdf.setDrawColor(...INK);
+        pdf.setLineWidth(0.6);
+        pdf.line(M, y, PW - M, y);
+        y += 9;
+
+        // ── Tabla de items ────────────────────────────────────────────────
+        const colCant = 126, colPrecio = 156, colTotal = PW - M;
+
+        function dibujarCabeceraTabla() {
+            pdf.setFillColor(...ACCENT_TINT);
+            pdf.rect(M, y, PW - M * 2, 9, 'F');
+            y += 6;
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(8);
+            pdf.setTextColor(...ACCENT);
+            pdf.text('PRODUCTO', M + 2, y);
+            pdf.text('CANT.', colCant, y, { align: 'center' });
+            pdf.text('PRECIO UNIT.', colPrecio, y, { align: 'right' });
+            pdf.text('TOTAL', colTotal, y, { align: 'right' });
+            y += 3;
+            pdf.setDrawColor(...ACCENT);
+            pdf.setLineWidth(0.4);
+            pdf.line(M, y, PW - M, y);
+            y += 5.5;
+        }
+
+        dibujarCabeceraTabla();
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(...INK);
+        const items = ventaData.items || [];
+        items.forEach((item, idx) => {
+            if (y > PH - 65) {
+                pdf.addPage();
+                dibujarBordePagina();
+                y = M;
+                dibujarCabeceraTabla();
+                pdf.setFont('helvetica', 'normal');
+                pdf.setTextColor(...INK);
+            }
+
+            const rowH = 8;
+            if (idx % 2 === 1) {
+                pdf.setFillColor(...ROW_ALT);
+                pdf.rect(M, y - 5, PW - M * 2, rowH, 'F');
+            }
+
+            const detalle = [item.talla, item.color].filter(x => x && normalizarVariacion(x) !== '').join(' / ');
+            const nombreLinea = detalle ? `${item.nombre} (${detalle})` : (item.nombre || '');
+            const nombreCorto = nombreLinea.length > 50 ? nombreLinea.slice(0, 48) + '…' : nombreLinea;
+
+            pdf.setFontSize(8.5);
+            pdf.setTextColor(...INK);
+            pdf.text(nombreCorto, M, y);
+            pdf.setTextColor(...TEXT);
+            pdf.text(String(item.cantidad ?? ''), colCant, y, { align: 'center' });
+            pdf.text(formatoMonedaDashboard.format(item.precio || 0), colPrecio, y, { align: 'right' });
+            pdf.setTextColor(...INK);
+            pdf.text(formatoMonedaDashboard.format(item.total || 0), colTotal, y, { align: 'right' });
+
+            pdf.setDrawColor(...HAIRLINE);
+            pdf.setLineWidth(0.15);
+            pdf.line(M, y + 3, PW - M, y + 3);
+
+            y += rowH;
+        });
+
+        pdf.setDrawColor(...ACCENT);
+        pdf.setLineWidth(0.5);
+        pdf.line(M, y - 5, PW - M, y - 5);
+        y += 8;
+
+        // ── Totales ───────────────────────────────────────────────────────
+        const totalPrendas = items.reduce((s, i) => s + (parseInt(i.cantidad, 10) || 0), 0);
+        const subtotal = items.reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
+        const descuentoRaw = parseFloat(ventaData.descuento) || 0;
+        const descuento = ventaData.descuentoTipo === 'porcentaje' ? subtotal * (descuentoRaw / 100) : descuentoRaw;
+        const totalVenta = parseFloat(ventaData.totalVenta) || 0;
+
+        const filasTotales = [
+            ['Total de prendas', `${totalPrendas} ${totalPrendas === 1 ? 'prenda' : 'prendas'}`, false],
+            ['Subtotal', formatoMonedaDashboard.format(subtotal), false],
+            descuento > 0 ? ['Descuento', `-${formatoMonedaDashboard.format(descuento)}`, false] : null,
+            ['TOTAL A PAGAR', formatoMonedaDashboard.format(totalVenta), true]
+        ].filter(Boolean);
+
+        const cardW = 84, cardX = PW - M - cardW;
+        const filasNormales = filasTotales.filter(f => !f[2]).length;
+        const cardH = filasNormales * 6.2 + 18;
+        if (y + cardH > PH - 55) { pdf.addPage(); dibujarBordePagina(); y = M; }
+
+        let ty = y + 2;
+        filasTotales.forEach(([label, valor, resaltado]) => {
+            if (resaltado) {
+                ty += 3;
+                pdf.setFillColor(...ACCENT_TINT);
+                pdf.roundedRect(cardX - 4, ty - 6, cardW + 4, 11, 1.5, 1.5, 'F');
+                pdf.setDrawColor(...ACCENT);
+                pdf.setLineWidth(0.5);
+                pdf.roundedRect(cardX - 4, ty - 6, cardW + 4, 11, 1.5, 1.5, 'S');
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(12.5);
+                pdf.setTextColor(...ACCENT);
+                pdf.text(label, cardX, ty + 1.5);
+                pdf.text(valor, cardX + cardW, ty + 1.5, { align: 'right' });
+                ty += 9;
+            } else {
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(9);
+                pdf.setTextColor(...MUTED);
+                pdf.text(label, cardX, ty);
+                pdf.setTextColor(...TEXT);
+                pdf.text(valor, cardX + cardW, ty, { align: 'right' });
+                ty += 6.2;
+            }
+        });
+
+        y = ty + 6;
+
+        // ── Forma de pago + observaciones ─────────────────────────────────
+        if (y > PH - 45) { pdf.addPage(); dibujarBordePagina(); y = M; }
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8);
+        pdf.setTextColor(...ACCENT);
+        pdf.text('FORMA DE PAGO', M, y);
+        y += 5.5;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(...TEXT);
+        const metodoLabelPdf = { efectivo: 'Efectivo', transferencia: 'Transferencia', otro: 'Otro' }[ventaData.metodoPago] || 'Efectivo';
+        pdf.text(
+            `${metodoLabelPdf}   ·   Recibido: ${formatoMonedaDashboard.format((ventaData.pagoEfectivo || 0) + (ventaData.pagoTransferencia || 0))}`,
+            M, y
+        );
+        y += 8;
+
+        if (ventaData.observaciones) {
+            if (y > PH - 40) { pdf.addPage(); dibujarBordePagina(); y = M; }
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(8);
+            pdf.setTextColor(...ACCENT);
+            pdf.text('OBSERVACIONES', M, y);
+            y += 5.5;
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.setTextColor(...TEXT);
+            const obsLines = pdf.splitTextToSize(ventaData.observaciones, PW - M * 2);
+            pdf.text(obsLines, M, y);
+            y += obsLines.length * 5;
+        }
+
+        // ── Pie de página ─────────────────────────────────────────────────
+        const footY = PH - 20;
+        pdf.setDrawColor(...ACCENT);
+        pdf.setLineWidth(0.6);
+        pdf.line(M, footY, PW - M, footY);
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9.5);
+        pdf.setTextColor(...ACCENT);
+        pdf.text('¡Gracias por tu compra!', PW / 2, footY + 7, { align: 'center' });
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(...MUTED);
+        pdf.text(
+            `${NEGOCIO_INFO_FABRICA.marca}  ·  WhatsApp ${NEGOCIO_INFO_FABRICA.telefono}  ·  ${NEGOCIO_INFO_FABRICA.direccion}`,
+            PW / 2, footY + 12, { align: 'center' }
+        );
+        pdf.setFontSize(6.5);
+        pdf.setTextColor(...SOFT);
+        pdf.text(
+            `Factura ${folioTxt} generada el ${new Date().toLocaleString('es-CO')}`,
+            PW / 2, footY + 16.5, { align: 'center' }
+        );
+
+        const totalPaginas = pdf.internal.getNumberOfPages();
+        if (totalPaginas > 1) {
+            for (let p = 1; p <= totalPaginas; p++) {
+                pdf.setPage(p);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(7);
+                pdf.setTextColor(...SOFT);
+                pdf.text(`Página ${p} de ${totalPaginas}`, PW - M - 2, PH - 10, { align: 'right' });
+            }
+        }
+
+        const nombreArchivo = `Factura_${folioTxt}_${(ventaData.clienteNombre || 'Cliente').replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
+        const blob = pdf.output('blob');
+        const blobUrl = URL.createObjectURL(blob);
+
+        return { folioTxt, blob, blobUrl, fileName: nombreArchivo };
     }
+
+    // --- Compartir/Imprimir la factura generada ---
+    let facturaGeneradaFab = null; // { folioTxt, blob, blobUrl, fileName, ventaData }
+
+    function formatearNumeroWhatsappFab(celular) {
+        const digitos = (celular || '').replace(/\D/g, '');
+        if (!digitos) return '';
+        return digitos.length <= 10 ? `57${digitos}` : digitos;
+    }
+
+    function imprimirFacturaPDFFab(blobUrl) {
+        let iframe = document.getElementById('factura-print-iframe-fab');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'factura-print-iframe-fab';
+            iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+            document.body.appendChild(iframe);
+        }
+        iframe.onload = () => {
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } catch (e) {
+                window.open(blobUrl, '_blank');
+            }
+        };
+        iframe.src = blobUrl;
+    }
+
+    async function compartirFacturaWhatsAppFab({ blob, fileName, folioTxt, ventaData }) {
+        const nombreCliente = ventaData.clienteNombre || 'Cliente';
+        const mensaje = `Hola ${nombreCliente}, aquí tienes tu factura ${folioTxt} de ${NEGOCIO_INFO_FABRICA.marca}. ¡Gracias por tu compra!`;
+        const file = new File([blob], fileName, { type: 'application/pdf' });
+        const puedeCompartirArchivo = navigator.canShare && navigator.canShare({ files: [file] });
+
+        if (puedeCompartirArchivo) {
+            try {
+                await navigator.share({ files: [file], title: `Factura ${folioTxt}`, text: mensaje });
+            } catch (e) {
+                if (e.name === 'AbortError') return; // el usuario canceló el share
+                console.warn('No se pudo compartir el PDF directamente:', e);
+                showToast('No se pudo confirmar el envío. Revisa WhatsApp antes de reintentar para no enviar la factura dos veces.', 'warning');
+            }
+            return;
+        }
+
+        // Respaldo (navegadores sin Web Share API con archivos): descarga el
+        // PDF y abre WhatsApp con el número del cliente para adjuntarlo a mano.
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        const numero = formatearNumeroWhatsappFab(ventaData.clienteCelular);
+        const texto = encodeURIComponent(`${mensaje}\n(Adjunta el PDF "${fileName}" que se acaba de descargar)`);
+        const waUrl = numero ? `https://wa.me/${numero}?text=${texto}` : `https://wa.me/?text=${texto}`;
+        openWhatsApp(waUrl);
+        showToast('Se descargó el PDF. Adjúntalo manualmente en el chat de WhatsApp que se abrió.', 'info');
+    }
+
+    // mailto no admite adjuntos: se descarga el PDF y se abre el correo con
+    // destinatario/asunto/cuerpo listos para que se adjunte a mano.
+    function enviarFacturaCorreoFab(email, { blob, fileName, folioTxt, ventaData }) {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        const asunto = encodeURIComponent(`Factura ${folioTxt} - ${NEGOCIO_INFO_FABRICA.marca}`);
+        const cuerpo = encodeURIComponent(
+            `Hola ${ventaData.clienteNombre || ''},\n\nAdjunto encontrarás tu factura ${folioTxt} de ${NEGOCIO_INFO_FABRICA.marca}.\n\n¡Gracias por tu compra!\n\n${NEGOCIO_INFO_FABRICA.marca}\nWhatsApp ${NEGOCIO_INFO_FABRICA.telefono}`
+        );
+        const mailtoUrl = `mailto:${encodeURIComponent(email)}?subject=${asunto}&body=${cuerpo}`;
+
+        const mailLink = document.createElement('a');
+        mailLink.href = mailtoUrl;
+        document.body.appendChild(mailLink);
+        mailLink.click();
+        mailLink.remove();
+
+        showToast('Se descargó el PDF y se abrió tu correo. Adjunta el archivo antes de enviarlo.', 'info');
+    }
+
+    let facturaAccionesModalFabInstance = null;
+    let facturaPreguntaModalFabInstance = null;
+    const facturaAccionesModalFabEl = document.getElementById('facturaAccionesModalFab');
+    if (facturaAccionesModalFabEl) {
+        facturaAccionesModalFabInstance = new bootstrap.Modal(facturaAccionesModalFabEl);
+        facturaAccionesModalFabEl.addEventListener('hidden.bs.modal', () => {
+            const emailForm = document.getElementById('factura-email-form-fab');
+            if (emailForm) { emailForm.style.display = 'none'; emailForm.reset(); }
+        });
+    }
+    const facturaPreguntaModalFabEl = document.getElementById('facturaPreguntaModalFab');
+    if (facturaPreguntaModalFabEl) facturaPreguntaModalFabInstance = new bootstrap.Modal(facturaPreguntaModalFabEl);
+
+    document.getElementById('btn-factura-imprimir-fab')?.addEventListener('click', () => {
+        if (facturaGeneradaFab) imprimirFacturaPDFFab(facturaGeneradaFab.blobUrl);
+    });
+
+    const btnFacturaWhatsappFab = document.getElementById('btn-factura-whatsapp-fab');
+    btnFacturaWhatsappFab?.addEventListener('click', async () => {
+        // Bloquea el botón mientras se comparte: en celulares donde el share
+        // sheet tarda en aparecer, un doble toque volvía a llamar a esta
+        // función y la factura se enviaba dos veces.
+        if (!facturaGeneradaFab || btnFacturaWhatsappFab.disabled) return;
+        btnFacturaWhatsappFab.disabled = true;
+        try {
+            await compartirFacturaWhatsAppFab(facturaGeneradaFab);
+        } finally {
+            btnFacturaWhatsappFab.disabled = false;
+        }
+    });
+
+    // --- Enviar por Correo: pide el email antes de enviar ---
+    const btnFacturaCorreoFab = document.getElementById('btn-factura-correo-fab');
+    const facturaEmailFormFab = document.getElementById('factura-email-form-fab');
+    const facturaEmailInputFab = document.getElementById('factura-email-input-fab');
+    btnFacturaCorreoFab?.addEventListener('click', () => {
+        const visible = facturaEmailFormFab.style.display !== 'none';
+        facturaEmailFormFab.style.display = visible ? 'none' : 'block';
+        if (!visible) facturaEmailInputFab?.focus();
+    });
+    facturaEmailFormFab?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!facturaGeneradaFab) return;
+        const email = (facturaEmailInputFab?.value || '').trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showToast('Ingresa un correo válido', 'warning');
+            return;
+        }
+        enviarFacturaCorreoFab(email, facturaGeneradaFab);
+        facturaEmailFormFab.style.display = 'none';
+        facturaEmailFormFab.reset();
+    });
+
+    document.getElementById('btn-factura-descargar-fab')?.addEventListener('click', () => {
+        if (!facturaGeneradaFab) return;
+        const a = document.createElement('a');
+        a.href = facturaGeneradaFab.blobUrl;
+        a.download = facturaGeneradaFab.fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    });
+
+    // Genera el PDF y abre el modal de acciones (imprimir/whatsapp/correo/
+    // descargar); reutilizada por la pregunta que aparece justo al
+    // registrar una venta nueva.
+    async function generarYMostrarFacturaFab(ventaId, ventaData, modalAOcultar) {
+        try {
+            const resultado = await generarFacturaVentaPDFFab(ventaId, ventaData);
+
+            if (facturaGeneradaFab?.blobUrl) URL.revokeObjectURL(facturaGeneradaFab.blobUrl);
+            facturaGeneradaFab = { ...resultado, ventaData };
+
+            const folioEl = document.getElementById('factura-modal-folio-fab');
+            if (folioEl) folioEl.textContent = resultado.folioTxt;
+
+            if (modalAOcultar) {
+                const elAOcultar = modalAOcultar._element;
+                if (elAOcultar) elAOcultar.addEventListener('hidden.bs.modal', () => facturaAccionesModalFabInstance?.show(), { once: true });
+                modalAOcultar.hide();
+            } else {
+                facturaAccionesModalFabInstance?.show();
+            }
+            return resultado;
+        } catch (error) {
+            console.error('Error al generar factura de fábrica:', error);
+            showToast('Error al generar la factura', 'error');
+            return null;
+        }
+    }
+
+    // --- Pregunta al registrar una venta nueva: ¿generar factura ahora? ---
+    let ventaRecienRegistradaFab = null; // { ventaId, ventaData }
+    const btnFacturaPreguntaSiFab = document.getElementById('btn-factura-pregunta-si-fab');
+    btnFacturaPreguntaSiFab?.addEventListener('click', async () => {
+        if (!ventaRecienRegistradaFab) return;
+        const originalHtml = btnFacturaPreguntaSiFab.innerHTML;
+        btnFacturaPreguntaSiFab.disabled = true;
+        btnFacturaPreguntaSiFab.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generando...';
+
+        await generarYMostrarFacturaFab(ventaRecienRegistradaFab.ventaId, ventaRecienRegistradaFab.ventaData, facturaPreguntaModalFabInstance);
+
+        btnFacturaPreguntaSiFab.disabled = false;
+        btnFacturaPreguntaSiFab.innerHTML = originalHtml;
+        ventaRecienRegistradaFab = null;
+    });
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -1314,29 +1827,18 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 tenantId: window.expectedTenantId
             };
 
-            await addDoc(ventasCollection, ventaData);
+            const ventaRef = await addDoc(ventasCollection, ventaData);
             await actualizarStockFabrica(carrito);
 
             showToast('Venta registrada', 'success');
 
-            // Snapshot para el comprobante: se toma antes de limpiar el
-            // carrito/cliente, que se resetean justo después.
-            const subtotal = calcularSubtotal();
-            const descuentoValRaw = limpiarNumero(descuentoInput.value);
-            const descuentoMonto = descuentoTipoSelect.value === 'porcentaje'
-                ? subtotal * (descuentoValRaw / 100)
-                : descuentoValRaw;
-            ofrecerEnvioComprobanteWhatsapp({
-                clienteNombre: ventaData.clienteNombre,
-                clienteCelular: ventaData.clienteCelular,
-                items: carrito,
-                subtotal,
-                descuento: descuentoMonto,
-                total,
-                metodoPago: metodoPagoSeleccionado,
-                recibido,
-                cambio: recibido - total
-            });
+            // Pregunta si se quiere facturar ya mismo (ventaData se conserva
+            // completo, incluidos los items, aunque el carrito se limpie a
+            // continuación).
+            if (facturaPreguntaModalFabInstance) {
+                ventaRecienRegistradaFab = { ventaId: ventaRef.id, ventaData };
+                facturaPreguntaModalFabInstance.show();
+            }
 
             carrito = [];
             seleccionarCliente(CLIENTE_GENERAL_DEFAULT);
