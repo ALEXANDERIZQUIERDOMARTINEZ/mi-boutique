@@ -1181,14 +1181,17 @@ body.dark-mode .mbn-item.active { color: var(--brand-400); }
    TOAST — Premium notifications
    ───────────────────────────────────────────────────────────────────────── */
 
-/* Móvil por defecto: centrado sobre el nav inferior */
+/* Móvil por defecto: debajo del topbar, no encima del nav inferior — ahí
+   suele haber botones/tarjetas con los que se sigue interactuando justo
+   después de la acción que dispara el toast (agregar producto, guardar,
+   etc.), y quedaba tapándolos. */
 .toast-container {
   z-index: 1200 !important;
   position: fixed !important;
-  bottom: calc(58px + env(safe-area-inset-bottom, 0px) + 10px) !important;
+  top: calc(50px + env(safe-area-inset-top, 0px) + 10px) !important;
+  bottom: auto !important;
   left: 50% !important;
   right: auto !important;
-  top: auto !important;
   transform: translateX(-50%) !important;
   width: calc(100% - 2rem) !important;
   max-width: 380px !important;
