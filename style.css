@@ -4447,6 +4447,78 @@ body.dark-mode .sv-quote-btn {
 #registrar-venta .vf-cart-item-remove { padding: 4px 5px; font-size: 0.86rem; color: #9ca3af; }
 #registrar-venta .vf-cart-item-remove:hover { background: #f3f4f6; color: #1a1a2e; }
 
+/* ── Historial de ventas (Fábrica): mismas tarjetas/filtros que usa
+   Boutique en su propio historial (.sv-filters, .venta-card, etc. son
+   clases compartidas), pero recoloreadas al blanco y negro de
+   Registrar Venta en vez del rosa/verde/azul de Boutique. ── */
+#registrar-venta .sv-filters {
+    border-color: #ececec;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+#registrar-venta .sv-filter-search:focus-within {
+    border-color: #1a1a2e;
+}
+#registrar-venta #fv-filtro-fecha-ventas {
+    border: 1.5px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: #1a1a2e;
+}
+#registrar-venta #fv-btn-limpiar-filtro-ventas {
+    border: 1.5px solid #ececec;
+    border-radius: 10px;
+    color: #1a1a2e;
+    background: #fff;
+}
+#registrar-venta #fv-btn-limpiar-filtro-ventas:hover {
+    background: #f5f5f5;
+    border-color: #ececec;
+    color: #1a1a2e;
+}
+
+#registrar-venta .venta-card {
+    border-color: #ececec;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+#registrar-venta .venta-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+#registrar-venta .venta-card::before {
+    background: #1a1a2e;
+    opacity: 1;
+}
+#registrar-venta .venta-card[data-estado="Anulada"]::before,
+#registrar-venta .venta-card[data-estado="Cancelada"]::before {
+    background: #ef4444;
+}
+#registrar-venta .venta-card[data-estado="Pendiente"]::before {
+    background: #f59e0b;
+}
+#registrar-venta .venta-card-fecha,
+#registrar-venta .venta-prod-detail,
+#registrar-venta .venta-card-entrega {
+    color: #9ca3af;
+}
+#registrar-venta .venta-prod-detail .text-primary {
+    color: #1a1a2e !important;
+}
+#registrar-venta .venta-card-total {
+    color: #1a1a2e;
+}
+#registrar-venta .venta-pago-badge.efec,
+#registrar-venta .venta-pago-badge.transf {
+    background: #f3f4f6;
+    color: #1a1a2e;
+}
+#registrar-venta .venta-card-meta-top .badge.bg-success {
+    background: #1a1a2e !important;
+    color: #fff !important;
+}
+#registrar-venta .venta-card-cliente-row .badge.bg-info {
+    background: #f3f4f6 !important;
+    color: #1a1a2e !important;
+}
+
 /* ════════════════════════════════════════════════════════════════
    CARRITO — clases vf-* usadas por renderCarrito() JS
    ════════════════════════════════════════════════════════════════ */
