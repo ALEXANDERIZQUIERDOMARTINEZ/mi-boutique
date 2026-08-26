@@ -7431,3 +7431,105 @@ img, video, iframe, embed, object {
     color: #b0b0b0;
     pointer-events: none;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   REGISTRAR VENTA (FÁBRICA) — Modales "Venta registrada" / "Factura
+   generada": mismo lenguaje visual blanco y negro que el resto de
+   Registrar Venta y el selector de productos, en vez de los colores
+   por defecto de Bootstrap (verde/rojo/azul). admin-styles.css ya
+   convierte cualquier .modal en una hoja inferior en móvil; aquí solo
+   se recolorean el contenido y, en móvil, se corrige el alto para que
+   la hoja quede pegada a su contenido en vez de quedar centrada en un
+   contenedor casi de pantalla completa (heredado de
+   .modal-dialog-centered), que dejaba un hueco vacío enorme.
+   ════════════════════════════════════════════════════════════════════ */
+.fv-invoice-modal .modal-content {
+    border-radius: 20px;
+}
+.fv-invoice-modal .modal-header {
+    border-bottom: 1px solid #ececec;
+    padding: 20px 20px 14px;
+}
+.fv-invoice-modal .modal-title {
+    display: flex;
+    align-items: center;
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: #1a1a2e;
+}
+.fv-invoice-modal .modal-title i {
+    color: #1a1a2e;
+}
+.fv-invoice-modal .btn-close:focus {
+    box-shadow: none;
+}
+.fv-invoice-modal .modal-body {
+    padding: 16px 20px;
+}
+.fv-invoice-modal-sub {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin-bottom: 14px;
+}
+.fv-invoice-modal-hint {
+    color: #9ca3af;
+    font-size: 0.76rem;
+}
+.fv-invoice-modal .modal-footer {
+    border-top: none;
+    padding: 4px 20px 20px;
+    gap: 8px;
+}
+.fv-invoice-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    transition: background 0.15s ease;
+}
+.fv-invoice-btn-primary {
+    border: 1.5px solid #1a1a2e;
+    background: #1a1a2e;
+    color: #fff;
+}
+.fv-invoice-btn-primary:hover { background: #2a2a42; color: #fff; }
+.fv-invoice-btn-outline {
+    border: 1.5px solid #1a1a2e;
+    background: #fff;
+    color: #1a1a2e;
+}
+.fv-invoice-btn-outline:hover { background: #f5f5f5; color: #1a1a2e; }
+.fv-invoice-btn-secondary {
+    border: 1.5px solid #ececec;
+    background: #fff;
+    color: #1a1a2e;
+}
+.fv-invoice-btn-secondary:hover { background: #f5f5f5; color: #1a1a2e; }
+.fv-invoice-modal #factura-email-form-fab .input-group > .fv-invoice-btn {
+    width: auto;
+    padding: 8px 14px;
+    border-radius: 0 999px 999px 0;
+}
+.fv-invoice-modal #factura-email-input-fab {
+    border-radius: 999px 0 0 999px;
+    border-color: #ececec;
+}
+.fv-invoice-btn:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* En móvil, admin-styles.css convierte cada .modal-dialog-centered en un
+   contenedor casi de pantalla completa (flex + align-items:center) para
+   centrar verticalmente su contenido; aquí se anula eso para que la hoja
+   quede pegada a su propio contenido, sin el hueco vacío del centrado. */
+@media (max-width: 767px) {
+    .fv-invoice-modal .modal-dialog.modal-dialog-centered {
+        display: block;
+        min-height: 0;
+    }
+}

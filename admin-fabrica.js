@@ -1300,7 +1300,9 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         const INK = [20, 20, 22], TEXT = [55, 54, 57], MUTED = [128, 127, 130],
               SOFT = [168, 167, 170], LINE = [220, 219, 222], HAIRLINE = [235, 234, 237],
               ROW_ALT = [247, 247, 248];
-        const ACCENT = [214, 64, 128], ACCENT_TINT = [253, 234, 244];
+        // Negro/gris de marca de Fábrica (mismo #1a1a2e del Dashboard y
+        // Registrar Venta) en vez del rosa/magenta de Boutique.
+        const ACCENT = [26, 26, 46], ACCENT_TINT = [243, 244, 246];
 
         function dibujarBordePagina() {
             pdf.setDrawColor(...LINE);

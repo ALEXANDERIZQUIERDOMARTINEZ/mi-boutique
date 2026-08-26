@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=1.9.3">
+    <link rel="stylesheet" href="style.css?v=1.9.4">
     <link rel="stylesheet" href="admin-styles.css?v=2.5.6">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -1700,68 +1700,69 @@
         </div>
 
         <!-- Modal: acciones tras generar la factura de una venta (mismo patrón que
-             admin.js de Boutique: PDF con jsPDF, imprimir/WhatsApp/correo/descargar) -->
-        <div class="modal fade" id="facturaAccionesModalFab" tabindex="-1" aria-labelledby="facturaAccionesModalFabTitle" aria-hidden="true">
+             admin.js de Boutique: PDF con jsPDF, imprimir/WhatsApp/correo/descargar),
+             pero con el diseño minimalista blanco y negro de Registrar Venta. -->
+        <div class="modal fade fv-invoice-modal" id="facturaAccionesModalFab" tabindex="-1" aria-labelledby="facturaAccionesModalFabTitle" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h1 class="modal-title fs-5" id="facturaAccionesModalFabTitle">
-                            <i class="bi bi-file-earmark-check-fill text-success me-2"></i>Factura <span id="factura-modal-folio-fab"></span> generada
+                            <i class="bi bi-file-earmark-check-fill me-2"></i>Factura <span id="factura-modal-folio-fab"></span> generada
                         </h1>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p class="text-muted mb-3">¿Qué deseas hacer con esta factura?</p>
+                        <p class="fv-invoice-modal-sub">¿Qué deseas hacer con esta factura?</p>
                         <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-outline-primary" id="btn-factura-imprimir-fab">
+                            <button type="button" class="fv-invoice-btn fv-invoice-btn-outline" id="btn-factura-imprimir-fab">
                                 <i class="bi bi-printer me-2"></i>Imprimir
                             </button>
-                            <button type="button" class="btn btn-success" id="btn-factura-whatsapp-fab">
+                            <button type="button" class="fv-invoice-btn fv-invoice-btn-outline" id="btn-factura-whatsapp-fab">
                                 <i class="bi bi-whatsapp me-2"></i>Enviar por WhatsApp
                             </button>
-                            <button type="button" class="btn btn-outline-danger" id="btn-factura-correo-fab">
+                            <button type="button" class="fv-invoice-btn fv-invoice-btn-outline" id="btn-factura-correo-fab">
                                 <i class="bi bi-envelope me-2"></i>Enviar por Correo
                             </button>
                             <form id="factura-email-form-fab" style="display:none;">
                                 <div class="input-group input-group-sm mt-1">
                                     <input type="email" id="factura-email-input-fab" class="form-control"
                                            placeholder="correo@ejemplo.com" autocomplete="off" required>
-                                    <button class="btn btn-danger" type="submit" id="btn-factura-email-enviar-fab">
+                                    <button class="fv-invoice-btn fv-invoice-btn-primary" type="submit" id="btn-factura-email-enviar-fab">
                                         <i class="bi bi-send"></i> Enviar
                                     </button>
                                 </div>
-                                <small class="text-muted d-block mt-1">
+                                <small class="fv-invoice-modal-hint d-block mt-1">
                                     Se descargará el PDF y se abrirá tu correo con el destinatario listo; adjunta el archivo antes de enviarlo.
                                 </small>
                             </form>
-                            <button type="button" class="btn btn-outline-secondary" id="btn-factura-descargar-fab">
+                            <button type="button" class="fv-invoice-btn fv-invoice-btn-outline" id="btn-factura-descargar-fab">
                                 <i class="bi bi-download me-2"></i>Descargar PDF
                             </button>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="button" class="fv-invoice-btn fv-invoice-btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Modal: ¿generar factura al registrar la venta? -->
-        <div class="modal fade" id="facturaPreguntaModalFab" tabindex="-1" aria-labelledby="facturaPreguntaModalFabTitle" aria-hidden="true">
+        <div class="modal fade fv-invoice-modal" id="facturaPreguntaModalFab" tabindex="-1" aria-labelledby="facturaPreguntaModalFabTitle" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h1 class="modal-title fs-5" id="facturaPreguntaModalFabTitle">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>Venta registrada
+                            <i class="bi bi-check-circle-fill me-2"></i>Venta registrada
                         </h1>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p class="mb-0">¿Deseas generar la factura de esta venta ahora?</p>
+                        <p class="fv-invoice-modal-sub mb-0">¿Deseas generar la factura de esta venta ahora?</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, gracias</button>
-                        <button type="button" class="btn btn-success" id="btn-factura-pregunta-si-fab">
+                        <button type="button" class="fv-invoice-btn fv-invoice-btn-secondary" data-bs-dismiss="modal">No, gracias</button>
+                        <button type="button" class="fv-invoice-btn fv-invoice-btn-primary" id="btn-factura-pregunta-si-fab">
                             <i class="bi bi-file-earmark-text me-1"></i>Sí, generar factura
                         </button>
                     </div>
@@ -2094,7 +2095,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.8.1"></script>
+    <script type="module" src="admin-fabrica.js?v=1.8.2"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.1.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->
