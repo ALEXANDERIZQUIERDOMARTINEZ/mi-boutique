@@ -3959,34 +3959,36 @@ body.dark-mode .sv-quote-btn {
    #ventas), así que estas reglas no tocan la pantalla de Boutique aunque
    compartan las mismas clases .sv-*.
    ════════════════════════════════════════════════════════════════ */
-/* Modo compacto: todo el formulario visible sin scroll en un celular —
-   se prioriza que quepa todo por encima del tamaño de letra. */
-#registrar-venta .sv-header { margin-bottom: 4px; }
-#registrar-venta .sv-title { font-size: 1rem; line-height: 1.2; }
-#registrar-venta .sv-form { gap: 3px; }
+/* Espacio holgado: ya no se prioriza que quepa todo sin scroll — se
+   prioriza que se vea prolijo y bien separado. */
+#registrar-venta { padding-top: 2px; }
+#registrar-venta .sv-header { margin: 2px 0 14px; align-items: flex-start; }
+#registrar-venta .sv-title { font-size: 1.3rem; line-height: 1.35; }
+#registrar-venta .sv-form { gap: 14px; }
 
 /* ── Encabezado: título + subtítulo + botón Historial/Nueva venta ── */
-.sv-header-brand { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+.sv-header-brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-top: 1px; }
 .sv-subtitle {
     margin: 0;
-    font-size: 0.6rem;
+    font-size: 0.78rem;
     color: #6b7280;
     font-weight: 500;
-    line-height: 1.2;
+    line-height: 1.3;
 }
 .sv-header-action {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
-    border-radius: 10px;
+    padding: 9px 14px;
+    border-radius: 11px;
     border: none;
     background: #f3f4f6;
     color: #1a1a2e;
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: 0.82rem;
     white-space: nowrap;
     flex-shrink: 0;
+    margin-top: 2px;
     transition: background 0.15s ease;
 }
 #registrar-venta .sv-header-action:hover { background: #e5e7eb; }
@@ -3994,36 +3996,36 @@ body.dark-mode .sv-quote-btn {
 #registrar-venta .sv-section-header {
     background: transparent;
     border-bottom: none;
-    padding: 5px 10px 1px;
-    gap: 5px;
-    font-size: 0.6rem;
-    line-height: 1.3;
+    padding: 14px 16px 8px;
+    gap: 9px;
+    font-size: 0.72rem;
 }
 
 #registrar-venta .sv-section-header i {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 19px;
-    height: 19px;
-    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
     background: #f3f4f6;
-    font-size: 0.65rem;
+    color: #1a1a2e;
+    font-size: 0.85rem;
 }
 
 #registrar-venta .sv-section-body {
-    padding: 3px 10px 6px;
-    gap: 3px;
+    padding: 6px 16px 16px;
+    gap: 10px;
 }
 
 #registrar-venta .sv-section,
 #registrar-venta .sv-payment {
-    border-radius: 14px;
-    border-color: #e5e7eb;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    border-color: #ececec;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-#registrar-venta .sv-payment { padding: 6px 10px; gap: 3px; }
+#registrar-venta .sv-payment { padding: 4px 16px 16px; }
 
 /* Campos de formulario: relleno claro sin borde duro, en vez del
    .form-control gris de Bootstrap — mismo tacto que .fvps-search-input
@@ -4031,24 +4033,24 @@ body.dark-mode .sv-quote-btn {
 #registrar-venta .sv-client-input,
 #registrar-venta .sv-client-meta .form-control,
 #registrar-venta .sv-payment textarea.form-control {
-    background: #f3f4f6;
+    background: #f5f5f6;
     border: 1.5px solid transparent;
-    border-radius: 10px;
+    border-radius: 11px;
     color: #1a1a2e;
-    padding: 5px 8px;
-    font-size: 0.76rem;
+    padding: 10px 12px;
+    font-size: 0.88rem;
     min-width: 0;
     text-overflow: ellipsis;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 #registrar-venta .sv-discount-row .form-control,
 #registrar-venta .sv-discount-row .form-select {
-    background: #f3f4f6;
+    background: #f5f5f6;
     border: 1.5px solid transparent;
-    border-radius: 8px;
+    border-radius: 9px;
     color: #1a1a2e;
-    padding: 3px 6px;
-    font-size: 0.7rem;
+    padding: 6px 8px;
+    font-size: 0.8rem;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 #registrar-venta .sv-client-input:focus,
@@ -4065,74 +4067,77 @@ body.dark-mode .sv-quote-btn {
 .sv-input-icon-wrap { position: relative; flex: 1; min-width: 0; }
 .sv-input-icon-wrap .sv-input-icon {
     position: absolute;
-    left: 9px;
+    left: 13px;
     top: 50%;
     transform: translateY(-50%);
     color: #9ca3af;
-    font-size: 0.7rem;
+    font-size: 0.82rem;
     pointer-events: none;
 }
-.sv-input-icon-wrap input.form-control { padding-left: 26px !important; }
+.sv-input-icon-wrap input.form-control { padding-left: 36px !important; }
 
-.sv-field-row { display: flex; gap: 6px; align-items: stretch; }
+.sv-field-row { display: flex; gap: 8px; align-items: stretch; }
 
 .sv-btn-add-client-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
+    width: 44px;
     flex-shrink: 0;
-    border-radius: 9px;
+    border-radius: 11px;
     border: none;
     background: #1a1a2e;
     color: #fff;
-    font-size: 0.8rem;
+    font-size: 1.05rem;
 }
 
 /* CTA "Nuevo cliente": visible solo mientras no hay cliente elegido —
-   ver seleccionarCliente() en admin-fabrica.js. */
+   ver seleccionarCliente() en admin-fabrica.js. Borde sólido en vez de
+   punteado: el punteado se leía como un placeholder sin terminar. */
 .sv-new-client-cta {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 10px;
     width: 100%;
-    margin-top: 3px;
-    padding: 4px 9px;
-    border-radius: 10px;
-    border: 1.5px dashed #d1d5db;
-    background: #f3f4f6;
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid #ececec;
+    background: #fafafa;
     text-align: left;
 }
-.sv-new-client-cta:hover { background: #e5e7eb; }
+.sv-new-client-cta:hover { background: #f3f4f6; border-color: #e0e0e0; }
 .sv-new-client-cta-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     background: #fff;
     color: #1a1a2e;
-    font-size: 0.72rem;
+    font-size: 0.95rem;
     flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 .sv-new-client-cta-text {
     flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
+    gap: 1px;
 }
 .sv-new-client-cta-text strong {
-    font-size: 0.72rem;
+    font-size: 0.86rem;
     color: #1a1a2e;
 }
 .sv-new-client-cta-text small {
-    font-size: 0.6rem;
+    font-size: 0.72rem;
     color: #9ca3af;
 }
 .sv-new-client-cta-chevron {
-    color: #1a1a2e;
-    font-size: 0.7rem;
+    color: #b0b0b0;
+    font-size: 0.85rem;
     flex-shrink: 0;
 }
 
@@ -4142,33 +4147,33 @@ body.dark-mode .sv-quote-btn {
 .sv-fake-search-input {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     flex: 1;
     min-width: 0;
-    padding: 0 10px;
-    background: #f3f4f6;
+    padding: 0 14px;
+    background: #f5f5f6;
     border: 1.5px solid transparent;
-    border-radius: 10px;
+    border-radius: 11px;
     color: #9ca3af;
-    font-size: 0.74rem;
+    font-size: 0.86rem;
     text-align: left;
     transition: background 0.15s ease;
 }
-.sv-fake-search-input i { font-size: 0.75rem; }
-.sv-fake-search-input:hover { background: #e5e7eb; }
+.sv-fake-search-input i { font-size: 0.88rem; }
+.sv-fake-search-input:hover { background: #eeeeee; }
 .sv-fake-search-input span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .sv-btn-barcode {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
+    width: 48px;
     flex-shrink: 0;
-    border-radius: 10px;
+    border-radius: 11px;
     border: none;
     background: #1a1a2e;
     color: #fff;
-    font-size: 0.85rem;
+    font-size: 1.05rem;
 }
 
 /* "Productos agregados" + Vaciar carrito, y la lista embebida */
@@ -4176,9 +4181,9 @@ body.dark-mode .sv-quote-btn {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    margin: 4px 0 2px;
-    font-size: 0.64rem;
+    gap: 10px;
+    margin: 14px 0 10px;
+    font-size: 0.72rem;
     font-weight: 800;
     color: #6b7280;
     text-transform: uppercase;
@@ -4186,12 +4191,12 @@ body.dark-mode .sv-quote-btn {
 }
 .sv-cart-count-inline {
     display: inline-flex;
-    padding: 1px 6px;
-    margin-left: 5px;
+    padding: 2px 8px;
+    margin-left: 6px;
     background: #f3f4f6;
     color: #1a1a2e;
     border-radius: 999px;
-    font-size: 0.58rem;
+    font-size: 0.66rem;
     font-weight: 700;
     text-transform: none;
     letter-spacing: normal;
@@ -4200,66 +4205,69 @@ body.dark-mode .sv-quote-btn {
 .sv-btn-clear-cart {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     border: none;
     background: transparent;
-    color: #1a1a2e;
-    font-size: 0.64rem;
+    color: #6b7280;
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: none;
     letter-spacing: normal;
-    padding: 2px 4px;
+    padding: 3px 5px;
     flex-shrink: 0;
 }
-.sv-btn-clear-cart:hover { color: #000; }
+.sv-btn-clear-cart:hover { color: #1a1a2e; }
 
 /* Carrito vacío: tarjeta con llamado a la acción (reemplaza el mensaje
-   plano mientras no hay productos en esta venta). */
+   plano mientras no hay productos en esta venta). Fondo liso y borde
+   sólido en vez de punteado, para que se vea terminada, no "a medias". */
 .sv-cart-empty-cta {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 2px;
-    padding: 7px 10px;
-    border: 1.5px dashed #d1d5db;
-    border-radius: 12px;
-    background: #f3f4f6;
+    gap: 4px;
+    padding: 26px 16px;
+    border: 1px solid #ececec;
+    border-radius: 14px;
+    background: #fafafa;
 }
 .sv-cart-empty-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
     background: #fff;
     color: #1a1a2e;
-    font-size: 0.78rem;
-    margin-bottom: 1px;
+    font-size: 1.2rem;
+    margin-bottom: 4px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
-.sv-cart-empty-cta strong { font-size: 0.7rem; color: #1a1a2e; }
-.sv-cart-empty-cta small { font-size: 0.58rem; color: #9ca3af; }
+.sv-cart-empty-cta strong { font-size: 0.92rem; color: #1a1a2e; }
+.sv-cart-empty-cta small { font-size: 0.76rem; color: #9ca3af; max-width: 240px; }
 .sv-btn-add-product-cta {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    margin-top: 3px;
-    padding: 5px 14px;
+    gap: 7px;
+    margin-top: 10px;
+    padding: 10px 22px;
     border: none;
     border-radius: 999px;
     background: #1a1a2e;
     color: #fff;
     font-weight: 700;
-    font-size: 0.68rem;
+    font-size: 0.84rem;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.18);
 }
 
 #registrar-venta #fv-carrito {
     background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
+    border: 1px solid #ececec;
+    border-radius: 12px;
     overflow: hidden;
-    max-height: 108px;
+    max-height: 280px;
     overflow-y: auto;
 }
 
@@ -4267,16 +4275,16 @@ body.dark-mode .sv-quote-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 7px;
     width: 100%;
-    margin-top: 2px;
-    padding: 4px;
-    border-radius: 10px;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 11px;
     border: 1.5px solid #1a1a2e;
     background: transparent;
     color: #1a1a2e;
     font-weight: 700;
-    font-size: 0.72rem;
+    font-size: 0.84rem;
     transition: background 0.15s ease;
 }
 .sv-btn-add-more:hover { background: #f3f4f6; }
@@ -4286,17 +4294,17 @@ body.dark-mode .sv-quote-btn {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 2px 0;
-    font-size: 0.74rem;
+    gap: 10px;
+    padding: 5px 0;
+    font-size: 0.86rem;
     color: #374151;
 }
-.sv-summary-row--discount .sv-discount-row { width: 120px; flex-shrink: 0; }
-.sv-summary-divider { height: 1px; background: #e5e7eb; margin: 2px 0; }
+.sv-summary-row--discount .sv-discount-row { width: 150px; flex-shrink: 0; }
+.sv-summary-divider { height: 1px; background: #ececec; margin: 6px 0; }
 .sv-summary-row--total {
-    padding-top: 4px;
+    padding-top: 5px;
     font-weight: 800;
-    font-size: 0.86rem;
+    font-size: 1.05rem;
     color: #1a1a2e;
 }
 
@@ -4308,21 +4316,21 @@ body.dark-mode .sv-quote-btn {
 .sv-pay-methods-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
-    margin-bottom: 3px;
+    gap: 8px;
+    margin-bottom: 12px;
 }
 .sv-pay-method-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    padding: 4px 3px;
-    border-radius: 9px;
-    border: 1.5px solid #e5e7eb;
+    gap: 5px;
+    padding: 9px 4px;
+    border-radius: 10px;
+    border: 1.5px solid #ececec;
     background: #fff;
     color: #6b7280;
     font-weight: 700;
-    font-size: 0.64rem;
+    font-size: 0.74rem;
     white-space: nowrap;
     transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
@@ -4337,11 +4345,12 @@ body.dark-mode .sv-quote-btn {
 .sv-pay-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 7px;
-    background: #f3f4f6;
-    border-radius: 10px;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #f5f5f6;
+    border-radius: 11px;
     border: 1.5px solid transparent;
+    margin-bottom: 10px;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 .sv-pay-row:focus-within {
@@ -4352,16 +4361,16 @@ body.dark-mode .sv-quote-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
     background: #f3f4f6;
     color: #1a1a2e;
-    font-size: 0.62rem;
+    font-size: 0.75rem;
     flex-shrink: 0;
 }
 .sv-pay-label {
-    font-size: 0.7rem;
+    font-size: 0.84rem;
     font-weight: 700;
     color: #4b5563;
     flex-shrink: 0;
@@ -4372,7 +4381,7 @@ body.dark-mode .sv-quote-btn {
     background: transparent;
     text-align: right;
     font-weight: 700;
-    font-size: 0.76rem;
+    font-size: 0.92rem;
     color: #1a1a2e;
     box-shadow: none !important;
     min-width: 0;
@@ -4383,67 +4392,60 @@ body.dark-mode .sv-quote-btn {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 8px;
+    padding: 9px 12px;
     background: #f3f4f6;
-    border-radius: 8px;
+    border-radius: 10px;
     font-weight: 800;
     color: #1a1a2e;
-    font-size: 0.7rem;
-    margin: 0;
+    font-size: 0.84rem;
+    margin: 0 0 12px;
 }
 
-.sv-observaciones { margin-bottom: 0; min-height: 26px; }
+.sv-observaciones { margin-bottom: 14px; min-height: 40px; }
 
 #registrar-venta .sv-submit-btn {
-    border-radius: 12px;
-    padding: 5px 14px;
-    font-size: 0.78rem;
+    border-radius: 13px;
+    padding: 13px 16px;
+    font-size: 0.92rem;
     background: #1a1a2e;
-    box-shadow: 0 4px 14px rgba(26, 26, 46, 0.35);
+    box-shadow: 0 4px 14px rgba(26, 26, 46, 0.3);
 }
 #registrar-venta .sv-submit-btn:hover {
     background: #000;
-    box-shadow: 0 6px 18px rgba(26, 26, 46, 0.45);
+    box-shadow: 0 6px 18px rgba(26, 26, 46, 0.4);
 }
 
 .sv-btn-save-draft {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
     width: 100%;
-    margin-top: 2px;
-    padding: 1px;
+    margin-top: 10px;
+    padding: 4px;
     border: none;
     background: transparent;
-    color: #1a1a2e;
+    color: #6b7280;
     font-weight: 700;
-    font-size: 0.66rem;
+    font-size: 0.78rem;
 }
-.sv-btn-save-draft:hover { color: #000; }
+.sv-btn-save-draft:hover { color: #1a1a2e; }
 
 /* Filas del carrito embebido en Productos: mismas clases .vf-cart-item*
-   que usa Boutique, pero más compactas solo aquí. */
-#registrar-venta .vf-cart-empty { padding: 12px 8px; }
-#registrar-venta .vf-cart-empty i { font-size: 1.1rem !important; }
-#registrar-venta .vf-cart-empty small { font-size: 0.68rem; }
-#registrar-venta .vf-cart-item { padding: 2px 8px; gap: 6px; }
+   que usa Boutique. */
+#registrar-venta .vf-cart-item { padding: 10px 12px; gap: 10px; }
 #registrar-venta .vf-cart-item-img,
-#registrar-venta .vf-cart-item-img-placeholder { width: 32px; height: 32px; border-radius: 6px; }
-#registrar-venta .vf-cart-item-name { font-size: 0.72rem; -webkit-line-clamp: 1; }
-#registrar-venta .vf-cart-item-variant { font-size: 0.62rem; margin-top: 0; }
-#registrar-venta .vf-cart-item-unit { font-size: 0.62rem; }
-#registrar-venta .vf-cart-item-controls { gap: 6px; }
-#registrar-venta .vf-qty-control { height: 22px; border-radius: 7px; }
-#registrar-venta .vf-qty-btn { width: 20px; font-size: 0.75rem; }
-#registrar-venta .vf-qty-input { width: 24px; font-size: 0.68rem; }
-#registrar-venta .vf-cart-item-total { font-size: 0.7rem; min-width: 48px; }
-#registrar-venta .vf-cart-item-remove { padding: 2px 3px; font-size: 0.72rem; color: #9ca3af; }
-#registrar-venta .vf-cart-item-remove:hover { background: #f3f4f6; color: #1a1a2e; }
-#registrar-venta .vf-cart-item-variant { color: #6b7280; }
-#registrar-venta .vf-cart-item-total { color: #1a1a2e; }
-#registrar-venta .vf-qty-btn { color: #1a1a2e; }
+#registrar-venta .vf-cart-item-img-placeholder { width: 44px; height: 44px; border-radius: 9px; }
+#registrar-venta .vf-cart-item-name { font-size: 0.86rem; -webkit-line-clamp: 1; }
+#registrar-venta .vf-cart-item-variant { font-size: 0.74rem; margin-top: 1px; color: #6b7280; }
+#registrar-venta .vf-cart-item-controls { gap: 8px; }
+#registrar-venta .vf-qty-control { height: 32px; border-radius: 9px; }
+#registrar-venta .vf-qty-btn { width: 28px; font-size: 0.95rem; color: #1a1a2e; }
 #registrar-venta .vf-qty-btn:hover { background: #e5e7eb; color: #1a1a2e; }
+#registrar-venta .vf-qty-input { width: 30px; font-size: 0.8rem; }
+#registrar-venta .vf-cart-item-total { font-size: 0.84rem; min-width: 62px; color: #1a1a2e; }
+#registrar-venta .vf-cart-item-remove { padding: 4px 5px; font-size: 0.86rem; color: #9ca3af; }
+#registrar-venta .vf-cart-item-remove:hover { background: #f3f4f6; color: #1a1a2e; }
 
 /* ════════════════════════════════════════════════════════════════
    CARRITO — clases vf-* usadas por renderCarrito() JS
