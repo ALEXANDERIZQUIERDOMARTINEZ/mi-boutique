@@ -359,6 +359,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
     const clientesCollection = collection(db, 'clientes');
 
+    // Cliente "genérico" preseleccionado: permite finalizar una venta de
+    // mostrador sin obligar a buscar/crear un cliente primero.
+    const CLIENTE_GENERAL_DEFAULT = { id: null, nombre: 'Cliente General', celular: '', direccion: '' };
+
     let carrito = [];
     let clienteSeleccionado = null;
     let productosCache = [];
@@ -680,6 +684,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         newClientCtaEl.style.display = cliente ? 'none' : '';
         clienteMetaEl.style.display = cliente ? '' : 'none';
     }
+
+    // Estado inicial: "Cliente General" ya seleccionado (ver
+    // CLIENTE_GENERAL_DEFAULT más arriba).
+    seleccionarCliente(CLIENTE_GENERAL_DEFAULT);
 
     const clientSearchInput = document.getElementById('fv-client-search');
     const clientListEl = document.getElementById('fv-client-list');
@@ -1267,6 +1275,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         e.preventDefault();
         if (carrito.length === 0) { showToast('Agrega al menos un producto', 'warning'); return; }
 
+        // Si por algún motivo no quedó ningún método de pago marcado como
+        // activo, se asume Efectivo en vez de bloquear la venta.
+        if (!metodoPagoSeleccionado) metodoPagoSeleccionado = 'efectivo';
+
         const total = calcularTotal();
         const recibido = limpiarNumero(pagoRecibidoInput.value);
         if (recibido < total) {
@@ -1327,7 +1339,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             });
 
             carrito = [];
-            seleccionarCliente(null);
+            seleccionarCliente(CLIENTE_GENERAL_DEFAULT);
             observacionesInput.value = '';
             descuentoInput.value = '0';
             pagoRecibidoInput.value = '0';
