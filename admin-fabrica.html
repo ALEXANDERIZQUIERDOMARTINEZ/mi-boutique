@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=1.9.2">
+    <link rel="stylesheet" href="style.css?v=1.9.3">
     <link rel="stylesheet" href="admin-styles.css?v=2.5.6">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -1700,53 +1700,39 @@
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════
-             PANTALLA: Seleccionar productos — estilo app "Treinta", pantalla
-             completa (no modal Bootstrap) para poder replicar el layout
-             exacto: header amarillo, chips de filtro y stepper de cantidad
-             por fila. Vive fuera de .admin-content-wrapper por la misma
-             razón que los demás modales de Registrar Venta (ver comentario
-             de más abajo sobre backdrops huérfanos).
+             PANTALLA: Agregar venta — selector de productos en blanco y negro,
+             pantalla completa (no modal Bootstrap). Vive fuera de
+             .admin-content-wrapper por la misma razón que los demás modales
+             de Registrar Venta (ver comentario de más abajo sobre backdrops
+             huérfanos).
              ═══════════════════════════════════════════════════════════════════ -->
         <div class="fvps-screen" id="fvProductScreen" aria-hidden="true">
             <div class="fvps-header">
                 <button type="button" class="fvps-icon-btn" id="fvps-back-btn" aria-label="Volver">
                     <i class="bi bi-arrow-left"></i>
                 </button>
-                <h1 class="fvps-title">Seleccionar productos</h1>
-                <div class="fvps-header-actions">
-                    <button type="button" class="fvps-icon-btn" id="fvps-search-toggle-btn" aria-label="Buscar">
-                        <i class="bi bi-search"></i>
-                    </button>
-                    <button type="button" class="fvps-icon-btn" id="fvps-barcode-btn" aria-label="Buscar por código">
-                        <i class="bi bi-upc-scan"></i>
-                    </button>
-                </div>
+                <h1 class="fvps-title">Agregar venta</h1>
+                <button type="button" class="fvps-icon-btn" id="fvps-barcode-btn" aria-label="Buscar por código">
+                    <i class="bi bi-upc-scan"></i>
+                </button>
             </div>
 
             <div class="fvps-search-bar" id="fvps-search-bar">
                 <i class="bi bi-search fvps-search-icon"></i>
-                <input type="search" id="fv-product-search" class="fvps-search-input" placeholder="Nombre o código...">
+                <input type="search" id="fv-product-search" class="fvps-search-input" placeholder="Buscar producto por código o nombre...">
             </div>
 
             <div class="fvps-body">
-                <button type="button" class="fvps-new-product-btn" id="fvps-new-product-btn">
-                    <i class="bi bi-plus-circle"></i> Nuevo producto
-                </button>
+                <div class="fvps-chips" id="fvps-chips">
+                    <button type="button" class="fvps-chip active" data-filter="todas"><i class="bi bi-list-ul"></i> Todos</button>
+                    <button type="button" class="fvps-chip fvps-chip-warning" data-filter="bajas"><i class="bi bi-exclamation-triangle"></i> Unidades bajas</button>
+                    <button type="button" class="fvps-chip" data-filter="favoritos"><i class="bi bi-star"></i> Favoritos</button>
+                    <button type="button" class="fvps-chip" data-filter="recientes"><i class="bi bi-clock-history"></i> Recientes</button>
+                </div>
 
-                <div class="fvps-filters">
-                    <button type="button" class="fvps-icon-chip fvps-icon-chip--dark" id="fvps-sort-btn" title="Ordenar alfabéticamente" aria-label="Ordenar">
-                        <i class="bi bi-sort-alpha-down"></i>
-                    </button>
-                    <button type="button" class="fvps-icon-chip" id="fvps-edit-price-btn" title="Editar precio de venta" aria-label="Editar precio">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <div class="fvps-chips" id="fvps-chips">
-                        <button type="button" class="fvps-chip active" data-filter="todas">Todas</button>
-                        <button type="button" class="fvps-chip fvps-chip-warning" data-filter="bajas">
-                            <i class="bi bi-info-circle-fill"></i> Unidades bajas
-                        </button>
-                        <!-- Chips de categoría: se insertan dinámicamente según el catálogo cargado -->
-                    </div>
+                <div class="fvps-list-header">
+                    <span>Producto</span>
+                    <button type="button" id="fvps-sort-disponible-btn">Disponible <i class="bi bi-arrow-down-up"></i></button>
                 </div>
 
                 <div id="fv-product-list" class="fvps-list"></div>
@@ -1771,11 +1757,17 @@
             </div>
 
             <div class="fvps-footer" id="fvps-footer">
-                <span class="fvps-footer-count" id="fvps-footer-count">0</span>
-                <span class="fvps-footer-label">Añadir productos</span>
-                <span class="fvps-footer-total" id="fvps-footer-total">$0</span>
-                <button type="button" class="fvps-footer-confirm" id="fvps-confirm-btn" aria-label="Añadir al carrito" disabled>
-                    <i class="bi bi-chevron-right"></i>
+                <span class="fvps-footer-cart-icon"><i class="bi bi-cart3"></i></span>
+                <div class="fvps-footer-text">
+                    <span class="fvps-footer-count-label" id="fvps-footer-count-label">0 productos seleccionados</span>
+                    <span class="fvps-footer-sub">Agrega productos para continuar</span>
+                </div>
+                <div class="fvps-footer-total-wrap">
+                    <span class="fvps-footer-total-label">Total</span>
+                    <span class="fvps-footer-total" id="fvps-footer-total">$0</span>
+                </div>
+                <button type="button" class="fvps-footer-confirm" id="fvps-confirm-btn" aria-label="Ver venta" disabled>
+                    Ver venta <i class="bi bi-chevron-right"></i>
                 </button>
             </div>
         </div>
@@ -2032,7 +2024,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.6.8"></script>
+    <script type="module" src="admin-fabrica.js?v=1.6.9"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.1.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->
