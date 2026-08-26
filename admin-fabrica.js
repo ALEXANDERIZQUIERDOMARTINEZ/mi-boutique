@@ -316,9 +316,9 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     const cambioEl = document.getElementById('fv-cambio');
     const descuentoInput = document.getElementById('fv-descuento');
     const descuentoTipoSelect = document.getElementById('fv-descuento-tipo');
-    const pagoEfectivoInput = document.getElementById('fv-pago-efectivo');
-    const pagoTransferenciaInput = document.getElementById('fv-pago-transferencia');
+    const pagoRecibidoInput = document.getElementById('fv-pago-recibido');
     const observacionesInput = document.getElementById('fv-observaciones');
+    let metodoPagoSeleccionado = 'efectivo'; // 'efectivo' | 'transferencia' | 'otro'
 
     function limpiarNumero(v) {
         return parseFloat((v || '0').toString().replace(/[^\d.-]/g, '')) || 0;
@@ -348,12 +348,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         return Math.max(0, subtotal - descuento);
     }
 
-    // Fábrica admite pago dividido (efectivo + transferencia a la vez), así
-    // que el "cambio" es lo que sobra de esa suma sobre el total — se
-    // muestra solo cuando hay algo que devolver.
+    // Un solo método de pago por venta (Efectivo/Transferencia/Otro) + lo
+    // recibido; el "cambio" es lo que sobra de eso sobre el total.
     function actualizarCambio() {
         const total = calcularTotal();
-        const pagado = limpiarNumero(pagoEfectivoInput.value) + limpiarNumero(pagoTransferenciaInput.value);
+        const pagado = limpiarNumero(pagoRecibidoInput.value);
         const cambio = pagado - total;
         if (cambio > 0) {
             cambioRowEl.style.display = '';
@@ -380,12 +379,16 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         return Math.max(0, stock - otrasLineas);
     }
 
+    const cartEmptyCtaEl = document.getElementById('fv-cart-empty-cta');
+    const cartWithItemsEl = document.getElementById('fv-cart-with-items');
+
     // Mismo lenguaje visual que el carrito de Boutique (clases .vf-cart-item*
     // ya definidas en style.css): foto, variación, stepper +/- de cantidad.
     function renderCarrito() {
-        if (carrito.length === 0) {
-            carritoEl.innerHTML = `<div class="vf-cart-empty"><i class="bi bi-cart-x fs-4 d-block mb-1"></i><small>Aún no has agregado productos</small></div>`;
-        } else {
+        const vacio = carrito.length === 0;
+        cartEmptyCtaEl.style.display = vacio ? '' : 'none';
+        cartWithItemsEl.style.display = vacio ? 'none' : '';
+        if (!vacio) {
             carritoEl.innerHTML = carrito.map((item, idx) => {
                 const producto = productosCache.find(p => p.id === item.productoId);
                 const imgHtml = producto?.imagenUrl
@@ -477,7 +480,76 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     });
 
     [descuentoInput, descuentoTipoSelect].forEach(el => el.addEventListener('input', renderCarrito));
-    [pagoEfectivoInput, pagoTransferenciaInput].forEach(el => el.addEventListener('input', actualizarCambio));
+    pagoRecibidoInput.addEventListener('input', actualizarCambio);
+
+    document.getElementById('fv-metodo-pago-row')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.sv-pay-method-btn');
+        if (!btn) return;
+        document.querySelectorAll('#fv-metodo-pago-row .sv-pay-method-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        metodoPagoSeleccionado = btn.dataset.metodo;
+    });
+
+    // ── Borrador de venta (localStorage, un solo slot) ─────────────────────
+    // No es un registro de negocio (no toca Firestore): solo evita perder
+    // una venta a medio armar si el usuario cierra la pestaña por accidente.
+    const BORRADOR_VENTA_KEY = 'fv_borrador_venta';
+
+    function guardarBorrador() {
+        try {
+            localStorage.setItem(BORRADOR_VENTA_KEY, JSON.stringify({
+                clienteId: clienteSeleccionado?.id || null,
+                clienteNombre: clienteSeleccionado?.nombre || '',
+                clienteCelular: clienteSeleccionado?.celular || '',
+                clienteDireccion: clienteSeleccionado?.direccion || '',
+                carrito,
+                observaciones: observacionesInput.value,
+                descuento: descuentoInput.value,
+                descuentoTipo: descuentoTipoSelect.value,
+                metodoPago: metodoPagoSeleccionado,
+                recibido: pagoRecibidoInput.value
+            }));
+            showToast('Borrador guardado', 'success');
+        } catch (error) {
+            console.error('Error al guardar borrador de venta:', error);
+            showToast('No se pudo guardar el borrador', 'error');
+        }
+    }
+
+    function limpiarBorrador() {
+        try { localStorage.removeItem(BORRADOR_VENTA_KEY); } catch (error) { /* localStorage no disponible */ }
+    }
+
+    function restaurarBorradorSiExiste() {
+        let borrador;
+        try {
+            const raw = localStorage.getItem(BORRADOR_VENTA_KEY);
+            if (!raw) return;
+            borrador = JSON.parse(raw);
+        } catch (error) { return; }
+        if (!borrador || carrito.length > 0) return; // no pisar una venta ya empezada
+
+        if (borrador.clienteId) {
+            seleccionarCliente({
+                id: borrador.clienteId,
+                nombre: borrador.clienteNombre,
+                celular: borrador.clienteCelular,
+                direccion: borrador.clienteDireccion
+            });
+        }
+        carrito = Array.isArray(borrador.carrito) ? borrador.carrito : [];
+        observacionesInput.value = borrador.observaciones || '';
+        descuentoInput.value = borrador.descuento || '0';
+        descuentoTipoSelect.value = borrador.descuentoTipo || 'fijo';
+        metodoPagoSeleccionado = borrador.metodoPago || 'efectivo';
+        document.querySelectorAll('#fv-metodo-pago-row .sv-pay-method-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.metodo === metodoPagoSeleccionado));
+        pagoRecibidoInput.value = borrador.recibido || '0';
+        renderCarrito();
+        showToast('Se restauró tu borrador de venta', 'info');
+    }
+
+    document.getElementById('fv-guardar-borrador-btn')?.addEventListener('click', guardarBorrador);
 
     document.getElementById('fv-vaciar-carrito-btn')?.addEventListener('click', () => {
         if (!carrito.length) return;
@@ -487,6 +559,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     });
 
     document.getElementById('fv-agregar-otro-btn')?.addEventListener('click', () => abrirPantallaProductos());
+    document.getElementById('fv-agregar-producto-cta-btn')?.addEventListener('click', () => abrirPantallaProductos());
 
     document.getElementById('fv-abrir-productos-barcode-btn')?.addEventListener('click', () => {
         abrirPantallaProductos();
@@ -494,12 +567,17 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     });
 
     // ── Cliente ──────────────────────────────────────────────────────────
+    const newClientCtaEl = document.getElementById('fv-new-client-cta');
+    const clienteMetaEl = document.getElementById('fv-cliente-meta');
+
     function seleccionarCliente(cliente) {
         clienteSeleccionado = cliente;
         clienteIdInput.value = cliente?.id || '';
         clienteNombreInput.value = cliente?.nombre || '';
         clienteCelularInput.value = cliente?.celular || '';
         clienteDireccionInput.value = cliente?.direccion || '';
+        newClientCtaEl.style.display = cliente ? 'none' : '';
+        clienteMetaEl.style.display = cliente ? '' : 'none';
     }
 
     const clientSearchInput = document.getElementById('fv-client-search');
@@ -1051,12 +1129,16 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         if (carrito.length === 0) { showToast('Agrega al menos un producto', 'warning'); return; }
 
         const total = calcularTotal();
-        const pagoEfectivo = limpiarNumero(pagoEfectivoInput.value);
-        const pagoTransferencia = limpiarNumero(pagoTransferenciaInput.value);
-        if (pagoEfectivo + pagoTransferencia < total) {
+        const recibido = limpiarNumero(pagoRecibidoInput.value);
+        if (recibido < total) {
             showToast('El pago no cubre el total', 'warning');
             return;
         }
+        // Un solo método por venta; "transferencia" agrupa transferencia y
+        // "otro" para no perder los reportes existentes que solo suman
+        // pagoEfectivo + pagoTransferencia.
+        const pagoEfectivo = metodoPagoSeleccionado === 'efectivo' ? recibido : 0;
+        const pagoTransferencia = metodoPagoSeleccionado === 'efectivo' ? 0 : recibido;
 
         const submitBtn = form.querySelector('.sv-submit-btn');
         submitBtn.disabled = true;
@@ -1072,6 +1154,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 descuentoTipo: descuentoTipoSelect.value,
                 pagoEfectivo,
                 pagoTransferencia,
+                metodoPago: metodoPagoSeleccionado,
                 totalVenta: total,
                 estado: 'Completada',
                 origen: 'mostrador',
@@ -1088,8 +1171,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             seleccionarCliente(null);
             observacionesInput.value = '';
             descuentoInput.value = '0';
-            pagoEfectivoInput.value = '0';
-            pagoTransferenciaInput.value = '0';
+            pagoRecibidoInput.value = '0';
+            metodoPagoSeleccionado = 'efectivo';
+            document.querySelectorAll('#fv-metodo-pago-row .sv-pay-method-btn').forEach(b =>
+                b.classList.toggle('active', b.dataset.metodo === 'efectivo'));
+            limpiarBorrador();
             renderCarrito();
             historialCargado = false; // para que el Historial la recargue con la venta nueva
         } catch (error) {
@@ -1245,7 +1331,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
         const pagoPartes = [];
         if (v.pagoEfectivo > 0) pagoPartes.push('<span class="venta-pago-badge efec"><i class="bi bi-cash-coin"></i> Efectivo</span>');
-        if (v.pagoTransferencia > 0) pagoPartes.push('<span class="venta-pago-badge transf"><i class="bi bi-bank"></i> Transfer.</span>');
+        if (v.pagoTransferencia > 0) {
+            pagoPartes.push(v.metodoPago === 'otro'
+                ? '<span class="venta-pago-badge transf"><i class="bi bi-credit-card"></i> Otro</span>'
+                : '<span class="venta-pago-badge transf"><i class="bi bi-bank"></i> Transfer.</span>');
+        }
         const pagoHtml = pagoPartes.length ? pagoPartes.join('') : '<span class="text-muted small">-</span>';
 
         const productosHtml = (v.items || []).length
@@ -1308,6 +1398,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     });
 
     renderCarrito();
+    restaurarBorradorSiExiste();
 })();
 
 // ========================================================================

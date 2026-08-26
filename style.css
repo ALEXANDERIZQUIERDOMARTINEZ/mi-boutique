@@ -4037,6 +4037,8 @@ body.dark-mode .sv-quote-btn {
     color: #1a1a2e;
     padding: 5px 8px;
     font-size: 0.76rem;
+    min-width: 0;
+    text-overflow: ellipsis;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 #registrar-venta .sv-discount-row .form-control,
@@ -4074,24 +4076,64 @@ body.dark-mode .sv-quote-btn {
 
 .sv-field-row { display: flex; gap: 6px; align-items: stretch; }
 
-#registrar-venta .sv-btn-add-client {
-    width: auto;
+.sv-btn-add-client-icon {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 0 10px;
-    border-radius: 10px;
-    background: var(--brand-50, #fdf2f8);
+    justify-content: center;
+    width: 30px;
+    flex-shrink: 0;
+    border-radius: 9px;
     border: none;
-    color: var(--brand-600, #c026d3);
-    font-weight: 700;
-    font-size: 0.68rem;
-    white-space: nowrap;
+    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%));
+    color: #fff;
+    font-size: 0.8rem;
 }
-#registrar-venta .sv-btn-add-client:hover {
-    background: var(--brand-100, #fce7f3);
-    border: none;
+
+/* CTA "Nuevo cliente": visible solo mientras no hay cliente elegido —
+   ver seleccionarCliente() en admin-fabrica.js. */
+.sv-new-client-cta {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    margin-top: 3px;
+    padding: 4px 9px;
+    border-radius: 10px;
+    border: 1.5px dashed var(--brand-200, #fbcfe8);
+    background: var(--brand-50, #fdf2f8);
+    text-align: left;
+}
+.sv-new-client-cta:hover { background: var(--brand-100, #fce7f3); }
+.sv-new-client-cta-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--brand-600, #c026d3);
+    font-size: 0.72rem;
+    flex-shrink: 0;
+}
+.sv-new-client-cta-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.sv-new-client-cta-text strong {
+    font-size: 0.72rem;
     color: var(--brand-700, #a21caf);
+}
+.sv-new-client-cta-text small {
+    font-size: 0.6rem;
+    color: #9ca3af;
+}
+.sv-new-client-cta-chevron {
+    color: var(--brand-400, #f472b6);
+    font-size: 0.7rem;
+    flex-shrink: 0;
 }
 
 /* Botón "Buscar producto en catálogo": se ve como un campo de búsqueda,
@@ -4171,6 +4213,47 @@ body.dark-mode .sv-quote-btn {
 }
 .sv-btn-clear-cart:hover { color: var(--brand-800, #86198f); }
 
+/* Carrito vacío: tarjeta con llamado a la acción (reemplaza el mensaje
+   plano mientras no hay productos en esta venta). */
+.sv-cart-empty-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 2px;
+    padding: 7px 10px;
+    border: 1.5px dashed var(--brand-200, #fbcfe8);
+    border-radius: 12px;
+    background: var(--brand-50, #fdf2f8);
+}
+.sv-cart-empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--brand-500, #D988B9);
+    font-size: 0.78rem;
+    margin-bottom: 1px;
+}
+.sv-cart-empty-cta strong { font-size: 0.7rem; color: #1a1a2e; }
+.sv-cart-empty-cta small { font-size: 0.58rem; color: #9ca3af; }
+.sv-btn-add-product-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 3px;
+    padding: 5px 14px;
+    border: none;
+    border-radius: 999px;
+    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%));
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.68rem;
+}
+
 #registrar-venta #fv-carrito {
     background: #fff;
     border: 1px solid #f0e9ee;
@@ -4221,9 +4304,35 @@ body.dark-mode .sv-quote-btn {
     border-radius: 14px;
 }
 
-/* Efectivo / Transferencia: fila con ícono en placa, etiqueta y monto
-   editable alineado a la derecha — sin el input-group gris de Bootstrap. */
-.sv-pay-input { gap: 4px !important; margin-bottom: 4px !important; }
+/* Toggle de método de pago: un solo método por venta (no simultáneo). */
+.sv-pay-methods-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    margin-bottom: 3px;
+}
+.sv-pay-method-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px 3px;
+    border-radius: 9px;
+    border: 1.5px solid #e9e5ea;
+    background: #fff;
+    color: #6b7280;
+    font-weight: 700;
+    font-size: 0.64rem;
+    white-space: nowrap;
+}
+.sv-pay-method-btn.active {
+    border-color: var(--brand-400, #f472b6);
+    background: var(--brand-50, #fdf2f8);
+    color: var(--brand-700, #a21caf);
+}
+
+/* "Recibido": fila con etiqueta y monto editable a la derecha — sin el
+   input-group gris de Bootstrap. */
 .sv-pay-row {
     display: flex;
     align-items: center;
@@ -4289,6 +4398,22 @@ body.dark-mode .sv-quote-btn {
     padding: 5px 14px;
     font-size: 0.78rem;
 }
+
+.sv-btn-save-draft {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    margin-top: 2px;
+    padding: 1px;
+    border: none;
+    background: transparent;
+    color: var(--brand-600, #c026d3);
+    font-weight: 700;
+    font-size: 0.66rem;
+}
+.sv-btn-save-draft:hover { color: var(--brand-800, #86198f); }
 
 /* Filas del carrito embebido en Productos: mismas clases .vf-cart-item*
    que usa Boutique, pero más compactas solo aquí. */

@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=1.8.9">
+    <link rel="stylesheet" href="style.css?v=1.9.0">
     <link rel="stylesheet" href="admin-styles.css?v=2.5.5">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -358,12 +358,25 @@
                                        readonly data-bs-toggle="modal" data-bs-target="#fvSearchClientModal"
                                        style="cursor:pointer;">
                             </div>
-                            <button class="btn sv-btn-add-client" type="button"
-                                    data-bs-toggle="modal" data-bs-target="#fvAddClientModal">
-                                <i class="bi bi-person-plus-fill"></i> Nuevo cliente
+                            <button class="btn sv-btn-add-client-icon" type="button"
+                                    data-bs-toggle="modal" data-bs-target="#fvAddClientModal" title="Nuevo cliente">
+                                <i class="bi bi-plus-lg"></i>
                             </button>
                         </div>
-                        <div class="sv-client-meta">
+
+                        <!-- CTA visible solo si todavía no hay cliente elegido -->
+                        <button type="button" class="sv-new-client-cta" id="fv-new-client-cta"
+                                data-bs-toggle="modal" data-bs-target="#fvAddClientModal">
+                            <span class="sv-new-client-cta-icon"><i class="bi bi-person-plus-fill"></i></span>
+                            <span class="sv-new-client-cta-text">
+                                <strong>Nuevo cliente</strong>
+                                <small>Crea un cliente nuevo</small>
+                            </span>
+                            <i class="bi bi-chevron-right sv-new-client-cta-chevron"></i>
+                        </button>
+
+                        <!-- Datos del cliente ya elegido -->
+                        <div class="sv-client-meta" id="fv-cliente-meta" style="display:none;">
                             <div class="sv-input-icon-wrap">
                                 <i class="bi bi-telephone sv-input-icon"></i>
                                 <input type="text" id="fv-cliente-celular" class="form-control form-control-sm" placeholder="Celular" readonly disabled>
@@ -393,22 +406,29 @@
                             </button>
                         </div>
 
-                        <div class="sv-cart-subheader">
-                            <span>Productos agregados <span class="sv-cart-count-inline" id="fv-items-count">0 items</span></span>
-                            <button type="button" class="sv-btn-clear-cart" id="fv-vaciar-carrito-btn">
-                                <i class="bi bi-trash3"></i> Vaciar carrito
+                        <!-- Carrito vacío: tarjeta con llamado a la acción -->
+                        <div class="sv-cart-empty-cta" id="fv-cart-empty-cta">
+                            <span class="sv-cart-empty-icon"><i class="bi bi-cart3"></i></span>
+                            <strong>Aún no has agregado productos</strong>
+                            <small>Busca y agrega productos para comenzar la venta.</small>
+                            <button type="button" class="sv-btn-add-product-cta" id="fv-agregar-producto-cta-btn">
+                                <i class="bi bi-plus-circle-fill"></i> Agregar producto
                             </button>
                         </div>
-                        <div id="fv-carrito" class="sv-cart-body">
-                            <div class="vf-cart-empty">
-                                <i class="bi bi-cart-x fs-4 d-block mb-1"></i>
-                                <small>Aún no has agregado productos</small>
-                            </div>
-                        </div>
 
-                        <button type="button" class="sv-btn-add-more" id="fv-agregar-otro-btn">
-                            <i class="bi bi-plus-circle"></i> Agregar otro producto
-                        </button>
+                        <!-- Carrito con productos -->
+                        <div id="fv-cart-with-items" style="display:none;">
+                            <div class="sv-cart-subheader">
+                                <span>Productos agregados <span class="sv-cart-count-inline" id="fv-items-count">0 items</span></span>
+                                <button type="button" class="sv-btn-clear-cart" id="fv-vaciar-carrito-btn">
+                                    <i class="bi bi-trash3"></i> Vaciar carrito
+                                </button>
+                            </div>
+                            <div id="fv-carrito"></div>
+                            <button type="button" class="sv-btn-add-more" id="fv-agregar-otro-btn">
+                                <i class="bi bi-plus-circle"></i> Agregar otro producto
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -448,17 +468,21 @@
                         <span>Método de pago</span>
                     </div>
 
-                    <div class="sv-pay-input">
-                        <div class="sv-pay-row">
-                            <span class="sv-pay-icon"><i class="bi bi-cash-coin"></i></span>
-                            <span class="sv-pay-label">Efectivo</span>
-                            <input type="text" inputmode="numeric" id="fv-pago-efectivo" class="form-control" placeholder="0" value="0">
-                        </div>
-                        <div class="sv-pay-row">
-                            <span class="sv-pay-icon"><i class="bi bi-bank"></i></span>
-                            <span class="sv-pay-label">Transferencia</span>
-                            <input type="text" inputmode="numeric" id="fv-pago-transferencia" class="form-control" placeholder="0" value="0">
-                        </div>
+                    <div class="sv-pay-methods-row" id="fv-metodo-pago-row">
+                        <button type="button" class="sv-pay-method-btn active" data-metodo="efectivo">
+                            <i class="bi bi-cash-coin"></i> Efectivo
+                        </button>
+                        <button type="button" class="sv-pay-method-btn" data-metodo="transferencia">
+                            <i class="bi bi-bank"></i> Transferencia
+                        </button>
+                        <button type="button" class="sv-pay-method-btn" data-metodo="otro">
+                            <i class="bi bi-credit-card"></i> Otro
+                        </button>
+                    </div>
+
+                    <div class="sv-pay-row">
+                        <span class="sv-pay-label">Recibido</span>
+                        <input type="text" inputmode="numeric" id="fv-pago-recibido" class="form-control" placeholder="0" value="0">
                     </div>
 
                     <div class="sv-change-row" id="fv-cambio-row" style="display:none;">
@@ -469,7 +493,11 @@
                     <textarea id="fv-observaciones" class="form-control form-control-sm sv-observaciones" rows="1" placeholder="Observaciones (opcional)..."></textarea>
 
                     <button type="submit" class="sv-submit-btn">
-                        <i class="bi bi-check-circle-fill"></i> Registrar Venta
+                        <i class="bi bi-check-circle-fill"></i> Confirmar venta
+                    </button>
+
+                    <button type="button" class="sv-btn-save-draft" id="fv-guardar-borrador-btn">
+                        <i class="bi bi-journal-text"></i> Guardar como borrador
                     </button>
                 </div>
             </form>
@@ -1993,7 +2021,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.6.7"></script>
+    <script type="module" src="admin-fabrica.js?v=1.6.8"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.1.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->
