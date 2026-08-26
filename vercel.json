@@ -44,6 +44,16 @@
         }
       ],
       "destination": "/mayor.html"
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "ameigroup.mishelles.store"
+        }
+      ],
+      "destination": "/login.html"
     }
   ],
   "headers": [
