@@ -352,15 +352,45 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     let clientesCache = null;
     let productoEnSheet = null; // producto cuya hoja de variaciones está abierta
 
-    // ── Estado del selector de productos estilo "Treinta" ─────────────────
+    // ── Estado del selector de productos "Agregar venta" ───────────────────
     const seleccionProductos = new Map(); // clave `${productoId}::${talla}::${color}` -> {productoId, codigo, nombre, talla, color, cantidad, precio}
     const precioOverride = new Map(); // productoId -> precio unitario editado a mano en esta sesión
-    let categoriasFvCache = null; // Map categoriaId -> nombre (para chips de filtro)
-    let fvModoEdicionPrecio = false;
-    let fvOrdenAscendente = true;
-    let fvFiltroActivo = 'todas'; // 'todas' | 'bajas' | categoriaId
+    let fvPrecioEditandoId = null; // productoId cuya fila de precio está en modo edición ahora mismo
+    let fvOrdenDisponible = null; // null (sin ordenar) | 'asc' | 'desc' — por columna "Disponible"
+    let fvFiltroActivo = 'todas'; // 'todas' | 'bajas' | 'favoritos' | 'recientes'
     let fvTerminoBusqueda = '';
     const FV_UMBRAL_BAJO_STOCK = 2;
+
+    // Favoritos y recientes son preferencia del dispositivo, no dato de
+    // negocio: se guardan en localStorage, no en Firestore.
+    const FV_FAVORITOS_KEY = 'fv_favoritos_productos';
+    const FV_RECIENTES_KEY = 'fv_recientes_productos';
+
+    function fvLeerListaLocal(key) {
+        try {
+            const raw = localStorage.getItem(key);
+            const arr = raw ? JSON.parse(raw) : [];
+            return Array.isArray(arr) ? arr : [];
+        } catch (error) { return []; }
+    }
+
+    const fvFavoritos = new Set(fvLeerListaLocal(FV_FAVORITOS_KEY));
+    let fvRecientes = fvLeerListaLocal(FV_RECIENTES_KEY);
+
+    function fvGuardarFavoritos() {
+        try { localStorage.setItem(FV_FAVORITOS_KEY, JSON.stringify(Array.from(fvFavoritos))); } catch (error) { /* localStorage no disponible */ }
+    }
+
+    function fvToggleFavorito(productoId) {
+        if (fvFavoritos.has(productoId)) fvFavoritos.delete(productoId);
+        else fvFavoritos.add(productoId);
+        fvGuardarFavoritos();
+    }
+
+    function fvRegistrarRecientes(productoIds) {
+        fvRecientes = [...productoIds, ...fvRecientes.filter(id => !productoIds.includes(id))].slice(0, 20);
+        try { localStorage.setItem(FV_RECIENTES_KEY, JSON.stringify(fvRecientes)); } catch (error) { /* localStorage no disponible */ }
+    }
 
     const clienteIdInput = document.getElementById('fv-cliente-id');
     const clienteNombreInput = document.getElementById('fv-cliente-nombre');
@@ -714,7 +744,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
     });
 
-    // ── Productos: selector estilo "Treinta" (pantalla completa) ──────────
+    // ── Productos: selector "Agregar venta" (pantalla completa) ────────────
     const productListEl = document.getElementById('fv-product-list');
     const productSearchInput = document.getElementById('fv-product-search');
     const fvScreenEl = document.getElementById('fvProductScreen');
@@ -725,33 +755,6 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     async function cargarProductosCache() {
         const snap = await getDocs(productosFabricaCollection);
         productosCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    }
-
-    async function cargarCategoriasFvCache() {
-        if (categoriasFvCache) return categoriasFvCache;
-        const snap = await getDocs(categoriasCollection);
-        categoriasFvCache = new Map(snap.docs.map(d => [d.id, d.data().nombre || 'Sin nombre']));
-        return categoriasFvCache;
-    }
-
-    // Reconstruye las chips de categoría (después de las fijas "Todas" /
-    // "Unidades bajas") según las categorías que de verdad tienen productos.
-    function construirChipsCategoria() {
-        if (!fvChipsEl || !categoriasFvCache) return;
-        fvChipsEl.querySelectorAll('.fvps-chip[data-categoria]').forEach(el => el.remove());
-        const idsPresentes = new Set(productosCache.map(p => p.categoriaId).filter(Boolean));
-        Array.from(idsPresentes)
-            .map(id => [id, categoriasFvCache.get(id) || 'Sin categoría'])
-            .sort((a, b) => a[1].localeCompare(b[1]))
-            .forEach(([id, nombre]) => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'fvps-chip';
-                btn.dataset.categoria = id;
-                btn.dataset.filter = id;
-                btn.textContent = nombre;
-                fvChipsEl.appendChild(btn);
-            });
     }
 
     function stockTotalFv(producto) {
@@ -796,8 +799,12 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         let lista = productosCache.slice();
         if (fvFiltroActivo === 'bajas') {
             lista = lista.filter(p => stockTotalFv(p) <= FV_UMBRAL_BAJO_STOCK);
-        } else if (fvFiltroActivo && fvFiltroActivo !== 'todas') {
-            lista = lista.filter(p => p.categoriaId === fvFiltroActivo);
+        } else if (fvFiltroActivo === 'favoritos') {
+            lista = lista.filter(p => fvFavoritos.has(p.id));
+        } else if (fvFiltroActivo === 'recientes') {
+            const orden = new Map(fvRecientes.map((id, idx) => [id, idx]));
+            lista = lista.filter(p => orden.has(p.id));
+            lista.sort((a, b) => orden.get(a.id) - orden.get(b.id));
         }
         if (fvTerminoBusqueda) {
             lista = lista.filter(p =>
@@ -805,10 +812,18 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 (p.codigo || '').toLowerCase().includes(fvTerminoBusqueda)
             );
         }
-        lista.sort((a, b) => {
-            const cmp = (a.nombre || '').localeCompare(b.nombre || '');
-            return fvOrdenAscendente ? cmp : -cmp;
-        });
+        // "Recientes" ya trae su propio orden (más reciente primero); el
+        // resto se ordena por nombre, o por stock disponible si se activó
+        // la columna "Disponible".
+        if (fvFiltroActivo !== 'recientes') {
+            lista.sort((a, b) => {
+                if (fvOrdenDisponible) {
+                    const cmp = stockTotalFv(a) - stockTotalFv(b);
+                    return fvOrdenDisponible === 'asc' ? cmp : -cmp;
+                }
+                return (a.nombre || '').localeCompare(b.nombre || '');
+            });
+        }
         return lista;
     }
 
@@ -834,9 +849,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             const variaciones = p.variaciones || [];
             const stock = stockTotalFv(p);
             const precio = precioProducto(p);
-            const precioHtml = fvModoEdicionPrecio
+            const precioHtml = fvPrecioEditandoId === p.id
                 ? `<input type="text" inputmode="numeric" class="fvps-item-price-input fv-price-override" data-id="${p.id}" value="${precio}">`
-                : `<span class="fvps-item-price">${formatoMonedaDashboard.format(precio)}</span>`;
+                : `<span class="fvps-item-price fv-price-toggle" data-id="${p.id}" title="Tocar para editar el precio">${formatoMonedaDashboard.format(precio)}</span>`;
+            const esFavorito = fvFavoritos.has(p.id);
 
             let controlHtml;
             if (variaciones.length <= 1) {
@@ -865,12 +881,17 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
             return `
                 <div class="fvps-item" data-id="${p.id}">
-                    <img src="${p.imagenUrl || placeholderImg(p.nombre)}" alt="" class="fvps-item-img">
+                    <div class="fvps-item-img-wrap">
+                        <img src="${p.imagenUrl || placeholderImg(p.nombre)}" alt="" class="fvps-item-img">
+                        <button type="button" class="fvps-item-fav-btn fv-toggle-fav ${esFavorito ? 'active' : ''}" data-id="${p.id}" aria-label="Marcar como favorito">
+                            <i class="bi ${esFavorito ? 'bi-star-fill' : 'bi-star'}"></i>
+                        </button>
+                    </div>
                     <div class="fvps-item-info">
                         <span class="fvps-item-name">${p.nombre || 'Sin nombre'}</span>
-                        ${stockBadge}
                         ${precioHtml}
                     </div>
+                    ${stockBadge}
                     ${controlHtml}
                 </div>
             `;
@@ -912,7 +933,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             count += entrada.cantidad;
             total += entrada.cantidad * entrada.precio;
         });
-        document.getElementById('fvps-footer-count').textContent = count;
+        const countLabelEl = document.getElementById('fvps-footer-count-label');
+        countLabelEl.textContent = count > 0
+            ? `${count} ${count === 1 ? 'producto' : 'productos'} seleccionado${count === 1 ? '' : 's'}`
+            : '0 productos seleccionados';
         document.getElementById('fvps-footer-total').textContent = formatoMonedaDashboard.format(total);
         document.getElementById('fvps-footer').classList.toggle('has-items', count > 0);
         document.getElementById('fvps-confirm-btn').disabled = count === 0;
@@ -979,7 +1003,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     document.getElementById('fv-product-back-btn')?.addEventListener('click', cerrarSheetVariaciones);
     fvSheetBackdropEl?.addEventListener('click', cerrarSheetVariaciones);
 
-    // ── Lista principal: stepper directo, elegir variación o editar precio ──
+    // ── Lista principal: stepper directo, favorito, precio o elegir variación ──
     productListEl?.addEventListener('click', (e) => {
         const plus = e.target.closest('.fv-qty-plus');
         const minus = e.target.closest('.fv-qty-minus');
@@ -997,8 +1021,33 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         if (chooseBtn) {
             const producto = productosCache.find(p => p.id === chooseBtn.dataset.id);
             if (producto) abrirSheetVariaciones(producto);
+            return;
+        }
+        const favBtn = e.target.closest('.fv-toggle-fav');
+        if (favBtn) {
+            fvToggleFavorito(favBtn.dataset.id);
+            if (fvFiltroActivo === 'favoritos') renderProductList();
+            else {
+                favBtn.classList.toggle('active');
+                favBtn.querySelector('i').className = favBtn.classList.contains('active') ? 'bi bi-star-fill' : 'bi bi-star';
+            }
+            return;
+        }
+        const priceToggle = e.target.closest('.fv-price-toggle');
+        if (priceToggle) {
+            fvPrecioEditandoId = priceToggle.dataset.id;
+            renderProductList();
+            const input = productListEl.querySelector(`.fv-price-override[data-id="${fvPrecioEditandoId}"]`);
+            input?.focus();
+            input?.select();
         }
     });
+
+    function fvCommitEdicionPrecio() {
+        if (!fvPrecioEditandoId) return;
+        fvPrecioEditandoId = null;
+        renderProductList();
+    }
 
     productListEl?.addEventListener('input', (e) => {
         const input = e.target.closest('.fv-price-override');
@@ -1012,21 +1061,24 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         renderFooter();
     });
 
+    productListEl?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.closest('.fv-price-override')) e.target.blur();
+    });
+
+    // "focusout" en vez de "blur" porque blur no burbujea — así se puede
+    // delegar en el contenedor en vez de reengancharse a cada input nuevo.
+    productListEl?.addEventListener('focusout', (e) => {
+        if (e.target.closest('.fv-price-override')) fvCommitEdicionPrecio();
+    });
+
     productSearchInput?.addEventListener('input', () => {
         fvTerminoBusqueda = productSearchInput.value.trim().toLowerCase();
         renderProductList();
     });
 
-    document.getElementById('fvps-sort-btn')?.addEventListener('click', (e) => {
-        fvOrdenAscendente = !fvOrdenAscendente;
-        const icon = e.currentTarget.querySelector('i');
-        if (icon) icon.className = fvOrdenAscendente ? 'bi bi-sort-alpha-down' : 'bi bi-sort-alpha-up';
-        renderProductList();
-    });
-
-    document.getElementById('fvps-edit-price-btn')?.addEventListener('click', (e) => {
-        fvModoEdicionPrecio = !fvModoEdicionPrecio;
-        e.currentTarget.classList.toggle('active', fvModoEdicionPrecio);
+    document.getElementById('fvps-sort-disponible-btn')?.addEventListener('click', (e) => {
+        fvOrdenDisponible = fvOrdenDisponible === 'asc' ? 'desc' : 'asc';
+        e.currentTarget.classList.add('active');
         renderProductList();
     });
 
@@ -1039,47 +1091,34 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         renderProductList();
     });
 
-    document.getElementById('fvps-search-toggle-btn')?.addEventListener('click', () => {
-        const bar = document.getElementById('fvps-search-bar');
-        bar.classList.toggle('open');
-        if (bar.classList.contains('open')) productSearchInput.focus();
-    });
-
     // Fábrica no tiene escáner de cámara (excluido del negocio, ver
     // cabecera del módulo); el código de barra de un producto es su
-    // "codigo" de texto, así que este botón solo abre la búsqueda para
+    // "codigo" de texto, así que este botón solo enfoca la búsqueda para
     // escribirlo o pegarlo — funcionalmente equivalente a escanearlo.
     document.getElementById('fvps-barcode-btn')?.addEventListener('click', () => {
-        const bar = document.getElementById('fvps-search-bar');
-        bar.classList.add('open');
         productSearchInput.placeholder = 'Escribe o pega el código...';
         productSearchInput.focus();
     });
 
-    document.getElementById('fvps-new-product-btn')?.addEventListener('click', () => {
-        document.getElementById('prodfab-btn-nuevo')?.click();
-    });
-
-    // El modal de "Nuevo producto" (Bootstrap) restaura el scroll del body al
-    // cerrarse; si nuestra pantalla de selección sigue abierta detrás, hay
-    // que volver a bloquearlo para que no se pueda hacer scroll del fondo.
+    // El modal de "Nuevo producto" (Bootstrap, abierto desde Productos
+    // Fábrica) restaura el scroll del body al cerrarse; si nuestra pantalla
+    // de selección sigue abierta detrás, hay que volver a bloquearlo para
+    // que no se pueda hacer scroll del fondo.
     document.getElementById('prodFabModal')?.addEventListener('hidden.bs.modal', () => {
         if (fvScreenEl.classList.contains('active')) document.body.style.overflow = 'hidden';
     });
 
-    // Si se crea un producto nuevo desde el botón de arriba (reutiliza el
-    // modal de "Productos Fábrica"), refresca el catálogo del selector.
+    // Si se crea/edita un producto desde Productos Fábrica mientras esta
+    // pantalla está abierta, refresca el catálogo del selector.
     window.addEventListener('fabrica:producto-guardado', () => {
         cargarProductosCache()
-            .then(() => {
-                construirChipsCategoria();
-                renderProductList();
-            })
+            .then(() => renderProductList())
             .catch((error) => console.error('Error al refrescar catálogo de Registrar Venta:', error));
     });
 
     document.getElementById('fvps-confirm-btn')?.addEventListener('click', () => {
         if (seleccionProductos.size === 0) return;
+        const productosAgregados = new Set();
         seleccionProductos.forEach((entrada) => {
             carrito.push({
                 productoId: entrada.productoId,
@@ -1091,8 +1130,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 precio: entrada.precio,
                 total: entrada.precio * entrada.cantidad
             });
+            productosAgregados.add(entrada.productoId);
         });
         renderCarrito();
+        fvRegistrarRecientes(Array.from(productosAgregados));
         const cantidadAgregada = seleccionProductos.size;
         seleccionProductos.clear();
         precioOverride.clear();
@@ -1107,22 +1148,13 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         document.body.style.overflow = 'hidden';
         renderFooter();
 
-        const pintarConCategorias = () => {
-            if (categoriasFvCache) construirChipsCategoria();
-            else cargarCategoriasFvCache().then(construirChipsCategoria).catch(() => {});
-        };
-
         if (productosCache.length > 0) {
             renderProductList();
-            pintarConCategorias();
             return;
         }
         productListEl.innerHTML = `<div class="fvps-empty">Cargando catálogo...</div>`;
         cargarProductosCache()
-            .then(() => {
-                renderProductList();
-                pintarConCategorias();
-            })
+            .then(() => renderProductList())
             .catch((error) => {
                 console.error('Error al cargar catálogo para Registrar Venta:', error);
                 productListEl.innerHTML = `<div class="fvps-empty">No se pudo cargar el catálogo: ${error.message}</div>`;
