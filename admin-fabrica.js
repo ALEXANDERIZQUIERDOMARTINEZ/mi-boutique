@@ -10,7 +10,7 @@
  */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
-    initializeFirestore, collection, getDocs, query, where, orderBy, doc,
+    initializeFirestore, collection, getDocs, query, where, orderBy, limit, doc,
     getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
@@ -262,17 +262,75 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         });
     });
 
+    function tiempoRelativoDashboard(fecha) {
+        const diff = Math.floor((new Date() - fecha) / 1000);
+        if (diff < 60) return 'Hace un momento';
+        if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
+        if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} h`;
+        if (diff < 604800) return `Hace ${Math.floor(diff / 86400)} días`;
+        return fecha.toLocaleDateString('es-CO', { month: 'short', day: 'numeric' });
+    }
+
+    // Últimas 5 ventas de Fábrica — mismo patrón que "Actividad reciente"
+    // del Dashboard de Boutique (admin.js), adaptado a tenantId 'fabrica'.
+    async function actualizarActividadRecienteFabrica() {
+        const cont = document.getElementById('fdb-actividad-reciente');
+        if (!cont) return;
+        try {
+            const q = query(
+                ventasCollection,
+                where('tenantId', '==', 'fabrica'),
+                orderBy('timestamp', 'desc'),
+                limit(5)
+            );
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) {
+                cont.innerHTML = '<div class="text-center text-muted py-3">No hay actividad reciente</div>';
+                return;
+            }
+            cont.innerHTML = snapshot.docs.map(docSnap => {
+                const venta = docSnap.data();
+                const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate() : null;
+                const cuando = fecha ? tiempoRelativoDashboard(fecha) : 'Hace un momento';
+                const anulada = venta.estado === 'Anulada' || venta.estado === 'Cancelada';
+                return `
+                    <div class="db-activity-item">
+                        <span class="db-activity-icon"><i class="bi bi-cart-check-fill"></i></span>
+                        <div class="db-activity-body">
+                            <div class="db-activity-title">${anulada ? 'Venta anulada' : 'Venta realizada'}</div>
+                            <div class="db-activity-sub">${venta.clienteNombre || 'Cliente General'}</div>
+                        </div>
+                        <div class="db-activity-meta">
+                            <span class="db-activity-time">${cuando}</span>
+                            <span class="db-activity-amount">${formatoMonedaDashboard.format(venta.totalVenta || 0)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } catch (error) {
+            console.error('Error al cargar actividad reciente de fábrica:', error);
+            cont.innerHTML = '<div class="text-center text-danger py-3">No se pudo cargar</div>';
+        }
+    }
+
     let dashboardYaCargado = false;
     function cargarDashboardSiCorresponde() {
         if ((window.location.hash || '#dashboard') !== '#dashboard') return;
         dashboardYaCargado = true;
         calcularProductosFabrica();
         calcularVentasFabrica('today');
+        actualizarActividadRecienteFabrica();
     }
 
     window.addEventListener('hashchange', cargarDashboardSiCorresponde);
     window.addEventListener('admin:section-shown', cargarDashboardSiCorresponde);
     if (!dashboardYaCargado) cargarDashboardSiCorresponde();
+
+    document.getElementById('fdb-ver-todo-actividad')?.addEventListener('click', () => {
+        // Deja que el href navegue a #registrar-venta; el historial se abre
+        // después de que esa sección termine de mostrarse.
+        setTimeout(() => window.mostrarHistorialVentasFabrica?.(), 50);
+    });
 })();
 
 // ========================================================================
@@ -1241,6 +1299,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         if (enHistorial) mostrarVistaFormulario();
         else mostrarVistaHistorial();
     });
+
+    // Expuesto para que "Ver todo" en Actividad Reciente del Dashboard
+    // pueda abrir directo el historial en vez de solo caer en Nueva Venta.
+    window.mostrarHistorialVentasFabrica = mostrarVistaHistorial;
 
     async function cargarHistorialVentas() {
         historialCargado = true;
