@@ -119,6 +119,19 @@ export function showToast(message, type = 'success', title = 'Notificación') {
 }
 window.showToast = showToast;
 
+// --- Helper: Open WhatsApp (PWA Compatible, misma lógica que admin.js) ---
+function openWhatsApp(url) {
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                  window.navigator.standalone === true ||
+                  document.referrer.includes('android-app://');
+    if (isPWA || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.location.href = url;
+    } else {
+        const ventana = window.open(url, '_blank');
+        if (!ventana) window.location.href = url;
+    }
+}
+
 const fabricaCollection = collection(db, 'movimientosFabrica');
 const inventarioFabricaCollection = collection(db, 'inventarioFabrica');
 const productosFabricaCollection = collection(db, 'productosFabrica');
@@ -1214,6 +1227,42 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
     }
 
+    // Arma el texto del comprobante de venta para enviarlo por WhatsApp al
+    // cliente (mismo estilo de mensaje que ya se usa en admin.js para
+    // pedidos/cotizaciones: negritas con asteriscos, un renglón por producto).
+    function construirMensajeComprobanteFabrica(datos) {
+        const lineas = datos.items.map((item, i) => {
+            const variante = [item.talla, item.color].filter(x => x && normalizarVariacion(x) !== '').join(' · ');
+            const precioUnit = formatoMonedaDashboard.format(parseFloat(item.precio) || 0);
+            return `${i + 1}. ${item.nombre}${variante ? ` (${variante})` : ''} x${item.cantidad} - ${precioUnit} c/u = ${formatoMonedaDashboard.format(item.total)}`;
+        });
+        const metodoLabel = { efectivo: 'Efectivo', transferencia: 'Transferencia', otro: 'Otro' }[datos.metodoPago] || datos.metodoPago;
+
+        let msg = `*Comprobante de venta*\nMishell's Fábrica\n\n`;
+        msg += `Cliente: ${datos.clienteNombre}\n\n`;
+        msg += `*Productos:*\n${lineas.join('\n')}\n\n`;
+        msg += `*Resumen:*\nSubtotal: ${formatoMonedaDashboard.format(datos.subtotal)}\n`;
+        if (datos.descuento > 0) msg += `Descuento: -${formatoMonedaDashboard.format(datos.descuento)}\n`;
+        msg += `*TOTAL: ${formatoMonedaDashboard.format(datos.total)}*\n\n`;
+        msg += `Método de pago: ${metodoLabel}\nRecibido: ${formatoMonedaDashboard.format(datos.recibido)}\n`;
+        if (datos.cambio > 0) msg += `Cambio: ${formatoMonedaDashboard.format(datos.cambio)}\n`;
+        msg += `\n¡Gracias por tu compra!`;
+        return msg;
+    }
+
+    // Tras registrar la venta, pregunta si se envía el comprobante por
+    // WhatsApp al cliente (si tiene celular registrado) y, de aceptar, abre
+    // WhatsApp con el mensaje ya armado.
+    function ofrecerEnvioComprobanteWhatsapp(datos) {
+        const celular = (datos.clienteCelular || '').replace(/\D/g, '');
+        if (!celular) return;
+        if (!confirm(`¿Enviar comprobante de venta a ${datos.clienteNombre} por WhatsApp?`)) return;
+        const mensaje = construirMensajeComprobanteFabrica(datos);
+        let tel = celular;
+        if (tel.startsWith('57')) tel = tel.substring(2);
+        openWhatsApp(`https://wa.me/57${tel}?text=${encodeURIComponent(mensaje)}`);
+    }
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (carrito.length === 0) { showToast('Agrega al menos un producto', 'warning'); return; }
@@ -1257,6 +1306,26 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             await actualizarStockFabrica(carrito);
 
             showToast('Venta registrada', 'success');
+
+            // Snapshot para el comprobante: se toma antes de limpiar el
+            // carrito/cliente, que se resetean justo después.
+            const subtotal = calcularSubtotal();
+            const descuentoValRaw = limpiarNumero(descuentoInput.value);
+            const descuentoMonto = descuentoTipoSelect.value === 'porcentaje'
+                ? subtotal * (descuentoValRaw / 100)
+                : descuentoValRaw;
+            ofrecerEnvioComprobanteWhatsapp({
+                clienteNombre: ventaData.clienteNombre,
+                clienteCelular: ventaData.clienteCelular,
+                items: carrito,
+                subtotal,
+                descuento: descuentoMonto,
+                total,
+                metodoPago: metodoPagoSeleccionado,
+                recibido,
+                cambio: recibido - total
+            });
+
             carrito = [];
             seleccionarCliente(null);
             observacionesInput.value = '';
