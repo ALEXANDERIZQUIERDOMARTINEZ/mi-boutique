@@ -3981,15 +3981,15 @@ body.dark-mode .sv-quote-btn {
     padding: 6px 12px;
     border-radius: 10px;
     border: none;
-    background: var(--brand-50, #fdf2f8);
-    color: var(--brand-700, #a21caf);
+    background: #f3f4f6;
+    color: #1a1a2e;
     font-weight: 700;
     font-size: 0.75rem;
     white-space: nowrap;
     flex-shrink: 0;
     transition: background 0.15s ease;
 }
-#registrar-venta .sv-header-action:hover { background: var(--brand-100, #fce7f3); }
+#registrar-venta .sv-header-action:hover { background: #e5e7eb; }
 
 #registrar-venta .sv-section-header {
     background: transparent;
@@ -4007,7 +4007,7 @@ body.dark-mode .sv-quote-btn {
     width: 19px;
     height: 19px;
     border-radius: 6px;
-    background: var(--brand-50, #fdf2f8);
+    background: #f3f4f6;
     font-size: 0.65rem;
 }
 
@@ -4019,8 +4019,8 @@ body.dark-mode .sv-quote-btn {
 #registrar-venta .sv-section,
 #registrar-venta .sv-payment {
     border-radius: 14px;
-    border-color: #f5e3ee;
-    box-shadow: 0 2px 12px rgba(190, 100, 160, 0.07);
+    border-color: #e5e7eb;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
 #registrar-venta .sv-payment { padding: 6px 10px; gap: 3px; }
@@ -4031,7 +4031,7 @@ body.dark-mode .sv-quote-btn {
 #registrar-venta .sv-client-input,
 #registrar-venta .sv-client-meta .form-control,
 #registrar-venta .sv-payment textarea.form-control {
-    background: #f8f5f7;
+    background: #f3f4f6;
     border: 1.5px solid transparent;
     border-radius: 10px;
     color: #1a1a2e;
@@ -4043,7 +4043,7 @@ body.dark-mode .sv-quote-btn {
 }
 #registrar-venta .sv-discount-row .form-control,
 #registrar-venta .sv-discount-row .form-select {
-    background: #f8f5f7;
+    background: #f3f4f6;
     border: 1.5px solid transparent;
     border-radius: 8px;
     color: #1a1a2e;
@@ -4057,7 +4057,7 @@ body.dark-mode .sv-quote-btn {
 #registrar-venta .sv-discount-row .form-control:focus,
 #registrar-venta .sv-discount-row .form-select:focus {
     background: #fff;
-    border-color: var(--brand-300, #f9a8d4);
+    border-color: #1a1a2e;
     box-shadow: none;
 }
 
@@ -4084,7 +4084,7 @@ body.dark-mode .sv-quote-btn {
     flex-shrink: 0;
     border-radius: 9px;
     border: none;
-    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%));
+    background: #1a1a2e;
     color: #fff;
     font-size: 0.8rem;
 }
@@ -4099,11 +4099,11 @@ body.dark-mode .sv-quote-btn {
     margin-top: 3px;
     padding: 4px 9px;
     border-radius: 10px;
-    border: 1.5px dashed var(--brand-200, #fbcfe8);
-    background: var(--brand-50, #fdf2f8);
+    border: 1.5px dashed #d1d5db;
+    background: #f3f4f6;
     text-align: left;
 }
-.sv-new-client-cta:hover { background: var(--brand-100, #fce7f3); }
+.sv-new-client-cta:hover { background: #e5e7eb; }
 .sv-new-client-cta-icon {
     display: inline-flex;
     align-items: center;
@@ -4112,7 +4112,7 @@ body.dark-mode .sv-quote-btn {
     height: 24px;
     border-radius: 50%;
     background: #fff;
-    color: var(--brand-600, #c026d3);
+    color: #1a1a2e;
     font-size: 0.72rem;
     flex-shrink: 0;
 }
@@ -4124,14 +4124,14 @@ body.dark-mode .sv-quote-btn {
 }
 .sv-new-client-cta-text strong {
     font-size: 0.72rem;
-    color: var(--brand-700, #a21caf);
+    color: #1a1a2e;
 }
 .sv-new-client-cta-text small {
     font-size: 0.6rem;
     color: #9ca3af;
 }
 .sv-new-client-cta-chevron {
-    color: var(--brand-400, #f472b6);
+    color: #1a1a2e;
     font-size: 0.7rem;
     flex-shrink: 0;
 }
@@ -4146,7 +4146,7 @@ body.dark-mode .sv-quote-btn {
     flex: 1;
     min-width: 0;
     padding: 0 10px;
-    background: #f8f5f7;
+    background: #f3f4f6;
     border: 1.5px solid transparent;
     border-radius: 10px;
     color: #9ca3af;
@@ -4155,7 +4155,7 @@ body.dark-mode .sv-quote-btn {
     transition: background 0.15s ease;
 }
 .sv-fake-search-input i { font-size: 0.75rem; }
-.sv-fake-search-input:hover { background: #f3eef1; }
+.sv-fake-search-input:hover { background: #e5e7eb; }
 .sv-fake-search-input span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .sv-btn-barcode {
@@ -4166,7 +4166,7 @@ body.dark-mode .sv-quote-btn {
     flex-shrink: 0;
     border-radius: 10px;
     border: none;
-    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%));
+    background: #1a1a2e;
     color: #fff;
     font-size: 0.85rem;
 }
@@ -4188,8 +4188,8 @@ body.dark-mode .sv-quote-btn {
     display: inline-flex;
     padding: 1px 6px;
     margin-left: 5px;
-    background: var(--brand-50, #fdf2f8);
-    color: var(--brand-700, #a21caf);
+    background: #f3f4f6;
+    color: #1a1a2e;
     border-radius: 999px;
     font-size: 0.58rem;
     font-weight: 700;
@@ -4203,7 +4203,7 @@ body.dark-mode .sv-quote-btn {
     gap: 4px;
     border: none;
     background: transparent;
-    color: var(--brand-600, #c026d3);
+    color: #1a1a2e;
     font-size: 0.64rem;
     font-weight: 700;
     text-transform: none;
@@ -4211,7 +4211,7 @@ body.dark-mode .sv-quote-btn {
     padding: 2px 4px;
     flex-shrink: 0;
 }
-.sv-btn-clear-cart:hover { color: var(--brand-800, #86198f); }
+.sv-btn-clear-cart:hover { color: #000; }
 
 /* Carrito vacío: tarjeta con llamado a la acción (reemplaza el mensaje
    plano mientras no hay productos en esta venta). */
@@ -4222,9 +4222,9 @@ body.dark-mode .sv-quote-btn {
     text-align: center;
     gap: 2px;
     padding: 7px 10px;
-    border: 1.5px dashed var(--brand-200, #fbcfe8);
+    border: 1.5px dashed #d1d5db;
     border-radius: 12px;
-    background: var(--brand-50, #fdf2f8);
+    background: #f3f4f6;
 }
 .sv-cart-empty-icon {
     display: inline-flex;
@@ -4234,7 +4234,7 @@ body.dark-mode .sv-quote-btn {
     height: 24px;
     border-radius: 50%;
     background: #fff;
-    color: var(--brand-500, #D988B9);
+    color: #1a1a2e;
     font-size: 0.78rem;
     margin-bottom: 1px;
 }
@@ -4248,7 +4248,7 @@ body.dark-mode .sv-quote-btn {
     padding: 5px 14px;
     border: none;
     border-radius: 999px;
-    background: var(--grad-brand, linear-gradient(135deg, #f472b6 0%, #D988B9 50%, #a855f7 100%));
+    background: #1a1a2e;
     color: #fff;
     font-weight: 700;
     font-size: 0.68rem;
@@ -4256,7 +4256,7 @@ body.dark-mode .sv-quote-btn {
 
 #registrar-venta #fv-carrito {
     background: #fff;
-    border: 1px solid #f0e9ee;
+    border: 1px solid #e5e7eb;
     border-radius: 10px;
     overflow: hidden;
     max-height: 108px;
@@ -4272,14 +4272,14 @@ body.dark-mode .sv-quote-btn {
     margin-top: 2px;
     padding: 4px;
     border-radius: 10px;
-    border: 1.5px solid var(--brand-300, #f9a8d4);
+    border: 1.5px solid #1a1a2e;
     background: transparent;
-    color: var(--brand-700, #a21caf);
+    color: #1a1a2e;
     font-weight: 700;
     font-size: 0.72rem;
     transition: background 0.15s ease;
 }
-.sv-btn-add-more:hover { background: var(--brand-50, #fdf2f8); }
+.sv-btn-add-more:hover { background: #f3f4f6; }
 
 /* Resumen de venta: subtotal / descuento / total */
 .sv-summary-row {
@@ -4292,12 +4292,12 @@ body.dark-mode .sv-quote-btn {
     color: #374151;
 }
 .sv-summary-row--discount .sv-discount-row { width: 120px; flex-shrink: 0; }
-.sv-summary-divider { height: 1px; background: #f0e9ee; margin: 2px 0; }
+.sv-summary-divider { height: 1px; background: #e5e7eb; margin: 2px 0; }
 .sv-summary-row--total {
     padding-top: 4px;
     font-weight: 800;
     font-size: 0.86rem;
-    color: var(--brand-700, #a21caf);
+    color: #1a1a2e;
 }
 
 #registrar-venta .sv-btn-search-product {
@@ -4318,17 +4318,18 @@ body.dark-mode .sv-quote-btn {
     gap: 3px;
     padding: 4px 3px;
     border-radius: 9px;
-    border: 1.5px solid #e9e5ea;
+    border: 1.5px solid #e5e7eb;
     background: #fff;
     color: #6b7280;
     font-weight: 700;
     font-size: 0.64rem;
     white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .sv-pay-method-btn.active {
-    border-color: var(--brand-400, #f472b6);
-    background: var(--brand-50, #fdf2f8);
-    color: var(--brand-700, #a21caf);
+    border-color: #1a1a2e;
+    background: #1a1a2e;
+    color: #fff;
 }
 
 /* "Recibido": fila con etiqueta y monto editable a la derecha — sin el
@@ -4338,14 +4339,14 @@ body.dark-mode .sv-quote-btn {
     align-items: center;
     gap: 6px;
     padding: 4px 7px;
-    background: #f8f5f7;
+    background: #f3f4f6;
     border-radius: 10px;
     border: 1.5px solid transparent;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 .sv-pay-row:focus-within {
     background: #fff;
-    border-color: var(--brand-300, #f9a8d4);
+    border-color: #1a1a2e;
 }
 .sv-pay-icon {
     display: inline-flex;
@@ -4354,8 +4355,8 @@ body.dark-mode .sv-quote-btn {
     width: 20px;
     height: 20px;
     border-radius: 6px;
-    background: var(--brand-50, #fdf2f8);
-    color: var(--brand-600, #c026d3);
+    background: #f3f4f6;
+    color: #1a1a2e;
     font-size: 0.62rem;
     flex-shrink: 0;
 }
@@ -4383,10 +4384,10 @@ body.dark-mode .sv-quote-btn {
     align-items: center;
     justify-content: space-between;
     padding: 4px 8px;
-    background: var(--brand-50, #fdf2f8);
+    background: #f3f4f6;
     border-radius: 8px;
     font-weight: 800;
-    color: var(--brand-700, #a21caf);
+    color: #1a1a2e;
     font-size: 0.7rem;
     margin: 0;
 }
@@ -4397,6 +4398,12 @@ body.dark-mode .sv-quote-btn {
     border-radius: 12px;
     padding: 5px 14px;
     font-size: 0.78rem;
+    background: #1a1a2e;
+    box-shadow: 0 4px 14px rgba(26, 26, 46, 0.35);
+}
+#registrar-venta .sv-submit-btn:hover {
+    background: #000;
+    box-shadow: 0 6px 18px rgba(26, 26, 46, 0.45);
 }
 
 .sv-btn-save-draft {
@@ -4409,11 +4416,11 @@ body.dark-mode .sv-quote-btn {
     padding: 1px;
     border: none;
     background: transparent;
-    color: var(--brand-600, #c026d3);
+    color: #1a1a2e;
     font-weight: 700;
     font-size: 0.66rem;
 }
-.sv-btn-save-draft:hover { color: var(--brand-800, #86198f); }
+.sv-btn-save-draft:hover { color: #000; }
 
 /* Filas del carrito embebido en Productos: mismas clases .vf-cart-item*
    que usa Boutique, pero más compactas solo aquí. */
@@ -4431,7 +4438,12 @@ body.dark-mode .sv-quote-btn {
 #registrar-venta .vf-qty-btn { width: 20px; font-size: 0.75rem; }
 #registrar-venta .vf-qty-input { width: 24px; font-size: 0.68rem; }
 #registrar-venta .vf-cart-item-total { font-size: 0.7rem; min-width: 48px; }
-#registrar-venta .vf-cart-item-remove { padding: 2px 3px; font-size: 0.72rem; }
+#registrar-venta .vf-cart-item-remove { padding: 2px 3px; font-size: 0.72rem; color: #9ca3af; }
+#registrar-venta .vf-cart-item-remove:hover { background: #f3f4f6; color: #1a1a2e; }
+#registrar-venta .vf-cart-item-variant { color: #6b7280; }
+#registrar-venta .vf-cart-item-total { color: #1a1a2e; }
+#registrar-venta .vf-qty-btn { color: #1a1a2e; }
+#registrar-venta .vf-qty-btn:hover { background: #e5e7eb; color: #1a1a2e; }
 
 /* ════════════════════════════════════════════════════════════════
    CARRITO — clases vf-* usadas por renderCarrito() JS
