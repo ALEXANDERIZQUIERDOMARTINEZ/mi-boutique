@@ -1793,7 +1793,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         if (!metodoPagoSeleccionado) metodoPagoSeleccionado = 'efectivo';
 
         const total = calcularTotal();
-        const recibido = limpiarNumero(pagoRecibidoInput.value);
+        // Si dejó "Recibido" en 0 (no lo tocó), se asume que pagó el total
+        // exacto en efectivo en vez de bloquear la venta; si escribió un
+        // valor y no alcanza, sí se avisa.
+        let recibido = limpiarNumero(pagoRecibidoInput.value);
+        if (recibido === 0) recibido = total;
         if (recibido < total) {
             showToast('El pago no cubre el total', 'warning');
             return;
