@@ -1964,40 +1964,99 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
     }
 
+    // El chequeo de estado, la reposición de stock y el cambio a "Anulada"
+    // van en UNA sola transacción: hacerlo en pasos sueltos (como antes)
+    // permitía que un doble clic, o dos personas anulando la misma venta
+    // casi a la vez, pasaran ambos el chequeo "¿ya está anulada?" antes de
+    // que cualquiera guardara el cambio de estado, y el stock se repusiera
+    // dos veces para la misma venta.
+    let ventasAnulandoFabrica = new Set();
     async function anularVentaFabrica(ventaId) {
         if (!ventaId) return;
         if (!puedeHacer('ventas_anular')) {
             showToast('No tienes permisos para anular ventas.', 'error');
             return;
         }
+        if (ventasAnulandoFabrica.has(ventaId)) return; // ya se está procesando (p. ej. doble clic)
         if (!confirm('¿Estás seguro de que quieres ANULAR esta venta?\nEsta acción repondrá el stock y marcará la venta como "Anulada".')) {
             return;
         }
 
+        ventasAnulandoFabrica.add(ventaId);
         const ventaRef = doc(db, 'ventas', ventaId);
         try {
-            const ventaSnap = await getDoc(ventaRef);
-            if (!ventaSnap.exists()) {
-                showToast('Error: No se encontró la venta.', 'error');
-                return;
-            }
-            const ventaData = ventaSnap.data();
-            if (ventaData.estado === 'Anulada' || ventaData.estado === 'Cancelada') {
-                showToast('Esta venta ya ha sido anulada.', 'info');
-                return;
-            }
+            const itemsOmitidos = await runTransaction(db, async (tx) => {
+                const ventaSnap = await tx.get(ventaRef);
+                if (!ventaSnap.exists()) throw new Error('VENTA_NO_ENCONTRADA');
+                const ventaData = ventaSnap.data();
+                if (ventaData.estado === 'Anulada' || ventaData.estado === 'Cancelada') {
+                    throw new Error('VENTA_YA_ANULADA');
+                }
 
-            await actualizarStockFabrica(ventaData.items || [], 'sumar');
-            await updateDoc(ventaRef, { estado: 'Anulada' });
+                const items = ventaData.items || [];
+                const itemsPorProducto = new Map();
+                for (const item of items) {
+                    if (!item.productoId) continue;
+                    if (!itemsPorProducto.has(item.productoId)) itemsPorProducto.set(item.productoId, []);
+                    itemsPorProducto.get(item.productoId).push(item);
+                }
+
+                const refs = new Map();
+                const snaps = new Map();
+                for (const productoId of itemsPorProducto.keys()) {
+                    const ref = doc(db, 'productosFabrica', productoId);
+                    refs.set(productoId, ref);
+                    snaps.set(productoId, await tx.get(ref));
+                }
+
+                const omitidos = [];
+                for (const [productoId, itemsDelProducto] of itemsPorProducto) {
+                    const snap = snaps.get(productoId);
+                    if (!snap.exists()) {
+                        itemsDelProducto.forEach(item => omitidos.push(item.nombre || item.productoId));
+                        continue;
+                    }
+                    const variaciones = JSON.parse(JSON.stringify(snap.data().variaciones || []));
+                    let cambiado = false;
+                    for (const item of itemsDelProducto) {
+                        const encontrada = variaciones.find(v =>
+                            normalizarVariacion(v.talla) === normalizarVariacion(item.talla) &&
+                            normalizarVariacion(v.color) === normalizarVariacion(item.color)
+                        );
+                        if (encontrada) {
+                            encontrada.stock = (parseInt(encontrada.stock, 10) || 0) + (parseInt(item.cantidad, 10) || 0);
+                            cambiado = true;
+                        } else {
+                            omitidos.push(item.nombre || item.productoId);
+                        }
+                    }
+                    if (cambiado) tx.update(refs.get(productoId), { variaciones });
+                }
+
+                tx.update(ventaRef, { estado: 'Anulada' });
+                return omitidos;
+            });
 
             showToast('Venta anulada y stock repuesto.', 'info');
+            if (itemsOmitidos.length) {
+                console.warn('Stock no ajustado para:', itemsOmitidos);
+                showToast(`El stock no se ajustó para: ${itemsOmitidos.join(', ')}. Revísalo manualmente.`, 'error');
+            }
 
             const idx = todasLasVentas.findIndex(v => v.id === ventaId);
             if (idx !== -1) todasLasVentas[idx].estado = 'Anulada';
             aplicarFiltrosHistorial();
         } catch (error) {
-            console.error('Error al anular la venta de fábrica:', error);
-            showToast('Error al anular la venta: ' + error.message, 'error');
+            if (error.message === 'VENTA_YA_ANULADA') {
+                showToast('Esta venta ya ha sido anulada.', 'info');
+            } else if (error.message === 'VENTA_NO_ENCONTRADA') {
+                showToast('Error: No se encontró la venta.', 'error');
+            } else {
+                console.error('Error al anular la venta de fábrica:', error);
+                showToast('Error al anular la venta: ' + error.message, 'error');
+            }
+        } finally {
+            ventasAnulandoFabrica.delete(ventaId);
         }
     }
 
