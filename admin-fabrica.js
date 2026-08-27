@@ -3196,6 +3196,19 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     let categoriasMap = new Map();
     let idPendienteEliminar = null;
     let imagenUrlActual = null;
+    // Talla+color que el producto tenía cuando se abrió el modal de edición
+    // (null mientras se crea un producto nuevo). Se usa al guardar para
+    // saber qué filas borró el usuario a propósito vs. cuáles nunca vio
+    // porque las agregó/vendió otra persona mientras el modal estaba abierto.
+    let productoEditandoVariacionesOriginales = null;
+
+    function claveVariacionFabrica(talla, color) {
+        return `${normalizarVariacionProdFab(talla)}||${normalizarVariacionProdFab(color)}`;
+    }
+    function normalizarVariacionProdFab(v) {
+        const n = (v || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+        return (n === 'unica' || n === 'unico') ? '' : n;
+    }
 
     const UMBRAL_BAJO_STOCK = 2;
 
@@ -3314,13 +3327,30 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     lowStockToggle.addEventListener('change', renderTabla);
 
     // ── Variaciones dinámicas (mismo patrón que el catálogo de Boutique) ──
-    function agregarFilaVariacion(talla = '', color = '', stock = 1) {
+    // 'stockOriginal' guarda el stock que tenía la fila cuando se pintó, y
+    // 'origTalla'/'origColor' con qué talla/color la identificaba en ese
+    // momento (el valor real del producto al editar, o nada para una fila
+    // nueva). Al guardar se busca esa identidad ORIGINAL en el stock más
+    // reciente de Firestore (no la identidad actual, por si el usuario
+    // renombró la talla/color) y se le suma solo la DIFERENCIA que el
+    // usuario quiso hacer — ver el merge en el submit del formulario.
+    // 'esOriginal' distingue "esta fila representa una variación que YA
+    // existía en el producto al abrir el modal" (talla/color/stock reales)
+    // de "fila nueva agregada con el botón +" — sin esto, dos filas en
+    // blanco (una real de un producto de talla única y otra recién
+    // agregada) se confundirían entre sí al normalizar talla/color vacíos.
+    function agregarFilaVariacion(talla = '', color = '', stock = 1, stockOriginal = 0, esOriginal = false) {
         const fila = variationTemplate.cloneNode(true);
         fila.classList.remove('d-none');
         fila.removeAttribute('id');
         fila.querySelector('[name="prodfab_variation_talla[]"]').value = talla;
         fila.querySelector('[name="prodfab_variation_color[]"]').value = color;
         fila.querySelector('[name="prodfab_variation_stock[]"]').value = stock;
+        fila.dataset.stockOriginal = String(parseFloat(stockOriginal) || 0);
+        if (esOriginal) {
+            fila.dataset.origTalla = talla || '';
+            fila.dataset.origColor = color || '';
+        }
         fila.querySelector('.remove-variation-fabrica-btn').addEventListener('click', () => fila.remove());
         variacionesContainer.appendChild(fila);
     }
@@ -3332,7 +3362,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             const fila = input.closest('.variation-row');
             const color = fila.querySelector('[name="prodfab_variation_color[]"]').value.trim();
             const stock = fila.querySelector('[name="prodfab_variation_stock[]"]').value;
-            return { talla: input.value.trim(), color, stock: parseFloat(stock) || 0 };
+            const stockOriginal = parseFloat(fila.dataset.stockOriginal) || 0;
+            const claveOriginal = ('origTalla' in fila.dataset)
+                ? claveVariacionFabrica(fila.dataset.origTalla, fila.dataset.origColor)
+                : null;
+            return { talla: input.value.trim(), color, stock: parseFloat(stock) || 0, stockOriginal, claveOriginal };
         }).filter(v => v.talla || v.color);
     }
 
@@ -3348,6 +3382,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         grupoMayoristaSelect.value = '';
         variacionesContainer.innerHTML = '';
         agregarFilaVariacion();
+        productoEditandoVariacionesOriginales = null;
         modalTitle.textContent = 'Nuevo producto';
         getModal('prodFabModal').show();
     }
@@ -3379,8 +3414,18 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 imagenPreview.style.display = 'none';
             }
             variacionesContainer.innerHTML = '';
-            (p.variaciones && p.variaciones.length ? p.variaciones : [{}]).forEach(v =>
-                agregarFilaVariacion(v.talla, v.color, v.stock ?? 1));
+            if (p.variaciones && p.variaciones.length) {
+                p.variaciones.forEach(v => agregarFilaVariacion(v.talla, v.color, v.stock ?? 1, v.stock ?? 0, true));
+            } else {
+                agregarFilaVariacion(); // producto sin variaciones todavía: fila en blanco sin identidad original
+            }
+            // Claves (talla+color) que el producto tenía en Firestore al abrir
+            // el modal — se usa al guardar para distinguir "el usuario borró
+            // esta fila a propósito" de "esta variación no existía cuando
+            // abrió el modal" (ver merge en el submit).
+            productoEditandoVariacionesOriginales = new Set(
+                (p.variaciones || []).map(v => claveVariacionFabrica(v.talla, v.color))
+            );
             modalTitle.textContent = 'Editar producto';
             getModal('prodFabModal').show();
         }
@@ -3441,7 +3486,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 imagenUrl = await getDownloadURL(storageRef);
             }
 
-            const datos = {
+            const datosBase = {
                 nombre,
                 descripcion: descripcionInput.value.trim(),
                 categoriaId: categoriaSelect.value || null,
@@ -3450,16 +3495,62 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 precioMayor,
                 visible: visibleCheckbox.checked,
                 imagenUrl,
-                variaciones: leerVariacionesDelForm(),
                 tenantId: window.expectedTenantId
             };
+            const filasForm = leerVariacionesDelForm();
 
             if (id) {
-                await updateDoc(doc(db, 'productosFabrica', id), datos);
+                // El stock puede haber cambiado en Firestore mientras este
+                // modal estaba abierto (una venta, otra edición) — igual que
+                // con actualizarStockFabrica, NO se pisa el documento con lo
+                // que había en el formulario al abrirlo. En vez de guardar el
+                // número absoluto de cada fila, se aplica solo la DIFERENCIA
+                // que el usuario hizo (stock actual del form − stock que vio
+                // al abrir el modal) sobre el stock real más reciente, dentro
+                // de una transacción.
+                const originales = productoEditandoVariacionesOriginales || new Set();
+                await runTransaction(db, async (tx) => {
+                    const ref = doc(db, 'productosFabrica', id);
+                    const snap = await tx.get(ref);
+                    const variacionesFrescas = new Map(
+                        (snap.exists() ? (snap.data().variaciones || []) : [])
+                            .map(v => [claveVariacionFabrica(v.talla, v.color), { talla: v.talla, color: v.color, stock: parseFloat(v.stock) || 0 }])
+                    );
+
+                    // Stock base de cada fila: se busca por su identidad
+                    // ORIGINAL (con la que se pintó), no por la actual — así,
+                    // si el usuario solo corrigió el texto de la talla/color
+                    // sin tocar el stock, igual se encuentra y respeta el
+                    // stock real más reciente en vez de tratarla como una
+                    // variación nueva (lo que la habría dejado en 0/negativa).
+                    const nuevasEntradas = filasForm.map(f => {
+                        const baseEntry = f.claveOriginal ? variacionesFrescas.get(f.claveOriginal) : null;
+                        const stockBase = baseEntry ? baseEntry.stock : 0;
+                        const delta = f.stock - f.stockOriginal;
+                        return { clave: claveVariacionFabrica(f.talla, f.color), talla: f.talla, color: f.color, stock: stockBase + delta };
+                    });
+
+                    // Identidades originales que ya no corresponden a ninguna
+                    // fila del formulario: el usuario borró esa fila a
+                    // propósito (si solo la renombró, su claveOriginal sigue
+                    // presente y no entra aquí).
+                    const clavesOriginalesEnUso = new Set(filasForm.map(f => f.claveOriginal).filter(Boolean));
+                    originales.forEach(clave => {
+                        if (!clavesOriginalesEnUso.has(clave)) variacionesFrescas.delete(clave);
+                    });
+
+                    nuevasEntradas.forEach(({ clave, talla, color, stock }) => {
+                        variacionesFrescas.set(clave, { talla, color, stock });
+                    });
+
+                    tx.update(ref, { ...datosBase, variaciones: Array.from(variacionesFrescas.values()) });
+                });
                 showToast('Producto actualizado', 'success');
             } else {
+                const variaciones = filasForm.map(({ talla, color, stock }) => ({ talla, color, stock }));
                 await addDoc(productosFabricaCollection, {
-                    ...datos,
+                    ...datosBase,
+                    variaciones,
                     codigo: 'PF' + Date.now().toString().slice(-6),
                     timestamp: serverTimestamp()
                 });
