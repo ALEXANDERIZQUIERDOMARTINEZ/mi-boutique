@@ -11,7 +11,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
     initializeFirestore, collection, getDocs, query, where, orderBy, limit, doc,
-    getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp, writeBatch,
+    getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp,
     onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
@@ -1196,39 +1196,64 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     document.getElementById('fvps-back-btn')?.addEventListener('click', cerrarPantallaProductos);
 
     // ── Guardar venta ────────────────────────────────────────────────────
+    // IMPORTANTE: el descuento se calcula dentro de una transacción de
+    // Firestore, leyendo el stock real del documento en ese instante — NO a
+    // partir de 'productosCache' (que es una foto de cuando se abrió/entró
+    // a "Registrar Venta" y no se refresca entre ventas dentro de la misma
+    // sesión). Calcular desde la caché local causaba que, al vender la misma
+    // prenda/talla/color dos veces seguidas sin recargar el catálogo (o con
+    // dos cajeros vendiendo a la vez), la segunda venta sobreescribiera el
+    // stock ya descontado por la primera, dejando el inventario incorrecto
+    // de forma intermitente.
     async function actualizarStockFabrica(items, accion = 'restar') {
         if (!items.length) return;
-        const batch = writeBatch(db);
-        const porProducto = new Map();
-        const itemsOmitidos = [];
-
+        const itemsPorProducto = new Map();
         for (const item of items) {
             if (!item.productoId) continue;
-            const producto = productosCache.find(p => p.id === item.productoId);
-            if (!producto) {
-                itemsOmitidos.push(item.nombre || item.productoId);
-                continue;
-            }
-            if (!porProducto.has(item.productoId)) {
-                porProducto.set(item.productoId, JSON.parse(JSON.stringify(producto.variaciones || [])));
-            }
-            const variaciones = porProducto.get(item.productoId);
-            const encontrada = variaciones.find(v =>
-                normalizarVariacion(v.talla) === normalizarVariacion(item.talla) &&
-                normalizarVariacion(v.color) === normalizarVariacion(item.color)
-            );
-            if (encontrada) {
-                const signo = accion === 'restar' ? -1 : 1;
-                encontrada.stock = (parseInt(encontrada.stock, 10) || 0) + signo * item.cantidad;
-            } else {
-                itemsOmitidos.push(item.nombre || item.productoId);
-            }
+            if (!itemsPorProducto.has(item.productoId)) itemsPorProducto.set(item.productoId, []);
+            itemsPorProducto.get(item.productoId).push(item);
         }
 
-        porProducto.forEach((variaciones, productoId) => {
-            batch.update(doc(db, 'productosFabrica', productoId), { variaciones });
+        const itemsOmitidos = await runTransaction(db, async (tx) => {
+            const omitidos = [];
+            const refs = new Map();
+            const snaps = new Map();
+
+            // Firestore exige leer todo antes de escribir nada dentro de
+            // una transacción, así que primero se obtienen los documentos
+            // actuales de cada producto involucrado.
+            for (const productoId of itemsPorProducto.keys()) {
+                const ref = doc(db, 'productosFabrica', productoId);
+                refs.set(productoId, ref);
+                snaps.set(productoId, await tx.get(ref));
+            }
+
+            for (const [productoId, itemsDelProducto] of itemsPorProducto) {
+                const snap = snaps.get(productoId);
+                if (!snap.exists()) {
+                    itemsDelProducto.forEach(item => omitidos.push(item.nombre || item.productoId));
+                    continue;
+                }
+                const variaciones = JSON.parse(JSON.stringify(snap.data().variaciones || []));
+                let cambiado = false;
+                for (const item of itemsDelProducto) {
+                    const encontrada = variaciones.find(v =>
+                        normalizarVariacion(v.talla) === normalizarVariacion(item.talla) &&
+                        normalizarVariacion(v.color) === normalizarVariacion(item.color)
+                    );
+                    if (encontrada) {
+                        const signo = accion === 'restar' ? -1 : 1;
+                        encontrada.stock = (parseInt(encontrada.stock, 10) || 0) + signo * item.cantidad;
+                        cambiado = true;
+                    } else {
+                        omitidos.push(item.nombre || item.productoId);
+                    }
+                }
+                if (cambiado) tx.update(refs.get(productoId), { variaciones });
+            }
+
+            return omitidos;
         });
-        await batch.commit();
 
         if (itemsOmitidos.length) {
             console.warn('Stock no ajustado para:', itemsOmitidos);
