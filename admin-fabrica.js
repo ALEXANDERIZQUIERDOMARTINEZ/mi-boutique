@@ -2332,6 +2332,49 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     let categoriasMap = new Map();
     let productosExistentes = [];
 
+    function normalizarVariacionCM(v) {
+        const n = (v || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+        return (n === 'unica' || n === 'unico') ? '' : n;
+    }
+    function claveVariacionCM(talla, color) {
+        return `${normalizarVariacionCM(talla)}||${normalizarVariacionCM(color)}`;
+    }
+
+    // Fusiona 'nuevasVariaciones' (filas del Excel para UN producto) contra
+    // el stock REAL más reciente del producto, dentro de una transacción.
+    // Entre que se detectan duplicados (Paso 2) y se confirma la carga
+    // (Paso 3) el usuario puede tardarse revisando la vista previa — si en
+    // ese lapso alguien vende esa prenda, escribir el array completo con lo
+    // leído en el Paso 2 (como se hacía antes) borraba esa venta. Al leer
+    // el documento dentro de la misma transacción que lo escribe, siempre
+    // se parte del stock real, sin importar cuánto haya pasado.
+    async function fusionarVariacionesEnTransaccion(productoId, nuevasVariaciones, accion) {
+        const ref = doc(db, 'productosFabrica', productoId);
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            const variacionesActuales = snap.exists() ? [...(snap.data().variaciones || [])] : [];
+
+            nuevasVariaciones.forEach(nuevaVar => {
+                const tallaVar = nuevaVar.talla || '';
+                const colorVar = nuevaVar.color || '';
+                const claveNueva = claveVariacionCM(tallaVar, colorVar);
+                const indexExistente = variacionesActuales.findIndex(v => claveVariacionCM(v.talla, v.color) === claveNueva);
+
+                if (indexExistente >= 0) {
+                    if (accion === 'reemplazar') {
+                        variacionesActuales[indexExistente].stock = nuevaVar.cantidad;
+                    } else {
+                        variacionesActuales[indexExistente].stock = (parseFloat(variacionesActuales[indexExistente].stock) || 0) + nuevaVar.cantidad;
+                    }
+                } else {
+                    variacionesActuales.push({ talla: tallaVar, color: colorVar, stock: nuevaVar.cantidad });
+                }
+            });
+
+            tx.update(ref, { variaciones: variacionesActuales });
+        });
+    }
+
     // ── 1) Leer Excel ──
     async function leerExcel(archivo) {
         mostrarLoader('Leyendo archivo...', 10);
@@ -2829,6 +2872,8 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
     // ── PASO 3: confirmar carga ──
     btnConfirmarCarga.addEventListener('click', async () => {
+        if (btnConfirmarCarga.disabled) return; // evita doble clic mientras ya se está guardando
+        btnConfirmarCarga.disabled = true;
         try {
             mostrarLoader('Guardando productos en catálogo...', 0);
             let contador = 0;
@@ -2837,49 +2882,13 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             for (const producto of productosAgrupados) {
                 if (producto.esDuplicado) {
                     if (producto.accionDuplicado === 'omitir') { contador++; continue; }
-
-                    const productoRef = doc(db, 'productosFabrica', producto.productoExistenteId);
-                    const productoExistente = producto.productoExistente;
-                    const variacionesActuales = [...(productoExistente.variaciones || [])];
-
-                    producto.variaciones.forEach(nuevaVar => {
-                        const tallaVar = nuevaVar.talla || '';
-                        const colorVar = nuevaVar.color || '';
-                        const indexExistente = variacionesActuales.findIndex(v => (v.talla || '') === tallaVar && (v.color || '') === colorVar);
-
-                        if (indexExistente >= 0) {
-                            if (producto.accionDuplicado === 'sumar') {
-                                variacionesActuales[indexExistente].stock = (parseFloat(variacionesActuales[indexExistente].stock) || 0) + nuevaVar.cantidad;
-                            } else if (producto.accionDuplicado === 'reemplazar') {
-                                variacionesActuales[indexExistente].stock = nuevaVar.cantidad;
-                            }
-                        } else {
-                            variacionesActuales.push({ talla: tallaVar, color: colorVar, stock: nuevaVar.cantidad });
-                        }
-                    });
-
-                    await updateDoc(productoRef, { variaciones: variacionesActuales });
+                    await fusionarVariacionesEnTransaccion(producto.productoExistenteId, producto.variaciones, producto.accionDuplicado);
                 } else {
                     const nombreNorm = producto.nombre.toLowerCase().trim();
                     const productoConMismoNombre = productosExistentes.find(p => p.nombre === nombreNorm);
 
                     if (productoConMismoNombre) {
-                        const productoRef = doc(db, 'productosFabrica', productoConMismoNombre.id);
-                        const variacionesActuales = [...(productoConMismoNombre.variaciones || [])];
-
-                        producto.variaciones.forEach(nuevaVar => {
-                            const tallaVar = nuevaVar.talla || '';
-                            const colorVar = nuevaVar.color || '';
-                            const indexExistente = variacionesActuales.findIndex(v => (v.talla || '') === tallaVar && (v.color || '') === colorVar);
-
-                            if (indexExistente >= 0) {
-                                variacionesActuales[indexExistente].stock = (parseFloat(variacionesActuales[indexExistente].stock) || 0) + nuevaVar.cantidad;
-                            } else {
-                                variacionesActuales.push({ talla: tallaVar, color: colorVar, stock: nuevaVar.cantidad });
-                            }
-                        });
-
-                        await updateDoc(productoRef, { variaciones: variacionesActuales });
+                        await fusionarVariacionesEnTransaccion(productoConMismoNombre.id, producto.variaciones, 'sumar');
                     } else {
                         const productoId = await guardarProductoFirestore(producto);
                         await guardarVariacionesFirestore(productoId, producto.variaciones);
@@ -2907,6 +2916,8 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             ocultarLoader();
             showToast('Error al guardar: ' + error.message, 'error');
             console.error(error);
+        } finally {
+            btnConfirmarCarga.disabled = false;
         }
     });
 
