@@ -2064,11 +2064,25 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
     }
 
-    document.getElementById('fv-lista-ventas')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-cancel-sale-fabrica');
-        if (!btn) return;
-        const id = btn.closest('.venta-card')?.dataset.id;
-        if (id) anularVentaFabrica(id);
+    document.getElementById('fv-lista-ventas')?.addEventListener('click', async (e) => {
+        const cancelBtn = e.target.closest('.btn-cancel-sale-fabrica');
+        if (cancelBtn) {
+            const id = cancelBtn.closest('.venta-card')?.dataset.id;
+            if (id) anularVentaFabrica(id);
+            return;
+        }
+        const facturaBtn = e.target.closest('.btn-print-invoice-fabrica');
+        if (facturaBtn) {
+            const id = facturaBtn.closest('.venta-card')?.dataset.id;
+            const venta = todasLasVentas.find(v => v.id === id);
+            if (!venta) { showToast('No se encontró la venta', 'error'); return; }
+            const originalHtml = facturaBtn.innerHTML;
+            facturaBtn.disabled = true;
+            facturaBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            await generarYMostrarFacturaFab(venta.id, venta, null);
+            facturaBtn.disabled = false;
+            facturaBtn.innerHTML = originalHtml;
+        }
     });
 
     function aplicarFiltrosHistorial() {
@@ -2153,10 +2167,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                         <span class="venta-card-total">${formatoMonedaDashboard.format(v.totalVenta || 0)}</span>
                     </div>
                 </div>
-                ${puedeHacer('ventas_anular') ? `
                 <div class="venta-card-actions">
-                    <button class="btn btn-action btn-action-danger btn-cancel-sale-fabrica" title="Anular venta" ${estaAnulada ? 'disabled' : ''}><i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span></button>
-                </div>` : ''}
+                    <button class="btn btn-action btn-action-view btn-print-invoice-fabrica" title="Ver / reimprimir factura"><i class="bi bi-receipt"></i><span class="btn-action-text">Factura</span></button>
+                    ${puedeHacer('ventas_anular') ? `<button class="btn btn-action btn-action-danger btn-cancel-sale-fabrica" title="Anular venta" ${estaAnulada ? 'disabled' : ''}><i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span></button>` : ''}
+                </div>
             </div>`;
     }
 
