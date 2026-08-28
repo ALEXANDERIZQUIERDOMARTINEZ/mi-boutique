@@ -1190,7 +1190,7 @@ if (waBtn) {
         }).then(() => Promise.all(
             items
                 .filter(item => item.productoId)
-                .map(item => updateDoc(doc(db, 'productos', item.productoId), {
+                .map(item => updateDoc(doc(db, 'productosFabrica', item.productoId), {
                     ventas: increment(item.cantidad || 1)
                 }).catch(() => {})) // no interrumpir el pedido si falla un producto
         )).catch(err => {

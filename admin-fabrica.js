@@ -138,6 +138,10 @@ const inventarioFabricaCollection = collection(db, 'inventarioFabrica');
 const productosFabricaCollection = collection(db, 'productosFabrica');
 const categoriasCollection = collection(db, 'categorias');
 const ventasCollection = collection(db, 'ventas');
+// Compartida con Boutique (index.html escribe con tenantId 'boutique', mayor.html
+// con tenantId 'fabrica') — ver SECCIÓN: PEDIDOS WEB más abajo, que filtra por
+// tenantId en JS para quedarse solo con los pedidos mayoristas de Fábrica.
+const webOrdersCollection = collection(db, 'pedidosWeb');
 
 const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
@@ -2060,11 +2064,25 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
     }
 
-    document.getElementById('fv-lista-ventas')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-cancel-sale-fabrica');
-        if (!btn) return;
-        const id = btn.closest('.venta-card')?.dataset.id;
-        if (id) anularVentaFabrica(id);
+    document.getElementById('fv-lista-ventas')?.addEventListener('click', async (e) => {
+        const cancelBtn = e.target.closest('.btn-cancel-sale-fabrica');
+        if (cancelBtn) {
+            const id = cancelBtn.closest('.venta-card')?.dataset.id;
+            if (id) anularVentaFabrica(id);
+            return;
+        }
+        const facturaBtn = e.target.closest('.btn-print-invoice-fabrica');
+        if (facturaBtn) {
+            const id = facturaBtn.closest('.venta-card')?.dataset.id;
+            const venta = todasLasVentas.find(v => v.id === id);
+            if (!venta) { showToast('No se encontró la venta', 'error'); return; }
+            const originalHtml = facturaBtn.innerHTML;
+            facturaBtn.disabled = true;
+            facturaBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            await generarYMostrarFacturaFab(venta.id, venta, null);
+            facturaBtn.disabled = false;
+            facturaBtn.innerHTML = originalHtml;
+        }
     });
 
     function aplicarFiltrosHistorial() {
@@ -2149,10 +2167,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                         <span class="venta-card-total">${formatoMonedaDashboard.format(v.totalVenta || 0)}</span>
                     </div>
                 </div>
-                ${puedeHacer('ventas_anular') ? `
                 <div class="venta-card-actions">
-                    <button class="btn btn-action btn-action-danger btn-cancel-sale-fabrica" title="Anular venta" ${estaAnulada ? 'disabled' : ''}><i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span></button>
-                </div>` : ''}
+                    <button class="btn btn-action btn-action-view btn-print-invoice-fabrica" title="Ver / reimprimir factura"><i class="bi bi-receipt"></i><span class="btn-action-text">Factura</span></button>
+                    ${puedeHacer('ventas_anular') ? `<button class="btn btn-action btn-action-danger btn-cancel-sale-fabrica" title="Anular venta" ${estaAnulada ? 'disabled' : ''}><i class="bi bi-x-circle"></i><span class="btn-action-text">Anular</span></button>` : ''}
+                </div>
             </div>`;
     }
 
@@ -2166,6 +2184,236 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
     renderCarrito();
     restaurarBorradorSiExiste();
+
+    // ────────────────────────────────────────────────────────────────────
+    // ── PEDIDOS WEB (mayoristas, desde mayor.html) ─────────────────────
+    // ────────────────────────────────────────────────────────────────────
+    // 'pedidosWeb' es una colección compartida con Boutique: index.html
+    // escribe ahí con tenantId 'boutique' y mayor.html (la tienda mayorista
+    // pública de Fábrica) con tenantId 'fabrica'. Antes, admin.html (Boutique)
+    // escuchaba la colección completa sin filtrar por tenant, así que los
+    // pedidos mayoristas de Fábrica también aparecían ahí — este bloque los
+    // trae en cambio a admin-fabrica.html (filtrando por tenantId === 'fabrica'
+    // en JS, sin depender de un índice compuesto nuevo) y los conecta
+    // directamente con "Registrar Venta" de Fábrica para que, al aceptarlos
+    // y guardar la venta, el stock se descuente de 'productosFabrica' (vía
+    // actualizarStockFabrica) en vez de quedar sin ajustar como pasaba antes
+    // por buscar el producto en el catálogo equivocado.
+    (() => {
+        const webOrdersContainer = document.getElementById('web-orders-container');
+        const loadingWebOrders = document.getElementById('loading-web-orders');
+        const pedidosWebCountBadge = document.getElementById('pedidos-web-count');
+        if (!webOrdersContainer) return;
+
+        let allOrders = { pendiente: [], aceptado: [], rechazado: [] };
+        let currentTab = 'pendiente';
+        let searchQuery = '';
+
+        const searchInput = document.getElementById('pw-search');
+        const tabButtons = document.querySelectorAll('#pw-tabs .pw-tab');
+
+        if (searchInput) {
+            let st;
+            searchInput.addEventListener('input', e => { clearTimeout(st); st = setTimeout(() => { searchQuery = e.target.value.toLowerCase().trim(); renderCurrentTab(); }, 200); });
+        }
+        tabButtons.forEach(btn => btn.addEventListener('click', () => {
+            tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTab = btn.dataset.tab;
+            renderCurrentTab();
+        }));
+
+        function getFiltered(estado) {
+            return allOrders[estado].filter(({ id, order }) => {
+                const q = searchQuery.replace(/^#/, '');
+                return !searchQuery
+                    || (order.clienteNombre || '').toLowerCase().includes(searchQuery)
+                    || (order.asesorNombre || '').toLowerCase().includes(searchQuery)
+                    || id.toLowerCase().includes(q);
+            });
+        }
+
+        function formatFecha(ts) {
+            if (!ts?.toDate) return 'Fecha no disponible';
+            return ts.toDate().toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+        }
+
+        function updateStats() {
+            const count = allOrders.pendiente.length;
+            if (pedidosWebCountBadge) { pedidosWebCountBadge.textContent = count; pedidosWebCountBadge.style.display = count > 0 ? 'inline' : 'none'; }
+            const pill = document.getElementById('pedidos-pending-pill');
+            const pillCount = document.getElementById('pedidos-pending-count');
+            if (pill && pillCount) { pillCount.textContent = count; pill.style.display = count > 0 ? 'inline-flex' : 'none'; }
+            const statPendientes = document.getElementById('pw-stat-pendientes');
+            if (statPendientes) statPendientes.textContent = count;
+            ['pendiente', 'aceptado', 'rechazado'].forEach(t => { const b = document.getElementById(`pw-badge-${t}`); if (b) b.textContent = allOrders[t].length; });
+            const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+            const aceptadosHoy = allOrders.aceptado.filter(({ order }) => { const f = order.fechaAceptacion?.toDate?.(); return f && f >= hoy; });
+            const valorHoy = aceptadosHoy.reduce((s, { order }) => s + (order.totalPedido || 0), 0);
+            const sH = document.getElementById('pw-stat-hoy'); if (sH) sH.textContent = aceptadosHoy.length;
+            const sV = document.getElementById('pw-stat-valor'); if (sV) sV.textContent = formatoMonedaDashboard.format(valorHoy);
+        }
+
+        function renderCurrentTab() {
+            webOrdersContainer.querySelectorAll('.pw-order-card, .pw-empty').forEach(el => el.remove());
+            const orders = getFiltered(currentTab);
+            if (orders.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'pw-empty';
+                const labels = { pendiente: 'No hay pedidos pendientes', aceptado: 'No hay pedidos aceptados', rechazado: 'No hay pedidos rechazados' };
+                const icons = { pendiente: 'bi-clock', aceptado: 'bi-check-circle', rechazado: 'bi-x-circle' };
+                empty.innerHTML = `<i class="bi ${icons[currentTab]} pw-empty-icon"></i><p class="pw-empty-text">${labels[currentTab]}</p>`;
+                webOrdersContainer.appendChild(empty);
+                return;
+            }
+            const frag = document.createDocumentFragment();
+            orders.forEach(({ id, order }) => frag.appendChild(createOrderCard(order, id)));
+            webOrdersContainer.appendChild(frag);
+        }
+
+        function createOrderCard(order, orderId) {
+            const card = document.createElement('div');
+            const estado = order.estado || 'pendiente';
+            card.className = `pw-order-card pw-status-${estado}`;
+            card.dataset.orderId = orderId;
+            const isPendiente = estado === 'pendiente';
+
+            const itemsHtml = (order.items || []).map(item => {
+                const producto = productosCache.find(p => p.id === item.productoId);
+                const imgHtml = producto?.imagenUrl
+                    ? `<img src="${producto.imagenUrl}" class="pw-item-img" alt="${item.nombre}">`
+                    : `<div class="pw-item-img-placeholder"><i class="bi bi-image"></i></div>`;
+                return `<div class="pw-item-row">
+                    ${imgHtml}
+                    <div class="pw-item-info">
+                        <div class="pw-item-name">${item.nombre}</div>
+                        <div class="pw-item-meta">${[item.talla, item.color].filter(Boolean).join(' · ')} · x${item.cantidad}</div>
+                    </div>
+                    <div class="pw-item-total">${formatoMonedaDashboard.format(item.total)}</div>
+                </div>`;
+            }).join('');
+
+            const statusLabels = { pendiente: 'Pendiente', aceptado: 'Aceptado', rechazado: 'Rechazado' };
+            const statusIcons = { pendiente: 'bi-clock-fill', aceptado: 'bi-check-circle-fill', rechazado: 'bi-x-circle-fill' };
+            const statusBadge = `<span class="pw-status-badge ${estado}"><i class="bi ${statusIcons[estado]}"></i>${statusLabels[estado]}</span>`;
+
+            const obsHtml = order.observaciones
+                ? `<div class="pw-obs"><i class="bi bi-chat-text me-1"></i>${order.observaciones}</div>` : '';
+
+            const actionsHtml = isPendiente ? `
+                <div class="pw-actions">
+                    <button class="pw-btn pw-btn-reject btn-reject-order-fab" data-order-id="${orderId}">
+                        <i class="bi bi-x-lg"></i><span class="d-none d-sm-inline ms-1">Rechazar</span>
+                    </button>
+                    <button class="pw-btn pw-btn-accept btn-accept-order-fab" data-order-id="${orderId}">
+                        <i class="bi bi-check-lg"></i><span class="ms-1">Aceptar</span>
+                    </button>
+                </div>` : '';
+
+            card.innerHTML = `
+                <div class="pw-card-header">
+                    <div>
+                        <div class="pw-card-id"><i class="bi bi-bag-check me-1"></i>#${orderId.substring(0, 8).toUpperCase()}</div>
+                        <div class="pw-card-date">${formatFecha(order.timestamp)}</div>
+                    </div>
+                    ${statusBadge}
+                </div>
+                <div class="pw-card-body">
+                    <div class="pw-client-row">
+                        <div class="pw-client-name">${order.clienteNombre || 'Cliente General'}</div>
+                        ${order.asesorNombre ? `<span class="pw-pago-badge"><i class="bi bi-person-badge"></i>${order.asesorNombre}</span>` : ''}
+                    </div>
+                    ${obsHtml}
+                    <div class="pw-items-list">${itemsHtml}</div>
+                </div>
+                <div class="pw-card-footer">
+                    <div>
+                        <div class="pw-total-label">Total del pedido</div>
+                        <div class="pw-total-val">${formatoMonedaDashboard.format(order.totalPedido || 0)}</div>
+                    </div>
+                    ${actionsHtml}
+                </div>`;
+
+            return card;
+        }
+
+        ['pendiente', 'aceptado', 'rechazado'].forEach(estado => {
+            const q = query(webOrdersCollection, where('estado', '==', estado), orderBy('timestamp', 'desc'), limit(100));
+            onSnapshot(q, snapshot => {
+                allOrders[estado] = [];
+                snapshot.forEach(d => {
+                    const order = d.data();
+                    if (order.tenantId !== 'fabrica') return;
+                    allOrders[estado].push({ id: d.id, order });
+                });
+                if (loadingWebOrders) loadingWebOrders.style.display = 'none';
+                updateStats();
+                if (estado === currentTab) renderCurrentTab();
+            }, err => console.error(`Error pedidos web fábrica ${estado}:`, err));
+        });
+
+        webOrdersContainer.addEventListener('click', async e => {
+            const a = e.target.closest('.btn-accept-order-fab');
+            const r = e.target.closest('.btn-reject-order-fab');
+            if (a) { e.preventDefault(); await handleAcceptOrder(a.dataset.orderId); }
+            else if (r) { e.preventDefault(); await handleRejectOrder(r.dataset.orderId); }
+        });
+
+        async function handleRejectOrder(orderId) {
+            if (!confirm('¿Estás seguro de que quieres rechazar este pedido?')) return;
+            try {
+                await updateDoc(doc(db, 'pedidosWeb', orderId), { estado: 'rechazado', fechaRechazo: serverTimestamp() });
+                showToast('Pedido rechazado correctamente', 'info');
+            } catch (err) { console.error('Error al rechazar:', err); showToast('Error al rechazar el pedido', 'error'); }
+        }
+
+        async function handleAcceptOrder(orderId) {
+            try {
+                const orderRef = doc(db, 'pedidosWeb', orderId);
+                const cached = allOrders.pendiente.find(o => o.id === orderId);
+                let orderData = cached?.order;
+                if (!orderData) {
+                    const orderSnap = await getDoc(orderRef);
+                    if (!orderSnap.exists()) { showToast('Pedido no encontrado', 'error'); return; }
+                    orderData = orderSnap.data();
+                }
+
+                // Precarga el catálogo si aún no está en caché, para que el carrito
+                // pueda mostrar imagen y respetar el stock real disponible; no bloquea
+                // el resto del flujo si tarda.
+                if (productosCache.length === 0) cargarProductosCache().then(renderCarrito).catch(() => {});
+
+                carrito = (orderData.items || []).map(item => ({
+                    productoId: item.productoId,
+                    codigo: item.codigo || '',
+                    nombre: item.nombre,
+                    talla: item.talla,
+                    color: item.color,
+                    cantidad: item.cantidad,
+                    precio: item.precio,
+                    total: item.total ?? (item.precio * item.cantidad)
+                }));
+                seleccionarCliente({
+                    id: null,
+                    nombre: orderData.clienteNombre || 'Cliente General',
+                    celular: orderData.clienteCelular || '',
+                    direccion: orderData.clienteDireccion || ''
+                });
+                let obs = `Pedido Web #${orderId.substring(0, 8).toUpperCase()}`;
+                if (orderData.asesorNombre) obs += ` · Asesor: ${orderData.asesorNombre}`;
+                if (orderData.observaciones) obs += `\n${orderData.observaciones}`;
+                if (observacionesInput) observacionesInput.value = obs;
+                renderCarrito();
+
+                mostrarVistaFormulario();
+                if (window.adminShowSection) { window.adminShowSection('#registrar-venta'); window.adminMarkActive('#registrar-venta'); }
+                showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
+
+                updateDoc(orderRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp() })
+                    .catch(err => { console.error('Error al marcar pedido como aceptado:', err); showToast('El pedido pasó al formulario, pero no se pudo marcar como aceptado. Verifica tu conexión.', 'error'); });
+            } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
+        }
+    })();
 })();
 
 // ========================================================================

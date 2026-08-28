@@ -1027,11 +1027,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ── Firestore: 3 listeners (pendiente / aceptado / rechazado) ────────
+        // 'pedidosWeb' es una colección compartida: la tienda al detal
+        // (index.html, tenantId 'boutique') y la mayorista de Fábrica
+        // (mayor.html, tenantId 'fabrica') escriben ahí. Filtramos aquí en
+        // JS (no en la query) los pedidos de Fábrica para que solo lleguen
+        // a admin-fabrica.html — así no se filtra por índice compuesto
+        // nuevo y sin desplegar, y los pedidos de Boutique (o los antiguos
+        // sin tenantId) se siguen viendo igual que antes.
         ['pendiente', 'aceptado', 'rechazado'].forEach(estado => {
-            const q = query(webOrdersCollection, where('estado', '==', estado), orderBy('timestamp', 'desc'), limit(50));
+            const q = query(webOrdersCollection, where('estado', '==', estado), orderBy('timestamp', 'desc'), limit(100));
             onSnapshot(q, snapshot => {
                 allOrders[estado] = [];
-                snapshot.forEach(d => allOrders[estado].push({ id: d.id, order: d.data() }));
+                snapshot.forEach(d => {
+                    const order = d.data();
+                    if (order.tenantId === 'fabrica') return;
+                    allOrders[estado].push({ id: d.id, order });
+                });
                 if (loadingWebOrders) loadingWebOrders.style.display = 'none';
                 updateStats();
                 if (estado === currentTab) renderCurrentTab();
@@ -8394,7 +8405,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const q = query(webOrdersCollection, where('estado', '==', 'pendiente'));
 
             onSnapshot(q, (snapshot) => {
-                const pedidosPendientes = snapshot.size;
+                // Excluye los pedidos de Fábrica (tenantId 'fabrica'): esta colección
+                // es compartida con mayor.html y esos pedidos se gestionan desde
+                // admin-fabrica.html, no desde aquí.
+                let pedidosPendientes = 0;
+                snapshot.forEach(d => { if (d.data().tenantId !== 'fabrica') pedidosPendientes++; });
 
                 const dbPedidosWebEl = document.getElementById('db-pedidos-web');
                 if (dbPedidosWebEl) {
