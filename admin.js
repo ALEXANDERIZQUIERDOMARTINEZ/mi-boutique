@@ -5210,6 +5210,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- Pregunta al registrar una venta nueva: ¿generar factura ahora? ---
         let ventaRecienRegistrada = null; // { ventaId, ventaData }
+
+        // Expuesto para otros módulos (p.ej. abonos de apartados, en su propio
+        // listener fuera de este IIFE) que registran una venta nueva y también
+        // quieren ofrecer facturarla justo después, con el mismo modal.
+        window.ofrecerFacturaTrasVenta = function(ventaId, ventaData) {
+            ventaRecienRegistrada = { ventaId, ventaData };
+            facturaPreguntaModalInstance?.show();
+        };
+
         const btnFacturaPreguntaSi = document.getElementById('btn-factura-pregunta-si');
         if (btnFacturaPreguntaSi) {
             btnFacturaPreguntaSi.addEventListener('click', async () => {
@@ -6907,6 +6916,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 console.log("✅ Apartado actualizado correctamente");
 
                 // ✅ PASO 4.5: Crear NUEVA VENTA con el abono (como si fuera otra venta)
+                let ventaAbonoRegistrada = null; // { ventaId, ventaData } — para ofrecer factura después
                 try {
                     // Obtener datos de la venta original para copiar información del cliente
                     let clienteNombre = apartadoData.clienteNombre || 'Cliente General';
@@ -6953,6 +6963,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     const nuevaVentaRef = await addDoc(collection(db, 'ventas'), nuevaVentaData);
                     console.log("✅ Nueva venta creada con el abono. ID:", nuevaVentaRef.id);
                     console.log("💰 Monto de la venta:", formatoMoneda.format(monto));
+                    ventaAbonoRegistrada = { ventaId: nuevaVentaRef.id, ventaData: nuevaVentaData };
 
                     registrarAuditoria({
                         accion: 'crear',
@@ -6997,6 +7008,23 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     showToast('¡Apartado completado exitosamente! 🎉', 'success');
                 } else {
                     showToast(`Abono registrado. Nuevo saldo: ${formatoMoneda.format(nuevoSaldo)}`, 'success');
+                }
+
+                // Igual que al registrar una venta nueva desde el formulario principal:
+                // el abono que se acaba de guardar ya quedó en el historial de ventas
+                // como su propio movimiento, así que se ofrece facturarlo ya mismo.
+                // Se espera a que el modal de abono termine de ocultarse (hidden.bs.modal)
+                // antes de abrir el de factura, para no dejar dos backdrops de Bootstrap
+                // en transición a la vez (mismo bug ya resuelto en generarYMostrarFactura).
+                if (ventaAbonoRegistrada && typeof window.ofrecerFacturaTrasVenta === 'function') {
+                    const elAbonoModal = abonoApartadoModalInstance?._element;
+                    if (elAbonoModal) {
+                        elAbonoModal.addEventListener('hidden.bs.modal', () => {
+                            window.ofrecerFacturaTrasVenta(ventaAbonoRegistrada.ventaId, ventaAbonoRegistrada.ventaData);
+                        }, { once: true });
+                    } else {
+                        window.ofrecerFacturaTrasVenta(ventaAbonoRegistrada.ventaId, ventaAbonoRegistrada.ventaData);
+                    }
                 }
 
                 // Limpiar formulario
