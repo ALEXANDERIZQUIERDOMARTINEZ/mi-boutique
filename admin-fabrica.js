@@ -3925,7 +3925,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     };
 
     // ── Agrupar ingresos/gastos por día (o por mes en rangos largos) ──
-    function buildLineChartData(movimientos, desde, hasta) {
+    function buildLineChartData(movimientos, ventas, desde, hasta) {
         const diffDays = Math.max(1, Math.round((hasta - desde) / (1000 * 60 * 60 * 24)));
         const porMes = diffDays > 60;
 
@@ -3957,6 +3957,17 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             const bucket = buckets.get(key);
             const monto = parseFloat(m.monto) || 0;
             if (m.tipo === 'ingreso') bucket.ingresos += monto; else bucket.gastos += monto;
+        });
+
+        // Las ventas también cuentan como ingreso, día por día (con su descuento aplicado)
+        ventas.forEach(venta => {
+            const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate() : new Date();
+            const key = keyFor(fecha);
+            if (!buckets.has(key)) buckets.set(key, { ingresos: 0, gastos: 0 });
+            const ratio = discountRatio(venta);
+            const montoVenta = (venta.items || []).reduce((s, it) =>
+                s + parseFloat(it.precio || 0) * parseInt(it.cantidad || 1, 10), 0) * ratio;
+            buckets.get(key).ingresos += montoVenta;
         });
 
         const keys = Array.from(buckets.keys()).sort();
@@ -4171,6 +4182,58 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }).join('');
     }
 
+    // ── Calcula el ratio de descuento de una venta (1 = sin descuento, 0.9 = 10% desc) ──
+    function discountRatio(venta) {
+        const items = venta.items || [];
+        const sumItems = items.reduce((s, it) =>
+            s + parseFloat(it.precio || 0) * parseInt(it.cantidad || 1, 10), 0);
+        if (sumItems <= 0) return 1;
+
+        const raw = parseFloat(venta.descuento) || 0;
+        if (raw <= 0) return 1;
+
+        const montoDesc = venta.descuentoTipo === 'porcentaje'
+            ? sumItems * (raw / 100)
+            : raw;
+
+        return Math.max(0, (sumItems - montoDesc) / sumItems);
+    }
+
+    // ── No hay costo por producto (somos fabricantes, no revendedores): el
+    // "gasto por prenda" es un valor único del periodo (gastos ÷ unidades
+    // vendidas) que se aplica igual a todos los productos. Esta función solo
+    // agrupa las unidades e ingresos vendidos por producto; el gasto/unidad
+    // se aplica después, ya con el total de gastos del periodo a la mano. ──
+    function agruparVentasPorProducto(ventas) {
+        const mapa = new Map();
+        let unidadesTotal = 0;
+        let ingresoTotal = 0;
+
+        ventas.forEach(venta => {
+            if (!venta.items || !venta.items.length) return;
+            const ratio = discountRatio(venta);
+
+            venta.items.forEach(item => {
+                const nombre = (item.nombre || 'Producto sin nombre').trim();
+                const key = nombre.toLowerCase();
+                const precioEfectivo = parseFloat(item.precio || 0) * ratio;
+                const cant = parseInt(item.cantidad || 1, 10);
+
+                if (!mapa.has(key)) {
+                    mapa.set(key, { nombre, cantidad: 0, ingresoTotal: 0 });
+                }
+                const entry = mapa.get(key);
+                entry.cantidad     += cant;
+                entry.ingresoTotal += precioEfectivo * cant;
+
+                unidadesTotal += cant;
+                ingresoTotal  += precioEfectivo * cant;
+            });
+        });
+
+        return { productos: Array.from(mapa.values()), unidadesTotal, ingresoTotal };
+    }
+
     // ── Consulta y renderizado principal ──
     async function calcularFabrica(desde, hasta, label) {
         ultimoRango = { desde, hasta, label };
@@ -4183,7 +4246,16 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             const clauses = [orderBy('timestamp', 'desc')];
             if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
 
-            const snapshot = await getDocs(query(fabricaCollection, ...clauses));
+            const [snapshot, ventasSnapshot] = await Promise.all([
+                getDocs(query(fabricaCollection, ...clauses)),
+                getDocs(query(
+                    ventasCollection,
+                    where('tenantId', '==', 'fabrica'),
+                    where('timestamp', '>=', Timestamp.fromDate(desde)),
+                    where('timestamp', '<=', Timestamp.fromDate(hasta)),
+                    orderBy('timestamp', 'desc')
+                ))
+            ]);
 
             let movimientos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => fechaDeMovimiento(b) - fechaDeMovimiento(a));
@@ -4195,13 +4267,31 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 });
             }
 
-            const totalIngresos = movimientos
+            const ventas = ventasSnapshot.docs
+                .map(d => d.data())
+                .filter(v => v.estado !== 'Anulada' && v.estado !== 'Cancelada');
+
+            // ── Gastos operativos (telas, luz, arriendo, nómina, hilos...) y
+            // otros ingresos manuales (aparte de la venta, ej. capital aportado) ──
+            const otrosIngresos = movimientos
                 .filter(m => m.tipo === 'ingreso')
                 .reduce((s, m) => s + (parseFloat(m.monto) || 0), 0);
             const totalGastos = movimientos
                 .filter(m => m.tipo === 'gasto')
                 .reduce((s, m) => s + (parseFloat(m.monto) || 0), 0);
-            const utilidad = totalIngresos - totalGastos;
+
+            // ── Ventas reales del periodo, agrupadas por producto ──
+            const { productos: productosVendidos, unidadesTotal: unidadesVendidas, ingresoTotal: ingresosVentas } =
+                agruparVentasPorProducto(ventas);
+
+            // ── No hay costo por producto: el gasto por prenda sale de
+            // repartir TODO el gasto operativo del periodo entre las
+            // unidades vendidas en ese mismo periodo. Es el mismo valor
+            // para cualquier prenda; el usuario solo pone el precio de venta. ──
+            const gastoPorPrenda = unidadesVendidas > 0 ? totalGastos / unidadesVendidas : 0;
+
+            const ingresosTotal = ingresosVentas + otrosIngresos;
+            const utilidad = ingresosTotal - totalGastos;
 
             // ── KPI principal ──
             const elUtilidad = document.getElementById('fab-utilidad-total');
@@ -4220,29 +4310,66 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 trendBadge.className = 'fin2-hero-trend';
             }
 
-            document.getElementById('fab-ingresos').textContent = fmt.format(totalIngresos);
-            document.getElementById('fab-gastos').textContent   = fmt.format(totalGastos);
+            document.getElementById('fab-ventas').textContent          = fmt.format(ingresosVentas);
+            document.getElementById('fab-otros-ingresos').textContent  = fmt.format(otrosIngresos);
+            document.getElementById('fab-gastos').textContent          = fmt.format(totalGastos);
+            document.getElementById('fab-unidades-vendidas').textContent = unidadesVendidas.toLocaleString('es-CO');
+            document.getElementById('fab-gasto-prenda').textContent    = fmt.format(gastoPorPrenda);
 
-            // ── Desglose: cuánto fue cada concepto de ingreso/gasto ──
+            // ── Desglose: cuánto fue cada concepto de ingreso/gasto (las
+            // ventas del periodo cuentan como un concepto más de ingreso) ──
             const ingresosPorConcepto = agruparPorConcepto(movimientos.filter(m => m.tipo === 'ingreso'));
-            const gastosPorConcepto   = agruparPorConcepto(movimientos.filter(m => m.tipo === 'gasto'));
-            renderDesglose('fab-desglose-ingresos', 'fab-desglose-ingresos-count', ingresosPorConcepto, totalIngresos, 'ingreso');
+            if (ingresosVentas > 0) ingresosPorConcepto.unshift({ nombre: 'Ventas', total: ingresosVentas });
+            ingresosPorConcepto.sort((a, b) => b.total - a.total);
+            const gastosPorConcepto = agruparPorConcepto(movimientos.filter(m => m.tipo === 'gasto'));
+            renderDesglose('fab-desglose-ingresos', 'fab-desglose-ingresos-count', ingresosPorConcepto, ingresosTotal, 'ingreso');
             renderDesglose('fab-desglose-gastos', 'fab-desglose-gastos-count', gastosPorConcepto, totalGastos, 'gasto');
 
-            // ── Gráfica: ingresos vs. gastos en el tiempo ──
-            let desdeGrafica = desde;
-            let hastaGrafica = hasta;
-            if (!desdeGrafica || !hastaGrafica) {
-                if (movimientos.length) {
-                    const fechas = movimientos.map(fechaDeMovimiento);
-                    desdeGrafica = new Date(Math.min(...fechas));
-                    hastaGrafica = new Date(Math.max(...fechas));
-                } else {
-                    desdeGrafica = new Date();
-                    hastaGrafica = new Date();
+            // ── Utilidad por producto ──
+            const productoCount = document.getElementById('fab-producto-count');
+            const productoNota  = document.getElementById('fab-producto-nota');
+            const productoTbody = document.getElementById('fab-producto-tabla-body');
+            const productoTfoot = document.getElementById('fab-producto-tabla-footer');
+
+            if (productoNota) productoNota.style.display = (totalGastos > 0 && unidadesVendidas === 0) ? 'block' : 'none';
+            if (productoCount) productoCount.textContent = `${productosVendidos.length} producto${productosVendidos.length !== 1 ? 's' : ''}`;
+
+            if (productosVendidos.length === 0) {
+                productoTbody.innerHTML = `<tr>
+                    <td colspan="6" class="fin2-empty-state">
+                        <i class="bi bi-bar-chart"></i>
+                        <span>No hay ventas completadas en este periodo</span>
+                    </td>
+                </tr>`;
+                if (productoTfoot) productoTfoot.style.display = 'none';
+            } else {
+                const productosConUtilidad = productosVendidos.map(p => {
+                    const precioProm     = p.cantidad > 0 ? p.ingresoTotal / p.cantidad : 0;
+                    const utilidadUnidad = precioProm - gastoPorPrenda;
+                    return { ...p, precioProm, utilidadUnidad, utilidadTotal: utilidadUnidad * p.cantidad };
+                }).sort((a, b) => b.utilidadTotal - a.utilidadTotal);
+
+                productoTbody.innerHTML = productosConUtilidad.map(p => {
+                    const colorCls = p.utilidadTotal >= 0 ? 'fin2-positive-text' : 'fin2-negative-text';
+                    return `<tr>
+                        <td class="fin2-td-nombre">${escaparHtml(p.nombre)}</td>
+                        <td class="text-end fin2-td-num">${fmt.format(p.precioProm)}</td>
+                        <td class="text-end fin2-td-num">${fmt.format(gastoPorPrenda)}</td>
+                        <td class="text-end fin2-td-num">${p.cantidad}</td>
+                        <td class="text-end fin2-td-num ${colorCls}">${fmt.format(p.utilidadUnidad)}</td>
+                        <td class="text-end fin2-td-num fw-semibold ${colorCls}">${fmt.format(p.utilidadTotal)}</td>
+                    </tr>`;
+                }).join('');
+
+                if (productoTfoot) {
+                    document.getElementById('fab-producto-footer-cant').textContent     = unidadesVendidas.toLocaleString('es-CO');
+                    document.getElementById('fab-producto-footer-utilidad').textContent = fmt.format(ingresosVentas - totalGastos);
+                    productoTfoot.style.display = '';
                 }
             }
-            const { labels: chartLabels, ingresosData, gastosData, porMes } = buildLineChartData(movimientos, desdeGrafica, hastaGrafica);
+
+            // ── Gráfica: ingresos vs. gastos en el tiempo ──
+            const { labels: chartLabels, ingresosData, gastosData, porMes } = buildLineChartData(movimientos, ventas, desde, hasta);
             renderLineChart(chartLabels, ingresosData, gastosData);
             const chartSubtitle = document.getElementById('fab-chart-subtitle');
             if (chartSubtitle) chartSubtitle.textContent = porMes ? 'por mes' : 'por día';
@@ -4263,7 +4390,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                     const fecha = fechaDeMovimiento(m);
                     const esIngreso = m.tipo === 'ingreso';
                     const badgeCls  = esIngreso ? 'bg-success' : 'bg-danger';
-                    const badgeTxt  = esIngreso ? 'Ingreso' : 'Gasto';
+                    const badgeTxt  = esIngreso ? 'Otro ingreso' : 'Gasto';
                     const colorCls  = esIngreso ? 'fin2-positive-text' : 'fin2-negative-text';
                     const signo     = esIngreso ? '+' : '−';
                     const acciones  = m.origenVenta
@@ -4353,12 +4480,12 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     window.addEventListener('admin:section-shown', cargarFabricaSiCorresponde);
     if (!fabricaYaCargada) cargarFabricaSiCorresponde();
 
-    // ── Abrir modal: Nuevo Ingreso / Nuevo Gasto ──
+    // ── Abrir modal: Otro Ingreso / Nuevo Gasto ──
     function abrirModalNuevo(tipo) {
         movForm.reset();
         movIdInput.value = '';
         movTipoInput.value = tipo;
-        movModalTitle.textContent = tipo === 'ingreso' ? 'Nuevo Ingreso' : 'Nuevo Gasto';
+        movModalTitle.textContent = tipo === 'ingreso' ? 'Otro ingreso' : 'Nuevo Gasto';
         movFechaInput.value = new Date().toISOString().slice(0, 10);
         getModal('fabricaMovModal').show();
     }
@@ -4385,7 +4512,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                     movMontoInput.value = data.monto || '';
                     const fecha = data.fecha?.toDate ? data.fecha.toDate() : new Date();
                     movFechaInput.value = fecha.toISOString().slice(0, 10);
-                    movModalTitle.textContent = data.tipo === 'ingreso' ? 'Editar Ingreso' : 'Editar Gasto';
+                    movModalTitle.textContent = data.tipo === 'ingreso' ? 'Editar otro ingreso' : 'Editar Gasto';
                     getModal('fabricaMovModal').show();
                 } catch (error) {
                     console.error('Error al cargar movimiento:', error);

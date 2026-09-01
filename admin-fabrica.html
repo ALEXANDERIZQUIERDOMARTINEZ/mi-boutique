@@ -782,12 +782,12 @@
             <!-- ── Encabezado ── -->
             <div class="fin2-page-header">
                 <div>
-                    <h1 class="fin2-page-title"><i class="bi bi-cash-coin"></i> Gastos e Ingresos</h1>
-                    <p class="fin2-page-subtitle">Ingresos y gastos registrados a mano para Fábrica, menos gastos</p>
+                    <h1 class="fin2-page-title"><i class="bi bi-cash-coin"></i> Finanzas de Fábrica</h1>
+                    <p class="fin2-page-subtitle">Las ventas entran solas. Registra aquí tus gastos (telas, luz, arriendo, nómina, hilos...) y calculamos el gasto por prenda y la utilidad real de cada producto.</p>
                 </div>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-success btn-sm" id="fab-btn-nuevo-ingreso">
-                        <i class="bi bi-plus-circle me-1"></i> Ingreso
+                        <i class="bi bi-plus-circle me-1"></i> Otro ingreso
                     </button>
                     <button type="button" class="btn btn-danger btn-sm" id="fab-btn-nuevo-gasto">
                         <i class="bi bi-dash-circle me-1"></i> Gasto
@@ -854,11 +854,20 @@
                 <div class="fin2-secondary-kpis">
                     <div class="fin2-skpi-card">
                         <div class="fin2-skpi-icon fin2-skpi-icon--green">
+                            <i class="bi bi-cart-check"></i>
+                        </div>
+                        <div class="fin2-skpi-body">
+                            <div class="fin2-skpi-label">Ventas del periodo</div>
+                            <div class="fin2-skpi-val" id="fab-ventas">$0</div>
+                        </div>
+                    </div>
+                    <div class="fin2-skpi-card">
+                        <div class="fin2-skpi-icon fin2-skpi-icon--blue">
                             <i class="bi bi-arrow-down-circle"></i>
                         </div>
                         <div class="fin2-skpi-body">
-                            <div class="fin2-skpi-label">Total ingresos</div>
-                            <div class="fin2-skpi-val" id="fab-ingresos">$0</div>
+                            <div class="fin2-skpi-label">Otros ingresos</div>
+                            <div class="fin2-skpi-val" id="fab-otros-ingresos">$0</div>
                         </div>
                     </div>
                     <div class="fin2-skpi-card">
@@ -868,6 +877,24 @@
                         <div class="fin2-skpi-body">
                             <div class="fin2-skpi-label">Total gastos</div>
                             <div class="fin2-skpi-val" id="fab-gastos">$0</div>
+                        </div>
+                    </div>
+                    <div class="fin2-skpi-card">
+                        <div class="fin2-skpi-icon fin2-skpi-icon--purple">
+                            <i class="bi bi-boxes"></i>
+                        </div>
+                        <div class="fin2-skpi-body">
+                            <div class="fin2-skpi-label">Unidades vendidas</div>
+                            <div class="fin2-skpi-val" id="fab-unidades-vendidas">0</div>
+                        </div>
+                    </div>
+                    <div class="fin2-skpi-card">
+                        <div class="fin2-skpi-icon fin2-skpi-icon--pink">
+                            <i class="bi bi-calculator"></i>
+                        </div>
+                        <div class="fin2-skpi-body">
+                            <div class="fin2-skpi-label">Gasto por prenda</div>
+                            <div class="fin2-skpi-val" id="fab-gasto-prenda">$0</div>
                         </div>
                     </div>
                 </div>
@@ -906,12 +933,59 @@
                     </div>
                 </div>
 
+                <!-- Utilidad por producto: precio de venta menos el gasto por prenda
+                     calculado (mismo gasto/prenda para todos, repartido entre las
+                     unidades vendidas del periodo — no hay costo manual por producto) -->
+                <div class="fin2-table-card">
+                    <div class="fin2-table-header">
+                        <div>
+                            <span class="fin2-table-title">
+                                <i class="bi bi-table"></i> Utilidad por producto
+                            </span>
+                            <span class="fin2-table-count" id="fab-producto-count">0 productos</span>
+                        </div>
+                    </div>
+                    <p class="text-muted small px-3 mb-2" id="fab-producto-nota" style="display:none;">
+                        <i class="bi bi-info-circle"></i> Aún no hay unidades vendidas en este periodo, así que no se puede repartir el gasto por prenda.
+                    </p>
+                    <div class="fin2-table-wrapper">
+                        <table class="fin2-table fin2-table-detalle-producto">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-end">Precio venta prom.</th>
+                                    <th class="text-end">Gasto/prenda</th>
+                                    <th class="text-end">Cant. vendida</th>
+                                    <th class="text-end">Utilidad/unidad</th>
+                                    <th class="text-end">Utilidad total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fab-producto-tabla-body">
+                                <tr>
+                                    <td colspan="6" class="fin2-empty-state">
+                                        <i class="bi bi-bar-chart"></i>
+                                        <span>No hay ventas completadas en este periodo</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot id="fab-producto-tabla-footer" style="display:none;">
+                                <tr class="fin2-tfoot-row">
+                                    <td colspan="3"><strong>TOTALES</strong></td>
+                                    <td class="text-end" id="fab-producto-footer-cant"></td>
+                                    <td class="text-end">—</td>
+                                    <td class="text-end" id="fab-producto-footer-utilidad"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Tabla de movimientos -->
                 <div class="fin2-table-card">
                     <div class="fin2-table-header">
                         <div>
                             <span class="fin2-table-title">
-                                <i class="bi bi-list-ul"></i> Movimientos
+                                <i class="bi bi-list-ul"></i> Gastos y otros ingresos (registrados a mano)
                             </span>
                             <span class="fin2-table-count" id="fab-movs-count">0 movimientos</span>
                         </div>
