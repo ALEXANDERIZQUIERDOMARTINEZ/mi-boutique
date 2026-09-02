@@ -163,9 +163,12 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         return (producto.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
     }
 
-    async function calcularProductosFabrica() {
+    // Listener en tiempo real: el resumen (inversión, bajo stock, unidades)
+    // se recalcula solo apenas cambia CUALQUIER producto — una venta, una
+    // edición, un cargue masivo — sin esperar a que alguien vuelva a entrar
+    // al Dashboard.
+    onSnapshot(productosFabricaCollection, (snapshot) => {
         try {
-            const snapshot = await getDocs(productosFabricaCollection);
             let totalProductos = 0, disponibles = 0, inversionTotal = 0, valorPotencialMayor = 0, totalUnidades = 0, bajoStockCount = 0;
 
             snapshot.forEach(docSnap => {
@@ -204,7 +207,9 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         } catch (error) {
             console.error('Error al calcular productos del dashboard de fábrica:', error);
         }
-    }
+    }, (error) => {
+        console.error('Error en el listener de productos del dashboard de fábrica:', error);
+    });
 
     function obtenerRangoFechasDashboard(rango) {
         const inicio = new Date();
@@ -227,25 +232,30 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         today: 'Ventas hoy', week: 'Ventas esta semana', month: 'Ventas este mes', year: 'Ventas este año'
     };
 
-    async function calcularVentasFabrica(rango) {
+    // Listener en tiempo real por rango: cada venta nueva (o anulación)
+    // actualiza el total al instante, sin esperar a cambiar de pestaña o
+    // recargar. Como el rango cambia con los botones, se guarda la función
+    // para cancelar el listener anterior antes de suscribirse al nuevo.
+    let cancelarListenerVentasFabrica = null;
+    function calcularVentasFabrica(rango) {
+        if (cancelarListenerVentasFabrica) { cancelarListenerVentasFabrica(); cancelarListenerVentasFabrica = null; }
+
         const tituloEl = document.getElementById('fdb-ventas-periodo-title');
         if (tituloEl) tituloEl.textContent = ETIQUETAS_RANGO_DASHBOARD[rango] || 'Ventas hoy';
 
-        try {
-            const { inicio, fin } = obtenerRangoFechasDashboard(rango);
-            // Solo lo propio de Fábrica: tenantId === 'fabrica'. Necesita el
-            // mismo índice compuesto (tenantId + timestamp) que
-            // productosFabrica/inventarioFabrica — si Firestore lo pide, es
-            // normal, se crea igual desde el link que da la consola.
-            const q = query(
-                ventasCollection,
-                where('tenantId', '==', 'fabrica'),
-                where('timestamp', '>=', Timestamp.fromDate(inicio)),
-                where('timestamp', '<', Timestamp.fromDate(fin)),
-                orderBy('timestamp', 'desc')
-            );
-            const snapshot = await getDocs(q);
-
+        const { inicio, fin } = obtenerRangoFechasDashboard(rango);
+        // Solo lo propio de Fábrica: tenantId === 'fabrica'. Necesita el
+        // mismo índice compuesto (tenantId + timestamp) que
+        // productosFabrica/inventarioFabrica — si Firestore lo pide, es
+        // normal, se crea igual desde el link que da la consola.
+        const q = query(
+            ventasCollection,
+            where('tenantId', '==', 'fabrica'),
+            where('timestamp', '>=', Timestamp.fromDate(inicio)),
+            where('timestamp', '<', Timestamp.fromDate(fin)),
+            orderBy('timestamp', 'desc')
+        );
+        cancelarListenerVentasFabrica = onSnapshot(q, (snapshot) => {
             let totalRecibido = 0;
             let ventasContadas = 0;
             snapshot.forEach(docSnap => {
@@ -261,11 +271,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             // "Ganancia real": plata que realmente entró (efectivo + transferencia),
             // sin restar costos — mismo criterio que el Dashboard de Boutique.
             document.getElementById('fdb-ganancia-real').textContent = formatoMonedaDashboard.format(totalRecibido);
-        } catch (error) {
+        }, (error) => {
             console.error('Error al calcular ventas del dashboard de fábrica:', error);
             const el = document.getElementById('fdb-ventas-periodo');
             if (el) el.textContent = 'Error';
-        }
+        });
     }
 
     document.querySelectorAll('#dashboard .db2-range-btn').forEach(btn => {
@@ -287,22 +297,22 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
     // Últimas 5 ventas de Fábrica — mismo patrón que "Actividad reciente"
     // del Dashboard de Boutique (admin.js), adaptado a tenantId 'fabrica'.
-    async function actualizarActividadRecienteFabrica() {
-        const cont = document.getElementById('fdb-actividad-reciente');
-        if (!cont) return;
-        try {
-            const q = query(
-                ventasCollection,
-                where('tenantId', '==', 'fabrica'),
-                orderBy('timestamp', 'desc'),
-                limit(5)
-            );
-            const snapshot = await getDocs(q);
+    // Listener en tiempo real, suscrito una sola vez: no depende de que el
+    // usuario vuelva a entrar al Dashboard para ver una venta nueva.
+    const contActividadRecienteFabrica = document.getElementById('fdb-actividad-reciente');
+    if (contActividadRecienteFabrica) {
+        const qActividadReciente = query(
+            ventasCollection,
+            where('tenantId', '==', 'fabrica'),
+            orderBy('timestamp', 'desc'),
+            limit(5)
+        );
+        onSnapshot(qActividadReciente, (snapshot) => {
             if (snapshot.empty) {
-                cont.innerHTML = '<div class="text-center text-muted py-3">No hay actividad reciente</div>';
+                contActividadRecienteFabrica.innerHTML = '<div class="text-center text-muted py-3">No hay actividad reciente</div>';
                 return;
             }
-            cont.innerHTML = snapshot.docs.map(docSnap => {
+            contActividadRecienteFabrica.innerHTML = snapshot.docs.map(docSnap => {
                 const venta = docSnap.data();
                 const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate() : null;
                 const cuando = fecha ? tiempoRelativoDashboard(fecha) : 'Hace un momento';
@@ -321,19 +331,23 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                     </div>
                 `;
             }).join('');
-        } catch (error) {
+        }, (error) => {
             console.error('Error al cargar actividad reciente de fábrica:', error);
-            cont.innerHTML = '<div class="text-center text-danger py-3">No se pudo cargar</div>';
-        }
+            contActividadRecienteFabrica.innerHTML = '<div class="text-center text-danger py-3">No se pudo cargar</div>';
+        });
     }
 
+    // Los productos y la actividad reciente ya viven en listeners suscritos
+    // una sola vez arriba (siempre al día). Las ventas del período sí se
+    // vuelven a suscribir aquí porque su rango de fechas ("hoy", "esta
+    // semana"...) depende del instante en que se calcula — si el Dashboard
+    // quedó abierto de un día para otro, hay que recalcular el rango, no
+    // solo esperar la próxima venta.
     let dashboardYaCargado = false;
     function cargarDashboardSiCorresponde() {
         if ((window.location.hash || '#dashboard') !== '#dashboard') return;
         dashboardYaCargado = true;
-        calcularProductosFabrica();
         calcularVentasFabrica('today');
-        actualizarActividadRecienteFabrica();
     }
 
     window.addEventListener('hashchange', cargarDashboardSiCorresponde);
@@ -774,10 +788,28 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     const fvSheetBackdropEl = document.getElementById('fvps-sheet-backdrop');
     const fvChipsEl = document.getElementById('fvps-chips');
 
-    async function cargarProductosCache() {
-        const snap = await getDocs(productosFabricaCollection);
-        productosCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Listener en tiempo real (no una carga puntual): el selector de
+    // "Agregar venta" — catálogo, stock disponible, tope de cantidad del
+    // carrito — siempre refleja el stock real de Firestore, sin depender de
+    // recargar la pantalla ni de que otro código avise "algo cambió".
+    let productosCacheListo = false;
+    let resolversProductosCacheListo = [];
+    function esperarProductosCacheListo() {
+        if (productosCacheListo) return Promise.resolve();
+        return new Promise(resolve => resolversProductosCacheListo.push(resolve));
     }
+    onSnapshot(productosFabricaCollection, (snap) => {
+        productosCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        productosCacheListo = true;
+        resolversProductosCacheListo.forEach(resolve => resolve());
+        resolversProductosCacheListo = [];
+        // Si la pantalla de "Agregar venta" está abierta, repinta con los
+        // datos frescos (nuevo stock tras una venta en otra pestaña, un
+        // producto nuevo, etc.).
+        if (fvScreenEl.classList.contains('active')) renderProductList();
+    }, (error) => {
+        console.error('Error en el listener de catálogo de fábrica (Registrar Venta):', error);
+    });
 
     function stockTotalFv(producto) {
         return (producto.variaciones || []).reduce((s, v) => s + (parseInt(v.stock, 10) || 0), 0);
@@ -1130,14 +1162,6 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         if (fvScreenEl.classList.contains('active')) document.body.style.overflow = 'hidden';
     });
 
-    // Si se crea/edita un producto desde Productos Fábrica mientras esta
-    // pantalla está abierta, refresca el catálogo del selector.
-    window.addEventListener('fabrica:producto-guardado', () => {
-        cargarProductosCache()
-            .then(() => renderProductList())
-            .catch((error) => console.error('Error al refrescar catálogo de Registrar Venta:', error));
-    });
-
     document.getElementById('fvps-confirm-btn')?.addEventListener('click', () => {
         if (seleccionProductos.size === 0) return;
         const productosAgregados = new Set();
@@ -1170,17 +1194,12 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         document.body.style.overflow = 'hidden';
         renderFooter();
 
-        if (productosCache.length > 0) {
+        if (productosCacheListo) {
             renderProductList();
             return;
         }
         productListEl.innerHTML = `<div class="fvps-empty">Cargando catálogo...</div>`;
-        cargarProductosCache()
-            .then(() => renderProductList())
-            .catch((error) => {
-                console.error('Error al cargar catálogo para Registrar Venta:', error);
-                productListEl.innerHTML = `<div class="fvps-empty">No se pudo cargar el catálogo: ${error.message}</div>`;
-            });
+        esperarProductosCacheListo().then(() => renderProductList());
     }
 
     function cerrarPantallaProductos() {
@@ -1198,13 +1217,15 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     // ── Guardar venta ────────────────────────────────────────────────────
     // IMPORTANTE: el descuento se calcula dentro de una transacción de
     // Firestore, leyendo el stock real del documento en ese instante — NO a
-    // partir de 'productosCache' (que es una foto de cuando se abrió/entró
-    // a "Registrar Venta" y no se refresca entre ventas dentro de la misma
-    // sesión). Calcular desde la caché local causaba que, al vender la misma
-    // prenda/talla/color dos veces seguidas sin recargar el catálogo (o con
-    // dos cajeros vendiendo a la vez), la segunda venta sobreescribiera el
-    // stock ya descontado por la primera, dejando el inventario incorrecto
-    // de forma intermitente.
+    // partir de 'productosCache' (que aunque ahora se mantiene al día vía
+    // onSnapshot, sigue siendo un espejo LOCAL con el retraso propio de la
+    // red; no es la fuente de verdad). Calcular el descuento desde la
+    // caché local causaba que, al vender la misma prenda/talla/color dos
+    // veces seguidas muy rápido (o con dos cajeros vendiendo a la vez), la
+    // segunda venta sobreescribiera el stock ya descontado por la primera,
+    // dejando el inventario incorrecto de forma intermitente. La
+    // transacción elimina ese riesgo sin importar qué tan al día esté la
+    // caché.
     async function actualizarStockFabrica(items, accion = 'restar') {
         if (!items.length) return;
         const itemsPorProducto = new Map();
@@ -1890,22 +1911,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
     });
 
-    // Precargar el catálogo al entrar a la sección — así, cuando el
-    // usuario abra "Buscar producto", el modal solo tiene que pintar
-    // datos que ya están en memoria (ver el listener show.bs.modal más
-    // arriba), sin depender de ninguna llamada async justo en ese
-    // instante.
-    let registrarVentaYaPrecargado = false;
-    function precargarSiCorresponde() {
-        if ((window.location.hash || '') !== '#registrar-venta') return;
-        registrarVentaYaPrecargado = true;
-        cargarProductosCache().catch((error) => {
-            console.error('Error al precargar catálogo de Registrar Venta:', error);
-        });
-    }
-    window.addEventListener('hashchange', precargarSiCorresponde);
-    window.addEventListener('admin:section-shown', precargarSiCorresponde);
-    if (!registrarVentaYaPrecargado) precargarSiCorresponde();
+    // El catálogo ya no necesita "precargarse" al entrar a la sección: el
+    // listener de arriba está suscrito desde que carga la página, así que
+    // cuando el usuario abra "Agregar venta" los datos ya están frescos en
+    // memoria (ver abrirPantallaProductos).
 
     // ── Nueva Venta / Historial ──────────────────────────────────────────
     // Historial de solo lectura por ahora: ver las ventas ya registradas,
@@ -3308,29 +3317,31 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }).join('');
     }
 
-    async function cargarProductos() {
-        try {
-            const tenantId = window.expectedTenantId;
-            const clauses = [orderBy('nombre')];
-            if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
-            const snapshot = await getDocs(query(productosFabricaCollection, ...clauses));
-            productos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            // Expuesto en window para que etiquetas-fabrica.js (script global,
-            // no módulo) pueda leer el catálogo ya cargado sin duplicar la
-            // consulta — mismo patrón que window.localProductsMap en Boutique.
-            window.fabricaProductsMap = new Map(productos.map(p => [p.id, p]));
-            window.fabricaCategoriasMap = categoriasMap;
-            renderTabla();
-        } catch (error) {
-            console.error('Error al cargar productos de fábrica:', error);
-            tbody.innerHTML = `<tr>
-                <td colspan="7" class="fin2-empty-state fin2-negative-text">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    <span>Error al cargar: ${error.message}</span>
-                </td>
-            </tr>`;
-        }
-    }
+    // Listener en tiempo real (no una carga puntual): así la tabla de
+    // inventario nunca queda desactualizada esperando que alguien cambie de
+    // pestaña y vuelva — una venta, una edición o un cargue masivo que
+    // toquen 'productosFabrica' se reflejan aquí apenas Firestore los
+    // confirma, sin depender de refrescar manualmente.
+    const tenantIdProductos = window.expectedTenantId;
+    const clausesProductos = [orderBy('nombre')];
+    if (tenantIdProductos) clausesProductos.unshift(where('tenantId', '==', tenantIdProductos));
+    onSnapshot(query(productosFabricaCollection, ...clausesProductos), (snapshot) => {
+        productos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Expuesto en window para que etiquetas-fabrica.js (script global,
+        // no módulo) pueda leer el catálogo ya cargado sin duplicar la
+        // consulta — mismo patrón que window.localProductsMap en Boutique.
+        window.fabricaProductsMap = new Map(productos.map(p => [p.id, p]));
+        window.fabricaCategoriasMap = categoriasMap;
+        renderTabla();
+    }, (error) => {
+        console.error('Error al cargar productos de fábrica:', error);
+        tbody.innerHTML = `<tr>
+            <td colspan="7" class="fin2-empty-state fin2-negative-text">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>Error al cargar: ${error.message}</span>
+            </td>
+        </tr>`;
+    });
 
     // ── Filtros ──
     searchInput.addEventListener('input', renderTabla);
@@ -3455,7 +3466,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 showToast('Producto eliminado', 'success');
                 getModal('prodFabDeleteModal').hide();
                 idPendienteEliminar = null;
-                cargarProductos();
+                // La tabla se actualiza sola vía el listener en tiempo real.
             } catch (error) {
                 console.error('Error al eliminar producto:', error);
                 showToast(`Error: ${error.message}`, 'error');
@@ -3570,10 +3581,9 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
             getModal('prodFabModal').hide();
             form.reset();
-            cargarProductos();
-            // Avisa al selector de productos de Registrar Venta (si está
-            // abierto) para que refresque su catálogo con el producto nuevo.
-            window.dispatchEvent(new CustomEvent('fabrica:producto-guardado'));
+            // La tabla y el selector de "Registrar Venta" se actualizan
+            // solos vía sus listeners en tiempo real — no hace falta
+            // refrescarlos a mano ni avisarles con un evento.
         } catch (error) {
             console.error('Error al guardar producto de fábrica:', error);
             showToast(`Error: ${error.message}`, 'error');
@@ -3584,18 +3594,19 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
     });
 
-    // ── Cargar al entrar a la sección ──
+    // ── Cargar categorías al entrar a la sección (el catálogo de productos
+    // ya vive actualizado por el listener de arriba) ──
     const tabLink = document.querySelector('a[href="#productos-fabrica"]');
-    if (tabLink) tabLink.addEventListener('click', () => { cargarCategorias(); cargarProductos(); });
+    if (tabLink) tabLink.addEventListener('click', cargarCategorias);
     window.addEventListener('hashchange', () => {
-        if ((window.location.hash || '') === '#productos-fabrica') { cargarCategorias(); cargarProductos(); }
+        if ((window.location.hash || '') === '#productos-fabrica') cargarCategorias();
     });
     window.addEventListener('admin:section-shown', (e) => {
-        if (e.detail && e.detail.hash === '#productos-fabrica') { cargarCategorias(); cargarProductos(); }
+        if (e.detail && e.detail.hash === '#productos-fabrica') cargarCategorias();
     });
 
     cargarGruposMayoristas();
-    if ((window.location.hash || '') === '#productos-fabrica') { cargarCategorias(); cargarProductos(); }
+    if ((window.location.hash || '') === '#productos-fabrica') cargarCategorias();
 
     console.log("✅ Módulo Productos Fábrica inicializado");
 })();
