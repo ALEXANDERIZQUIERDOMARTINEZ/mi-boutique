@@ -4257,7 +4257,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             const clauses = [orderBy('timestamp', 'desc')];
             if (tenantId) clauses.unshift(where('tenantId', '==', tenantId));
 
-            const [snapshot, ventasSnapshot] = await Promise.all([
+            // allSettled (no all): si la consulta de ventas falla por lo que
+            // sea (índice, permisos, red), los gastos/otros ingresos —lo que
+            // ya venía funcionando— se siguen viendo igual; solo se pierde
+            // temporalmente la parte de ventas/gasto por prenda.
+            const [movResult, ventasResult] = await Promise.allSettled([
                 getDocs(query(fabricaCollection, ...clauses)),
                 getDocs(query(
                     ventasCollection,
@@ -4267,6 +4271,9 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                     orderBy('timestamp', 'desc')
                 ))
             ]);
+
+            if (movResult.status === 'rejected') throw movResult.reason;
+            const snapshot = movResult.value;
 
             let movimientos = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
                 .sort((a, b) => fechaDeMovimiento(b) - fechaDeMovimiento(a));
@@ -4278,9 +4285,14 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 });
             }
 
-            const ventas = ventasSnapshot.docs
-                .map(d => d.data())
-                .filter(v => v.estado !== 'Anulada' && v.estado !== 'Cancelada');
+            let ventas = [];
+            if (ventasResult.status === 'fulfilled') {
+                ventas = ventasResult.value.docs
+                    .map(d => d.data())
+                    .filter(v => v.estado !== 'Anulada' && v.estado !== 'Cancelada');
+            } else {
+                console.error('Error al cargar ventas de fábrica para Finanzas:', ventasResult.reason);
+            }
 
             // ── Gastos operativos (telas, luz, arriendo, nómina, hilos...) y
             // otros ingresos manuales (aparte de la venta, ej. capital aportado) ──
@@ -4321,11 +4333,19 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 trendBadge.className = 'fin2-hero-trend';
             }
 
-            document.getElementById('fab-ventas').textContent          = fmt.format(ingresosVentas);
-            document.getElementById('fab-otros-ingresos').textContent  = fmt.format(otrosIngresos);
-            document.getElementById('fab-gastos').textContent          = fmt.format(totalGastos);
-            document.getElementById('fab-unidades-vendidas').textContent = unidadesVendidas.toLocaleString('es-CO');
-            document.getElementById('fab-gasto-prenda').textContent    = fmt.format(gastoPorPrenda);
+            // setText: si algún elemento nuevo no existe todavía en la página
+            // (ej. caché vieja del HTML), que no tumbe el resto del cálculo —
+            // antes "Total gastos" era de lo primero en pintarse y no debe
+            // dejar de actualizarse porque otra tarjeta nueva falle.
+            const setText = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value;
+            };
+            setText('fab-ventas', fmt.format(ingresosVentas));
+            setText('fab-otros-ingresos', fmt.format(otrosIngresos));
+            setText('fab-gastos', fmt.format(totalGastos));
+            setText('fab-unidades-vendidas', unidadesVendidas.toLocaleString('es-CO'));
+            setText('fab-gasto-prenda', fmt.format(gastoPorPrenda));
 
             // ── Desglose: cuánto fue cada concepto de ingreso/gasto (las
             // ventas del periodo cuentan como un concepto más de ingreso) ──
@@ -4346,7 +4366,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             if (productoCount) productoCount.textContent = `${productosVendidos.length} producto${productosVendidos.length !== 1 ? 's' : ''}`;
 
             if (productosVendidos.length === 0) {
-                productoTbody.innerHTML = `<tr>
+                if (productoTbody) productoTbody.innerHTML = `<tr>
                     <td colspan="6" class="fin2-empty-state">
                         <i class="bi bi-bar-chart"></i>
                         <span>No hay ventas completadas en este periodo</span>
@@ -4360,7 +4380,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                     return { ...p, precioProm, utilidadUnidad, utilidadTotal: utilidadUnidad * p.cantidad };
                 }).sort((a, b) => b.utilidadTotal - a.utilidadTotal);
 
-                productoTbody.innerHTML = productosConUtilidad.map(p => {
+                if (productoTbody) productoTbody.innerHTML = productosConUtilidad.map(p => {
                     const colorCls = p.utilidadTotal >= 0 ? 'fin2-positive-text' : 'fin2-negative-text';
                     return `<tr>
                         <td class="fin2-td-nombre">${escaparHtml(p.nombre)}</td>
@@ -4373,8 +4393,8 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 }).join('');
 
                 if (productoTfoot) {
-                    document.getElementById('fab-producto-footer-cant').textContent     = unidadesVendidas.toLocaleString('es-CO');
-                    document.getElementById('fab-producto-footer-utilidad').textContent = fmt.format(ingresosVentas - totalGastos);
+                    setText('fab-producto-footer-cant', unidadesVendidas.toLocaleString('es-CO'));
+                    setText('fab-producto-footer-utilidad', fmt.format(ingresosVentas - totalGastos));
                     productoTfoot.style.display = '';
                 }
             }
