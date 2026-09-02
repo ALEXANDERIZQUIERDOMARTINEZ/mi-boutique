@@ -3673,8 +3673,13 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             descripcionInput.value = p.descripcion || '';
             categoriaSelect.value = p.categoriaId || '';
             grupoMayoristaSelect.value = (p.grupoMayorista === 'ninguno' || WHOLESALE_TIER_GROUPS[p.grupoMayorista]) ? p.grupoMayorista : '';
-            costoInput.value = p.costoCompra || '';
-            precioMayorInput.value = p.precioMayor || '';
+            // ?? en vez de || : costoCompra/precioMayor en 0 es un valor
+            // real (producto sin costo cargado aún), no "vacío". Con ||
+            // quedaba '' en el input requerido y el navegador bloqueaba el
+            // submit en silencio (sin disparar el listener, sin toast) —
+            // exactamente el síntoma de "no actualiza, no pasa nada".
+            costoInput.value = p.costoCompra ?? 0;
+            precioMayorInput.value = p.precioMayor ?? 0;
             visibleCheckbox.checked = p.visible !== false;
             imagenUrlActual = p.imagenUrl || null;
             if (imagenUrlActual) {
