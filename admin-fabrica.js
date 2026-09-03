@@ -4130,6 +4130,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 const desde = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
                 return { desde, hasta: hoyFin, label: 'Este mes' };
             }
+            case 'anio': {
+                const desde = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+                return { desde, hasta: hoyFin, label: 'Este año' };
+            }
             default: // 'todo'
                 return { desde: INICIO_FABRICA, hasta: hoyFin, label: 'Desde junio' };
         }
