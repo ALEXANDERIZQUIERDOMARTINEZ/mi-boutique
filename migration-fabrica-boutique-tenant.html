@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Migración: Gastos de Fábrica mal ubicados en Boutique</title>
+<title>Migración: Gastos de Fábrica mal ubicados en otro tenant</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
   body { padding: 20px; background-color: #f8f9fa; }
@@ -21,34 +21,56 @@
 </head>
 <body>
 <div class="container">
-  <h1 class="mb-3">🔄 Migración: Gastos/Ingresos de Fábrica registrados desde Boutique</h1>
+  <h1 class="mb-3">🔄 Migración: Gastos/Ingresos de Fábrica mal ubicados</h1>
 
   <div class="alert alert-warning">
     <strong>Qué hace esto:</strong> algunos movimientos de "Gastos e Ingresos" de Fábrica se
-    guardaron con el negocio (tenant) <code>boutique</code> en vez de <code>fabrica</code>
-    (se registraron desde la pestaña "Fábrica" que también existe dentro del panel de la
-    tienda). Por eso no aparecen en las Finanzas de <code>admin-fabrica.html</code>.
-    Esta página los <strong>copia</strong> a <code>tenantId: fabrica</code> y luego
-    <strong>borra</strong> el original mal ubicado, uno por uno. Solo funciona si tu cuenta
-    tiene rol <strong>SUPER_ADMIN</strong> (Firestore lo exige para mover datos entre negocios).
+    registraron desde la pestaña "Fábrica" que también existe dentro del panel de la tienda
+    (<code>admin.html</code>), y quedaron guardados con OTRO tenantId en vez de
+    <code>fabrica</code> — por eso no aparecen en las Finanzas de
+    <code>admin-fabrica.html</code>. Esta página primero <strong>lista todo agrupado por
+    tenantId</strong> (sin tocar nada) para ver con qué valor real quedaron guardados, y
+    luego, sobre el grupo que elijas, los <strong>copia</strong> a
+    <code>tenantId: fabrica</code> y <strong>borra</strong> el original, uno por uno. Solo
+    funciona si tu cuenta tiene rol <strong>SUPER_ADMIN</strong> (Firestore lo exige para
+    mover datos entre negocios).
   </div>
 
   <div id="estadoSesion" class="alert alert-secondary">Verificando sesión…</div>
 
+  <div class="card mb-3" id="cardGrupos" style="display:none;">
+    <div class="card-header">1) Todos los movimientos, agrupados por tenantId</div>
+    <div class="card-body">
+      <div class="table-responsive mb-3">
+        <table class="table table-sm table-bordered">
+          <thead><tr><th>tenantId</th><th class="text-end">Cantidad</th></tr></thead>
+          <tbody id="gruposBody"></tbody>
+        </table>
+      </div>
+      <div class="d-flex align-items-end gap-2">
+        <div>
+          <label class="form-label mb-1">Migrar el grupo:</label>
+          <select id="selectGrupo" class="form-select"></select>
+        </div>
+        <button class="btn btn-outline-primary" id="btnVerGrupo">Ver este grupo</button>
+      </div>
+    </div>
+  </div>
+
   <div class="card mb-3" id="cardPreview" style="display:none;">
-    <div class="card-header">1) Vista previa (sin cambios todavía)</div>
+    <div class="card-header">2) Vista previa del grupo elegido (sin cambios todavía)</div>
     <div class="card-body">
       <p id="previewResumen" class="mb-2"></p>
       <div class="table-responsive" style="max-height: 360px; overflow-y:auto;">
         <table class="table table-sm table-striped preview">
           <thead>
-            <tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th class="text-end">Monto</th><th>Doc ID (boutique)</th></tr>
+            <tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th class="text-end">Monto</th><th>tenantId actual</th><th>Doc ID</th></tr>
           </thead>
           <tbody id="previewBody"></tbody>
         </table>
       </div>
       <button class="btn btn-primary mt-2" id="btnMigrar" disabled>
-        🚀 Migrar estos movimientos a Fábrica
+        🚀 Migrar este grupo a Fábrica
       </button>
     </div>
   </div>
@@ -63,7 +85,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import {
-  getFirestore, collection, query, where, getDocs, addDoc, deleteDoc, doc, getDoc,
+  getFirestore, collection, getDocs, addDoc, deleteDoc, doc, getDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
@@ -88,11 +110,16 @@ function log(msg, tipo = 'info') {
 }
 
 const estadoSesionEl = document.getElementById('estadoSesion');
+const cardGrupos = document.getElementById('cardGrupos');
+const gruposBody = document.getElementById('gruposBody');
+const selectGrupo = document.getElementById('selectGrupo');
+const btnVerGrupo = document.getElementById('btnVerGrupo');
 const cardPreview = document.getElementById('cardPreview');
 const previewBody = document.getElementById('previewBody');
 const previewResumen = document.getElementById('previewResumen');
 const btnMigrar = document.getElementById('btnMigrar');
 
+let todosLosMovimientos = [];
 let movimientosAMigrar = [];
 
 function fmtMonto(m) {
@@ -124,32 +151,63 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     estadoSesionEl.className = 'alert alert-success';
-    estadoSesionEl.textContent = `Sesión OK: ${user.email} (SUPER_ADMIN). Cargando vista previa…`;
+    estadoSesionEl.textContent = `Sesión OK: ${user.email} (SUPER_ADMIN). Cargando todos los movimientos…`;
 
-    await cargarVistaPrevia();
+    await cargarGrupos();
   } catch (error) {
     estadoSesionEl.className = 'alert alert-danger';
     estadoSesionEl.textContent = `Error verificando sesión: ${error.message}`;
   }
 });
 
-async function cargarVistaPrevia() {
-  log('Buscando movimientosFabrica con tenantId = "boutique"…');
-  const q = query(collection(db, 'movimientosFabrica'), where('tenantId', '==', 'boutique'));
-  const snap = await getDocs(q);
+// Sin filtro: como SUPER_ADMIN, firestore.rules deja leer cualquier
+// tenantId (belongsToTenant() da bypass), así que esto trae TODO lo que
+// haya en la colección, sea cual sea el valor real de tenantId con el que
+// haya quedado guardado cada movimiento.
+async function cargarGrupos() {
+  log('Buscando TODOS los movimientos en movimientosFabrica (sin filtrar por tenant)…');
+  const snap = await getDocs(collection(db, 'movimientosFabrica'));
 
-  movimientosAMigrar = snap.docs
-    .map(d => ({ id: d.id, ...d.data() }))
-    .sort((a, b) => (fechaDeMovimiento(b) || 0) - (fechaDeMovimiento(a) || 0));
+  todosLosMovimientos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  log(`Encontrados ${todosLosMovimientos.length} movimientos en total.`, 'success');
 
-  if (movimientosAMigrar.length === 0) {
-    log('No se encontró ningún movimiento con tenantId "boutique". No hay nada que migrar.', 'warning');
-    previewResumen.textContent = 'No hay movimientos para migrar.';
-    cardPreview.style.display = '';
-    return;
+  const grupos = new Map();
+  todosLosMovimientos.forEach(m => {
+    const t = m.tenantId ?? '(sin tenantId)';
+    grupos.set(t, (grupos.get(t) || 0) + 1);
+  });
+
+  const filas = Array.from(grupos.entries()).sort((a, b) => b[1] - a[1]);
+  gruposBody.innerHTML = filas.map(([t, count]) =>
+    `<tr><td><code>${t}</code></td><td class="text-end">${count}</td></tr>`
+  ).join('');
+
+  // El selector solo ofrece grupos que NO sean ya "fabrica" — esos no
+  // necesitan migrarse.
+  const opciones = filas.filter(([t]) => t !== 'fabrica');
+  if (opciones.length === 0) {
+    log('Todos los movimientos ya están en tenantId "fabrica". No hay nada que migrar.', 'warning');
+    selectGrupo.innerHTML = '<option>— nada que migrar —</option>';
+    btnVerGrupo.disabled = true;
+  } else {
+    selectGrupo.innerHTML = opciones.map(([t, count]) =>
+      `<option value="${t}">${t} (${count})</option>`
+    ).join('');
+    btnVerGrupo.disabled = false;
   }
 
-  log(`Encontrados ${movimientosAMigrar.length} movimientos.`, 'success');
+  cardGrupos.style.display = '';
+}
+
+btnVerGrupo.addEventListener('click', () => {
+  const tenantElegido = selectGrupo.value;
+  if (!tenantElegido) return;
+
+  movimientosAMigrar = todosLosMovimientos
+    .filter(m => (m.tenantId ?? '(sin tenantId)') === tenantElegido)
+    .sort((a, b) => (fechaDeMovimiento(b) || 0) - (fechaDeMovimiento(a) || 0));
+
+  log(`Mostrando ${movimientosAMigrar.length} movimiento(s) con tenantId "${tenantElegido}".`);
   previewResumen.textContent = `${movimientosAMigrar.length} movimiento(s) se van a copiar a tenantId "fabrica" y luego se borra el original. Revisa la lista antes de continuar.`;
 
   previewBody.innerHTML = movimientosAMigrar.map(m => {
@@ -160,17 +218,19 @@ async function cargarVistaPrevia() {
       <td>${m.tipo === 'ingreso' ? 'Ingreso' : 'Gasto'}</td>
       <td>${(m.concepto || '').replace(/</g, '&lt;')}</td>
       <td class="text-end">${fmtMonto(m.monto)}</td>
+      <td><code>${m.tenantId ?? '(sin tenantId)'}</code></td>
       <td><code>${m.id}</code></td>
     </tr>`;
   }).join('');
 
   cardPreview.style.display = '';
-  btnMigrar.disabled = false;
-}
+  btnMigrar.disabled = movimientosAMigrar.length === 0;
+});
 
 btnMigrar.addEventListener('click', async () => {
   if (!movimientosAMigrar.length) return;
-  if (!confirm(`Vas a migrar ${movimientosAMigrar.length} movimiento(s) de "boutique" a "fabrica". Esto crea copias nuevas y BORRA los originales. ¿Continuar?`)) return;
+  const tenantOrigen = selectGrupo.value;
+  if (!confirm(`Vas a migrar ${movimientosAMigrar.length} movimiento(s) de "${tenantOrigen}" a "fabrica". Esto crea copias nuevas y BORRA los originales. ¿Continuar?`)) return;
 
   btnMigrar.disabled = true;
   let ok = 0, fallidos = 0;
@@ -185,7 +245,7 @@ btnMigrar.addEventListener('click', async () => {
         fecha,
         tenantId: 'fabrica',
         timestamp: serverTimestamp(),
-        migradoDesdeTenant: 'boutique',
+        migradoDesdeTenant: tenantOrigen,
         migradoDesdeId: m.id
       };
       const ref = await addDoc(collection(db, 'movimientosFabrica'), nuevoDoc);
