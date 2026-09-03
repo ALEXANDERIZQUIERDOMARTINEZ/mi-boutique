@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Migración: Gastos de Fábrica mal ubicados en Boutique</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  body { padding: 20px; background-color: #f8f9fa; }
+  .log {
+    background-color: #212529; color: #00ff00; padding: 20px; border-radius: 8px;
+    height: 320px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 13px;
+  }
+  .log div { margin-bottom: 4px; }
+  .log .success { color: #00ff00; }
+  .log .error   { color: #ff5c5c; }
+  .log .warning { color: #ffaa00; }
+  .log .info    { color: #6cb6ff; }
+  table.preview td, table.preview th { font-size: 0.85rem; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1 class="mb-3">🔄 Migración: Gastos/Ingresos de Fábrica registrados desde Boutique</h1>
+
+  <div class="alert alert-warning">
+    <strong>Qué hace esto:</strong> algunos movimientos de "Gastos e Ingresos" de Fábrica se
+    guardaron con el negocio (tenant) <code>boutique</code> en vez de <code>fabrica</code>
+    (se registraron desde la pestaña "Fábrica" que también existe dentro del panel de la
+    tienda). Por eso no aparecen en las Finanzas de <code>admin-fabrica.html</code>.
+    Esta página los <strong>copia</strong> a <code>tenantId: fabrica</code> y luego
+    <strong>borra</strong> el original mal ubicado, uno por uno. Solo funciona si tu cuenta
+    tiene rol <strong>SUPER_ADMIN</strong> (Firestore lo exige para mover datos entre negocios).
+  </div>
+
+  <div id="estadoSesion" class="alert alert-secondary">Verificando sesión…</div>
+
+  <div class="card mb-3" id="cardPreview" style="display:none;">
+    <div class="card-header">1) Vista previa (sin cambios todavía)</div>
+    <div class="card-body">
+      <p id="previewResumen" class="mb-2"></p>
+      <div class="table-responsive" style="max-height: 360px; overflow-y:auto;">
+        <table class="table table-sm table-striped preview">
+          <thead>
+            <tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th class="text-end">Monto</th><th>Doc ID (boutique)</th></tr>
+          </thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-primary mt-2" id="btnMigrar" disabled>
+        🚀 Migrar estos movimientos a Fábrica
+      </button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Log</div>
+    <div class="card-body p-0"><div class="log" id="log"></div></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+import {
+  getFirestore, collection, query, where, getDocs, addDoc, deleteDoc, doc, getDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
+  authDomain: "mishell-boutique-admin.firebaseapp.com",
+  projectId: "mishell-boutique-admin",
+  storageBucket: "mishell-boutique-admin.firebasestorage.app",
+  messagingSenderId: "399662956877",
+  appId: "1:399662956877:web:084236f5bb3cf6f0a8f704"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const logEl = document.getElementById('log');
+function log(msg, tipo = 'info') {
+  const t = new Date().toLocaleTimeString();
+  logEl.innerHTML += `<div class="${tipo}">[${t}] ${msg}</div>`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+const estadoSesionEl = document.getElementById('estadoSesion');
+const cardPreview = document.getElementById('cardPreview');
+const previewBody = document.getElementById('previewBody');
+const previewResumen = document.getElementById('previewResumen');
+const btnMigrar = document.getElementById('btnMigrar');
+
+let movimientosAMigrar = [];
+
+function fmtMonto(m) {
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(m || 0);
+}
+function fechaDeMovimiento(m) {
+  return m.fecha?.toDate ? m.fecha.toDate() : (m.timestamp?.toDate ? m.timestamp.toDate() : null);
+}
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    estadoSesionEl.className = 'alert alert-danger';
+    estadoSesionEl.textContent = 'No hay sesión activa. Abre esta página en la misma pestaña/navegador donde ya iniciaste sesión en el panel (admin.html o admin-fabrica.html), logueado como Super Admin.';
+    return;
+  }
+
+  try {
+    const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
+    if (!userDoc.exists()) {
+      estadoSesionEl.className = 'alert alert-danger';
+      estadoSesionEl.textContent = 'Tu usuario no existe en la colección "usuarios".';
+      return;
+    }
+    const userData = userDoc.data();
+    if (userData.rol !== 'SUPER_ADMIN') {
+      estadoSesionEl.className = 'alert alert-danger';
+      estadoSesionEl.textContent = `Tu cuenta (${user.email}) tiene rol "${userData.rol || 'desconocido'}", no SUPER_ADMIN. Firestore va a rechazar la migración — no puedes continuar desde esta cuenta.`;
+      return;
+    }
+
+    estadoSesionEl.className = 'alert alert-success';
+    estadoSesionEl.textContent = `Sesión OK: ${user.email} (SUPER_ADMIN). Cargando vista previa…`;
+
+    await cargarVistaPrevia();
+  } catch (error) {
+    estadoSesionEl.className = 'alert alert-danger';
+    estadoSesionEl.textContent = `Error verificando sesión: ${error.message}`;
+  }
+});
+
+async function cargarVistaPrevia() {
+  log('Buscando movimientosFabrica con tenantId = "boutique"…');
+  const q = query(collection(db, 'movimientosFabrica'), where('tenantId', '==', 'boutique'));
+  const snap = await getDocs(q);
+
+  movimientosAMigrar = snap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (fechaDeMovimiento(b) || 0) - (fechaDeMovimiento(a) || 0));
+
+  if (movimientosAMigrar.length === 0) {
+    log('No se encontró ningún movimiento con tenantId "boutique". No hay nada que migrar.', 'warning');
+    previewResumen.textContent = 'No hay movimientos para migrar.';
+    cardPreview.style.display = '';
+    return;
+  }
+
+  log(`Encontrados ${movimientosAMigrar.length} movimientos.`, 'success');
+  previewResumen.textContent = `${movimientosAMigrar.length} movimiento(s) se van a copiar a tenantId "fabrica" y luego se borra el original. Revisa la lista antes de continuar.`;
+
+  previewBody.innerHTML = movimientosAMigrar.map(m => {
+    const f = fechaDeMovimiento(m);
+    const fechaTxt = f ? f.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    return `<tr>
+      <td>${fechaTxt}</td>
+      <td>${m.tipo === 'ingreso' ? 'Ingreso' : 'Gasto'}</td>
+      <td>${(m.concepto || '').replace(/</g, '&lt;')}</td>
+      <td class="text-end">${fmtMonto(m.monto)}</td>
+      <td><code>${m.id}</code></td>
+    </tr>`;
+  }).join('');
+
+  cardPreview.style.display = '';
+  btnMigrar.disabled = false;
+}
+
+btnMigrar.addEventListener('click', async () => {
+  if (!movimientosAMigrar.length) return;
+  if (!confirm(`Vas a migrar ${movimientosAMigrar.length} movimiento(s) de "boutique" a "fabrica". Esto crea copias nuevas y BORRA los originales. ¿Continuar?`)) return;
+
+  btnMigrar.disabled = true;
+  let ok = 0, fallidos = 0;
+
+  for (const m of movimientosAMigrar) {
+    try {
+      const fecha = m.fecha || m.timestamp || serverTimestamp();
+      const nuevoDoc = {
+        tipo: m.tipo,
+        concepto: m.concepto || '',
+        monto: m.monto,
+        fecha,
+        tenantId: 'fabrica',
+        timestamp: serverTimestamp(),
+        migradoDesdeTenant: 'boutique',
+        migradoDesdeId: m.id
+      };
+      const ref = await addDoc(collection(db, 'movimientosFabrica'), nuevoDoc);
+      await deleteDoc(doc(db, 'movimientosFabrica', m.id));
+      log(`✅ ${m.id} → ${ref.id} (${m.concepto || 'sin concepto'}, ${fmtMonto(m.monto)})`, 'success');
+      ok++;
+    } catch (error) {
+      log(`❌ Error migrando ${m.id}: ${error.message}`, 'error');
+      fallidos++;
+    }
+  }
+
+  log('', 'info');
+  log(`TERMINADO. Migrados: ${ok}. Fallidos: ${fallidos}.`, ok && !fallidos ? 'success' : 'warning');
+  previewResumen.textContent = `Migración terminada: ${ok} migrados, ${fallidos} fallidos. Refresca Finanzas en admin-fabrica.html para verlos.`;
+});
+</script>
+</body>
+</html>
