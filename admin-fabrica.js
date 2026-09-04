@@ -3741,6 +3741,21 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
 
         const id = idInput.value;
+
+        // Sin esto, si "Guardar" termina creando en vez de actualizar (p.ej.
+        // el usuario abrió "Nuevo producto" por error para renombrar uno que
+        // ya existía, en vez del lápiz de esa fila), el resultado es un
+        // producto duplicado silencioso: el original queda intacto y nadie
+        // se entera hasta que aparece dos veces en el catálogo.
+        if (!id) {
+            const nombreNorm = nombre.toLowerCase();
+            const yaExiste = productos.some(p => (p.nombre || '').toLowerCase().trim() === nombreNorm);
+            if (yaExiste) {
+                showToast('Ya existe un producto con ese nombre. Para editarlo usa el lápiz de esa fila en la tabla, no "Nuevo producto".', 'warning');
+                return;
+            }
+        }
+
         const guardarTexto = btnGuardar.querySelector('.save-text');
         const spinner = btnGuardar.querySelector('.spinner-border');
         btnGuardar.disabled = true;
@@ -3787,8 +3802,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 await runTransaction(db, async (tx) => {
                     const ref = doc(db, 'productosFabrica', id);
                     const snap = await tx.get(ref);
+                    if (!snap.exists()) {
+                        throw new Error('Este producto ya no existe (puede que alguien lo haya eliminado). Cierra el modal y recarga la lista.');
+                    }
                     const variacionesFrescas = new Map(
-                        (snap.exists() ? (snap.data().variaciones || []) : [])
+                        (snap.data().variaciones || [])
                             .map(v => [claveVariacionFabrica(v.talla, v.color), { talla: v.talla, color: v.color, stock: parseFloat(v.stock) || 0 }])
                     );
 
