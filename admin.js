@@ -3622,7 +3622,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Guardar todos los datos
             allSalesData = [];
             snapshot.forEach(docSnap => {
-                allSalesData.push({ id: docSnap.id, ...docSnap.data() });
+                const venta = docSnap.data();
+                // Las ventas de Fábrica (tenantId 'fabrica') se registran en la
+                // misma colección 'ventas' que las de Boutique, pero pertenecen
+                // a admin-fabrica.html. Se excluyen aquí igual que ya se hace
+                // con pedidosWeb, para que no aparezcan mezcladas en este
+                // historial ni queden fuera del alcance de los filtros.
+                if (venta.tenantId === 'fabrica') return;
+                allSalesData.push({ id: docSnap.id, ...venta });
             });
 
             // Aplicar filtros
