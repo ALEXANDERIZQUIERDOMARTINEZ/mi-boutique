@@ -1253,6 +1253,37 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 snaps.set(productoId, await tx.get(ref));
             }
 
+            // Al VENDER ('restar'), se valida el stock REAL de Firestore
+            // (no 'productosCache', que puede estar desactualizada) ANTES de
+            // tocar nada: así una prenda agotada bloquea toda la venta con un
+            // error claro, en vez de dejar el stock en negativo — el bug que
+            // dejaba pasar ventas de prendas agotadas, incluidas las que
+            // llegan ya armadas desde un Pedido Web aceptado sin pasar por el
+            // selector de productos (que sí valida contra la caché).
+            if (accion === 'restar') {
+                const agotados = [];
+                for (const [productoId, itemsDelProducto] of itemsPorProducto) {
+                    const snap = snaps.get(productoId);
+                    const variaciones = snap.exists() ? (snap.data().variaciones || []) : [];
+                    for (const item of itemsDelProducto) {
+                        const encontrada = variaciones.find(v =>
+                            normalizarVariacion(v.talla) === normalizarVariacion(item.talla) &&
+                            normalizarVariacion(v.color) === normalizarVariacion(item.color)
+                        );
+                        const stockActual = encontrada ? (parseInt(encontrada.stock, 10) || 0) : 0;
+                        if (stockActual < item.cantidad) {
+                            const variante = [item.talla, item.color].filter(x => x && normalizarVariacion(x) !== '').join(' / ');
+                            agotados.push(variante ? `${item.nombre || productoId} (${variante})` : (item.nombre || productoId));
+                        }
+                    }
+                }
+                if (agotados.length) {
+                    const error = new Error(`Prenda(s) agotada(s): ${agotados.join(', ')}`);
+                    error.agotados = agotados;
+                    throw error;
+                }
+            }
+
             for (const [productoId, itemsDelProducto] of itemsPorProducto) {
                 const snap = snaps.get(productoId);
                 if (!snap.exists()) {
@@ -1883,8 +1914,13 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 tenantId: window.expectedTenantId
             };
 
-            const ventaRef = await addDoc(ventasCollection, ventaData);
+            // Descuenta el stock ANTES de registrar la venta: si alguna
+            // prenda no tiene stock suficiente (agotada), actualizarStockFabrica
+            // lanza un error y ni se descuenta nada ni se guarda la venta —
+            // antes se guardaba la venta primero y el stock quedaba en
+            // negativo sin avisar.
             await actualizarStockFabrica(carrito);
+            const ventaRef = await addDoc(ventasCollection, ventaData);
 
             showToast('Venta registrada', 'success');
 
@@ -1909,7 +1945,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             historialCargado = false; // para que el Historial la recargue con la venta nueva
         } catch (error) {
             console.error('Error al registrar venta de fábrica:', error);
-            showToast('No se pudo registrar la venta: ' + error.message, 'error');
+            if (error.agotados) {
+                showToast(`No se pudo registrar la venta: agotado ${error.agotados.join(', ')}`, 'error');
+            } else {
+                showToast('No se pudo registrar la venta: ' + error.message, 'error');
+            }
         } finally {
             submitBtn.disabled = false;
         }
