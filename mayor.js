@@ -736,12 +736,12 @@ function buildCardColorsPreviewHtml(p) {
     const colores = getColoresDelProducto(p);
     if (colores.length === 0) return '';
     const variantesColor = p.variantes_color || [];
-    const chipsHtml = colores.map(({ color }) => {
+    const chipsHtml = colores.map(({ color, stock }) => {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
-        return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-chip-swatch" style="${swatchStyle}"></span>${formatColorLabel(color)}</span>`;
+        return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-chip-swatch" style="${swatchStyle}"></span>${formatColorLabel(color)}<span class="mayor-card-color-chip-stock">${stock}</span></span>`;
     }).join('');
-    return `<div class="mayor-card-colors-preview" data-id="${p.id}">${chipsHtml}</div>`;
+    return `<p class="mayor-card-colors-label">Colores disponibles</p><div class="mayor-card-colors-preview" data-id="${p.id}">${chipsHtml}</div>`;
 }
 
 function buildCardElement(p) {
