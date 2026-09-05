@@ -8816,9 +8816,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     let unsubscribeTendencia = null;
 
     const COLOR_DETAL = 'rgba(217,136,185,0.85)';   // rosa Boutique
-    const COLOR_MAYOR = 'rgba(42,120,214,0.85)';    // azul Fábrica
     const COLOR_DETAL_HOVER = 'rgba(217,136,185,1)';
-    const COLOR_MAYOR_HOVER = 'rgba(42,120,214,1)';
 
     // Total del día compacto para la etiqueta encima de cada barra ($420 k / $1,6 M)
     const formatoCompacto = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', notation: 'compact', maximumFractionDigits: 1 });
@@ -9003,7 +9001,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ================================================================
     // GRÁFICA 2: TOP 15 PRODUCTOS (barras horizontales, últimos 30 días)
     // ================================================================
-    async function crearGraficoTopProductos(tipo = 'todos') {
+    async function crearGraficoTopProductos() {
         const canvas = document.getElementById('db-top-chart');
         if (!canvas || typeof Chart === 'undefined') return;
 
@@ -9019,25 +9017,21 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             snapshot.forEach(doc => {
                 const venta = doc.data();
                 if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
-                const esMayorista = venta.tipoVenta === 'mayorista';
+                // Las ventas mayoristas no son de Boutique — le pertenecen al tenant
+                // Fábrica, igual que en el resto de este dashboard (KPIs y tendencia).
+                if (venta.tipoVenta === 'mayorista') return;
                 (venta.items || []).forEach(item => {
                     const nombre = item.nombre || 'Sin nombre';
-                    if (!productosVendidos[nombre]) productosVendidos[nombre] = { detal: 0, mayorista: 0 };
-                    if (esMayorista) productosVendidos[nombre].mayorista += (item.cantidad || 0);
-                    else productosVendidos[nombre].detal += (item.cantidad || 0);
+                    productosVendidos[nombre] = (productosVendidos[nombre] || 0) + (item.cantidad || 0);
                 });
             });
-
-            const unidadesSegunTipo = ({ detal, mayorista }) =>
-                tipo === 'detal' ? detal : tipo === 'mayor' ? mayorista : detal + mayorista;
 
             // Sin .reverse(): Chart.js dibuja el índice 0 arriba en las barras
             // horizontales, así que dejar el orden descendente (mayor a menor)
             // pone el producto más vendido arriba y el resto bajando.
             const topProductos = Object.entries(productosVendidos)
-                .map(([nombre, cantidades]) => [nombre, cantidades, unidadesSegunTipo(cantidades)])
-                .filter(([, , unidades]) => unidades > 0)
-                .sort((a, b) => b[2] - a[2])
+                .filter(([, unidades]) => unidades > 0)
+                .sort((a, b) => b[1] - a[1])
                 .slice(0, 15);
 
             if (topChart) topChart.destroy();
@@ -9058,33 +9052,24 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
             const labels = topProductos.map(([nombre]) => nombre.length > 24 ? nombre.slice(0, 24) + '…' : nombre);
 
-            const datasets = tipo === 'todos'
-                ? [
-                    { label: 'Detal', data: topProductos.map(([, c]) => c.detal), backgroundColor: COLOR_DETAL, borderRadius: 4, stack: 'u' },
-                    { label: 'Mayorista', data: topProductos.map(([, c]) => c.mayorista), backgroundColor: COLOR_MAYOR, borderRadius: 4, stack: 'u' }
-                  ]
-                : [{
-                    label: tipo === 'detal' ? 'Detal' : 'Mayorista',
-                    data: topProductos.map(([, , unidades]) => unidades),
-                    backgroundColor: tipo === 'detal' ? COLOR_DETAL : COLOR_MAYOR,
-                    borderRadius: 4
-                  }];
-
             topChart = new Chart(canvas.getContext('2d'), {
                 type: 'bar',
-                data: { labels, datasets },
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Detal',
+                        data: topProductos.map(([, unidades]) => unidades),
+                        backgroundColor: COLOR_DETAL,
+                        borderRadius: 4
+                    }]
+                },
                 options: {
                     indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: { duration: 400 },
                     plugins: {
-                        legend: {
-                            display: tipo === 'todos',
-                            position: 'top',
-                            align: 'end',
-                            labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, pointStyle: 'circle', font: { size: 11 } }
-                        },
+                        legend: { display: false },
                         tooltip: {
                             callbacks: {
                                 label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.x} u.`
@@ -9093,13 +9078,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     },
                     scales: {
                         x: {
-                            stacked: tipo === 'todos',
                             beginAtZero: true,
                             grid: { color: 'rgba(0,0,0,0.05)' },
                             ticks: { precision: 0, font: { size: 11 } }
                         },
                         y: {
-                            stacked: tipo === 'todos',
                             grid: { display: false },
                             ticks: { font: { size: 11 } }
                         }
@@ -9190,17 +9173,6 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         e.target.id === 'mt-30days' ? 30 :
                         180;
             crearGraficoTendencia(dias);
-        });
-    });
-
-    // Cambiar tipo de venta (detal/mayor) de la gráfica de top productos
-    const tpTipoBtns = document.querySelectorAll('input[name="tp-tipo"]');
-    tpTipoBtns.forEach(btn => {
-        btn.addEventListener('change', (e) => {
-            const tipo = e.target.id === 'tp-detal' ? 'detal' :
-                        e.target.id === 'tp-mayor' ? 'mayor' :
-                        'todos';
-            crearGraficoTopProductos(tipo);
         });
     });
 
