@@ -963,7 +963,13 @@ if (mqaBodyEl) {
             } else {
                 const tallas = getTallasConStock(p);
                 const tallasColor = tallas.length > 0 ? getTallasParaColor(p, color) : [];
-                const talla = tallas.length > 0 ? (tallasColor[0] || tallas[0]) : null;
+                // Si ESTE color no tiene tallas reales con stock (es "talla única"
+                // para ese color), usar null en vez de la talla de OTRO color del
+                // mismo producto: antes, en una prenda con colores mixtos (unos con
+                // tallas reales y otros de talla única), el fallback a `tallas[0]`
+                // le pegaba a un color equivocado y el combo talla/color no existía
+                // → "Sin stock disponible" aunque el color sí tuviera stock.
+                const talla = tallasColor[0] || null;
                 const stockDisp = getStockDisponibleFila(p, talla, color, filas.length);
                 if (stockDisp <= 0) {
                     showToast('Sin stock disponible para este color', 'warning');
