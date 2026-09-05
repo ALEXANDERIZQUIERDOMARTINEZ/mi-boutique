@@ -3810,17 +3810,39 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                             .map(v => [claveVariacionFabrica(v.talla, v.color), { talla: v.talla, color: v.color, stock: parseFloat(v.stock) || 0 }])
                     );
 
-                    // Stock base de cada fila: se busca por su identidad
-                    // ORIGINAL (con la que se pintó), no por la actual — así,
-                    // si el usuario solo corrigió el texto de la talla/color
-                    // sin tocar el stock, igual se encuentra y respeta el
-                    // stock real más reciente en vez de tratarla como una
-                    // variación nueva (lo que la habría dejado en 0/negativa).
-                    const nuevasEntradas = filasForm.map(f => {
-                        const baseEntry = f.claveOriginal ? variacionesFrescas.get(f.claveOriginal) : null;
-                        const stockBase = baseEntry ? baseEntry.stock : 0;
-                        const delta = f.stock - f.stockOriginal;
-                        return { clave: claveVariacionFabrica(f.talla, f.color), talla: f.talla, color: f.color, stock: stockBase + delta };
+                    // Varias filas del formulario pueden resolver a la MISMA
+                    // identidad final (talla+color) — típicamente porque el
+                    // usuario usó "+ Añadir" para sumarle stock a un color que
+                    // ya tenía su propia fila, en vez de editar esa fila
+                    // existente. Se agrupan por esa identidad final para que
+                    // sus cambios se SUMEN sobre el stock real más reciente;
+                    // si no, la fila que queda "tapada" (la que se procesa
+                    // primero) se pierde en silencio cuando la otra la
+                    // sobreescribe — el síntoma exacto de "edito el stock de
+                    // un color y aparece otro con datos distintos, el viejo
+                    // queda sin tocar".
+                    const gruposPorClaveFinal = new Map();
+                    filasForm.forEach(f => {
+                        const clave = claveVariacionFabrica(f.talla, f.color);
+                        if (!gruposPorClaveFinal.has(clave)) gruposPorClaveFinal.set(clave, { talla: f.talla, color: f.color, filas: [] });
+                        gruposPorClaveFinal.get(clave).filas.push(f);
+                    });
+
+                    // Stock base de cada grupo: se busca por la identidad
+                    // ORIGINAL de cada fila (con la que se pintó), no por la
+                    // actual — así, si el usuario solo corrigió el texto de
+                    // la talla/color sin tocar el stock, igual se encuentra y
+                    // respeta el stock real más reciente en vez de tratarla
+                    // como una variación nueva (lo que la habría dejado en
+                    // 0/negativa). Si varias filas originales terminan en el
+                    // mismo grupo, sus stocks base también se suman.
+                    const nuevasEntradas = Array.from(gruposPorClaveFinal.entries()).map(([clave, { talla, color, filas }]) => {
+                        const stockBase = filas.reduce((suma, f) => {
+                            const baseEntry = f.claveOriginal ? variacionesFrescas.get(f.claveOriginal) : null;
+                            return suma + (baseEntry ? baseEntry.stock : 0);
+                        }, 0);
+                        const delta = filas.reduce((suma, f) => suma + (f.stock - f.stockOriginal), 0);
+                        return { clave, talla, color, stock: stockBase + delta };
                     });
 
                     // Identidades originales que ya no corresponden a ninguna
