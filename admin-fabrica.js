@@ -3885,14 +3885,20 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                         return { clave, talla, color, stock: stockBase + delta };
                     });
 
-                    // Identidades originales que ya no corresponden a ninguna
-                    // fila del formulario: el usuario borró esa fila a
-                    // propósito (si solo la renombró, su claveOriginal sigue
-                    // presente y no entra aquí).
-                    const clavesOriginalesEnUso = new Set(filasForm.map(f => f.claveOriginal).filter(Boolean));
-                    originales.forEach(clave => {
-                        if (!clavesOriginalesEnUso.has(clave)) variacionesFrescas.delete(clave);
-                    });
+                    // Se borran TODAS las identidades (talla+color) que el
+                    // producto tenía al abrir el modal, sin importar si su
+                    // fila sigue en el formulario — el stock ya calculado de
+                    // esa fila se vuelve a insertar abajo, con su identidad
+                    // ACTUAL, tomado de 'nuevasEntradas'. Antes solo se
+                    // borraban las identidades que ya no tenían ninguna fila
+                    // en el formulario (o sea, filas borradas a propósito) y
+                    // se dejaban intactas las que seguían "en uso" — pero
+                    // renombrar una fila (cambiar el color) NO cambia su
+                    // claveOriginal, así que seguía contando como "en uso" y
+                    // la entrada VIEJA se quedaba huérfana junto a la nueva:
+                    // el síntoma exacto de "renombro el color y aparecen los
+                    // dos, el viejo intacto y el nuevo con el stock movido".
+                    originales.forEach(clave => variacionesFrescas.delete(clave));
 
                     nuevasEntradas.forEach(({ clave, talla, color, stock }) => {
                         variacionesFrescas.set(clave, { talla, color, stock });
