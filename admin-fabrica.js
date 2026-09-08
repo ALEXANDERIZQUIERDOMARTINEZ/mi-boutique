@@ -284,6 +284,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             // (momento de creación del registro).
             let gastosOperativos = 0;
             let ingresosOperativos = 0;
+            let errorMovimientos = null;
             try {
                 const tenantId = window.expectedTenantId;
                 const movClauses = [orderBy('timestamp', 'desc')];
@@ -301,6 +302,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 });
             } catch (err) {
                 console.error('Error sumando gastos/ingresos operativos del período (fábrica):', err);
+                errorMovimientos = err;
             }
 
             // "Ganancia real": plata que entró por las ventas (efectivo +
@@ -315,12 +317,20 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
             const gananciaDetalleEl = document.getElementById('fdb-ganancia-detalle');
             if (gananciaDetalleEl) {
-                if (gastosOperativos > 0 || ingresosOperativos > 0) {
-                    const partes = [`− ${formatoMonedaDashboard.format(gastosOperativos)} gastos`];
-                    if (ingresosOperativos > 0) partes.push(`+ ${formatoMonedaDashboard.format(ingresosOperativos)} otros ingresos`);
-                    gananciaDetalleEl.textContent = partes.join(' · ');
+                // Se muestra el error en la propia tarjeta (no solo en consola) para
+                // poder diagnosticar en producción sin herramientas de desarrollador.
+                if (errorMovimientos) {
+                    gananciaDetalleEl.textContent = `Error al leer gastos: ${errorMovimientos.message || errorMovimientos}`;
+                    gananciaDetalleEl.classList.add('text-danger');
                 } else {
-                    gananciaDetalleEl.textContent = 'Sin gastos registrados';
+                    gananciaDetalleEl.classList.remove('text-danger');
+                    if (gastosOperativos > 0 || ingresosOperativos > 0) {
+                        const partes = [`− ${formatoMonedaDashboard.format(gastosOperativos)} gastos`];
+                        if (ingresosOperativos > 0) partes.push(`+ ${formatoMonedaDashboard.format(ingresosOperativos)} otros ingresos`);
+                        gananciaDetalleEl.textContent = partes.join(' · ');
+                    } else {
+                        gananciaDetalleEl.textContent = 'Sin gastos registrados';
+                    }
                 }
             }
         }, (error) => {
