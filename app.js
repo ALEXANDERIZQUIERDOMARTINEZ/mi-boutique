@@ -4,7 +4,7 @@ import { initializeFirestore, collection, addDoc, onSnapshot, query, where, orde
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
-import { WHOLESALE_TIER_GROUPS, getHybridTierPrice, getBaseTierPrice, resolveWholesaleGroup, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js';
+import { WHOLESALE_TIER_GROUPS, getHybridTierPrice, getBaseTierPrice, resolveWholesaleGroup, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js?v=2';
 import { resolveTenant } from './src/core/tenant-resolver.js';
 
 // *** CONFIGURACIÓN DE FIREBASE ***

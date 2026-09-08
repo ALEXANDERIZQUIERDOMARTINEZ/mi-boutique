@@ -10,7 +10,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 // estado y sus propios listeners de 'adminAuthReady' — duplicaba filas y
 // manejadores de clic en la sección Auditoría.
 import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js?v=1.0.1";
-import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin, WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js";
+import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin, WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js?v=2";
 import { resolveTenant } from "./src/core/tenant-resolver.js";
 
 // Your web app's Firebase configuration

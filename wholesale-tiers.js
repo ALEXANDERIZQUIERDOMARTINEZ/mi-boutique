@@ -5,7 +5,6 @@ export const WHOLESALE_TIER_GROUPS = {
         label: 'Bodys básicos',
         surtido: true,
         tiers: [
-            { min: 1, precio: 28000 },
             { min: 6, precio: 17000 },
             { min: 12, precio: 16000 },
             { min: 24, precio: 15000 },
@@ -19,7 +18,6 @@ export const WHOLESALE_TIER_GROUPS = {
         label: 'Vestidos largos / Conjuntos',
         surtido: true,
         tiers: [
-            { min: 1, precio: 55000 },
             { min: 6, precio: 32000 },
             { min: 12, precio: 31000 },
             { min: 24, precio: 30000 },
@@ -31,7 +29,6 @@ export const WHOLESALE_TIER_GROUPS = {
         label: 'Vestidos cortos básicos',
         surtido: true,
         tiers: [
-            { min: 1, precio: 40000 },
             { min: 6, precio: 23000 },
             { min: 12, precio: 22000 },
             { min: 24, precio: 21000 },
@@ -99,34 +96,33 @@ export function getTierPrice(grupo, cantidadTotal) {
     return precio;
 }
 
-// Precio base (1 unidad) de un grupo, usado como precio de vitrina.
+// Precio del primer escalón (el más barato de mostrar en el catálogo) de un
+// grupo. No se vende por unidad suelta: todos los grupos arrancan en su
+// mínimo real de mayoreo (6X o más), no hay escalón de "vitrina" por 1 unidad.
 export function getBaseTierPrice(grupo) {
     const group = WHOLESALE_TIER_GROUPS[grupo];
     return group ? group.tiers[0].precio : null;
 }
 
-// Umbral del primer escalón real de mayoreo (ej. 6X) para los grupos que
-// participan del surtido (bodys, vestidos largos/conjuntos y vestidos cortos
-// básicos): no hace falta comprar 6 del MISMO tipo entre ellos, cuenta el
-// total combinado. Los grupos elaborados/semi elaborados no entran aquí.
+// Umbral del primer escalón de mayoreo (ej. 6X) para los grupos que participan
+// del surtido (bodys, vestidos largos/conjuntos y vestidos cortos básicos): no
+// hace falta comprar 6 del MISMO tipo entre ellos, cuenta el total combinado.
+// Los grupos elaborados/semi elaborados no entran aquí.
 export function getPrimerEscalonMayorista() {
     const minimos = Object.values(WHOLESALE_TIER_GROUPS)
         .filter(g => g.surtido)
-        .map(g => g.tiers[1]?.min)
+        .map(g => g.tiers[0]?.min)
         .filter(v => typeof v === 'number');
     return minimos.length ? Math.min(...minimos) : Infinity;
 }
 
-// Cantidad mínima del primer escalón REAL de un grupo (ignora el escalón min:1
-// de "vitrina" que solo existe para mostrar el precio en el catálogo). Para
-// bodys/vestidosLargos/vestidosCortos es 6; para los grupos elaborados que no
-// tienen escalón min:1 (ya arrancan en 6, 12, etc.) es el mínimo de su propio
-// primer escalón.
+// Cantidad mínima del primer escalón de un grupo (todos arrancan ya en su
+// mínimo real de mayoreo: 6 para bodys/vestidosLargos/vestidosCortos, 6 o más
+// para los grupos elaborados según su propia tabla).
 export function getFirstRealTierMin(grupo) {
     const group = WHOLESALE_TIER_GROUPS[grupo];
     if (!group) return null;
-    const real = group.tiers.find(t => t.min > 1) || group.tiers[0];
-    return real.min;
+    return group.tiers[0].min;
 }
 
 // Precio/escalón real de un grupo combinando dos totales:
@@ -148,7 +144,7 @@ export function getHybridTierInfo(grupo, totalPropio, totalMixto) {
         if (totalPropio >= group.tiers[i].min) idxPropio = i;
     }
     let idxMixto = 0;
-    if (group.surtido && group.tiers[1] && totalMixto >= group.tiers[1].min) idxMixto = 1;
+    if (group.surtido && group.tiers[0] && totalMixto >= group.tiers[0].min) idxMixto = 0;
     const idx = Math.max(idxPropio, idxMixto);
     return {
         precio: group.tiers[idx].precio,
