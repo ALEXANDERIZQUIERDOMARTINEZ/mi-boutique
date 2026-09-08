@@ -15,7 +15,7 @@ import {
     onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
-import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup } from "./wholesale-tiers.js";
+import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup, getHybridTierInfo, isSurtidoGroup } from "./wholesale-tiers.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -388,6 +388,17 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     let clientesCache = null;
     let productoEnSheet = null; // producto cuya hoja de variaciones está abierta
 
+    // Nombres de categoría (id -> nombre), para resolveWholesaleGroup: misma
+    // colección 'categorias' que usa mayor.html, así la venta de mostrador de
+    // Fábrica aplica las MISMAS tablas de precio por cantidad (ver
+    // wholesale-tiers.js) sin duplicar la lógica.
+    let categoriasMapVentas = new Map();
+    onSnapshot(categoriasCollection, (snap) => {
+        categoriasMapVentas = new Map(snap.docs.map(d => [d.id, d.data().nombre || '']));
+    }, (error) => {
+        console.error('Error en el listener de categorías (Registrar Venta):', error);
+    });
+
     // ── Estado del selector de productos "Agregar venta" ───────────────────
     const seleccionProductos = new Map(); // clave `${productoId}::${talla}::${color}` -> {productoId, codigo, nombre, talla, color, cantidad, precio}
     const precioOverride = new Map(); // productoId -> precio unitario editado a mano en esta sesión
@@ -509,6 +520,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     // Mismo lenguaje visual que el carrito de Boutique (clases .vf-cart-item*
     // ya definidas en style.css): foto, variación, stepper +/- de cantidad.
     function renderCarrito() {
+        recalcularPreciosCarrito();
         const vacio = carrito.length === 0;
         cartEmptyCtaEl.style.display = vacio ? '' : 'none';
         cartWithItemsEl.style.display = vacio ? 'none' : '';
@@ -849,8 +861,82 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         return stock - cantidadYaEnCarrito(producto.id, talla, color) - cantidadSeleccionada(producto.id, talla, color);
     }
 
+    function grupoMayoristaDe(producto) {
+        return resolveWholesaleGroup(producto, categoriasMapVentas);
+    }
+
+    // Cantidad total "pendiente" (ya puesta en el carrito + lo que se está
+    // marcando ahora mismo en el selector de productos, aún sin confirmar),
+    // agrupada por tabla de precios al por mayor — para que el precio de
+    // cada línea baje solo apenas el total de su categoría (o del surtido de
+    // básicos) alcanza el siguiente escalón, igual que en mayor.html.
+    function cantidadesPorGrupo() {
+        const cantidadPorProducto = new Map();
+        carrito.forEach(item => {
+            cantidadPorProducto.set(item.productoId, (cantidadPorProducto.get(item.productoId) || 0) + item.cantidad);
+        });
+        seleccionProductos.forEach(entrada => {
+            cantidadPorProducto.set(entrada.productoId, (cantidadPorProducto.get(entrada.productoId) || 0) + entrada.cantidad);
+        });
+        const porGrupo = new Map();
+        cantidadPorProducto.forEach((cantidad, productoId) => {
+            const producto = productosCache.find(p => p.id === productoId);
+            if (!producto) return;
+            const grupo = grupoMayoristaDe(producto);
+            if (!grupo) return;
+            porGrupo.set(grupo, (porGrupo.get(grupo) || 0) + cantidad);
+        });
+        return porGrupo;
+    }
+
+    // Cuánto hay pendiente sumando SOLO los grupos "surtido" (bodys, vestidos
+    // largos/conjuntos y vestidos cortos básicos): mezclar esas referencias
+    // alcanza para desbloquear su primer escalón (6X), igual que en la
+    // política de "6 prendas surtidas" de mayor.html.
+    function totalMixtoSurtido(porGrupo) {
+        let total = 0;
+        porGrupo.forEach((cantidad, grupo) => { if (isSurtidoGroup(grupo)) total += cantidad; });
+        return total;
+    }
+
+    // Precio unitario de una prenda: un override manual (precio escrito a
+    // mano en esta venta) siempre gana; si no, y la prenda pertenece a una
+    // tabla de precios por cantidad, aplica el escalón que corresponda según
+    // el total pendiente de esa categoría (o del surtido de básicos); si no
+    // tiene tabla, usa el Precio Mayor fijo del producto.
     function precioProducto(producto) {
-        return precioOverride.has(producto.id) ? precioOverride.get(producto.id) : (parseFloat(producto.precioMayor) || 0);
+        if (precioOverride.has(producto.id)) return precioOverride.get(producto.id);
+        const grupo = grupoMayoristaDe(producto);
+        if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
+            const porGrupo = cantidadesPorGrupo();
+            const totalPropio = porGrupo.get(grupo) || 0;
+            const totalMixto = totalMixtoSurtido(porGrupo);
+            const info = getHybridTierInfo(grupo, totalPropio, totalMixto);
+            if (info) return info.precio;
+        }
+        return parseFloat(producto.precioMayor) || 0;
+    }
+
+    // Recalcula el precio/total de TODAS las líneas ya confirmadas en el
+    // carrito: al agregar más unidades de la misma categoría (o del surtido
+    // de básicos), las líneas ya puestas antes también deben bajar de precio
+    // solas, no solo la última que se agregó.
+    function recalcularPreciosCarrito() {
+        carrito.forEach(item => {
+            const producto = productosCache.find(p => p.id === item.productoId);
+            if (!producto) return;
+            item.precio = precioProducto(producto);
+            item.total = item.precio * item.cantidad;
+        });
+    }
+
+    // Mismo recálculo, pero para las entradas del selector de productos
+    // ("Agregar venta") que todavía no se confirman al carrito.
+    function recalcularPreciosSeleccion() {
+        seleccionProductos.forEach((entrada) => {
+            const producto = productosCache.find(p => p.id === entrada.productoId);
+            if (producto) entrada.precio = precioProducto(producto);
+        });
     }
 
     function productosFiltrados() {
@@ -971,17 +1057,21 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         const nuevaCantidad = cantidadActual + delta;
         if (nuevaCantidad <= 0) {
             seleccionProductos.delete(key);
-            return;
+        } else {
+            seleccionProductos.set(key, {
+                productoId: producto.id,
+                codigo: producto.codigo || '',
+                nombre: producto.nombre || '',
+                talla,
+                color,
+                cantidad: nuevaCantidad,
+                precio: precioProducto(producto)
+            });
         }
-        seleccionProductos.set(key, {
-            productoId: producto.id,
-            codigo: producto.codigo || '',
-            nombre: producto.nombre || '',
-            talla,
-            color,
-            cantidad: nuevaCantidad,
-            precio: precioProducto(producto)
-        });
+        // El total pendiente de la categoría cambió: recalcula el precio de
+        // TODAS las entradas ya marcadas (no solo la que se acaba de tocar),
+        // por si esta era la unidad que hizo subir de escalón a las demás.
+        recalcularPreciosSeleccion();
     }
 
     function renderFooter() {
@@ -1182,11 +1272,15 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             });
             productosAgregados.add(entrada.productoId);
         });
-        renderCarrito();
-        fvRegistrarRecientes(Array.from(productosAgregados));
+        // Limpiar la selección ANTES de recalcular el carrito (dentro de
+        // renderCarrito): si no, las entradas recién confirmadas cuentan dos
+        // veces (una en el carrito, otra todavía en seleccionProductos) y el
+        // escalón de precio queda mal calculado hasta el próximo cambio.
         const cantidadAgregada = seleccionProductos.size;
         seleccionProductos.clear();
         precioOverride.clear();
+        renderCarrito();
+        fvRegistrarRecientes(Array.from(productosAgregados));
         renderFooter();
         cerrarPantallaProductos();
         showToast(cantidadAgregada > 1 ? 'Productos agregados al carrito' : 'Producto agregado al carrito', 'success');
