@@ -8083,7 +8083,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     const DASHBOARD_VENTAS_CACHE_KEY = 'mishellDashboardVentasCache_v1';
     const DASHBOARD_VENTAS_CACHE_IDS = [
         'db-ventas-hoy', 'db-ventas-count',
-        'db-boutique-ganancia'
+        'db-boutique-ganancia', 'db-ganancia-detalle'
     ];
 
     function guardarCacheVentasRango(rango) {
@@ -8220,12 +8220,54 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         dbVentasCountEl.textContent = `${ventasContadas} ${ventasContadas === 1 ? 'venta' : 'ventas'}`;
                     }
 
-                    // "Ganancia real": plata que realmente entró por las ventas al
-                    // detal (ya con descuentos aplicados), sin restar ningún costo.
-                    const gananciaRealBoutique = gananciaRealAcumulada;
+                    // 💸 RESTAR/SUMAR GASTOS E INGRESOS OPERATIVOS del período (arriendo,
+                    // luz, rollos de tela, etc.) registrados a mano en Finanzas > Gastos
+                    // e Ingresos (colección movimientosBoutique). Sin esto, "Ganancia real"
+                    // terminaba siendo idéntica a "Ventas hoy" (no restaba nada).
+                    // Se trae toda la colección (mismo patrón que usa el módulo Finanzas
+                    // para este mismo dato) y se filtra aquí por su fecha efectiva, porque
+                    // el campo 'fecha' (elegido a mano al registrar el movimiento) puede
+                    // no coincidir con 'timestamp' (momento de creación del registro).
+                    let gastosOperativos = 0;
+                    let ingresosOperativos = 0;
+                    try {
+                        const tenantId = window.expectedTenantId;
+                        const movClauses = [orderBy('timestamp', 'desc')];
+                        if (tenantId) movClauses.unshift(where('tenantId', '==', tenantId));
+                        const movSnap = await getDocs(query(boutiqueCollection, ...movClauses));
+
+                        movSnap.forEach(docSnap => {
+                            const mov = docSnap.data();
+                            const fechaMov = mov.fecha?.toDate ? mov.fecha.toDate() : (mov.timestamp?.toDate ? mov.timestamp.toDate() : null);
+                            if (!fechaMov || fechaMov < inicio || fechaMov >= fin) return;
+
+                            const monto = parseFloat(mov.monto) || 0;
+                            if (mov.tipo === 'gasto') gastosOperativos += monto;
+                            else if (mov.tipo === 'ingreso') ingresosOperativos += monto;
+                        });
+                    } catch (err) {
+                        console.error('Error sumando gastos/ingresos operativos del período:', err);
+                    }
+
+                    // "Ganancia real": plata que entró por las ventas al detal (ya con
+                    // descuentos aplicados), más otros ingresos operativos y menos los
+                    // gastos operativos del mismo período (arriendo, luz, telas, etc.).
+                    const gananciaRealBoutique = gananciaRealAcumulada + ingresosOperativos - gastosOperativos;
                     const dbBoutiqueGananciaEl = document.getElementById('db-boutique-ganancia');
                     if (dbBoutiqueGananciaEl) {
                         dbBoutiqueGananciaEl.textContent = formatoMoneda.format(gananciaRealBoutique);
+                        dbBoutiqueGananciaEl.classList.toggle('text-danger', gananciaRealBoutique < 0);
+                    }
+
+                    const dbGananciaDetalleEl = document.getElementById('db-ganancia-detalle');
+                    if (dbGananciaDetalleEl) {
+                        if (gastosOperativos > 0 || ingresosOperativos > 0) {
+                            const partes = [`− ${formatoMoneda.format(gastosOperativos)} gastos`];
+                            if (ingresosOperativos > 0) partes.push(`+ ${formatoMoneda.format(ingresosOperativos)} otros ingresos`);
+                            dbGananciaDetalleEl.textContent = partes.join(' · ');
+                        } else {
+                            dbGananciaDetalleEl.textContent = 'Sin gastos registrados';
+                        }
                     }
 
                     // Ya llegó la confirmación real: quitar la marca de "valor en
@@ -8234,7 +8276,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     DASHBOARD_VENTAS_CACHE_IDS.forEach(id => document.getElementById(id)?.classList.remove('db-valor-en-cache'));
                     guardarCacheVentasRango(rango);
 
-                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Ganancia real (plata recibida): ${formatoMoneda.format(gananciaRealBoutique)}`);
+                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Ganancia real (neta de gastos operativos): ${formatoMoneda.format(gananciaRealBoutique)} (gastos: ${formatoMoneda.format(gastosOperativos)}, otros ingresos: ${formatoMoneda.format(ingresosOperativos)})`);
                 },
                 (error) => {
                     marcarDashboardListo('ventasRango');
