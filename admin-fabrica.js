@@ -15,7 +15,7 @@ import {
     onSnapshot, runTransaction
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
-import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup, getHybridTierInfo, isSurtidoGroup } from "./wholesale-tiers.js";
+import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin } from "./wholesale-tiers.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -969,7 +969,13 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             const porGrupo = cantidadesPorGrupo();
             const totalPropio = porGrupo.get(grupo) || 0;
             const totalMixto = totalMixtoSurtido(porGrupo);
-            const info = getHybridTierInfo(grupo, totalPropio, totalMixto);
+            // Al vender por mayor el precio mínimo siempre es el del primer escalón
+            // real (ej. 6X), aunque en esta venta solo vayan 1 o 2 prendas: el
+            // cliente ya es mayorista, no se le cobra el precio de vitrina (1X).
+            // Mismo criterio que recalcularPreciosMayoristas() en admin.js.
+            const totalParaEscalon = Math.max(totalPropio, getFirstRealTierMin(grupo) || 0);
+            const totalMixtoParaEscalon = Math.max(totalMixto, getFirstRealTierMin(grupo) || 0);
+            const info = getHybridTierInfo(grupo, totalParaEscalon, totalMixtoParaEscalon);
             if (info) return info.precio;
         }
         return parseFloat(producto.precioMayor) || 0;
