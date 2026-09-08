@@ -259,7 +259,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             where('timestamp', '<', Timestamp.fromDate(fin)),
             orderBy('timestamp', 'desc')
         );
-        cancelarListenerVentasFabrica = onSnapshot(q, (snapshot) => {
+        cancelarListenerVentasFabrica = onSnapshot(q, async (snapshot) => {
             let totalRecibido = 0;
             let ventasContadas = 0;
             snapshot.forEach(docSnap => {
@@ -272,9 +272,57 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
             document.getElementById('fdb-ventas-periodo').textContent = formatoMonedaDashboard.format(totalRecibido);
             document.getElementById('fdb-ventas-count').textContent = `${ventasContadas} ${ventasContadas === 1 ? 'venta' : 'ventas'}`;
-            // "Ganancia real": plata que realmente entró (efectivo + transferencia),
-            // sin restar costos — mismo criterio que el Dashboard de Boutique.
-            document.getElementById('fdb-ganancia-real').textContent = formatoMonedaDashboard.format(totalRecibido);
+
+            // 💸 RESTAR/SUMAR GASTOS E INGRESOS OPERATIVOS del período (telas,
+            // luz, arriendo, nómina, hilos...) registrados a mano en Finanzas >
+            // Gastos e Ingresos (colección movimientosFabrica). Sin esto,
+            // "Ganancia real" terminaba siendo idéntica a "Ventas [período]"
+            // (no restaba nada). Se trae toda la colección (mismo patrón que
+            // usa el módulo Finanzas para este mismo dato) y se filtra aquí por
+            // su fecha efectiva, porque el campo 'fecha' (elegido a mano al
+            // registrar el movimiento) puede no coincidir con 'timestamp'
+            // (momento de creación del registro).
+            let gastosOperativos = 0;
+            let ingresosOperativos = 0;
+            try {
+                const tenantId = window.expectedTenantId;
+                const movClauses = [orderBy('timestamp', 'desc')];
+                if (tenantId) movClauses.unshift(where('tenantId', '==', tenantId));
+                const movSnap = await getDocs(query(fabricaCollection, ...movClauses));
+
+                movSnap.forEach(movDoc => {
+                    const mov = movDoc.data();
+                    const fechaMov = mov.fecha?.toDate ? mov.fecha.toDate() : (mov.timestamp?.toDate ? mov.timestamp.toDate() : null);
+                    if (!fechaMov || fechaMov < inicio || fechaMov >= fin) return;
+
+                    const monto = parseFloat(mov.monto) || 0;
+                    if (mov.tipo === 'gasto') gastosOperativos += monto;
+                    else if (mov.tipo === 'ingreso') ingresosOperativos += monto;
+                });
+            } catch (err) {
+                console.error('Error sumando gastos/ingresos operativos del período (fábrica):', err);
+            }
+
+            // "Ganancia real": plata que entró por las ventas (efectivo +
+            // transferencia), más otros ingresos operativos y menos los gastos
+            // operativos del mismo período (telas, luz, arriendo, etc.).
+            const gananciaReal = totalRecibido + ingresosOperativos - gastosOperativos;
+            const gananciaRealEl = document.getElementById('fdb-ganancia-real');
+            if (gananciaRealEl) {
+                gananciaRealEl.textContent = formatoMonedaDashboard.format(gananciaReal);
+                gananciaRealEl.classList.toggle('text-danger', gananciaReal < 0);
+            }
+
+            const gananciaDetalleEl = document.getElementById('fdb-ganancia-detalle');
+            if (gananciaDetalleEl) {
+                if (gastosOperativos > 0 || ingresosOperativos > 0) {
+                    const partes = [`− ${formatoMonedaDashboard.format(gastosOperativos)} gastos`];
+                    if (ingresosOperativos > 0) partes.push(`+ ${formatoMonedaDashboard.format(ingresosOperativos)} otros ingresos`);
+                    gananciaDetalleEl.textContent = partes.join(' · ');
+                } else {
+                    gananciaDetalleEl.textContent = 'Sin gastos registrados';
+                }
+            }
         }, (error) => {
             console.error('Error al calcular ventas del dashboard de fábrica:', error);
             const el = document.getElementById('fdb-ventas-periodo');
