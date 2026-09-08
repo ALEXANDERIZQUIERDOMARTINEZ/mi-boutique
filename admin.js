@@ -8164,6 +8164,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     let totalDineroRecibido = 0;
                     let ventasContadas = 0;
                     let gananciaRealAcumulada = 0;
+                    const itemsVendidosPeriodo = [];
 
                     snapshot.forEach(doc => {
                         const venta = doc.data();
@@ -8182,12 +8183,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             const recibido = efectivo + transferencia;
 
                             ventasContadas++;
-
-                            // "Ganancia real": plata que realmente entra por la venta
-                            // (efectivo + transferencia, ya con cualquier descuento
-                            // aplicado), sin restar ningún costo.
                             totalDineroRecibido += recibido;
                             gananciaRealAcumulada += recibido;
+
+                            // Se guardan los items para restar más abajo el costo de la
+                            // mercancía vendida (telas/costo de fábrica de cada prenda).
+                            (venta.items || []).forEach(item => itemsVendidosPeriodo.push(item));
                         }
                     });
 
@@ -8221,20 +8222,30 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     }
 
                     // 💸 RESTAR/SUMAR GASTOS E INGRESOS OPERATIVOS del período (arriendo,
-                    // luz, rollos de tela, etc.) registrados a mano en Finanzas > Gastos
-                    // e Ingresos (colección movimientosBoutique). Sin esto, "Ganancia real"
-                    // terminaba siendo idéntica a "Ventas hoy" (no restaba nada).
-                    // Se trae toda la colección (mismo patrón que usa el módulo Finanzas
-                    // para este mismo dato) y se filtra aquí por su fecha efectiva, porque
-                    // el campo 'fecha' (elegido a mano al registrar el movimiento) puede
-                    // no coincidir con 'timestamp' (momento de creación del registro).
+                    // luz, agua, etc.) registrados a mano en Finanzas > Gastos e Ingresos
+                    // (colección movimientosBoutique), Y el costo de la mercancía vendida
+                    // (telas/costo de fábrica de cada prenda, tomado del catálogo de
+                    // productos). Antes solo se restaban los gastos manuales, así que
+                    // "Ganancia real" quedaba idéntica a "Ventas hoy" mientras no hubiera
+                    // gastos registrados — mostrando el 100% del precio de venta como
+                    // ganancia, aunque cada prenda sí tuvo un costo (tela + arriendo/luz/
+                    // agua prorrateados). Se trae toda la colección de movimientos (mismo
+                    // patrón que usa el módulo Finanzas) y se filtra aquí por su fecha
+                    // efectiva, porque el campo 'fecha' (elegido a mano al registrar el
+                    // movimiento) puede no coincidir con 'timestamp' (momento de creación
+                    // del registro).
                     let gastosOperativos = 0;
                     let ingresosOperativos = 0;
+                    let costoMercanciaVendida = 0;
                     try {
                         const tenantId = window.expectedTenantId;
                         const movClauses = [orderBy('timestamp', 'desc')];
                         if (tenantId) movClauses.unshift(where('tenantId', '==', tenantId));
-                        const movSnap = await getDocs(query(boutiqueCollection, ...movClauses));
+
+                        const [movSnap, prodsSnap] = await Promise.all([
+                            getDocs(query(boutiqueCollection, ...movClauses)),
+                            getDocs(productsCollection)
+                        ]);
 
                         movSnap.forEach(docSnap => {
                             const mov = docSnap.data();
@@ -8245,14 +8256,31 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                             if (mov.tipo === 'gasto') gastosOperativos += monto;
                             else if (mov.tipo === 'ingreso') ingresosOperativos += monto;
                         });
+
+                        // Mapa productoId → costoCompra (costo real registrado en el
+                        // catálogo), igual al que usa el módulo Finanzas para este cálculo.
+                        const costoPorProducto = new Map();
+                        prodsSnap.forEach(d => costoPorProducto.set(d.id, parseFloat(d.data().costoCompra) || 0));
+
+                        itemsVendidosPeriodo.forEach(item => {
+                            const cant = parseInt(item.cantidad || 1, 10);
+                            const costoItem = parseFloat(
+                                item.precioCosto ??
+                                item.costo ??
+                                (item.productoId ? costoPorProducto.get(item.productoId) : undefined) ??
+                                0
+                            );
+                            costoMercanciaVendida += costoItem * cant;
+                        });
                     } catch (err) {
-                        console.error('Error sumando gastos/ingresos operativos del período:', err);
+                        console.error('Error sumando gastos/ingresos operativos o costo de mercancía del período:', err);
                     }
 
                     // "Ganancia real": plata que entró por las ventas al detal (ya con
-                    // descuentos aplicados), más otros ingresos operativos y menos los
-                    // gastos operativos del mismo período (arriendo, luz, telas, etc.).
-                    const gananciaRealBoutique = gananciaRealAcumulada + ingresosOperativos - gastosOperativos;
+                    // descuentos aplicados), menos el costo de la mercancía vendida
+                    // (telas) y los gastos operativos del período (arriendo, luz, agua),
+                    // más otros ingresos operativos.
+                    const gananciaRealBoutique = gananciaRealAcumulada - costoMercanciaVendida + ingresosOperativos - gastosOperativos;
                     const dbBoutiqueGananciaEl = document.getElementById('db-boutique-ganancia');
                     if (dbBoutiqueGananciaEl) {
                         dbBoutiqueGananciaEl.textContent = formatoMoneda.format(gananciaRealBoutique);
@@ -8261,8 +8289,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                     const dbGananciaDetalleEl = document.getElementById('db-ganancia-detalle');
                     if (dbGananciaDetalleEl) {
-                        if (gastosOperativos > 0 || ingresosOperativos > 0) {
-                            const partes = [`− ${formatoMoneda.format(gastosOperativos)} gastos`];
+                        if (costoMercanciaVendida > 0 || gastosOperativos > 0 || ingresosOperativos > 0) {
+                            const partes = [];
+                            if (costoMercanciaVendida > 0) partes.push(`− ${formatoMoneda.format(costoMercanciaVendida)} costo mercancía`);
+                            if (gastosOperativos > 0) partes.push(`− ${formatoMoneda.format(gastosOperativos)} gastos`);
                             if (ingresosOperativos > 0) partes.push(`+ ${formatoMoneda.format(ingresosOperativos)} otros ingresos`);
                             dbGananciaDetalleEl.textContent = partes.join(' · ');
                         } else {
@@ -8276,7 +8306,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                     DASHBOARD_VENTAS_CACHE_IDS.forEach(id => document.getElementById(id)?.classList.remove('db-valor-en-cache'));
                     guardarCacheVentasRango(rango);
 
-                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Ganancia real (neta de gastos operativos): ${formatoMoneda.format(gananciaRealBoutique)} (gastos: ${formatoMoneda.format(gastosOperativos)}, otros ingresos: ${formatoMoneda.format(ingresosOperativos)})`);
+                    console.log(`✅ Ventas (${rango}) detal (dinero recibido): ${formatoMoneda.format(totalDineroRecibido)} (${ventasContadas} ventas) | Ganancia real (neta de costo de mercancía y gastos operativos): ${formatoMoneda.format(gananciaRealBoutique)} (costo mercancía: ${formatoMoneda.format(costoMercanciaVendida)}, gastos: ${formatoMoneda.format(gastosOperativos)}, otros ingresos: ${formatoMoneda.format(ingresosOperativos)})`);
                 },
                 (error) => {
                     marcarDashboardListo('ventasRango');

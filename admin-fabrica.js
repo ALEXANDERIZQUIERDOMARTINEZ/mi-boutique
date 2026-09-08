@@ -262,34 +262,47 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         cancelarListenerVentasFabrica = onSnapshot(q, async (snapshot) => {
             let totalRecibido = 0;
             let ventasContadas = 0;
+            const itemsVendidosPeriodo = [];
             snapshot.forEach(docSnap => {
                 const venta = docSnap.data();
                 const estado = venta.estado || '';
                 if (estado === 'Anulada' || estado === 'Cancelada') return;
                 totalRecibido += (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
                 ventasContadas++;
+                // Se guardan los items para restar más abajo el costo de la
+                // mercancía vendida (telas de cada prenda producida).
+                (venta.items || []).forEach(item => itemsVendidosPeriodo.push(item));
             });
 
             document.getElementById('fdb-ventas-periodo').textContent = formatoMonedaDashboard.format(totalRecibido);
             document.getElementById('fdb-ventas-count').textContent = `${ventasContadas} ${ventasContadas === 1 ? 'venta' : 'ventas'}`;
 
-            // 💸 RESTAR/SUMAR GASTOS E INGRESOS OPERATIVOS del período (telas,
-            // luz, arriendo, nómina, hilos...) registrados a mano en Finanzas >
-            // Gastos e Ingresos (colección movimientosFabrica). Sin esto,
-            // "Ganancia real" terminaba siendo idéntica a "Ventas [período]"
-            // (no restaba nada). Se trae toda la colección (mismo patrón que
-            // usa el módulo Finanzas para este mismo dato) y se filtra aquí por
-            // su fecha efectiva, porque el campo 'fecha' (elegido a mano al
-            // registrar el movimiento) puede no coincidir con 'timestamp'
+            // 💸 RESTAR/SUMAR GASTOS E INGRESOS OPERATIVOS del período (luz,
+            // agua, arriendo, nómina, hilos...) registrados a mano en Finanzas >
+            // Gastos e Ingresos (colección movimientosFabrica), Y el costo de la
+            // mercancía vendida (telas de cada prenda, tomado del catálogo de
+            // productosFabrica). Antes solo se restaban los gastos manuales, así
+            // que "Ganancia real" quedaba idéntica a "Ventas [período]" mientras
+            // no hubiera gastos registrados — mostrando el 100% del precio de
+            // venta como ganancia, aunque cada prenda sí tuvo un costo (tela +
+            // arriendo/luz/agua prorrateados). Se trae toda la colección de
+            // movimientos (mismo patrón que usa el módulo Finanzas) y se filtra
+            // aquí por su fecha efectiva, porque el campo 'fecha' (elegido a mano
+            // al registrar el movimiento) puede no coincidir con 'timestamp'
             // (momento de creación del registro).
             let gastosOperativos = 0;
             let ingresosOperativos = 0;
+            let costoMercanciaVendida = 0;
             let errorMovimientos = null;
             try {
                 const tenantId = window.expectedTenantId;
                 const movClauses = [orderBy('timestamp', 'desc')];
                 if (tenantId) movClauses.unshift(where('tenantId', '==', tenantId));
-                const movSnap = await getDocs(query(fabricaCollection, ...movClauses));
+
+                const [movSnap, prodsSnap] = await Promise.all([
+                    getDocs(query(fabricaCollection, ...movClauses)),
+                    getDocs(productosFabricaCollection)
+                ]);
 
                 movSnap.forEach(movDoc => {
                     const mov = movDoc.data();
@@ -300,15 +313,32 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                     if (mov.tipo === 'gasto') gastosOperativos += monto;
                     else if (mov.tipo === 'ingreso') ingresosOperativos += monto;
                 });
+
+                // Mapa productoId → costoCompra (costo real registrado en el
+                // catálogo de fábrica).
+                const costoPorProducto = new Map();
+                prodsSnap.forEach(d => costoPorProducto.set(d.id, parseFloat(d.data().costoCompra) || 0));
+
+                itemsVendidosPeriodo.forEach(item => {
+                    const cant = parseInt(item.cantidad || 1, 10);
+                    const costoItem = parseFloat(
+                        item.precioCosto ??
+                        item.costo ??
+                        (item.productoId ? costoPorProducto.get(item.productoId) : undefined) ??
+                        0
+                    );
+                    costoMercanciaVendida += costoItem * cant;
+                });
             } catch (err) {
-                console.error('Error sumando gastos/ingresos operativos del período (fábrica):', err);
+                console.error('Error sumando gastos/ingresos operativos o costo de mercancía del período (fábrica):', err);
                 errorMovimientos = err;
             }
 
             // "Ganancia real": plata que entró por las ventas (efectivo +
-            // transferencia), más otros ingresos operativos y menos los gastos
-            // operativos del mismo período (telas, luz, arriendo, etc.).
-            const gananciaReal = totalRecibido + ingresosOperativos - gastosOperativos;
+            // transferencia), menos el costo de la mercancía vendida (telas) y
+            // los gastos operativos del período (luz, agua, arriendo, etc.), más
+            // otros ingresos operativos.
+            const gananciaReal = totalRecibido - costoMercanciaVendida + ingresosOperativos - gastosOperativos;
             const gananciaRealEl = document.getElementById('fdb-ganancia-real');
             if (gananciaRealEl) {
                 gananciaRealEl.textContent = formatoMonedaDashboard.format(gananciaReal);
@@ -324,8 +354,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                     gananciaDetalleEl.classList.add('text-danger');
                 } else {
                     gananciaDetalleEl.classList.remove('text-danger');
-                    if (gastosOperativos > 0 || ingresosOperativos > 0) {
-                        const partes = [`− ${formatoMonedaDashboard.format(gastosOperativos)} gastos`];
+                    if (costoMercanciaVendida > 0 || gastosOperativos > 0 || ingresosOperativos > 0) {
+                        const partes = [];
+                        if (costoMercanciaVendida > 0) partes.push(`− ${formatoMonedaDashboard.format(costoMercanciaVendida)} costo mercancía`);
+                        if (gastosOperativos > 0) partes.push(`− ${formatoMonedaDashboard.format(gastosOperativos)} gastos`);
                         if (ingresosOperativos > 0) partes.push(`+ ${formatoMonedaDashboard.format(ingresosOperativos)} otros ingresos`);
                         gananciaDetalleEl.textContent = partes.join(' · ');
                     } else {
