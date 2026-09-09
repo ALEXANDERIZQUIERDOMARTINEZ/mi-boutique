@@ -62,12 +62,21 @@ function normalizeColor(color) {
 const PRODUCT_IMAGE_MAX_DIMENSION = 1600;
 const PRODUCT_IMAGE_JPEG_QUALITY = 0.82;
 const PRODUCT_IMAGE_SKIP_COMPRESSION_BELOW = 300 * 1024; // 300KB
+// Si el navegador nunca dispara onload/onerror (pasa con algunos archivos
+// HEIC reenviados por WhatsApp mal etiquetados como image/jpeg), sin este
+// límite la promesa quedaba pendiente para siempre y el botón "Guardando..."
+// del formulario de producto no volvía a habilitarse.
+const PRODUCT_IMAGE_DECODE_TIMEOUT_MS = 10000;
 
 function compressProductImageFile(file) {
     if (!file || !file.type?.startsWith('image/') || file.type === 'image/svg+xml') return Promise.resolve(file);
     if (file.size <= PRODUCT_IMAGE_SKIP_COMPRESSION_BELOW) return Promise.resolve(file);
 
     return new Promise((resolve) => {
+        let settled = false;
+        const finish = (result) => { if (!settled) { settled = true; clearTimeout(safetyTimer); resolve(result); } };
+        const safetyTimer = setTimeout(() => { URL.revokeObjectURL(url); finish(file); }, PRODUCT_IMAGE_DECODE_TIMEOUT_MS);
+
         const img = new Image();
         const url = URL.createObjectURL(file);
         img.onload = () => {
@@ -82,14 +91,27 @@ function compressProductImageFile(file) {
             canvas.getContext('2d').drawImage(img, 0, 0, width, height);
             URL.revokeObjectURL(url);
             canvas.toBlob((blob) => {
-                if (!blob || blob.size >= file.size) { resolve(file); return; }
+                if (!blob || blob.size >= file.size) { finish(file); return; }
                 const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
-                resolve(new File([blob], newName, { type: 'image/jpeg' }));
+                finish(new File([blob], newName, { type: 'image/jpeg' }));
             }, 'image/jpeg', PRODUCT_IMAGE_JPEG_QUALITY);
         };
-        img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+        img.onerror = () => { URL.revokeObjectURL(url); finish(file); };
         img.src = url;
     });
+}
+
+// Envuelve una escritura a Firestore/Storage con un límite de tiempo: si la
+// red se degrada a mitad de un uploadBytes/updateDoc/addDoc, esas promesas no
+// rechazan por sí solas (Firestore reintenta en segundo plano indefinidamente),
+// así que sin esto el botón "Guardando..." del formulario de producto se
+// quedaba cargando para siempre en vez de mostrar un error y liberarse.
+const WRITE_TIMEOUT_MS = 20000;
+function withWriteTimeout(promise, label) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(`Se agotó el tiempo de espera guardando ${label}. Revisa tu conexión e intenta de nuevo.`)), WRITE_TIMEOUT_MS))
+    ]);
 }
 
 // ── Carga diferida de librerías pesadas de terceros ─────────────────────
@@ -2166,8 +2188,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const angulo = cv.newFileAngles[i] || 'frente';
                     const fileName = `${tenantId || 'tenant'}/productos/${productId}/color_${cv.id}_${Date.now()}_${i}_${file.name}`;
                     const storageRef = ref(storage, fileName);
-                    const snapshot = await uploadBytes(storageRef, file, { cacheControl: 'public, max-age=31536000, immutable' });
-                    const url = await getDownloadURL(snapshot.ref);
+                    const snapshot = await withWriteTimeout(uploadBytes(storageRef, file, { cacheControl: 'public, max-age=31536000, immutable' }), 'las imágenes de color');
+                    const url = await withWriteTimeout(getDownloadURL(snapshot.ref), 'las imágenes de color');
                     nuevasImgs.push({ url, angulo, orden: cv.imagenes.length + i });
                 }
 
@@ -2450,8 +2472,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const fileName = `product_images/${Date.now()}-${firstFile.name}`;
                     const storageRef = ref(storage, fileName);
 
-                    const uploadResult = await uploadBytes(storageRef, firstFile, { cacheControl: 'public, max-age=31536000, immutable' });
-                    productData.imagenUrl = await getDownloadURL(uploadResult.ref);
+                    const uploadResult = await withWriteTimeout(uploadBytes(storageRef, firstFile, { cacheControl: 'public, max-age=31536000, immutable' }), 'la imagen');
+                    productData.imagenUrl = await withWriteTimeout(getDownloadURL(uploadResult.ref), 'la imagen');
                     console.log("Imagen subida:", productData.imagenUrl);
                 }
 
@@ -2477,7 +2499,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!productData.imagenUrl) {
                         productData.imagenUrl = existingDoc?.imagenUrl || null;
                     }
-                    await updateDoc(doc(db, "productos", productId), productData);
+                    await withWriteTimeout(updateDoc(doc(db, "productos", productId), productData), 'el producto');
                     imagenInput.value = '';
                     showToast("Producto actualizado!");
 
@@ -2514,7 +2536,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else { 
                     if (!productData.imagenUrl) { showToast("Se requiere una imagen para crear un producto nuevo.", 'warning'); throw new Error("Imagen requerida"); }
                     productData.codigo = "P" + Date.now().toString().slice(-5);
-                    const docRef = await addDoc(productsCollection, productData);
+                    const docRef = await withWriteTimeout(addDoc(productsCollection, productData), 'el producto');
                     showToast("Producto guardado!");
 
                     registrarAuditoria({
