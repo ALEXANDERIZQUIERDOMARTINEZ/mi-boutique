@@ -333,6 +333,14 @@ export class AuthManager {
                     resolveOnce(this.currentUser);
                 } catch (error) {
                     console.error('Error verificando usuario:', error);
+                    // Limpiar el caché optimista antes de redirigir: si no,
+                    // login.html lo lee al cargar y manda de vuelta a
+                    // admin.html de inmediato (ver su comentario sobre este
+                    // mismo invariante), y si el error persiste (red
+                    // inestable, permisos, etc.) queda un ping-pong infinito
+                    // de recargas entre login.html y admin.html.
+                    sessionStorage.removeItem('adminUser');
+                    localStorage.removeItem(USER_CACHE_KEY);
                     this.redirectToLogin();
                     rejectOnce(error);
                 }
