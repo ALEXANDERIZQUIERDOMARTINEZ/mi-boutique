@@ -118,7 +118,7 @@ export const MODULOS_PERMISOS = [
     { id: 'usuarios_ver', nombre: 'Usuarios', permisos: [PERMISOS.USUARIOS_VER, PERMISOS.USUARIOS_CREAR, PERMISOS.USUARIOS_EDITAR] },
     { id: 'auditoria_ver', nombre: 'Auditoría', permisos: [PERMISOS.AUDITORIA_VER] }
     // "Backup" no aparece aquí a propósito: exporta todos los datos de la
-    // tienda, así que se queda reservado solo para Sistema (Super Admin).
+    // tienda, así que se queda reservado al rol Administrador.
 ];
 
 // Roles predefinidos con sus permisos.
@@ -126,15 +126,10 @@ export const MODULOS_PERMISOS = [
 // usuarios.js los convierte al formato de mapa { permiso: true } que exigen
 // las Security Rules antes de guardarlos en Firestore.
 export const ROLES = {
-    SUPER_ADMIN: {
-        nombre: 'Sistema (Super Administrador)',
-        descripcion: 'Acceso total al sistema',
-        permisos: Object.values(PERMISOS) // Todos los permisos
-    },
     ADMIN: {
         nombre: 'Administrador',
-        descripcion: 'Acceso completo a la tienda, excepto gestión de usuarios',
-        permisos: Object.values(PERMISOS).filter(p => !p.startsWith('usuarios_'))
+        descripcion: 'Acceso total a su negocio, incluida la gestión de usuarios',
+        permisos: Object.values(PERMISOS) // Todos los permisos
     },
     VENDEDOR: {
         nombre: 'Vendedor',
@@ -272,7 +267,32 @@ export class AuthManager {
                         return;
                     }
 
-                    const userData = userDoc.data();
+                    let userData = userDoc.data();
+
+                    // TEMPORAL — conversión de cuentas del rol eliminado
+                    // SUPER_ADMIN a Administrador de Boutique con todos los
+                    // permisos. Tiene que correr (cada cuenta entra una vez)
+                    // ANTES de desplegar las firestore.rules sin Super Admin:
+                    // con las reglas viejas esa cuenta todavía puede
+                    // escribir su propio documento. Borrar este bloque
+                    // cuando ya no queden cuentas SUPER_ADMIN.
+                    if (userData.rol === 'SUPER_ADMIN') {
+                        const conversion = {
+                            rol: 'ADMIN',
+                            tenantId: userData.tenantId || 'boutique',
+                            permisos: Object.fromEntries(Object.values(PERMISOS).map(p => [p, true]))
+                        };
+                        try {
+                            await setDoc(doc(this.db, 'usuarios', user.uid), conversion, { merge: true });
+                            userData = { ...userData, ...conversion };
+                        } catch (error) {
+                            console.error('No se pudo convertir la cuenta SUPER_ADMIN a Administrador:', error);
+                            await this.logout();
+                            alert('Tu cuenta usa un rol que ya no existe y no se pudo actualizar. Contacta al administrador.');
+                            rejectOnce('Super admin conversion failed');
+                            return;
+                        }
+                    }
 
                     // Verificar que el usuario está activo
                     if (!userData.activo) {
@@ -285,16 +305,14 @@ export class AuthManager {
                     // Cada negocio tiene su propio panel: si la persona abrió
                     // el de otro negocio, se la manda al suyo. El aislamiento
                     // real de datos lo garantiza firestore.rules.
-                    const tenantId = userData.rol === 'SUPER_ADMIN' ? null : (userData.tenantId || 'boutique');
-                    if (tenantId) {
-                        const panelPropio = PANEL_POR_NEGOCIO[tenantId];
-                        const paginaActual = window.location.pathname.split('/').pop();
-                        const esPanel = Object.values(PANEL_POR_NEGOCIO).includes(paginaActual);
-                        if (panelPropio && esPanel && paginaActual !== panelPropio) {
-                            window.location.replace(panelPropio);
-                            rejectOnce('Wrong panel');
-                            return;
-                        }
+                    const tenantId = userData.tenantId || 'boutique';
+                    const panelPropio = PANEL_POR_NEGOCIO[tenantId];
+                    const paginaActual = window.location.pathname.split('/').pop();
+                    const esPanel = Object.values(PANEL_POR_NEGOCIO).includes(paginaActual);
+                    if (panelPropio && esPanel && paginaActual !== panelPropio) {
+                        window.location.replace(panelPropio);
+                        rejectOnce('Wrong panel');
+                        return;
                     }
 
                     // Verificar que nadie haya cerrado todas las sesiones después
@@ -346,10 +364,9 @@ export class AuthManager {
             const raw = localStorage.getItem(USER_CACHE_KEY);
             if (!raw) return null;
             const cached = JSON.parse(raw);
-            // Ya no hay "panel equivocado" que filtrar: admin.html es un
-            // panel único y cada usuario siempre ve su propia empresa
-            // (o la que Super Admin haya elegido explícitamente).
-            return cached;
+            // Una sesión guardada con el rol eliminado SUPER_ADMIN no se usa:
+            // la verificación real (init) convierte esa cuenta primero.
+            return cached.rol === 'SUPER_ADMIN' ? null : cached;
         } catch (error) {
             console.warn('No se pudo leer el caché de usuario:', error);
             return null;
@@ -373,8 +390,6 @@ export class AuthManager {
      * no un documento global: antes vivía en config/seguridad (compartido
      * por toda la plataforma), así que cualquier usuario activo de
      * cualquier empresa podía invalidar las sesiones de TODAS las demás.
-     * tenantId null (Super Admin, no pertenece a ninguna empresa) no se
-     * verifica — ver llamada en init().
      * Antes esto se comparaba contra una marca de tiempo propia guardada en
      * localStorage, pero localStorage puede vaciarse solo (limpieza de
      * almacenamiento de Safari/iOS tras días sin interacción, modo privado,
@@ -388,7 +403,6 @@ export class AuthManager {
      * localStorage sobreviva.
      */
     async verificarSesionVigente(user, tenantId) {
-        if (!tenantId) return true; // Super Admin: no aplica
         try {
             const cfgDoc = await getDoc(doc(this.db, 'tenants', tenantId, 'config', 'seguridad'));
             const invalidarEn = cfgDoc.exists() ? cfgDoc.data().invalidarSesionesEn : null;
@@ -407,11 +421,9 @@ export class AuthManager {
      * Escucha en vivo tenants/{tenantId}/config/seguridad DE LA EMPRESA de
      * este usuario: si su administrador cierra todas las sesiones mientras
      * esta pestaña sigue abierta, la cierra de inmediato sin esperar a que
-     * alguien recargue la página. Super Admin no pertenece a ninguna
-     * empresa, no aplica.
+     * alguien recargue la página.
      */
     escucharInvalidacionSesiones() {
-        if (this.isSuperAdmin()) return; // no pertenece a ninguna empresa
         // Igual que en init(): un usuario sin tenantId (cuentas de Boutique
         // de antes de multi-tenant) se trata como 'boutique', no como "sin
         // empresa" — si no, se quedarían sin este listener por completo.
@@ -437,8 +449,7 @@ export class AuthManager {
      * podía cerrar las sesiones de todas las demás.
      */
     async invalidarTodasLasSesiones() {
-        // window.expectedTenantId es el negocio del panel abierto (también
-        // para Super Admin, que no tiene tenantId propio).
+        // window.expectedTenantId es el negocio del panel abierto.
         const tenantId = window.expectedTenantId || this.currentUser?.tenantId || 'boutique';
         await setDoc(doc(this.db, 'tenants', tenantId, 'config', 'seguridad'), { invalidarSesionesEn: serverTimestamp() }, { merge: true });
     }
@@ -466,7 +477,6 @@ export class AuthManager {
      */
     hasPermission(permission) {
         if (!this.currentUser) return false;
-        if (this.isSuperAdmin()) return true;
         return this.userPermissions?.[permission] === true;
     }
 
@@ -475,7 +485,6 @@ export class AuthManager {
      */
     hasAnyPermission(permissions) {
         if (!this.currentUser) return false;
-        if (this.isSuperAdmin()) return true;
         return permissions.some(p => this.userPermissions?.[p] === true);
     }
 
@@ -484,15 +493,7 @@ export class AuthManager {
      */
     hasAllPermissions(permissions) {
         if (!this.currentUser) return false;
-        if (this.isSuperAdmin()) return true;
         return permissions.every(p => this.userPermissions?.[p] === true);
-    }
-
-    /**
-     * Verifica si el usuario es super admin
-     */
-    isSuperAdmin() {
-        return this.currentUser?.rol === 'SUPER_ADMIN';
     }
 
     /**
@@ -551,7 +552,6 @@ export function createPermissionChecker(authManager) {
         can: (permission) => authManager.hasPermission(permission),
         canAny: (permissions) => authManager.hasAnyPermission(permissions),
         canAll: (permissions) => authManager.hasAllPermissions(permissions),
-        isSuperAdmin: () => authManager.isSuperAdmin(),
 
         // Utilidad para deshabilitar elementos sin permisos
         protectButton: (buttonElement, permission, message = 'No tienes permiso para esta acción') => {

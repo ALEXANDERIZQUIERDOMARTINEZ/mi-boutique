@@ -6,13 +6,13 @@
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js';
+import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js?v=2.0.0';
 // La versión debe coincidir con el <script type="module" src="auditoria.js?v=..."> de
 // admin.html / admin-fabrica.html: un specifier de import distinto (con o sin query
 // string distinta) hace que el navegador cargue auditoria.js como un módulo aparte,
 // con su propio estado y sus propios listeners de 'adminAuthReady' — eso duplicaba
 // filas y manejadores de clic en la sección Auditoría.
-import { registrarAuditoria } from './auditoria.js?v=1.0.1';
+import { registrarAuditoria } from './auditoria.js?v=1.0.2';
 
 // Referencias globales
 let usuariosCollection;
@@ -181,8 +181,8 @@ function renderUsuarioRow(usuario, tbody) {
     const isCurrentUser = currentAuthManager?.getCurrentUser()?.uid === usuario.id;
     // Editar: requiere permiso usuarios_editar (o usuarios_crear si aún no tiene ninguno)
     const canEdit = currentAuthManager?.hasPermission(PERMISOS.USUARIOS_EDITAR);
-    // Eliminar: según firestore.rules, solo el Super Admin puede eliminar usuarios
-    const canDelete = currentAuthManager?.isSuperAdmin();
+    // Eliminar: según firestore.rules, solo el rol Administrador puede eliminar usuarios
+    const canDelete = currentAuthManager?.getCurrentUser()?.rol === 'ADMIN';
 
     tr.innerHTML = `
         <td class="px-4">
@@ -210,7 +210,7 @@ function renderUsuarioRow(usuario, tbody) {
                 </button>
                 <button class="btn btn-outline-danger" onclick="window.deleteUsuarioConfirm('${usuario.id}', '${usuario.nombre}')"
                     ${!canDelete || isCurrentUser ? 'disabled' : ''}
-                    title="${isCurrentUser ? 'No puedes eliminarte a ti mismo' : (canDelete ? 'Eliminar' : 'Solo el Super Administrador puede eliminar usuarios')}">
+                    title="${isCurrentUser ? 'No puedes eliminarte a ti mismo' : (canDelete ? 'Eliminar' : 'Solo un Administrador puede eliminar usuarios')}">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>

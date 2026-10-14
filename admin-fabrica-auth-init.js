@@ -7,10 +7,10 @@
  * cual, sin cambios, igual que en Boutique.
  */
 
-import { AuthManager } from './auth.js';
+import { AuthManager } from './auth.js?v=2.0.0';
 // Versión debe coincidir con el import de usuarios.js en admin-auth-init.js
 // (Vercel cachea .js hasta 1h; bump este número cuando usuarios.js cambie).
-import { initUsuariosManager } from './usuarios.js?v=1.1.0';
+import { initUsuariosManager } from './usuarios.js?v=1.2.0';
 
 function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
@@ -37,7 +37,7 @@ const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
 
 /**
  * Conecta el botón "Cerrar todas las sesiones" (visible solo para
- * Administrador/Sistema vía data-roles) con AuthManager.invalidarTodasLasSesiones.
+ * Administrador vía data-roles) con AuthManager.invalidarTodasLasSesiones.
  */
 function configurarCierreSesionesGlobal(authManager) {
     const btn = document.getElementById('btn-cerrar-todas-sesiones');
@@ -81,7 +81,7 @@ function aplicarPermisosNav() {
 
     document.querySelectorAll('[data-permiso]').forEach(el => {
         const permiso = el.getAttribute('data-permiso');
-        const permitido = ctx.isSuperAdmin || ctx.permisos?.[permiso] === true;
+        const permitido = ctx.permisos?.[permiso] === true;
         el.style.display = permitido ? '' : 'none';
     });
 
@@ -112,8 +112,7 @@ function construirAppContext(usuario) {
         nombre: usuario.nombre,
         rol: usuario.rol,
         permisos: usuario.permisos || {},
-        tenantId: usuario.tenantId ?? null,
-        isSuperAdmin: usuario.rol === 'SUPER_ADMIN'
+        tenantId: usuario.tenantId ?? null
     };
 }
 

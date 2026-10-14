@@ -6,12 +6,12 @@
  */
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { AuthManager } from './auth.js';
+import { AuthManager } from './auth.js?v=2.0.0';
 // Versionado por lo mismo que auditoria.js más abajo: usuarios.js no tiene
 // ninguna otra referencia versionada en el proyecto, así que Vercel puede
 // servir una copia vieja en caché (max-age=3600) hasta una hora después de
 // cada cambio. Bump este número cuando usuarios.js cambie.
-import { initUsuariosManager } from './usuarios.js?v=1.1.0';
+import { initUsuariosManager } from './usuarios.js?v=1.2.0';
 
 function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
@@ -43,7 +43,7 @@ function mostrarErrorGate() {
 
 /**
  * Conecta el botón "Cerrar todas las sesiones" (visible solo para
- * Administrador/Sistema vía data-roles) con AuthManager.invalidarTodasLasSesiones.
+ * Administrador vía data-roles) con AuthManager.invalidarTodasLasSesiones.
  */
 function configurarCierreSesionesGlobal(authManager) {
     const btn = document.getElementById('btn-cerrar-todas-sesiones');
@@ -96,13 +96,13 @@ function aplicarPermisosNav() {
 
     document.querySelectorAll('[data-permiso]').forEach(el => {
         const permiso = el.getAttribute('data-permiso');
-        const tienePermiso = ctx.isSuperAdmin || ctx.permisos?.[permiso] === true;
+        const tienePermiso = ctx.permisos?.[permiso] === true;
         el.style.display = tienePermiso ? '' : 'none';
     });
 
     document.querySelectorAll('[data-roles]').forEach(el => {
         const roles = el.getAttribute('data-roles').split(',').map(r => r.trim());
-        const permitido = ctx.isSuperAdmin || roles.includes(ctx.rol);
+        const permitido = roles.includes(ctx.rol);
         el.style.display = permitido ? '' : 'none';
     });
 
@@ -135,8 +135,7 @@ function construirAppContext(usuario) {
         nombre: usuario.nombre,
         rol: usuario.rol,
         permisos: usuario.permisos || {},
-        tenantId: usuario.tenantId ?? null,
-        isSuperAdmin: usuario.rol === 'SUPER_ADMIN'
+        tenantId: usuario.tenantId ?? null
     };
 }
 
