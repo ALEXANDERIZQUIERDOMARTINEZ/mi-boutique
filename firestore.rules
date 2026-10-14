@@ -54,10 +54,18 @@ service cloud.firestore {
       return isActiveUser() && getUserData().rol == 'ADMIN';
     }
 
-    // Verifica si el usuario pertenece a un negocio (el suyo o uno extra)
+    // Verifica si el usuario pertenece a un negocio (el suyo o uno extra).
+    // tenantId null = documento anterior a la separación = Boutique.
     function belongsToTenant(tenantId) {
       return isActiveUser() &&
-             (tenantId in negociosExtra() || getUserData().tenantId == tenantId);
+             (tenantId == null
+               ? esUsuarioBoutique()
+               : (tenantId in negociosExtra() || getUserData().tenantId == tenantId));
+    }
+
+    // Tiene acceso a Boutique (su negocio principal o uno extra)
+    function esUsuarioBoutique() {
+      return negocioUsuario() == 'boutique' || 'boutique' in negociosExtra();
     }
 
     // Verifica si el documento que se está creando es de un negocio del usuario
@@ -99,7 +107,7 @@ service cloud.firestore {
       // Admin Tenant puede leer usuarios de su tenant
       allow read: if isActiveUser() &&
                     hasPermission('usuarios_ver') &&
-                    belongsToTenant(resource.data.tenantId);
+                    belongsToTenant(resource.data.get('tenantId', null));
 
       // Crear: con permiso, dentro del propio negocio. Nadie puede darse ni
       // dar acceso a otros negocios ('negocios') desde la app.
@@ -110,13 +118,13 @@ service cloud.firestore {
 
       // Actualizar: Solo del mismo tenant, sin cambiar tenantId
       allow update: if hasPermission('usuarios_editar') &&
-                      belongsToTenant(resource.data.tenantId) &&
+                      belongsToTenant(resource.data.get('tenantId', null)) &&
                       isNotChangingTenant() &&
                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['negocios']);
 
       // Eliminar: solo un Administrador del mismo negocio, y nunca a sí mismo
       allow delete: if isAdmin() &&
-                      belongsToTenant(resource.data.tenantId) &&
+                      belongsToTenant(resource.data.get('tenantId', null)) &&
                       userId != request.auth.uid;
     }
 
@@ -139,7 +147,7 @@ service cloud.firestore {
       // productos_editar, pero SÍ necesitan poder ajustar stock al vender o
       // reponerlo al anular, sin que eso dé permiso de tocar precio/nombre/etc.
       // Se restringe a que el único campo que cambie sea variaciones.
-      allow update: if belongsToTenant(resource.data.tenantId) &&
+      allow update: if belongsToTenant(resource.data.get('tenantId', null)) &&
                       isNotChangingTenant() &&
                       (hasPermission('productos_editar') ||
                        ((hasPermission('ventas_crear') || hasPermission('ventas_anular')) &&
@@ -147,7 +155,7 @@ service cloud.firestore {
 
       // Eliminar: Solo del mismo tenant
       allow delete: if hasPermission('productos_eliminar') &&
-                      belongsToTenant(resource.data.tenantId);
+                      belongsToTenant(resource.data.get('tenantId', null));
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -163,7 +171,7 @@ service cloud.firestore {
       allow read: if isActiveUser() &&
                     (hasPermission('ventas_ver') || hasPermission('dashboard_ver') ||
                      hasPermission('fabrica_gestionar')) &&
-                    (negocioUsuario() == 'boutique' || belongsToTenant(resource.data.tenantId));
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       // Crear: Con tenantId correcto
       allow create: if hasPermission('ventas_crear') &&
@@ -175,14 +183,14 @@ service cloud.firestore {
       allow update: if isActiveUser() &&
                       (hasPermission('ventas_editar') || hasPermission('ventas_anular')) &&
                       (!resource.data.keys().hasAny(['tenantId']) ||
-                       (belongsToTenant(resource.data.tenantId) && isNotChangingTenant()));
+                       (belongsToTenant(resource.data.get('tenantId', null)) && isNotChangingTenant()));
 
       // Eliminar: Solo con permiso explícito ventas_eliminar
       // Permite docs sin tenantId (registros anteriores a migración)
       allow delete: if isActiveUser() &&
                       hasPermission('ventas_eliminar') &&
                       (!resource.data.keys().hasAny(['tenantId']) ||
-                       belongsToTenant(resource.data.tenantId));
+                       belongsToTenant(resource.data.get('tenantId', null)));
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -193,7 +201,7 @@ service cloud.firestore {
       // Leer: quien puede ver ventas. Permite docs sin tenantId (legacy)
       allow read: if hasPermission('ventas_ver') &&
                     (!resource.data.keys().hasAny(['tenantId']) ||
-                     belongsToTenant(resource.data.tenantId));
+                     (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null))));
 
       // Crear: quien puede registrar ventas, con tenantId correcto
       allow create: if hasPermission('ventas_crear') &&
@@ -213,7 +221,7 @@ service cloud.firestore {
       // propio tenant (los registros sin tenantId son de antes de que
       // existiera Fábrica, se tratan como visibles para compatibilidad)
       allow read: if hasPermission('auditoria_ver') &&
-                    (!resource.data.keys().hasAny(['tenantId']) || belongsToTenant(resource.data.tenantId));
+                    (!resource.data.keys().hasAny(['tenantId']) || belongsToTenant(resource.data.get('tenantId', null)));
 
       // Crear: cualquier usuario activo puede dejar su propio registro,
       // pero solo puede firmarlo como sí mismo (no puede suplantar a otro
@@ -257,7 +265,7 @@ service cloud.firestore {
 
       // Eliminar: solo staff con permiso, del mismo tenant
       allow delete: if hasPermission('clientes_eliminar') &&
-                      belongsToTenant(resource.data.tenantId);
+                      belongsToTenant(resource.data.get('tenantId', null));
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -270,11 +278,11 @@ service cloud.firestore {
 
       // Leer: Solo del mismo tenant
       allow read: if hasPermission('pedidos_web_ver') &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       // Actualizar: Solo del mismo tenant, sin cambiar tenantId
       allow update: if hasPermission('pedidos_web_gestionar') &&
-                      belongsToTenant(resource.data.tenantId) &&
+                      belongsToTenant(resource.data.get('tenantId', null)) &&
                       isNotChangingTenant();
 
       // No eliminar pedidos
@@ -290,7 +298,7 @@ service cloud.firestore {
     match /cotizaciones/{cotizacionId} {
       // Leer: quien puede registrar/ver ventas, solo del mismo tenant
       allow read: if (hasPermission('ventas_ver') || hasPermission('ventas_crear')) &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       // Crear: quien puede registrar ventas, con tenantId correcto
       allow create: if hasPermission('ventas_crear') &&
@@ -299,7 +307,7 @@ service cloud.firestore {
 
       // Actualizar (aceptar/rechazar): Solo del mismo tenant, sin cambiar tenantId
       allow update: if hasPermission('ventas_editar') &&
-                      belongsToTenant(resource.data.tenantId) &&
+                      belongsToTenant(resource.data.get('tenantId', null)) &&
                       isNotChangingTenant();
 
       // No eliminar cotizaciones
@@ -313,7 +321,7 @@ service cloud.firestore {
     match /apartados/{apartadoId} {
       // Leer: Solo del mismo tenant
       allow read: if hasPermission('apartados_ver') &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       // Crear: Con tenantId correcto
       allow create: if hasPermission('apartados_crear') &&
@@ -322,12 +330,12 @@ service cloud.firestore {
 
       // Actualizar: Solo del mismo tenant, sin cambiar tenantId
       allow update: if hasPermission('apartados_editar') &&
-                      belongsToTenant(resource.data.tenantId) &&
+                      belongsToTenant(resource.data.get('tenantId', null)) &&
                       isNotChangingTenant();
 
       // Eliminar: Solo del mismo tenant
       allow delete: if hasPermission('apartados_eliminar') &&
-                      belongsToTenant(resource.data.tenantId);
+                      belongsToTenant(resource.data.get('tenantId', null));
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -345,10 +353,10 @@ service cloud.firestore {
       allow create: if hasPermission('categorias_gestionar') &&
                       (!('tenantId' in request.resource.data) || isCreatingWithCorrectTenant());
       allow update: if hasPermission('categorias_gestionar') &&
-                      (!('tenantId' in resource.data) || belongsToTenant(resource.data.tenantId)) &&
+                      (!('tenantId' in resource.data) || belongsToTenant(resource.data.get('tenantId', null))) &&
                       isNotChangingTenant();
       allow delete: if hasPermission('categorias_gestionar') &&
-                      (!('tenantId' in resource.data) || belongsToTenant(resource.data.tenantId));
+                      (!('tenantId' in resource.data) || belongsToTenant(resource.data.get('tenantId', null)));
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -358,11 +366,11 @@ service cloud.firestore {
     match /proveedores/{supplierId} {
       // Leer: Solo del mismo tenant
       allow read: if hasPermission('proveedores_gestionar') &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       // Gestionar: Solo del mismo tenant
       allow create, update, delete: if hasPermission('proveedores_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -374,11 +382,11 @@ service cloud.firestore {
     match /repartidores/{repartidorId} {
       // Leer: Solo del mismo tenant
       allow read: if hasPermission('repartidores_gestionar') &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       // Gestionar: Solo del mismo tenant
       allow create, update, delete: if hasPermission('repartidores_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -389,10 +397,10 @@ service cloud.firestore {
 
     match /movimientosFinancieros/{movimientoId} {
       allow read: if hasPermission('finanzas_ver') &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       allow create, update, delete: if hasPermission('finanzas_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -429,10 +437,10 @@ service cloud.firestore {
 
     match /movimientosFabrica/{movimientoId} {
       allow read: if hasPermission('fabrica_gestionar') &&
-                    belongsToTenant(resource.data.tenantId);
+                    belongsToTenant(resource.data.get('tenantId', null));
 
       allow create, update, delete: if hasPermission('fabrica_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -443,10 +451,10 @@ service cloud.firestore {
 
     match /inventarioFabrica/{itemId} {
       allow read: if hasPermission('inventario_fabrica_gestionar') &&
-                    belongsToTenant(resource.data.tenantId);
+                    belongsToTenant(resource.data.get('tenantId', null));
 
       allow create, update, delete: if hasPermission('inventario_fabrica_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -461,14 +469,14 @@ service cloud.firestore {
       allow read: if true;
 
       allow create, delete: if hasPermission('inventario_fabrica_gestionar') &&
-                              (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                              (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                               (request.resource == null || isCreatingWithCorrectTenant());
 
       // Igual que productos de Boutique: gestión completa del catálogo, o
       // solo tocar stock al registrar (ventas_crear) o anular (ventas_anular)
       // una venta de mostrador — restringido a que el único campo que
       // cambie sea variaciones.
-      allow update: if belongsToTenant(resource.data.tenantId) &&
+      allow update: if belongsToTenant(resource.data.get('tenantId', null)) &&
                       isNotChangingTenant() &&
                       (hasPermission('inventario_fabrica_gestionar') ||
                        ((hasPermission('ventas_crear') || hasPermission('ventas_anular')) &&
@@ -481,10 +489,10 @@ service cloud.firestore {
 
     match /movimientosBoutique/{movimientoId} {
       allow read: if hasPermission('finanzas_ver') &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       allow create, update, delete: if hasPermission('finanzas_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -495,10 +503,10 @@ service cloud.firestore {
 
     match /cierresCaja/{cierreId} {
       allow read: if (hasPermission('cierres_caja') || hasPermission('finanzas_ver')) &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       allow create, update, delete: if hasPermission('cierres_caja') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -516,7 +524,7 @@ service cloud.firestore {
 
       // Responder: Solo staff del tenant
       allow update: if hasPermission('chat_responder') &&
-                      belongsToTenant(resource.data.tenantId) &&
+                      belongsToTenant(resource.data.get('tenantId', null)) &&
                       isNotChangingTenant();
 
       allow delete: if false;
@@ -528,10 +536,10 @@ service cloud.firestore {
 
     match /metas/{metaId} {
       allow read: if (hasPermission('dashboard_ver') || hasPermission('finanzas_ver')) &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       allow create, update, delete: if hasPermission('finanzas_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -545,7 +553,7 @@ service cloud.firestore {
       allow read: if true;
 
       allow create, update, delete: if hasPermission('promociones_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -555,7 +563,7 @@ service cloud.firestore {
       allow read: if true;
 
       allow create, update, delete: if hasPermission('promociones_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -566,37 +574,37 @@ service cloud.firestore {
 
     match /ordenesRecepcion/{ordenId} {
       allow read: if hasPermission('productos_ver') &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       allow create, update, delete: if hasPermission('productos_editar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     match /liquidaciones/{liquidacionId} {
       allow read: if (hasPermission('repartidores_gestionar') || hasPermission('finanzas_ver')) &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       allow create, update, delete: if hasPermission('repartidores_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     match /abonos/{abonoId} {
       allow read: if hasPermission('apartados_ver') &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       allow create, update, delete: if hasPermission('apartados_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     match /historial_cargues/{cargueId} {
       allow read: if hasPermission('productos_ver') &&
-                    belongsToTenant(resource.data.tenantId);
+                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
 
       allow create: if hasPermission('productos_importar') &&
                       hasRequiredTenantId() &&
@@ -607,7 +615,7 @@ service cloud.firestore {
 
     match /historial_cargues_fabrica/{cargueId} {
       allow read: if hasPermission('inventario_fabrica_gestionar') &&
-                    belongsToTenant(resource.data.tenantId);
+                    belongsToTenant(resource.data.get('tenantId', null));
 
       allow create: if hasPermission('inventario_fabrica_gestionar') &&
                       hasRequiredTenantId() &&
