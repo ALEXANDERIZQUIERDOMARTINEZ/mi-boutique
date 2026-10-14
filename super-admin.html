@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Super Admin - Mishell's</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="super-admin-styles.css?v=1.3.0">
+</head>
+<body class="sa-body">
+
+  <div id="admin-auth-gate" style="position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+    <div class="spinner-border" style="color:#0a0a0a;" role="status"></div>
+    <span style="color:#6c757d;font-size:.9rem;">Verificando sesión…</span>
+  </div>
+
+  <div class="sa-shell" id="sa-shell">
+
+    <!-- Sidebar -->
+    <aside class="sa-sidebar">
+      <div class="sa-brand">
+        <div class="sa-brand-mark">M</div>
+        <div class="sa-brand-text">
+          <strong>Mishell's</strong>
+          <small>Super Admin</small>
+        </div>
+      </div>
+
+      <nav class="sa-nav">
+        <button type="button" class="sa-nav-item active" data-bs-toggle="pill" data-bs-target="#dashboard" data-page-title="Dashboard">
+          <i class="bi bi-grid-1x2"></i> Dashboard
+        </button>
+        <button type="button" class="sa-nav-item" data-bs-toggle="pill" data-bs-target="#empresas" data-page-title="Empresas">
+          <i class="bi bi-building"></i> Empresas
+        </button>
+        <button type="button" class="sa-nav-item" data-bs-toggle="pill" data-bs-target="#planes" data-page-title="Planes">
+          <i class="bi bi-collection"></i> Planes
+        </button>
+        <button type="button" class="sa-nav-item" data-bs-toggle="pill" data-bs-target="#usuarios" data-page-title="Usuarios y acceso">
+          <i class="bi bi-people"></i> Usuarios
+        </button>
+
+        <div class="sa-nav-label">Próximamente</div>
+        <button type="button" class="sa-nav-item is-soon" title="Próximamente" disabled>
+          <i class="bi bi-person-badge"></i> Administradores <span class="sa-nav-soon-badge">Pronto</span>
+        </button>
+        <button type="button" class="sa-nav-item is-soon" title="Próximamente" disabled>
+          <i class="bi bi-boxes"></i> Módulos <span class="sa-nav-soon-badge">Pronto</span>
+        </button>
+        <button type="button" class="sa-nav-item is-soon" title="Próximamente" disabled>
+          <i class="bi bi-credit-card"></i> Suscripciones <span class="sa-nav-soon-badge">Pronto</span>
+        </button>
+        <button type="button" class="sa-nav-item is-soon" title="Próximamente" disabled>
+          <i class="bi bi-bar-chart"></i> Reportes <span class="sa-nav-soon-badge">Pronto</span>
+        </button>
+        <button type="button" class="sa-nav-item is-soon" title="Próximamente" disabled>
+          <i class="bi bi-shield-lock"></i> Auditoría <span class="sa-nav-soon-badge">Pronto</span>
+        </button>
+        <button type="button" class="sa-nav-item is-soon" title="Próximamente" disabled>
+          <i class="bi bi-gear"></i> Configuración <span class="sa-nav-soon-badge">Pronto</span>
+        </button>
+      </nav>
+
+      <div class="sa-sidebar-footer">
+        <button type="button" class="sa-impersonate-btn" title="Próximamente" disabled>
+          <i class="bi bi-box-arrow-in-right"></i> Acceder a una empresa
+        </button>
+        <div class="sa-user">
+          <div class="sa-user-avatar" id="sa-user-avatar">SA</div>
+          <div class="sa-user-info">
+            <strong id="nav-user-name">Super Admin</strong>
+            <span><span class="sa-user-dot"></span> <span id="nav-user-email">En línea</span></span>
+          </div>
+          <button class="sa-user-logout" id="btn-logout" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i></button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="sa-main">
+      <header class="sa-topbar">
+        <div class="sa-topbar-left">
+          <button class="sa-burger" id="sa-burger"><i class="bi bi-list"></i></button>
+          <h1 id="sa-page-title">Dashboard</h1>
+        </div>
+        <div class="sa-topbar-right">
+          <button class="sa-icon-btn" id="sa-notif-btn" title="Notificaciones">
+            <i class="bi bi-bell"></i>
+            <span class="sa-badge-count" id="sa-notif-badge" style="display:none;">0</span>
+          </button>
+          <button class="sa-icon-btn" id="sa-theme-toggle" title="Cambiar tema">
+            <i class="bi bi-moon"></i>
+          </button>
+          <div class="sa-date-chip"><i class="bi bi-calendar3"></i> <span id="sa-today-date"></span></div>
+        </div>
+
+        <div class="sa-notif-panel" id="sa-notif-panel">
+          <div class="sa-notif-panel-head">Suscripciones por vencer</div>
+          <div id="sa-notif-list"><div class="sa-notif-empty">Nada por vencer en los próximos 30 días.</div></div>
+        </div>
+      </header>
+
+      <div class="sa-content">
+        <div class="tab-content">
+
+          <!-- ═══════ Dashboard ═══════ -->
+          <div class="tab-pane fade show active" id="dashboard">
+
+            <div id="sa-dashboard-error" class="sa-dash-error" style="display:none;">
+              <i class="bi bi-exclamation-triangle"></i>
+              <span id="sa-dashboard-error-msg"></span>
+              <button type="button" id="sa-dashboard-error-retry" class="sa-dash-error-retry">Reintentar</button>
+            </div>
+
+            <div class="sa-grid sa-stats-grid mb-3">
+              <div class="sa-stat-card">
+                <div class="sa-stat-icon"><i class="bi bi-building"></i></div>
+                <div class="sa-stat-label">Empresas activas</div>
+                <div class="sa-stat-value" id="stat-empresas">0</div>
+                <div class="sa-stat-sub" id="stat-empresas-total-sub">de 0 empresas</div>
+              </div>
+              <div class="sa-stat-card">
+                <div class="sa-stat-icon"><i class="bi bi-credit-card"></i></div>
+                <div class="sa-stat-label">Suscripciones activas</div>
+                <div class="sa-stat-value" id="stat-suscripciones-activas">0</div>
+                <div class="sa-stat-sub">Con plan asignado</div>
+              </div>
+              <div class="sa-stat-card">
+                <div class="sa-stat-icon"><i class="bi bi-cash-stack"></i></div>
+                <div class="sa-stat-label">Ingresos mensuales</div>
+                <div class="sa-stat-value" id="stat-ingresos-mensuales">$0</div>
+                <div class="sa-stat-sub">Suma de suscripciones activas</div>
+              </div>
+              <div class="sa-stat-card">
+                <div class="sa-stat-icon"><i class="bi bi-clock-history"></i></div>
+                <div class="sa-stat-label">Por vencer</div>
+                <div class="sa-stat-value" id="stat-por-vencer">0</div>
+                <div class="sa-stat-sub">Próximos 30 días</div>
+              </div>
+              <div class="sa-stat-card">
+                <div class="sa-stat-icon"><i class="bi bi-people"></i></div>
+                <div class="sa-stat-label">Usuarios totales</div>
+                <div class="sa-stat-value" id="stat-usuarios">0</div>
+                <div class="sa-stat-sub"><span id="stat-sin-asignar">0</span> sin empresa asignada</div>
+              </div>
+            </div>
+
+            <div class="sa-grid sa-dash-grid mb-3">
+              <div class="sa-card sa-card-pad">
+                <div class="sa-card-head"><h2>Ingresos por plan</h2></div>
+                <div id="ingresos-por-plan-list">
+                  <div class="sa-empty-inline">Cargando...</div>
+                </div>
+              </div>
+
+              <div class="sa-card sa-card-pad">
+                <div class="sa-card-head"><h2>Estado de empresas</h2></div>
+                <div class="sa-donut-wrap">
+                  <div class="sa-donut" id="sa-donut">
+                    <div class="sa-donut-center"><strong id="sa-donut-total">0</strong><span>Total</span></div>
+                  </div>
+                  <div class="sa-legend" id="sa-donut-legend"></div>
+                </div>
+              </div>
+
+              <div class="sa-card sa-card-pad">
+                <div class="sa-card-head">
+                  <h2>Nuevas empresas</h2>
+                  <a href="#empresas" class="sa-card-link sa-link-empresas">Ver todas</a>
+                </div>
+                <div class="sa-list" id="lista-nuevas-empresas">
+                  <div class="sa-empty-inline">Cargando...</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="sa-grid sa-dash-grid2">
+              <div class="sa-card sa-card-pad">
+                <div class="sa-card-head">
+                  <h2>Empresas recientes</h2>
+                  <a href="#empresas" class="sa-card-link sa-link-empresas">Ver todas</a>
+                </div>
+                <div class="sa-table-wrap">
+                  <table class="sa-table">
+                    <thead>
+                      <tr>
+                        <th>Empresa</th>
+                        <th>Plan</th>
+                        <th>Estado</th>
+                        <th>Usuarios</th>
+                        <th>Vencimiento</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="tabla-empresas-recientes">
+                      <tr><td colspan="6" class="sa-empty-inline">Cargando...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="sa-grid" style="grid-template-columns:1fr; align-content:start;">
+                <div class="sa-card sa-card-pad">
+                  <div class="sa-card-head"><h2>Suscripciones por vencer</h2></div>
+                  <div class="sa-list" id="lista-por-vencer">
+                    <div class="sa-empty-inline">Cargando...</div>
+                  </div>
+                </div>
+                <div class="sa-cta">
+                  <div>
+                    <h3>Nueva empresa</h3>
+                    <p>Crea una empresa y su cuenta de administrador en un solo paso.</p>
+                  </div>
+                  <button type="button" class="sa-cta-btn" data-bs-toggle="modal" data-bs-target="#modalCrearEmpresa">
+                    <i class="bi bi-plus-lg"></i> Crear empresa
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ═══════ Empresas ═══════ -->
+          <div class="tab-pane fade" id="empresas">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h2 class="mb-0">Empresas</h2>
+              <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearEmpresa">
+                <i class="bi bi-plus-circle"></i> Nueva empresa
+              </button>
+            </div>
+            <div id="lista-empresas">
+              <div class="text-center py-5">
+                <div class="spinner-border" role="status"></div>
+                <p class="mt-2">Cargando...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══════ Planes ═══════ -->
+          <div class="tab-pane fade" id="planes">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <h2 class="mb-0">Planes</h2>
+              <button class="btn btn-primary" id="btn-nuevo-plan">
+                <i class="bi bi-plus-circle"></i> Nuevo plan
+              </button>
+            </div>
+            <p class="text-muted">Cada plan define qué módulos incluye. Se asigna a una empresa desde "Empresas" → Gestionar.</p>
+            <div id="lista-planes">
+              <div class="text-center py-5">
+                <div class="spinner-border" role="status"></div>
+                <p class="mt-2">Cargando...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══════ Usuarios y acceso ═══════ -->
+          <div class="tab-pane fade" id="usuarios">
+            <h2 class="mb-4">Usuarios y acceso</h2>
+            <p class="text-muted">A qué empresa pertenece cada usuario — es lo que decide a cuál admin puede entrar.</p>
+            <div class="sa-card">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Email</th>
+                      <th>Rol</th>
+                      <th>Empresa actual</th>
+                      <th style="width:260px;">Asignar a</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabla-usuarios">
+                    <tr><td colspan="5" class="text-center py-4 text-muted">Cargando...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom tab bar (móvil): navegación estilo app nativa.
+       Vive fuera de #sa-shell (que es display:flex) a propósito — Safari
+       en iOS tiene un bug conocido donde un position:fixed hijo directo de
+       un contenedor flex no se excluye del flujo del flex y termina mal
+       posicionado (pegado arriba en vez de abajo). -->
+  <nav class="sa-bottomnav">
+    <button type="button" class="sa-bottomnav-item active" data-bs-toggle="pill" data-bs-target="#dashboard" data-page-title="Dashboard">
+      <i class="bi bi-grid-1x2"></i> <span>Inicio</span>
+    </button>
+    <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#empresas" data-page-title="Empresas">
+      <i class="bi bi-building"></i> <span>Empresas</span>
+    </button>
+    <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#planes" data-page-title="Planes">
+      <i class="bi bi-collection"></i> <span>Planes</span>
+    </button>
+    <button type="button" class="sa-bottomnav-item" data-bs-toggle="pill" data-bs-target="#usuarios" data-page-title="Usuarios y acceso">
+      <i class="bi bi-people"></i> <span>Usuarios</span>
+    </button>
+    <button type="button" class="sa-bottomnav-item" id="sa-bottomnav-mas">
+      <i class="bi bi-three-dots"></i> <span>Más</span>
+    </button>
+  </nav>
+
+  <!-- Modal: Crear Empresa -->
+  <div class="modal fade" id="modalCrearEmpresa" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Nueva empresa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-crear-empresa">
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control" id="empresa-nombre" placeholder="Ej: Mishelles Fábrica" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Identificador (tenant)</label>
+              <input type="text" class="form-control" id="empresa-slug" placeholder="Ej: fabrica" pattern="[a-z0-9-]+" required>
+              <small class="text-muted">Solo minúsculas, números y guiones — es el mismo valor que se guarda en <code>usuarios/{uid}.tenantId</code> para cada persona de esta empresa.</small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nombre corto (para el menú lateral del panel)</label>
+              <input type="text" class="form-control" id="empresa-nombre-corto" placeholder="Ej: Fábrica">
+            </div>
+            <div class="row g-3">
+              <div class="col-7">
+                <label class="form-label">Logo (URL de imagen)</label>
+                <input type="url" class="form-control" id="empresa-logo" placeholder="https://...">
+                <small class="text-muted">Vacío = usa el logo genérico.</small>
+              </div>
+              <div class="col-5">
+                <label class="form-label">Color de marca</label>
+                <input type="color" class="form-control form-control-color w-100" id="empresa-color" value="#5b6b8c">
+              </div>
+            </div>
+            <div class="mb-3 mt-3">
+              <label class="form-label">Plan</label>
+              <select class="form-select" id="empresa-plan">
+                <option value="">Sin plan (por ahora ve todos los módulos — asígnale uno luego desde "Gestionar")</option>
+              </select>
+            </div>
+            <hr>
+            <h6>Cuenta del administrador de esta empresa</h6>
+            <p class="text-muted small">Se crea junto con la empresa para que quede operativa de inmediato, sin tocar código.</p>
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control" id="empresa-admin-nombre" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Correo</label>
+              <input type="email" class="form-control" id="empresa-admin-email" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Contraseña temporal</label>
+              <input type="password" class="form-control" id="empresa-admin-password" minlength="6" required>
+              <small class="text-muted">Mínimo 6 caracteres. Pídele que la cambie al entrar.</small>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btn-guardar-empresa">Crear</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Nuevo/Editar Plan -->
+  <div class="modal fade" id="modalPlan" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalPlanTitle">Nuevo plan</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-plan">
+            <input type="hidden" id="plan-id">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="plan-nombre" placeholder="Ej: Profesional" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Precio</label>
+                <input type="number" class="form-control" id="plan-precio" min="0" step="0.01">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Periodicidad</label>
+                <select class="form-select" id="plan-periodicidad">
+                  <option value="mensual">Mensual</option>
+                  <option value="anual">Anual</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3 mt-3">
+              <label class="form-label">Descripción</label>
+              <textarea class="form-control" id="plan-descripcion" rows="2"></textarea>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Máximo de usuarios</label>
+                <input type="number" class="form-control" id="plan-max-usuarios" min="0" placeholder="Sin límite">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Máximo de productos</label>
+                <input type="number" class="form-control" id="plan-max-productos" min="0" placeholder="Sin límite">
+              </div>
+            </div>
+            <hr>
+            <label class="form-label d-block">Módulos incluidos en este plan</label>
+            <div id="plan-modulos-lista" class="row row-cols-1 row-cols-md-2 g-2"></div>
+            <div class="form-check form-switch mt-3">
+              <input class="form-check-input" type="checkbox" id="plan-activo" checked>
+              <label class="form-check-label" for="plan-activo">Disponible para asignar a empresas nuevas</label>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btn-guardar-plan">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Gestionar empresa (plan, módulos, estado, suscripción) -->
+  <div class="modal fade" id="modalGestionarEmpresa" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Gestionar <span id="gestion-empresa-nombre"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="gestion-tenant-id">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Estado</label>
+              <select class="form-select" id="gestion-estado">
+                <option value="activo">Activo</option>
+                <option value="trial">Prueba (trial)</option>
+                <option value="suspendido">Suspendido</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+              <small class="text-muted">Suspendido/Cancelado bloquea todo el acceso de esta empresa de inmediato.</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Plan</label>
+              <select class="form-select" id="gestion-plan">
+                <option value="">Sin plan</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-4">
+              <label class="form-label">Vence</label>
+              <input type="date" class="form-control" id="gestion-fecha-vencimiento">
+              <small class="text-muted">Vacío = no vence.</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Precio suscripción</label>
+              <input type="number" class="form-control" id="gestion-precio" min="0" step="0.01">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Periodicidad</label>
+              <select class="form-select" id="gestion-periodicidad">
+                <option value="">—</option>
+                <option value="mensual">Mensual</option>
+                <option value="anual">Anual</option>
+              </select>
+            </div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-6">
+              <label class="form-label">Máximo de usuarios</label>
+              <input type="number" class="form-control" id="gestion-max-usuarios" min="0" placeholder="Sin límite">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Máximo de productos</label>
+              <input type="number" class="form-control" id="gestion-max-productos" min="0" placeholder="Sin límite">
+            </div>
+          </div>
+          <hr>
+          <label class="form-label d-block">
+            Módulos habilitados
+            <small class="text-muted d-block fw-normal">Los del plan vienen marcados. Puedes agregar o quitar módulos como excepción para esta empresa.</small>
+          </label>
+          <div id="gestion-modulos-lista" class="row row-cols-1 row-cols-md-2 g-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btn-guardar-gestion-empresa">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Editar Empresa (nombre, marca y color; el identificador no se puede cambiar) -->
+  <div class="modal fade" id="modalEditarEmpresa" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar empresa</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-editar-empresa">
+            <input type="hidden" id="editar-empresa-id">
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              <input type="text" class="form-control" id="editar-empresa-nombre" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nombre corto (para el menú lateral del panel)</label>
+              <input type="text" class="form-control" id="editar-empresa-nombre-corto">
+            </div>
+            <div class="row g-3">
+              <div class="col-7">
+                <label class="form-label">Logo (URL de imagen)</label>
+                <input type="url" class="form-control" id="editar-empresa-logo" placeholder="https://...">
+              </div>
+              <div class="col-5">
+                <label class="form-label">Color de marca</label>
+                <input type="color" class="form-control form-control-color w-100" id="editar-empresa-color">
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btn-guardar-edicion-empresa">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ── Shell: sidebar móvil, tema, reloj, título de página ──
+    // Vive aquí (no en super-admin.js) porque es puramente de interfaz —
+    // no toca Firestore ni depende del guard de sesión.
+    (function () {
+      const shell = document.getElementById('sa-shell');
+      document.getElementById('sa-burger')?.addEventListener('click', () => shell.classList.toggle('sa-sidebar-open'));
+      document.getElementById('sa-bottomnav-mas')?.addEventListener('click', () => shell.classList.add('sa-sidebar-open'));
+      document.addEventListener('click', (e) => {
+        if (!shell.classList.contains('sa-sidebar-open')) return;
+        if (e.target.closest('.sa-sidebar') || e.target.closest('#sa-burger') || e.target.closest('#sa-bottomnav-mas')) return;
+        shell.classList.remove('sa-sidebar-open');
+      });
+
+      const themeBtn = document.getElementById('sa-theme-toggle');
+      const themeIcon = themeBtn?.querySelector('i');
+      function aplicarTema(tema) {
+        if (tema === 'dark') {
+          document.documentElement.setAttribute('data-sa-theme', 'dark');
+          themeIcon?.classList.remove('bi-moon');
+          themeIcon?.classList.add('bi-sun');
+        } else {
+          document.documentElement.removeAttribute('data-sa-theme');
+          themeIcon?.classList.remove('bi-sun');
+          themeIcon?.classList.add('bi-moon');
+        }
+      }
+      aplicarTema(localStorage.getItem('sa-theme') || 'light');
+      themeBtn?.addEventListener('click', () => {
+        const actual = document.documentElement.getAttribute('data-sa-theme') === 'dark' ? 'dark' : 'light';
+        const nuevo = actual === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('sa-theme', nuevo);
+        aplicarTema(nuevo);
+      });
+
+      const fechaEl = document.getElementById('sa-today-date');
+      function pintarFecha() {
+        if (!fechaEl) return;
+        const corta = window.innerWidth <= 480;
+        fechaEl.textContent = new Intl.DateTimeFormat('es-CO', corta
+          ? { day: 'numeric', month: 'short' }
+          : { day: 'numeric', month: 'long', year: 'numeric' }
+        ).format(new Date());
+      }
+      pintarFecha();
+      window.addEventListener('resize', pintarFecha);
+
+      // Sidebar y bottom-nav son dos grupos de tabs distintos para Bootstrap
+      // (cada uno solo controla el "active" de sus propios hermanos), así que
+      // se sincronizan a mano para que ambos reflejen la pestaña visible.
+      const disparadoresTab = document.querySelectorAll('[data-bs-toggle="pill"]');
+      disparadoresTab.forEach(btn => {
+        btn.addEventListener('shown.bs.tab', () => {
+          const target = btn.dataset.bsTarget;
+          disparadoresTab.forEach(otro => otro.classList.toggle('active', otro.dataset.bsTarget === target));
+          if (btn.dataset.pageTitle) document.getElementById('sa-page-title').textContent = btn.dataset.pageTitle;
+          shell.classList.remove('sa-sidebar-open');
+        });
+      });
+      document.querySelectorAll('.sa-link-empresas').forEach(a => {
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          bootstrap.Tab.getOrCreateInstance(document.querySelector('[data-bs-target="#empresas"]')).show();
+        });
+      });
+
+      const notifBtn = document.getElementById('sa-notif-btn');
+      const notifPanel = document.getElementById('sa-notif-panel');
+      notifBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notifPanel.classList.toggle('show');
+      });
+      document.addEventListener('click', (e) => {
+        if (notifPanel && !notifPanel.contains(e.target) && e.target !== notifBtn) notifPanel.classList.remove('show');
+      });
+    })();
+  </script>
+  <script type="module" src="super-admin.js?v=2.1.0"></script>
+
+</body>
+</html>

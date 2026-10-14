@@ -3,33 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        // Si este dispositivo ya tiene una sesión guardada, saltar directo
-        // al panel de su negocio en vez de
+        // Si este dispositivo ya tiene una sesión guardada de un usuario con
+        // UNA sola empresa conocida, saltar directo a su panel en vez de
         // descargar el formulario, Bootstrap y el SDK de Firebase Auth solo
         // para, un instante después, redirigir a donde ya sabemos que va a
         // terminar. admin.html/admin-fabrica.html hacen su propia
         // verificación real contra Firebase (auth.js) y devuelven aquí si la
         // sesión ya no es válida — limpiando este caché antes de hacerlo, así
         // que no hay riesgo de quedar en un ciclo de redirecciones.
+        // Super Admin (varias empresas posibles) NO se salta esto: siempre
+        // ve el selector para elegir a cuál empresa entrar.
         try {
             var cacheCruda = localStorage.getItem('mishellAdminUserCache');
             if (cacheCruda) {
                 var cache = JSON.parse(cacheCruda);
-                // Duplica PANEL_POR_NEGOCIO de auth.js a propósito: este
-                // script corre antes de que cargue nada de Firebase/ES
-                // modules, así que no puede importarlo.
-                var PANEL_POR_NEGOCIO = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
-                var negociosCache = (cache.negocios && cache.negocios.length) ? cache.negocios : [cache.tenantId || 'boutique'];
-                // Se entra directo al panel que se intentaba abrir
-                // (?negocio=) o, en fabrica.mishelles.store, a Fábrica, si la
-                // cuenta tiene acceso; si no, con más de un negocio se
-                // muestra el selector.
-                var preferido = new URLSearchParams(location.search).get('negocio') ||
-                    (location.hostname.indexOf('fabrica.') === 0 ? 'fabrica' : null);
-                var panel = (preferido && negociosCache.indexOf(preferido) !== -1)
-                    ? PANEL_POR_NEGOCIO[preferido]
-                    : (negociosCache.length > 1 ? null : PANEL_POR_NEGOCIO[negociosCache[0]]);
-                if (panel) {
+                // Duplica PANEL_POR_TENANT de tenant-branding.js a propósito:
+                // este script corre antes de que cargue nada de Firebase/ES
+                // modules, así que no puede importarlo. Si se agrega una
+                // empresa nueva con panel propio, actualizar ambos lugares.
+                var PANEL_POR_TENANT = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
+                var tenantId = cache.tenantId || 'boutique';
+                var panel = PANEL_POR_TENANT[tenantId];
+                // admin.html es el panel único: necesita saber qué empresa
+                // cargar vía ?empresa=, ya que el archivo mismo no lo trae
+                // quemado. admin-fabrica.html (todavía sin migrar) no lo usa.
+                if (panel === 'admin.html') panel += '?empresa=' + encodeURIComponent(tenantId);
+                if (cache.rol !== 'SUPER_ADMIN' && panel) {
                     location.replace(panel);
                 }
             }
@@ -78,31 +77,6 @@
             max-width: 420px;
             width: 100%;
             padding: 24px 16px;
-        }
-
-        .negocio-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            border: 2px solid #eee0e8;
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            background: #fdfbfc;
-            font-weight: 700;
-            color: #2d1b26;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .negocio-item:hover {
-            border-color: var(--primary-color);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-        }
-
-        .negocio-item i {
-            margin-left: auto;
-            color: #a08a99;
         }
 
         .login-card {
@@ -291,6 +265,55 @@
             }
         }
 
+        .empresa-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border: 2px solid #eee0e8;
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fdfbfc;
+        }
+
+        .empresa-item:hover:not(.empresa-item--disabled) {
+            border-color: var(--empresa-color, var(--primary-color));
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+            transform: translateY(-1px);
+        }
+
+        .empresa-item--disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .empresa-item-logo {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            object-fit: cover;
+            flex: none;
+            background: var(--empresa-color, var(--primary-color));
+        }
+
+        .empresa-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .empresa-item-nombre {
+            font-weight: 700;
+            color: #2d1b26;
+            font-size: 0.98rem;
+        }
+
+        .empresa-item-sub {
+            font-size: 0.78rem;
+            color: #8a7a85;
+        }
+
         /* En pantallas muy bajas (celular en horizontal) evitamos que la
            tarjeta se corte: dejamos de centrar verticalmente y permitimos
            scroll natural del body */
@@ -389,13 +412,20 @@
             </form>
         </div>
 
-        <!-- Selector de negocio: solo para cuentas con acceso a Boutique y
-             Fábrica (campo 'negocios' en su documento de usuarios). -->
-        <div class="login-card" id="negocio-card" style="display:none;">
+        <!-- Selector de empresa: aparece después de iniciar sesión, con la
+             marca de cada empresa a la que este usuario tiene acceso.
+             Nunca se elige "de una lista de datos ajenos" — solo se pintan
+             las empresas que su tenantId (o, si es Super Admin, todas las
+             que existen) le permiten entrar. -->
+        <div class="login-card" id="empresa-card" style="display:none;">
             <div class="logo-section">
-                <h1>¿A dónde quieres entrar?</h1>
+                <div class="logo-badge">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+                <h1 id="empresa-saludo">¡Bienvenido!</h1>
+                <p>Elige la empresa a la que quieres entrar</p>
             </div>
-            <div id="negocio-lista"></div>
+            <div id="empresa-lista"></div>
             <button type="button" class="btn btn-link w-100 mt-2" id="btn-cambiar-cuenta">
                 <i class="bi bi-arrow-left"></i> Usar otra cuenta
             </button>
@@ -406,10 +436,14 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
         import { initializeFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { obtenerMarcaTenant, obtenerTodasLasMarcas, PANEL_POR_TENANT } from './tenant-branding.js';
 
-        // Mismo mapa que PANEL_POR_NEGOCIO en auth.js (no se importa para no
-        // depender de que el navegador tenga la última versión en caché).
-        const PANEL_POR_NEGOCIO = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
+        // admin.html es el panel único: no trae la empresa quemada, así que
+        // hay que decírsela por la URL. admin-fabrica.html (todavía sin
+        // migrar, ver Fase 3 del plan) sigue sin necesitarlo.
+        function urlPanel(tenantId, panel) {
+            return panel === 'admin.html' ? `${panel}?empresa=${encodeURIComponent(tenantId)}` : panel;
+        }
 
         // Firebase configuration
         const firebaseConfig = {
@@ -447,6 +481,10 @@
         const manualEmailInput = document.getElementById('email');
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
         const loginCard = document.getElementById('login-card');
+        const empresaCard = document.getElementById('empresa-card');
+        const empresaSaludo = document.getElementById('empresa-saludo');
+        const empresaLista = document.getElementById('empresa-lista');
+        const btnCambiarCuenta = document.getElementById('btn-cambiar-cuenta');
 
         // ─── Directorio de usuarios (solo nombre + correo, sin rol ni
         // permisos) para el selector — SOLO de este dispositivo, tomado de
@@ -576,8 +614,11 @@
             }
         });
 
-        // ─── Entrada al panel (post-login) ─────────────────────────────────
-        // Verifica el usuario en Firestore y lo manda al panel de su negocio.
+        // ─── Selector de empresa (post-login) ──────────────────────────────
+        // Verifica el usuario en Firestore (igual que antes) y, si es válido,
+        // pinta el selector con las empresas a las que tiene acceso en vez de
+        // saltar directo a admin.html — un usuario normal solo ve la suya
+        // (y de hecho ni ve el selector si es una sola), Super Admin ve todas.
         async function manejarUsuarioAutenticado(user, { mostrarErroresDeForm = false } = {}) {
             const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
 
@@ -606,47 +647,71 @@
 
             upsertDirectorioCache(user.uid, userData.nombre, user.email);
 
-            const negocios = Array.from(new Set([userData.tenantId || 'boutique', ...(userData.negocios || [])]))
-                .filter(n => PANEL_POR_NEGOCIO[n]);
-            // Panel al que se intentaba entrar (?negocio=, ver redirectToLogin
-            // en auth.js) o, en fabrica.mishelles.store, Fábrica.
-            const preferido = new URLSearchParams(window.location.search).get('negocio') ||
-                (window.location.hostname.startsWith('fabrica.') ? 'fabrica' : null);
-            if (preferido && negocios.includes(preferido)) {
-                window.location.href = PANEL_POR_NEGOCIO[preferido];
-                return true;
-            }
-            if (negocios.length > 1) {
-                mostrarSelectorNegocio(negocios);
-                return true;
-            }
-            window.location.href = PANEL_POR_NEGOCIO[negocios[0]] || 'admin.html';
+            await mostrarSelectorEmpresa(userData);
             return true;
         }
 
-        const NOMBRE_NEGOCIO = { boutique: "Mishell's Boutique", fabrica: "Mishell's Fábrica" };
-
-        function mostrarSelectorNegocio(negocios) {
-            const lista = document.getElementById('negocio-lista');
-            lista.innerHTML = negocios.map(n => `
-                <div class="negocio-item" data-panel="${PANEL_POR_NEGOCIO[n]}">
-                    ${NOMBRE_NEGOCIO[n] || n}
-                    <i class="bi bi-chevron-right"></i>
-                </div>
-            `).join('');
+        async function mostrarSelectorEmpresa(userData) {
             loginCard.style.display = 'none';
-            document.getElementById('negocio-card').style.display = 'block';
+            empresaCard.style.display = 'block';
+            const primerNombre = (userData.nombre || '').trim().split(' ')[0];
+            empresaSaludo.textContent = primerNombre ? `¡Hola, ${primerNombre}!` : '¡Bienvenido!';
+            empresaLista.innerHTML = `<div class="text-center py-3"><div class="spinner-border spinner-border-sm" style="color:var(--primary-color);"></div></div>`;
+
+            const esSuperAdmin = userData.rol === 'SUPER_ADMIN';
+            const empresas = esSuperAdmin
+                ? await obtenerTodasLasMarcas(db)
+                : [await obtenerMarcaTenant(db, userData.tenantId || 'boutique')];
+
+            // Usuario normal con una sola empresa conocida: no hace falta
+            // que elija nada, se entra directo. El selector es para cuando
+            // de verdad hay más de una opción (Super Admin).
+            if (!esSuperAdmin && empresas.length === 1 && PANEL_POR_TENANT[empresas[0].id]) {
+                window.location.href = urlPanel(empresas[0].id, PANEL_POR_TENANT[empresas[0].id]);
+                return;
+            }
+
+            empresaLista.innerHTML = empresas.map(emp => {
+                const panel = PANEL_POR_TENANT[emp.id];
+                const disponible = !!panel;
+                return `
+                    <div class="empresa-item ${disponible ? '' : 'empresa-item--disabled'}"
+                         style="--empresa-color:${emp.color}" data-panel="${panel ? urlPanel(emp.id, panel) : ''}">
+                        <img class="empresa-item-logo" src="${emp.logoUrl || 'icon.svg'}" alt="">
+                        <div class="empresa-item-info">
+                            <div class="empresa-item-nombre">${emp.nombre}</div>
+                            <div class="empresa-item-sub">${disponible ? 'Entrar al panel' : 'Próximamente'}</div>
+                        </div>
+                        ${disponible ? '<i class="bi bi-chevron-right" style="color:#a08a99;"></i>' : ''}
+                    </div>
+                `;
+            }).join('');
+
+            if (esSuperAdmin) {
+                empresaLista.insertAdjacentHTML('beforeend', `
+                    <div class="empresa-item" style="--empresa-color:#2d1b26" data-panel="super-admin.html">
+                        <span class="empresa-item-logo d-flex align-items-center justify-content-center" style="background:#2d1b26;">
+                            <i class="bi bi-shield-check" style="color:#fff;"></i>
+                        </span>
+                        <div class="empresa-item-info">
+                            <div class="empresa-item-nombre">Super Admin</div>
+                            <div class="empresa-item-sub">Gestionar empresas y accesos</div>
+                        </div>
+                        <i class="bi bi-chevron-right" style="color:#a08a99;"></i>
+                    </div>
+                `);
+            }
         }
 
-        document.getElementById('negocio-lista').addEventListener('click', (e) => {
-            const item = e.target.closest('.negocio-item');
-            if (item) window.location.href = item.dataset.panel;
+        empresaLista.addEventListener('click', (e) => {
+            const item = e.target.closest('.empresa-item:not(.empresa-item--disabled)');
+            if (!item || !item.dataset.panel) return;
+            window.location.href = item.dataset.panel;
         });
 
-        document.getElementById('btn-cambiar-cuenta').addEventListener('click', async () => {
+        btnCambiarCuenta.addEventListener('click', async () => {
             await signOut(auth);
-            localStorage.removeItem('mishellAdminUserCache');
-            document.getElementById('negocio-card').style.display = 'none';
+            empresaCard.style.display = 'none';
             loginCard.style.display = 'block';
         });
 
@@ -722,7 +787,8 @@
 
         // Si Firebase ya tiene una sesión activa (persistida de una vez
         // anterior) y no se saltó ya el login por completo (el script del
-        // <head>), entrar directo al panel sin pedir credenciales de nuevo. No
+        // <head>, que solo aplica a quien tiene una única empresa conocida),
+        // mostrar el selector directo sin pedir credenciales de nuevo. No
         // depender de sessionStorage aquí: se vacía cada vez que se cierra
         // la pestaña/app, así que en el celular casi siempre estaría vacío
         // aunque la sesión siga siendo válida — eso obligaba a re-loguearse

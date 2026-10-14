@@ -21,57 +21,56 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
     }
 
-    // Verifica si el usuario está activo
+    // Verifica si el usuario está activo Y su empresa está vigente (ver
+    // tenantActivo() más abajo). Se agrega aquí — no en cada colección por
+    // separado — porque isActiveUser() ya es el cimiento de hasPermission(),
+    // belongsToTenant() e isSuperAdmin(): suspender o vencer UNA empresa
+    // bloquea de golpe todo su acceso, sin tener que tocar las 37
+    // colecciones una por una. Super Admin no pertenece a ninguna empresa,
+    // así que se salta esta validación (igual que el resto de atajos de
+    // Super Admin en este archivo).
     function isActiveUser() {
-      return isRegisteredUser() && getUserData().activo == true;
+      return isRegisteredUser() && getUserData().activo == true &&
+             (getUserData().rol == 'SUPER_ADMIN' ||
+              tenantActivo(getUserData().tenantId == null ? 'boutique' : getUserData().tenantId));
     }
 
-    // Verifica si el usuario tiene un permiso específico
+    // Verifica si el usuario tiene un permiso específico. Super Admin
+    // siempre pasa, sin importar qué tenga guardado en su propio mapa de
+    // permisos — igual que en el cliente (auth.js: hasPermission() ahí
+    // también hace isSuperAdmin() ? true : ...). Sin este atajo, una cuenta
+    // Super Admin creada antes de que existiera un permiso nuevo (p.ej.
+    // inventario_fabrica_gestionar, agregado con el módulo de Fábrica)
+    // queda bloqueada de ese módulo para siempre por no tener esa llave
+    // en su documento — aunque su rol sea SUPER_ADMIN.
     function hasPermission(permission) {
-      return isActiveUser() && getUserData().permisos[permission] == true;
+      return isActiveUser() &&
+             (getUserData().rol == 'SUPER_ADMIN' || getUserData().permisos[permission] == true);
     }
 
     // ═══════════════════════════════════════════════════════════════════
     // FUNCIONES MULTI-TENANT - CRÍTICAS
     // ═══════════════════════════════════════════════════════════════════
 
-    // Negocio del usuario: su tenantId, o 'boutique' si no tiene (cuentas
-    // anteriores a la separación Boutique / Fábrica)
-    function negocioUsuario() {
-      return getUserData().get('tenantId', null) == null ? 'boutique' : getUserData().tenantId;
+    // Verifica si el usuario es Super Admin (sin tenantId)
+    function isSuperAdmin() {
+      return isActiveUser() && getUserData().rol == 'SUPER_ADMIN';
     }
 
-    // Negocios adicionales a los que la persona tiene acceso (lista en su
-    // documento, p.ej. ['fabrica'] para quien administra los dos). Solo se
-    // asigna desde la consola de Firebase: la app no puede cambiarlo (ver
-    // match /usuarios).
-    function negociosExtra() {
-      return getUserData().get('negocios', []);
-    }
-
-    // Verifica si el usuario es Administrador de su negocio
-    function isAdmin() {
-      return isActiveUser() && getUserData().rol == 'ADMIN';
-    }
-
-    // Verifica si el usuario pertenece a un negocio (el suyo o uno extra).
-    // tenantId null = documento anterior a la separación = Boutique.
+    // Verifica si el usuario pertenece a un tenant específico
     function belongsToTenant(tenantId) {
       return isActiveUser() &&
-             (tenantId == null
-               ? esUsuarioBoutique()
-               : (tenantId in negociosExtra() || getUserData().tenantId == tenantId));
+             (getUserData().tenantId == tenantId || isSuperAdmin());
     }
 
-    // Tiene acceso a Boutique (su negocio principal o uno extra)
-    function esUsuarioBoutique() {
-      return negocioUsuario() == 'boutique' || 'boutique' in negociosExtra();
-    }
-
-    // Verifica si el documento que se está creando es de un negocio del usuario
+    // Verifica si el documento que se está creando tiene el tenantId correcto
+    // Super Admin no tiene tenantId propio (no pertenece a ninguna
+    // empresa), así que esta comparación nunca puede dar verdadero para
+    // él sin un atajo — igual que hasPermission() y belongsToTenant(),
+    // se le deja crear con cualquier tenantId que el cliente ya validó
+    // (window.expectedTenantId, fijo por página).
     function isCreatingWithCorrectTenant() {
-      return request.resource.data.tenantId in negociosExtra() ||
-             request.resource.data.tenantId == getUserData().tenantId;
+      return isSuperAdmin() || request.resource.data.tenantId == getUserData().tenantId;
     }
 
     // Verifica que no se intente cambiar el tenantId en una actualización
@@ -90,10 +89,116 @@ service cloud.firestore {
       return 'facturas_' + (getUserData().tenantId == null ? 'default' : getUserData().tenantId);
     }
 
-    // El contador de facturas es de un negocio del usuario
-    function esContadorPropio(contadorId) {
-      return contadorId == tenantCounterId() ||
-             (contadorId.matches('facturas_.+') && contadorId.split('_')[1] in negociosExtra());
+    // ═══════════════════════════════════════════════════════════════════
+    // FUNCIONES DE PLAN Y MÓDULOS (SaaS multiempresa)
+    // ═══════════════════════════════════════════════════════════════════
+    // IMPORTANTE — "fail-open" a propósito en toda esta sección: mientras
+    // una empresa no tenga tenants/{id} o tenantsPrivado/{id} creado, o no
+    // tenga 'estado'/'planId' asignado todavía, se comporta EXACTAMENTE
+    // como hoy (activa, con todos los módulos). Así desplegar estas reglas
+    // no bloquea de golpe a ninguna empresa existente que el Super Admin
+    // no haya migrado a un plan real — la restricción solo empieza a
+    // aplicar una vez que la empresa tiene esos datos. Suspender/vencer o
+    // quitar un módulo es siempre una acción EXPLÍCITA del Super Admin,
+    // nunca un efecto secundario de datos faltantes.
+    //
+    // 'estado' se queda en tenants/{id} (público, ver esa colección más
+    // abajo) porque tenant-resolver.js lo necesita sin sesión para
+    // resolver el catálogo público por subdominio, y por sí solo no es
+    // sensible. planId/suscripción (con precio y fechas)/límites/excepciones
+    // de módulos SÍ son datos del negocio del dueño de cada empresa, así
+    // que viven en tenantsPrivado/{id} — misma llave que tenants/{id} pero
+    // de lectura restringida (ver esa colección), para no exponerlos en el
+    // documento de lectura pública que usa el selector de login.
+
+    function tenantsPrivadoData(tenantId) {
+      return get(/databases/$(database)/documents/tenantsPrivado/$(tenantId)).data;
+    }
+
+    function tenantVigente(tenantId) {
+      let tienePublico = exists(/databases/$(database)/documents/tenants/$(tenantId));
+      let estadoOk = !tienePublico ||
+                     !('estado' in get(/databases/$(database)/documents/tenants/$(tenantId)).data) ||
+                     (get(/databases/$(database)/documents/tenants/$(tenantId)).data.estado != 'suspendido' &&
+                      get(/databases/$(database)/documents/tenants/$(tenantId)).data.estado != 'cancelado');
+      let tienePrivado = exists(/databases/$(database)/documents/tenantsPrivado/$(tenantId));
+      let fechaOk = !tienePrivado ||
+                    !('suscripcion' in tenantsPrivadoData(tenantId)) ||
+                    !('fechaVencimiento' in tenantsPrivadoData(tenantId).suscripcion) ||
+                    tenantsPrivadoData(tenantId).suscripcion.fechaVencimiento == null ||
+                    tenantsPrivadoData(tenantId).suscripcion.fechaVencimiento > request.time;
+      return estadoOk && fechaOk;
+    }
+
+    // Empresa suspendida/cancelada o con suscripción vencida → bloquea todo
+    // (ver isActiveUser()). Sin documentos todavía: no bloquea.
+    function tenantActivo(tenantId) {
+      return tenantVigente(tenantId);
+    }
+
+    // Úsese en colecciones que sean un MÓDULO exclusivo/opcional (hoy: las
+    // de Fábrica) además de hasPermission() — hasPermission() valida que
+    // la PERSONA tenga el permiso; esto valida que la EMPRESA haya
+    // contratado ese módulo. Son verificaciones independientes a propósito.
+    function tenantTieneModulo(tenantId, moduloId) {
+      let tienePrivado = exists(/databases/$(database)/documents/tenantsPrivado/$(tenantId));
+      let tp = tienePrivado ? tenantsPrivadoData(tenantId) : {};
+      let revocado = tienePrivado && ('modulosRevocados' in tp) && (moduloId in tp.modulosRevocados);
+      let extra = tienePrivado && ('modulosExtra' in tp) && (moduloId in tp.modulosExtra);
+      let tienePlan = tienePrivado && ('planId' in tp) && tp.planId != null &&
+                       exists(/databases/$(database)/documents/planes/$(tp.planId));
+      let enPlan = tienePlan &&
+                   ('modulos' in get(/databases/$(database)/documents/planes/$(tp.planId)).data) &&
+                   (moduloId in get(/databases/$(database)/documents/planes/$(tp.planId)).data.modulos);
+      // Sin plan asignado todavía: no restringe (ver nota de fail-open).
+      return !revocado && (extra || !tienePlan || enPlan);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE TENANTS - SOLO SUPER ADMINS
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /tenants/{tenantId} {
+      // Lectura pública: SOLO nombre, logo, color de marca y estado (nada
+      // sensible) — los necesita el selector de empresa del login antes de
+      // que se sepa a cuál empresa pertenece quien está entrando, y
+      // tenant-resolver.js para el catálogo público por subdominio.
+      // planId/suscripción (precio, fechas)/límites/excepciones de módulos
+      // NUNCA van aquí — viven en tenantsPrivado/{tenantId} (ver abajo). Si
+      // fueran públicos, cualquiera sin sesión podría leer el precio y la
+      // fecha de vencimiento de la suscripción de cualquier empresa.
+      allow read: if true;
+
+      // Solo Super Admins pueden crear/editar tenants
+      allow create, update: if isSuperAdmin();
+
+      // NUNCA eliminar tenants (usar estado "cancelado")
+      allow delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE TENANTS (DATOS PRIVADOS) - PLAN, SUSCRIPCIÓN, MÓDULOS
+    // ═══════════════════════════════════════════════════════════════════
+    // Contraparte privada de tenants/{tenantId}: planId, modulosExtra,
+    // modulosRevocados, suscripcion (precio, fechas), limites,
+    // propietarioId. Mismo id que el tenant. Solo el propio tenant (sus
+    // usuarios activos) o Super Admin pueden leerlo — nunca público.
+    match /tenantsPrivado/{tenantId} {
+      allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+      allow create, update: if isSuperAdmin();
+      allow delete: if false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // REGLAS DE PLANES - SOLO SUPER ADMINS
+    // ═══════════════════════════════════════════════════════════════════
+
+    match /planes/{planId} {
+      // Lectura pública (para mostrar en onboarding)
+      allow read: if true;
+
+      // Solo Super Admins pueden gestionar planes
+      allow create, update, delete: if isSuperAdmin();
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -104,28 +209,28 @@ service cloud.firestore {
       // Leer propio documento
       allow read: if isAuthenticated() && request.auth.uid == userId;
 
+      // Super Admin puede leer todos los usuarios
+      allow read: if isSuperAdmin();
+
       // Admin Tenant puede leer usuarios de su tenant
       allow read: if isActiveUser() &&
                     hasPermission('usuarios_ver') &&
-                    belongsToTenant(resource.data.get('tenantId', null));
+                    belongsToTenant(resource.data.tenantId);
 
-      // Crear: con permiso, dentro del propio negocio. Nadie puede darse ni
-      // dar acceso a otros negocios ('negocios') desde la app.
-      allow create: if hasPermission('usuarios_crear') &&
-                      hasRequiredTenantId() &&
-                      isCreatingWithCorrectTenant() &&
-                      !('negocios' in request.resource.data);
+      // Crear: Super Admin o Admin Tenant (con tenantId correcto)
+      allow create: if isSuperAdmin() ||
+                      (hasPermission('usuarios_crear') &&
+                       hasRequiredTenantId() &&
+                       isCreatingWithCorrectTenant());
 
       // Actualizar: Solo del mismo tenant, sin cambiar tenantId
-      allow update: if hasPermission('usuarios_editar') &&
-                      belongsToTenant(resource.data.get('tenantId', null)) &&
-                      isNotChangingTenant() &&
-                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['negocios']);
+      allow update: if isSuperAdmin() ||
+                      (hasPermission('usuarios_editar') &&
+                       belongsToTenant(resource.data.tenantId) &&
+                       isNotChangingTenant());
 
-      // Eliminar: solo un Administrador del mismo negocio, y nunca a sí mismo
-      allow delete: if isAdmin() &&
-                      belongsToTenant(resource.data.get('tenantId', null)) &&
-                      userId != request.auth.uid;
+      // Eliminar: Solo Super Admin
+      allow delete: if isSuperAdmin();
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -147,7 +252,7 @@ service cloud.firestore {
       // productos_editar, pero SÍ necesitan poder ajustar stock al vender o
       // reponerlo al anular, sin que eso dé permiso de tocar precio/nombre/etc.
       // Se restringe a que el único campo que cambie sea variaciones.
-      allow update: if belongsToTenant(resource.data.get('tenantId', null)) &&
+      allow update: if belongsToTenant(resource.data.tenantId) &&
                       isNotChangingTenant() &&
                       (hasPermission('productos_editar') ||
                        ((hasPermission('ventas_crear') || hasPermission('ventas_anular')) &&
@@ -155,7 +260,7 @@ service cloud.firestore {
 
       // Eliminar: Solo del mismo tenant
       allow delete: if hasPermission('productos_eliminar') &&
-                      belongsToTenant(resource.data.get('tenantId', null));
+                      belongsToTenant(resource.data.tenantId);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -163,15 +268,13 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════
 
     match /ventas/{saleId} {
-      // Leer: con permiso de ventas, dashboard o finanzas de Fábrica, y solo
-      // las ventas del propio negocio. Fábrica consulta siempre con
-      // where('tenantId', '==', 'fabrica'). Boutique todavía lee la colección
-      // sin ese filtro (sus ventas anteriores a la separación no tienen
-      // tenantId) y separa las de Fábrica del lado cliente (admin.js).
+      // Leer: Usuario activo con permiso de ventas o dashboard.
+      // Fábrica también puede leer, pero SOLO ventas mayoristas (las usa
+      // para sumar sus ingresos), nunca las ventas al detal de la boutique.
+      // No requiere tenantId en el documento para compatibilidad con registros anteriores
       allow read: if isActiveUser() &&
                     (hasPermission('ventas_ver') || hasPermission('dashboard_ver') ||
-                     hasPermission('fabrica_gestionar')) &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                     (hasPermission('fabrica_gestionar') && resource.data.tipoVenta == 'mayorista'));
 
       // Crear: Con tenantId correcto
       allow create: if hasPermission('ventas_crear') &&
@@ -183,14 +286,14 @@ service cloud.firestore {
       allow update: if isActiveUser() &&
                       (hasPermission('ventas_editar') || hasPermission('ventas_anular')) &&
                       (!resource.data.keys().hasAny(['tenantId']) ||
-                       (belongsToTenant(resource.data.get('tenantId', null)) && isNotChangingTenant()));
+                       (belongsToTenant(resource.data.tenantId) && isNotChangingTenant()));
 
       // Eliminar: Solo con permiso explícito ventas_eliminar
       // Permite docs sin tenantId (registros anteriores a migración)
       allow delete: if isActiveUser() &&
                       hasPermission('ventas_eliminar') &&
                       (!resource.data.keys().hasAny(['tenantId']) ||
-                       belongsToTenant(resource.data.get('tenantId', null)));
+                       belongsToTenant(resource.data.tenantId));
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -201,7 +304,7 @@ service cloud.firestore {
       // Leer: quien puede ver ventas. Permite docs sin tenantId (legacy)
       allow read: if hasPermission('ventas_ver') &&
                     (!resource.data.keys().hasAny(['tenantId']) ||
-                     (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null))));
+                     belongsToTenant(resource.data.tenantId));
 
       // Crear: quien puede registrar ventas, con tenantId correcto
       allow create: if hasPermission('ventas_crear') &&
@@ -221,7 +324,7 @@ service cloud.firestore {
       // propio tenant (los registros sin tenantId son de antes de que
       // existiera Fábrica, se tratan como visibles para compatibilidad)
       allow read: if hasPermission('auditoria_ver') &&
-                    (!resource.data.keys().hasAny(['tenantId']) || belongsToTenant(resource.data.get('tenantId', null)));
+                    (!resource.data.keys().hasAny(['tenantId']) || belongsToTenant(resource.data.tenantId));
 
       // Crear: cualquier usuario activo puede dejar su propio registro,
       // pero solo puede firmarlo como sí mismo (no puede suplantar a otro
@@ -229,7 +332,8 @@ service cloud.firestore {
       allow create: if isActiveUser() &&
                       request.resource.data.usuarioId == request.auth.uid &&
                       (!('tenantId' in request.resource.data) ||
-                       isCreatingWithCorrectTenant());
+                       isSuperAdmin() ||
+                       request.resource.data.tenantId == getUserData().tenantId);
 
       // Es un log inmutable: nunca se edita ni se elimina
       allow update, delete: if false;
@@ -241,10 +345,10 @@ service cloud.firestore {
 
     match /contadores/{contadorId} {
       allow read: if (hasPermission('ventas_ver') || hasPermission('ventas_crear')) &&
-                    esContadorPropio(contadorId);
+                    (contadorId == tenantCounterId() || isSuperAdmin());
 
       allow write: if hasPermission('ventas_crear') &&
-                     esContadorPropio(contadorId);
+                     (contadorId == tenantCounterId() || isSuperAdmin());
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -265,7 +369,7 @@ service cloud.firestore {
 
       // Eliminar: solo staff con permiso, del mismo tenant
       allow delete: if hasPermission('clientes_eliminar') &&
-                      belongsToTenant(resource.data.get('tenantId', null));
+                      belongsToTenant(resource.data.tenantId);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -278,11 +382,11 @@ service cloud.firestore {
 
       // Leer: Solo del mismo tenant
       allow read: if hasPermission('pedidos_web_ver') &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       // Actualizar: Solo del mismo tenant, sin cambiar tenantId
       allow update: if hasPermission('pedidos_web_gestionar') &&
-                      belongsToTenant(resource.data.get('tenantId', null)) &&
+                      belongsToTenant(resource.data.tenantId) &&
                       isNotChangingTenant();
 
       // No eliminar pedidos
@@ -298,7 +402,7 @@ service cloud.firestore {
     match /cotizaciones/{cotizacionId} {
       // Leer: quien puede registrar/ver ventas, solo del mismo tenant
       allow read: if (hasPermission('ventas_ver') || hasPermission('ventas_crear')) &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       // Crear: quien puede registrar ventas, con tenantId correcto
       allow create: if hasPermission('ventas_crear') &&
@@ -307,7 +411,7 @@ service cloud.firestore {
 
       // Actualizar (aceptar/rechazar): Solo del mismo tenant, sin cambiar tenantId
       allow update: if hasPermission('ventas_editar') &&
-                      belongsToTenant(resource.data.get('tenantId', null)) &&
+                      belongsToTenant(resource.data.tenantId) &&
                       isNotChangingTenant();
 
       // No eliminar cotizaciones
@@ -321,7 +425,7 @@ service cloud.firestore {
     match /apartados/{apartadoId} {
       // Leer: Solo del mismo tenant
       allow read: if hasPermission('apartados_ver') &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       // Crear: Con tenantId correcto
       allow create: if hasPermission('apartados_crear') &&
@@ -330,12 +434,12 @@ service cloud.firestore {
 
       // Actualizar: Solo del mismo tenant, sin cambiar tenantId
       allow update: if hasPermission('apartados_editar') &&
-                      belongsToTenant(resource.data.get('tenantId', null)) &&
+                      belongsToTenant(resource.data.tenantId) &&
                       isNotChangingTenant();
 
       // Eliminar: Solo del mismo tenant
       allow delete: if hasPermission('apartados_eliminar') &&
-                      belongsToTenant(resource.data.get('tenantId', null));
+                      belongsToTenant(resource.data.tenantId);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -347,16 +451,21 @@ service cloud.firestore {
       // para el filtro por categoría — mismo criterio que productos.
       allow read: if true;
 
-      // Boutique y Fábrica comparten taxonomía a propósito (misma dueña):
-      // esos documentos no llevan tenantId y basta el permiso. Si alguno
-      // sí lo trae, se valida como cualquier otra colección.
+      // Boutique y Fábrica comparten taxonomía a propósito (misma dueña) —
+      // esos documentos nunca llevan tenantId, y para ellos basta el
+      // permiso, sin validar tenant (comportamiento sin cambios). Una
+      // empresa nueva del SaaS sí necesita sus categorías propias y
+      // aisladas: si el documento SÍ trae tenantId, se valida como
+      // cualquier otra colección tenant-aware. Preparado para cuando se
+      // construya esa UI (hoy admin.js sigue leyendo categorias sin
+      // filtrar, es decir, sigue siendo compartida en la práctica).
       allow create: if hasPermission('categorias_gestionar') &&
                       (!('tenantId' in request.resource.data) || isCreatingWithCorrectTenant());
       allow update: if hasPermission('categorias_gestionar') &&
-                      (!('tenantId' in resource.data) || belongsToTenant(resource.data.get('tenantId', null))) &&
+                      (!('tenantId' in resource.data) || belongsToTenant(resource.data.tenantId)) &&
                       isNotChangingTenant();
       allow delete: if hasPermission('categorias_gestionar') &&
-                      (!('tenantId' in resource.data) || belongsToTenant(resource.data.get('tenantId', null)));
+                      (!('tenantId' in resource.data) || belongsToTenant(resource.data.tenantId));
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -366,11 +475,11 @@ service cloud.firestore {
     match /proveedores/{supplierId} {
       // Leer: Solo del mismo tenant
       allow read: if hasPermission('proveedores_gestionar') &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       // Gestionar: Solo del mismo tenant
       allow create, update, delete: if hasPermission('proveedores_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -382,11 +491,11 @@ service cloud.firestore {
     match /repartidores/{repartidorId} {
       // Leer: Solo del mismo tenant
       allow read: if hasPermission('repartidores_gestionar') &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       // Gestionar: Solo del mismo tenant
       allow create, update, delete: if hasPermission('repartidores_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -397,10 +506,10 @@ service cloud.firestore {
 
     match /movimientosFinancieros/{movimientoId} {
       allow read: if hasPermission('finanzas_ver') &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       allow create, update, delete: if hasPermission('finanzas_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -437,11 +546,16 @@ service cloud.firestore {
 
     match /movimientosFabrica/{movimientoId} {
       allow read: if hasPermission('fabrica_gestionar') &&
-                    belongsToTenant(resource.data.get('tenantId', null));
+                    belongsToTenant(resource.data.tenantId);
 
+      // tenantTieneModulo(): además de que LA PERSONA tenga el permiso,
+      // valida que LA EMPRESA tenga el módulo Fábrica contratado (plan o
+      // excepción manual) — ver "FUNCIONES DE PLAN Y MÓDULOS" más arriba.
       allow create, update, delete: if hasPermission('fabrica_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || tenantTieneModulo(resource.data.tenantId, 'fabrica_gestionar')) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || tenantTieneModulo(request.resource.data.tenantId, 'fabrica_gestionar')) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
 
@@ -451,11 +565,13 @@ service cloud.firestore {
 
     match /inventarioFabrica/{itemId} {
       allow read: if hasPermission('inventario_fabrica_gestionar') &&
-                    belongsToTenant(resource.data.get('tenantId', null));
+                    belongsToTenant(resource.data.tenantId);
 
       allow create, update, delete: if hasPermission('inventario_fabrica_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                                      (resource == null || tenantTieneModulo(resource.data.tenantId, 'inventario_fabrica_gestionar')) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
+                                      (request.resource == null || tenantTieneModulo(request.resource.data.tenantId, 'inventario_fabrica_gestionar')) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
 
@@ -469,14 +585,17 @@ service cloud.firestore {
       allow read: if true;
 
       allow create, delete: if hasPermission('inventario_fabrica_gestionar') &&
-                              (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
-                              (request.resource == null || isCreatingWithCorrectTenant());
+                              (resource == null || belongsToTenant(resource.data.tenantId)) &&
+                              (resource == null || tenantTieneModulo(resource.data.tenantId, 'inventario_fabrica_gestionar')) &&
+                              (request.resource == null || isCreatingWithCorrectTenant()) &&
+                              (request.resource == null || tenantTieneModulo(request.resource.data.tenantId, 'inventario_fabrica_gestionar'));
 
       // Igual que productos de Boutique: gestión completa del catálogo, o
       // solo tocar stock al registrar (ventas_crear) o anular (ventas_anular)
       // una venta de mostrador — restringido a que el único campo que
       // cambie sea variaciones.
-      allow update: if belongsToTenant(resource.data.get('tenantId', null)) &&
+      allow update: if belongsToTenant(resource.data.tenantId) &&
+                      tenantTieneModulo(resource.data.tenantId, 'inventario_fabrica_gestionar') &&
                       isNotChangingTenant() &&
                       (hasPermission('inventario_fabrica_gestionar') ||
                        ((hasPermission('ventas_crear') || hasPermission('ventas_anular')) &&
@@ -489,10 +608,10 @@ service cloud.firestore {
 
     match /movimientosBoutique/{movimientoId} {
       allow read: if hasPermission('finanzas_ver') &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       allow create, update, delete: if hasPermission('finanzas_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -503,10 +622,10 @@ service cloud.firestore {
 
     match /cierresCaja/{cierreId} {
       allow read: if (hasPermission('cierres_caja') || hasPermission('finanzas_ver')) &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       allow create, update, delete: if hasPermission('cierres_caja') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -524,7 +643,7 @@ service cloud.firestore {
 
       // Responder: Solo staff del tenant
       allow update: if hasPermission('chat_responder') &&
-                      belongsToTenant(resource.data.get('tenantId', null)) &&
+                      belongsToTenant(resource.data.tenantId) &&
                       isNotChangingTenant();
 
       allow delete: if false;
@@ -536,10 +655,10 @@ service cloud.firestore {
 
     match /metas/{metaId} {
       allow read: if (hasPermission('dashboard_ver') || hasPermission('finanzas_ver')) &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       allow create, update, delete: if hasPermission('finanzas_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -553,7 +672,7 @@ service cloud.firestore {
       allow read: if true;
 
       allow create, update, delete: if hasPermission('promociones_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -563,7 +682,7 @@ service cloud.firestore {
       allow read: if true;
 
       allow create, update, delete: if hasPermission('promociones_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
@@ -574,63 +693,64 @@ service cloud.firestore {
 
     match /ordenesRecepcion/{ordenId} {
       allow read: if hasPermission('productos_ver') &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       allow create, update, delete: if hasPermission('productos_editar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     match /liquidaciones/{liquidacionId} {
       allow read: if (hasPermission('repartidores_gestionar') || hasPermission('finanzas_ver')) &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       allow create, update, delete: if hasPermission('repartidores_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     match /abonos/{abonoId} {
       allow read: if hasPermission('apartados_ver') &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       allow create, update, delete: if hasPermission('apartados_gestionar') &&
-                                      (resource == null || belongsToTenant(resource.data.get('tenantId', null))) &&
+                                      (resource == null || belongsToTenant(resource.data.tenantId)) &&
                                       (request.resource == null || isCreatingWithCorrectTenant()) &&
                                       (resource == null || request.resource == null || isNotChangingTenant());
     }
 
     match /historial_cargues/{cargueId} {
       allow read: if hasPermission('productos_ver') &&
-                    (esUsuarioBoutique() || belongsToTenant(resource.data.get('tenantId', null)));
+                    belongsToTenant(resource.data.tenantId);
 
       allow create: if hasPermission('productos_importar') &&
                       hasRequiredTenantId() &&
                       isCreatingWithCorrectTenant();
 
-      allow update, delete: if false;
+      allow update, delete: if isSuperAdmin();
     }
 
     match /historial_cargues_fabrica/{cargueId} {
       allow read: if hasPermission('inventario_fabrica_gestionar') &&
-                    belongsToTenant(resource.data.get('tenantId', null));
+                    belongsToTenant(resource.data.tenantId);
 
       allow create: if hasPermission('inventario_fabrica_gestionar') &&
                       hasRequiredTenantId() &&
-                      isCreatingWithCorrectTenant();
+                      isCreatingWithCorrectTenant() &&
+                      tenantTieneModulo(request.resource.data.tenantId, 'inventario_fabrica_gestionar');
 
-      allow update, delete: if false;
+      allow update, delete: if isSuperAdmin();
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // AUDIT LOGS
+    // AUDIT LOGS - SOLO SUPER ADMINS
     // ═══════════════════════════════════════════════════════════════════
 
     match /auditLogs/{logId} {
-      // Nadie lo lee desde la app
-      allow read: if false;
+      // Solo Super Admins pueden leer audit logs
+      allow read: if isSuperAdmin();
 
       // Escritura por sistema (Cloud Functions)
       allow create: if true;
@@ -680,12 +800,12 @@ service cloud.firestore {
 
       // 'seguridad' (cerrar todas las sesiones) es más sensible que el
       // resto: solo Administrador/Sistema de ESA empresa, igual que ya
-      // exige la UI (data-roles="ADMIN" en admin.html) — antes
+      // exige la UI (data-roles="ADMIN,SUPER_ADMIN" en admin.html) — antes
       // esto no se validaba del lado servidor. El resto exige el permiso
       // config_gestionar de esa empresa (mismo criterio que hoy).
       allow create, update: if belongsToTenant(tenantId) &&
                                (docId == 'seguridad'
-                                 ? isAdmin()
+                                 ? (getUserData().rol == 'ADMIN' || isSuperAdmin())
                                  : hasPermission('config_gestionar'));
       allow delete: if false;
     }

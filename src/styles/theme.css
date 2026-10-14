@@ -1,0 +1,337 @@
+/**
+ * TEMA BASE MULTI-TENANT
+ * Variables CSS que se inyectan dinámicamente según el tenant
+ */
+
+:root {
+  /* ============================================================
+     COLORES PRIMARIOS (Inyectados dinámicamente por tenant)
+     ============================================================ */
+
+  /* Colores por defecto (Mishell) - Se sobrescriben dinámicamente */
+  --color-primario: #D988B9;
+  --color-primario-claro: #F5E8ED;
+  --color-primario-hover: #E3B0CC;
+  --color-primario-oscuro: #C273A2;
+
+  --color-secundario: #333333;
+  --color-acento: #FFD700;
+
+  /* ============================================================
+     COLORES DE SISTEMA (No cambian)
+     ============================================================ */
+
+  --color-fondo: #ffffff;
+  --color-fondo-alt: #f8f9fa;
+  --color-borde: #E5E5E5;
+  --color-borde-hover: #cccccc;
+  --color-texto: #333333;
+  --color-texto-secundario: #666666;
+  --color-texto-placeholder: #999999;
+
+  /* Colores de estado */
+  --color-success: #28a745;
+  --color-success-claro: #d4edda;
+  --color-danger: #dc3545;
+  --color-danger-claro: #f8d7da;
+  --color-warning: #ffc107;
+  --color-warning-claro: #fff3cd;
+  --color-info: #17a2b8;
+  --color-info-claro: #d1ecf1;
+
+  /* ============================================================
+     TIPOGRAFÍA
+     ============================================================ */
+
+  --fuente-principal: 'Poppins', sans-serif;
+  --fuente-secundaria: 'Roboto', sans-serif;
+  --fuente-monoespaciada: 'Courier New', monospace;
+
+  --peso-light: 300;
+  --peso-regular: 400;
+  --peso-medium: 500;
+  --peso-semibold: 600;
+  --peso-bold: 700;
+
+  --tamano-xs: 0.75rem;    /* 12px */
+  --tamano-sm: 0.875rem;   /* 14px */
+  --tamano-base: 1rem;     /* 16px */
+  --tamano-lg: 1.125rem;   /* 18px */
+  --tamano-xl: 1.25rem;    /* 20px */
+  --tamano-2xl: 1.5rem;    /* 24px */
+  --tamano-3xl: 1.875rem;  /* 30px */
+  --tamano-4xl: 2.25rem;   /* 36px */
+
+  /* ============================================================
+     ESPACIADO
+     ============================================================ */
+
+  --espacio-xs: 0.25rem;   /* 4px */
+  --espacio-sm: 0.5rem;    /* 8px */
+  --espacio-md: 1rem;      /* 16px */
+  --espacio-lg: 1.5rem;    /* 24px */
+  --espacio-xl: 2rem;      /* 32px */
+  --espacio-2xl: 3rem;     /* 48px */
+  --espacio-3xl: 4rem;     /* 64px */
+
+  /* ============================================================
+     BORDES Y RADIUS
+     ============================================================ */
+
+  --radio-sm: 0.25rem;     /* 4px */
+  --radio-md: 0.5rem;      /* 8px */
+  --radio-lg: 0.75rem;     /* 12px */
+  --radio-xl: 1rem;        /* 16px */
+  --radio-pill: 50rem;     /* Pill shape */
+  --radio-circle: 50%;     /* Circle */
+
+  --borde-ancho: 1px;
+  --borde-ancho-grueso: 2px;
+
+  /* ============================================================
+     SOMBRAS
+     ============================================================ */
+
+  --sombra-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --sombra-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --sombra-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --sombra-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --sombra-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+
+  /* ============================================================
+     TRANSICIONES
+     ============================================================ */
+
+  --transicion-rapida: 0.15s ease;
+  --transicion-normal: 0.3s ease;
+  --transicion-lenta: 0.5s ease;
+
+  --transicion-all: all var(--transicion-normal);
+  --transicion-color: color var(--transicion-normal),
+                      background-color var(--transicion-normal),
+                      border-color var(--transicion-normal);
+  --transicion-transform: transform var(--transicion-normal);
+  --transicion-opacity: opacity var(--transicion-normal);
+
+  /* ============================================================
+     Z-INDEX
+     ============================================================ */
+
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+
+/* ============================================================
+   APLICACIÓN DE VARIABLES A ELEMENTOS
+   ============================================================ */
+
+/* BOTONES */
+.btn-primary {
+  background-color: var(--color-primario) !important;
+  border-color: var(--color-primario) !important;
+  transition: var(--transicion-color);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--color-primario-hover) !important;
+  border-color: var(--color-primario-hover) !important;
+}
+
+.btn-primary:active {
+  background-color: var(--color-primario-oscuro) !important;
+  border-color: var(--color-primario-oscuro) !important;
+}
+
+.btn-outline-primary {
+  color: var(--color-primario) !important;
+  border-color: var(--color-primario) !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--color-primario) !important;
+  border-color: var(--color-primario) !important;
+  color: white !important;
+}
+
+/* ENLACES */
+a {
+  color: var(--color-primario);
+  transition: var(--transicion-color);
+}
+
+a:hover {
+  color: var(--color-primario-oscuro);
+}
+
+/* BADGES */
+.badge-primary {
+  background-color: var(--color-primario) !important;
+}
+
+/* NAVBAR */
+.navbar-brand {
+  color: var(--color-primario) !important;
+  font-weight: var(--peso-bold);
+  transition: var(--transicion-color);
+}
+
+.navbar-brand:hover {
+  color: var(--color-primario-hover) !important;
+}
+
+/* CARDS */
+.card {
+  border: var(--borde-ancho) solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-sm);
+  transition: var(--transicion-all);
+}
+
+.card:hover {
+  box-shadow: var(--sombra-md);
+}
+
+.card-header {
+  background-color: var(--color-fondo-alt);
+  border-bottom: var(--borde-ancho) solid var(--color-borde);
+}
+
+/* PRODUCT CARDS */
+.product-card {
+  border: var(--borde-ancho) solid var(--color-borde);
+  border-radius: var(--radio-md);
+  transition: var(--transicion-all);
+  cursor: pointer;
+}
+
+.product-card:hover {
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 2px var(--color-primario-claro);
+  transform: translateY(-2px);
+}
+
+/* FORMS */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 0.2rem var(--color-primario-claro);
+}
+
+.form-check-input:checked {
+  background-color: var(--color-primario);
+  border-color: var(--color-primario);
+}
+
+/* TABLES */
+.table-hover tbody tr:hover {
+  background-color: var(--color-primario-claro);
+}
+
+/* PAGINATION */
+.page-link {
+  color: var(--color-primario);
+}
+
+.page-link:hover {
+  color: var(--color-primario-oscuro);
+  background-color: var(--color-primario-claro);
+  border-color: var(--color-primario);
+}
+
+.page-item.active .page-link {
+  background-color: var(--color-primario);
+  border-color: var(--color-primario);
+}
+
+/* SPINNERS */
+.spinner-border-primary {
+  color: var(--color-primario);
+}
+
+/* ALERTS */
+.alert-primary {
+  background-color: var(--color-primario-claro);
+  border-color: var(--color-primario);
+  color: var(--color-primario-oscuro);
+}
+
+/* PROGRESS BARS */
+.progress-bar-primary {
+  background-color: var(--color-primario);
+}
+
+/* TEXT UTILITIES */
+.text-primary {
+  color: var(--color-primario) !important;
+}
+
+.bg-primary {
+  background-color: var(--color-primario) !important;
+}
+
+.border-primary {
+  border-color: var(--color-primario) !important;
+}
+
+/* ============================================================
+   UTILIDADES PERSONALIZADAS
+   ============================================================ */
+
+/* Contenedor con padding dinámico */
+.container-dynamic {
+  padding: var(--espacio-lg);
+}
+
+/* Espaciado responsive */
+.spacing-xs { margin: var(--espacio-xs); }
+.spacing-sm { margin: var(--espacio-sm); }
+.spacing-md { margin: var(--espacio-md); }
+.spacing-lg { margin: var(--espacio-lg); }
+.spacing-xl { margin: var(--espacio-xl); }
+
+/* Animaciones suaves */
+.smooth-transition {
+  transition: var(--transicion-all);
+}
+
+/* Hover lift */
+.hover-lift {
+  transition: var(--transicion-transform);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* ============================================================
+   DARK MODE (Opcional - Para futura implementación)
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-fondo: #1a1a1a;
+    --color-fondo-alt: #2d2d2d;
+    --color-texto: #e5e5e5;
+    --color-texto-secundario: #b3b3b3;
+    --color-borde: #404040;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  :root {
+    --espacio-lg: 1rem;
+    --espacio-xl: 1.5rem;
+    --tamano-xl: 1.125rem;
+    --tamano-2xl: 1.25rem;
+  }
+}
