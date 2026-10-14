@@ -41,19 +41,29 @@ service cloud.firestore {
       return getUserData().get('tenantId', null) == null ? 'boutique' : getUserData().tenantId;
     }
 
+    // Negocios adicionales a los que la persona tiene acceso (lista en su
+    // documento, p.ej. ['fabrica'] para quien administra los dos). Solo se
+    // asigna desde la consola de Firebase: la app no puede cambiarlo (ver
+    // match /usuarios).
+    function negociosExtra() {
+      return getUserData().get('negocios', []);
+    }
+
     // Verifica si el usuario es Administrador de su negocio
     function isAdmin() {
       return isActiveUser() && getUserData().rol == 'ADMIN';
     }
 
-    // Verifica si el usuario pertenece a un tenant específico
+    // Verifica si el usuario pertenece a un negocio (el suyo o uno extra)
     function belongsToTenant(tenantId) {
-      return isActiveUser() && getUserData().tenantId == tenantId;
+      return isActiveUser() &&
+             (tenantId in negociosExtra() || getUserData().tenantId == tenantId);
     }
 
-    // Verifica si el documento que se está creando tiene el tenantId correcto
+    // Verifica si el documento que se está creando es de un negocio del usuario
     function isCreatingWithCorrectTenant() {
-      return request.resource.data.tenantId == getUserData().tenantId;
+      return request.resource.data.tenantId in negociosExtra() ||
+             request.resource.data.tenantId == getUserData().tenantId;
     }
 
     // Verifica que no se intente cambiar el tenantId en una actualización
@@ -72,6 +82,12 @@ service cloud.firestore {
       return 'facturas_' + (getUserData().tenantId == null ? 'default' : getUserData().tenantId);
     }
 
+    // El contador de facturas es de un negocio del usuario
+    function esContadorPropio(contadorId) {
+      return contadorId == tenantCounterId() ||
+             (contadorId.matches('facturas_.+') && contadorId.split('_')[1] in negociosExtra());
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     // REGLAS DE USUARIOS - CON VALIDACIÓN DE TENANT
     // ═══════════════════════════════════════════════════════════════════
@@ -85,15 +101,18 @@ service cloud.firestore {
                     hasPermission('usuarios_ver') &&
                     belongsToTenant(resource.data.tenantId);
 
-      // Crear: con permiso, dentro del propio negocio
+      // Crear: con permiso, dentro del propio negocio. Nadie puede darse ni
+      // dar acceso a otros negocios ('negocios') desde la app.
       allow create: if hasPermission('usuarios_crear') &&
                       hasRequiredTenantId() &&
-                      isCreatingWithCorrectTenant();
+                      isCreatingWithCorrectTenant() &&
+                      !('negocios' in request.resource.data);
 
       // Actualizar: Solo del mismo tenant, sin cambiar tenantId
       allow update: if hasPermission('usuarios_editar') &&
                       belongsToTenant(resource.data.tenantId) &&
-                      isNotChangingTenant();
+                      isNotChangingTenant() &&
+                      !request.resource.data.diff(resource.data).affectedKeys().hasAny(['negocios']);
 
       // Eliminar: solo un Administrador del mismo negocio, y nunca a sí mismo
       allow delete: if isAdmin() &&
@@ -144,7 +163,7 @@ service cloud.firestore {
       allow read: if isActiveUser() &&
                     (hasPermission('ventas_ver') || hasPermission('dashboard_ver') ||
                      hasPermission('fabrica_gestionar')) &&
-                    (negocioUsuario() == 'boutique' || resource.data.tenantId == negocioUsuario());
+                    (negocioUsuario() == 'boutique' || belongsToTenant(resource.data.tenantId));
 
       // Crear: Con tenantId correcto
       allow create: if hasPermission('ventas_crear') &&
@@ -202,7 +221,7 @@ service cloud.firestore {
       allow create: if isActiveUser() &&
                       request.resource.data.usuarioId == request.auth.uid &&
                       (!('tenantId' in request.resource.data) ||
-                       request.resource.data.tenantId == getUserData().tenantId);
+                       isCreatingWithCorrectTenant());
 
       // Es un log inmutable: nunca se edita ni se elimina
       allow update, delete: if false;
@@ -214,10 +233,10 @@ service cloud.firestore {
 
     match /contadores/{contadorId} {
       allow read: if (hasPermission('ventas_ver') || hasPermission('ventas_crear')) &&
-                    contadorId == tenantCounterId();
+                    esContadorPropio(contadorId);
 
       allow write: if hasPermission('ventas_crear') &&
-                     contadorId == tenantCounterId();
+                     esContadorPropio(contadorId);
     }
 
     // ═══════════════════════════════════════════════════════════════════
