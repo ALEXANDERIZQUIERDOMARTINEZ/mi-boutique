@@ -19,10 +19,15 @@
                 // script corre antes de que cargue nada de Firebase/ES
                 // modules, así que no puede importarlo.
                 var PANEL_POR_NEGOCIO = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
-                var panel = PANEL_POR_NEGOCIO[cache.tenantId || 'boutique'];
-                // Con acceso a más de un negocio se muestra el selector.
-                var variosNegocios = (cache.negocios || []).length > 1;
-                if (panel && !variosNegocios) {
+                var negociosCache = (cache.negocios && cache.negocios.length) ? cache.negocios : [cache.tenantId || 'boutique'];
+                // En fabrica.mishelles.store se entra directo a Fábrica si la
+                // cuenta tiene acceso; si no, con más de un negocio se
+                // muestra el selector.
+                var preferido = location.hostname.indexOf('fabrica.') === 0 ? 'fabrica' : null;
+                var panel = (preferido && negociosCache.indexOf(preferido) !== -1)
+                    ? PANEL_POR_NEGOCIO[preferido]
+                    : (negociosCache.length > 1 ? null : PANEL_POR_NEGOCIO[negociosCache[0]]);
+                if (panel) {
                     location.replace(panel);
                 }
             }
@@ -601,6 +606,12 @@
 
             const negocios = Array.from(new Set([userData.tenantId || 'boutique', ...(userData.negocios || [])]))
                 .filter(n => PANEL_POR_NEGOCIO[n]);
+            // En fabrica.mishelles.store se entra directo a Fábrica.
+            const preferido = window.location.hostname.startsWith('fabrica.') ? 'fabrica' : null;
+            if (preferido && negocios.includes(preferido)) {
+                window.location.href = PANEL_POR_NEGOCIO[preferido];
+                return true;
+            }
             if (negocios.length > 1) {
                 mostrarSelectorNegocio(negocios);
                 return true;
