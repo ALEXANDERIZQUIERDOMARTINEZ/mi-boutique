@@ -409,7 +409,10 @@ export class AuthManager {
      */
     redirectToLogin() {
         if (!window.location.pathname.includes('login.html')) {
-            window.location.href = 'login.html';
+            // Recordar a qué panel se intentaba entrar, para volver a él
+            // después de iniciar sesión.
+            const negocio = negocioDePagina();
+            window.location.href = negocio ? `login.html?negocio=${negocio}` : 'login.html';
         }
     }
 

@@ -32,6 +32,28 @@
       ],
       "destination": "https://fabrica.mishelles.store/encargo.html",
       "permanent": true
+    },
+    {
+      "source": "/admin-fabrica.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "fabrica.mishelles.store"
+        }
+      ],
+      "destination": "https://ameigroup.mishelles.store/admin-fabrica.html",
+      "permanent": false
+    },
+    {
+      "source": "/admin-fabrica",
+      "has": [
+        {
+          "type": "host",
+          "value": "fabrica.mishelles.store"
+        }
+      ],
+      "destination": "https://ameigroup.mishelles.store/admin-fabrica.html",
+      "permanent": false
     }
   ],
   "rewrites": [

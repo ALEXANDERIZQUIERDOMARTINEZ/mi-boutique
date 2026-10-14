@@ -20,10 +20,12 @@
                 // modules, así que no puede importarlo.
                 var PANEL_POR_NEGOCIO = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
                 var negociosCache = (cache.negocios && cache.negocios.length) ? cache.negocios : [cache.tenantId || 'boutique'];
-                // En fabrica.mishelles.store se entra directo a Fábrica si la
+                // Se entra directo al panel que se intentaba abrir
+                // (?negocio=) o, en fabrica.mishelles.store, a Fábrica, si la
                 // cuenta tiene acceso; si no, con más de un negocio se
                 // muestra el selector.
-                var preferido = location.hostname.indexOf('fabrica.') === 0 ? 'fabrica' : null;
+                var preferido = new URLSearchParams(location.search).get('negocio') ||
+                    (location.hostname.indexOf('fabrica.') === 0 ? 'fabrica' : null);
                 var panel = (preferido && negociosCache.indexOf(preferido) !== -1)
                     ? PANEL_POR_NEGOCIO[preferido]
                     : (negociosCache.length > 1 ? null : PANEL_POR_NEGOCIO[negociosCache[0]]);
@@ -606,8 +608,10 @@
 
             const negocios = Array.from(new Set([userData.tenantId || 'boutique', ...(userData.negocios || [])]))
                 .filter(n => PANEL_POR_NEGOCIO[n]);
-            // En fabrica.mishelles.store se entra directo a Fábrica.
-            const preferido = window.location.hostname.startsWith('fabrica.') ? 'fabrica' : null;
+            // Panel al que se intentaba entrar (?negocio=, ver redirectToLogin
+            // en auth.js) o, en fabrica.mishelles.store, Fábrica.
+            const preferido = new URLSearchParams(window.location.search).get('negocio') ||
+                (window.location.hostname.startsWith('fabrica.') ? 'fabrica' : null);
             if (preferido && negocios.includes(preferido)) {
                 window.location.href = PANEL_POR_NEGOCIO[preferido];
                 return true;

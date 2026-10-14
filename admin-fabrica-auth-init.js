@@ -7,10 +7,10 @@
  * cual, sin cambios, igual que en Boutique.
  */
 
-import { AuthManager } from './auth.js?v=2.1.0';
+import { AuthManager } from './auth.js?v=2.2.0';
 // Versión debe coincidir con el import de usuarios.js en admin-auth-init.js
 // (Vercel cachea .js hasta 1h; bump este número cuando usuarios.js cambie).
-import { initUsuariosManager } from './usuarios.js?v=1.3.0';
+import { initUsuariosManager } from './usuarios.js?v=1.4.0';
 
 function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
