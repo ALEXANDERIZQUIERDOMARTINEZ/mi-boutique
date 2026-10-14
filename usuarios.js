@@ -5,8 +5,8 @@
 
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js?v=2.0.0';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, where, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js?v=2.2.0';
 // La versión debe coincidir con el <script type="module" src="auditoria.js?v=..."> de
 // admin.html / admin-fabrica.html: un specifier de import distinto (con o sin query
 // string distinta) hace que el navegador cargue auditoria.js como un módulo aparte,
@@ -127,8 +127,11 @@ function actualizarDirectorioLocal(usuarios) {
 function loadUsuarios() {
     const tbody = document.getElementById('usuarios-table-body');
 
-    // Listener en tiempo real
-    onSnapshot(query(usuariosCollection, orderBy('createdAt', 'desc')), (snapshot) => {
+    // Listener en tiempo real, solo con los usuarios del negocio de este
+    // panel (firestore.rules no permite listar los de otro negocio). Se
+    // ordena aquí y no en la consulta para no necesitar un índice compuesto.
+    const tenantId = currentAuthManager?.getCurrentUser()?.tenantId ?? null;
+    onSnapshot(query(usuariosCollection, where('tenantId', '==', tenantId)), (snapshot) => {
         allUsuarios = [];
         tbody.innerHTML = '';
 
@@ -148,11 +151,14 @@ function loadUsuarios() {
             return;
         }
 
-        snapshot.forEach((docSnap) => {
-            const usuario = { id: docSnap.id, ...docSnap.data() };
-            allUsuarios.push(usuario);
-            renderUsuarioRow(usuario, tbody);
-        });
+        const segundos = (u) => u.createdAt?.seconds || 0;
+        snapshot.docs
+            .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+            .sort((a, b) => segundos(b) - segundos(a))
+            .forEach(usuario => {
+                allUsuarios.push(usuario);
+                renderUsuarioRow(usuario, tbody);
+            });
 
         actualizarDirectorioLocal(allUsuarios);
     }, (error) => {

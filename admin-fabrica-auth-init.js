@@ -7,10 +7,10 @@
  * cual, sin cambios, igual que en Boutique.
  */
 
-import { AuthManager } from './auth.js?v=2.0.0';
+import { AuthManager } from './auth.js?v=2.2.0';
 // Versión debe coincidir con el import de usuarios.js en admin-auth-init.js
 // (Vercel cachea .js hasta 1h; bump este número cuando usuarios.js cambie).
-import { initUsuariosManager } from './usuarios.js?v=1.2.0';
+import { initUsuariosManager } from './usuarios.js?v=1.4.0';
 
 function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
@@ -79,6 +79,13 @@ function aplicarPermisosNav() {
     const ctx = window.appContext;
     if (!ctx) return;
 
+    // Enlaces "Ir a Boutique / Ir a Fábrica": solo para quien tiene acceso
+    // a ese negocio (lista 'negocios' de su cuenta, ver auth.js).
+    document.querySelectorAll('[data-negocio-requerido]').forEach(el => {
+        const negocio = el.getAttribute('data-negocio-requerido');
+        el.style.display = (ctx.negocios || []).includes(negocio) ? '' : 'none';
+    });
+
     document.querySelectorAll('[data-permiso]').forEach(el => {
         const permiso = el.getAttribute('data-permiso');
         const permitido = ctx.permisos?.[permiso] === true;
@@ -112,7 +119,8 @@ function construirAppContext(usuario) {
         nombre: usuario.nombre,
         rol: usuario.rol,
         permisos: usuario.permisos || {},
-        tenantId: usuario.tenantId ?? null
+        tenantId: usuario.tenantId ?? null,
+        negocios: usuario.negocios || []
     };
 }
 

@@ -20,6 +20,23 @@ export const PANEL_POR_NEGOCIO = {
     fabrica: 'admin-fabrica.html'
 };
 
+/**
+ * Negocios a los que tiene acceso una persona: el de su tenantId (o
+ * 'boutique' si no tiene, cuentas anteriores a la separación) más los de
+ * su lista 'negocios' (p.ej. quien administra Boutique y Fábrica con la
+ * misma cuenta). Esa lista solo se asigna desde la consola de Firebase.
+ */
+export function negociosDeUsuario(usuario) {
+    const principal = usuario?.tenantId || 'boutique';
+    return Array.from(new Set([principal, ...(usuario?.negocios || [])]));
+}
+
+// Negocio del panel abierto en esta página, o null si no es un panel.
+function negocioDePagina() {
+    const pagina = window.location.pathname.split('/').pop();
+    return Object.keys(PANEL_POR_NEGOCIO).find(n => PANEL_POR_NEGOCIO[n] === pagina) || null;
+}
+
 // Definición de permisos del sistema
 // IMPORTANTE: estas claves deben coincidir exactamente con los permisos
 // evaluados en firestore.rules (función hasPermission), ya que las Security
@@ -280,6 +297,7 @@ export class AuthManager {
                         const conversion = {
                             rol: 'ADMIN',
                             tenantId: userData.tenantId || 'boutique',
+                            negocios: ['fabrica'],
                             permisos: Object.fromEntries(Object.values(PERMISOS).map(p => [p, true]))
                         };
                         try {
@@ -303,21 +321,28 @@ export class AuthManager {
                     }
 
                     // Cada negocio tiene su propio panel: si la persona abrió
-                    // el de otro negocio, se la manda al suyo. El aislamiento
-                    // real de datos lo garantiza firestore.rules.
-                    const tenantId = userData.tenantId || 'boutique';
-                    const panelPropio = PANEL_POR_NEGOCIO[tenantId];
-                    const paginaActual = window.location.pathname.split('/').pop();
-                    const esPanel = Object.values(PANEL_POR_NEGOCIO).includes(paginaActual);
-                    if (panelPropio && esPanel && paginaActual !== panelPropio) {
-                        window.location.replace(panelPropio);
+                    // el de un negocio al que no tiene acceso, se la manda al
+                    // suyo. El aislamiento real de datos lo garantiza
+                    // firestore.rules.
+                    const negocios = negociosDeUsuario(userData);
+                    const negocioPagina = negocioDePagina();
+                    if (negocioPagina && !negocios.includes(negocioPagina)) {
+                        window.location.replace(PANEL_POR_NEGOCIO[negocios[0]] || 'login.html');
                         rejectOnce('Wrong panel');
                         return;
                     }
+                    // Negocio con el que se trabaja en esta sesión: el del panel
+                    // abierto. En su negocio principal se conserva el tenantId
+                    // tal como está guardado (null en cuentas antiguas), que es
+                    // con lo que lo comparan las Security Rules.
+                    const principal = userData.tenantId || 'boutique';
+                    const tenantId = (!negocioPagina || negocioPagina === principal)
+                        ? (userData.tenantId ?? null)
+                        : negocioPagina;
 
                     // Verificar que nadie haya cerrado todas las sesiones después
                     // de que este dispositivo inició sesión
-                    const sesionVigente = await this.verificarSesionVigente(user, tenantId);
+                    const sesionVigente = await this.verificarSesionVigente(user, tenantId || 'boutique');
                     if (!sesionVigente) {
                         await this.logout();
                         alert('Tu sesión fue cerrada por un administrador. Vuelve a iniciar sesión.');
@@ -331,7 +356,8 @@ export class AuthManager {
                         email: user.email,
                         nombre: userData.nombre,
                         rol: userData.rol,
-                        tenantId: userData.tenantId ?? null,
+                        tenantId,
+                        negocios,
                         permisos: userData.permisos || {}
                     };
 
@@ -366,7 +392,12 @@ export class AuthManager {
             const cached = JSON.parse(raw);
             // Una sesión guardada con el rol eliminado SUPER_ADMIN no se usa:
             // la verificación real (init) convierte esa cuenta primero.
-            return cached.rol === 'SUPER_ADMIN' ? null : cached;
+            if (cached.rol === 'SUPER_ADMIN') return null;
+            // Tampoco una sesión guardada en el panel del otro negocio: se
+            // espera a la verificación real, que fija el negocio correcto.
+            const negocioPagina = negocioDePagina();
+            if (negocioPagina && (cached.tenantId || 'boutique') !== negocioPagina) return null;
+            return cached;
         } catch (error) {
             console.warn('No se pudo leer el caché de usuario:', error);
             return null;
@@ -378,7 +409,10 @@ export class AuthManager {
      */
     redirectToLogin() {
         if (!window.location.pathname.includes('login.html')) {
-            window.location.href = 'login.html';
+            // Recordar a qué panel se intentaba entrar, para volver a él
+            // después de iniciar sesión.
+            const negocio = negocioDePagina();
+            window.location.href = negocio ? `login.html?negocio=${negocio}` : 'login.html';
         }
     }
 

@@ -6,12 +6,12 @@
  */
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { AuthManager } from './auth.js?v=2.0.0';
+import { AuthManager } from './auth.js?v=2.2.0';
 // Versionado por lo mismo que auditoria.js más abajo: usuarios.js no tiene
 // ninguna otra referencia versionada en el proyecto, así que Vercel puede
 // servir una copia vieja en caché (max-age=3600) hasta una hora después de
 // cada cambio. Bump este número cuando usuarios.js cambie.
-import { initUsuariosManager } from './usuarios.js?v=1.2.0';
+import { initUsuariosManager } from './usuarios.js?v=1.4.0';
 
 function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
@@ -94,6 +94,13 @@ function aplicarPermisosNav() {
     const ctx = window.appContext;
     if (!ctx) return;
 
+    // Enlaces "Ir a Boutique / Ir a Fábrica": solo para quien tiene acceso
+    // a ese negocio (lista 'negocios' de su cuenta, ver auth.js).
+    document.querySelectorAll('[data-negocio-requerido]').forEach(el => {
+        const negocio = el.getAttribute('data-negocio-requerido');
+        el.style.display = (ctx.negocios || []).includes(negocio) ? '' : 'none';
+    });
+
     document.querySelectorAll('[data-permiso]').forEach(el => {
         const permiso = el.getAttribute('data-permiso');
         const tienePermiso = ctx.permisos?.[permiso] === true;
@@ -135,7 +142,8 @@ function construirAppContext(usuario) {
         nombre: usuario.nombre,
         rol: usuario.rol,
         permisos: usuario.permisos || {},
-        tenantId: usuario.tenantId ?? null
+        tenantId: usuario.tenantId ?? null,
+        negocios: usuario.negocios || []
     };
 }
 

@@ -19,7 +19,16 @@
                 // script corre antes de que cargue nada de Firebase/ES
                 // modules, así que no puede importarlo.
                 var PANEL_POR_NEGOCIO = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
-                var panel = PANEL_POR_NEGOCIO[cache.tenantId || 'boutique'];
+                var negociosCache = (cache.negocios && cache.negocios.length) ? cache.negocios : [cache.tenantId || 'boutique'];
+                // Se entra directo al panel que se intentaba abrir
+                // (?negocio=) o, en fabrica.mishelles.store, a Fábrica, si la
+                // cuenta tiene acceso; si no, con más de un negocio se
+                // muestra el selector.
+                var preferido = new URLSearchParams(location.search).get('negocio') ||
+                    (location.hostname.indexOf('fabrica.') === 0 ? 'fabrica' : null);
+                var panel = (preferido && negociosCache.indexOf(preferido) !== -1)
+                    ? PANEL_POR_NEGOCIO[preferido]
+                    : (negociosCache.length > 1 ? null : PANEL_POR_NEGOCIO[negociosCache[0]]);
                 if (panel) {
                     location.replace(panel);
                 }
@@ -69,6 +78,31 @@
             max-width: 420px;
             width: 100%;
             padding: 24px 16px;
+        }
+
+        .negocio-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border: 2px solid #eee0e8;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            background: #fdfbfc;
+            font-weight: 700;
+            color: #2d1b26;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .negocio-item:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        }
+
+        .negocio-item i {
+            margin-left: auto;
+            color: #a08a99;
         }
 
         .login-card {
@@ -354,6 +388,18 @@
                 </div>
             </form>
         </div>
+
+        <!-- Selector de negocio: solo para cuentas con acceso a Boutique y
+             Fábrica (campo 'negocios' en su documento de usuarios). -->
+        <div class="login-card" id="negocio-card" style="display:none;">
+            <div class="logo-section">
+                <h1>¿A dónde quieres entrar?</h1>
+            </div>
+            <div id="negocio-lista"></div>
+            <button type="button" class="btn btn-link w-100 mt-2" id="btn-cambiar-cuenta">
+                <i class="bi bi-arrow-left"></i> Usar otra cuenta
+            </button>
+        </div>
     </div>
 
     <script type="module">
@@ -560,9 +606,49 @@
 
             upsertDirectorioCache(user.uid, userData.nombre, user.email);
 
-            window.location.href = PANEL_POR_NEGOCIO[userData.tenantId || 'boutique'] || 'admin.html';
+            const negocios = Array.from(new Set([userData.tenantId || 'boutique', ...(userData.negocios || [])]))
+                .filter(n => PANEL_POR_NEGOCIO[n]);
+            // Panel al que se intentaba entrar (?negocio=, ver redirectToLogin
+            // en auth.js) o, en fabrica.mishelles.store, Fábrica.
+            const preferido = new URLSearchParams(window.location.search).get('negocio') ||
+                (window.location.hostname.startsWith('fabrica.') ? 'fabrica' : null);
+            if (preferido && negocios.includes(preferido)) {
+                window.location.href = PANEL_POR_NEGOCIO[preferido];
+                return true;
+            }
+            if (negocios.length > 1) {
+                mostrarSelectorNegocio(negocios);
+                return true;
+            }
+            window.location.href = PANEL_POR_NEGOCIO[negocios[0]] || 'admin.html';
             return true;
         }
+
+        const NOMBRE_NEGOCIO = { boutique: "Mishell's Boutique", fabrica: "Mishell's Fábrica" };
+
+        function mostrarSelectorNegocio(negocios) {
+            const lista = document.getElementById('negocio-lista');
+            lista.innerHTML = negocios.map(n => `
+                <div class="negocio-item" data-panel="${PANEL_POR_NEGOCIO[n]}">
+                    ${NOMBRE_NEGOCIO[n] || n}
+                    <i class="bi bi-chevron-right"></i>
+                </div>
+            `).join('');
+            loginCard.style.display = 'none';
+            document.getElementById('negocio-card').style.display = 'block';
+        }
+
+        document.getElementById('negocio-lista').addEventListener('click', (e) => {
+            const item = e.target.closest('.negocio-item');
+            if (item) window.location.href = item.dataset.panel;
+        });
+
+        document.getElementById('btn-cambiar-cuenta').addEventListener('click', async () => {
+            await signOut(auth);
+            localStorage.removeItem('mishellAdminUserCache');
+            document.getElementById('negocio-card').style.display = 'none';
+            loginCard.style.display = 'block';
+        });
 
         // Handle form submission
         loginForm.addEventListener('submit', async (e) => {

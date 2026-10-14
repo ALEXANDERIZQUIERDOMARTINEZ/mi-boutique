@@ -189,6 +189,9 @@
                     <span class="rail-profile-name" id="rail-admin-name">Administrador</span>
                     <span class="rail-profile-role" id="rail-profile-role">Admin</span>
                 </div>
+                <a class="rail-profile-logout" href="admin-fabrica.html" data-negocio-requerido="fabrica" title="Ir a Fábrica" style="display:none;">
+                    <i class="bi bi-arrow-left-right"></i>
+                </a>
                 <button class="rail-profile-logout" id="rail-logout-btn" title="Cerrar sesión">
                     <i class="bi bi-box-arrow-right"></i>
                 </button>
@@ -273,6 +276,9 @@
                     <div class="admin-topbar-dropdown-divider"></div>
                     <a href="index.html" target="_blank" class="admin-topbar-dropdown-item">
                         <i class="bi bi-shop"></i> Ver catálogo
+                    </a>
+                    <a href="admin-fabrica.html" class="admin-topbar-dropdown-item" data-negocio-requerido="fabrica" style="display:none;">
+                        <i class="bi bi-arrow-left-right"></i> Ir a Fábrica
                     </a>
                     <button type="button" class="admin-topbar-dropdown-item admin-topbar-dropdown-item-danger" id="topbar-logout-btn">
                         <i class="bi bi-box-arrow-right"></i> Cerrar sesión
@@ -3580,7 +3586,7 @@
 
     <script src="connection-status.js?v=1.0.0" defer></script>
     <script type="module" src="admin.js?v=3.8.7"></script>
-    <script type="module" src="admin-auth-init.js?v=1.3.0"></script>
+    <script type="module" src="admin-auth-init.js?v=1.6.0"></script>
     <script type="module" src="auditoria.js?v=1.0.2"></script>
 
     <!-- chart.js se usa en el Dashboard, la sección que se ve al entrar al
