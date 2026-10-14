@@ -1,6 +1,6 @@
 // Import Firebase core and Firestore modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { initializeFirestore, collection, addDoc as sdkAddDoc, getDocs as sdkGetDocs, doc, deleteDoc, updateDoc, onSnapshot as sdkOnSnapshot, serverTimestamp, query as sdkQuery, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 // Import Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 // Import Auditoría (registro de quién crea/edita/elimina). La versión debe
@@ -12,15 +12,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js?v=1.0.1";
 import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin, WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js?v=2";
 import { resolveTenant } from "./src/core/tenant-resolver.js";
-import { crearFirestoreConTenant } from "./src/core/tenant-scope.js";
-
-// Todas las lecturas/escrituras del panel pasan por la empresa activa: cada
-// query/getDocs/onSnapshot/addDoc de una colección por empresa llega ya
-// filtrada (o marcada) con el tenantId del usuario — ver tenant-scope.js.
-// No hace falta filtrar por empresa a mano en cada sección.
-const { query, getDocs, onSnapshot, addDoc } = crearFirestoreConTenant({
-    query: sdkQuery, getDocs: sdkGetDocs, onSnapshot: sdkOnSnapshot, addDoc: sdkAddDoc
-});
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -1058,14 +1049,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ── Firestore: 3 listeners (pendiente / aceptado / rechazado) ────────
-        // 'pedidosWeb' es compartida entre empresas; solo llegan aquí los de
-        // la empresa activa (ver src/core/tenant-scope.js).
+        // 'pedidosWeb' es una colección compartida: la tienda al detal
+        // (index.html, tenantId 'boutique') y la mayorista de Fábrica
+        // (mayor.html, tenantId 'fabrica') escriben ahí. Filtramos aquí en
+        // JS (no en la query) los pedidos de Fábrica para que solo lleguen
+        // a admin-fabrica.html — así no se filtra por índice compuesto
+        // nuevo y sin desplegar, y los pedidos de Boutique (o los antiguos
+        // sin tenantId) se siguen viendo igual que antes.
         ['pendiente', 'aceptado', 'rechazado'].forEach(estado => {
             const q = query(webOrdersCollection, where('estado', '==', estado), orderBy('timestamp', 'desc'), limit(100));
             onSnapshot(q, snapshot => {
                 allOrders[estado] = [];
                 snapshot.forEach(d => {
                     const order = d.data();
+                    if (order.tenantId === 'fabrica') return;
                     allOrders[estado].push({ id: d.id, order });
                 });
                 if (loadingWebOrders) loadingWebOrders.style.display = 'none';
@@ -1323,7 +1320,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ventaClienteInput = document.getElementById('venta-cliente'); const ventaCelularInput = document.getElementById('venta-cliente-celular'); const ventaDireccionInput = document.getElementById('venta-cliente-direccion'); const ventaCedulaInput = document.getElementById('venta-cliente-cedula');
         if (!addForm || !editForm || !clientListTable || !searchModalList) { console.warn("Elementos de Clientes no encontrados."); return; }
 
-        const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General", cedula: ""}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "", nombre: d.nombre || "", cedula: d.cedula || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-view btn-client-history" data-client-name="${d.nombre}" data-client-celular="${d.celular || ''}"><i class="bi bi-clock-history"></i><span class="btn-action-text">Historial</span></button> <button class="btn btn-action btn-action-edit btn-edit-client"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-client"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td>`; clientListTable.appendChild(tr); }
+        const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General", cedula: ""}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); if (d.tenantId && d.tenantId !== 'boutique') return; const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "", nombre: d.nombre || "", cedula: d.cedula || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-view btn-client-history" data-client-name="${d.nombre}" data-client-celular="${d.celular || ''}"><i class="bi bi-clock-history"></i><span class="btn-action-text">Historial</span></button> <button class="btn btn-action btn-action-edit btn-edit-client"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-client"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td>`; clientListTable.appendChild(tr); }
             const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action client-search-item'; li.dataset.name = dataListValue; li.dataset.id = id; li.textContent = dataListValue; searchModalList.appendChild(li);
         }); document.dispatchEvent(new CustomEvent('clientsLoaded', { detail: { clientsMap: localClientsMap } })); window.fillClientInfoSales(); };
 
@@ -3648,6 +3645,12 @@ document.addEventListener('DOMContentLoaded', () => {
             allSalesData = [];
             snapshot.forEach(docSnap => {
                 const venta = docSnap.data();
+                // Las ventas de Fábrica (tenantId 'fabrica') se registran en la
+                // misma colección 'ventas' que las de Boutique, pero pertenecen
+                // a admin-fabrica.html. Se excluyen aquí igual que ya se hace
+                // con pedidosWeb, para que no aparezcan mezcladas en este
+                // historial ni queden fuera del alcance de los filtros.
+                if (venta.tenantId === 'fabrica') return;
                 allSalesData.push({ id: docSnap.id, ...venta });
             });
 
@@ -8473,7 +8476,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             const q = query(webOrdersCollection, where('estado', '==', 'pendiente'));
 
             onSnapshot(q, (snapshot) => {
-                const pedidosPendientes = snapshot.size;
+                // Excluye los pedidos de Fábrica (tenantId 'fabrica'): esta colección
+                // es compartida con mayor.html y esos pedidos se gestionan desde
+                // admin-fabrica.html, no desde aquí.
+                let pedidosPendientes = 0;
+                snapshot.forEach(d => { if (d.data().tenantId !== 'fabrica') pedidosPendientes++; });
 
                 const dbPedidosWebEl = document.getElementById('db-pedidos-web');
                 if (dbPedidosWebEl) {
