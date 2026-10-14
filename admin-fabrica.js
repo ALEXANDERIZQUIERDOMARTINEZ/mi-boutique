@@ -1560,8 +1560,20 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             pdf.rect(8, 8, PW - 16, PH - 16);
         }
 
-        const numeroFactura = await obtenerNumeroFacturaFab(ventaId, ventaData);
-        const folioTxt = formatearNumeroFacturaFab(numeroFactura);
+        // Si Firestore no deja reservar el consecutivo (reglas desplegadas
+        // distintas a las del repo, p.ej. el contador de otro negocio), la
+        // factura se genera igual con un folio derivado del id de la venta
+        // en vez de dejar a la persona sin factura.
+        let folioTxt;
+        try {
+            const numeroFactura = await obtenerNumeroFacturaFab(ventaId, ventaData);
+            folioTxt = formatearNumeroFacturaFab(numeroFactura);
+        } catch (error) {
+            if (error?.code !== 'permission-denied') throw error;
+            console.warn('No se pudo reservar el consecutivo de factura:', error);
+            folioTxt = `FAC-V${String(ventaId).slice(0, 6).toUpperCase()}`;
+            showToast('La factura se generó sin número consecutivo (sin permiso para el contador de facturas).', 'warning');
+        }
         const fecha = ventaData.timestamp?.toDate ? ventaData.timestamp.toDate() : new Date();
         const vendedor = window.appContext?.nombre || null;
 
