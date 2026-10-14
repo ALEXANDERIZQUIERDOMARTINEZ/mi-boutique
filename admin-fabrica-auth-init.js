@@ -11,7 +11,6 @@ import { AuthManager } from './auth.js';
 // Versión debe coincidir con el import de usuarios.js en admin-auth-init.js
 // (Vercel cachea .js hasta 1h; bump este número cuando usuarios.js cambie).
 import { initUsuariosManager } from './usuarios.js?v=1.1.0';
-import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js';
 
 function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
@@ -131,10 +130,6 @@ function renderizarSesion(authManager, usuario) {
         console.error('admin-fabrica-auth-init: firebaseApp/db no están disponibles. ¿Falló admin-fabrica.js?');
         return;
     }
-
-    // Logo/nombre/color de la marca de este panel — no depende de que la
-    // sesión termine de verificarse, es lectura pública (igual que planes).
-    obtenerMarcaTenant(window.db, window.expectedTenantId || 'fabrica').then(aplicarMarcaEnPanel);
 
     const authManager = new AuthManager(window.firebaseApp);
     window.authManager = authManager;

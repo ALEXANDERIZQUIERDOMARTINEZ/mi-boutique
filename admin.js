@@ -11,7 +11,6 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 // manejadores de clic en la sección Auditoría.
 import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js?v=1.0.1";
 import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin, WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js?v=2";
-import { resolveTenant } from "./src/core/tenant-resolver.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -35,11 +34,6 @@ const db = initializeFirestore(app, {
 });
 const storage = getStorage(app);
 console.log("Firebase Initialized!");
-
-// Detecta el tenant desde la URL y aplica su branding si ya existe en
-// Firestore. No bloquea ni afecta el resto de la carga: mientras no haya
-// tenants migrados, esto no hace nada (ver src/core/tenant-resolver.js).
-resolveTenant(db);
 
 // Normaliza los valores de talla/color para prendas sin variación real: sin
 // importar cómo se haya escrito ('unica', 'Unica', 'única', vacío...), siempre
@@ -176,24 +170,16 @@ window.loadExternalLib = loadExternalLib;
 // el guard de autenticación (auth.js / usuarios.js / admin-auth-init.js)
 window.db = db;
 window.firebaseApp = app;
-// window.expectedTenantId YA NO es una empresa quemada en el archivo:
-// se resuelve en vivo a partir de window.appContext (que trae el tenantId
-// real del usuario, verificado contra Firestore por auth.js). Un usuario
-// normal SIEMPRE usa su propio tenantId, sin importar la URL — solo
-// Super Admin (que no pertenece a ninguna empresa) puede indicar a cuál
-// entrar, y únicamente vía el parámetro ?empresa= que login.html arma a
-// partir de la lista real de empresas, nunca escrito a mano por el
-// usuario normal. La aplicación real de esto la hace igual firestore.rules
-// del lado servidor — este valor solo filtra qué se consulta/etiqueta
-// desde el cliente.
+// Negocio cuyos datos maneja este panel: el tenantId de la persona que
+// inició sesión. Super Admin no tiene tenantId propio; admin.html es el
+// panel de Boutique, así que entra a Boutique. Las Security Rules
+// (firestore.rules) son las que garantizan el aislamiento real.
 Object.defineProperty(window, 'expectedTenantId', {
     configurable: true,
     get() {
         const ctx = window.appContext;
         if (!ctx) return null;
-        if (ctx.isSuperAdmin) {
-            return new URLSearchParams(window.location.search).get('empresa') || null;
-        }
+        if (ctx.isSuperAdmin) return 'boutique';
         return ctx.tenantId ?? null;
     }
 });
@@ -13430,9 +13416,8 @@ document.addEventListener('click', (e) => {
 });
 
 // ════════════════════════════════════════════════════════════════════
-// MÓDULOS EXCLUSIVOS DE FÁBRICA — portados de admin-fabrica.js (ver Fase 3
-// del plan de panel único). Solo se activan si el HTML de la sección
-// existe (empresas sin producción propia no tienen estos tab-pane), y
+// MÓDULOS EXCLUSIVOS DE FÁBRICA — portados de admin-fabrica.js. Solo se
+// activan si el HTML de la sección existe, y
 // solo son visibles en el rail-nav con los permisos fabrica_gestionar /
 // inventario_fabrica_gestionar (auth.js → MODULOS_PERMISOS).
 // ════════════════════════════════════════════════════════════════════

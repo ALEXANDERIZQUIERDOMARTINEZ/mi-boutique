@@ -13,6 +13,13 @@ import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp } from "
 // — mientras la verificación real contra Firebase ocurre en segundo plano.
 const USER_CACHE_KEY = 'mishellAdminUserCache';
 
+// Panel de administración de cada negocio. login.html lo usa para saber a
+// dónde mandar a cada persona según el tenantId de su documento.
+export const PANEL_POR_NEGOCIO = {
+    boutique: 'admin.html',
+    fabrica: 'admin-fabrica.html'
+};
+
 // Definición de permisos del sistema
 // IMPORTANTE: estas claves deben coincidir exactamente con los permisos
 // evaluados en firestore.rules (función hasPermission), ya que las Security
@@ -275,28 +282,17 @@ export class AuthManager {
                         return;
                     }
 
-                    // NOTA: ya no existe una validación de "tenant esperado por
-                    // archivo" aquí — admin.html es un panel único para
-                    // cualquier empresa, y window.expectedTenantId ahora se
-                    // deriva del propio usuario (ver admin.js), no al revés.
-                    // El aislamiento real de datos lo garantiza
-                    // firestore.rules del lado servidor, no este cliente.
-
-                    // Verificar que la EMPRESA del usuario esté activa (no
-                    // suspendida/cancelada/vencida). Super Admin no pertenece
-                    // a ninguna empresa, se salta esto. El enforcement real
-                    // está en firestore.rules (tenantActivo(), ver Fase 1 del
-                    // SaaS multiempresa) — este chequeo es solo para no dejar
-                    // que el panel cargue con datos y luego cada escritura
-                    // falle sin explicación; si la verificación no puede
-                    // completarse (sin red, etc.) no bloquea el acceso por eso.
+                    // Cada negocio tiene su propio panel: si la persona abrió
+                    // el de otro negocio, se la manda al suyo. El aislamiento
+                    // real de datos lo garantiza firestore.rules.
                     const tenantId = userData.rol === 'SUPER_ADMIN' ? null : (userData.tenantId || 'boutique');
                     if (tenantId) {
-                        const motivoBloqueo = await this.verificarEmpresaBloqueada(tenantId);
-                        if (motivoBloqueo) {
-                            await this.logout();
-                            alert(motivoBloqueo);
-                            rejectOnce('Tenant blocked');
+                        const panelPropio = PANEL_POR_NEGOCIO[tenantId];
+                        const paginaActual = window.location.pathname.split('/').pop();
+                        const esPanel = Object.values(PANEL_POR_NEGOCIO).includes(paginaActual);
+                        if (panelPropio && esPanel && paginaActual !== panelPropio) {
+                            window.location.replace(panelPropio);
+                            rejectOnce('Wrong panel');
                             return;
                         }
                     }
@@ -408,40 +404,6 @@ export class AuthManager {
     }
 
     /**
-     * Devuelve un mensaje explicando por qué la empresa de este usuario está
-     * bloqueada (suspendida, cancelada, o con la suscripción vencida), o
-     * null si puede entrar. Espejo en el cliente de tenantActivo() en
-     * firestore.rules (Fase 1 del SaaS multiempresa) — el enforcement real
-     * es ese, esto solo evita un panel a medio cargar con errores confusos.
-     * Si algo falla al verificar (sin red, tenantsPrivado sin permiso
-     * todavía, etc.) no bloquea el acceso por eso — mismo criterio que
-     * verificarSesionVigente().
-     */
-    async verificarEmpresaBloqueada(tenantId) {
-        try {
-            const tenantDoc = await getDoc(doc(this.db, 'tenants', tenantId));
-            const estado = tenantDoc.exists() ? tenantDoc.data().estado : null;
-            if (estado === 'suspendido') return 'Tu empresa está suspendida. Contacta al administrador de la plataforma.';
-            if (estado === 'cancelado') return 'Tu empresa canceló su suscripción. Contacta al administrador de la plataforma.';
-        } catch (error) {
-            console.warn('No se pudo verificar el estado de la empresa:', error);
-            return null;
-        }
-
-        try {
-            const privDoc = await getDoc(doc(this.db, 'tenantsPrivado', tenantId));
-            const fechaVencimiento = privDoc.exists() ? privDoc.data()?.suscripcion?.fechaVencimiento : null;
-            if (fechaVencimiento && fechaVencimiento.toDate() < new Date()) {
-                return 'La suscripción de tu empresa venció. Contacta al administrador de la plataforma.';
-            }
-        } catch (error) {
-            console.warn('No se pudo verificar la vigencia de la suscripción:', error);
-        }
-
-        return null;
-    }
-
-    /**
      * Escucha en vivo tenants/{tenantId}/config/seguridad DE LA EMPRESA de
      * este usuario: si su administrador cierra todas las sesiones mientras
      * esta pestaña sigue abierta, la cierra de inmediato sin esperar a que
@@ -475,10 +437,8 @@ export class AuthManager {
      * podía cerrar las sesiones de todas las demás.
      */
     async invalidarTodasLasSesiones() {
-        // window.expectedTenantId (admin.js) ya resuelve esto correctamente
-        // para los dos casos: un usuario normal (su propia empresa) y Super
-        // Admin viendo una empresa via ?empresa= (que no tiene tenantId
-        // propio) — se prefiere sobre this.currentUser.tenantId por eso.
+        // window.expectedTenantId es el negocio del panel abierto (también
+        // para Super Admin, que no tiene tenantId propio).
         const tenantId = window.expectedTenantId || this.currentUser?.tenantId || 'boutique';
         await setDoc(doc(this.db, 'tenants', tenantId, 'config', 'seguridad'), { invalidarSesionesEn: serverTimestamp() }, { merge: true });
     }

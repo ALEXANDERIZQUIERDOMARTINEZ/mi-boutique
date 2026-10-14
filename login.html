@@ -11,23 +11,17 @@
         // verificación real contra Firebase (auth.js) y devuelven aquí si la
         // sesión ya no es válida — limpiando este caché antes de hacerlo, así
         // que no hay riesgo de quedar en un ciclo de redirecciones.
-        // Super Admin (varias empresas posibles) NO se salta esto: siempre
-        // ve el selector para elegir a cuál empresa entrar.
+        // Super Admin NO se salta esto: siempre ve el selector para elegir
+        // a cuál negocio entrar (Boutique o Fábrica).
         try {
             var cacheCruda = localStorage.getItem('mishellAdminUserCache');
             if (cacheCruda) {
                 var cache = JSON.parse(cacheCruda);
-                // Duplica PANEL_POR_TENANT de tenant-branding.js a propósito:
-                // este script corre antes de que cargue nada de Firebase/ES
-                // modules, así que no puede importarlo. Si se agrega una
-                // empresa nueva con panel propio, actualizar ambos lugares.
-                var PANEL_POR_TENANT = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
-                var tenantId = cache.tenantId || 'boutique';
-                var panel = PANEL_POR_TENANT[tenantId];
-                // admin.html es el panel único: necesita saber qué empresa
-                // cargar vía ?empresa=, ya que el archivo mismo no lo trae
-                // quemado. admin-fabrica.html (todavía sin migrar) no lo usa.
-                if (panel === 'admin.html') panel += '?empresa=' + encodeURIComponent(tenantId);
+                // Duplica PANEL_POR_NEGOCIO de auth.js a propósito: este
+                // script corre antes de que cargue nada de Firebase/ES
+                // modules, así que no puede importarlo.
+                var PANEL_POR_NEGOCIO = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
+                var panel = PANEL_POR_NEGOCIO[cache.tenantId || 'boutique'];
                 if (cache.rol !== 'SUPER_ADMIN' && panel) {
                     location.replace(panel);
                 }
@@ -412,11 +406,9 @@
             </form>
         </div>
 
-        <!-- Selector de empresa: aparece después de iniciar sesión, con la
-             marca de cada empresa a la que este usuario tiene acceso.
-             Nunca se elige "de una lista de datos ajenos" — solo se pintan
-             las empresas que su tenantId (o, si es Super Admin, todas las
-             que existen) le permiten entrar. -->
+        <!-- Selector de negocio: solo lo ve Super Admin (Boutique o
+             Fábrica). Cualquier otra persona entra directo al panel de su
+             negocio según el tenantId de su documento. -->
         <div class="login-card" id="empresa-card" style="display:none;">
             <div class="logo-section">
                 <div class="logo-badge">
@@ -436,14 +428,14 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
         import { initializeFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-        import { obtenerMarcaTenant, obtenerTodasLasMarcas, PANEL_POR_TENANT } from './tenant-branding.js';
 
-        // admin.html es el panel único: no trae la empresa quemada, así que
-        // hay que decírsela por la URL. admin-fabrica.html (todavía sin
-        // migrar, ver Fase 3 del plan) sigue sin necesitarlo.
-        function urlPanel(tenantId, panel) {
-            return panel === 'admin.html' ? `${panel}?empresa=${encodeURIComponent(tenantId)}` : panel;
-        }
+        // Mismo mapa que PANEL_POR_NEGOCIO en auth.js (no se importa para no
+        // depender de que el navegador tenga la última versión en caché).
+        const PANEL_POR_NEGOCIO = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
+        const NEGOCIOS = [
+            { id: 'boutique', nombre: "Mishell's Boutique", color: '#D988B9' },
+            { id: 'fabrica', nombre: "Mishell's Fábrica", color: '#5b6b8c' }
+        ];
 
         // Firebase configuration
         const firebaseConfig = {
@@ -614,11 +606,9 @@
             }
         });
 
-        // ─── Selector de empresa (post-login) ──────────────────────────────
-        // Verifica el usuario en Firestore (igual que antes) y, si es válido,
-        // pinta el selector con las empresas a las que tiene acceso en vez de
-        // saltar directo a admin.html — un usuario normal solo ve la suya
-        // (y de hecho ni ve el selector si es una sola), Super Admin ve todas.
+        // ─── Entrada al panel (post-login) ─────────────────────────────────
+        // Verifica el usuario en Firestore y lo manda al panel de su negocio.
+        // Super Admin elige entre Boutique y Fábrica.
         async function manejarUsuarioAutenticado(user, { mostrarErroresDeForm = false } = {}) {
             const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
 
@@ -652,55 +642,27 @@
         }
 
         async function mostrarSelectorEmpresa(userData) {
+            if (userData.rol !== 'SUPER_ADMIN') {
+                window.location.href = PANEL_POR_NEGOCIO[userData.tenantId || 'boutique'] || 'admin.html';
+                return;
+            }
+
             loginCard.style.display = 'none';
             empresaCard.style.display = 'block';
             const primerNombre = (userData.nombre || '').trim().split(' ')[0];
             empresaSaludo.textContent = primerNombre ? `¡Hola, ${primerNombre}!` : '¡Bienvenido!';
             empresaLista.innerHTML = `<div class="text-center py-3"><div class="spinner-border spinner-border-sm" style="color:var(--primary-color);"></div></div>`;
 
-            const esSuperAdmin = userData.rol === 'SUPER_ADMIN';
-            const empresas = esSuperAdmin
-                ? await obtenerTodasLasMarcas(db)
-                : [await obtenerMarcaTenant(db, userData.tenantId || 'boutique')];
-
-            // Usuario normal con una sola empresa conocida: no hace falta
-            // que elija nada, se entra directo. El selector es para cuando
-            // de verdad hay más de una opción (Super Admin).
-            if (!esSuperAdmin && empresas.length === 1 && PANEL_POR_TENANT[empresas[0].id]) {
-                window.location.href = urlPanel(empresas[0].id, PANEL_POR_TENANT[empresas[0].id]);
-                return;
-            }
-
-            empresaLista.innerHTML = empresas.map(emp => {
-                const panel = PANEL_POR_TENANT[emp.id];
-                const disponible = !!panel;
-                return `
-                    <div class="empresa-item ${disponible ? '' : 'empresa-item--disabled'}"
-                         style="--empresa-color:${emp.color}" data-panel="${panel ? urlPanel(emp.id, panel) : ''}">
-                        <img class="empresa-item-logo" src="${emp.logoUrl || 'icon.svg'}" alt="">
-                        <div class="empresa-item-info">
-                            <div class="empresa-item-nombre">${emp.nombre}</div>
-                            <div class="empresa-item-sub">${disponible ? 'Entrar al panel' : 'Próximamente'}</div>
-                        </div>
-                        ${disponible ? '<i class="bi bi-chevron-right" style="color:#a08a99;"></i>' : ''}
+            empresaLista.innerHTML = NEGOCIOS.map(neg => `
+                <div class="empresa-item" style="--empresa-color:${neg.color}" data-panel="${PANEL_POR_NEGOCIO[neg.id]}">
+                    <img class="empresa-item-logo" src="icon.svg" alt="">
+                    <div class="empresa-item-info">
+                        <div class="empresa-item-nombre">${neg.nombre}</div>
+                        <div class="empresa-item-sub">Entrar al panel</div>
                     </div>
-                `;
-            }).join('');
-
-            if (esSuperAdmin) {
-                empresaLista.insertAdjacentHTML('beforeend', `
-                    <div class="empresa-item" style="--empresa-color:#2d1b26" data-panel="super-admin.html">
-                        <span class="empresa-item-logo d-flex align-items-center justify-content-center" style="background:#2d1b26;">
-                            <i class="bi bi-shield-check" style="color:#fff;"></i>
-                        </span>
-                        <div class="empresa-item-info">
-                            <div class="empresa-item-nombre">Super Admin</div>
-                            <div class="empresa-item-sub">Gestionar empresas y accesos</div>
-                        </div>
-                        <i class="bi bi-chevron-right" style="color:#a08a99;"></i>
-                    </div>
-                `);
-            }
+                    <i class="bi bi-chevron-right" style="color:#a08a99;"></i>
+                </div>
+            `).join('');
         }
 
         empresaLista.addEventListener('click', (e) => {
@@ -787,8 +749,7 @@
 
         // Si Firebase ya tiene una sesión activa (persistida de una vez
         // anterior) y no se saltó ya el login por completo (el script del
-        // <head>, que solo aplica a quien tiene una única empresa conocida),
-        // mostrar el selector directo sin pedir credenciales de nuevo. No
+        // <head>, que no aplica a Super Admin), mostrar el selector directo sin pedir credenciales de nuevo. No
         // depender de sessionStorage aquí: se vacía cada vez que se cierra
         // la pestaña/app, así que en el celular casi siempre estaría vacío
         // aunque la sesión siga siendo válida — eso obligaba a re-loguearse
