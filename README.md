@@ -40,14 +40,15 @@ documentos sin `tenantId` son de Boutique (anteriores a la separación).
 
 - El `tenantId` del documento `usuarios/{uid}` decide a qué panel entra cada
   persona (`PANEL_POR_NEGOCIO` en `auth.js`).
-- Super Admin no tiene `tenantId`: elige el negocio en el login.
 - `firestore.rules` impide leer o escribir datos del otro negocio.
 
 ## Permisos
-Los roles (Administrador, Vendedor, Inventario, Contador, Repartidor,
-Visualizador y Super Admin) y sus permisos están en `auth.js`. Las claves
+Los roles (Administrador, Vendedor, Inventario, Contador, Repartidor y
+Visualizador) y sus permisos están en `auth.js`. Las claves
 de permiso deben coincidir con las que evalúa `firestore.rules`, que es la
 autoridad real; el panel solo oculta lo que la persona no puede usar.
+El Administrador tiene todos los permisos de su negocio: gestiona usuarios,
+hace backups y puede cerrar todas las sesiones.
 
 ## Desarrollo
 1. Servir la carpeta con cualquier servidor estático, por ejemplo

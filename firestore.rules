@@ -26,42 +26,28 @@ service cloud.firestore {
       return isRegisteredUser() && getUserData().activo == true;
     }
 
-    // Verifica si el usuario tiene un permiso específico. Super Admin
-    // siempre pasa, sin importar qué tenga guardado en su propio mapa de
-    // permisos — igual que en el cliente (auth.js: hasPermission() ahí
-    // también hace isSuperAdmin() ? true : ...). Sin este atajo, una cuenta
-    // Super Admin creada antes de que existiera un permiso nuevo (p.ej.
-    // inventario_fabrica_gestionar, agregado con el módulo de Fábrica)
-    // queda bloqueada de ese módulo para siempre por no tener esa llave
-    // en su documento — aunque su rol sea SUPER_ADMIN.
+    // Verifica si el usuario tiene un permiso específico
     function hasPermission(permission) {
-      return isActiveUser() &&
-             (getUserData().rol == 'SUPER_ADMIN' || getUserData().permisos[permission] == true);
+      return isActiveUser() && getUserData().permisos[permission] == true;
     }
 
     // ═══════════════════════════════════════════════════════════════════
     // FUNCIONES MULTI-TENANT - CRÍTICAS
     // ═══════════════════════════════════════════════════════════════════
 
-    // Verifica si el usuario es Super Admin (sin tenantId)
-    function isSuperAdmin() {
-      return isActiveUser() && getUserData().rol == 'SUPER_ADMIN';
+    // Verifica si el usuario es Administrador de su negocio
+    function isAdmin() {
+      return isActiveUser() && getUserData().rol == 'ADMIN';
     }
 
     // Verifica si el usuario pertenece a un tenant específico
     function belongsToTenant(tenantId) {
-      return isActiveUser() &&
-             (getUserData().tenantId == tenantId || isSuperAdmin());
+      return isActiveUser() && getUserData().tenantId == tenantId;
     }
 
     // Verifica si el documento que se está creando tiene el tenantId correcto
-    // Super Admin no tiene tenantId propio (no pertenece a ninguna
-    // empresa), así que esta comparación nunca puede dar verdadero para
-    // él sin un atajo — igual que hasPermission() y belongsToTenant(),
-    // se le deja crear con cualquier tenantId que el cliente ya validó
-    // (window.expectedTenantId, fijo por página).
     function isCreatingWithCorrectTenant() {
-      return isSuperAdmin() || request.resource.data.tenantId == getUserData().tenantId;
+      return request.resource.data.tenantId == getUserData().tenantId;
     }
 
     // Verifica que no se intente cambiar el tenantId en una actualización
@@ -88,28 +74,25 @@ service cloud.firestore {
       // Leer propio documento
       allow read: if isAuthenticated() && request.auth.uid == userId;
 
-      // Super Admin puede leer todos los usuarios
-      allow read: if isSuperAdmin();
-
       // Admin Tenant puede leer usuarios de su tenant
       allow read: if isActiveUser() &&
                     hasPermission('usuarios_ver') &&
                     belongsToTenant(resource.data.tenantId);
 
-      // Crear: Super Admin o Admin Tenant (con tenantId correcto)
-      allow create: if isSuperAdmin() ||
-                      (hasPermission('usuarios_crear') &&
-                       hasRequiredTenantId() &&
-                       isCreatingWithCorrectTenant());
+      // Crear: con permiso, dentro del propio negocio
+      allow create: if hasPermission('usuarios_crear') &&
+                      hasRequiredTenantId() &&
+                      isCreatingWithCorrectTenant();
 
       // Actualizar: Solo del mismo tenant, sin cambiar tenantId
-      allow update: if isSuperAdmin() ||
-                      (hasPermission('usuarios_editar') &&
-                       belongsToTenant(resource.data.tenantId) &&
-                       isNotChangingTenant());
+      allow update: if hasPermission('usuarios_editar') &&
+                      belongsToTenant(resource.data.tenantId) &&
+                      isNotChangingTenant();
 
-      // Eliminar: Solo Super Admin
-      allow delete: if isSuperAdmin();
+      // Eliminar: solo un Administrador del mismo negocio, y nunca a sí mismo
+      allow delete: if isAdmin() &&
+                      belongsToTenant(resource.data.tenantId) &&
+                      userId != request.auth.uid;
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -211,7 +194,6 @@ service cloud.firestore {
       allow create: if isActiveUser() &&
                       request.resource.data.usuarioId == request.auth.uid &&
                       (!('tenantId' in request.resource.data) ||
-                       isSuperAdmin() ||
                        request.resource.data.tenantId == getUserData().tenantId);
 
       // Es un log inmutable: nunca se edita ni se elimina
@@ -224,10 +206,10 @@ service cloud.firestore {
 
     match /contadores/{contadorId} {
       allow read: if (hasPermission('ventas_ver') || hasPermission('ventas_crear')) &&
-                    (contadorId == tenantCounterId() || isSuperAdmin());
+                    contadorId == tenantCounterId();
 
       allow write: if hasPermission('ventas_crear') &&
-                     (contadorId == tenantCounterId() || isSuperAdmin());
+                     contadorId == tenantCounterId();
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -593,7 +575,7 @@ service cloud.firestore {
                       hasRequiredTenantId() &&
                       isCreatingWithCorrectTenant();
 
-      allow update, delete: if isSuperAdmin();
+      allow update, delete: if false;
     }
 
     match /historial_cargues_fabrica/{cargueId} {
@@ -604,16 +586,16 @@ service cloud.firestore {
                       hasRequiredTenantId() &&
                       isCreatingWithCorrectTenant();
 
-      allow update, delete: if isSuperAdmin();
+      allow update, delete: if false;
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // AUDIT LOGS - SOLO SUPER ADMINS
+    // AUDIT LOGS
     // ═══════════════════════════════════════════════════════════════════
 
     match /auditLogs/{logId} {
-      // Solo Super Admins pueden leer audit logs
-      allow read: if isSuperAdmin();
+      // Nadie lo lee desde la app
+      allow read: if false;
 
       // Escritura por sistema (Cloud Functions)
       allow create: if true;
@@ -663,12 +645,12 @@ service cloud.firestore {
 
       // 'seguridad' (cerrar todas las sesiones) es más sensible que el
       // resto: solo Administrador/Sistema de ESA empresa, igual que ya
-      // exige la UI (data-roles="ADMIN,SUPER_ADMIN" en admin.html) — antes
+      // exige la UI (data-roles="ADMIN" en admin.html) — antes
       // esto no se validaba del lado servidor. El resto exige el permiso
       // config_gestionar de esa empresa (mismo criterio que hoy).
       allow create, update: if belongsToTenant(tenantId) &&
                                (docId == 'seguridad'
-                                 ? (getUserData().rol == 'ADMIN' || isSuperAdmin())
+                                 ? isAdmin()
                                  : hasPermission('config_gestionar'));
       allow delete: if false;
     }

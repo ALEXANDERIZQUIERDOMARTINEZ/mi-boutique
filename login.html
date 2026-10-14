@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <script>
-        // Si este dispositivo ya tiene una sesión guardada de un usuario con
-        // UNA sola empresa conocida, saltar directo a su panel en vez de
+        // Si este dispositivo ya tiene una sesión guardada, saltar directo
+        // al panel de su negocio en vez de
         // descargar el formulario, Bootstrap y el SDK de Firebase Auth solo
         // para, un instante después, redirigir a donde ya sabemos que va a
         // terminar. admin.html/admin-fabrica.html hacen su propia
         // verificación real contra Firebase (auth.js) y devuelven aquí si la
         // sesión ya no es válida — limpiando este caché antes de hacerlo, así
         // que no hay riesgo de quedar en un ciclo de redirecciones.
-        // Super Admin NO se salta esto: siempre ve el selector para elegir
-        // a cuál negocio entrar (Boutique o Fábrica).
         try {
             var cacheCruda = localStorage.getItem('mishellAdminUserCache');
             if (cacheCruda) {
@@ -22,7 +20,7 @@
                 // modules, así que no puede importarlo.
                 var PANEL_POR_NEGOCIO = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
                 var panel = PANEL_POR_NEGOCIO[cache.tenantId || 'boutique'];
-                if (cache.rol !== 'SUPER_ADMIN' && panel) {
+                if (panel) {
                     location.replace(panel);
                 }
             }
@@ -259,55 +257,6 @@
             }
         }
 
-        .empresa-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            border: 2px solid #eee0e8;
-            border-radius: 14px;
-            padding: 12px 14px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            background: #fdfbfc;
-        }
-
-        .empresa-item:hover:not(.empresa-item--disabled) {
-            border-color: var(--empresa-color, var(--primary-color));
-            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-            transform: translateY(-1px);
-        }
-
-        .empresa-item--disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
-
-        .empresa-item-logo {
-            width: 46px;
-            height: 46px;
-            border-radius: 12px;
-            object-fit: cover;
-            flex: none;
-            background: var(--empresa-color, var(--primary-color));
-        }
-
-        .empresa-item-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .empresa-item-nombre {
-            font-weight: 700;
-            color: #2d1b26;
-            font-size: 0.98rem;
-        }
-
-        .empresa-item-sub {
-            font-size: 0.78rem;
-            color: #8a7a85;
-        }
-
         /* En pantallas muy bajas (celular en horizontal) evitamos que la
            tarjeta se corte: dejamos de centrar verticalmente y permitimos
            scroll natural del body */
@@ -405,23 +354,6 @@
                 </div>
             </form>
         </div>
-
-        <!-- Selector de negocio: solo lo ve Super Admin (Boutique o
-             Fábrica). Cualquier otra persona entra directo al panel de su
-             negocio según el tenantId de su documento. -->
-        <div class="login-card" id="empresa-card" style="display:none;">
-            <div class="logo-section">
-                <div class="logo-badge">
-                    <i class="bi bi-check2-circle"></i>
-                </div>
-                <h1 id="empresa-saludo">¡Bienvenido!</h1>
-                <p>Elige la empresa a la que quieres entrar</p>
-            </div>
-            <div id="empresa-lista"></div>
-            <button type="button" class="btn btn-link w-100 mt-2" id="btn-cambiar-cuenta">
-                <i class="bi bi-arrow-left"></i> Usar otra cuenta
-            </button>
-        </div>
     </div>
 
     <script type="module">
@@ -432,10 +364,6 @@
         // Mismo mapa que PANEL_POR_NEGOCIO en auth.js (no se importa para no
         // depender de que el navegador tenga la última versión en caché).
         const PANEL_POR_NEGOCIO = { boutique: 'admin.html', fabrica: 'admin-fabrica.html' };
-        const NEGOCIOS = [
-            { id: 'boutique', nombre: "Mishell's Boutique", color: '#D988B9' },
-            { id: 'fabrica', nombre: "Mishell's Fábrica", color: '#5b6b8c' }
-        ];
 
         // Firebase configuration
         const firebaseConfig = {
@@ -473,10 +401,6 @@
         const manualEmailInput = document.getElementById('email');
         const forgotPasswordLink = document.getElementById('forgotPasswordLink');
         const loginCard = document.getElementById('login-card');
-        const empresaCard = document.getElementById('empresa-card');
-        const empresaSaludo = document.getElementById('empresa-saludo');
-        const empresaLista = document.getElementById('empresa-lista');
-        const btnCambiarCuenta = document.getElementById('btn-cambiar-cuenta');
 
         // ─── Directorio de usuarios (solo nombre + correo, sin rol ni
         // permisos) para el selector — SOLO de este dispositivo, tomado de
@@ -608,7 +532,6 @@
 
         // ─── Entrada al panel (post-login) ─────────────────────────────────
         // Verifica el usuario en Firestore y lo manda al panel de su negocio.
-        // Super Admin elige entre Boutique y Fábrica.
         async function manejarUsuarioAutenticado(user, { mostrarErroresDeForm = false } = {}) {
             const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
 
@@ -637,45 +560,9 @@
 
             upsertDirectorioCache(user.uid, userData.nombre, user.email);
 
-            await mostrarSelectorEmpresa(userData);
+            window.location.href = PANEL_POR_NEGOCIO[userData.tenantId || 'boutique'] || 'admin.html';
             return true;
         }
-
-        async function mostrarSelectorEmpresa(userData) {
-            if (userData.rol !== 'SUPER_ADMIN') {
-                window.location.href = PANEL_POR_NEGOCIO[userData.tenantId || 'boutique'] || 'admin.html';
-                return;
-            }
-
-            loginCard.style.display = 'none';
-            empresaCard.style.display = 'block';
-            const primerNombre = (userData.nombre || '').trim().split(' ')[0];
-            empresaSaludo.textContent = primerNombre ? `¡Hola, ${primerNombre}!` : '¡Bienvenido!';
-            empresaLista.innerHTML = `<div class="text-center py-3"><div class="spinner-border spinner-border-sm" style="color:var(--primary-color);"></div></div>`;
-
-            empresaLista.innerHTML = NEGOCIOS.map(neg => `
-                <div class="empresa-item" style="--empresa-color:${neg.color}" data-panel="${PANEL_POR_NEGOCIO[neg.id]}">
-                    <img class="empresa-item-logo" src="icon.svg" alt="">
-                    <div class="empresa-item-info">
-                        <div class="empresa-item-nombre">${neg.nombre}</div>
-                        <div class="empresa-item-sub">Entrar al panel</div>
-                    </div>
-                    <i class="bi bi-chevron-right" style="color:#a08a99;"></i>
-                </div>
-            `).join('');
-        }
-
-        empresaLista.addEventListener('click', (e) => {
-            const item = e.target.closest('.empresa-item:not(.empresa-item--disabled)');
-            if (!item || !item.dataset.panel) return;
-            window.location.href = item.dataset.panel;
-        });
-
-        btnCambiarCuenta.addEventListener('click', async () => {
-            await signOut(auth);
-            empresaCard.style.display = 'none';
-            loginCard.style.display = 'block';
-        });
 
         // Handle form submission
         loginForm.addEventListener('submit', async (e) => {
@@ -749,7 +636,7 @@
 
         // Si Firebase ya tiene una sesión activa (persistida de una vez
         // anterior) y no se saltó ya el login por completo (el script del
-        // <head>, que no aplica a Super Admin), mostrar el selector directo sin pedir credenciales de nuevo. No
+        // <head>), entrar directo al panel sin pedir credenciales de nuevo. No
         // depender de sessionStorage aquí: se vacía cada vez que se cierra
         // la pestaña/app, así que en el celular casi siempre estaría vacío
         // aunque la sesión siga siendo válida — eso obligaba a re-loguearse

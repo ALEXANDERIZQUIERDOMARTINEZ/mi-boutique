@@ -9,7 +9,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 // el navegador cargue auditoria.js como un módulo aparte, con su propio
 // estado y sus propios listeners de 'adminAuthReady' — duplicaba filas y
 // manejadores de clic en la sección Auditoría.
-import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js?v=1.0.1";
+import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js?v=1.0.2";
 import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin, WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js?v=2";
 
 // Your web app's Firebase configuration
@@ -157,8 +157,7 @@ window.loadExternalLib = loadExternalLib;
                 nombre: u.nombre,
                 rol: u.rol,
                 permisos: u.permisos || {},
-                tenantId: u.tenantId || null,
-                isSuperAdmin: u.rol === 'SUPER_ADMIN'
+                tenantId: u.tenantId || null
             };
         }
     } catch(e) {
@@ -171,15 +170,13 @@ window.loadExternalLib = loadExternalLib;
 window.db = db;
 window.firebaseApp = app;
 // Negocio cuyos datos maneja este panel: el tenantId de la persona que
-// inició sesión. Super Admin no tiene tenantId propio; admin.html es el
-// panel de Boutique, así que entra a Boutique. Las Security Rules
-// (firestore.rules) son las que garantizan el aislamiento real.
+// inició sesión. Las Security Rules (firestore.rules) son las que
+// garantizan el aislamiento real.
 Object.defineProperty(window, 'expectedTenantId', {
     configurable: true,
     get() {
         const ctx = window.appContext;
         if (!ctx) return null;
-        if (ctx.isSuperAdmin) return 'boutique';
         return ctx.tenantId ?? null;
     }
 });
@@ -2441,8 +2438,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let productData = { nombre: nombreProducto, codigo: codigoInput ? codigoInput.value.trim() : '', codigoBarras: codigoBarrasInput ? codigoBarrasInput.value.trim() : '', proveedor: proveedorInput.value.trim(), descripcion: descripcionInput.value.trim(), categoriaId: categoriaSelect.value, costoCompra: parseFloat(costoInput.value) || 0, precioDetal: parseFloat(detalInput.value) || 0, precioMayor: parseFloat(mayorInput.value) || 0, visible: visibleCheckbox.checked, bajoEncargo: bajoEncargoCheckbox ? bajoEncargoCheckbox.checked : false, grupoMayorista: grupoMayoristaSelect ? grupoMayoristaSelect.value : '', mostrarFotoPrincipal: mostrarFotoPrincipalCheckbox ? mostrarFotoPrincipalCheckbox.checked : true, timestamp: serverTimestamp(), variaciones: [], imagenUrl: null };
             // Requerido por firestore.rules (hasRequiredTenantId()) al crear: sin este
             // campo, addDoc() es rechazado con "Missing or insufficient permissions"
-            // para CUALQUIER usuario, Super Admin incluido, porque esa validación no
-            // tiene atajo de rol — corre antes de llegar a isCreatingWithCorrectTenant().
+            // para CUALQUIER usuario — corre antes de llegar a isCreatingWithCorrectTenant().
             if (!productId) {
                 productData.tenantId = window.expectedTenantId ?? null;
             }
@@ -3616,7 +3612,6 @@ document.addEventListener('DOMContentLoaded', () => {
          // --- Helper de permisos para ventas ---
          function puedeHacer(permiso) {
              if (!window.appContext) return true; // sin contexto = acceso directo, permitir
-             if (window.appContext.isSuperAdmin) return true;
              return window.appContext.permisos?.[permiso] === true;
          }
 

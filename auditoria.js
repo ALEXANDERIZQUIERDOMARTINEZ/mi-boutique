@@ -436,7 +436,7 @@ function wireEventos() {
 
 function tienePermisoAuditoria(appContext) {
     if (!appContext) return false;
-    return appContext.isSuperAdmin || appContext.permisos?.auditoria_ver === true;
+    return appContext.permisos?.auditoria_ver === true;
 }
 
 function inicializarSeccionAuditoria(appContext) {
