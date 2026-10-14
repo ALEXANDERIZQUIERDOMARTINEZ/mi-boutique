@@ -35,6 +35,12 @@ service cloud.firestore {
     // FUNCIONES MULTI-TENANT - CRÍTICAS
     // ═══════════════════════════════════════════════════════════════════
 
+    // Negocio del usuario: su tenantId, o 'boutique' si no tiene (cuentas
+    // anteriores a la separación Boutique / Fábrica)
+    function negocioUsuario() {
+      return getUserData().get('tenantId', null) == null ? 'boutique' : getUserData().tenantId;
+    }
+
     // Verifica si el usuario es Administrador de su negocio
     function isAdmin() {
       return isActiveUser() && getUserData().rol == 'ADMIN';
@@ -130,13 +136,15 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════
 
     match /ventas/{saleId} {
-      // Leer: Usuario activo con permiso de ventas o dashboard.
-      // Fábrica también puede leer, pero SOLO ventas mayoristas (las usa
-      // para sumar sus ingresos), nunca las ventas al detal de la boutique.
-      // No requiere tenantId en el documento para compatibilidad con registros anteriores
+      // Leer: con permiso de ventas, dashboard o finanzas de Fábrica, y solo
+      // las ventas del propio negocio. Fábrica consulta siempre con
+      // where('tenantId', '==', 'fabrica'). Boutique todavía lee la colección
+      // sin ese filtro (sus ventas anteriores a la separación no tienen
+      // tenantId) y separa las de Fábrica del lado cliente (admin.js).
       allow read: if isActiveUser() &&
                     (hasPermission('ventas_ver') || hasPermission('dashboard_ver') ||
-                     (hasPermission('fabrica_gestionar') && resource.data.tipoVenta == 'mayorista'));
+                     hasPermission('fabrica_gestionar')) &&
+                    (negocioUsuario() == 'boutique' || resource.data.tenantId == negocioUsuario());
 
       // Crear: Con tenantId correcto
       allow create: if hasPermission('ventas_crear') &&
