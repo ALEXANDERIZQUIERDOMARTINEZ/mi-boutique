@@ -79,6 +79,13 @@ function aplicarPermisosNav() {
     const ctx = window.appContext;
     if (!ctx) return;
 
+    // Enlaces "Ir a Boutique / Ir a Fábrica": solo para quien tiene acceso
+    // a ese negocio (lista 'negocios' de su cuenta, ver auth.js).
+    document.querySelectorAll('[data-negocio-requerido]').forEach(el => {
+        const negocio = el.getAttribute('data-negocio-requerido');
+        el.style.display = (ctx.negocios || []).includes(negocio) ? '' : 'none';
+    });
+
     document.querySelectorAll('[data-permiso]').forEach(el => {
         const permiso = el.getAttribute('data-permiso');
         const permitido = ctx.permisos?.[permiso] === true;
@@ -112,7 +119,8 @@ function construirAppContext(usuario) {
         nombre: usuario.nombre,
         rol: usuario.rol,
         permisos: usuario.permisos || {},
-        tenantId: usuario.tenantId ?? null
+        tenantId: usuario.tenantId ?? null,
+        negocios: usuario.negocios || []
     };
 }
 

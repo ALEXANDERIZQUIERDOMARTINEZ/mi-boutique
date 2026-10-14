@@ -128,6 +128,9 @@
                     <span class="rail-profile-name" id="rail-admin-name">Administrador</span>
                     <span class="rail-profile-role" id="rail-profile-role">Admin</span>
                 </div>
+                <a class="rail-profile-logout" href="admin.html" data-negocio-requerido="boutique" title="Ir a Boutique" style="display:none;">
+                    <i class="bi bi-arrow-left-right"></i>
+                </a>
                 <button class="rail-profile-logout" id="rail-logout-btn" title="Cerrar sesión">
                     <i class="bi bi-box-arrow-right"></i>
                 </button>
@@ -171,6 +174,9 @@
                             <div class="admin-topbar-dropdown-email" id="topbar-dropdown-email"></div>
                         </div>
                     </div>
+                    <a href="admin.html" class="admin-topbar-dropdown-item" data-negocio-requerido="boutique" style="display:none;">
+                        <i class="bi bi-arrow-left-right"></i> Ir a Boutique
+                    </a>
                     <button type="button" class="admin-topbar-dropdown-item" id="topbar-logout-btn">
                         <i class="bi bi-box-arrow-right"></i> Cerrar sesión
                     </button>
@@ -2251,7 +2257,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
     <script type="module" src="admin-fabrica.js?v=1.9.11"></script>
-    <script type="module" src="admin-fabrica-auth-init.js?v=1.4.0"></script>
+    <script type="module" src="admin-fabrica-auth-init.js?v=1.5.0"></script>
     <!-- Impresión de etiquetas QR de Fábrica: lee window.fabricaProductsMap
          que llena admin-fabrica.js (sección Productos). -->
     <script src="etiquetas-fabrica.js?v=1.1.0" defer></script>
