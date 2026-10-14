@@ -1501,8 +1501,19 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         if (ventaData.numeroFactura) return ventaData.numeroFactura;
 
         const facturaRef = doc(db, 'facturas', ventaId);
-        const facturaSnap = await getDoc(facturaRef);
-        if (facturaSnap.exists()) {
+        // Leer una factura que todavía no existe puede devolver
+        // permission-denied con las reglas desplegadas (evalúan
+        // resource.data, que es null para un documento nuevo). En ese caso
+        // se trata como "no existe": crearla abajo sigue siendo seguro
+        // porque las reglas solo permiten create (nunca update), así que si
+        // ya existiera la transacción falla y el contador no avanza.
+        let facturaSnap = null;
+        try {
+            facturaSnap = await getDoc(facturaRef);
+        } catch (error) {
+            if (error?.code !== 'permission-denied') throw error;
+        }
+        if (facturaSnap?.exists()) {
             ventaData.numeroFactura = facturaSnap.data().numero;
             return ventaData.numeroFactura;
         }
@@ -2004,7 +2015,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             return resultado;
         } catch (error) {
             console.error('Error al generar factura de fábrica:', error);
-            showToast('Error al generar la factura', 'error');
+            showToast(`Error al generar la factura: ${error?.message || error}`, 'error');
             return null;
         }
     }

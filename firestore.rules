@@ -302,8 +302,12 @@ service cloud.firestore {
 
     match /facturas/{facturaId} {
       // Leer: quien puede ver ventas. Permite docs sin tenantId (legacy)
+      // resource == null: la factura aún no existe (se consulta antes de
+      // crearla); sin esto, leer resource.data de un doc inexistente da
+      // error y Firestore niega la lectura.
       allow read: if hasPermission('ventas_ver') &&
-                    (!resource.data.keys().hasAny(['tenantId']) ||
+                    (resource == null ||
+                     !resource.data.keys().hasAny(['tenantId']) ||
                      belongsToTenant(resource.data.tenantId));
 
       // Crear: quien puede registrar ventas, con tenantId correcto
