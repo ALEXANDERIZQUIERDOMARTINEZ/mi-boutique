@@ -6,12 +6,13 @@
  */
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { AuthManager } from './auth.js?v=2.2.0';
+import { AuthManager } from './auth.js';
 // Versionado por lo mismo que auditoria.js más abajo: usuarios.js no tiene
 // ninguna otra referencia versionada en el proyecto, así que Vercel puede
 // servir una copia vieja en caché (max-age=3600) hasta una hora después de
 // cada cambio. Bump este número cuando usuarios.js cambie.
-import { initUsuariosManager } from './usuarios.js?v=1.4.0';
+import { initUsuariosManager } from './usuarios.js?v=1.1.0';
+import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js';
 
 function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
@@ -43,7 +44,7 @@ function mostrarErrorGate() {
 
 /**
  * Conecta el botón "Cerrar todas las sesiones" (visible solo para
- * Administrador vía data-roles) con AuthManager.invalidarTodasLasSesiones.
+ * Administrador/Sistema vía data-roles) con AuthManager.invalidarTodasLasSesiones.
  */
 function configurarCierreSesionesGlobal(authManager) {
     const btn = document.getElementById('btn-cerrar-todas-sesiones');
@@ -94,22 +95,24 @@ function aplicarPermisosNav() {
     const ctx = window.appContext;
     if (!ctx) return;
 
-    // Enlaces "Ir a Boutique / Ir a Fábrica": solo para quien tiene acceso
-    // a ese negocio (lista 'negocios' de su cuenta, ver auth.js).
-    document.querySelectorAll('[data-negocio-requerido]').forEach(el => {
-        const negocio = el.getAttribute('data-negocio-requerido');
-        el.style.display = (ctx.negocios || []).includes(negocio) ? '' : 'none';
-    });
-
     document.querySelectorAll('[data-permiso]').forEach(el => {
         const permiso = el.getAttribute('data-permiso');
-        const tienePermiso = ctx.permisos?.[permiso] === true;
-        el.style.display = tienePermiso ? '' : 'none';
+        // Dos condiciones independientes, ambas necesarias: que la PERSONA
+        // tenga el permiso, y que la EMPRESA tenga ese módulo contratado
+        // (ctx.modulosEfectivos, cargado por aplicarModulosEfectivos() —
+        // null mientras no haya terminado de cargar o la empresa no tenga
+        // plan asignado, y en ese caso no restringe, ver Fase 1 del SaaS
+        // multiempresa / firestore.rules: tenantTieneModulo()). El id de
+        // data-permiso es a la vez el permiso y el id del módulo en
+        // MODULOS_PERMISOS (auth.js) — mismo catálogo para ambas cosas.
+        const tienePermiso = ctx.isSuperAdmin || ctx.permisos?.[permiso] === true;
+        const tieneModulo = ctx.isSuperAdmin || !ctx.modulosEfectivos || ctx.modulosEfectivos.includes(permiso);
+        el.style.display = (tienePermiso && tieneModulo) ? '' : 'none';
     });
 
     document.querySelectorAll('[data-roles]').forEach(el => {
         const roles = el.getAttribute('data-roles').split(',').map(r => r.trim());
-        const permitido = roles.includes(ctx.rol);
+        const permitido = ctx.isSuperAdmin || roles.includes(ctx.rol);
         el.style.display = permitido ? '' : 'none';
     });
 
@@ -143,8 +146,58 @@ function construirAppContext(usuario) {
         rol: usuario.rol,
         permisos: usuario.permisos || {},
         tenantId: usuario.tenantId ?? null,
-        negocios: usuario.negocios || []
+        isSuperAdmin: usuario.rol === 'SUPER_ADMIN',
+        modulosEfectivos: null // se llena de forma asíncrona, ver aplicarModulosEfectivos()
     };
+}
+
+/**
+ * (plan.modulos ∪ modulosExtra) − modulosRevocados — mismo cálculo que
+ * moduloEnEmpresa() en firestore.rules, del lado cliente para poder ocultar
+ * el rail-nav sin esperar a que una escritura falle. null = sin restringir
+ * (fail-open: sin tenantsPrivado o sin plan asignado todavía, igual que en
+ * las rules — ver Fase 1 del SaaS multiempresa).
+ */
+async function cargarModulosEfectivos(tenantId) {
+    if (!tenantId) return null;
+    try {
+        const privSnap = await getDoc(doc(window.db, 'tenantsPrivado', tenantId));
+        if (!privSnap.exists()) return null;
+        const priv = privSnap.data();
+
+        let modulosPlan = [];
+        if (priv.planId) {
+            const planSnap = await getDoc(doc(window.db, 'planes', priv.planId));
+            if (planSnap.exists()) modulosPlan = planSnap.data().modulos || [];
+        }
+
+        const extra = priv.modulosExtra || [];
+        if (!priv.planId && extra.length === 0) return null; // nada configurado todavía
+
+        const revocados = new Set(priv.modulosRevocados || []);
+        return Array.from(new Set([...modulosPlan, ...extra])).filter(m => !revocados.has(m));
+    } catch (error) {
+        console.warn('No se pudo cargar los módulos de la empresa:', error);
+        return null; // sin dato confiable, no restringir por eso
+    }
+}
+
+// Evita recargar módulos si renderizarSesion() se llama dos veces para el
+// mismo tenant (entrada optimista con caché + verificación real, ver
+// initAuthGuard más abajo).
+let modulosCargadosParaTenant = undefined;
+
+async function aplicarModulosEfectivos() {
+    const ctx = window.appContext;
+    if (!ctx || ctx.isSuperAdmin) return;
+    const tenantId = ctx.tenantId || 'boutique';
+    if (modulosCargadosParaTenant === tenantId) return;
+    const modulos = await cargarModulosEfectivos(tenantId);
+    modulosCargadosParaTenant = tenantId;
+    if (window.appContext && (window.appContext.tenantId || 'boutique') === tenantId) {
+        window.appContext.modulosEfectivos = modulos;
+        aplicarPermisosNav();
+    }
 }
 
 function renderizarSesion(authManager, usuario) {
@@ -153,6 +206,7 @@ function renderizarSesion(authManager, usuario) {
     authManager.updateUserInfo(usuario);
     aplicarPermisosNav();
     window.dispatchEvent(new CustomEvent('adminAuthReady', { detail: window.appContext }));
+    aplicarModulosEfectivos();
 }
 
 (async function initAuthGuard() {
@@ -160,6 +214,10 @@ function renderizarSesion(authManager, usuario) {
         console.error('admin-auth-init: firebaseApp/db no están disponibles. ¿Falló admin.js?');
         return;
     }
+
+    // Logo/nombre/color de la marca de este panel — no depende de que la
+    // sesión termine de verificarse, es lectura pública (igual que planes).
+    obtenerMarcaTenant(window.db, window.expectedTenantId || 'boutique').then(aplicarMarcaEnPanel);
 
     const authManager = new AuthManager(window.firebaseApp);
     window.authManager = authManager;

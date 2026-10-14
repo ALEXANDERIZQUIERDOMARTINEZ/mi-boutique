@@ -519,6 +519,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
     function puedeHacer(permiso) {
         if (!window.appContext) return true; // sin contexto = acceso directo, permitir
+        if (window.appContext.isSuperAdmin) return true;
         return window.appContext.permisos?.[permiso] === true;
     }
 

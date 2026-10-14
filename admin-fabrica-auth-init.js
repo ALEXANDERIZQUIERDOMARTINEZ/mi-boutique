@@ -7,10 +7,11 @@
  * cual, sin cambios, igual que en Boutique.
  */
 
-import { AuthManager } from './auth.js?v=2.2.0';
+import { AuthManager } from './auth.js';
 // Versión debe coincidir con el import de usuarios.js en admin-auth-init.js
 // (Vercel cachea .js hasta 1h; bump este número cuando usuarios.js cambie).
-import { initUsuariosManager } from './usuarios.js?v=1.4.0';
+import { initUsuariosManager } from './usuarios.js?v=1.1.0';
+import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js';
 
 function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();
@@ -37,7 +38,7 @@ const DIRECTORIO_KEY = 'mishellUsuariosDirectorio';
 
 /**
  * Conecta el botón "Cerrar todas las sesiones" (visible solo para
- * Administrador vía data-roles) con AuthManager.invalidarTodasLasSesiones.
+ * Administrador/Sistema vía data-roles) con AuthManager.invalidarTodasLasSesiones.
  */
 function configurarCierreSesionesGlobal(authManager) {
     const btn = document.getElementById('btn-cerrar-todas-sesiones');
@@ -79,16 +80,9 @@ function aplicarPermisosNav() {
     const ctx = window.appContext;
     if (!ctx) return;
 
-    // Enlaces "Ir a Boutique / Ir a Fábrica": solo para quien tiene acceso
-    // a ese negocio (lista 'negocios' de su cuenta, ver auth.js).
-    document.querySelectorAll('[data-negocio-requerido]').forEach(el => {
-        const negocio = el.getAttribute('data-negocio-requerido');
-        el.style.display = (ctx.negocios || []).includes(negocio) ? '' : 'none';
-    });
-
     document.querySelectorAll('[data-permiso]').forEach(el => {
         const permiso = el.getAttribute('data-permiso');
-        const permitido = ctx.permisos?.[permiso] === true;
+        const permitido = ctx.isSuperAdmin || ctx.permisos?.[permiso] === true;
         el.style.display = permitido ? '' : 'none';
     });
 
@@ -120,7 +114,7 @@ function construirAppContext(usuario) {
         rol: usuario.rol,
         permisos: usuario.permisos || {},
         tenantId: usuario.tenantId ?? null,
-        negocios: usuario.negocios || []
+        isSuperAdmin: usuario.rol === 'SUPER_ADMIN'
     };
 }
 
@@ -137,6 +131,10 @@ function renderizarSesion(authManager, usuario) {
         console.error('admin-fabrica-auth-init: firebaseApp/db no están disponibles. ¿Falló admin-fabrica.js?');
         return;
     }
+
+    // Logo/nombre/color de la marca de este panel — no depende de que la
+    // sesión termine de verificarse, es lectura pública (igual que planes).
+    obtenerMarcaTenant(window.db, window.expectedTenantId || 'fabrica').then(aplicarMarcaEnPanel);
 
     const authManager = new AuthManager(window.firebaseApp);
     window.authManager = authManager;
