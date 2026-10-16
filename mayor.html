@@ -677,6 +677,80 @@
   .mayor-card-action {
     margin-top: auto;
   }
+  .mayor-card-colors-box.is-empty {
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+  /* Casilla "+N más" cuando la prenda tiene más de 6 colores. */
+  .mayor-card-color-chip-more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-fondo-secundario);
+    color: var(--color-primario-oscuro);
+    font-size: 0.68rem;
+    font-weight: 800;
+  }
+  /* Aviso sobre la foto: es de referencia, no del lote exacto. */
+  .mayor-ref-label {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0,0,0,0.58);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 2;
+  }
+  .mayor-zoom-ref-label {
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    font-size: 0.78rem;
+    padding: 5px 12px;
+  }
+  /* Tarjetas alineadas: con subgrid, cada fila de la grilla comparte la
+     altura de foto, nombre, precio, colores y botón, así todo queda a la
+     misma altura aunque una prenda tenga 1 color y otra 6. */
+  @supports (grid-template-rows: subgrid) {
+    .mayor-grid.mayor-grid { row-gap: 0; }
+    .mayor-card {
+      display: grid;
+      grid-row: span 5;
+      grid-template-rows: subgrid;
+      row-gap: 0;
+      margin-bottom: 18px;
+    }
+    .mayor-card-body {
+      display: grid;
+      grid-row: span 4;
+      grid-template-rows: subgrid;
+      row-gap: 0;
+    }
+    .mayor-card-colors-box { align-self: start; }
+    .mayor-card-action { margin-top: 0; align-self: end; }
+  }
+  @media (max-width: 991.98px) {
+    @supports (grid-template-rows: subgrid) {
+      .mayor-card { margin-bottom: 10px; }
+    }
+    .mayor-ref-label:not(.mayor-zoom-ref-label) {
+      font-size: 0.5rem;
+      padding: 2px 6px;
+      left: 6px;
+      bottom: 6px;
+    }
+  }
   /* Indicación con flecha que apunta al botón "Agregar". */
   .mayor-add-hint {
     display: flex;
@@ -783,8 +857,11 @@
     object-fit: contain;
     border-radius: var(--radio-md);
     background: var(--color-fondo-secundario);
-    margin-bottom: 10px;
     transition: max-height 0.2s ease;
+  }
+  .mqa-hero-wrap {
+    position: relative;
+    margin-bottom: 10px;
   }
   .mayor-quickadd-sheet.is-compact .mqa-hero-img {
     max-height: 90px;
@@ -1660,7 +1737,10 @@
     <button type="button" class="mayor-fullsheet-close" id="mqa-close-btn" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
   </div>
   <div class="mayor-fullsheet-body">
-    <img src="" id="mqa-img" class="mqa-hero-img" alt="">
+    <div class="mqa-hero-wrap">
+      <img src="" id="mqa-img" class="mqa-hero-img" alt="">
+      <span class="mayor-ref-label"><i class="bi bi-camera-fill"></i> Foto de referencia</span>
+    </div>
     <div class="mqa-price" id="mqa-price"></div>
     <div id="mqa-body"></div>
   </div>
@@ -1693,6 +1773,7 @@
   <div class="izoom-img-area" id="mayorZoomImgArea">
     <img src="" id="mayorZoomedImage" class="zoomed-image" alt="Prenda ampliada">
   </div>
+  <span class="mayor-ref-label mayor-zoom-ref-label"><i class="bi bi-camera-fill"></i> Foto de referencia</span>
 </div>
 
 <!-- Scripts optimizados con carga diferida -->

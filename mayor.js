@@ -653,7 +653,7 @@ function buildCardPriceHtml(p) {
     if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
         return `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${buildTierHint(p)}</span>`;
     }
-    return formatoMoneda.format(precioUnitario);
+    return `${formatoMoneda.format(precioUnitario)} c/u`;
 }
 
 // Bolitas de color: la manera de agregar la prenda ahora es tocar el color
@@ -737,13 +737,24 @@ function buildCardActionHtml(p) {
 // botón "Agregar"); la selección real ocurre ahí.
 function buildCardColorsPreviewHtml(p) {
     const colores = getColoresDelProducto(p);
-    if (colores.length === 0) return '';
+    // Siempre se devuelve la caja (vacía si no hay colores) para que todas
+    // las tarjetas tengan las mismas filas y queden alineadas entre sí.
+    if (colores.length === 0) return '<div class="mayor-card-colors-box is-empty"></div>';
     const variantesColor = p.variantes_color || [];
-    const chipsHtml = colores.map(({ color, stock }) => {
+    // Máximo 6 casillas por tarjeta: si hay más colores se muestran 5 y una
+    // casilla "+N más" (al tocarla se abre la hoja con todos). Así todas las
+    // tarjetas quedan del mismo alto y la grilla se ve ordenada.
+    const MAX_PREVIEW = 6;
+    const visibles = colores.length > MAX_PREVIEW ? colores.slice(0, MAX_PREVIEW - 1) : colores;
+    const ocultos = colores.length - visibles.length;
+    let chipsHtml = visibles.map(({ color, stock }) => {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
         return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-chip-swatch" style="${swatchStyle}"></span><span class="mayor-card-color-chip-name">${formatColorLabel(color)}</span><span class="mayor-card-color-chip-stock">Quedan ${stock}</span></span>`;
     }).join('');
+    if (ocultos > 0) {
+        chipsHtml += `<span class="mayor-card-color-chip is-more"><span class="color-swatch-circle mayor-card-color-chip-swatch mayor-card-color-chip-more">+${ocultos}</span><span class="mayor-card-color-chip-name">${ocultos === 1 ? 'Otro color' : 'Más colores'}</span><span class="mayor-card-color-chip-stock">Toca para ver</span></span>`;
+    }
     // Bolitas de color grandes con el nombre debajo (como en cualquier tienda
     // online) y frases sin ambigüedad: "Viene en estos N colores" y
     // "Quedan X". Antes los chips pequeños con un número rosado se confundían
@@ -763,7 +774,7 @@ function buildCardElement(p) {
     card.className = 'mayor-card' + (filas.length > 0 ? ' is-selected' : '');
     card.dataset.productId = p.id;
     card.innerHTML = `
-        <div class="mayor-card-img">${buildStockBadgeHtml(p)}<img src="${img}" alt="${p.nombre}" loading="lazy"></div>
+        <div class="mayor-card-img">${buildStockBadgeHtml(p)}<img src="${img}" alt="${p.nombre}" loading="lazy"><span class="mayor-ref-label"><i class="bi bi-camera-fill"></i> Foto de referencia</span></div>
         <div class="mayor-card-body">
             <h3 class="mayor-card-name">${p.nombre}</h3>
             <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
