@@ -1,7 +1,7 @@
 {
-  "name": "MISHELL'ES BOUTIQUE",
-  "short_name": "Mishell",
-  "description": "Catálogo de Moda & Elegancia",
+  "name": "Mishell'es Boutique",
+  "short_name": "Mishell'es",
+  "description": "Moda femenina en Montería con envíos a toda Colombia",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

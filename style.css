@@ -650,22 +650,36 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-add-card {
-    background: var(--color-primario);
+    /* Rosa oscuro: el blanco sobre --color-primario solo daba ~2.6:1 de
+       contraste; este tono pasa el mínimo WCAG AA (4.5:1). */
+    background: #A8508A;
     color: white;
     border: none;
-    font-size: 0.55rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 5px 9px;
+    border-radius: 6px;
+    font-family: var(--fuente-principal);
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    line-height: 1;
+    padding: 9px 14px;
+    min-height: 34px;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, transform 0.1s ease;
     white-space: nowrap;
     flex-shrink: 0;
 }
 
 .btn-add-card:hover {
-    background: var(--color-primario-oscuro);
+    background: #8E3F73;
+}
+
+.btn-add-card:active {
+    transform: scale(0.96);
+}
+
+.btn-add-card:focus-visible {
+    outline: 2px solid #A8508A;
+    outline-offset: 2px;
 }
 
 /* Badges */
@@ -6474,9 +6488,9 @@ img, video, iframe, embed, object {
     }
 
     .btn-add-card {
-        font-size: 0.48rem !important;
-        padding: 4px 6px !important;
-        letter-spacing: 0.5px !important;
+        font-size: 0.68rem !important;
+        padding: 8px 10px !important;
+        min-height: 32px;
     }
 
     .card-color-dot {
@@ -6530,8 +6544,8 @@ img, video, iframe, embed, object {
     }
 
     .btn-add-card {
-        font-size: 0.55rem;
-        padding: 5px 8px;
+        font-size: 0.7rem;
+        padding: 8px 12px;
     }
 }
 
