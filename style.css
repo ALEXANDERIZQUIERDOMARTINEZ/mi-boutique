@@ -7076,6 +7076,9 @@ img, video, iframe, embed, object {
     flex-shrink: 0;
 }
 .fvps-chips::-webkit-scrollbar { display: none; }
+.fvps-chips[hidden] { display: none; }
+.fvps-chips-categorias { margin-top: -4px; }
+.fvps-chip-cat { padding: 7px 14px; font-size: 0.8rem; }
 
 .fvps-chip {
     display: inline-flex;
