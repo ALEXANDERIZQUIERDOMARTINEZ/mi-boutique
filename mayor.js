@@ -718,7 +718,10 @@ function buildCardActionHtml(p) {
     const filas = detalleFilas.get(p.id) || [];
     const total = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
     if (total === 0) {
-        return `<button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-lg"></i> Agregar</button>`;
+        // Indicación explícita con flecha hacia el botón: varios clientes no
+        // entendían que ahí se elige el color y la cantidad.
+        return `<p class="mayor-add-hint"><i class="bi bi-hand-index-thumb-fill"></i> Toca <b>Agregar</b> para elegir color y cantidad <i class="bi bi-arrow-down mayor-add-hint-arrow"></i></p>
+            <button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-lg"></i> Agregar</button>`;
     }
     return `
         <button type="button" class="mayor-add-btn is-added" data-id="${p.id}">
@@ -747,7 +750,7 @@ function buildCardColorsPreviewHtml(p) {
     // con etiquetas o notificaciones.
     const n = colores.length;
     return `<div class="mayor-card-colors-box">
-            <p class="mayor-card-colors-label">${n === 1 ? 'Viene en este color:' : `Viene en estos ${n} colores:`}</p>
+            <p class="mayor-card-colors-label"><i class="bi bi-palette-fill"></i> ${n === 1 ? 'Viene en este color' : `Viene en estos ${n} colores`} <i class="bi bi-arrow-down"></i></p>
             <div class="mayor-card-colors-preview" data-id="${p.id}">${chipsHtml}</div>
         </div>`;
 }

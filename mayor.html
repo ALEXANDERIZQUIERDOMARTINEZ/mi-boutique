@@ -607,11 +607,19 @@
     padding: 7px 8px 8px;
     margin-bottom: 10px;
   }
+  /* Título resaltado tipo etiqueta, con flecha hacia los colores. */
   .mayor-card-colors-label {
-    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 0.76rem;
     font-weight: 700;
-    color: var(--color-texto);
-    margin: 0 0 8px;
+    color: #fff;
+    background: var(--color-primario);
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin: 0 0 9px;
   }
   .mayor-card-colors-preview {
     display: grid;
@@ -651,6 +659,32 @@
   }
   .mayor-card-action {
     margin-top: auto;
+  }
+  /* Indicación con flecha que apunta al botón "Agregar". */
+  .mayor-add-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--color-primario-oscuro);
+    margin: 0 0 6px;
+  }
+  .mayor-add-hint b {
+    font-weight: 700;
+  }
+  .mayor-add-hint-arrow {
+    animation: mayor-hint-bounce 1.2s ease-in-out infinite;
+  }
+  @keyframes mayor-hint-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(3px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mayor-add-hint-arrow { animation: none; }
   }
   /* Botón claro de "Agregar" — reemplaza el gesto escondido de tocar un
      color directamente en la tarjeta. Una vez agregada la prenda, el mismo
@@ -1280,8 +1314,14 @@
       margin-top: 2px;
     }
     .mayor-card-colors-label {
-      font-size: 0.7rem;
-      margin-bottom: 6px;
+      font-size: 0.66rem;
+      padding: 3px 6px;
+      margin-bottom: 7px;
+    }
+    .mayor-add-hint {
+      font-size: 0.6rem;
+      gap: 3px;
+      margin-bottom: 5px;
     }
     .mayor-card-colors-box {
       padding: 6px 6px 7px;
