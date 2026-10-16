@@ -739,15 +739,15 @@ function buildCardColorsPreviewHtml(p) {
     const chipsHtml = colores.map(({ color, stock }) => {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
-        return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-chip-swatch" style="${swatchStyle}"></span><span class="mayor-card-color-chip-name">${formatColorLabel(color)}</span><span class="mayor-card-color-chip-stock">${stock} und.</span></span>`;
+        return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-chip-swatch" style="${swatchStyle}"></span><span class="mayor-card-color-chip-name">${formatColorLabel(color)}</span><span class="mayor-card-color-chip-stock">Quedan ${stock}</span></span>`;
     }).join('');
-    // Encabezado explícito ("Elige tu color" + cuántos hay) dentro de un
-    // recuadro propio: antes los chips sueltos con un número rosado se
-    // confundían con etiquetas o notificaciones y el cliente no entendía que
-    // eran los colores de la prenda ni que el número era el stock.
+    // Bolitas de color grandes con el nombre debajo (como en cualquier tienda
+    // online) y frases sin ambigüedad: "Viene en estos N colores" y
+    // "Quedan X". Antes los chips pequeños con un número rosado se confundían
+    // con etiquetas o notificaciones.
     const n = colores.length;
     return `<div class="mayor-card-colors-box">
-            <p class="mayor-card-colors-label"><i class="bi bi-palette-fill"></i> Elige tu color <span class="mayor-card-colors-count">${n} color${n === 1 ? '' : 'es'}</span></p>
+            <p class="mayor-card-colors-label">${n === 1 ? 'Viene en este color:' : `Viene en estos ${n} colores:`}</p>
             <div class="mayor-card-colors-preview" data-id="${p.id}">${chipsHtml}</div>
         </div>`;
 }

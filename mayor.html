@@ -608,55 +608,44 @@
     margin-bottom: 10px;
   }
   .mayor-card-colors-label {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: var(--color-texto);
-    margin: 0 0 6px;
-  }
-  .mayor-card-colors-label .bi {
-    color: var(--color-primario);
-  }
-  .mayor-card-colors-count {
-    margin-left: auto;
-    font-size: 0.62rem;
-    font-weight: 600;
-    color: var(--color-texto-secundario);
+    margin: 0 0 8px;
   }
   .mayor-card-colors-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 8px 4px;
     cursor: pointer;
   }
+  /* Cada color: bolita grande arriba, nombre y "Quedan X" debajo. */
   .mayor-card-color-chip {
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    font-size: 0.68rem;
-    font-weight: 500;
-    color: var(--color-texto-secundario);
-    background: var(--color-fondo-secundario);
-    border-radius: 999px;
-    padding: 3px 9px 3px 4px;
-    white-space: nowrap;
+    gap: 3px;
+    text-align: center;
+    min-width: 0;
   }
   .mayor-card-color-chip-swatch {
-    width: 14px;
-    height: 14px;
+    width: 30px;
+    height: 30px;
     flex-shrink: 0;
-    box-shadow: 0 0 0 1px var(--color-borde);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--color-borde), 0 1px 3px rgba(0,0,0,0.15);
   }
   /* Cantidad disponible de ese color específico, para que el cliente no
      tenga que abrir la hoja de agregar solo para saber cuánto queda. */
   .mayor-card-color-chip-name {
-    font-weight: 600;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1.15;
     color: var(--color-texto);
+    overflow-wrap: break-word;
   }
   .mayor-card-color-chip-stock {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     font-weight: 500;
     color: var(--color-texto-secundario);
   }
@@ -1291,26 +1280,26 @@
       margin-top: 2px;
     }
     .mayor-card-colors-label {
-      font-size: 0.62rem;
-      margin-bottom: 3px;
+      font-size: 0.7rem;
+      margin-bottom: 6px;
     }
     .mayor-card-colors-box {
       padding: 6px 6px 7px;
       margin-bottom: 8px;
     }
     .mayor-card-colors-preview {
-      gap: 4px;
-    }
-    .mayor-card-color-chip {
-      font-size: 0.6rem;
-      padding: 2px 7px 2px 3px;
+      grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+      gap: 6px 3px;
     }
     .mayor-card-color-chip-swatch {
-      width: 11px;
-      height: 11px;
+      width: 24px;
+      height: 24px;
+    }
+    .mayor-card-color-chip-name {
+      font-size: 0.56rem;
     }
     .mayor-card-color-chip-stock {
-      font-size: 0.56rem;
+      font-size: 0.52rem;
     }
     .mayor-add-btn {
       font-size: 0.76rem;
