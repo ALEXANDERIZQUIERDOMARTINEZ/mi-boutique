@@ -7085,8 +7085,108 @@ img, video, iframe, embed, object {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding-bottom: 2px;
+    /* Sin esto, al ser hijo de un flex en columna con overflow propio, la
+       fila de filtros se encoge a ~0px y desaparece. */
+    flex-shrink: 0;
 }
 .fvps-chips::-webkit-scrollbar { display: none; }
+.fvps-chips[hidden] { display: none; }
+/* Botón de filtros dentro del buscador */
+.fvps-filter-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin: -6px -8px -6px 0;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #6b7280;
+    font-size: 1rem;
+    flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.fvps-filter-toggle:hover,
+.fvps-filter-toggle.open { background: #f3f4f6; color: #1a1a2e; }
+.fvps-filter-dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #1a1a2e;
+    box-shadow: 0 0 0 2px #fff;
+    display: none;
+}
+.fvps-filter-toggle.has-filters { color: #1a1a2e; }
+.fvps-filter-toggle.has-filters .fvps-filter-dot { display: block; }
+
+/* Panel de filtros plegable — minimalista: etiquetas pequeñas y pastillas
+   de texto que se acomodan en varias líneas (sin scroll horizontal). */
+.fvps-filter-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 2px 0 12px;
+    border-bottom: 1px solid #f0f0f0;
+    flex-shrink: 0;
+    animation: fvpsFilterIn 0.18s ease;
+}
+.fvps-filter-panel[hidden],
+.fvps-filter-group[hidden],
+.fvps-active-filters[hidden] { display: none; }
+@keyframes fvpsFilterIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+}
+.fvps-filter-group { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.fvps-filter-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.fvps-filter-panel .fvps-chips {
+    flex-wrap: wrap;
+    overflow: visible;
+    gap: 6px;
+}
+.fvps-filter-panel .fvps-chip {
+    padding: 5px 12px;
+    border: 1px solid #e5e7eb;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #4b5563;
+}
+.fvps-filter-panel .fvps-chip:hover { border-color: #1a1a2e; color: #1a1a2e; }
+.fvps-filter-panel .fvps-chip.active {
+    background: #1a1a2e;
+    border-color: #1a1a2e;
+    color: #fff;
+}
+
+.fvps-active-filters {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    flex-shrink: 0;
+}
+.fvps-active-filters button {
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 0.76rem;
+    color: #9ca3af;
+    text-decoration: underline;
+}
 
 .fvps-chip {
     display: inline-flex;
@@ -7119,6 +7219,7 @@ img, video, iframe, embed, object {
     color: #9ca3af;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    flex-shrink: 0;
 }
 .fvps-list-header button {
     display: inline-flex;

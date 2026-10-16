@@ -618,53 +618,90 @@
   }
   /* Vista previa de colores en la tarjeta — el nombre de cada color visible
      de un vistazo, sin tener que abrir la hoja de agregar. */
+  .mayor-card-colors-box {
+    border: 1px solid var(--color-borde);
+    border-radius: 10px;
+    padding: 7px 8px 8px;
+    margin-bottom: 10px;
+  }
+  /* Título resaltado tipo etiqueta, con flecha hacia los colores. */
   .mayor-card-colors-label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: var(--color-texto-secundario);
-    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--color-primario);
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin: 0 0 9px;
   }
   .mayor-card-colors-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 8px 4px;
     cursor: pointer;
   }
+  /* Cada color: bolita grande arriba, nombre y "Quedan X" debajo. */
   .mayor-card-color-chip {
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    font-size: 0.68rem;
-    font-weight: 500;
-    color: var(--color-texto-secundario);
-    background: var(--color-fondo-secundario);
-    border-radius: 999px;
-    padding: 3px 9px 3px 4px;
-    white-space: nowrap;
+    gap: 3px;
+    text-align: center;
+    min-width: 0;
   }
   .mayor-card-color-chip-swatch {
-    width: 13px;
-    height: 13px;
+    width: 30px;
+    height: 30px;
     flex-shrink: 0;
-    box-shadow: 0 0 0 1px var(--color-borde);
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--color-borde), 0 1px 3px rgba(0,0,0,0.15);
   }
   /* Cantidad disponible de ese color específico, para que el cliente no
      tenga que abrir la hoja de agregar solo para saber cuánto queda. */
-  .mayor-card-color-chip-stock {
-    min-width: 16px;
-    height: 16px;
-    padding: 0 5px;
-    border-radius: 999px;
-    background: var(--color-primario);
-    color: #fff;
+  .mayor-card-color-chip-name {
     font-size: 0.62rem;
     font-weight: 700;
-    line-height: 16px;
-    text-align: center;
+    line-height: 1.15;
+    color: var(--color-texto);
+    overflow-wrap: break-word;
+  }
+  .mayor-card-color-chip-stock {
+    font-size: 0.58rem;
+    font-weight: 500;
+    color: var(--color-texto-secundario);
   }
   .mayor-card-action {
     margin-top: auto;
+  }
+  /* Indicación con flecha que apunta al botón "Agregar". */
+  .mayor-add-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--color-primario-oscuro);
+    margin: 0 0 6px;
+  }
+  .mayor-add-hint b {
+    font-weight: 700;
+  }
+  .mayor-add-hint-arrow {
+    animation: mayor-hint-bounce 1.2s ease-in-out infinite;
+  }
+  @keyframes mayor-hint-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(3px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mayor-add-hint-arrow { animation: none; }
   }
   /* Botón claro de "Agregar" — reemplaza el gesto escondido de tocar un
      color directamente en la tarjeta. Una vez agregada la prenda, el mismo
@@ -1294,26 +1331,32 @@
       margin-top: 2px;
     }
     .mayor-card-colors-label {
-      font-size: 0.62rem;
-      margin-bottom: 3px;
+      font-size: 0.66rem;
+      padding: 3px 6px;
+      margin-bottom: 7px;
     }
-    .mayor-card-colors-preview {
-      gap: 4px;
+    .mayor-add-hint {
+      font-size: 0.6rem;
+      gap: 3px;
+      margin-bottom: 5px;
+    }
+    .mayor-card-colors-box {
+      padding: 6px 6px 7px;
       margin-bottom: 8px;
     }
-    .mayor-card-color-chip {
-      font-size: 0.6rem;
-      padding: 2px 7px 2px 3px;
+    .mayor-card-colors-preview {
+      grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+      gap: 6px 3px;
     }
     .mayor-card-color-chip-swatch {
-      width: 11px;
-      height: 11px;
+      width: 24px;
+      height: 24px;
+    }
+    .mayor-card-color-chip-name {
+      font-size: 0.56rem;
     }
     .mayor-card-color-chip-stock {
-      min-width: 14px;
-      height: 14px;
-      font-size: 0.56rem;
-      line-height: 14px;
+      font-size: 0.52rem;
     }
     .mayor-add-btn {
       font-size: 0.76rem;

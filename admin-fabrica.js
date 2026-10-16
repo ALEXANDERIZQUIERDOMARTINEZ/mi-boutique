@@ -453,6 +453,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     let categoriasMapVentas = new Map();
     onSnapshot(categoriasCollection, (snap) => {
         categoriasMapVentas = new Map(snap.docs.map(d => [d.id, d.data().nombre || '']));
+        if (fvScreenEl?.classList.contains('active')) renderProductList();
     }, (error) => {
         console.error('Error en el listener de categorías (Registrar Venta):', error);
     });
@@ -462,8 +463,9 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     const precioOverride = new Map(); // productoId -> precio unitario editado a mano en esta sesión
     let fvPrecioEditandoId = null; // productoId cuya fila de precio está en modo edición ahora mismo
     let fvOrdenDisponible = null; // null (sin ordenar) | 'asc' | 'desc' — por columna "Disponible"
-    let fvFiltroActivo = 'todas'; // 'todas' | 'bajas' | 'favoritos' | 'recientes'
+    let fvFiltroActivo = 'todas'; // 'todas' | 'bajas' | 'favoritos' | 'recientes' | 'agotados'
     let fvTerminoBusqueda = '';
+    let fvCategoriaActiva = ''; // '' = todas | id de categoría
     const FV_UMBRAL_BAJO_STOCK = 2;
 
     // Favoritos y recientes son preferencia del dispositivo, no dato de
@@ -861,6 +863,9 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     const fvSheetEl = document.getElementById('fv-product-step-variation');
     const fvSheetBackdropEl = document.getElementById('fvps-sheet-backdrop');
     const fvChipsEl = document.getElementById('fvps-chips');
+    const fvCategoriasEl = document.getElementById('fvps-categorias');
+    const fvFilterPanelEl = document.getElementById('fvps-filter-panel');
+    const fvFilterToggleEl = document.getElementById('fvps-filter-toggle');
 
     // Listener en tiempo real (no una carga puntual): el selector de
     // "Agregar venta" — catálogo, stock disponible, tope de cantidad del
@@ -1005,6 +1010,16 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
     function productosFiltrados() {
         let lista = productosCache.slice();
+        // Los agotados solo se muestran en su propio filtro: en una venta
+        // no se pueden elegir, así que solo estorban en la lista.
+        if (fvFiltroActivo === 'agotados') {
+            lista = lista.filter(p => stockTotalFv(p) <= 0);
+        } else {
+            lista = lista.filter(p => stockTotalFv(p) > 0);
+        }
+        if (fvCategoriaActiva) {
+            lista = lista.filter(p => p.categoriaId === fvCategoriaActiva);
+        }
         if (fvFiltroActivo === 'bajas') {
             lista = lista.filter(p => stockTotalFv(p) <= FV_UMBRAL_BAJO_STOCK);
         } else if (fvFiltroActivo === 'favoritos') {
@@ -1015,10 +1030,13 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             lista.sort((a, b) => orden.get(a.id) - orden.get(b.id));
         }
         if (fvTerminoBusqueda) {
-            lista = lista.filter(p =>
-                (p.nombre || '').toLowerCase().includes(fvTerminoBusqueda) ||
-                (p.codigo || '').toLowerCase().includes(fvTerminoBusqueda)
-            );
+            // Cada palabra escrita debe aparecer en el nombre o el código,
+            // sin importar mayúsculas ni tildes ("maria rosa" ≈ "María Rosa").
+            const palabras = fvTerminoBusqueda.split(/\s+/).filter(Boolean);
+            lista = lista.filter(p => {
+                const texto = fvNormalizarBusqueda(`${p.nombre || ''} ${p.codigo || ''}`);
+                return palabras.every(w => texto.includes(w));
+            });
         }
         // "Recientes" ya trae su propio orden (más reciente primero); el
         // resto se ordena por nombre, o por stock disponible si se activó
@@ -1035,6 +1053,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         return lista;
     }
 
+    function fvNormalizarBusqueda(texto) {
+        return String(texto).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    }
+
     function textoDisponibles(n) {
         return `${n} disponible${n === 1 ? '' : 's'}`;
     }
@@ -1043,7 +1065,44 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         return `https://placehold.co/96x96/f5e8ed/D988B9?text=${encodeURIComponent((nombre || '?').charAt(0).toUpperCase())}`;
     }
 
+    // Chips de categoría: solo las que tienen algún producto en el catálogo,
+    // ordenadas por nombre. Se repintan junto con la lista para reflejar
+    // categorías/productos nuevos.
+    function renderCategoriaChips() {
+        if (!fvCategoriasEl) return;
+        const ids = new Set(productosCache.map(p => p.categoriaId).filter(Boolean));
+        if (fvCategoriaActiva && !ids.has(fvCategoriaActiva)) fvCategoriaActiva = '';
+        const categorias = Array.from(ids)
+            .map(id => ({ id, nombre: categoriasMapVentas.get(id) || 'Sin nombre' }))
+            .sort((a, b) => a.nombre.localeCompare(b.nombre));
+        document.getElementById('fvps-categorias-group').hidden = categorias.length === 0;
+        const escapar = (t) => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        fvCategoriasEl.innerHTML = [
+            `<button type="button" class="fvps-chip ${fvCategoriaActiva ? '' : 'active'}" data-categoria="">Todas</button>`,
+            ...categorias.map(c => `<button type="button" class="fvps-chip ${c.id === fvCategoriaActiva ? 'active' : ''}" data-categoria="${escapar(c.id)}">${escapar(c.nombre)}</button>`)
+        ].join('');
+    }
+
+    // Punto en el botón de filtros + línea "BODYS · Favoritos  Limpiar"
+    // cuando hay filtros activos y el panel está cerrado.
+    function renderFiltrosActivos() {
+        const partes = [];
+        if (fvCategoriaActiva) partes.push(categoriasMapVentas.get(fvCategoriaActiva) || 'Categoría');
+        if (fvFiltroActivo !== 'todas') {
+            partes.push(fvChipsEl.querySelector(`[data-filter="${fvFiltroActivo}"]`)?.textContent.trim() || '');
+        }
+        const hayFiltros = partes.length > 0;
+        const panelAbierto = !fvFilterPanelEl.hidden;
+        fvFilterToggleEl.classList.toggle('has-filters', hayFiltros);
+        fvFilterToggleEl.classList.toggle('open', panelAbierto);
+        fvFilterToggleEl.setAttribute('aria-expanded', String(panelAbierto));
+        document.getElementById('fvps-active-filters').hidden = !hayFiltros || panelAbierto;
+        document.getElementById('fvps-active-filters-text').textContent = partes.join(' · ');
+    }
+
     function renderProductList() {
+        renderCategoriaChips();
+        renderFiltrosActivos();
         if (!productosCache.length) {
             productListEl.innerHTML = `<div class="fvps-empty">Cargando catálogo...</div>`;
             return;
@@ -1159,9 +1218,18 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         const producto = productoEnSheet;
         if (!producto) return;
         const opcionesEl = document.getElementById('fv-variation-options');
-        opcionesEl.innerHTML = (producto.variaciones || []).map((v) => {
-            const disponible = Math.max(0, disponibleVariacion(producto, v));
-            const cantidad = cantidadSeleccionada(producto.id, v.talla, v.color);
+        // Solo tallas/colores con unidades (o que ya tienen algo
+        // seleccionado, para poder quitarlo): los agotados no se pueden vender.
+        const filas = (producto.variaciones || []).map((v) => ({
+            v,
+            disponible: Math.max(0, disponibleVariacion(producto, v)),
+            cantidad: cantidadSeleccionada(producto.id, v.talla, v.color)
+        })).filter(f => f.disponible > 0 || f.cantidad > 0);
+        if (!filas.length) {
+            opcionesEl.innerHTML = `<div class="fvps-empty">Sin unidades disponibles</div>`;
+            return;
+        }
+        opcionesEl.innerHTML = filas.map(({ v, disponible, cantidad }) => {
             const etiqueta = [v.talla, v.color].filter(x => x && normalizarVariacion(x) !== '').join(' / ') || 'Única';
             return `
                 <div class="fvps-variation-row" data-talla="${v.talla || ''}" data-color="${v.color || ''}">
@@ -1284,7 +1352,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     });
 
     productSearchInput?.addEventListener('input', () => {
-        fvTerminoBusqueda = productSearchInput.value.trim().toLowerCase();
+        fvTerminoBusqueda = fvNormalizarBusqueda(productSearchInput.value.trim());
         renderProductList();
     });
 
@@ -1300,6 +1368,25 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         fvChipsEl.querySelectorAll('.fvps-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         fvFiltroActivo = chip.dataset.filter;
+        renderProductList();
+    });
+
+    fvCategoriasEl?.addEventListener('click', (e) => {
+        const chip = e.target.closest('.fvps-chip');
+        if (!chip) return;
+        fvCategoriaActiva = chip.dataset.categoria || '';
+        renderProductList();
+    });
+
+    fvFilterToggleEl?.addEventListener('click', () => {
+        fvFilterPanelEl.hidden = !fvFilterPanelEl.hidden;
+        renderFiltrosActivos();
+    });
+
+    document.getElementById('fvps-clear-filters')?.addEventListener('click', () => {
+        fvCategoriaActiva = '';
+        fvFiltroActivo = 'todas';
+        fvChipsEl.querySelectorAll('.fvps-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === 'todas'));
         renderProductList();
     });
 
