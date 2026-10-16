@@ -7071,6 +7071,9 @@ img, video, iframe, embed, object {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding-bottom: 2px;
+    /* Sin esto, al ser hijo de un flex en columna con overflow propio, la
+       fila de filtros se encoge a ~0px y desaparece. */
+    flex-shrink: 0;
 }
 .fvps-chips::-webkit-scrollbar { display: none; }
 
@@ -7105,6 +7108,7 @@ img, video, iframe, embed, object {
     color: #9ca3af;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    flex-shrink: 0;
 }
 .fvps-list-header button {
     display: inline-flex;
