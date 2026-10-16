@@ -753,7 +753,7 @@ function buildCardColorsPreviewHtml(p) {
         return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-chip-swatch" style="${swatchStyle}"></span><span class="mayor-card-color-chip-name">${formatColorLabel(color)}</span><span class="mayor-card-color-chip-stock">Quedan ${stock}</span></span>`;
     }).join('');
     if (ocultos > 0) {
-        chipsHtml += `<span class="mayor-card-color-chip is-more"><span class="color-swatch-circle mayor-card-color-chip-swatch mayor-card-color-chip-more">+${ocultos}</span><span class="mayor-card-color-chip-name">${ocultos === 1 ? 'Otro color' : 'Más colores'}</span><span class="mayor-card-color-chip-stock">Toca para ver</span></span>`;
+        chipsHtml += `<span class="mayor-card-color-chip is-more"><span class="color-swatch-circle mayor-card-color-chip-swatch mayor-card-color-chip-more">+${ocultos}</span><span class="mayor-card-color-chip-name">Ver todos</span><span class="mayor-card-color-chip-stock">${ocultos} más</span></span>`;
     }
     // Bolitas de color grandes con el nombre debajo (como en cualquier tienda
     // online) y frases sin ambigüedad: "Viene en estos N colores" y
