@@ -739,9 +739,17 @@ function buildCardColorsPreviewHtml(p) {
     const chipsHtml = colores.map(({ color, stock }) => {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
-        return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-chip-swatch" style="${swatchStyle}"></span>${formatColorLabel(color)}<span class="mayor-card-color-chip-stock">${stock}</span></span>`;
+        return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-chip-swatch" style="${swatchStyle}"></span><span class="mayor-card-color-chip-name">${formatColorLabel(color)}</span><span class="mayor-card-color-chip-stock">${stock} und.</span></span>`;
     }).join('');
-    return `<p class="mayor-card-colors-label">Colores disponibles</p><div class="mayor-card-colors-preview" data-id="${p.id}">${chipsHtml}</div>`;
+    // Encabezado explícito ("Elige tu color" + cuántos hay) dentro de un
+    // recuadro propio: antes los chips sueltos con un número rosado se
+    // confundían con etiquetas o notificaciones y el cliente no entendía que
+    // eran los colores de la prenda ni que el número era el stock.
+    const n = colores.length;
+    return `<div class="mayor-card-colors-box">
+            <p class="mayor-card-colors-label"><i class="bi bi-palette-fill"></i> Elige tu color <span class="mayor-card-colors-count">${n} color${n === 1 ? '' : 'es'}</span></p>
+            <div class="mayor-card-colors-preview" data-id="${p.id}">${chipsHtml}</div>
+        </div>`;
 }
 
 function buildCardElement(p) {
