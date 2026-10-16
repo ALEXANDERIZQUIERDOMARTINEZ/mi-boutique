@@ -715,7 +715,7 @@
   .mayor-zoom-ref-label {
     position: fixed;
     left: 50%;
-    bottom: 18px;
+    bottom: calc(18px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
     font-size: 0.78rem;
     padding: 5px 12px;
@@ -746,8 +746,8 @@
       .mayor-card { margin-bottom: 10px; }
     }
     .mayor-ref-label:not(.mayor-zoom-ref-label) {
-      font-size: 0.5rem;
-      padding: 2px 6px;
+      font-size: 0.58rem;
+      padding: 3px 7px;
       left: 6px;
       bottom: 6px;
     }
@@ -1781,7 +1781,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.9.5"></script>
+<script type="module" src="mayor.js?v=1.9.7"></script>
 
 </body>
 </html>
