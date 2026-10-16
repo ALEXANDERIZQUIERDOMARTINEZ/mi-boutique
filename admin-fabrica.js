@@ -462,7 +462,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     const precioOverride = new Map(); // productoId -> precio unitario editado a mano en esta sesión
     let fvPrecioEditandoId = null; // productoId cuya fila de precio está en modo edición ahora mismo
     let fvOrdenDisponible = null; // null (sin ordenar) | 'asc' | 'desc' — por columna "Disponible"
-    let fvFiltroActivo = 'todas'; // 'todas' | 'bajas' | 'favoritos' | 'recientes'
+    let fvFiltroActivo = 'todas'; // 'todas' | 'bajas' | 'favoritos' | 'recientes' | 'agotados'
     let fvTerminoBusqueda = '';
     const FV_UMBRAL_BAJO_STOCK = 2;
 
@@ -1005,6 +1005,13 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
     function productosFiltrados() {
         let lista = productosCache.slice();
+        // Los agotados solo se muestran en su propio filtro: en una venta
+        // no se pueden elegir, así que solo estorban en la lista.
+        if (fvFiltroActivo === 'agotados') {
+            lista = lista.filter(p => stockTotalFv(p) <= 0);
+        } else {
+            lista = lista.filter(p => stockTotalFv(p) > 0);
+        }
         if (fvFiltroActivo === 'bajas') {
             lista = lista.filter(p => stockTotalFv(p) <= FV_UMBRAL_BAJO_STOCK);
         } else if (fvFiltroActivo === 'favoritos') {
@@ -1015,10 +1022,13 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             lista.sort((a, b) => orden.get(a.id) - orden.get(b.id));
         }
         if (fvTerminoBusqueda) {
-            lista = lista.filter(p =>
-                (p.nombre || '').toLowerCase().includes(fvTerminoBusqueda) ||
-                (p.codigo || '').toLowerCase().includes(fvTerminoBusqueda)
-            );
+            // Cada palabra escrita debe aparecer en el nombre o el código,
+            // sin importar mayúsculas ni tildes ("maria rosa" ≈ "María Rosa").
+            const palabras = fvTerminoBusqueda.split(/\s+/).filter(Boolean);
+            lista = lista.filter(p => {
+                const texto = fvNormalizarBusqueda(`${p.nombre || ''} ${p.codigo || ''}`);
+                return palabras.every(w => texto.includes(w));
+            });
         }
         // "Recientes" ya trae su propio orden (más reciente primero); el
         // resto se ordena por nombre, o por stock disponible si se activó
@@ -1033,6 +1043,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             });
         }
         return lista;
+    }
+
+    function fvNormalizarBusqueda(texto) {
+        return String(texto).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     }
 
     function textoDisponibles(n) {
@@ -1284,7 +1298,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     });
 
     productSearchInput?.addEventListener('input', () => {
-        fvTerminoBusqueda = productSearchInput.value.trim().toLowerCase();
+        fvTerminoBusqueda = fvNormalizarBusqueda(productSearchInput.value.trim());
         renderProductList();
     });
 
