@@ -864,6 +864,8 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     const fvSheetBackdropEl = document.getElementById('fvps-sheet-backdrop');
     const fvChipsEl = document.getElementById('fvps-chips');
     const fvCategoriasEl = document.getElementById('fvps-categorias');
+    const fvFilterPanelEl = document.getElementById('fvps-filter-panel');
+    const fvFilterToggleEl = document.getElementById('fvps-filter-toggle');
 
     // Listener en tiempo real (no una carga puntual): el selector de
     // "Agregar venta" — catálogo, stock disponible, tope de cantidad del
@@ -1073,16 +1075,34 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         const categorias = Array.from(ids)
             .map(id => ({ id, nombre: categoriasMapVentas.get(id) || 'Sin nombre' }))
             .sort((a, b) => a.nombre.localeCompare(b.nombre));
-        fvCategoriasEl.hidden = categorias.length === 0;
+        document.getElementById('fvps-categorias-group').hidden = categorias.length === 0;
         const escapar = (t) => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         fvCategoriasEl.innerHTML = [
-            `<button type="button" class="fvps-chip fvps-chip-cat ${fvCategoriaActiva ? '' : 'active'}" data-categoria=""><i class="bi bi-grid"></i> Todas las categorías</button>`,
-            ...categorias.map(c => `<button type="button" class="fvps-chip fvps-chip-cat ${c.id === fvCategoriaActiva ? 'active' : ''}" data-categoria="${escapar(c.id)}">${escapar(c.nombre)}</button>`)
+            `<button type="button" class="fvps-chip ${fvCategoriaActiva ? '' : 'active'}" data-categoria="">Todas</button>`,
+            ...categorias.map(c => `<button type="button" class="fvps-chip ${c.id === fvCategoriaActiva ? 'active' : ''}" data-categoria="${escapar(c.id)}">${escapar(c.nombre)}</button>`)
         ].join('');
+    }
+
+    // Punto en el botón de filtros + línea "BODYS · Favoritos  Limpiar"
+    // cuando hay filtros activos y el panel está cerrado.
+    function renderFiltrosActivos() {
+        const partes = [];
+        if (fvCategoriaActiva) partes.push(categoriasMapVentas.get(fvCategoriaActiva) || 'Categoría');
+        if (fvFiltroActivo !== 'todas') {
+            partes.push(fvChipsEl.querySelector(`[data-filter="${fvFiltroActivo}"]`)?.textContent.trim() || '');
+        }
+        const hayFiltros = partes.length > 0;
+        const panelAbierto = !fvFilterPanelEl.hidden;
+        fvFilterToggleEl.classList.toggle('has-filters', hayFiltros);
+        fvFilterToggleEl.classList.toggle('open', panelAbierto);
+        fvFilterToggleEl.setAttribute('aria-expanded', String(panelAbierto));
+        document.getElementById('fvps-active-filters').hidden = !hayFiltros || panelAbierto;
+        document.getElementById('fvps-active-filters-text').textContent = partes.join(' · ');
     }
 
     function renderProductList() {
         renderCategoriaChips();
+        renderFiltrosActivos();
         if (!productosCache.length) {
             productListEl.innerHTML = `<div class="fvps-empty">Cargando catálogo...</div>`;
             return;
@@ -1355,6 +1375,18 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         const chip = e.target.closest('.fvps-chip');
         if (!chip) return;
         fvCategoriaActiva = chip.dataset.categoria || '';
+        renderProductList();
+    });
+
+    fvFilterToggleEl?.addEventListener('click', () => {
+        fvFilterPanelEl.hidden = !fvFilterPanelEl.hidden;
+        renderFiltrosActivos();
+    });
+
+    document.getElementById('fvps-clear-filters')?.addEventListener('click', () => {
+        fvCategoriaActiva = '';
+        fvFiltroActivo = 'todas';
+        fvChipsEl.querySelectorAll('.fvps-chip').forEach(c => c.classList.toggle('active', c.dataset.filter === 'todas'));
         renderProductList();
     });
 

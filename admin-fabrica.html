@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=1.9.7">
+    <link rel="stylesheet" href="style.css?v=1.9.8">
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -1947,18 +1947,35 @@
             <div class="fvps-search-bar" id="fvps-search-bar">
                 <i class="bi bi-search fvps-search-icon"></i>
                 <input type="search" id="fv-product-search" class="fvps-search-input" placeholder="Buscar producto por código o nombre...">
+                <button type="button" class="fvps-filter-toggle" id="fvps-filter-toggle" aria-label="Filtros" aria-expanded="false" aria-controls="fvps-filter-panel">
+                    <i class="bi bi-sliders2"></i>
+                    <span class="fvps-filter-dot"></span>
+                </button>
             </div>
 
             <div class="fvps-body">
-                <div class="fvps-chips" id="fvps-chips">
-                    <button type="button" class="fvps-chip active" data-filter="todas"><i class="bi bi-list-ul"></i> Todos</button>
-                    <button type="button" class="fvps-chip fvps-chip-warning" data-filter="bajas"><i class="bi bi-exclamation-triangle"></i> Unidades bajas</button>
-                    <button type="button" class="fvps-chip" data-filter="favoritos"><i class="bi bi-star"></i> Favoritos</button>
-                    <button type="button" class="fvps-chip" data-filter="recientes"><i class="bi bi-clock-history"></i> Recientes</button>
-                    <button type="button" class="fvps-chip" data-filter="agotados"><i class="bi bi-x-circle"></i> Sin stock</button>
+                <!-- Filtros plegados por defecto (se abren con el botón del
+                     buscador) para que la lista quede limpia. -->
+                <div class="fvps-filter-panel" id="fvps-filter-panel" hidden>
+                    <span class="fvps-filter-label">Mostrar</span>
+                    <div class="fvps-chips" id="fvps-chips">
+                        <button type="button" class="fvps-chip active" data-filter="todas">Todos</button>
+                        <button type="button" class="fvps-chip" data-filter="bajas">Unidades bajas</button>
+                        <button type="button" class="fvps-chip" data-filter="favoritos">Favoritos</button>
+                        <button type="button" class="fvps-chip" data-filter="recientes">Recientes</button>
+                        <button type="button" class="fvps-chip" data-filter="agotados">Sin stock</button>
+                    </div>
+                    <div class="fvps-filter-group" id="fvps-categorias-group" hidden>
+                        <span class="fvps-filter-label">Categoría</span>
+                        <div class="fvps-chips" id="fvps-categorias"></div>
+                    </div>
                 </div>
 
-                <div class="fvps-chips fvps-chips-categorias" id="fvps-categorias" hidden></div>
+                <!-- Resumen de filtros activos cuando el panel está cerrado -->
+                <div class="fvps-active-filters" id="fvps-active-filters" hidden>
+                    <span id="fvps-active-filters-text"></span>
+                    <button type="button" id="fvps-clear-filters">Limpiar</button>
+                </div>
 
                 <div class="fvps-list-header">
                     <span>Producto</span>
@@ -2254,7 +2271,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.9.13"></script>
+    <script type="module" src="admin-fabrica.js?v=1.9.14"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.1.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->
