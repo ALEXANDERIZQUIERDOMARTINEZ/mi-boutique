@@ -549,8 +549,30 @@ function sortProducts(list) {
         case 'precio-desc': return [...list].sort((a, b) => getPrecioUnitario(b) - getPrecioUnitario(a));
         case 'stock-desc': return [...list].sort((a, b) => getStockTotal(b) - getStockTotal(a));
         case 'stock-asc': return [...list].sort((a, b) => getStockTotal(a) - getStockTotal(b));
-        default: return list;
+        // "Relevancia": primero las prendas más vendidas de los últimos 90
+        // días (vendidasRecientes lo calcula el panel de Fábrica); las demás
+        // conservan su orden.
+        default: return [...list].sort((a, b) => getVendidasRecientes(b) - getVendidasRecientes(a));
     }
+}
+
+function getVendidasRecientes(p) {
+    return parseInt(p.vendidasRecientes, 10) || 0;
+}
+
+// Las prendas que llevan la etiqueta "Más vendida": las de más unidades
+// vendidas entre todas las disponibles (no solo las de la búsqueda actual),
+// para que la etiqueta signifique lo mismo en cualquier filtro.
+const MAS_VENDIDAS_TOP = 6;
+let masVendidasIds = new Set();
+function actualizarMasVendidas() {
+    masVendidasIds = new Set(
+        allProducts
+            .filter(p => p.visible !== false && getStockTotal(p) > 0 && getPrecioUnitario(p) > 0 && getVendidasRecientes(p) > 0)
+            .sort((a, b) => getVendidasRecientes(b) - getVendidasRecientes(a))
+            .slice(0, MAS_VENDIDAS_TOP)
+            .map(p => p.id)
+    );
 }
 
 function buildPageList(current, total) {
@@ -741,20 +763,14 @@ function buildCardColorsPreviewHtml(p) {
     // las tarjetas tengan las mismas filas y queden alineadas entre sí.
     if (colores.length === 0) return '<div class="mayor-card-colors-box is-empty"></div>';
     const variantesColor = p.variantes_color || [];
-    // Máximo 6 casillas por tarjeta: si hay más colores se muestran 5 y una
-    // casilla "+N más" (al tocarla se abre la hoja con todos). Así todas las
-    // tarjetas quedan del mismo alto y la grilla se ve ordenada.
-    const MAX_PREVIEW = 6;
-    const visibles = colores.length > MAX_PREVIEW ? colores.slice(0, MAX_PREVIEW - 1) : colores;
-    const ocultos = colores.length - visibles.length;
-    let chipsHtml = visibles.map(({ color, stock }) => {
+    // Se muestran TODOS los colores en la tarjeta (sin "+N más"): si son
+    // más de 6, la caja pasa a modo compacto (bolitas y letras más chicas)
+    // para que la tarjeta no crezca tanto.
+    const chipsHtml = colores.map(({ color, stock }) => {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
         return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-chip-swatch" style="${swatchStyle}"></span><span class="mayor-card-color-chip-name">${formatColorLabel(color)}</span><span class="mayor-card-color-chip-stock">Quedan ${stock}</span></span>`;
     }).join('');
-    if (ocultos > 0) {
-        chipsHtml += `<span class="mayor-card-color-chip is-more"><span class="color-swatch-circle mayor-card-color-chip-swatch mayor-card-color-chip-more">+${ocultos}</span><span class="mayor-card-color-chip-name">Ver todos</span><span class="mayor-card-color-chip-stock">${ocultos} más</span></span>`;
-    }
     // Bolitas de color grandes con el nombre debajo (como en cualquier tienda
     // online) y frases sin ambigüedad: "Viene en estos N colores" y
     // "Quedan X". Antes los chips pequeños con un número rosado se confundían
@@ -762,7 +778,7 @@ function buildCardColorsPreviewHtml(p) {
     const n = colores.length;
     return `<div class="mayor-card-colors-box">
             <p class="mayor-card-colors-label"><i class="bi bi-palette-fill"></i> ${n === 1 ? 'Viene en este color' : `Viene en estos ${n} colores`} <i class="bi bi-arrow-down"></i></p>
-            <div class="mayor-card-colors-preview" data-id="${p.id}">${chipsHtml}</div>
+            <div class="mayor-card-colors-preview${n > 6 ? ' is-dense' : ''}" data-id="${p.id}">${chipsHtml}</div>
         </div>`;
 }
 
@@ -774,7 +790,7 @@ function buildCardElement(p) {
     card.className = 'mayor-card' + (filas.length > 0 ? ' is-selected' : '');
     card.dataset.productId = p.id;
     card.innerHTML = `
-        <div class="mayor-card-img">${buildStockBadgeHtml(p)}<img src="${img}" alt="${p.nombre}" loading="lazy"><span class="mayor-ref-label"><i class="bi bi-camera-fill"></i> Foto de referencia</span></div>
+        <div class="mayor-card-img">${masVendidasIds.has(p.id) ? '<span class="mayor-card-best-badge">🔥 Más vendida</span>' : ''}${buildStockBadgeHtml(p)}<img src="${img}" alt="${p.nombre}" loading="lazy"><span class="mayor-ref-label"><i class="bi bi-camera-fill"></i> Foto de referencia</span></div>
         <div class="mayor-card-body">
             <h3 class="mayor-card-name">${p.nombre}</h3>
             <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
@@ -835,6 +851,7 @@ function updateCardInPlace(id) {
 function renderProducts() {
     if (!gridEl) return;
     reconciliarTodo();
+    actualizarMasVendidas();
     const filtered = computeVisibleProducts();
     const totalPages = Math.max(1, Math.ceil(filtered.length / PRODUCTS_PER_PAGE));
     if (currentPage > totalPages) currentPage = totalPages;
