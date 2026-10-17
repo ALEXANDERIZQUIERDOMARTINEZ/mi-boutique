@@ -12,7 +12,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase
 import {
     initializeFirestore, collection, getDocs, query, where, orderBy, limit, doc,
     getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp,
-    onSnapshot, runTransaction
+    onSnapshot, runTransaction, writeBatch
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin } from "./wholesale-tiers.js?v=2";
@@ -889,6 +889,59 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     }, (error) => {
         console.error('Error en el listener de catálogo de fábrica (Registrar Venta):', error);
     });
+
+    // ── Prendas más vendidas (para el catálogo mayorista) ────────────────
+    // Suma las unidades vendidas de cada prenda en los últimos 90 días
+    // (ventas no anuladas) y la guarda en productosFabrica.vendidasRecientes.
+    // mayor.html la usa para mostrar primero las más vendidas. Se recalcula
+    // desde cero (no con incrementos) para que se corrija sola si alguna
+    // venta se anula o se borra. Solo lo hace quien gestiona el inventario.
+    const DIAS_MAS_VENDIDAS = 90;
+    let recalculandoMasVendidas = false;
+    let recalcularMasVendidasPendiente = false;
+    async function recalcularMasVendidasFabrica() {
+        if (!window.appContext || !puedeHacer('inventario_fabrica_gestionar')) return;
+        if (recalculandoMasVendidas) { recalcularMasVendidasPendiente = true; return; }
+        recalculandoMasVendidas = true;
+        try {
+            await esperarProductosCacheListo();
+            const desde = new Date(Date.now() - DIAS_MAS_VENDIDAS * 24 * 60 * 60 * 1000);
+            const snap = await getDocs(query(
+                ventasCollection,
+                where('tenantId', '==', 'fabrica'),
+                where('timestamp', '>=', Timestamp.fromDate(desde)),
+                orderBy('timestamp', 'desc')
+            ));
+            const unidades = new Map();
+            snap.forEach(docSnap => {
+                const venta = docSnap.data();
+                if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
+                (venta.items || []).forEach(item => {
+                    if (!item.productoId) return;
+                    unidades.set(item.productoId, (unidades.get(item.productoId) || 0) + (parseInt(item.cantidad, 10) || 0));
+                });
+            });
+            const cambios = productosCache.filter(p => (p.vendidasRecientes || 0) !== (unidades.get(p.id) || 0));
+            for (let i = 0; i < cambios.length; i += 400) {
+                const batch = writeBatch(db);
+                cambios.slice(i, i + 400).forEach(p => {
+                    batch.update(doc(db, 'productosFabrica', p.id), { vendidasRecientes: unidades.get(p.id) || 0 });
+                });
+                await batch.commit();
+            }
+        } catch (error) {
+            console.warn('No se pudo actualizar "más vendidas" del catálogo:', error);
+        } finally {
+            recalculandoMasVendidas = false;
+            if (recalcularMasVendidasPendiente) {
+                recalcularMasVendidasPendiente = false;
+                recalcularMasVendidasFabrica();
+            }
+        }
+    }
+    // Al abrir el panel, una vez que ya se sabe quién inició sesión.
+    if (window.appContext) recalcularMasVendidasFabrica();
+    else window.addEventListener('adminAuthReady', () => recalcularMasVendidasFabrica(), { once: true });
 
     function stockTotalFv(producto) {
         return (producto.variaciones || []).reduce((s, v) => s + (parseInt(v.stock, 10) || 0), 0);
@@ -2191,6 +2244,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             const ventaRef = await addDoc(ventasCollection, ventaData);
 
             showToast('Venta registrada', 'success');
+            recalcularMasVendidasFabrica();
 
             // Pregunta si se quiere facturar ya mismo (ventaData se conserva
             // completo, incluidos los items, aunque el carrito se limpie a
@@ -2359,6 +2413,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             });
 
             showToast('Venta anulada y stock repuesto.', 'info');
+            recalcularMasVendidasFabrica();
             if (itemsOmitidos.length) {
                 console.warn('Stock no ajustado para:', itemsOmitidos);
                 showToast(`El stock no se ajustó para: ${itemsOmitidos.join(', ')}. Revísalo manualmente.`, 'error');

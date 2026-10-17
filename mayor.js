@@ -549,8 +549,30 @@ function sortProducts(list) {
         case 'precio-desc': return [...list].sort((a, b) => getPrecioUnitario(b) - getPrecioUnitario(a));
         case 'stock-desc': return [...list].sort((a, b) => getStockTotal(b) - getStockTotal(a));
         case 'stock-asc': return [...list].sort((a, b) => getStockTotal(a) - getStockTotal(b));
-        default: return list;
+        // "Relevancia": primero las prendas más vendidas de los últimos 90
+        // días (vendidasRecientes lo calcula el panel de Fábrica); las demás
+        // conservan su orden.
+        default: return [...list].sort((a, b) => getVendidasRecientes(b) - getVendidasRecientes(a));
     }
+}
+
+function getVendidasRecientes(p) {
+    return parseInt(p.vendidasRecientes, 10) || 0;
+}
+
+// Las prendas que llevan la etiqueta "Más vendida": las de más unidades
+// vendidas entre todas las disponibles (no solo las de la búsqueda actual),
+// para que la etiqueta signifique lo mismo en cualquier filtro.
+const MAS_VENDIDAS_TOP = 6;
+let masVendidasIds = new Set();
+function actualizarMasVendidas() {
+    masVendidasIds = new Set(
+        allProducts
+            .filter(p => p.visible !== false && getStockTotal(p) > 0 && getPrecioUnitario(p) > 0 && getVendidasRecientes(p) > 0)
+            .sort((a, b) => getVendidasRecientes(b) - getVendidasRecientes(a))
+            .slice(0, MAS_VENDIDAS_TOP)
+            .map(p => p.id)
+    );
 }
 
 function buildPageList(current, total) {
@@ -774,7 +796,7 @@ function buildCardElement(p) {
     card.className = 'mayor-card' + (filas.length > 0 ? ' is-selected' : '');
     card.dataset.productId = p.id;
     card.innerHTML = `
-        <div class="mayor-card-img">${buildStockBadgeHtml(p)}<img src="${img}" alt="${p.nombre}" loading="lazy"><span class="mayor-ref-label"><i class="bi bi-camera-fill"></i> Foto de referencia</span></div>
+        <div class="mayor-card-img">${masVendidasIds.has(p.id) ? '<span class="mayor-card-best-badge">🔥 Más vendida</span>' : ''}${buildStockBadgeHtml(p)}<img src="${img}" alt="${p.nombre}" loading="lazy"><span class="mayor-ref-label"><i class="bi bi-camera-fill"></i> Foto de referencia</span></div>
         <div class="mayor-card-body">
             <h3 class="mayor-card-name">${p.nombre}</h3>
             <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
@@ -835,6 +857,7 @@ function updateCardInPlace(id) {
 function renderProducts() {
     if (!gridEl) return;
     reconciliarTodo();
+    actualizarMasVendidas();
     const filtered = computeVisibleProducts();
     const totalPages = Math.max(1, Math.ceil(filtered.length / PRODUCTS_PER_PAGE));
     if (currentPage > totalPages) currentPage = totalPages;

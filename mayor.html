@@ -581,6 +581,25 @@
     box-shadow: var(--sombra-sm);
     white-space: nowrap;
   }
+  /* Etiqueta de las prendas más vendidas (arriba a la izquierda). Si la
+     prenda ya está elegida, baja un poco para no taparse con "✓ Elegida". */
+  .mayor-card-best-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: #ff6d00;
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 999px;
+    box-shadow: var(--sombra-sm);
+    white-space: nowrap;
+    z-index: 2;
+  }
+  .mayor-card.is-selected .mayor-card-best-badge {
+    top: 34px;
+  }
   .mayor-card-stock-badge.is-low {
     background: #fdecea;
     color: #c62828;
@@ -1386,6 +1405,15 @@
       top: 6px;
       right: 6px;
     }
+    .mayor-card-best-badge {
+      font-size: 0.54rem;
+      padding: 3px 6px;
+      top: 6px;
+      left: 6px;
+    }
+    .mayor-card.is-selected .mayor-card-best-badge {
+      top: 28px;
+    }
     .mayor-grid {
       gap: 10px;
       padding: 10px 8px 16px;
@@ -1637,7 +1665,7 @@
 
       <p class="mayor-sidebar-group-label">Ordenar por</p>
       <div id="mayor-sort-filter" role="group" aria-label="Ordenar prendas">
-        <button type="button" class="mayor-sidebar-item active" data-sort="relevancia"><i class="bi bi-stars"></i> Relevancia</button>
+        <button type="button" class="mayor-sidebar-item active" data-sort="relevancia"><i class="bi bi-fire"></i> Más vendidas primero</button>
         <button type="button" class="mayor-sidebar-item" data-sort="precio-asc"><i class="bi bi-sort-numeric-down"></i> Precio: menor a mayor</button>
         <button type="button" class="mayor-sidebar-item" data-sort="precio-desc"><i class="bi bi-sort-numeric-up"></i> Precio: mayor a menor</button>
         <button type="button" class="mayor-sidebar-item" data-sort="stock-desc"><i class="bi bi-boxes"></i> Más disponibilidad</button>
@@ -1781,7 +1809,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.9.7"></script>
+<script type="module" src="mayor.js?v=1.9.8"></script>
 
 </body>
 </html>
