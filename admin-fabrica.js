@@ -2526,13 +2526,54 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     // pueda abrir directo el historial en vez de solo caer en Nueva Venta.
     window.mostrarHistorialVentasFabrica = mostrarVistaHistorial;
 
+    // Fecha local AAAA-MM-DD (no toISOString: eso usa UTC y en Colombia las
+    // ventas después de las 7 p. m. caían en el día siguiente).
+    function fechaLocalISO(d) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    const fechaHistorialInput = document.getElementById('fv-filtro-fecha-ventas');
+    function fechaHistorialSeleccionada() {
+        if (!fechaHistorialInput.value) fechaHistorialInput.value = fechaLocalISO(new Date());
+        fechaHistorialInput.max = fechaLocalISO(new Date());
+        return fechaHistorialInput.value;
+    }
+
+    // Solo las ventas al por mayor registradas desde este panel (Registrar
+    // Venta de admin-fabrica: origen "mostrador", tipoVenta "mayorista").
+    // Las ventas de Boutique traen tipoEntrega/repartidor y no entran.
+    function esVentaDeFabrica(v) {
+        if (v.origen === 'mostrador') return true;
+        return String(v.tipoVenta || '').toLowerCase() === 'mayorista' && v.tipoEntrega === undefined;
+    }
+
+    // Trae solo las ventas del día elegido (por defecto hoy) en vez de todo
+    // el historial: carga mucho más rápido. Usa el mismo índice
+    // (tenantId + timestamp) que el Dashboard.
+    let historialFechaCargada = null;
     async function cargarHistorialVentas() {
         historialCargado = true;
         const listaEl = document.getElementById('fv-lista-ventas');
+        const fecha = fechaHistorialSeleccionada();
+        historialFechaCargada = fecha;
+        const [anio, mes, dia] = fecha.split('-').map(Number);
+        const inicio = new Date(anio, mes - 1, dia, 0, 0, 0, 0);
+        const fin = new Date(anio, mes - 1, dia + 1, 0, 0, 0, 0);
+        const nextBtn = document.getElementById('fv-hist-next');
+        if (nextBtn) nextBtn.disabled = fecha >= fechaLocalISO(new Date());
+        const resumenEl = document.getElementById('fv-hist-resumen');
+        if (resumenEl) resumenEl.innerHTML = '';
+        listaEl.innerHTML = `<div class="ventas-empty-state"><span class="spinner-border spinner-border-sm text-muted"></span><p class="text-muted mb-0 mt-2">Cargando ventas...</p></div>`;
         try {
-            const q = query(ventasCollection, where('tenantId', '==', 'fabrica'), orderBy('timestamp', 'desc'));
+            const q = query(
+                ventasCollection,
+                where('tenantId', '==', 'fabrica'),
+                where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                where('timestamp', '<', Timestamp.fromDate(fin)),
+                orderBy('timestamp', 'desc')
+            );
             const snap = await getDocs(q);
-            todasLasVentas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (historialFechaCargada !== fecha) return; // se cambió de día mientras cargaba
+            todasLasVentas = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(esVentaDeFabrica);
             aplicarFiltrosHistorial();
         } catch (error) {
             console.error('Error al cargar historial de ventas de fábrica:', error);
@@ -2661,23 +2702,29 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     function aplicarFiltrosHistorial() {
         const listaEl = document.getElementById('fv-lista-ventas');
         const termino = (document.getElementById('fv-filtro-buscar-ventas')?.value || '').trim().toLowerCase();
-        const fechaFiltro = document.getElementById('fv-filtro-fecha-ventas')?.value || '';
-
         const filtradas = todasLasVentas.filter(v => {
             if (termino) {
                 const clienteMatch = (v.clienteNombre || '').toLowerCase().includes(termino);
                 const productoMatch = (v.items || []).some(i => (i.nombre || '').toLowerCase().includes(termino));
                 if (!clienteMatch && !productoMatch) return false;
             }
-            if (fechaFiltro && v.timestamp?.toDate) {
-                const fechaVenta = v.timestamp.toDate().toISOString().slice(0, 10);
-                if (fechaVenta !== fechaFiltro) return false;
-            }
             return true;
         });
 
+        // Resumen del día: cantidad de ventas y total (sin contar anuladas).
+        const resumenEl = document.getElementById('fv-hist-resumen');
+        if (resumenEl) {
+            const validas = filtradas.filter(v => v.estado !== 'Anulada' && v.estado !== 'Cancelada');
+            const total = validas.reduce((s, v) => s + (Number(v.totalVenta) || 0), 0);
+            const fecha = fechaHistorialInput.value;
+            const esHoy = fecha === fechaLocalISO(new Date());
+            const [a, m, d] = fecha.split('-').map(Number);
+            const etiqueta = esHoy ? 'Hoy' : new Date(a, m - 1, d).toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
+            resumenEl.innerHTML = `<span>${etiqueta}</span><span>${validas.length} venta${validas.length === 1 ? '' : 's'} · <strong>${formatoMonedaDashboard.format(total)}</strong></span>`;
+        }
+
         if (!filtradas.length) {
-            listaEl.innerHTML = `<div class="ventas-empty-state"><i class="bi bi-search fs-2 d-block mb-2 text-muted"></i><p class="text-muted mb-0">No se encontraron ventas</p></div>`;
+            listaEl.innerHTML = `<div class="ventas-empty-state"><i class="bi bi-receipt fs-2 d-block mb-2 text-muted"></i><p class="text-muted mb-0">${termino ? 'No se encontraron ventas con esa búsqueda' : 'No hay ventas registradas este día'}</p></div>`;
             return;
         }
 
@@ -2748,11 +2795,22 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     }
 
     document.getElementById('fv-filtro-buscar-ventas')?.addEventListener('input', aplicarFiltrosHistorial);
-    document.getElementById('fv-filtro-fecha-ventas')?.addEventListener('input', aplicarFiltrosHistorial);
+    // Cambiar de día vuelve a consultar solo ese día.
+    fechaHistorialInput?.addEventListener('change', () => cargarHistorialVentas());
+    function moverDiaHistorial(delta) {
+        const [a, m, d] = fechaHistorialSeleccionada().split('-').map(Number);
+        const nueva = new Date(a, m - 1, d + delta);
+        if (fechaLocalISO(nueva) > fechaLocalISO(new Date())) return;
+        fechaHistorialInput.value = fechaLocalISO(nueva);
+        cargarHistorialVentas();
+    }
+    document.getElementById('fv-hist-prev')?.addEventListener('click', () => moverDiaHistorial(-1));
+    document.getElementById('fv-hist-next')?.addEventListener('click', () => moverDiaHistorial(1));
+    // "Hoy": limpia la búsqueda y vuelve al día de hoy.
     document.getElementById('fv-btn-limpiar-filtro-ventas')?.addEventListener('click', () => {
         document.getElementById('fv-filtro-buscar-ventas').value = '';
-        document.getElementById('fv-filtro-fecha-ventas').value = '';
-        aplicarFiltrosHistorial();
+        fechaHistorialInput.value = fechaLocalISO(new Date());
+        cargarHistorialVentas();
     });
 
     renderCarrito();

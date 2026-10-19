@@ -1692,3 +1692,63 @@ body.fab-page.dark-mode #registrar-venta .sv-cart-empty-cta strong { color: var(
   }
 }
 
+
+/* Historial por día: ‹ fecha › Hoy + resumen del día */
+.fab-page #fv-sales-list-view .sv-date-nav {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.fab-page #fv-sales-list-view .sv-date-nav > .form-control {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 38px;
+  font-size: 16px;
+  text-align: center;
+}
+.fab-page .sv-date-step {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  transition: background .15s, border-color .15s;
+}
+.fab-page .sv-date-step:hover:not(:disabled) {
+  border-color: var(--brand-500);
+  color: var(--brand-600, var(--brand-500));
+}
+.fab-page .sv-date-step:disabled { opacity: .4; cursor: default; }
+.fab-page #fv-sales-list-view .sv-date-today {
+  flex: 0 0 auto;
+  height: 38px;
+  border-radius: 999px;
+  padding: 0 0.95rem;
+  font-weight: 600;
+}
+.fab-page .sv-hist-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0.75rem 0.15rem 0.6rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.fab-page .sv-hist-summary:empty { display: none; }
+.fab-page .sv-hist-summary > span:first-child {
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-weight: 600;
+}
+.fab-page .sv-hist-summary strong { color: var(--text-primary); font-weight: 700; }
+
+/* En el historial no aplica el botón de borradores */
+.fab-page #registrar-venta:has(#fv-sales-list-view:not([style*="none"])) .sv-drafts-btn {
+  display: none;
+}
