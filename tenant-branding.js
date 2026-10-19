@@ -12,7 +12,7 @@ import { doc, getDoc, collection, getDocs } from "https://www.gstatic.com/fireba
 // (Boutique nunca lo necesitó para funcionar) o falla la lectura.
 export const MARCA_DEFAULT = {
     boutique: { nombre: "Mishell's Boutique", nombreCorto: 'Boutique', logoUrl: 'icon.svg', color: '#D988B9' },
-    fabrica:  { nombre: "Mishell's Fábrica",  nombreCorto: 'Fábrica',  logoUrl: 'icon.svg', color: '#5b6b8c' }
+    fabrica:  { nombre: "Mishell'es Fábrica", nombreCorto: 'Fábrica',  logoUrl: 'icon.svg', color: '#D988B9' }
 };
 
 // Únicas empresas con panel propio construido hoy (ver Fase 6 del plan).

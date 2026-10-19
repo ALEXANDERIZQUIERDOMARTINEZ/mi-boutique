@@ -11,10 +11,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="style.css?v=1.9.6">
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
+    <!-- Tema de Fábrica: mismos colores, letra (Poppins) y estilo limpio que
+         la tienda mayorista (mayor.html). Solo lo carga este panel. -->
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.0.0">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
@@ -44,7 +47,10 @@
         <div class="rail-brand">
             <div class="rail-brand-inner">
                 <img src="icon.svg" alt="M" class="rail-logo-img">
-                <span class="rail-brand-name">Mishell's Fábrica</span>
+                <span class="fab-wordmark" aria-label="Mishell'es Fábrica">
+                    <span class="fab-wordmark-name">MISHELL'ES</span>
+                    <span class="fab-wordmark-sub">FÁBRICA</span>
+                </span>
             </div>
             <button class="rail-collapse-btn" id="railCollapseBtn" aria-label="Colapsar menú">
                 <i class="bi bi-chevron-left" id="railCollapseIcon"></i>
@@ -195,64 +201,15 @@
                 <div class="db-greeting-card">
                     <div class="db-greeting-avatar"><span>M</span></div>
                     <div class="db-greeting-body">
-                        <span class="db-greeting-hello">Hola, <span id="db-greeting-name">Administrador</span> 👋</span>
-                        <span class="db-greeting-store">Mishell's Fábrica</span>
+                        <span class="db-greeting-hello">Hola, <span id="db-greeting-name">Administrador</span></span>
+                        <span class="db-greeting-store">Mishell'es Fábrica</span>
                         <span class="db-greeting-date" id="dashboard-date"></span>
                     </div>
                 </div>
             </section>
 
-            <section class="db-section">
-                <div class="db-menu-grid">
-                    <a href="#pedidos-web" class="db-menu-tile" data-permiso="pedidos_web_ver">
-                        <span class="db-menu-tile-icon fin2-skpi-icon--amber"><i class="bi bi-bag-check"></i></span>
-                        <span class="db-menu-tile-label">Pedidos Web</span>
-                    </a>
-                    <a href="#registrar-venta" class="db-menu-tile" data-permiso="ventas_crear">
-                        <span class="db-menu-tile-icon fin2-skpi-icon--green"><i class="bi bi-plus-circle"></i></span>
-                        <span class="db-menu-tile-label">Registrar Venta</span>
-                    </a>
-                    <a href="#clientes-fabrica" class="db-menu-tile" data-permiso="clientes_ver">
-                        <span class="db-menu-tile-icon fin2-skpi-icon--amber"><i class="bi bi-people"></i></span>
-                        <span class="db-menu-tile-label">Clientes</span>
-                    </a>
-                    <a href="#productos-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
-                        <span class="db-menu-tile-icon fin2-skpi-icon--purple"><i class="bi bi-grid-3x3-gap"></i></span>
-                        <span class="db-menu-tile-label">Productos</span>
-                    </a>
-                    <a href="#inventario-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
-                        <span class="db-menu-tile-icon fin2-skpi-icon--blue"><i class="bi bi-boxes"></i></span>
-                        <span class="db-menu-tile-label">Inventario</span>
-                    </a>
-                    <a href="#categorias-fabrica" class="db-menu-tile" data-permiso="categorias_gestionar">
-                        <span class="db-menu-tile-icon fin2-skpi-icon--pink"><i class="bi bi-tags"></i></span>
-                        <span class="db-menu-tile-label">Categorías</span>
-                    </a>
-                    <a href="#cargue-masivo-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
-                        <span class="db-menu-tile-icon fin2-skpi-icon--slate"><i class="bi bi-file-earmark-excel"></i></span>
-                        <span class="db-menu-tile-label">Cargue Masivo</span>
-                    </a>
-                    <a href="#etiquetas-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
-                        <span class="db-menu-tile-icon fin2-skpi-icon--green"><i class="bi bi-upc-scan"></i></span>
-                        <span class="db-menu-tile-label">Etiquetas</span>
-                    </a>
-                    <a href="#fabrica" class="db-menu-tile" data-permiso="fabrica_gestionar">
-                        <span class="db-menu-tile-icon fin2-skpi-icon--fabrica"><i class="bi bi-cash-coin"></i></span>
-                        <span class="db-menu-tile-label">Gastos e Ingresos</span>
-                    </a>
-                    <a href="#usuarios" class="db-menu-tile" data-permiso="usuarios_ver">
-                        <span class="db-menu-tile-icon fin2-skpi-icon--purple"><i class="bi bi-person-badge"></i></span>
-                        <span class="db-menu-tile-label">Usuarios</span>
-                    </a>
-                    <a href="#auditoria" class="db-menu-tile" data-permiso="auditoria_ver">
-                        <span class="db-menu-tile-icon fin2-skpi-icon--slate"><i class="bi bi-clock-history"></i></span>
-                        <span class="db-menu-tile-label">Auditoría</span>
-                    </a>
-                </div>
-            </section>
-
-            <!-- ── Resumen financiero: inversión, bajo stock y utilidad — lo que
-                 mostraba el Dashboard anterior, debajo del saludo y accesos ── -->
+            <!-- ── Resumen: inversión, bajo stock y ventas — lo primero que se ve
+                 debajo del saludo; los accesos rápidos van después ── -->
             <section class="db-section">
                 <div class="db-head">
                     <div class="db-head-left">
@@ -324,6 +281,38 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            <!-- ── Accesos rápidos: solo las 4 secciones más usadas (el resto está
+                 en el menú lateral / "Más" en el celular) ── -->
+            <section class="db-section">
+                <div class="db-head">
+                    <div class="db-head-left">
+                        <span class="db-eyebrow">Accesos rápidos</span>
+                    </div>
+                </div>
+                <div class="db-menu-grid db-menu-grid--quick">
+                    <a href="#pedidos-web" class="db-menu-tile" data-permiso="pedidos_web_ver">
+                        <span class="db-menu-tile-icon"><i class="bi bi-bag-check"></i></span>
+                        <span class="db-menu-tile-label">Pedidos Web</span>
+                        <i class="bi bi-chevron-right db-menu-tile-arrow"></i>
+                    </a>
+                    <a href="#registrar-venta" class="db-menu-tile" data-permiso="ventas_crear">
+                        <span class="db-menu-tile-icon"><i class="bi bi-plus-circle"></i></span>
+                        <span class="db-menu-tile-label">Registrar Venta</span>
+                        <i class="bi bi-chevron-right db-menu-tile-arrow"></i>
+                    </a>
+                    <a href="#productos-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
+                        <span class="db-menu-tile-icon"><i class="bi bi-grid-3x3-gap"></i></span>
+                        <span class="db-menu-tile-label">Productos</span>
+                        <i class="bi bi-chevron-right db-menu-tile-arrow"></i>
+                    </a>
+                    <a href="#inventario-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
+                        <span class="db-menu-tile-icon"><i class="bi bi-boxes"></i></span>
+                        <span class="db-menu-tile-label">Inventario</span>
+                        <i class="bi bi-chevron-right db-menu-tile-arrow"></i>
+                    </a>
                 </div>
             </section>
 
@@ -569,16 +558,25 @@
             <!-- Stats rápidas -->
             <div class="pw-stats">
                 <div class="pw-stat pw-stat-warning">
-                    <span class="pw-stat-val" id="pw-stat-pendientes">0</span>
-                    <span class="pw-stat-label">Pendientes</span>
+                    <span class="pw-stat-icon"><i class="bi bi-clock"></i></span>
+                    <span class="pw-stat-body">
+                        <span class="pw-stat-val" id="pw-stat-pendientes">0</span>
+                        <span class="pw-stat-label">Pendientes</span>
+                    </span>
                 </div>
                 <div class="pw-stat pw-stat-success">
-                    <span class="pw-stat-val" id="pw-stat-hoy">0</span>
-                    <span class="pw-stat-label">Aceptados hoy</span>
+                    <span class="pw-stat-icon"><i class="bi bi-check2-circle"></i></span>
+                    <span class="pw-stat-body">
+                        <span class="pw-stat-val" id="pw-stat-hoy">0</span>
+                        <span class="pw-stat-label">Aceptados hoy</span>
+                    </span>
                 </div>
                 <div class="pw-stat pw-stat-brand">
-                    <span class="pw-stat-val" id="pw-stat-valor">$0</span>
-                    <span class="pw-stat-label">Valor hoy</span>
+                    <span class="pw-stat-icon"><i class="bi bi-cash-stack"></i></span>
+                    <span class="pw-stat-body">
+                        <span class="pw-stat-val" id="pw-stat-valor">$0</span>
+                        <span class="pw-stat-label">Valor hoy</span>
+                    </span>
                 </div>
             </div>
 
