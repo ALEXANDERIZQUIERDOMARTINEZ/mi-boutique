@@ -769,7 +769,7 @@ function buildCardElement(p) {
     card.className = 'mayor-card' + (filas.length > 0 ? ' is-selected' : '');
     card.dataset.productId = p.id;
     card.innerHTML = `
-        <div class="mayor-card-img"><img src="${img}" alt="${p.nombre}" loading="lazy"></div>
+        <div class="mayor-card-img"><img src="${img}" alt="${p.nombre}" loading="lazy"><span class="mayor-ref-label"><i class="bi bi-camera-fill"></i> Foto de referencia</span></div>
         <div class="mayor-card-body">
             <h3 class="mayor-card-name">${formatCardProductName(p.nombre)}</h3>
             <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
