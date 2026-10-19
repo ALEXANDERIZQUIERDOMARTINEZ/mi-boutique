@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Tema de Fábrica: mismos colores, letra (Poppins) y estilo limpio que
          la tienda mayorista (mayor.html). Solo lo carga este panel. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.7.2">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.8.0">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
@@ -297,10 +297,18 @@
                     <h1 class="sv-title" id="fv-view-title">Nueva venta</h1>
                     <p class="sv-subtitle" id="fv-view-subtitle">Registra tu venta de forma rápida</p>
                 </div>
-                <button type="button" id="fv-toggle-view-btn" class="sv-header-action">
-                    <i class="bi bi-clock-history" id="fv-toggle-view-icon"></i>
-                    <span id="fv-toggle-view-label">Historial</span>
-                </button>
+                <div class="sv-header-actions">
+                    <button type="button" class="sv-header-action sv-drafts-btn" id="fv-drafts-btn"
+                            data-bs-toggle="modal" data-bs-target="#fvDraftsModal" aria-label="Borradores">
+                        <i class="bi bi-journal-text"></i>
+                        <span class="sv-drafts-btn-label">Borradores</span>
+                        <span class="sv-drafts-count" id="fv-drafts-count" hidden>0</span>
+                    </button>
+                    <button type="button" id="fv-toggle-view-btn" class="sv-header-action">
+                        <i class="bi bi-clock-history" id="fv-toggle-view-icon"></i>
+                        <span id="fv-toggle-view-label">Historial</span>
+                    </button>
+                </div>
             </div>
 
             <div id="fv-sales-form-view">
@@ -371,15 +379,15 @@
                         </div>
 
                         <!-- Aviso de borrador guardado (Recuperar / Descartar) -->
-                        <div class="sv-draft-banner" id="fv-draft-banner" hidden>
+                        <button type="button" class="sv-draft-banner" id="fv-draft-banner" hidden
+                                data-bs-toggle="modal" data-bs-target="#fvDraftsModal">
                             <i class="bi bi-journal-text"></i>
                             <span class="sv-draft-banner-text">
-                                <strong>Tienes una venta guardada como borrador</strong>
-                                <small id="fv-draft-banner-detail"></small>
+                                <strong id="fv-draft-banner-detail">Tienes ventas guardadas como borrador</strong>
+                                <small>Toca para verlas y continuar</small>
                             </span>
-                            <button type="button" class="sv-draft-banner-btn" id="fv-draft-discard-btn">Descartar</button>
-                            <button type="button" class="sv-draft-banner-btn sv-draft-banner-btn--primary" id="fv-draft-restore-btn">Recuperar</button>
-                        </div>
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
 
                         <!-- Carrito vacío: tarjeta con llamado a la acción -->
                         <div class="sv-cart-empty-cta" id="fv-cart-empty-cta">
@@ -1773,6 +1781,22 @@
             </div>
         </div>
 
+        <!-- Modal: Borradores de venta -->
+        <div class="modal fade" id="fvDraftsModal" tabindex="-1" aria-labelledby="fvDraftsModalLabel">
+            <div class="modal-dialog modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="fvDraftsModalLabel">Borradores</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="fv-drafts-note"><i class="bi bi-phone"></i> Se guardan en este dispositivo.</p>
+                        <div id="fv-drafts-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Modal: Nuevo cliente -->
         <div class="modal fade" id="fvAddClientModal" tabindex="-1">
             <div class="modal-dialog">
@@ -2225,7 +2249,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.9.22"></script>
+    <script type="module" src="admin-fabrica.js?v=1.9.23"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.1.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->

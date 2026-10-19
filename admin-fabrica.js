@@ -696,6 +696,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         subtotalEl.textContent = formatoMonedaDashboard.format(calcularSubtotal());
         totalEl.textContent = formatoMonedaDashboard.format(calcularTotal());
         actualizarCambio();
+        actualizarIndicadoresBorradores();
     }
 
     carritoEl.addEventListener('click', (e) => {
@@ -765,81 +766,94 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         metodoPagoSeleccionado = btn.dataset.metodo;
     });
 
-    // ── Borrador de venta (localStorage, un solo slot) ─────────────────────
-    // No es un registro de negocio (no toca Firestore): solo evita perder
-    // una venta a medio armar si el usuario cierra la pestaña por accidente.
-    const BORRADOR_VENTA_KEY = 'fv_borrador_venta';
+    // ── Borradores de venta (localStorage, varios) ─────────────────────────
+    // No son registros de negocio (no tocan Firestore): sirven para dejar
+    // ventas a medio armar y retomarlas después desde "Borradores". Se
+    // guardan en este dispositivo/navegador.
+    const BORRADORES_KEY = 'fv_borradores_venta';
+    const BORRADOR_VIEJO_KEY = 'fv_borrador_venta'; // versión anterior: un solo borrador
 
+    function leerBorradores() {
+        let lista = [];
+        try {
+            lista = JSON.parse(localStorage.getItem(BORRADORES_KEY) || '[]');
+            if (!Array.isArray(lista)) lista = [];
+            // Migrar el borrador único de la versión anterior a la lista.
+            const viejo = JSON.parse(localStorage.getItem(BORRADOR_VIEJO_KEY) || 'null');
+            if (viejo && Array.isArray(viejo.carrito) && viejo.carrito.length) {
+                lista.unshift({ id: 'b' + Date.now().toString(36), fecha: Date.now(), ...viejo });
+                localStorage.setItem(BORRADORES_KEY, JSON.stringify(lista));
+            }
+            localStorage.removeItem(BORRADOR_VIEJO_KEY);
+        } catch (error) { /* localStorage no disponible */ }
+        return lista;
+    }
+    function escribirBorradores(lista) {
+        try { localStorage.setItem(BORRADORES_KEY, JSON.stringify(lista)); } catch (error) { /* sin localStorage */ }
+        actualizarIndicadoresBorradores();
+    }
+
+    function resumenBorrador(b) {
+        const prendas = (b.carrito || []).reduce((s, it) => s + (parseInt(it.cantidad, 10) || 0), 0);
+        const total = (b.carrito || []).reduce((s, it) => s + (Number(it.total) || 0), 0);
+        return { prendas, total };
+    }
+
+    function reiniciarFormularioVenta() {
+        carrito = [];
+        seleccionarCliente(CLIENTE_GENERAL_DEFAULT);
+        observacionesInput.value = '';
+        descuentoInput.value = '0';
+        descuentoTipoSelect.value = 'fijo';
+        pagoRecibidoInput.value = '0';
+        metodoPagoSeleccionado = 'efectivo';
+        document.querySelectorAll('#fv-metodo-pago-row .sv-pay-method-btn').forEach(b =>
+            b.classList.toggle('active', b.dataset.metodo === 'efectivo'));
+        renderCarrito();
+    }
+
+    // "Guardar como borrador": guarda la venta actual en la lista y deja el
+    // formulario en blanco para atender la siguiente.
     function guardarBorrador() {
-        try {
-            localStorage.setItem(BORRADOR_VENTA_KEY, JSON.stringify({
-                clienteId: clienteSeleccionado?.id || null,
-                clienteNombre: clienteSeleccionado?.nombre || '',
-                clienteCelular: clienteSeleccionado?.celular || '',
-                clienteDireccion: clienteSeleccionado?.direccion || '',
-                carrito,
-                observaciones: observacionesInput.value,
-                descuento: descuentoInput.value,
-                descuentoTipo: descuentoTipoSelect.value,
-                metodoPago: metodoPagoSeleccionado,
-                recibido: pagoRecibidoInput.value
-            }));
-            showToast('Borrador guardado', 'success');
-        } catch (error) {
-            console.error('Error al guardar borrador de venta:', error);
-            showToast('No se pudo guardar el borrador', 'error');
+        if (!carrito.length) {
+            showToast('Agrega al menos un producto antes de guardar el borrador', 'warning');
+            return;
         }
+        const lista = leerBorradores();
+        lista.unshift({
+            id: 'b' + Date.now().toString(36),
+            fecha: Date.now(),
+            clienteId: clienteSeleccionado?.id || null,
+            clienteNombre: clienteSeleccionado?.nombre || '',
+            clienteCelular: clienteSeleccionado?.celular || '',
+            clienteDireccion: clienteSeleccionado?.direccion || '',
+            carrito,
+            observaciones: observacionesInput.value,
+            descuento: descuentoInput.value,
+            descuentoTipo: descuentoTipoSelect.value,
+            metodoPago: metodoPagoSeleccionado,
+            recibido: pagoRecibidoInput.value
+        });
+        escribirBorradores(lista);
+        reiniciarFormularioVenta();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showToast('Borrador guardado. Lo encuentras en "Borradores".', 'success');
     }
 
-    function limpiarBorrador() {
-        try { localStorage.removeItem(BORRADOR_VENTA_KEY); } catch (error) { /* localStorage no disponible */ }
-    }
+    // Cargar un borrador en el formulario (y quitarlo de la lista: pasa a ser
+    // la venta en curso; si se vuelve a guardar, queda como borrador nuevo).
+    function recuperarBorrador(id) {
+        const lista = leerBorradores();
+        const borrador = lista.find(b => b.id === id);
+        if (!borrador) return;
+        if (carrito.length && !confirm('Tienes productos en la venta actual. ¿Reemplazarlos por este borrador?')) return;
 
-    function leerBorrador() {
-        try {
-            const raw = localStorage.getItem(BORRADOR_VENTA_KEY);
-            return raw ? JSON.parse(raw) : null;
-        } catch (error) { return null; }
-    }
-
-    // Nueva venta siempre empieza en blanco. Si hay un borrador guardado se
-    // muestra un aviso para recuperarlo o descartarlo, en vez de cargarlo
-    // solo cada vez que se abre la página.
-    const draftBannerEl = document.getElementById('fv-draft-banner');
-    function mostrarAvisoBorrador() {
-        if (!draftBannerEl) return;
-        const borrador = leerBorrador();
-        const prendas = (borrador?.carrito || []).reduce((s, it) => s + (parseInt(it.cantidad, 10) || 0), 0);
-        if (!borrador || !prendas || carrito.length > 0) { draftBannerEl.hidden = true; return; }
-        const detalleEl = document.getElementById('fv-draft-banner-detail');
-        if (detalleEl) {
-            const total = (borrador.carrito || []).reduce((s, it) => s + (Number(it.total) || 0), 0);
-            detalleEl.textContent = `${prendas} prenda${prendas === 1 ? '' : 's'} · ${formatoMonedaDashboard.format(total)}`;
-        }
-        draftBannerEl.hidden = false;
-    }
-    document.getElementById('fv-draft-restore-btn')?.addEventListener('click', () => {
-        restaurarBorradorSiExiste();
-        if (draftBannerEl) draftBannerEl.hidden = true;
-    });
-    document.getElementById('fv-draft-discard-btn')?.addEventListener('click', () => {
-        limpiarBorrador();
-        if (draftBannerEl) draftBannerEl.hidden = true;
-        showToast('Borrador descartado', 'info');
-    });
-
-    function restaurarBorradorSiExiste() {
-        const borrador = leerBorrador();
-        if (!borrador || carrito.length > 0) return; // no pisar una venta ya empezada
-
-        if (borrador.clienteId) {
-            seleccionarCliente({
-                id: borrador.clienteId,
-                nombre: borrador.clienteNombre,
-                celular: borrador.clienteCelular,
-                direccion: borrador.clienteDireccion
-            });
-        }
+        seleccionarCliente(borrador.clienteId ? {
+            id: borrador.clienteId,
+            nombre: borrador.clienteNombre,
+            celular: borrador.clienteCelular,
+            direccion: borrador.clienteDireccion
+        } : CLIENTE_GENERAL_DEFAULT);
         carrito = Array.isArray(borrador.carrito) ? borrador.carrito : [];
         observacionesInput.value = borrador.observaciones || '';
         descuentoInput.value = borrador.descuento || '0';
@@ -848,8 +862,73 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         document.querySelectorAll('#fv-metodo-pago-row .sv-pay-method-btn').forEach(b =>
             b.classList.toggle('active', b.dataset.metodo === metodoPagoSeleccionado));
         pagoRecibidoInput.value = borrador.recibido || '0';
+        escribirBorradores(lista.filter(b => b.id !== id));
         renderCarrito();
-        showToast('Se restauró tu borrador de venta', 'info');
+        bootstrap.Modal.getInstance(document.getElementById('fvDraftsModal'))?.hide();
+        showToast('Borrador cargado en la venta', 'info');
+    }
+
+    function eliminarBorrador(id) {
+        if (!confirm('¿Eliminar este borrador?')) return;
+        escribirBorradores(leerBorradores().filter(b => b.id !== id));
+        renderListaBorradores();
+    }
+
+    function tiempoBorrador(ms) {
+        const diff = Math.floor((Date.now() - ms) / 1000);
+        if (diff < 60) return 'Hace un momento';
+        if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
+        if (diff < 86400) return `Hace ${Math.floor(diff / 3600)} h`;
+        return new Date(ms).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    }
+
+    const draftsListEl = document.getElementById('fv-drafts-list');
+    function renderListaBorradores() {
+        if (!draftsListEl) return;
+        const lista = leerBorradores();
+        if (!lista.length) {
+            draftsListEl.innerHTML = `<div class="fv-drafts-empty"><i class="bi bi-journal"></i><strong>No tienes borradores</strong><small>Usa "Guardar como borrador" en una venta para dejarla aquí y retomarla después.</small></div>`;
+            return;
+        }
+        draftsListEl.innerHTML = lista.map(b => {
+            const { prendas, total } = resumenBorrador(b);
+            const detalle = (b.carrito || []).slice(0, 3).map(it => nombreCarrito(it.nombre)).filter((v, i, arr) => arr.indexOf(v) === i).join(', ');
+            return `
+                <div class="fv-draft-item" data-id="${b.id}">
+                    <div class="fv-draft-item-body">
+                        <div class="fv-draft-item-top">
+                            <strong>${b.clienteNombre || 'Cliente General'}</strong>
+                            <span class="fv-draft-item-total">${formatoMonedaDashboard.format(total)}</span>
+                        </div>
+                        <div class="fv-draft-item-sub">${prendas} prenda${prendas === 1 ? '' : 's'}${detalle ? ' · ' + detalle : ''}</div>
+                        <div class="fv-draft-item-time">${tiempoBorrador(b.fecha || Date.now())}</div>
+                    </div>
+                    <div class="fv-draft-item-actions">
+                        <button type="button" class="fv-draft-delete" data-id="${b.id}" aria-label="Eliminar borrador"><i class="bi bi-trash3"></i></button>
+                        <button type="button" class="fv-draft-open" data-id="${b.id}">Continuar</button>
+                    </div>
+                </div>`;
+        }).join('');
+    }
+    draftsListEl?.addEventListener('click', (e) => {
+        const abrir = e.target.closest('.fv-draft-open');
+        if (abrir) { recuperarBorrador(abrir.dataset.id); return; }
+        const borrar = e.target.closest('.fv-draft-delete');
+        if (borrar) eliminarBorrador(borrar.dataset.id);
+    });
+    document.getElementById('fvDraftsModal')?.addEventListener('show.bs.modal', renderListaBorradores);
+
+    // Contador en el botón "Borradores" y aviso cuando la venta está vacía.
+    function actualizarIndicadoresBorradores() {
+        const draftBannerEl = document.getElementById('fv-draft-banner');
+        const n = leerBorradores().length;
+        const badge = document.getElementById('fv-drafts-count');
+        if (badge) { badge.textContent = n; badge.hidden = n === 0; }
+        if (draftBannerEl) {
+            draftBannerEl.hidden = n === 0 || carrito.length > 0;
+            const detalleEl = document.getElementById('fv-draft-banner-detail');
+            if (detalleEl) detalleEl.textContent = n === 1 ? 'Tienes 1 venta guardada como borrador' : `Tienes ${n} ventas guardadas como borrador`;
+        }
     }
 
     document.getElementById('fv-guardar-borrador-btn')?.addEventListener('click', guardarBorrador);
@@ -858,7 +937,6 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         if (!carrito.length) return;
         if (!confirm('¿Vaciar todo el carrito de esta venta?')) return;
         carrito = [];
-        limpiarBorrador(); // si no, el borrador volvía a aparecer al recargar
         renderCarrito();
     });
 
@@ -2386,7 +2464,6 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             metodoPagoSeleccionado = 'efectivo';
             document.querySelectorAll('#fv-metodo-pago-row .sv-pay-method-btn').forEach(b =>
                 b.classList.toggle('active', b.dataset.metodo === 'efectivo'));
-            limpiarBorrador();
             renderCarrito();
             historialCargado = false; // para que el Historial la recargue con la venta nueva
         } catch (error) {
@@ -2679,7 +2756,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     });
 
     renderCarrito();
-    mostrarAvisoBorrador();
+    actualizarIndicadoresBorradores();
 
     // ────────────────────────────────────────────────────────────────────
     // ── PEDIDOS WEB (mayoristas, desde mayor.html) ─────────────────────
