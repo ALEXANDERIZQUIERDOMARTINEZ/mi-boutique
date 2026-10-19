@@ -4289,10 +4289,69 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             fila.dataset.origTalla = talla || '';
             fila.dataset.origColor = color || '';
         }
-        fila.querySelector('.remove-variation-fabrica-btn').addEventListener('click', () => fila.remove());
+        fila.querySelector('.remove-variation-fabrica-btn').addEventListener('click', () => { fila.remove(); actualizarTotalVariaciones(); });
         variacionesContainer.appendChild(fila);
     }
-    addVariationBtn.addEventListener('click', () => agregarFilaVariacion());
+    addVariationBtn.addEventListener('click', () => {
+        agregarFilaVariacion('', '', 1);
+        actualizarTotalVariaciones();
+        variacionesContainer.lastElementChild?.querySelector('[name="prodfab_variation_color[]"]')?.focus();
+    });
+
+    // ── Detalles visuales del formulario (foto, margen, total de unidades) ──
+    const photoEl = document.getElementById('prodfab-photo');
+    const codigoLabel = document.getElementById('prodfab-codigo-label');
+    const margenEl = document.getElementById('prodfab-margen');
+    const varTotalEl = document.getElementById('prodfab-var-total');
+    const fmtPesos = (n) => '$' + Math.round(n).toLocaleString('es-CO');
+
+    function actualizarFoto() {
+        const tiene = imagenPreview.style.display !== 'none' && !!imagenPreview.getAttribute('src');
+        photoEl?.classList.toggle('has-photo', tiene);
+    }
+    function actualizarMargen() {
+        if (!margenEl) return;
+        const costo = parseFloat(costoInput.value) || 0;
+        const precio = parseFloat(precioMayorInput.value) || 0;
+        if (!precio) { margenEl.innerHTML = ''; return; }
+        const ganancia = precio - costo;
+        const pct = precio ? Math.round((ganancia / precio) * 100) : 0;
+        margenEl.className = 'pf-margin' + (ganancia < 0 ? ' is-neg' : (ganancia === 0 ? ' is-zero' : ''));
+        margenEl.innerHTML = `<i class="bi bi-graph-up-arrow"></i> Ganancia por prenda <strong>${fmtPesos(ganancia)}</strong> <span>(${pct}%)</span>`;
+    }
+    function actualizarTotalVariaciones() {
+        if (!varTotalEl) return;
+        const filas = variacionesContainer.querySelectorAll('.variation-row');
+        const total = Array.from(filas).reduce((s, f) => s + (parseFloat(f.querySelector('[name="prodfab_variation_stock[]"]').value) || 0), 0);
+        varTotalEl.textContent = filas.length ? `${filas.length} color${filas.length === 1 ? '' : 'es'} · ${total} und` : '';
+    }
+    function actualizarFormularioProducto() {
+        if (codigoLabel) codigoLabel.textContent = codigoInput.value || '';
+        actualizarFoto();
+        actualizarMargen();
+        actualizarTotalVariaciones();
+    }
+    document.getElementById('prodFabModal')?.addEventListener('show.bs.modal', actualizarFormularioProducto);
+    // Foto que no carga (enlace roto): se ve como "Agregar foto".
+    imagenPreview.addEventListener('error', () => { imagenPreview.style.display = 'none'; actualizarFoto(); });
+    imagenPreview.addEventListener('load', actualizarFoto);
+    costoInput.addEventListener('input', actualizarMargen);
+    precioMayorInput.addEventListener('input', actualizarMargen);
+    imagenInput.addEventListener('change', () => {
+        const archivo = imagenInput.files[0];
+        if (!archivo) return;
+        imagenPreview.src = URL.createObjectURL(archivo);
+        imagenPreview.style.display = 'block';
+        actualizarFoto();
+    });
+    variacionesContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('.pf-step');
+        if (!btn) return;
+        const input = btn.parentElement.querySelector('input');
+        input.value = Math.max(0, (parseFloat(input.value) || 0) + Number(btn.dataset.step));
+        actualizarTotalVariaciones();
+    });
+    variacionesContainer.addEventListener('input', actualizarTotalVariaciones);
 
     function leerVariacionesDelForm() {
         const tallas = Array.from(variacionesContainer.querySelectorAll('[name="prodfab_variation_talla[]"]'));
@@ -4426,7 +4485,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             const nombreNorm = nombre.toLowerCase();
             const yaExiste = productos.some(p => (p.nombre || '').toLowerCase().trim() === nombreNorm);
             if (yaExiste) {
-                showToast('Ya existe un producto con ese nombre. Para editarlo usa el lápiz de esa fila en la tabla, no "Nuevo producto".', 'warning');
+                showToast('Ya existe un producto con ese nombre. Para editarlo tócalo en la lista, no uses "Nuevo".', 'warning');
                 return;
             }
         }
