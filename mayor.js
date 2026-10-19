@@ -692,7 +692,7 @@ function buildCardExtraHtml(p) {
     const filas = detalleFilas.get(p.id) || [];
     if (filas.length === 0) {
         if (getColoresDelProducto(p).length === 0) return '';
-        return `<p class="mayor-add-hint">👆 Toca un color para agregarlo a tu pedido</p>`;
+        return `<p class="mayor-add-hint"><i class="bi bi-hand-index-thumb"></i> Toca un color para agregarlo a tu pedido</p>`;
     }
     const totalProducto = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
     const tallas = getTallasConStock(p);
@@ -1327,7 +1327,7 @@ function openDemoTourSheet() {
 const MAYOR_TOUR_STEPS = [
     {
         selector: '#btn-open-mayor-sidebar',
-        title: '👋 Antes de empezar',
+        title: 'Antes de empezar',
         text: 'Toca aquí para ver el mínimo de prendas por pedido, la tabla de precios, y para filtrar u ordenar las prendas.',
         onEnter: () => { closeQuickAddSheet(); openMayorSidebar(); },
     },
