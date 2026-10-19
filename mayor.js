@@ -560,21 +560,6 @@ function getVendidasRecientes(p) {
     return parseInt(p.vendidasRecientes, 10) || 0;
 }
 
-// Las prendas que llevan la etiqueta "Más vendida": las de más unidades
-// vendidas entre todas las disponibles (no solo las de la búsqueda actual),
-// para que la etiqueta signifique lo mismo en cualquier filtro.
-const MAS_VENDIDAS_TOP = 6;
-let masVendidasIds = new Set();
-function actualizarMasVendidas() {
-    masVendidasIds = new Set(
-        allProducts
-            .filter(p => p.visible !== false && getStockTotal(p) > 0 && getPrecioUnitario(p) > 0 && getVendidasRecientes(p) > 0)
-            .sort((a, b) => getVendidasRecientes(b) - getVendidasRecientes(a))
-            .slice(0, MAS_VENDIDAS_TOP)
-            .map(p => p.id)
-    );
-}
-
 function buildPageList(current, total) {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
     const pages = [1];
@@ -659,16 +644,6 @@ function renderFilaHtml(p, fila, idx, tallas) {
     `;
 }
 
-// Disponibilidad total de la prenda (todos los colores/tallas sumados), para
-// que se vea de un vistazo en la tarjeta sin tener que tocar cada color.
-function buildStockBadgeHtml(p) {
-    const stock = getStockTotal(p);
-    if (stock <= 0) return '';
-    const isLow = stock <= LOW_STOCK_THRESHOLD;
-    const label = isLow ? `¡Últimas ${stock}!` : `${stock} disponibles`;
-    return `<span class="mayor-card-stock-badge${isLow ? ' is-low' : ''}">${label}</span>`;
-}
-
 function buildCardPriceHtml(p) {
     const grupo = resolveWholesaleGroup(p, categoriesMap);
     const precioUnitario = getPrecioUnitario(p);
@@ -740,10 +715,7 @@ function buildCardActionHtml(p) {
     const filas = detalleFilas.get(p.id) || [];
     const total = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
     if (total === 0) {
-        // Indicación explícita con flecha hacia el botón: varios clientes no
-        // entendían que ahí se elige el color y la cantidad.
-        return `<p class="mayor-add-hint"><i class="bi bi-hand-index-thumb-fill"></i> Toca <b>Agregar</b> para elegir color y cantidad <i class="bi bi-arrow-down mayor-add-hint-arrow"></i></p>
-            <button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-lg"></i> Agregar</button>`;
+        return `<button type="button" class="mayor-add-btn" data-id="${p.id}"><i class="bi bi-plus-lg"></i> Agregar</button>`;
     }
     return `
         <button type="button" class="mayor-add-btn is-added" data-id="${p.id}">
@@ -752,36 +724,32 @@ function buildCardActionHtml(p) {
         </button>`;
 }
 
-// Construye el nodo de UNA tarjeta completa (se usa al pintar la grilla).
-// Vista previa de colores directo en la tarjeta de la grilla — el nombre de
-// cada color, no solo una bolita, para que se vea sin tener que abrir la
-// hoja de agregar. Es solo informativa (un toque abre la misma hoja que el
-// botón "Agregar"); la selección real ocurre ahí.
+// Vista previa de colores en la tarjeta: solo las bolitas (con el nombre
+// como tooltip) y un "+N" si no caben todas. El nombre y la disponibilidad
+// de cada color se ven en la hoja de agregar rápido, que se abre al tocar.
+const CARD_MAX_SWATCHES = 6;
 function buildCardColorsPreviewHtml(p) {
     const colores = getColoresDelProducto(p);
     // Siempre se devuelve la caja (vacía si no hay colores) para que todas
     // las tarjetas tengan las mismas filas y queden alineadas entre sí.
     if (colores.length === 0) return '<div class="mayor-card-colors-box is-empty"></div>';
     const variantesColor = p.variantes_color || [];
-    // Se muestran TODOS los colores en la tarjeta (sin "+N más"): si son
-    // más de 6, la caja pasa a modo compacto (bolitas y letras más chicas)
-    // para que la tarjeta no crezca tanto.
-    const chipsHtml = colores.map(({ color, stock }) => {
+    const visibles = colores.length > CARD_MAX_SWATCHES ? colores.slice(0, CARD_MAX_SWATCHES - 1) : colores;
+    const restantes = colores.length - visibles.length;
+    const swatchesHtml = visibles.map(({ color }) => {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
-        return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-chip-swatch" style="${swatchStyle}"></span><span class="mayor-card-color-chip-name">${formatColorLabel(color)}</span><span class="mayor-card-color-chip-stock">Quedan ${stock}</span></span>`;
+        const label = formatColorLabel(color).replace(/"/g, '&quot;');
+        return `<span class="color-swatch-circle mayor-card-color-dot" style="${swatchStyle}" title="${label}"></span>`;
     }).join('');
-    // Bolitas de color grandes con el nombre debajo (como en cualquier tienda
-    // online) y frases sin ambigüedad: "Viene en estos N colores" y
-    // "Quedan X". Antes los chips pequeños con un número rosado se confundían
-    // con etiquetas o notificaciones.
+    const masHtml = restantes > 0 ? `<span class="mayor-card-color-more">+${restantes}</span>` : '';
     const n = colores.length;
     return `<div class="mayor-card-colors-box">
-            <p class="mayor-card-colors-label"><i class="bi bi-palette-fill"></i> ${n === 1 ? 'Viene en este color' : `Viene en estos ${n} colores`} <i class="bi bi-arrow-down"></i></p>
-            <div class="mayor-card-colors-preview${n > 6 ? ' is-dense' : ''}" data-id="${p.id}">${chipsHtml}</div>
+            <div class="mayor-card-colors-preview" data-id="${p.id}" aria-label="${n} color${n === 1 ? '' : 'es'} disponible${n === 1 ? '' : 's'}">${swatchesHtml}${masHtml}</div>
         </div>`;
 }
 
+// Construye el nodo de UNA tarjeta completa (se usa al pintar la grilla).
 function buildCardElement(p) {
     const filas = detalleFilas.get(p.id) || [];
     const img = getCardImageUrl(p);
@@ -790,7 +758,7 @@ function buildCardElement(p) {
     card.className = 'mayor-card' + (filas.length > 0 ? ' is-selected' : '');
     card.dataset.productId = p.id;
     card.innerHTML = `
-        <div class="mayor-card-img">${masVendidasIds.has(p.id) ? '<span class="mayor-card-best-badge">🔥 Más vendida</span>' : ''}${buildStockBadgeHtml(p)}<img src="${img}" alt="${p.nombre}" loading="lazy"><span class="mayor-ref-label"><i class="bi bi-camera-fill"></i> Foto de referencia</span></div>
+        <div class="mayor-card-img"><img src="${img}" alt="${p.nombre}" loading="lazy"></div>
         <div class="mayor-card-body">
             <h3 class="mayor-card-name">${p.nombre}</h3>
             <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
@@ -851,7 +819,6 @@ function updateCardInPlace(id) {
 function renderProducts() {
     if (!gridEl) return;
     reconciliarTodo();
-    actualizarMasVendidas();
     const filtered = computeVisibleProducts();
     const totalPages = Math.max(1, Math.ceil(filtered.length / PRODUCTS_PER_PAGE));
     if (currentPage > totalPages) currentPage = totalPages;
