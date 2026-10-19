@@ -424,6 +424,329 @@ body.fab-page::after {
   }
 }
 
+/* ═══ TODAS LAS SECCIONES ═══════════════════════════════════════════════
+   Mismo lenguaje que el Dashboard: encabezado sobrio (título sin ícono +
+   subtítulo gris), tarjetas blancas con borde suave y sin sombra, tablas
+   con encabezados en versalitas, botones rosa lisos y campos neutros. */
+
+/* Variables de Bootstrap: el "primario" pasa a ser el rosa de la marca. */
+body.fab-page {
+  --bs-primary: #D988B9;
+  --bs-primary-rgb: 217, 136, 185;
+  --bs-link-color: #C273A2;
+  --bs-link-color-rgb: 194, 115, 162;
+  --bs-link-hover-color: #a85b8b;
+  --bs-font-sans-serif: var(--font-sans);
+}
+
+/* Encabezados de sección: todos con el mismo tamaño y sin ícono. */
+.fab-page .admin-main .tab-pane > h1.h2,
+.fab-page .admin-main .tab-pane > .d-flex > h1.h2,
+.fab-page .admin-main .fin2-page-title,
+.fab-page .admin-main .pw-header h1,
+.fab-page .admin-main .sv-title {
+  font-family: var(--font-sans);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin-bottom: 0;
+}
+.fab-page .admin-main .tab-pane > h1.h2 {
+  margin-bottom: 1.1rem;
+}
+.fab-page .admin-main .tab-pane > h1.h2 > i,
+.fab-page .admin-main .tab-pane > .d-flex > h1.h2 > i,
+.fab-page .admin-main .fin2-page-title > i {
+  display: none;
+}
+.fab-page .admin-main .fin2-page-subtitle,
+.fab-page .admin-main .pw-header p,
+.fab-page .admin-main .sv-subtitle,
+.fab-page .admin-main #etiquetas-fabrica > p.text-muted {
+  font-size: 0.82rem;
+  color: var(--text-secondary) !important;
+  margin-top: 0.2rem;
+}
+.fab-page .admin-main .fin2-page-header,
+.fab-page .admin-main .pw-header,
+.fab-page .admin-main .sv-header {
+  margin-bottom: 1.1rem;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* Tarjetas y paneles */
+.fab-page .admin-main .card,
+.fab-page .admin-main .fin2-hero-kpi,
+.fab-page .admin-main .fin2-skpi-card,
+.fab-page .admin-main .inv-filters-block,
+.fab-page .admin-main .sv-section,
+.fab-page .admin-main .pw-order-card {
+  border: 1px solid var(--border-default) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  background: var(--surface-raised);
+}
+/* Sin el borde rosa a la izquierda de los filtros ni la franja de color
+   arriba del resumen de finanzas. */
+.fab-page .admin-main .inv-filters-block {
+  border-left-width: 1px !important;
+}
+.fab-page .admin-main .inv-filters-block::before,
+.fab-page .admin-main .fin2-hero-kpi::before {
+  display: none !important;
+}
+.fab-page .admin-main #fabrica .fin2-hero-kpi {
+  border-top-width: 1px !important;
+}
+.fab-page .admin-main .card-header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  padding: 0.9rem 1.15rem !important;
+}
+.fab-page .admin-main .card-header .h5,
+.fab-page .admin-main .card-header h3,
+.fab-page .admin-main .card-header h5 {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin: 0;
+}
+.fab-page .admin-main .card.shadow-sm {
+  box-shadow: none !important;
+}
+
+/* Tablas */
+.fab-page .admin-main .table {
+  --bs-table-bg: transparent;
+  font-size: 0.84rem;
+  color: var(--text-primary);
+}
+.fab-page .admin-main .table > thead > tr > th,
+.fab-page .admin-main .table thead th {
+  background: #FAFAFA !important;
+  color: var(--text-secondary) !important;
+  font-size: 0.64rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-default) !important;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+}
+.fab-page .admin-main .table > tbody > tr > td {
+  border-color: var(--border-subtle);
+  vertical-align: middle;
+}
+.fab-page .admin-main .table-hover > tbody > tr:hover > * {
+  --bs-table-hover-bg: #FAFAFA;
+}
+
+/* Botones */
+.fab-page .admin-main .btn {
+  font-family: var(--font-sans);
+  border-radius: 10px;
+  font-weight: 600;
+  box-shadow: none !important;
+}
+.fab-page .admin-main .btn-primary,
+.fab-page .admin-main .fin2-btn-apply {
+  background: var(--brand-500) !important;
+  border-color: var(--brand-500) !important;
+  color: #fff !important;
+}
+.fab-page .admin-main .btn-primary:hover,
+.fab-page .admin-main .btn-primary:focus,
+.fab-page .admin-main .fin2-btn-apply:hover {
+  background: var(--brand-600) !important;
+  border-color: var(--brand-600) !important;
+}
+.fab-page .admin-main .btn-outline-primary {
+  color: var(--brand-600);
+  border-color: var(--border-brand);
+}
+.fab-page .admin-main .btn-outline-primary:hover {
+  background: var(--brand-100);
+  color: var(--brand-700);
+  border-color: var(--brand-500);
+}
+/* "Otro ingreso" / "Gasto": contorno en vez de bloques verde y rojo. */
+.fab-page .admin-main #fab-btn-nuevo-ingreso,
+.fab-page .admin-main #fab-btn-nuevo-gasto {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+}
+.fab-page .admin-main #fab-btn-nuevo-ingreso { color: #1e7e34; }
+.fab-page .admin-main #fab-btn-nuevo-gasto { color: #c62828; }
+.fab-page .admin-main #fab-btn-nuevo-ingreso:hover { background: #f1faf3; border-color: #b9e4c4; }
+.fab-page .admin-main #fab-btn-nuevo-gasto:hover { background: #fdecea; border-color: #f5c2c0; }
+
+/* Botones de acción de cada fila (editar / eliminar): íconos neutros. */
+.fab-page .admin-main .btn-action {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--text-secondary) !important;
+  border-radius: 8px !important;
+}
+.fab-page .admin-main .btn-action:hover {
+  color: var(--brand-700) !important;
+  border-color: var(--brand-500) !important;
+}
+.fab-page .admin-main .btn-action-delete:hover {
+  color: #c62828 !important;
+  border-color: #f5c2c0 !important;
+  background: #fdecea !important;
+}
+
+/* Campos */
+.fab-page .admin-main .form-control,
+.fab-page .admin-main .form-select,
+.fab-page .admin-main .inv-search-input,
+.fab-page .admin-main .fin2-date-input {
+  font-family: var(--font-sans);
+  border: 1px solid var(--border-default) !important;
+  border-radius: 10px !important;
+  background-color: var(--surface-raised) !important;
+  color: var(--text-primary);
+  box-shadow: none;
+}
+.fab-page .admin-main .form-control:focus,
+.fab-page .admin-main .form-select:focus,
+.fab-page .admin-main .inv-search-input:focus {
+  border-color: var(--brand-500) !important;
+  box-shadow: 0 0 0 3px rgba(217,136,185,0.15) !important;
+}
+.fab-page .admin-main .form-label,
+.fab-page .admin-main label.form-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.fab-page .admin-main .form-check-input:checked {
+  background-color: var(--brand-500);
+  border-color: var(--brand-500);
+}
+
+/* Pestañas y filtros tipo píldora */
+.fab-page .admin-main .fin2-filter-btn.active {
+  background: var(--brand-500) !important;
+  border-color: var(--brand-500) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+/* Recuadros informativos: neutros, con el ícono en rosa. */
+.fab-page .admin-main .alert-info,
+.fab-page .admin-main .alert-primary {
+  background: #FAFAFA;
+  border: 1px solid var(--border-default);
+  border-left: 3px solid var(--brand-500);
+  border-radius: 12px;
+  color: var(--text-primary);
+}
+.fab-page .admin-main .alert-info i,
+.fab-page .admin-main .alert-primary i {
+  color: var(--brand-500);
+}
+.fab-page .admin-main .text-primary {
+  color: var(--brand-600) !important;
+}
+
+/* Finanzas: todos los íconos de indicadores en el mismo rosa suave. */
+.fab-page .admin-main .fin2-skpi-icon--blue,
+.fab-page .admin-main .fin2-skpi-icon--purple,
+.fab-page .admin-main .fin2-skpi-icon--amber,
+.fab-page .admin-main .fin2-skpi-icon--green,
+.fab-page .admin-main .fin2-skpi-icon--pink,
+.fab-page .admin-main .fin2-skpi-icon--fabrica,
+.fab-page .admin-main .fin2-hero-icon {
+  background: var(--brand-100) !important;
+  color: var(--brand-600) !important;
+}
+
+/* Nueva venta: los botones azul oscuro pasan al rosa de la marca. */
+.fab-page .sv-btn-add-client-icon,
+.fab-page .sv-btn-barcode,
+.fab-page .sv-btn-add-product-cta,
+.fab-page .sv-pay-method-btn.active,
+.fab-page #registrar-venta .sv-submit-btn,
+.fab-page .fvps-chip.active,
+.fab-page .fvps-filter-panel .fvps-chip.active,
+.fab-page .fvps-stepper-btn--plus,
+.fab-page .fvps-choose-variant-btn.has-selection,
+.fab-page .fvps-footer-cart-icon,
+.fab-page .fvps-footer-confirm,
+.fab-page .fv-invoice-btn-primary {
+  background: var(--brand-500) !important;
+  border-color: var(--brand-500) !important;
+  color: #fff !important;
+}
+.fab-page .fvps-filter-dot,
+.fab-page #registrar-venta .venta-card::before {
+  background: var(--brand-500) !important;
+}
+
+/* Categorías: nombre en una línea y solo íconos de editar/eliminar. */
+.fab-page #categorias-fabrica .list-group-item {
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-color: var(--border-subtle);
+}
+.fab-page #categorias-fabrica .catfab-nombre {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.86rem;
+  font-weight: 500;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.fab-page #categorias-fabrica .action-buttons {
+  flex: 0 0 auto;
+  width: auto;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+}
+.fab-page #categorias-fabrica .btn-action-text {
+  display: none;
+}
+.fab-page #categorias-fabrica .btn-action {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Modales */
+.fab-page .modal-content {
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+  font-family: var(--font-sans);
+}
+.fab-page .modal-header {
+  border-bottom-color: var(--border-subtle);
+}
+.fab-page .modal-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.fab-page .modal-footer {
+  border-top-color: var(--border-subtle);
+}
+.fab-page .modal .btn-primary {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+  border-radius: 10px;
+}
+.fab-page .modal .btn-primary:hover {
+  background: var(--brand-600);
+  border-color: var(--brand-600);
+}
+
 /* ── Modo oscuro: mismos acentos rosa sobre las superficies oscuras ── */
 body.fab-page.dark-mode .rail-link.active {
   background: rgba(217,136,185,0.16);
@@ -433,9 +756,46 @@ body.fab-page.dark-mode .db-fabrica .db-greeting-store,
 body.fab-page.dark-mode .fab-wordmark-sub {
   color: var(--brand-400);
 }
+body.fab-page.dark-mode .admin-main .fin2-skpi-icon--blue,
+body.fab-page.dark-mode .admin-main .fin2-skpi-icon--purple,
+body.fab-page.dark-mode .admin-main .fin2-skpi-icon--amber,
+body.fab-page.dark-mode .admin-main .fin2-skpi-icon--green,
+body.fab-page.dark-mode .admin-main .fin2-skpi-icon--pink,
+body.fab-page.dark-mode .admin-main .fin2-skpi-icon--fabrica,
+body.fab-page.dark-mode .admin-main .fin2-hero-icon,
 body.fab-page.dark-mode .db-fabrica .fdb-quick-icon,
 body.fab-page.dark-mode .db-fabrica .db-activity-icon,
 body.fab-page.dark-mode .pw-stat-icon {
   background: rgba(217,136,185,0.16) !important;
   color: var(--brand-300) !important;
+}
+
+/* Modo oscuro para lo común de las secciones */
+body.fab-page.dark-mode .admin-main .table > thead > tr > th,
+body.fab-page.dark-mode .admin-main .table thead th {
+  background: rgba(255,255,255,0.03) !important;
+}
+body.fab-page.dark-mode .admin-main .alert-info,
+body.fab-page.dark-mode .admin-main .alert-primary {
+  background: rgba(255,255,255,0.03);
+  color: var(--text-primary);
+}
+body.fab-page.dark-mode .admin-main #fab-btn-nuevo-ingreso,
+body.fab-page.dark-mode .admin-main #fab-btn-nuevo-gasto,
+body.fab-page.dark-mode .admin-main .btn-action {
+  background: transparent !important;
+}
+
+/* Nueva venta mantiene sus tarjetas claras también en modo oscuro (así
+   estaba diseñada en style.css); aquí solo se evita que las reglas comunes
+   de arriba las oscurezcan a medias. */
+body.fab-page.dark-mode #registrar-venta .sv-section {
+  background: #ffffff !important;
+  border-color: #E5E5E5 !important;
+}
+body.fab-page.dark-mode #registrar-venta .form-control,
+body.fab-page.dark-mode #registrar-venta .form-select {
+  background-color: #f5f5f5 !important;
+  border-color: transparent !important;
+  color: #333333 !important;
 }
