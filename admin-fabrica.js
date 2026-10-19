@@ -2538,12 +2538,12 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         return fechaHistorialInput.value;
     }
 
-    // Solo las ventas al por mayor registradas desde este panel (Registrar
-    // Venta de admin-fabrica: origen "mostrador", tipoVenta "mayorista").
-    // Las ventas de Boutique traen tipoEntrega/repartidor y no entran.
+    // Solo las ventas registradas desde este panel (Registrar Venta de
+    // admin-fabrica las guarda siempre con origen "mostrador"). Las que se
+    // hacen desde admin.html con la empresa Fábrica no llevan ese campo y
+    // no entran.
     function esVentaDeFabrica(v) {
-        if (v.origen === 'mostrador') return true;
-        return String(v.tipoVenta || '').toLowerCase() === 'mayorista' && v.tipoEntrega === undefined;
+        return v.origen === 'mostrador';
     }
 
     // Trae solo las ventas del día elegido (por defecto hoy) en vez de todo
