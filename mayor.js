@@ -29,9 +29,11 @@ const webOrdersCollection = collection(db, 'pedidosWeb');
 const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 // Asesoras/asesores a los que se puede enviar el pedido por WhatsApp — el
 // cliente elige uno con los radios del panel de cierre (ver #mayor-advisor-options).
+// En la página se muestran como "Asesor 1" / "Asesor 2"; `nombre` solo se
+// guarda en el pedido (asesorNombre) para que el admin sepa a quién llegó.
 const ASESORES = {
-    mishell: { nombre: 'Mishell Espitia Solano', numero: '573046084971' },
-    alexander: { nombre: 'Alexander Izquierdo', numero: '573017850041' }
+    asesor1: { nombre: 'Mishell Espitia Solano', numero: '573046084971' },
+    asesor2: { nombre: 'Alexander Izquierdo', numero: '573017850041' }
 };
 
 const MIN_POR_PRENDA = 6;
@@ -426,12 +428,17 @@ function renderOrderSummary() {
             const subtotal = precioUnitario * cantidad;
             total += subtotal;
             totalUnidades += cantidad;
-            const detalle = f.talla ? `${formatColorLabel(f.color)} · talla ${f.talla}` : formatColorLabel(f.color);
+            const detalle = f.talla ? `${formatCardColorName(f.color)} · talla ${f.talla}` : formatCardColorName(f.color);
+            const vc = (p.variantes_color || []).find(v => (v.nombre || '').toLowerCase().trim() === f.color.toLowerCase().trim());
+            const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(f.color)};`;
             return `
                 <div class="mayor-summary-row">
-                    <span>${detalle} × ${cantidad}</span>
+                    <span class="mayor-summary-row-left">
+                        <span class="color-swatch-circle mayor-summary-swatch" style="${swatchStyle}"></span>
+                        <span>${detalle} <span class="mayor-summary-qty">× ${cantidad}</span></span>
+                    </span>
                     <span class="mayor-summary-row-right">
-                        <strong>${formatoMoneda.format(subtotal)}</strong>
+                        ${formatoMoneda.format(subtotal)}
                         <button type="button" class="mayor-summary-remove" data-id="${p.id}" data-idx="${idx}" aria-label="Quitar ${detalle} de ${p.nombre}"><i class="bi bi-x-lg"></i></button>
                     </span>
                 </div>`;
@@ -439,17 +446,17 @@ function renderOrderSummary() {
         return `
             <div class="mayor-summary-group">
                 <div class="mayor-summary-group-name">
-                    <span>${p.nombre}</span>
-                    <span class="mayor-summary-group-actions">
+                    <span class="mayor-summary-group-title">
+                        <strong>${formatCardProductName(p.nombre)}</strong>
                         <span class="mayor-summary-group-unit">${formatoMoneda.format(precioUnitario)} c/u</span>
-                        <button type="button" class="mayor-summary-remove-all" data-id="${p.id}" aria-label="Quitar toda ${p.nombre}"><i class="bi bi-trash3"></i></button>
                     </span>
+                    <button type="button" class="mayor-summary-remove-all" data-id="${p.id}" aria-label="Quitar toda ${p.nombre}"><i class="bi bi-trash3"></i></button>
                 </div>
                 ${filasHtml}
             </div>
         `;
     }).join('');
-    orderSummaryEl.innerHTML = `${gruposHtml}<div class="mayor-summary-total"><span>Total (${totalUnidades} und.)</span><strong>${formatoMoneda.format(total)}</strong></div>`;
+    orderSummaryEl.innerHTML = `${gruposHtml}<div class="mayor-summary-total"><span>Total <small>· ${totalUnidades} und.</small></span><strong>${formatoMoneda.format(total)}</strong></div>`;
 }
 
 if (orderSummaryEl) {
@@ -877,7 +884,7 @@ function actualizarPreciosEnVivo() {
     }
 
     renderOrderSummary();
-    if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
+    renderFinalizeHandle();
     renderOrderProgress();
 }
 
@@ -894,13 +901,22 @@ function renderOrderProgress() {
     const pct = Math.min(100, Math.round((total / MIN_POR_PRENDA) * 100));
     const complete = total >= MIN_POR_PRENDA;
     orderProgressEl.classList.toggle('is-complete', complete);
+    const faltan = MIN_POR_PRENDA - total;
     const texto = complete
-        ? `<i class="bi bi-check-circle-fill"></i> Mínimo alcanzado: llevas ${total} prendas surtidas.`
-        : `<i class="bi bi-info-circle-fill"></i> Llevas ${total} de ${MIN_POR_PRENDA} prendas mínimas — te faltan ${MIN_POR_PRENDA - total} (pueden ser de cualquier referencia).`;
+        ? `<i class="bi bi-check-circle-fill"></i><span><strong>Pedido mínimo alcanzado</strong><small>Llevas ${total} prendas surtidas.</small></span>`
+        : `<i class="bi bi-info-circle-fill"></i><span><strong>Llevas ${total} de ${MIN_POR_PRENDA} prendas · te falta${faltan === 1 ? '' : 'n'} ${faltan}</strong><small>Pueden ser de cualquier referencia.</small></span>`;
     orderProgressEl.innerHTML = `
         <div class="mayor-order-progress-text">${texto}</div>
         <div class="mayor-progress-track"><div class="mayor-progress-fill" style="width:${pct}%"></div></div>
     `;
+}
+
+// Barra colapsada del pedido: "N prendas · $total".
+const finalizeCountEl = document.getElementById('mayor-finalize-count');
+function renderFinalizeHandle() {
+    if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
+    const n = getTotalGeneral();
+    if (finalizeCountEl) finalizeCountEl.textContent = `${n} prenda${n === 1 ? '' : 's'}`;
 }
 
 // Bolsa de la barra superior: muestra cuántas unidades lleva el pedido y,
@@ -922,7 +938,7 @@ function updateProgress() {
         topbarBagCountEl.textContent = totalUnidadesPedido > 99 ? '99+' : String(totalUnidadesPedido);
     }
     renderOrderSummary();
-    if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
+    renderFinalizeHandle();
     renderOrderProgress();
     const hayAlgoSeleccionado = [...detalleFilas.values()].some(filas => filas.length > 0);
     if (finalizePanelEl) finalizePanelEl.classList.toggle('is-visible', hayAlgoSeleccionado);
@@ -1135,7 +1151,7 @@ if (finalizeToggleBtn) {
 
 function getAsesorSeleccionado() {
     const input = asesorOptionsEl?.querySelector('input[name="mayor-asesor"]:checked');
-    return ASESORES[input?.value] || ASESORES.mishell;
+    return ASESORES[input?.value] || ASESORES.asesor1;
 }
 
 if (asesorOptionsEl) {
