@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Tema de Fábrica: mismos colores, letra (Poppins) y estilo limpio que
          la tienda mayorista (mayor.html). Solo lo carga este panel. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.4">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.7">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
@@ -2038,73 +2038,117 @@
     </div>
 
     <!-- Modal: Nuevo/Editar producto de Fábrica -->
-    <div class="modal fade" id="prodFabModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade pf-modal" id="prodFabModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
-                <form id="prodFabForm">
+                <form id="prodFabForm" class="pf-form">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="prodFabModalTitle">Nuevo producto</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <div class="pf-form-head">
+                            <h5 class="modal-title" id="prodFabModalTitle">Nuevo producto</h5>
+                            <span class="pf-form-code" id="prodfab-codigo-label"></span>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
                         <input type="hidden" id="prodfab-id" value="">
-                        <div class="row">
-                            <div class="col-md-8 mb-3">
-                                <label class="form-label">Nombre</label>
-                                <input type="text" class="form-control" id="prodfab-nombre" required>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Código</label>
-                                <input type="text" class="form-control" id="prodfab-codigo" placeholder="Autogenerado" readonly disabled>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Descripción</label>
-                            <textarea class="form-control" id="prodfab-descripcion" rows="2"></textarea>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Categoría</label>
-                                <select class="form-select" id="prodfab-categoria"><option value="">Selecciona...</option></select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Grupo mayorista</label>
-                                <select class="form-select" id="prodfab-grupo-mayorista"><option value="">Automático (detecta la tabla por la categoría)</option></select>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Costo ($)</label>
-                                <input type="number" class="form-control" id="prodfab-costo" step="0.01" min="0" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Precio mayor ($)</label>
-                                <input type="number" class="form-control" id="prodfab-precio-mayor" step="0.01" min="0" required>
+                        <input type="hidden" id="prodfab-codigo" value="">
+
+                        <!-- Foto + nombre -->
+                        <div class="pf-form-top">
+                            <label class="pf-photo" for="prodfab-imagen" id="prodfab-photo">
+                                <img id="prodfab-imagen-preview" src="" alt="" style="display:none;">
+                                <span class="pf-photo-empty">
+                                    <i class="bi bi-camera"></i>
+                                    <span>Agregar foto</span>
+                                </span>
+                                <span class="pf-photo-edit"><i class="bi bi-pencil"></i></span>
+                                <input type="file" id="prodfab-imagen" accept="image/*" hidden>
+                            </label>
+                            <div class="pf-form-top-fields">
+                                <div class="pf-field">
+                                    <label class="pf-label" for="prodfab-nombre">Nombre</label>
+                                    <input type="text" class="pf-input" id="prodfab-nombre" placeholder="Ej. Adara" autocomplete="off" required>
+                                </div>
+                                <label class="pf-switch" for="prodfab-visible">
+                                    <span class="pf-switch-text">
+                                        <strong>Visible en la tienda</strong>
+                                        <small>En el catálogo mayorista</small>
+                                    </span>
+                                    <span class="form-check form-switch m-0">
+                                        <input class="form-check-input" type="checkbox" id="prodfab-visible" checked>
+                                    </span>
+                                </label>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Imagen</label>
-                            <input type="file" class="form-control" id="prodfab-imagen" accept="image/*">
-                            <img id="prodfab-imagen-preview" src="" alt="" style="display:none;max-height:80px;margin-top:8px;border-radius:6px;">
+
+                        <div class="pf-field">
+                            <label class="pf-label" for="prodfab-descripcion">Descripción <span class="pf-optional">opcional</span></label>
+                            <textarea class="pf-input" id="prodfab-descripcion" rows="2" placeholder="Tela, corte, detalles..."></textarea>
                         </div>
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="prodfab-visible" checked>
-                            <label class="form-check-label" for="prodfab-visible">Visible</label>
+
+                        <!-- Clasificación -->
+                        <div class="pf-form-section">
+                            <div class="pf-form-section-title">Clasificación</div>
+                            <div class="pf-grid-2">
+                                <div class="pf-field">
+                                    <label class="pf-label" for="prodfab-categoria">Categoría</label>
+                                    <select class="pf-input pf-select" id="prodfab-categoria"><option value="">Selecciona...</option></select>
+                                </div>
+                                <div class="pf-field">
+                                    <label class="pf-label" for="prodfab-grupo-mayorista">Tabla de precios mayorista</label>
+                                    <select class="pf-input pf-select" id="prodfab-grupo-mayorista"><option value="">Automático (detecta la tabla por la categoría)</option></select>
+                                </div>
+                            </div>
                         </div>
-                        <hr class="my-3">
-                        <h6 class="mb-2">Variaciones (talla / color / stock)</h6>
-                        <div class="row align-items-center mb-2 variation-row d-none" id="variation-template-fabrica">
-                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" name="prodfab_variation_talla[]" placeholder="Talla"></div>
-                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" name="prodfab_variation_color[]" placeholder="Color"></div>
-                            <div class="col-md-3"><input type="number" class="form-control form-control-sm" name="prodfab_variation_stock[]" min="0" value="1" placeholder="Stock"></div>
-                            <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-variation-fabrica-btn p-1"><i class="bi bi-trash3"></i></button></div>
+
+                        <!-- Precios -->
+                        <div class="pf-form-section">
+                            <div class="pf-form-section-title">Precios</div>
+                            <div class="pf-grid-2 pf-grid-2--always">
+                                <div class="pf-field">
+                                    <label class="pf-label" for="prodfab-costo">Costo</label>
+                                    <div class="pf-money">
+                                        <span>$</span>
+                                        <input type="number" class="pf-input" id="prodfab-costo" step="0.01" min="0" inputmode="decimal" placeholder="0" required>
+                                    </div>
+                                </div>
+                                <div class="pf-field">
+                                    <label class="pf-label" for="prodfab-precio-mayor">Precio mayor</label>
+                                    <div class="pf-money">
+                                        <span>$</span>
+                                        <input type="number" class="pf-input" id="prodfab-precio-mayor" step="0.01" min="0" inputmode="decimal" placeholder="0" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pf-margin" id="prodfab-margen"></div>
                         </div>
-                        <div id="prodfab-variaciones-container"></div>
-                        <button type="button" id="prodfab-add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-plus-lg"></i> Añadir</button>
+
+                        <!-- Colores y stock -->
+                        <div class="pf-form-section">
+                            <div class="pf-form-section-title">
+                                <span>Colores y stock</span>
+                                <span class="pf-var-total" id="prodfab-var-total"></span>
+                            </div>
+                            <div class="pf-var-head" aria-hidden="true">
+                                <span>Color</span><span>Talla</span><span>Unidades</span><span></span>
+                            </div>
+                            <div class="pf-var-row variation-row d-none" id="variation-template-fabrica">
+                                <input type="text" class="pf-input" name="prodfab_variation_color[]" placeholder="Color" aria-label="Color" autocomplete="off">
+                                <input type="text" class="pf-input" name="prodfab_variation_talla[]" placeholder="Única" aria-label="Talla" autocomplete="off">
+                                <div class="pf-stepper">
+                                    <button type="button" class="pf-step" data-step="-1" aria-label="Restar"><i class="bi bi-dash"></i></button>
+                                    <input type="number" class="pf-input" name="prodfab_variation_stock[]" min="0" value="1" inputmode="numeric" aria-label="Unidades">
+                                    <button type="button" class="pf-step" data-step="1" aria-label="Sumar"><i class="bi bi-plus"></i></button>
+                                </div>
+                                <button type="button" class="pf-var-del remove-variation-fabrica-btn" aria-label="Quitar color"><i class="bi bi-x-lg"></i></button>
+                            </div>
+                            <div id="prodfab-variaciones-container" class="pf-var-list"></div>
+                            <button type="button" id="prodfab-add-variation-btn" class="pf-var-add"><i class="bi bi-plus-lg"></i> Agregar color</button>
+                        </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary" id="prodfab-btn-guardar">
+                        <button type="button" class="pf-btn pf-btn--ghost" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="pf-btn pf-btn--primary" id="prodfab-btn-guardar">
                             <span class="save-text">Guardar</span>
                             <span class="spinner-border spinner-border-sm d-none" role="status"></span>
                         </button>
@@ -2224,7 +2268,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.9.29"></script>
+    <script type="module" src="admin-fabrica.js?v=1.9.31"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.1.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->
