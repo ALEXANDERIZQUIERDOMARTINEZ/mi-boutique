@@ -659,6 +659,7 @@
     box-shadow: var(--sombra-sm);
   }
   .mayor-card-body {
+    cursor: pointer;
     padding: 9px 11px 11px;
     display: flex;
     flex-direction: column;
@@ -1633,6 +1634,38 @@
   .btn-mayor-send.btn-mayor-whatsapp i {
     font-size: 1.1rem;
   }
+  .mayor-copy-order-btn {
+    width: 100%;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--color-borde);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--color-texto);
+    font-family: var(--fuente-principal);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+  .mayor-copy-order-btn:hover {
+    background: var(--color-fondo-secundario);
+  }
+  .mayor-copy-order-btn.is-copied {
+    border-color: #1fa855;
+    color: #17914a;
+    background: #f1faf3;
+  }
+  .mayor-copy-order-hint {
+    margin: 8px 0 0;
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--color-texto-secundario);
+  }
 
   /* ── Densidad compacta en móvil: más prendas visibles por pantalla ── */
   @media (max-width: 991.98px) {
@@ -1982,6 +2015,10 @@
     <button type="button" class="btn btn-mayor-send btn-mayor-whatsapp" id="btn-send-mayor-whatsapp">
       <i class="bi bi-whatsapp"></i> Enviar pedido por WhatsApp
     </button>
+    <button type="button" class="mayor-copy-order-btn" id="btn-copy-mayor-order">
+      <i class="bi bi-copy"></i> <span>Copiar pedido</span>
+    </button>
+    <p class="mayor-copy-order-hint">Cópialo para pegarlo y enviarlo por el chat que prefieras.</p>
   </div>
 </div>
 
@@ -2068,7 +2105,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.9.20"></script>
+<script type="module" src="mayor.js?v=1.9.22"></script>
 
 </body>
 </html>

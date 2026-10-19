@@ -981,15 +981,11 @@ if (gridEl) {
             openMayorZoom(zoomImg.src, p ? p.nombre : '');
             return;
         }
-        const addBtn = e.target.closest('.mayor-add-btn');
-        if (addBtn) {
-            openQuickAddSheet(addBtn.dataset.id);
-            return;
-        }
-        const colorsPreview = e.target.closest('.mayor-card-colors-preview');
-        if (colorsPreview) {
-            openQuickAddSheet(colorsPreview.dataset.id);
-        }
+        // Toda la parte de abajo de la tarjeta (nombre, precio, colores y
+        // botón) abre la hoja de agregar; la foto se reserva para ampliarla.
+        const cardBody = e.target.closest('.mayor-card-body');
+        const card = cardBody && cardBody.closest('.mayor-card');
+        if (card) openQuickAddSheet(card.dataset.productId);
     });
 }
 
@@ -1162,62 +1158,78 @@ if (asesorOptionsEl) {
     });
 }
 
-if (waBtn) {
-    waBtn.addEventListener('click', () => {
-        // Última verificación antes de armar el pedido: si el stock cambió mientras
-        // se elegía, o alguna combinación de filas se pasó del disponible, se
-        // corrige aquí y se le pide al cliente revisar el resumen actualizado antes
-        // de volver a intentar enviarlo (nunca se envía un pedido sin re-chequear).
-        if (reconciliarTodo()) {
-            renderProducts();
-            updateProgress();
-            showToast('Ajustamos tu pedido porque algo superaba el stock disponible. Revisa el resumen y toca enviar de nuevo.', 'warning');
-            return;
-        }
-        if (!ordenAlcanzaMinimo()) {
-            const faltan = MIN_POR_PRENDA - getTotalGeneral();
-            showToast(
-                faltan >= MIN_POR_PRENDA
-                    ? `Elige al menos ${MIN_POR_PRENDA} prendas surtidas (pueden ser de referencias distintas)`
-                    : `Te faltan ${faltan} prenda${faltan === 1 ? '' : 's'} para el mínimo de ${MIN_POR_PRENDA} surtidas`,
-                'warning'
-            );
-            return;
-        }
-        waBtn.disabled = true;
-        // Un bloque por prenda (nombre + precio/u una sola vez) y debajo sus colores/
-        // tallas, en vez de una lista plana repitiendo el nombre en cada línea —
-        // así se lee de un vistazo cuánto va de cada referencia. Junto con cada
-        // bloque armamos también los renglones "items" con la misma info, para
-        // guardar el pedido en Firestore (colección pedidosWeb) y que quede listo
-        // para que el admin solo tenga que darle "Aceptar".
-        const productosConSeleccion = allProducts.filter(p => getCantidadProducto(p.id) > 0);
-        const items = [];
-        const bloques = productosConSeleccion.map(p => {
-            const filas = (detalleFilas.get(p.id) || []).filter(f => (parseInt(f.cantidad, 10) || 0) > 0);
-            const precioUnitario = getPrecioUnitario(p);
-            const detalleLineas = filas.map(f => {
-                const cantidad = parseInt(f.cantidad, 10) || 0;
-                items.push({
-                    productoId: p.id || '',
-                    codigo: p.codigo || '',
-                    nombre: p.nombre || '',
-                    talla: f.talla || '',
-                    color: f.color || '',
-                    cantidad,
-                    precio: precioUnitario,
-                    total: precioUnitario * cantidad
-                });
-                const detalle = f.talla ? `${formatColorLabel(f.color)} (talla ${f.talla})` : formatColorLabel(f.color);
-                return `   • ${detalle} x${cantidad} = ${formatoMoneda.format(precioUnitario * cantidad)}`;
-            }).join('\n');
-            return `🛍️ *${p.nombre}* — ${formatoMoneda.format(precioUnitario)} c/u\n${detalleLineas}`;
-        });
-        const observaciones = (obsEl?.value || '').trim();
-        const totalEstimado = calcularTotalEstimado();
-        const totalUnidades = getTotalGeneral();
-        const asesor = getAsesorSeleccionado();
+// Valida el pedido antes de enviarlo o copiarlo. Devuelve false (y avisa)
+// si hay que corregir algo.
+function validarPedidoParaEnviar() {
+    // Última verificación antes de armar el pedido: si el stock cambió mientras
+    // se elegía, o alguna combinación de filas se pasó del disponible, se
+    // corrige aquí y se le pide al cliente revisar el resumen actualizado antes
+    // de volver a intentar enviarlo (nunca se envía un pedido sin re-chequear).
+    if (reconciliarTodo()) {
+        renderProducts();
+        updateProgress();
+        showToast('Ajustamos tu pedido porque algo superaba el stock disponible. Revisa el resumen y toca enviar de nuevo.', 'warning');
+        return false;
+    }
+    if (!ordenAlcanzaMinimo()) {
+        const faltan = MIN_POR_PRENDA - getTotalGeneral();
+        showToast(
+            faltan >= MIN_POR_PRENDA
+                ? `Elige al menos ${MIN_POR_PRENDA} prendas surtidas (pueden ser de referencias distintas)`
+                : `Te faltan ${faltan} prenda${faltan === 1 ? '' : 's'} para el mínimo de ${MIN_POR_PRENDA} surtidas`,
+            'warning'
+        );
+        return false;
+    }
+    return true;
+}
 
+// Último pedido guardado en Firestore: si el cliente copia el pedido y luego
+// lo envía por WhatsApp (o al revés) sin cambiar nada, se reutiliza el mismo
+// código en vez de crear un pedido duplicado.
+let ultimoPedidoGuardado = null;
+
+// Arma el mensaje del pedido (y lo guarda en pedidosWeb si no estaba ya
+// guardado tal cual). Devuelve { mensaje, asesor }.
+function prepararPedido() {
+    // Un bloque por prenda (nombre + precio/u una sola vez) y debajo sus colores/
+    // tallas, en vez de una lista plana repitiendo el nombre en cada línea —
+    // así se lee de un vistazo cuánto va de cada referencia. Junto con cada
+    // bloque armamos también los renglones "items" con la misma info, para
+    // guardar el pedido en Firestore (colección pedidosWeb) y que quede listo
+    // para que el admin solo tenga que darle "Aceptar".
+    const productosConSeleccion = allProducts.filter(p => getCantidadProducto(p.id) > 0);
+    const items = [];
+    const bloques = productosConSeleccion.map(p => {
+        const filas = (detalleFilas.get(p.id) || []).filter(f => (parseInt(f.cantidad, 10) || 0) > 0);
+        const precioUnitario = getPrecioUnitario(p);
+        const detalleLineas = filas.map(f => {
+            const cantidad = parseInt(f.cantidad, 10) || 0;
+            items.push({
+                productoId: p.id || '',
+                codigo: p.codigo || '',
+                nombre: p.nombre || '',
+                talla: f.talla || '',
+                color: f.color || '',
+                cantidad,
+                precio: precioUnitario,
+                total: precioUnitario * cantidad
+            });
+            const detalle = f.talla ? `${formatColorLabel(f.color)} (talla ${f.talla})` : formatColorLabel(f.color);
+            return `   • ${detalle} x${cantidad} = ${formatoMoneda.format(precioUnitario * cantidad)}`;
+        }).join('\n');
+        return `🛍️ *${p.nombre}* — ${formatoMoneda.format(precioUnitario)} c/u\n${detalleLineas}`;
+    });
+    const observaciones = (obsEl?.value || '').trim();
+    const totalEstimado = calcularTotalEstimado();
+    const totalUnidades = getTotalGeneral();
+    const asesor = getAsesorSeleccionado();
+
+    const firma = JSON.stringify({ items, observaciones, asesor: asesor.numero });
+    let codigoPedido;
+    if (ultimoPedidoGuardado && ultimoPedidoGuardado.firma === firma) {
+        codigoPedido = ultimoPedidoGuardado.codigoPedido;
+    } else {
         // Sin nombre/celular del comprador (mayor.html no los pide): el pedido
         // queda a nombre de "Cliente General" con su propio código, para que el
         // admin lo identifique en Pedidos Web y solo tenga que darle "Aceptar".
@@ -1229,7 +1241,8 @@ if (waBtn) {
         // no entrega directo a la app de WhatsApp, sino que abre una pestaña
         // nueva del navegador (justo lo que se reportó como regresión).
         const pedidoDocRef = doc(webOrdersCollection);
-        const codigoPedido = pedidoDocRef.id.substring(0, 8).toUpperCase();
+        codigoPedido = pedidoDocRef.id.substring(0, 8).toUpperCase();
+        ultimoPedidoGuardado = { firma, codigoPedido };
 
         setDoc(pedidoDocRef, {
             // mayor.html es la tienda mayorista de Fábrica — no depende de
@@ -1264,10 +1277,38 @@ if (waBtn) {
             console.error('Error guardando pedido web:', err);
             showToast('No pudimos guardar tu pedido en el sistema, pero puedes enviarlo igual por WhatsApp.', 'warning');
         });
+    }
 
-        let mensaje = `¡Hola! 👋 Quiero hacer este pedido al por mayor:\n\n${bloques.join('\n\n')}\n\n———————————————\nTotal: ${totalUnidades} prenda${totalUnidades === 1 ? '' : 's'} — ${formatoMoneda.format(totalEstimado)}`;
-        mensaje += `\n\n🧾 Código de pedido: #${codigoPedido}`;
-        if (observaciones) mensaje += `\n\n📝 Observaciones: ${observaciones}`;
+    let mensaje = `¡Hola! 👋 Quiero hacer este pedido al por mayor:\n\n${bloques.join('\n\n')}\n\n———————————————\nTotal: ${totalUnidades} prenda${totalUnidades === 1 ? '' : 's'} — ${formatoMoneda.format(totalEstimado)}`;
+    mensaje += `\n\n🧾 Código de pedido: #${codigoPedido}`;
+    if (observaciones) mensaje += `\n\n📝 Observaciones: ${observaciones}`;
+    return { mensaje, asesor };
+}
+
+function copiarTexto(texto) {
+    if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(texto);
+    }
+    // Respaldo para navegadores sin API de portapapeles.
+    return new Promise((resolve, reject) => {
+        const ta = document.createElement('textarea');
+        ta.value = texto;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        ok ? resolve() : reject(new Error('copy failed'));
+    });
+}
+
+if (waBtn) {
+    waBtn.addEventListener('click', () => {
+        if (!validarPedidoParaEnviar()) return;
+        waBtn.disabled = true;
+        const { mensaje, asesor } = prepararPedido();
         const url = `https://wa.me/${asesor.numero}?text=${encodeURIComponent(mensaje)}`;
         const a = document.createElement('a');
         a.href = url;
@@ -1277,6 +1318,27 @@ if (waBtn) {
         a.click();
         document.body.removeChild(a);
         waBtn.disabled = false;
+    });
+}
+
+// "Copiar pedido": el mismo mensaje al portapapeles, para pegarlo y enviarlo
+// por el chat o canal que el cliente prefiera.
+const copyOrderBtn = document.getElementById('btn-copy-mayor-order');
+if (copyOrderBtn) {
+    copyOrderBtn.addEventListener('click', () => {
+        if (!validarPedidoParaEnviar()) return;
+        const { mensaje } = prepararPedido();
+        copiarTexto(mensaje).then(() => {
+            // Sin toast: taparía este mismo botón; el botón ya muestra "¡Copiado!".
+            copyOrderBtn.classList.add('is-copied');
+            copyOrderBtn.querySelector('span').textContent = '¡Copiado!';
+            setTimeout(() => {
+                copyOrderBtn.classList.remove('is-copied');
+                copyOrderBtn.querySelector('span').textContent = 'Copiar pedido';
+            }, 2000);
+        }).catch(() => {
+            showToast('No pudimos copiar el pedido en este navegador. Usa el botón de WhatsApp.', 'warning');
+        });
     });
 }
 
