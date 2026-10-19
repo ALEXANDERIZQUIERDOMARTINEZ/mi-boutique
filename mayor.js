@@ -724,28 +724,23 @@ function buildCardActionHtml(p) {
         </button>`;
 }
 
-// Vista previa de colores en la tarjeta: solo las bolitas (con el nombre
-// como tooltip) y un "+N" si no caben todas. El nombre y la disponibilidad
-// de cada color se ven en la hoja de agregar rápido, que se abre al tocar.
-const CARD_MAX_SWATCHES = 6;
+// Vista previa de colores en la tarjeta: TODOS los colores, cada uno con su
+// bolita, su nombre y cuántas unidades quedan, para que el cliente vea la
+// disponibilidad sin abrir la hoja. Es solo informativa (un toque abre la
+// misma hoja que el botón "Agregar"); la selección real ocurre ahí.
 function buildCardColorsPreviewHtml(p) {
     const colores = getColoresDelProducto(p);
     // Siempre se devuelve la caja (vacía si no hay colores) para que todas
     // las tarjetas tengan las mismas filas y queden alineadas entre sí.
     if (colores.length === 0) return '<div class="mayor-card-colors-box is-empty"></div>';
     const variantesColor = p.variantes_color || [];
-    const visibles = colores.length > CARD_MAX_SWATCHES ? colores.slice(0, CARD_MAX_SWATCHES - 1) : colores;
-    const restantes = colores.length - visibles.length;
-    const swatchesHtml = visibles.map(({ color }) => {
+    const chipsHtml = colores.map(({ color, stock }) => {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
-        const label = formatColorLabel(color).replace(/"/g, '&quot;');
-        return `<span class="color-swatch-circle mayor-card-color-dot" style="${swatchStyle}" title="${label}"></span>`;
+        return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-dot" style="${swatchStyle}"></span><span class="mayor-card-color-chip-name">${formatColorLabel(color)}</span><span class="mayor-card-color-chip-stock">Quedan ${stock}</span></span>`;
     }).join('');
-    const masHtml = restantes > 0 ? `<span class="mayor-card-color-more">+${restantes}</span>` : '';
-    const n = colores.length;
     return `<div class="mayor-card-colors-box">
-            <div class="mayor-card-colors-preview" data-id="${p.id}" aria-label="${n} color${n === 1 ? '' : 'es'} disponible${n === 1 ? '' : 's'}">${swatchesHtml}${masHtml}</div>
+            <div class="mayor-card-colors-preview" data-id="${p.id}">${chipsHtml}</div>
         </div>`;
 }
 
