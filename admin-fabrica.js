@@ -652,6 +652,12 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
     // Mismo lenguaje visual que el carrito de Boutique (clases .vf-cart-item*
     // ya definidas en style.css): foto, variación, stepper +/- de cantidad.
+    // "ANALLY" → "Anally", "AMARILLO PASTEL" → "Amarillo pastel" (solo para mostrar).
+    const nombreCarrito = (t) => {
+        const s = String(t || '').toLowerCase().trim();
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    };
+
     function renderCarrito() {
         recalcularPreciosCarrito();
         const vacio = carrito.length === 0;
@@ -663,12 +669,12 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 const imgHtml = producto?.imagenUrl
                     ? `<img src="${producto.imagenUrl}" alt="${item.nombre}" class="vf-cart-item-img" onerror="this.style.display='none'">`
                     : `<div class="vf-cart-item-img-placeholder"><i class="bi bi-image"></i></div>`;
-                const variante = [item.talla, item.color].filter(x => x && normalizarVariacion(x) !== '').join(' / ');
+                const variante = [item.talla, item.color].filter(x => x && normalizarVariacion(x) !== '').map(nombreCarrito).join(' / ');
                 return `
                     <div class="vf-cart-item" data-idx="${idx}">
                         ${imgHtml}
                         <div class="vf-cart-item-info">
-                            <div class="vf-cart-item-name">${item.nombre}</div>
+                            <div class="vf-cart-item-name">${nombreCarrito(item.nombre)}</div>
                             <div class="vf-cart-item-variant">${variante ? variante + ' · ' : ''}${formatoMonedaDashboard.format(item.precio)} c/u</div>
                         </div>
                         <div class="vf-cart-item-controls">
@@ -1295,7 +1301,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                         </button>
                     </div>
                     <div class="fvps-item-info">
-                        <span class="fvps-item-name">${p.nombre || 'Sin nombre'}</span>
+                        <span class="fvps-item-name">${p.nombre ? nombreCarrito(p.nombre) : 'Sin nombre'}</span>
                         ${precioHtml}
                     </div>
                     ${stockBadge}

@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Tema de Fábrica: mismos colores, letra (Poppins) y estilo limpio que
          la tienda mayorista (mayor.html). Solo lo carga este panel. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.5.0">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.7.0">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
@@ -305,8 +305,8 @@
 
             <div id="fv-sales-form-view">
             <form id="fvForm" class="sv-form">
-                <!-- Cliente -->
-                <div class="sv-section">
+                <!-- Cliente: una fila compacta (toca para cambiar) -->
+                <div class="sv-section sv-section--flat sv-client-section">
                     <div class="sv-section-header">
                         <i class="bi bi-person-fill"></i>
                         <span>Cliente</span>
@@ -314,16 +314,17 @@
                     <div class="sv-section-body">
                         <input type="hidden" id="fv-cliente-id">
                         <div class="sv-field-row">
-                            <div class="sv-input-icon-wrap">
-                                <i class="bi bi-search sv-input-icon"></i>
+                            <div class="sv-input-icon-wrap sv-client-pick">
+                                <i class="bi bi-person sv-input-icon"></i>
+                                <span class="sv-client-pick-label">Cliente</span>
                                 <input type="text" id="fv-cliente-nombre" class="form-control sv-client-input"
-                                       placeholder="Buscar o seleccionar cliente..."
+                                       placeholder="Elegir cliente"
                                        readonly data-bs-toggle="modal" data-bs-target="#fvSearchClientModal"
                                        style="cursor:pointer;">
                             </div>
                             <button class="btn sv-btn-add-client-icon" type="button"
-                                    data-bs-toggle="modal" data-bs-target="#fvAddClientModal" title="Nuevo cliente">
-                                <i class="bi bi-plus-lg"></i>
+                                    data-bs-toggle="modal" data-bs-target="#fvAddClientModal" title="Nuevo cliente" aria-label="Nuevo cliente">
+                                <i class="bi bi-person-plus"></i>
                             </button>
                         </div>
 
@@ -353,7 +354,7 @@
                 </div>
 
                 <!-- Productos + Carrito -->
-                <div class="sv-section">
+                <div class="sv-section sv-section--flat sv-products-section">
                     <div class="sv-section-header">
                         <i class="bi bi-bag-fill"></i>
                         <span>Productos</span>
@@ -371,11 +372,11 @@
 
                         <!-- Carrito vacío: tarjeta con llamado a la acción -->
                         <div class="sv-cart-empty-cta" id="fv-cart-empty-cta">
-                            <span class="sv-cart-empty-icon"><i class="bi bi-cart3"></i></span>
-                            <strong>Aún no has agregado productos</strong>
-                            <small>Busca y agrega productos para comenzar la venta.</small>
+                            <span class="sv-cart-empty-icon"><i class="bi bi-bag"></i></span>
+                            <strong>El carrito está vacío</strong>
+                            <small>Busca un producto o escanea su código para empezar.</small>
                             <button type="button" class="sv-btn-add-product-cta" id="fv-agregar-producto-cta-btn">
-                                <i class="bi bi-plus-circle-fill"></i> Agregar producto
+                                <i class="bi bi-grid-3x3-gap"></i> Ver catálogo
                             </button>
                         </div>
 
@@ -1880,7 +1881,7 @@
                 <button type="button" class="fvps-icon-btn" id="fvps-back-btn" aria-label="Volver">
                     <i class="bi bi-arrow-left"></i>
                 </button>
-                <h1 class="fvps-title">Agregar venta</h1>
+                <h1 class="fvps-title">Agregar productos</h1>
                 <button type="button" class="fvps-icon-btn" id="fvps-barcode-btn" aria-label="Buscar por código">
                     <i class="bi bi-upc-scan"></i>
                 </button>
@@ -2213,7 +2214,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.9.19"></script>
+    <script type="module" src="admin-fabrica.js?v=1.9.20"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.1.0"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->
