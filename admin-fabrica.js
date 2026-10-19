@@ -1637,7 +1637,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     // (imprimir/WhatsApp/correo/descargar) tras confirmar que sí se quiere
     // facturar la venta recién registrada.
     const NEGOCIO_INFO_FABRICA = {
-        marca: "MISHELL'S FÁBRICA",
+        marca: "MISHELL'ES FÁBRICA",
         nombreLegal: 'Andrea Mishell Espitia Solano',
         cedula: '1193211056',
         direccion: 'Mz 35 Lote 14',

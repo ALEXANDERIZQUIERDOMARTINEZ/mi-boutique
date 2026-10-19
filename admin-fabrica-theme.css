@@ -1,0 +1,316 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   TEMA FÁBRICA — mismos colores, letra y estilo limpio que la tienda
+   mayorista (mayor.html / style.css): rosa #D988B9, Poppins, fondo cálido
+   claro, tarjetas blancas con borde suave y etiquetas en versalitas.
+
+   Solo lo carga admin-fabrica.html y todo va bajo body.fab-page, así que
+   el admin de Boutique (admin.html) no cambia aunque comparta
+   admin-styles.css. Los tokens de marca se definen en <body> a propósito:
+   tenant-branding.js pinta --brand-* en <html>, y aquí se fijan los de la
+   tienda mayorista para que Fábrica se vea igual que mayor.html.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Tokens (claro y oscuro) ── */
+body.fab-page {
+  --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --brand-50:  #fff5f9;
+  --brand-100: #F5E8ED;
+  --brand-200: #efd3e2;
+  --brand-300: #E3B0CC;
+  --brand-400: #e39fc8;
+  --brand-500: #D988B9;
+  --brand-600: #C273A2;
+  --brand-700: #a85b8b;
+  --brand-800: #8a4670;
+  --brand-900: #6e3559;
+
+  --grad-brand: linear-gradient(135deg, #D988B9 0%, #C273A2 100%);
+  --grad-brand-soft: linear-gradient(135deg, rgba(217,136,185,0.14) 0%, rgba(217,136,185,0.06) 100%);
+  --border-brand: rgba(217,136,185,0.35);
+  --shadow-brand: 0 4px 14px rgba(217,136,185,0.28);
+  --shadow-glow: 0 0 0 3px rgba(217,136,185,0.15);
+
+  --fabrica-accent:        #D988B9;
+  --fabrica-accent-text:   #a85b8b;
+  --fabrica-accent-soft:   rgba(217,136,185,0.14);
+  --fabrica-accent-border: rgba(217,136,185,0.4);
+  --fabrica-accent-shadow: rgba(217,136,185,0.3);
+
+  --admin-primario:        #D988B9;
+  --admin-primario-claro:  #F5E8ED;
+  --admin-primario-hover:  #E3B0CC;
+  --admin-primario-oscuro: #C273A2;
+
+  font-feature-settings: normal;
+}
+
+/* Neutros de mayor.html — solo en modo claro, para no pisar el oscuro. */
+body.fab-page:not(.dark-mode) {
+  --text-primary:   #333333;
+  --text-secondary: #666666;
+  --text-tertiary:  #999999;
+  --surface-base:   #f8f7f4;
+  --surface-raised: #ffffff;
+  --grad-surface:   #ffffff;
+  --border-subtle:  #EFEFEF;
+  --border-default: #E5E5E5;
+  --neutral-100:    #FAFAFA;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Fondo plano, sin los resplandores rosa/morado del tema anterior. */
+body.fab-page::before,
+body.fab-page::after {
+  display: none;
+}
+
+/* ── Logo tipográfico del menú lateral (igual al de mayor.html) ── */
+.fab-page .fab-wordmark {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.fab-page .fab-wordmark-name {
+  font-family: var(--font-sans);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--text-primary);
+}
+.fab-page .fab-wordmark-sub {
+  margin-top: 4px;
+  font-family: var(--font-sans);
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.42em;
+  color: var(--brand-600);
+}
+.admin-rail.collapsed .fab-wordmark {
+  display: none;
+}
+
+/* Enlace activo del menú: píldora rosa clara como en el menú de mayor.html */
+.fab-page .rail-link.active {
+  background: var(--brand-100);
+  color: var(--brand-700);
+}
+.fab-page .rail-link.active i {
+  color: var(--brand-600);
+}
+.fab-page .rail-group-label {
+  letter-spacing: 0.08em;
+}
+/* Poppins es más ancha que Inter: los nombres largos del menú
+   ("Inventario (materia prima)") pasan a dos líneas en vez de salirse. */
+.fab-page .rail-link {
+  white-space: normal;
+  line-height: 1.25;
+}
+@media (max-width: 575.98px) {
+  .db-fabrica .db-menu-tile-label {
+    font-size: 0.8rem;
+  }
+}
+
+/* ═══ DASHBOARD ═══ */
+
+/* Saludo: tarjeta blanca con la "M" rosa, en vez del bloque azul oscuro. */
+.db-fabrica .db-greeting-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  box-shadow: none;
+  padding: 1.1rem 1.25rem;
+}
+.db-fabrica .db-greeting-avatar {
+  width: 46px;
+  height: 46px;
+  border: none;
+  border-radius: 50%;
+  background: var(--brand-500);
+}
+.db-fabrica .db-greeting-avatar span {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+}
+.db-fabrica .db-greeting-hello {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.db-fabrica .db-greeting-store {
+  color: var(--brand-600);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.db-fabrica .db-greeting-date {
+  color: var(--text-secondary);
+}
+
+/* Títulos de sección en versalitas grises, como "COLORES DISPONIBLES". */
+.db-fabrica .db-eyebrow {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.db-fabrica .db-title {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Números: iconos en círculo rosa claro (antes negro). */
+.db-fabrica .db-stat-icon {
+  background: var(--brand-100) !important;
+  color: var(--brand-600) !important;
+}
+.db-fabrica .db-stat-name {
+  letter-spacing: 0.06em;
+}
+.db-fabrica .db-panel,
+.db-fabrica .db-stat-strip {
+  border-color: var(--border-default);
+  box-shadow: none;
+}
+.db-fabrica .db-report-link {
+  background: var(--brand-500);
+}
+.db-fabrica .db-report-link:hover {
+  background: var(--brand-600);
+}
+.db-fabrica .db2-range-btn.active {
+  color: var(--brand-700);
+}
+
+/* Accesos rápidos: 4 filas compactas (icono + nombre + flecha). */
+.db-fabrica .db-menu-grid--quick {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+@media (min-width: 992px) {
+  .db-fabrica .db-menu-grid--quick {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.db-fabrica .db-menu-grid--quick .db-menu-tile {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.8rem 0.9rem;
+  border-color: var(--border-default);
+  border-radius: 12px;
+  box-shadow: none;
+}
+.db-fabrica .db-menu-grid--quick .db-menu-tile:hover {
+  border-color: var(--brand-500);
+  box-shadow: none;
+  transform: none;
+}
+.db-fabrica .db-menu-tile-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand-100) !important;
+  color: var(--brand-600) !important;
+  font-size: 1rem;
+}
+.db-fabrica .db-menu-tile-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+.db-fabrica .db-menu-tile-arrow {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+/* Actividad reciente */
+.db-fabrica .db-activity-icon {
+  background: var(--brand-100);
+  color: var(--brand-600);
+}
+.db-fabrica .db-activity-amount {
+  color: var(--text-primary);
+}
+
+/* ═══ PEDIDOS WEB: tarjetas de resumen con el estilo del Dashboard ═══ */
+.fab-page .pw-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: left;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  box-shadow: none;
+}
+.fab-page .pw-stat-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--brand-100);
+  color: var(--brand-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+}
+.fab-page .pw-stat-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.fab-page .pw-stat-warning .pw-stat-val,
+.fab-page .pw-stat-success .pw-stat-val,
+.fab-page .pw-stat-brand .pw-stat-val {
+  color: var(--text-primary);
+  font-size: 1.35rem;
+  white-space: nowrap;
+}
+.fab-page .pw-stat-label {
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+@media (max-width: 575.98px) {
+  .fab-page .pw-stat {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.8rem;
+  }
+  .fab-page .pw-stat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+  .fab-page .pw-stat-warning .pw-stat-val,
+  .fab-page .pw-stat-success .pw-stat-val,
+  .fab-page .pw-stat-brand .pw-stat-val {
+    font-size: 1.1rem;
+  }
+}
+
+/* ── Modo oscuro: mismos acentos rosa sobre las superficies oscuras ── */
+body.fab-page.dark-mode .rail-link.active {
+  background: rgba(217,136,185,0.16);
+  color: var(--brand-300);
+}
+body.fab-page.dark-mode .db-fabrica .db-greeting-store,
+body.fab-page.dark-mode .fab-wordmark-sub {
+  color: var(--brand-400);
+}
+body.fab-page.dark-mode .db-fabrica .db-stat-icon,
+body.fab-page.dark-mode .db-fabrica .db-menu-tile-icon,
+body.fab-page.dark-mode .db-fabrica .db-activity-icon,
+body.fab-page.dark-mode .pw-stat-icon {
+  background: rgba(217,136,185,0.16) !important;
+  color: var(--brand-300) !important;
+}
