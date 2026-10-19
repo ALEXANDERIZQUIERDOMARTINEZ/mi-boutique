@@ -974,17 +974,9 @@ document.addEventListener('keydown', (e) => {
 // ── Interacción dentro de la grilla: solo ampliar foto y abrir la hoja ──
 if (gridEl) {
     gridEl.addEventListener('click', (e) => {
-        const zoomImg = e.target.closest('.mayor-card-img img');
-        if (zoomImg) {
-            const card = zoomImg.closest('.mayor-card');
-            const p = card ? productsData.find(pp => pp.id === card.dataset.productId) : null;
-            openMayorZoom(zoomImg.src, p ? p.nombre : '');
-            return;
-        }
-        // Toda la parte de abajo de la tarjeta (nombre, precio, colores y
-        // botón) abre la hoja de agregar; la foto se reserva para ampliarla.
-        const cardBody = e.target.closest('.mayor-card-body');
-        const card = cardBody && cardBody.closest('.mayor-card');
+        // Toda la tarjeta (foto incluida) abre la hoja de agregar; la foto se
+        // amplía desde la miniatura de la hoja.
+        const card = e.target.closest('.mayor-card');
         if (card) openQuickAddSheet(card.dataset.productId);
     });
 }
