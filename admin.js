@@ -1,6 +1,6 @@
 // Import Firebase core and Firestore modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { initializeFirestore, enableMultiTabIndexedDbPersistence, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 // Import Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 // Import Auditoría (registro de quién crea/edita/elimina). La versión debe
@@ -32,6 +32,17 @@ const app = initializeApp(firebaseConfig);
 // `app`), así que heredan esta configuración sin repetirla.
 const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
+});
+// Caché local (IndexedDB) de Firestore: al volver a abrir el admin, los
+// listeners pintan al instante lo que ya estaba guardado en el navegador y
+// luego solo bajan del servidor lo que cambió, en vez de descargar otra vez
+// productos, clientes, ventas, etc. completos en cada carga. Debe llamarse
+// antes de cualquier otra operación sobre `db`. "MultiTab" permite tener
+// el admin abierto en varias pestañas a la vez. Si el navegador no lo
+// soporta (modo incógnito, navegadores in-app), Firestore sigue
+// funcionando igual que antes, solo sin caché.
+enableMultiTabIndexedDbPersistence(db).catch(err => {
+    console.warn('Firestore: caché local no disponible, se usa solo red:', err.code || err);
 });
 const storage = getStorage(app);
 console.log("Firebase Initialized!");
@@ -6452,8 +6463,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }); 
         };
         
-        // Query simplificada sin índice compuesto - ordenar en memoria
-        onSnapshot(apartadosCollection, (snapshot) => {
+        // Solo los apartados pendientes (filtro de igualdad simple, no
+        // necesita índice compuesto) — antes se descargaba la colección
+        // entera, incluidos todos los apartados ya completados o
+        // cancelados, solo para descartarlos en memoria. El orden se sigue
+        // haciendo en memoria.
+        onSnapshot(query(apartadosCollection, where('estado', '==', 'Pendiente')), (snapshot) => {
             // Filtrar y ordenar en memoria
             const apartadosPendientes = [];
             snapshot.forEach(doc => {
