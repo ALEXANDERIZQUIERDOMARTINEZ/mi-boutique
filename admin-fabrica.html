@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Tema de Fábrica: mismos colores, letra (Poppins) y estilo limpio que
          la tienda mayorista (mayor.html). Solo lo carga este panel. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.3.1">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.4.0">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
@@ -196,86 +196,91 @@
              .db-menu-*) que no tocan .db-stat-strip/.db-compare de
              admin-styles.css porque admin.html (Boutique) sigue usándolas.
              ═══════════════════════════════════════════════════════════════════ -->
+        <!-- Dashboard de Fábrica. Orden en el celular: saludo → ventas de hoy →
+             (pedidos web pendientes) → inventario → actividad. En escritorio,
+             ventas y actividad a la izquierda; pendientes e inventario a la
+             derecha. Sin accesos rápidos: repetían el menú y la barra inferior. -->
         <div class="tab-pane fade show active db-fabrica" id="dashboard">
-            <section class="db-section">
-                <div class="db-greeting-card">
-                    <div class="db-greeting-avatar"><span>M</span></div>
-                    <div class="db-greeting-body">
-                        <span class="db-greeting-hello">Hola, <span id="db-greeting-name">Administrador</span></span>
-                        <span class="db-greeting-store">Mishell'es Fábrica</span>
-                        <span class="db-greeting-date" id="dashboard-date"></span>
+            <div class="fdb-grid">
+                <header class="fdb-head">
+                    <div class="fdb-head-text">
+                        <h1 class="fdb-hello">Hola, <span id="db-greeting-name">Administrador</span></h1>
+                        <span class="fdb-date" id="dashboard-date"></span>
                     </div>
-                </div>
-            </section>
+                    <a href="#registrar-venta" class="fdb-new-sale" data-permiso="ventas_crear">
+                        <i class="bi bi-plus-lg"></i><span>Nueva venta</span>
+                    </a>
+                </header>
 
-            <!-- ── Ventas de hoy: el dato principal del día ── -->
-            <section class="db-section">
-                <div class="db-panel fdb-today">
-                    <div class="fdb-today-head">
-                        <span class="db-eyebrow" id="fdb-ventas-periodo-title">Ventas de hoy</span>
+                <!-- Ventas de hoy + últimos 7 días -->
+                <section class="db-panel fdb-sales">
+                    <div class="fdb-sales-head">
+                        <span class="fdb-label" id="fdb-ventas-periodo-title">Ventas de hoy</span>
                         <a href="#fabrica" class="fdb-link">Ver reporte <i class="bi bi-chevron-right"></i></a>
                     </div>
-                    <div class="fdb-today-val" id="fdb-ventas-periodo">$0</div>
-                    <div class="fdb-today-sub" id="fdb-ventas-count">0 ventas</div>
-                </div>
-            </section>
-
-            <!-- ── Inventario: productos, bajo stock e inversión en una fila ── -->
-            <section class="db-section">
-                <span class="db-eyebrow fdb-section-label">Inventario</span>
-                <div class="db-panel fdb-inv">
-                    <div class="fdb-inv-item">
-                        <span class="fdb-inv-label"><i class="bi bi-boxes"></i> Productos</span>
-                        <span class="fdb-inv-val" id="fdb-total-productos">0</span>
-                        <span class="fdb-inv-sub" id="fdb-productos-disponibles">0 disponibles</span>
+                    <div class="fdb-sales-val" id="fdb-ventas-periodo">$0</div>
+                    <div class="fdb-sales-meta">
+                        <span id="fdb-ventas-count">0 ventas</span>
+                        <span class="fdb-dot">·</span>
+                        <span>Ticket prom. <strong id="fdb-ticket-promedio">$0</strong></span>
                     </div>
-                    <div class="fdb-inv-item">
-                        <span class="fdb-inv-label"><i class="bi bi-exclamation-triangle"></i> Bajo stock</span>
-                        <span class="fdb-inv-val" id="fdb-bajo-stock">0</span>
-                        <span class="fdb-inv-sub">2 und. o menos</span>
+                    <div class="fdb-week" aria-label="Ventas de los últimos 7 días">
+                        <div class="fdb-week-bars" id="fdb-week-bars"></div>
+                        <div class="fdb-week-foot">
+                            <span>Últimos 7 días</span>
+                            <span>Ayer: <strong id="fdb-ventas-ayer">$0</strong></span>
+                        </div>
                     </div>
-                    <div class="fdb-inv-item">
-                        <span class="fdb-inv-label"><i class="bi bi-box-seam"></i> Inversión</span>
-                        <span class="fdb-inv-val" id="fdb-inversion-inventario">$0</span>
-                        <span class="fdb-inv-sub" id="fdb-inventario-unidades">0 unidades</span>
-                    </div>
-                </div>
-            </section>
+                </section>
 
-            <!-- ── Accesos rápidos: las 4 secciones más usadas, en una sola fila ── -->
-            <section class="db-section">
-                <span class="db-eyebrow fdb-section-label">Accesos rápidos</span>
-                <div class="db-panel fdb-quick">
-                    <a href="#pedidos-web" class="fdb-quick-item" data-permiso="pedidos_web_ver">
-                        <span class="fdb-quick-icon"><i class="bi bi-bag-check"></i></span>
-                        <span class="fdb-quick-label">Pedidos web</span>
+                <div class="fdb-side">
+                    <!-- Aviso de pedidos web por revisar (solo si hay) -->
+                    <a href="#pedidos-web" class="fdb-alert" id="fdb-pedidos-alert" data-permiso="pedidos_web_ver" hidden>
+                        <span class="fdb-alert-icon"><i class="bi bi-bag-check"></i></span>
+                        <span class="fdb-alert-text">
+                            <strong><span id="fdb-pedidos-count">0</span> pedidos web por revisar</strong>
+                            <small>Llegaron desde la tienda mayorista</small>
+                        </span>
+                        <i class="bi bi-chevron-right"></i>
                     </a>
-                    <a href="#registrar-venta" class="fdb-quick-item" data-permiso="ventas_crear">
-                        <span class="fdb-quick-icon"><i class="bi bi-plus-lg"></i></span>
-                        <span class="fdb-quick-label">Nueva venta</span>
-                    </a>
-                    <a href="#productos-fabrica" class="fdb-quick-item" data-permiso="inventario_fabrica_gestionar">
-                        <span class="fdb-quick-icon"><i class="bi bi-grid-3x3-gap"></i></span>
-                        <span class="fdb-quick-label">Productos</span>
-                    </a>
-                    <a href="#inventario-fabrica" class="fdb-quick-item" data-permiso="inventario_fabrica_gestionar">
-                        <span class="fdb-quick-icon"><i class="bi bi-boxes"></i></span>
-                        <span class="fdb-quick-label">Inventario</span>
-                    </a>
-                </div>
-            </section>
 
-            <section class="db-section">
-                <div class="db-panel db-activity-feed">
-                    <div class="db-panel-head">
-                        <span class="db-panel-title">Actividad Reciente</span>
-                        <a href="#registrar-venta" class="db-panel-link" id="fdb-ver-todo-actividad">Ver todo <i class="bi bi-chevron-right"></i></a>
+                    <!-- Inventario -->
+                    <section class="db-panel fdb-inv">
+                        <div class="fdb-inv-head">
+                            <span class="fdb-label">Inventario</span>
+                            <a href="#productos-fabrica" class="fdb-link">Productos <i class="bi bi-chevron-right"></i></a>
+                        </div>
+                        <div class="fdb-inv-grid">
+                            <div class="fdb-inv-item">
+                                <span class="fdb-inv-name">Productos</span>
+                                <span class="fdb-inv-val" id="fdb-total-productos">0</span>
+                                <span class="fdb-inv-sub" id="fdb-productos-disponibles">0 disponibles</span>
+                            </div>
+                            <a href="#productos-fabrica" class="fdb-inv-item fdb-inv-item--link" id="fdb-bajo-stock-link" title="Ver productos con bajo stock">
+                                <span class="fdb-inv-name">Bajo stock <i class="bi bi-chevron-right"></i></span>
+                                <span class="fdb-inv-val" id="fdb-bajo-stock">0</span>
+                                <span class="fdb-inv-sub">2 und. o menos</span>
+                            </a>
+                            <div class="fdb-inv-item fdb-inv-item--wide">
+                                <span class="fdb-inv-name">Inversión en inventario</span>
+                                <span class="fdb-inv-val" id="fdb-inversion-inventario">$0</span>
+                                <span class="fdb-inv-sub" id="fdb-inventario-unidades">0 unidades</span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Actividad reciente -->
+                <section class="db-panel fdb-activity">
+                    <div class="fdb-activity-head">
+                        <span class="fdb-label">Últimas ventas</span>
+                        <a href="#registrar-venta" class="fdb-link" id="fdb-ver-todo-actividad">Ver todas <i class="bi bi-chevron-right"></i></a>
                     </div>
                     <div id="fdb-actividad-reciente">
                         <div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm"></span></div>
                     </div>
-                </div>
-            </section>
+                </section>
+            </div>
         </div>
 
         <!-- ═══════════════════════════════════════════════════════════════════
