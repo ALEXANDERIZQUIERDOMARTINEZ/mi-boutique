@@ -281,8 +281,15 @@ async function calculateProductSales() {
     }
 }
 
-// Calculate sales on page load
-calculateProductSales();
+// Solo lo usa el buscador de productos del punto de venta (para mostrar
+// primero los más vendidos), y calcularlo exige descargar TODAS las ventas
+// de la historia. Antes se hacía al cargar la página, en cada visita; ahora
+// se calcula una sola vez, la primera vez que se abre ese buscador.
+let productSalesPromise = null;
+function asegurarVentasPorProducto() {
+    if (!productSalesPromise) productSalesPromise = calculateProductSales();
+    return productSalesPromise;
+}
 
 // --- Helper: Format Currency ---
 const formatoMoneda = new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:0,maximumFractionDigits:0});
@@ -1889,6 +1896,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (searchProductModalEl) {
             searchProductModalEl.addEventListener('show.bs.modal', () => {
                 if (productSearchModalSucia) pintarModalBusquedaProductos();
+                // Primera apertura: se pinta ya con el orden por stock y,
+                // cuando terminen de llegar las ventas, se reordena por
+                // más vendidos.
+                if (!productSalesPromise) asegurarVentasPorProducto().then(pintarModalBusquedaProductos);
             });
         }
 
@@ -11263,8 +11274,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         }
     }
 
-    // Actualizar contadores al cargar
-    actualizarContadores();
+    // Los contadores descargan colecciones completas (productos, clientes,
+    // ventas, finanzas, apartados, pedidos) solo para contarlas. Antes eso
+    // pasaba en cada carga del admin; ahora solo la primera vez que se entra
+    // a la sección Backup.
+    let contadoresCargados = false;
+    alEntrarSeccion('#backup', () => {
+        if (contadoresCargados) return;
+        contadoresCargados = true;
+        actualizarContadores();
+    });
 
     console.log("✅ Sistema de Backup/Exportación inicializado");
 })();

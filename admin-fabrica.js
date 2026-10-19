@@ -947,9 +947,23 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             }
         }
     }
-    // Al abrir el panel, una vez que ya se sabe quién inició sesión.
-    if (window.appContext) recalcularMasVendidasFabrica();
-    else window.addEventListener('adminAuthReady', () => recalcularMasVendidasFabrica(), { once: true });
+    // Al abrir el panel, una vez que ya se sabe quién inició sesión. Cada
+    // venta o anulación ya lo recalcula por su cuenta (ver más abajo), así
+    // que al abrir solo hace falta para que salgan de la cuenta las ventas
+    // que pasaron de 90 días: basta con hacerlo cada pocas horas, no en
+    // cada carga (descarga 90 días de ventas).
+    const CLAVE_ULTIMO_RECALCULO = 'fabrica:ultimoRecalculoMasVendidas';
+    const HORAS_ENTRE_RECALCULOS = 6;
+    function recalcularMasVendidasAlAbrir() {
+        try {
+            const ultimo = parseInt(localStorage.getItem(CLAVE_ULTIMO_RECALCULO), 10) || 0;
+            if (Date.now() - ultimo < HORAS_ENTRE_RECALCULOS * 60 * 60 * 1000) return;
+            localStorage.setItem(CLAVE_ULTIMO_RECALCULO, String(Date.now()));
+        } catch (e) { /* sin localStorage: recalcular como antes */ }
+        recalcularMasVendidasFabrica();
+    }
+    if (window.appContext) recalcularMasVendidasAlAbrir();
+    else window.addEventListener('adminAuthReady', () => recalcularMasVendidasAlAbrir(), { once: true });
 
     function stockTotalFv(producto) {
         return (producto.variaciones || []).reduce((s, v) => s + (parseInt(v.stock, 10) || 0), 0);
