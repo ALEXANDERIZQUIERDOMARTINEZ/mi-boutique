@@ -2864,9 +2864,17 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             });
         }
 
+        // "Hoy, 3:20 p. m." / "Ayer, 9:05 a. m." / "18 oct, 3:20 p. m."
         function formatFecha(ts) {
-            if (!ts?.toDate) return 'Fecha no disponible';
-            return ts.toDate().toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+            const f = ts?.toDate?.();
+            if (!f) return 'Sin fecha';
+            const hora = f.toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit' });
+            const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+            const dia = new Date(f); dia.setHours(0, 0, 0, 0);
+            const diff = Math.round((hoy - dia) / 86400000);
+            if (diff === 0) return `Hoy, ${hora}`;
+            if (diff === 1) return `Ayer, ${hora}`;
+            return `${f.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }).replace('.', '')}, ${hora}`;
         }
 
         function updateStats() {
@@ -2893,15 +2901,23 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             const sV = document.getElementById('pw-stat-valor'); if (sV) sV.textContent = formatoMonedaDashboard.format(valorHoy);
         }
 
+        // Pedidos abiertos (detalle visible): se conservan aunque llegue una
+        // actualización de Firestore y la lista se vuelva a pintar.
+        const pedidosAbiertos = new Set();
+        const escPw = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const capPw = (t) => { const x = String(t || '').toLowerCase().trim(); return x.charAt(0).toUpperCase() + x.slice(1); };
+
         function renderCurrentTab() {
             webOrdersContainer.querySelectorAll('.pw-order-card, .pw-empty').forEach(el => el.remove());
             const orders = getFiltered(currentTab);
             if (orders.length === 0) {
                 const empty = document.createElement('div');
-                empty.className = 'pw-empty';
-                const labels = { pendiente: 'No hay pedidos pendientes', aceptado: 'No hay pedidos aceptados', rechazado: 'No hay pedidos rechazados' };
-                const icons = { pendiente: 'bi-clock', aceptado: 'bi-check-circle', rechazado: 'bi-x-circle' };
-                empty.innerHTML = `<i class="bi ${icons[currentTab]} pw-empty-icon"></i><p class="pw-empty-text">${labels[currentTab]}</p>`;
+                empty.className = 'pw-empty pw2-empty';
+                const labels = { pendiente: 'No hay pedidos por revisar', aceptado: 'No hay pedidos aceptados', rechazado: 'No hay pedidos rechazados' };
+                const icons = { pendiente: 'bi-inbox', aceptado: 'bi-check-circle', rechazado: 'bi-x-circle' };
+                empty.innerHTML = searchQuery
+                    ? `<i class="bi bi-search"></i><strong>Sin resultados</strong><span>Prueba con otro código o asesor.</span>`
+                    : `<i class="bi ${icons[currentTab]}"></i><strong>${labels[currentTab]}</strong>${currentTab === 'pendiente' ? '<span>Los pedidos de la tienda mayorista llegan aquí.</span>' : ''}`;
                 webOrdersContainer.appendChild(empty);
                 return;
             }
@@ -2910,68 +2926,88 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             webOrdersContainer.appendChild(frag);
         }
 
+        // Agrupa las líneas del pedido por producto: "Adara — Rosa ×2, Negro ×1"
+        // en vez de una fila por color (los pedidos traen muchos colores del
+        // mismo producto y la lista se volvía interminable).
+        function agruparItems(items) {
+            const grupos = new Map();
+            (items || []).forEach(item => {
+                const clave = item.productoId || item.nombre;
+                if (!grupos.has(clave)) {
+                    const producto = productosCache.find(p => p.id === item.productoId);
+                    grupos.set(clave, { nombre: item.nombre, imagen: producto?.imagenUrl || '', variantes: [], unidades: 0, total: 0 });
+                }
+                const g = grupos.get(clave);
+                const cant = Number(item.cantidad) || 0;
+                const talla = normalizarVariacion(item.talla || '') ? item.talla : '';
+                g.variantes.push({ etiqueta: [item.color, talla].filter(Boolean).map(capPw).join(' ') || 'Única', cantidad: cant });
+                g.unidades += cant;
+                g.total += Number(item.total ?? (item.precio * cant)) || 0;
+            });
+            return Array.from(grupos.values());
+        }
+
         function createOrderCard(order, orderId) {
-            const card = document.createElement('div');
+            const card = document.createElement('article');
             const estado = order.estado || 'pendiente';
-            card.className = `pw-order-card pw-status-${estado}`;
+            const abierto = pedidosAbiertos.has(orderId);
+            card.className = `pw-order-card pw2-card pw2-card--${estado}${abierto ? ' is-open' : ''}`;
             card.dataset.orderId = orderId;
             const isPendiente = estado === 'pendiente';
 
-            const itemsHtml = (order.items || []).map(item => {
-                const producto = productosCache.find(p => p.id === item.productoId);
-                const imgHtml = producto?.imagenUrl
-                    ? `<img src="${producto.imagenUrl}" class="pw-item-img" alt="${item.nombre}">`
-                    : `<div class="pw-item-img-placeholder"><i class="bi bi-image"></i></div>`;
-                return `<div class="pw-item-row">
-                    ${imgHtml}
-                    <div class="pw-item-info">
-                        <div class="pw-item-name">${item.nombre}</div>
-                        <div class="pw-item-meta">${[item.talla, item.color].filter(Boolean).join(' · ')} · x${item.cantidad}</div>
+            const grupos = agruparItems(order.items);
+            const unidades = grupos.reduce((s, g) => s + g.unidades, 0);
+            const codigo = orderId.substring(0, 8).toUpperCase();
+            const cliente = order.clienteNombre && order.clienteNombre !== 'Cliente General' ? order.clienteNombre : '';
+
+            const MAX_THUMBS = 4;
+            const thumbs = grupos.slice(0, MAX_THUMBS).map(g => g.imagen
+                ? `<img src="${escPw(g.imagen)}" alt="" loading="lazy">`
+                : `<span class="pw2-thumb-ph"><i class="bi bi-image"></i></span>`).join('')
+                + (grupos.length > MAX_THUMBS ? `<span class="pw2-thumb-more">+${grupos.length - MAX_THUMBS}</span>` : '');
+            const resumenProductos = grupos.map(g => capPw(g.nombre)).join(', ');
+
+            const detalle = grupos.map(g => `
+                <div class="pw2-item">
+                    <div class="pw2-item-img">${g.imagen ? `<img src="${escPw(g.imagen)}" alt="" loading="lazy">` : '<i class="bi bi-image"></i>'}</div>
+                    <div class="pw2-item-body">
+                        <div class="pw2-item-top">
+                            <span class="pw2-item-name">${escPw(capPw(g.nombre))}</span>
+                            <span class="pw2-item-total">${formatoMonedaDashboard.format(g.total)}</span>
+                        </div>
+                        <div class="pw2-item-vars">${g.variantes.map(v => `<span>${escPw(v.etiqueta)} <b>×${v.cantidad}</b></span>`).join('')}</div>
                     </div>
-                    <div class="pw-item-total">${formatoMonedaDashboard.format(item.total)}</div>
-                </div>`;
-            }).join('');
+                </div>`).join('');
 
-            const statusLabels = { pendiente: 'Pendiente', aceptado: 'Aceptado', rechazado: 'Rechazado' };
-            const statusIcons = { pendiente: 'bi-clock-fill', aceptado: 'bi-check-circle-fill', rechazado: 'bi-x-circle-fill' };
-            const statusBadge = `<span class="pw-status-badge ${estado}"><i class="bi ${statusIcons[estado]}"></i>${statusLabels[estado]}</span>`;
-
-            const obsHtml = order.observaciones
-                ? `<div class="pw-obs"><i class="bi bi-chat-text me-1"></i>${order.observaciones}</div>` : '';
-
-            const actionsHtml = isPendiente ? `
-                <div class="pw-actions">
-                    <button class="pw-btn pw-btn-reject btn-reject-order-fab" data-order-id="${orderId}">
-                        <i class="bi bi-x-lg"></i><span class="d-none d-sm-inline ms-1">Rechazar</span>
-                    </button>
-                    <button class="pw-btn pw-btn-accept btn-accept-order-fab" data-order-id="${orderId}">
-                        <i class="bi bi-check-lg"></i><span class="ms-1">Aceptar</span>
-                    </button>
+            const estadoLabel = { pendiente: 'Por revisar', aceptado: 'Aceptado', rechazado: 'Rechazado' }[estado] || estado;
+            const acciones = isPendiente ? `
+                <div class="pw2-actions">
+                    <button type="button" class="pw2-btn pw2-btn--reject btn-reject-order-fab" data-order-id="${orderId}" aria-label="Rechazar pedido"><i class="bi bi-x-lg"></i> Rechazar</button>
+                    <button type="button" class="pw2-btn pw2-btn--accept btn-accept-order-fab" data-order-id="${orderId}"><i class="bi bi-check-lg"></i> Aceptar y vender</button>
                 </div>` : '';
 
             card.innerHTML = `
-                <div class="pw-card-header">
-                    <div>
-                        <div class="pw-card-id"><i class="bi bi-bag-check me-1"></i>#${orderId.substring(0, 8).toUpperCase()}</div>
-                        <div class="pw-card-date">${formatFecha(order.timestamp)}</div>
+                <button type="button" class="pw2-summary" aria-expanded="${abierto}">
+                    <div class="pw2-row">
+                        <span class="pw2-code">#${codigo}</span>
+                        ${order.asesorNombre ? `<span class="pw2-asesor"><i class="bi bi-person"></i>${escPw(order.asesorNombre)}</span>` : ''}
+                        <span class="pw2-total">${formatoMonedaDashboard.format(order.totalPedido || 0)}</span>
                     </div>
-                    ${statusBadge}
-                </div>
-                <div class="pw-card-body">
-                    <div class="pw-client-row">
-                        <div class="pw-client-name">${order.clienteNombre || 'Cliente General'}</div>
-                        ${order.asesorNombre ? `<span class="pw-pago-badge"><i class="bi bi-person-badge"></i>${order.asesorNombre}</span>` : ''}
+                    <div class="pw2-row pw2-row--meta">
+                        <span>${formatFecha(order.timestamp)}</span>
+                        <span>${unidades} prenda${unidades === 1 ? '' : 's'}</span>
+                        ${cliente ? `<span>${escPw(cliente)}</span>` : ''}
+                        ${!isPendiente ? `<span class="pw2-state">${estadoLabel}</span>` : ''}
                     </div>
-                    ${obsHtml}
-                    <div class="pw-items-list">${itemsHtml}</div>
-                </div>
-                <div class="pw-card-footer">
-                    <div>
-                        <div class="pw-total-label">Total del pedido</div>
-                        <div class="pw-total-val">${formatoMonedaDashboard.format(order.totalPedido || 0)}</div>
+                    <div class="pw2-row pw2-row--products">
+                        <span class="pw2-thumbs">${thumbs}</span>
+                        <span class="pw2-products-text">${escPw(resumenProductos)}</span>
+                        <i class="bi bi-chevron-down pw2-chevron"></i>
                     </div>
-                    ${actionsHtml}
-                </div>`;
+                    ${order.observaciones ? `<div class="pw2-obs"><i class="bi bi-chat-left-text"></i>${escPw(order.observaciones)}</div>` : ''}
+                </button>
+                <div class="pw2-detail">${detalle}</div>
+                ${acciones}`;
 
             return card;
         }
@@ -2992,6 +3028,16 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         });
 
         webOrdersContainer.addEventListener('click', async e => {
+            const resumen = e.target.closest('.pw2-summary');
+            if (resumen) {
+                const card = resumen.closest('.pw-order-card');
+                const id = card.dataset.orderId;
+                const abrir = !card.classList.contains('is-open');
+                card.classList.toggle('is-open', abrir);
+                resumen.setAttribute('aria-expanded', String(abrir));
+                if (abrir) pedidosAbiertos.add(id); else pedidosAbiertos.delete(id);
+                return;
+            }
             const a = e.target.closest('.btn-accept-order-fab');
             const r = e.target.closest('.btn-reject-order-fab');
             if (a) { e.preventDefault(); await handleAcceptOrder(a.dataset.orderId); }
