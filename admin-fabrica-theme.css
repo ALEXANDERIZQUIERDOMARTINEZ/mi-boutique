@@ -921,17 +921,24 @@ body.fab-page.dark-mode .db-fabrica .fdb-alert {
 }
 
 /* ═══ NUEVA VENTA ═══════════════════════════════════════════════════════
-   Mismo criterio que el Dashboard: encabezado en una línea, secciones con
-   títulos en versalitas (sin ícono), carrito vacío compacto, una sola
-   tarjeta de "Cobro" y una barra fija abajo con el total y "Confirmar". */
+   Flujo tipo caja registradora: arriba el cliente en una fila y el buscador
+   grande; en el medio el carrito; la tarjeta "Cobro" solo aparece cuando
+   ya hay productos; y abajo una barra fija con el total y "Confirmar". */
+
+/* style.css pone overflow-x:hidden en <body>, y eso convierte al body en
+   su propio contenedor de scroll: "position: sticky" deja de funcionar.
+   "clip" evita igual el scroll horizontal sin ese efecto. No se aplica con
+   un modal abierto, para no pisar el bloqueo de scroll de Bootstrap. */
+body.fab-page:not(.modal-open) {
+  overflow-x: clip !important;
+  overflow-y: visible !important;
+}
 
 .fab-page #registrar-venta .sv-header {
   align-items: center;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.9rem;
 }
-.fab-page #registrar-venta .sv-subtitle {
-  display: none;
-}
+.fab-page #registrar-venta .sv-subtitle { display: none; }
 .fab-page #registrar-venta .sv-header-action {
   border: 1px solid var(--border-default);
   background: var(--surface-raised);
@@ -941,98 +948,201 @@ body.fab-page.dark-mode .db-fabrica .fdb-alert {
   font-weight: 600;
   padding: 0.45rem 0.8rem;
 }
+.fab-page #registrar-venta .sv-form { gap: 0.75rem; }
 
-/* Secciones */
-.fab-page #registrar-venta .sv-form {
-  gap: 0.85rem;
+/* Secciones planas (cliente y productos): sin tarjeta ni título. */
+.fab-page #registrar-venta .sv-section--flat {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
-.fab-page #registrar-venta .sv-section {
+.fab-page #registrar-venta .sv-section--flat > .sv-section-header { display: none; }
+.fab-page #registrar-venta .sv-section--flat > .sv-section-body {
+  padding: 0 !important;
+  gap: 0.6rem;
+}
+
+/* Cliente: fila tocable "Cliente · Cliente General ›" + botón nuevo cliente. */
+.fab-page #registrar-venta .sv-client-section .sv-field-row { gap: 0.5rem; }
+.fab-page #registrar-venta .sv-client-pick {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.fab-page #registrar-venta .sv-client-pick .sv-input-icon {
+  left: 14px;
+  color: var(--brand-600);
+  font-size: 1rem;
+}
+.fab-page #registrar-venta .sv-client-pick-label {
+  position: absolute;
+  left: 40px;
+  top: 8px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  pointer-events: none;
+  z-index: 2;
+}
+.fab-page #registrar-venta .sv-client-input {
+  height: 54px;
+  padding: 20px 36px 6px 40px !important;
+  border: 1px solid var(--border-default) !important;
   border-radius: 14px !important;
+  background: var(--surface-raised) !important;
+  font-size: 0.92rem !important;
+  font-weight: 600;
+  color: var(--text-primary) !important;
+  /* Flecha a la derecha: indica que se toca para cambiar. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 16 16' fill='%23999'%3E%3Cpath d='M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
 }
-.fab-page #registrar-venta .sv-section-header {
-  padding: 0.85rem 1rem 0.2rem;
-  gap: 0;
+.fab-page #registrar-venta .sv-btn-add-client-icon {
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+  border-radius: 14px !important;
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--border-default) !important;
+  color: var(--brand-600) !important;
+  font-size: 1.1rem;
 }
-.fab-page #registrar-venta .sv-section-header > i {
+.fab-page #registrar-venta .sv-btn-add-client-icon:hover {
+  border-color: var(--brand-500) !important;
+}
+.fab-page #registrar-venta .sv-new-client-cta { display: none !important; }
+/* Celular y dirección solo si el cliente los tiene. */
+.fab-page #registrar-venta .sv-client-meta:not(:has(input:not(:placeholder-shown))) {
+  display: none !important;
+}
+
+/* Buscador grande con el escáner adentro. */
+.fab-page #registrar-venta .sv-products-section .sv-field-row {
+  position: relative;
+}
+.fab-page #registrar-venta .sv-fake-search-input {
+  height: 52px;
+  padding-right: 56px;
+  border: 1.5px solid var(--brand-300);
+  background: var(--surface-raised);
+  border-radius: 14px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  box-shadow: 0 0 0 4px rgba(217,136,185,0.08);
+}
+.fab-page #registrar-venta .sv-fake-search-input i { color: var(--brand-600); }
+.fab-page #registrar-venta .sv-btn-barcode {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px !important;
+  background: var(--brand-100) !important;
+  border-color: var(--brand-100) !important;
+  color: var(--brand-700) !important;
+}
+
+/* Carrito vacío: mensaje limpio, sin recuadro punteado. */
+.fab-page #registrar-venta .sv-cart-empty-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 2.2rem 1rem 1.6rem;
+  border: none;
+  background: transparent;
+  text-align: center;
+}
+.fab-page #registrar-venta .sv-cart-empty-icon {
+  display: flex;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 0.4rem;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-100);
+  color: var(--brand-600);
+  font-size: 1.3rem;
+  box-shadow: none;
+}
+.fab-page #registrar-venta .sv-cart-empty-cta strong {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.fab-page #registrar-venta .sv-cart-empty-cta small {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  max-width: 260px;
+}
+.fab-page #registrar-venta .sv-btn-add-product-cta {
+  margin-top: 0.6rem;
+  background: transparent !important;
+  color: var(--brand-600) !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+}
+.fab-page #registrar-venta .sv-btn-add-product-cta:hover {
+  color: var(--brand-700) !important;
+  text-decoration: underline;
+}
+
+/* Carrito con productos: lista en una tarjeta blanca. */
+.fab-page #registrar-venta #fv-cart-with-items {
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-raised);
+  padding: 0.75rem 0.9rem;
+}
+.fab-page #registrar-venta .sv-cart-subheader {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.fab-page #registrar-venta .sv-btn-add-more {
+  border: 1px dashed var(--border-brand) !important;
+  color: var(--brand-600) !important;
+  background: transparent !important;
+  border-radius: 12px !important;
+}
+
+/* Cobro: solo cuando el carrito tiene productos. */
+.fab-page #registrar-venta .sv-form:has(#fv-cart-with-items[style*="none"]) .sv-checkout {
   display: none;
 }
-.fab-page #registrar-venta .sv-section-header > span {
+.fab-page #registrar-venta .sv-checkout { border-radius: 14px !important; }
+.fab-page #registrar-venta .sv-checkout .sv-section-header {
+  padding: 0.85rem 1rem 0.1rem;
+}
+.fab-page #registrar-venta .sv-checkout .sv-section-header > i { display: none; }
+.fab-page #registrar-venta .sv-checkout .sv-section-header > span {
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-secondary);
 }
-.fab-page #registrar-venta .sv-section-body {
-  padding: 0.5rem 1rem 1rem;
-  gap: 0.6rem;
+.fab-page #registrar-venta .sv-checkout .sv-section-body {
+  padding: 0.4rem 1rem 0.9rem;
+  gap: 0.55rem;
 }
-
-/* Cliente: celular y dirección solo si el cliente los tiene. */
-.fab-page #registrar-venta .sv-client-meta:not(:has(input:not(:placeholder-shown))) {
-  display: none !important;
-}
-.fab-page #registrar-venta .sv-btn-add-client-icon {
-  border-radius: 12px !important;
-}
-
-/* Productos: búsqueda + escáner; carrito vacío compacto. */
-.fab-page #registrar-venta .sv-fake-search-input {
-  border: 1px solid var(--border-default);
-  background: var(--surface-raised);
-  border-radius: 12px;
-}
-.fab-page #registrar-venta .sv-btn-barcode {
-  border-radius: 12px !important;
-}
-.fab-page #registrar-venta .sv-cart-empty-cta {
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem 0.5rem;
-  padding: 1rem;
-  border: 1px dashed var(--border-default);
-  border-radius: 12px;
-  background: #FAFAFA;
-  text-align: center;
-}
-.fab-page #registrar-venta .sv-cart-empty-icon {
-  display: none;
-}
-.fab-page #registrar-venta .sv-cart-empty-cta strong {
-  flex-basis: 100%;
-  font-size: 0.84rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-.fab-page #registrar-venta .sv-cart-empty-cta small {
-  flex-basis: 100%;
-  font-size: 0.74rem;
-  color: var(--text-secondary);
-}
-.fab-page #registrar-venta .sv-btn-add-product-cta {
-  margin-top: 0.5rem;
-  background: var(--surface-raised) !important;
-  color: var(--brand-600) !important;
-  border: 1px solid var(--border-brand) !important;
-  box-shadow: none !important;
-  font-size: 0.8rem;
-  padding: 0.5rem 1rem;
-}
-.fab-page #registrar-venta .sv-btn-add-product-cta:hover {
-  background: var(--brand-50) !important;
-}
-
-/* Cobro */
 .fab-page #registrar-venta .sv-checkout .sv-summary-row {
   font-size: 0.86rem;
-  padding: 0.15rem 0;
-  min-height: 0;
+  padding: 0.1rem 0;
 }
-.fab-page #registrar-venta .sv-checkout .sv-summary-divider {
-  margin: 0.2rem 0;
-}
+.fab-page #registrar-venta .sv-checkout .sv-summary-divider { margin: 0.15rem 0; }
 .fab-page #registrar-venta .sv-pay-methods-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1042,6 +1152,10 @@ body.fab-page.dark-mode .db-fabrica .fdb-alert {
   background: #F2F2F2;
 }
 .fab-page #registrar-venta .sv-pay-method-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
   border: none !important;
   background: transparent !important;
   color: var(--text-secondary) !important;
@@ -1053,40 +1167,26 @@ body.fab-page.dark-mode .db-fabrica .fdb-alert {
   white-space: nowrap;
   min-width: 0;
 }
+.fab-page #registrar-venta .sv-pay-method-btn i { margin: 0; }
 .fab-page #registrar-venta .sv-pay-method-btn.active {
   background: var(--surface-raised) !important;
   color: var(--brand-700) !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
-}
-.fab-page #registrar-venta .sv-pay-method-btn {
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-}
-.fab-page #registrar-venta .sv-pay-method-btn i {
-  margin: 0;
 }
 .fab-page #registrar-venta .sv-pay-row {
   background: transparent;
   padding: 0;
 }
 .fab-page #registrar-venta .sv-btn-save-draft {
-  margin-top: 0.1rem;
+  margin-top: 0;
   font-size: 0.78rem;
 }
-
-/* style.css pone overflow-x:hidden en <body>, y eso convierte al body en
-   su propio contenedor de scroll: "position: sticky" deja de funcionar.
-   "clip" evita igual el scroll horizontal sin ese efecto. No se aplica con
-   un modal abierto, para no pisar el bloqueo de scroll de Bootstrap. */
-body.fab-page:not(.modal-open) {
-  overflow-x: clip !important;
-  overflow-y: visible !important;
+@media (max-width: 575.98px) {
+  .fab-page #registrar-venta .sv-pay-method-btn i { display: none; }
 }
 
-/* Barra fija con el total y "Confirmar venta": queda encima de la barra
-   de navegación del celular y se desplaza junto con el formulario. */
+/* Barra fija con el total y "Confirmar venta", encima de la barra de
+   navegación del celular. Con el carrito vacío el botón se ve apagado. */
 .fab-page #registrar-venta .sv-checkout-bar {
   position: sticky;
   bottom: calc(68px + env(safe-area-inset-bottom, 0px));
@@ -1094,7 +1194,8 @@ body.fab-page:not(.modal-open) {
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  padding: 0.7rem 0.75rem 0.7rem 1rem;
+  margin-top: 0.25rem;
+  padding: 0.65rem 0.65rem 0.65rem 1rem;
   border: 1px solid var(--border-default);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.96);
@@ -1103,9 +1204,7 @@ body.fab-page:not(.modal-open) {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
 }
 @media (min-width: 992px) {
-  .fab-page #registrar-venta .sv-checkout-bar {
-    bottom: 1rem;
-  }
+  .fab-page #registrar-venta .sv-checkout-bar { bottom: 1rem; }
 }
 .fab-page #registrar-venta .sv-checkout-total {
   display: flex;
@@ -1130,23 +1229,237 @@ body.fab-page:not(.modal-open) {
 .fab-page #registrar-venta .sv-checkout-bar .sv-submit-btn {
   flex: 1;
   margin: 0;
-  padding: 0.8rem 0.9rem;
+  padding: 0.85rem 0.9rem;
   border-radius: 12px;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   white-space: nowrap;
 }
+.fab-page #registrar-venta .sv-form:has(#fv-cart-with-items[style*="none"]) .sv-checkout-bar .sv-submit-btn {
+  opacity: 0.45;
+}
 
-/* Modo oscuro: la barra acompaña a las tarjetas claras de Nueva venta. */
+/* Modo oscuro: Nueva venta conserva sus superficies claras. */
+body.fab-page.dark-mode #registrar-venta .sv-section:not(.sv-section--flat),
+body.fab-page.dark-mode #registrar-venta #fv-cart-with-items,
 body.fab-page.dark-mode #registrar-venta .sv-checkout-bar {
-  background: rgba(255, 255, 255, 0.96);
-  border-color: #E5E5E5;
+  background: #ffffff !important;
+  border-color: #E5E5E5 !important;
 }
-body.fab-page.dark-mode #registrar-venta .sv-checkout-total strong {
-  color: #333333;
+body.fab-page.dark-mode #registrar-venta .form-control,
+body.fab-page.dark-mode #registrar-venta .form-select,
+body.fab-page.dark-mode #registrar-venta .sv-fake-search-input,
+body.fab-page.dark-mode #registrar-venta .sv-btn-add-client-icon {
+  background-color: #ffffff !important;
+  color: #333333 !important;
 }
-@media (max-width: 575.98px) {
-  /* En el celular "Transferencia" no cabe con ícono: solo el texto. */
-  .fab-page #registrar-venta .sv-pay-method-btn i {
-    display: none;
+body.fab-page.dark-mode #registrar-venta .sv-checkout-total strong { color: #333333; }
+body.fab-page.dark-mode #registrar-venta .sv-cart-empty-cta strong { color: var(--text-primary); }
+/* Celular: el formulario ocupa toda la pantalla para que la barra del total
+   quede siempre justo encima de la navegación, aunque el carrito esté vacío. */
+@media (max-width: 991.98px) {
+  .fab-page #registrar-venta #fvForm {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - 215px - env(safe-area-inset-bottom, 0px));
   }
+  .fab-page #registrar-venta #fvForm > .sv-checkout-bar {
+    margin-top: auto;
+  }
+}
+
+/* ── Carrito: filas de dos líneas, sin recuadro dentro del recuadro ──
+   Arriba: nombre + total de la línea. Abajo: variante y precio unitario,
+   cantidad (− 1 +) y quitar. */
+.fab-page #registrar-venta .sv-btn-add-more { display: none !important; }
+.fab-page #registrar-venta #fv-carrito {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.fab-page #registrar-venta .vf-cart-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    "info total total"
+    "info qty remove";
+  align-items: center;
+  column-gap: 0.6rem;
+  row-gap: 0.35rem;
+  padding: 0.7rem 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.fab-page #registrar-venta .vf-cart-item + .vf-cart-item {
+  border-top: 1px solid var(--border-subtle);
+}
+.fab-page #registrar-venta .vf-cart-item-img,
+.fab-page #registrar-venta .vf-cart-item-img-placeholder {
+  display: none;
+}
+.fab-page #registrar-venta .vf-cart-item-info {
+  grid-area: info;
+  min-width: 0;
+  align-self: start;
+}
+.fab-page #registrar-venta .vf-cart-item-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fab-page #registrar-venta .vf-cart-item-variant {
+  margin-top: 0.1rem;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  text-transform: none;
+}
+.fab-page #registrar-venta .vf-cart-item-controls {
+  display: contents;
+}
+.fab-page #registrar-venta .vf-cart-item-total {
+  grid-area: total;
+  justify-self: end;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.fab-page #registrar-venta .vf-qty-control {
+  grid-area: qty;
+  justify-self: end;
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-raised);
+}
+.fab-page #registrar-venta .vf-qty-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+.fab-page #registrar-venta .vf-qty-input {
+  width: 32px;
+  height: 30px;
+  border: none !important;
+  background: transparent !important;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: none !important;
+  padding: 0;
+}
+.fab-page #registrar-venta .vf-cart-item-remove {
+  grid-area: remove;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-tertiary);
+}
+.fab-page #registrar-venta .vf-cart-item-remove:hover {
+  background: #fdecea;
+  color: #c62828;
+}
+
+/* ── Selector de productos ("Agregar productos") ──
+   Rosa en vez de negro, nombre completo (la disponibilidad pasa debajo del
+   precio en vez de una píldora que lo cortaba) y botón "Elegir" liviano. */
+.fab-page .fvps-title {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.fab-page .fvps-search-bar {
+  border: 1.5px solid var(--brand-300);
+  box-shadow: 0 0 0 4px rgba(217,136,185,0.08);
+}
+.fab-page .fvps-search-icon { color: var(--brand-600); }
+.fab-page .fvps-icon-btn {
+  border-color: var(--border-default) !important;
+  color: var(--text-primary);
+}
+.fab-page .fvps-item {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "img info ctrl"
+    "img stock ctrl";
+  column-gap: 0.75rem;
+  row-gap: 0.1rem;
+  align-items: center;
+  padding: 0.65rem;
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+}
+.fab-page .fvps-item-img-wrap {
+  grid-area: img;
+  width: 56px;
+  height: 56px;
+}
+.fab-page .fvps-item-img {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+}
+.fab-page .fvps-item-info {
+  grid-area: info;
+  min-width: 0;
+  align-self: end;
+}
+.fab-page .fvps-item-name {
+  display: block;
+  text-transform: none !important;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fab-page .fvps-item-price {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.fab-page .fvps-item-stock {
+  grid-area: stock;
+  align-self: start;
+  justify-self: start;
+  padding: 0;
+  background: transparent !important;
+  border: none !important;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.fab-page .fvps-item-stock--baja { color: #c27c0e; }
+.fab-page .fvps-item-stock--out { color: #c62828; }
+.fab-page .fvps-item > :last-child {
+  grid-area: ctrl;
+}
+.fab-page .fvps-choose-variant-btn {
+  border: 1px solid var(--border-brand) !important;
+  background: var(--surface-raised) !important;
+  color: var(--brand-700) !important;
+  border-radius: 999px !important;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+}
+.fab-page .fvps-choose-variant-btn.has-selection {
+  background: var(--brand-500) !important;
+  border-color: var(--brand-500) !important;
+  color: #fff !important;
+}
+.fab-page .fvps-variation-row {
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
 }
