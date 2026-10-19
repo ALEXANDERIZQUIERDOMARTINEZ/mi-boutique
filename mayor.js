@@ -1313,6 +1313,47 @@ if (waBtn) {
     });
 }
 
+// Texto del detalle de prendas (lo mismo que se ve en la lista "Prendas"),
+// sin código de pedido: solo para copiar y pegar. No guarda nada.
+function buildDetallePedidoTexto() {
+    const productos = allProducts.filter(p => getCantidadProducto(p.id) > 0);
+    const bloques = productos.map(p => {
+        const precioUnitario = getPrecioUnitario(p);
+        const lineas = (detalleFilas.get(p.id) || [])
+            .filter(f => (parseInt(f.cantidad, 10) || 0) > 0)
+            .map(f => {
+                const cantidad = parseInt(f.cantidad, 10) || 0;
+                const detalle = f.talla ? `${formatCardColorName(f.color)} (talla ${f.talla})` : formatCardColorName(f.color);
+                return `  • ${detalle} x${cantidad} = ${formatoMoneda.format(precioUnitario * cantidad)}`;
+            });
+        return `${formatCardProductName(p.nombre)} — ${formatoMoneda.format(precioUnitario)} c/u\n${lineas.join('\n')}`;
+    });
+    const n = getTotalGeneral();
+    return `${bloques.join('\n\n')}\n\nTotal: ${n} prenda${n === 1 ? '' : 's'} — ${formatoMoneda.format(calcularTotalEstimado())}`;
+}
+
+// Muestra "¡Copiado!" un momento en el botón (el texto va en su <span>).
+function marcarBotonCopiado(btn, textoNormal) {
+    const label = btn.querySelector('span');
+    btn.classList.add('is-copied');
+    if (label) label.textContent = '¡Copiado!';
+    clearTimeout(btn._copiadoTimer);
+    btn._copiadoTimer = setTimeout(() => {
+        btn.classList.remove('is-copied');
+        if (label) label.textContent = textoNormal;
+    }, 2000);
+}
+
+const copyDetailBtn = document.getElementById('btn-copy-mayor-detail');
+if (copyDetailBtn) {
+    copyDetailBtn.addEventListener('click', () => {
+        if (getTotalGeneral() === 0) return;
+        copiarTexto(buildDetallePedidoTexto())
+            .then(() => marcarBotonCopiado(copyDetailBtn, 'Copiar'))
+            .catch(() => showToast('No pudimos copiar el detalle en este navegador.', 'warning'));
+    });
+}
+
 // "Copiar pedido": el mismo mensaje al portapapeles, para pegarlo y enviarlo
 // por el chat o canal que el cliente prefiera.
 const copyOrderBtn = document.getElementById('btn-copy-mayor-order');
@@ -1322,12 +1363,7 @@ if (copyOrderBtn) {
         const { mensaje } = prepararPedido();
         copiarTexto(mensaje).then(() => {
             // Sin toast: taparía este mismo botón; el botón ya muestra "¡Copiado!".
-            copyOrderBtn.classList.add('is-copied');
-            copyOrderBtn.querySelector('span').textContent = '¡Copiado!';
-            setTimeout(() => {
-                copyOrderBtn.classList.remove('is-copied');
-                copyOrderBtn.querySelector('span').textContent = 'Copiar pedido';
-            }, 2000);
+            marcarBotonCopiado(copyOrderBtn, 'Copiar pedido');
         }).catch(() => {
             showToast('No pudimos copiar el pedido en este navegador. Usa el botón de WhatsApp.', 'warning');
         });

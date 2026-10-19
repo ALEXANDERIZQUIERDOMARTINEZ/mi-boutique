@@ -1327,7 +1327,38 @@
     color: var(--color-texto-secundario);
     margin: 20px 0 8px;
   }
-  .mayor-finalize-section span {
+  .mayor-finalize-section-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .mayor-copy-detail-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border: 1px solid var(--color-borde);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--color-texto);
+    font-family: var(--fuente-principal);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+  .mayor-copy-detail-btn:hover {
+    background: var(--color-fondo-secundario);
+  }
+  .mayor-copy-detail-btn.is-copied {
+    border-color: #1fa855;
+    color: #17914a;
+    background: #f1faf3;
+  }
+  .mayor-finalize-optional {
     font-weight: 500;
     text-transform: none;
     letter-spacing: 0;
@@ -1989,9 +2020,14 @@
   </button>
   <div class="mayor-finalize-inner">
     <div class="mayor-order-progress" id="mayor-order-progress" style="display:none;"></div>
-    <p class="mayor-finalize-section">Prendas</p>
+    <div class="mayor-finalize-section mayor-finalize-section-row">
+      <span>Prendas</span>
+      <button type="button" class="mayor-copy-detail-btn" id="btn-copy-mayor-detail" aria-label="Copiar el detalle de las prendas">
+        <i class="bi bi-copy"></i> <span>Copiar</span>
+      </button>
+    </div>
     <div class="mayor-summary" id="mayor-order-summary"></div>
-    <label class="mayor-finalize-section" for="mayor-observaciones">Observaciones <span>(opcional)</span></label>
+    <label class="mayor-finalize-section" for="mayor-observaciones">Observaciones <span class="mayor-finalize-optional">(opcional)</span></label>
     <textarea class="mayor-obs-input" id="mayor-observaciones" rows="2" placeholder="Ej: recoger en tienda, entrega en Montería…"></textarea>
     <p class="mayor-finalize-section">Envía tu pedido a</p>
     <div class="mayor-advisor-options" id="mayor-advisor-options">
@@ -2107,7 +2143,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.9.23"></script>
+<script type="module" src="mayor.js?v=1.9.24"></script>
 
 </body>
 </html>
