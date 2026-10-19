@@ -4109,6 +4109,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     }
 
     const UMBRAL_BAJO_STOCK = 2;
+    // "ANALLY" → "Anally" (solo para mostrar en la lista).
+    const nombreCarrito = (t) => {
+        const s = String(t || '').toLowerCase().trim();
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    };
 
     function getModal(id) {
         const el = document.getElementById(id);
@@ -4163,35 +4168,69 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             return true;
         });
 
+        // Resumen del encabezado y contador del chip "Bajo stock"
+        const totalBajo = productos.filter(p => stockTotal(p) <= UMBRAL_BAJO_STOCK).length;
+        const resumenEl = document.getElementById('prodfab-resumen');
+        if (resumenEl) {
+            const unidades = productos.reduce((s, p) => s + stockTotal(p), 0);
+            resumenEl.textContent = `${productos.length} producto${productos.length === 1 ? '' : 's'} · ${unidades.toLocaleString('es-CO')} unidades`;
+        }
+        const bajoCountEl = document.getElementById('prodfab-bajo-count');
+        if (bajoCountEl) bajoCountEl.textContent = totalBajo ? totalBajo : '';
+
         if (!filtrados.length) {
-            tbody.innerHTML = `<tr>
-                <td colspan="7" class="fin2-empty-state">
-                    <i class="bi bi-inbox"></i>
-                    <span>No hay productos registrados</span>
-                </td>
-            </tr>`;
+            const filtrando = texto || categoriaId || soloBajoStock;
+            tbody.innerHTML = `<div class="pf-empty">
+                <i class="bi bi-${filtrando ? 'search' : 'box-seam'}"></i>
+                <strong>${filtrando ? 'Sin resultados' : 'Aún no hay productos'}</strong>
+                <span>${filtrando ? 'Prueba con otro nombre o quita los filtros.' : 'Crea el primero con el botón Nuevo.'}</span>
+            </div>`;
             return;
         }
 
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         tbody.innerHTML = filtrados.map(p => {
-            const variacionesTxt = (p.variaciones || []).length
-                ? p.variaciones.map(v => `${v.talla || '—'} / ${v.color || '—'} (${v.stock ?? 0})`).join(', ')
-                : 'Sin variaciones';
             const grupoClave = resolveWholesaleGroup(p, categoriasMap);
             const grupo = grupoClave ? (WHOLESALE_TIER_GROUPS[grupoClave]?.label || grupoClave) : 'Precio fijo';
-            const imgSrc = p.imagenUrl || 'https://placehold.co/60x60/f5e8ed/D988B9?text=%20';
-            return `<tr>
-                <td><img src="${imgSrc}" alt="${p.nombre || ''}" class="table-product-img"></td>
-                <td class="product-name">${p.nombre || ''}${p.visible === false ? ' <span class="badge bg-secondary">Oculto</span>' : ''}<small class="text-muted d-block">Código: ${p.codigo || p.id.substring(0, 6)}</small></td>
-                <td>${categoriasMap.get(p.categoriaId) || '—'}</td>
-                <td>${grupo}</td>
-                <td class="text-end">${(p.precioMayor || 0).toLocaleString('es-CO')}</td>
-                <td><small>${variacionesTxt}</small></td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-outline-secondary prodfab-btn-editar" data-id="${p.id}"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-sm btn-outline-danger prodfab-btn-eliminar" data-id="${p.id}"><i class="bi bi-trash"></i></button>
-                </td>
-            </tr>`;
+            const categoria = categoriasMap.get(p.categoriaId);
+            const total = stockTotal(p);
+            const estadoStock = total <= 0 ? 'out' : (total <= UMBRAL_BAJO_STOCK ? 'low' : 'ok');
+            // Solo los colores con unidades, de más a menos; los agotados se
+            // resumen en un chip aparte para que la tarjeta no crezca.
+            const variaciones = (p.variaciones || []).slice().sort((x, y) => (parseFloat(y.stock) || 0) - (parseFloat(x.stock) || 0));
+            const conStock = variaciones.filter(v => (parseFloat(v.stock) || 0) > 0);
+            const agotadas = variaciones.length - conStock.length;
+            const MAX_CHIPS = 4;
+            const etiquetaVar = (v) => [v.color, normalizarVariacionProdFab(v.talla) ? v.talla : '']
+                .filter(Boolean).map(nombreCarrito).join(' ') || 'Única';
+            const chips = conStock.slice(0, MAX_CHIPS)
+                .map(v => `<span class="pf-var">${esc(etiquetaVar(v))}<b>${parseFloat(v.stock) || 0}</b></span>`).join('')
+                + (conStock.length > MAX_CHIPS ? `<span class="pf-var pf-var--more">+${conStock.length - MAX_CHIPS}</span>` : '')
+                + (agotadas ? `<span class="pf-var is-out">${agotadas} agotado${agotadas === 1 ? '' : 's'}</span>` : '');
+            const img = p.imagenUrl
+                ? `<img src="${esc(p.imagenUrl)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'bi bi-image'}))">`
+                : `<i class="bi bi-image"></i>`;
+            return `<article class="pf-card prodfab-btn-editar${p.visible === false ? ' is-hidden' : ''}" data-id="${p.id}" role="button" tabindex="0" aria-label="Editar ${esc(p.nombre)}">
+                <div class="pf-thumb">${img}</div>
+                <div class="pf-body">
+                    <div class="pf-row">
+                        <h3 class="pf-name">${esc(nombreCarrito(p.nombre || 'Sin nombre'))}</h3>
+                        <span class="pf-price">${formatoMonedaDashboard.format(p.precioMayor || 0)}</span>
+                    </div>
+                    <div class="pf-meta">
+                        <span>${esc(p.codigo || p.id.substring(0, 6))}</span>
+                        ${categoria ? `<span>${esc(nombreCarrito(categoria))}</span>` : ''}
+                        <span>${esc(grupo)}</span>
+                        ${p.visible === false ? '<span class="pf-hidden-tag"><i class="bi bi-eye-slash"></i> Oculto</span>' : ''}
+                    </div>
+                    <div class="pf-vars">
+                        ${total > 0
+                            ? `<span class="pf-stock pf-stock--${estadoStock}">${total} und</span>${chips}`
+                            : `<span class="pf-stock pf-stock--out">${variaciones.length ? 'Agotado' : 'Sin colores'}</span>`}
+                    </div>
+                </div>
+                <button type="button" class="pf-del prodfab-btn-eliminar" data-id="${p.id}" aria-label="Eliminar ${esc(p.nombre)}"><i class="bi bi-trash3"></i></button>
+            </article>`;
         }).join('');
     }
 
@@ -4213,12 +4252,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         renderTabla();
     }, (error) => {
         console.error('Error al cargar productos de fábrica:', error);
-        tbody.innerHTML = `<tr>
-            <td colspan="7" class="fin2-empty-state fin2-negative-text">
-                <i class="bi bi-exclamation-triangle"></i>
-                <span>Error al cargar: ${error.message}</span>
-            </td>
-        </tr>`;
+        tbody.innerHTML = `<div class="pf-empty pf-empty--error">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>No se pudo cargar</strong>
+            <span>${error.message}</span>
+        </div>`;
     });
 
     // ── Filtros ──
@@ -4289,9 +4327,16 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     btnNuevo.addEventListener('click', abrirModalNuevo);
 
     // ── Editar / eliminar ──
+    tbody.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('pf-card')) {
+            e.preventDefault();
+            e.target.click();
+        }
+    });
     tbody.addEventListener('click', (e) => {
-        const btnEditar = e.target.closest('.prodfab-btn-editar');
         const btnEliminar = e.target.closest('.prodfab-btn-eliminar');
+        // Toda la tarjeta abre la edición, salvo el botón de eliminar.
+        const btnEditar = btnEliminar ? null : e.target.closest('.prodfab-btn-editar');
 
         if (btnEditar) {
             const p = productos.find(x => x.id === btnEditar.dataset.id);
