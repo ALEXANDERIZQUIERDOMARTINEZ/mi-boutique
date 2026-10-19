@@ -1673,3 +1673,22 @@ body.fab-page.dark-mode #registrar-venta .sv-cart-empty-cta strong { color: var(
 }
 .fab-page .fv-drafts-empty strong { font-size: 0.88rem; font-weight: 600; }
 .fab-page .fv-drafts-empty small { font-size: 0.76rem; color: var(--text-secondary); max-width: 280px; }
+
+/* "Confirmar venta" estático: la barra del total queda en su lugar, al final
+   de la venta, en vez de quedarse fija abajo mientras se desplaza. */
+.fab-page #registrar-venta .sv-checkout-bar {
+  position: static;
+  box-shadow: none;
+  background: var(--surface-raised);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@media (max-width: 991.98px) {
+  .fab-page #registrar-venta #fvForm {
+    min-height: 0;
+  }
+  .fab-page #registrar-venta #fvForm > .sv-checkout-bar {
+    margin-top: 0.25rem;
+  }
+}
+
