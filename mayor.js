@@ -724,23 +724,30 @@ function buildCardActionHtml(p) {
         </button>`;
 }
 
-// Vista previa de colores en la tarjeta: TODOS los colores, cada uno con su
-// bolita, su nombre y cuántas unidades quedan, para que el cliente vea la
-// disponibilidad sin abrir la hoja. Es solo informativa (un toque abre la
-// misma hoja que el botón "Agregar"); la selección real ocurre ahí.
+// Vista previa de colores en la tarjeta: TODOS los colores, como una lista
+// con título "Colores disponibles" y, por color, su bolita, su nombre y las
+// unidades que quedan ("18 und.", en rojo si son pocas). Es solo informativa (un toque
+// abre la misma hoja que el botón "Agregar"); la selección real ocurre ahí.
+const CARD_COLOR_LOW_STOCK = 2;
+function formatCardColorName(color) {
+    const label = formatColorLabel(color).toLowerCase();
+    return label.charAt(0).toUpperCase() + label.slice(1);
+}
 function buildCardColorsPreviewHtml(p) {
     const colores = getColoresDelProducto(p);
     // Siempre se devuelve la caja (vacía si no hay colores) para que todas
     // las tarjetas tengan las mismas filas y queden alineadas entre sí.
     if (colores.length === 0) return '<div class="mayor-card-colors-box is-empty"></div>';
     const variantesColor = p.variantes_color || [];
-    const chipsHtml = colores.map(({ color, stock }) => {
+    const filasHtml = colores.map(({ color, stock }) => {
         const vc = variantesColor.find(v => (v.nombre || '').toLowerCase().trim() === color.toLowerCase().trim());
         const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${getColorHex(color)};`;
-        return `<span class="mayor-card-color-chip"><span class="color-swatch-circle mayor-card-color-dot" style="${swatchStyle}"></span><span class="mayor-card-color-chip-name">${formatColorLabel(color)}</span><span class="mayor-card-color-chip-stock">Quedan ${stock}</span></span>`;
+        const isLow = stock <= CARD_COLOR_LOW_STOCK;
+        return `<li class="mayor-card-color-row"><span class="color-swatch-circle mayor-card-color-dot" style="${swatchStyle}"></span><span class="mayor-card-color-name">${formatCardColorName(color)}</span><span class="mayor-card-color-qty${isLow ? ' is-low' : ''}">${stock} und.</span></li>`;
     }).join('');
     return `<div class="mayor-card-colors-box">
-            <div class="mayor-card-colors-preview" data-id="${p.id}">${chipsHtml}</div>
+            <div class="mayor-card-colors-head">Colores disponibles</div>
+            <ul class="mayor-card-colors-preview" data-id="${p.id}">${filasHtml}</ul>
         </div>`;
 }
 
