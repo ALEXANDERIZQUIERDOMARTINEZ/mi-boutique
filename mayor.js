@@ -83,6 +83,7 @@ function closeMayorSidebar() {
 }
 if (openSidebarBtn) openSidebarBtn.addEventListener('click', openMayorSidebar);
 if (mayorSidebarBackdropEl) mayorSidebarBackdropEl.addEventListener('click', closeMayorSidebar);
+document.getElementById('mayor-sidebar-close')?.addEventListener('click', closeMayorSidebar);
 
 // ── Hojas de pantalla completa (Cómo comprar / Agregar rápido) ──────────
 // Son overlays propios (position:fixed;inset:0 + clase .is-open) en vez de
@@ -497,13 +498,10 @@ function productBelongsToCategory(p, filterValue) {
     return false;
 }
 
-// Una categoría solo se muestra en el filtro si tiene al menos una prenda
-// que realmente aparecería en la grilla (visible, con stock y con precio
-// al por mayor configurado) — evita listar categorías vacías.
-function categoryHasAvailableProduct(catName) {
-    return allProducts.some(p =>
-        p.visible !== false && getStockTotal(p) > 0 && getPrecioUnitario(p) > 0 && productBelongsToCategory(p, catName)
-    );
+// Prendas que realmente aparecerían en la grilla (visibles, con stock y con
+// precio al por mayor configurado).
+function isProductAvailable(p) {
+    return p.visible !== false && getStockTotal(p) > 0 && getPrecioUnitario(p) > 0;
 }
 
 // Reconstruye los botones de categoría del menú lateral a partir de
@@ -513,14 +511,19 @@ function categoryHasAvailableProduct(catName) {
 // llenar una categoría).
 function renderCategoryFilterButtons() {
     if (!categoryFilterEl) return;
-    const visibleCategories = latestCategories.filter(cat => categoryHasAvailableProduct(cat.nombre));
-    const items = [{ filtro: 'disponible', label: 'Disponibles', icon: 'bi-shop-window' },
-        ...visibleCategories.map(cat => ({ filtro: cat.nombre, label: cat.nombre, icon: 'bi-tag' }))];
+    // Cuántas prendas disponibles tiene cada categoría; las que no tienen
+    // ninguna no se listan.
+    const disponibles = allProducts.filter(isProductAvailable);
+    const visibleCategories = latestCategories
+        .map(cat => ({ cat, count: disponibles.filter(p => productBelongsToCategory(p, cat.nombre)).length }))
+        .filter(({ count }) => count > 0);
+    const items = [{ filtro: 'disponible', label: 'Todas las prendas', icon: 'bi-grid', count: disponibles.length },
+        ...visibleCategories.map(({ cat, count }) => ({ filtro: cat.nombre, label: formatCardColorName(cat.nombre), icon: 'bi-tag', count }))];
     if (activeFilter !== 'disponible' && !items.some(item => item.filtro === activeFilter)) {
         activeFilter = 'disponible';
     }
     categoryFilterEl.innerHTML = items.map(item =>
-        `<button type="button" class="mayor-sidebar-item${item.filtro === activeFilter ? ' active' : ''}" data-filter="${item.filtro}"><i class="bi ${item.icon}"></i> ${item.label}</button>`
+        `<button type="button" class="mayor-sidebar-item${item.filtro === activeFilter ? ' active' : ''}" data-filter="${item.filtro}"><i class="bi ${item.icon}"></i><span class="mayor-sidebar-item-label">${item.label}</span><span class="mayor-sidebar-count">${item.count}</span></button>`
     ).join('');
 }
 
