@@ -572,29 +572,55 @@
     flex: 1;
   }
   .mayor-card-name {
-    font-size: 0.94rem;
+    font-size: 0.95rem;
     font-weight: 600;
+    letter-spacing: -0.005em;
     color: var(--color-texto);
-    margin: 0 0 2px;
-    line-height: 1.25;
+    margin: 0 0 4px;
+    line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .mayor-card-price {
-    font-size: 0.94rem;
-    font-weight: 700;
+  /* Precio: monto grande + "c/u" en gris; debajo, etiqueta del descuento
+     por cantidad (también se usa en la hoja de agregar, .mqa-price). */
+  .mayor-card-price,
+  .mqa-price {
     color: var(--color-texto);
-    margin-bottom: 7px;
+    margin-bottom: 10px;
   }
-  .mayor-card-price .tier-hint {
-    display: block;
-    font-size: 0.72rem;
-    line-height: 1.3;
-    font-weight: 600;
+  .mayor-price-amount {
+    font-size: 1.08rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .mayor-price-unit {
+    margin-left: 3px;
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: var(--color-texto-secundario);
+  }
+  .mayor-card-price .tier-hint,
+  .mqa-price .tier-hint {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    width: fit-content;
+    max-width: 100%;
+    margin-top: 6px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--color-primario-claro);
     color: var(--color-primario-oscuro);
-    margin-top: 1px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .tier-hint i {
+    font-size: 0.66rem;
+    flex-shrink: 0;
   }
   /* Vista previa de colores en la tarjeta: lista tipo ficha técnica con
      título, y por color bolita + nombre + unidades alineadas a la derecha. */
@@ -812,17 +838,13 @@
     max-height: 90px;
   }
   .mqa-price {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--color-texto);
     margin-bottom: 12px;
   }
+  .mqa-price .mayor-price-amount {
+    font-size: 1.25rem;
+  }
   .mqa-price .tier-hint {
-    display: block;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--color-primario-oscuro);
-    margin-top: 3px;
+    font-size: 0.78rem;
   }
 
   /* Cuántos colores tiene la prenda, de un vistazo. */
@@ -1335,16 +1357,23 @@
       padding: 8px 9px 9px;
     }
     .mayor-card-name {
-      font-size: 0.82rem;
-      margin-bottom: 3px;
+      font-size: 0.86rem;
+      margin-bottom: 2px;
     }
     .mayor-card-price {
-      font-size: 0.8rem;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
+    }
+    .mayor-card-price .mayor-price-amount {
+      font-size: 0.98rem;
+    }
+    .mayor-card-price .mayor-price-unit {
+      font-size: 0.68rem;
     }
     .mayor-card-price .tier-hint {
-      font-size: 0.66rem;
-      margin-top: 2px;
+      font-size: 0.62rem;
+      padding: 2px 7px;
+      margin-top: 4px;
+      gap: 4px;
     }
     .mayor-card-colors-box {
       padding: 7px 8px 8px;
@@ -1714,7 +1743,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.9.13"></script>
+<script type="module" src="mayor.js?v=1.9.14"></script>
 
 </body>
 </html>

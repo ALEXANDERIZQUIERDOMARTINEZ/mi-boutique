@@ -385,8 +385,8 @@ function buildTierHint(p) {
     if (!nextTier) return info.idx > 0 ? 'Ya tienes el mejor precio' : '';
     const precioSiguiente = formatoMoneda.format(nextTier.precio);
     return info.idx === 0
-        ? `Desde ${nextTier.min} unidades: ${precioSiguiente} c/u`
-        : `Con ${nextTier.min} de esta prenda: ${precioSiguiente} c/u`;
+        ? `Desde ${nextTier.min} und. · ${precioSiguiente}`
+        : `Con ${nextTier.min} und. · ${precioSiguiente}`;
 }
 
 function calcularTotalEstimado() {
@@ -644,13 +644,22 @@ function renderFilaHtml(p, fila, idx, tallas) {
     `;
 }
 
+// Precio destacado + "c/u" en gris, y debajo (si la prenda tiene precios por
+// cantidad) una etiqueta corta con el siguiente escalón: "Desde 12 und. · $ 16.000".
 function buildCardPriceHtml(p) {
     const grupo = resolveWholesaleGroup(p, categoriesMap);
-    const precioUnitario = getPrecioUnitario(p);
+    const precioHtml = `<span class="mayor-price-amount">${formatoMoneda.format(getPrecioUnitario(p))}</span><span class="mayor-price-unit">c/u</span>`;
     if (grupo && WHOLESALE_TIER_GROUPS[grupo]) {
-        return `${formatoMoneda.format(precioUnitario)} c/u<span class="tier-hint">${buildTierHint(p)}</span>`;
+        const hint = buildTierHint(p);
+        return hint ? `${precioHtml}<span class="tier-hint"><i class="bi bi-tag-fill"></i>${hint}</span>` : precioHtml;
     }
-    return `${formatoMoneda.format(precioUnitario)} c/u`;
+    return precioHtml;
+}
+
+// Nombre de la prenda en formato título ("Blusa Globo") en vez de todo en
+// mayúsculas como viene guardado.
+function formatCardProductName(nombre) {
+    return (nombre || '').toLowerCase().replace(/(^|\s)(\p{L})/gu, (m, sp, l) => sp + l.toUpperCase());
 }
 
 // Bolitas de color: la manera de agregar la prenda ahora es tocar el color
@@ -762,7 +771,7 @@ function buildCardElement(p) {
     card.innerHTML = `
         <div class="mayor-card-img"><img src="${img}" alt="${p.nombre}" loading="lazy"></div>
         <div class="mayor-card-body">
-            <h3 class="mayor-card-name">${p.nombre}</h3>
+            <h3 class="mayor-card-name">${formatCardProductName(p.nombre)}</h3>
             <div class="mayor-card-price">${buildCardPriceHtml(p)}</div>
             ${buildCardColorsPreviewHtml(p)}
             <div class="mayor-card-action">${buildCardActionHtml(p)}</div>
@@ -778,7 +787,7 @@ function renderQuickAddSheet(id) {
     const p = allProducts.find(pp => pp.id === id);
     if (!p || !mqaBodyEl) return;
     if (mqaImgEl) mqaImgEl.src = getCardImageUrl(p);
-    if (mqaNameEl) mqaNameEl.textContent = p.nombre;
+    if (mqaNameEl) mqaNameEl.textContent = formatCardProductName(p.nombre);
     if (mqaPriceEl) mqaPriceEl.innerHTML = buildCardPriceHtml(p);
     mqaBodyEl.innerHTML = buildCardColorsHtml(p) + buildCardExtraHtml(p);
 
