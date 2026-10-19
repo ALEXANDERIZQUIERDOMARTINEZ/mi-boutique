@@ -121,6 +121,8 @@ const mqaBodyEl = document.getElementById('mqa-body');
 const mqaImgEl = document.getElementById('mqa-img');
 const mqaNameEl = document.getElementById('mqa-name');
 const mqaPriceEl = document.getElementById('mqa-price');
+const mqaThumbBtn = document.getElementById('mqa-thumb-btn');
+const mqaDoneLabelEl = document.getElementById('mqa-done-label');
 let openSheetProductId = null;
 
 function closeQuickAddSheet() {
@@ -129,6 +131,9 @@ function closeQuickAddSheet() {
 }
 if (mqaCloseBtn) mqaCloseBtn.addEventListener('click', closeQuickAddSheet);
 if (mqaDoneBtn) mqaDoneBtn.addEventListener('click', closeQuickAddSheet);
+if (mqaThumbBtn) mqaThumbBtn.addEventListener('click', () => {
+    if (mqaImgEl && mqaImgEl.src) openMayorZoom(mqaImgEl.src, mqaNameEl ? mqaNameEl.textContent : '');
+});
 
 document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
@@ -628,18 +633,18 @@ function renderFilaHtml(p, fila, idx, tallas) {
         <div class="mayor-selected-item">
             <div class="mayor-selected-head">
                 <span class="color-swatch-circle mayor-selected-swatch" style="${swatchStyle}"></span>
-                <span class="mayor-selected-name">${formatColorLabel(fila.color)}</span>
-                <button type="button" class="mayor-selected-remove" data-id="${p.id}" data-idx="${idx}" aria-label="Quitar ${formatColorLabel(fila.color)}"><i class="bi bi-x-lg"></i></button>
+                <span class="mayor-selected-info">
+                    <span class="mayor-selected-name">${formatCardColorName(fila.color)}</span>
+                    <span class="mayor-qty-stock">${stockFila} disponible${stockFila === 1 ? '' : 's'}</span>
+                </span>
+                <div class="mp-qty mayor-qty">
+                    <button type="button" class="mp-qty-btn mayor-qty-minus" data-id="${p.id}" data-idx="${idx}" ${cantidad <= 1 ? 'disabled' : ''} aria-label="Quitar una">−</button>
+                    <input type="number" min="1" max="${stockFila || 1}" class="mayor-qty-input" data-id="${p.id}" data-idx="${idx}" value="${cantidad}" aria-label="Cantidad">
+                    <button type="button" class="mp-qty-btn mayor-qty-plus" data-id="${p.id}" data-idx="${idx}" ${cantidad >= stockFila ? 'disabled' : ''} aria-label="Agregar una">+</button>
+                </div>
+                <button type="button" class="mayor-selected-remove" data-id="${p.id}" data-idx="${idx}" aria-label="Quitar ${formatCardColorName(fila.color)}"><i class="bi bi-trash3"></i></button>
             </div>
             ${tallaPillsHtml}
-            <div class="mayor-qty">
-                <div class="mp-qty">
-                    <button type="button" class="mp-qty-btn mayor-qty-minus" data-id="${p.id}" data-idx="${idx}" ${cantidad <= 1 ? 'disabled' : ''}>−</button>
-                    <input type="number" min="1" max="${stockFila || 1}" class="mayor-qty-input" data-id="${p.id}" data-idx="${idx}" value="${cantidad}">
-                    <button type="button" class="mp-qty-btn mayor-qty-plus" data-id="${p.id}" data-idx="${idx}" ${cantidad >= stockFila ? 'disabled' : ''}>+</button>
-                </div>
-                <span class="mayor-qty-stock">${stockFila} disp.</span>
-            </div>
         </div>
     `;
 }
@@ -683,14 +688,16 @@ function buildCardColorsHtml(p) {
             <button type="button" class="mayor-card-color-item mayor-swatch-btn${sel ? ' is-selected' : ''}" data-id="${p.id}" data-color="${color.replace(/"/g, '&quot;')}">
                 <span class="color-swatch-circle mayor-card-color-swatch" style="${swatchStyle}"></span>
                 <span class="mayor-color-row-info">
-                    <span class="mayor-color-row-name">${formatColorLabel(color)}</span>
-                    <span class="mayor-color-row-stock">${stock} disponible${stock === 1 ? '' : 's'}</span>
+                    <span class="mayor-color-row-name">${formatCardColorName(color)}</span>
+                    <span class="mayor-color-row-stock${stock <= CARD_COLOR_LOW_STOCK ? ' is-low' : ''}">${stock} disponible${stock === 1 ? '' : 's'}</span>
                 </span>
-                ${sel ? `<span class="mayor-swatch-badge">${sel.cantidad}</span>` : '<i class="bi bi-plus-lg mayor-color-row-add"></i>'}
+                ${sel ? `<span class="mayor-swatch-badge">${sel.cantidad}</span>` : '<span class="mayor-color-row-add"><i class="bi bi-plus-lg"></i></span>'}
             </button>
         `;
     }).join('');
-    const resumen = `<p class="mayor-colors-summary">${colores.length} color${colores.length === 1 ? '' : 'es'} disponible${colores.length === 1 ? '' : 's'}</p>`;
+    const n = colores.length;
+    const resumen = `<div class="mqa-section-head"><span>Elige tus colores</span><span>${n} disponible${n === 1 ? '' : 's'}</span></div>
+        <p class="mqa-section-hint">Toca un color para agregarlo o quitarlo.</p>`;
     return `${resumen}<div class="mayor-card-colors">${itemsHtml}</div>`;
 }
 
@@ -699,15 +706,12 @@ function buildCardColorsHtml(p) {
 // color elegido siempre se ve con su talla y cantidad, listas para ajustar.
 function buildCardExtraHtml(p) {
     const filas = detalleFilas.get(p.id) || [];
-    if (filas.length === 0) {
-        if (getColoresDelProducto(p).length === 0) return '';
-        return `<p class="mayor-add-hint"><i class="bi bi-hand-index-thumb"></i> Toca un color para agregarlo a tu pedido</p>`;
-    }
+    if (filas.length === 0) return '';
     const totalProducto = filas.reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
     const tallas = getTallasConStock(p);
     const filasHtml = filas.map((f, idx) => renderFilaHtml(p, f, idx, tallas)).join('');
     return `
-        <div class="mayor-card-toggle-label">${totalProducto} unidad${totalProducto === 1 ? '' : 'es'} elegida${totalProducto === 1 ? '' : 's'}</div>
+        <div class="mqa-section-head"><span>Tu selección</span><span>${totalProducto} unidad${totalProducto === 1 ? '' : 'es'}</span></div>
         <div class="mayor-selected-list">${filasHtml}</div>
     `;
 }
@@ -791,13 +795,8 @@ function renderQuickAddSheet(id) {
     if (mqaPriceEl) mqaPriceEl.innerHTML = buildCardPriceHtml(p);
     mqaBodyEl.innerHTML = buildCardColorsHtml(p) + buildCardExtraHtml(p);
 
-    // Cuantos más colores/tallas haya que mostrar, menos espacio le
-    // dejamos a la foto — así todo sigue cabiendo sin necesidad de
-    // deslizar la pantalla.
-    const colores = getColoresDelProducto(p);
-    const filas = detalleFilas.get(p.id) || [];
-    const isCompact = (colores.length + filas.length) > 3;
-    if (quickAddSheetEl) quickAddSheetEl.classList.toggle('is-compact', isCompact);
+    const total = (detalleFilas.get(p.id) || []).reduce((s, f) => s + (parseInt(f.cantidad, 10) || 0), 0);
+    if (mqaDoneLabelEl) mqaDoneLabelEl.textContent = total > 0 ? `Listo · ${total} unidad${total === 1 ? '' : 'es'}` : 'Listo';
 }
 
 function openQuickAddSheet(id) {
