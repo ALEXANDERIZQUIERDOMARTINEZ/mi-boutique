@@ -206,8 +206,10 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             // stock actual al precio mayorista, menos lo que costó producirlo.
             const utilidadPotencial = valorPotencialMayor - inversionTotal;
             const margen = inversionTotal > 0 ? (utilidadPotencial / inversionTotal) * 100 : 0;
-            document.getElementById('fdb-utilidad-potencial').textContent = formatoMonedaDashboard.format(utilidadPotencial);
-            document.getElementById('fdb-margen-utilidad').innerHTML = `<i class="bi bi-percent"></i> ${margen.toFixed(1)}% de margen`;
+            const utilidadEl = document.getElementById('fdb-utilidad-potencial');
+            if (utilidadEl) utilidadEl.textContent = formatoMonedaDashboard.format(utilidadPotencial);
+            const margenEl = document.getElementById('fdb-margen-utilidad');
+            if (margenEl) margenEl.innerHTML = `<i class="bi bi-percent"></i> ${margen.toFixed(1)}% de margen`;
         } catch (error) {
             console.error('Error al calcular productos del dashboard de fábrica:', error);
         }
@@ -233,7 +235,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     }
 
     const ETIQUETAS_RANGO_DASHBOARD = {
-        today: 'Ventas hoy', week: 'Ventas esta semana', month: 'Ventas este mes', year: 'Ventas este año'
+        today: 'Ventas de hoy', week: 'Ventas esta semana', month: 'Ventas este mes', year: 'Ventas este año'
     };
 
     // Listener en tiempo real por rango: cada venta nueva (o anulación)
@@ -245,7 +247,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         if (cancelarListenerVentasFabrica) { cancelarListenerVentasFabrica(); cancelarListenerVentasFabrica = null; }
 
         const tituloEl = document.getElementById('fdb-ventas-periodo-title');
-        if (tituloEl) tituloEl.textContent = ETIQUETAS_RANGO_DASHBOARD[rango] || 'Ventas hoy';
+        if (tituloEl) tituloEl.textContent = ETIQUETAS_RANGO_DASHBOARD[rango] || 'Ventas de hoy';
 
         const { inicio, fin } = obtenerRangoFechasDashboard(rango);
         // Solo lo propio de Fábrica: tenantId === 'fabrica'. Necesita el
@@ -282,6 +284,12 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             // su fecha efectiva, porque el campo 'fecha' (elegido a mano al
             // registrar el movimiento) puede no coincidir con 'timestamp'
             // (momento de creación del registro).
+            // El Dashboard de Fábrica ya no muestra "Ganancia real": si su
+            // tarjeta no está en la página, no hace falta leer los movimientos.
+            const gananciaRealEl = document.getElementById('fdb-ganancia-real');
+            const gananciaDetalleEl = document.getElementById('fdb-ganancia-detalle');
+            if (!gananciaRealEl && !gananciaDetalleEl) return;
+
             let gastosOperativos = 0;
             let ingresosOperativos = 0;
             let errorMovimientos = null;
@@ -309,13 +317,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             // transferencia), más otros ingresos operativos y menos los gastos
             // operativos del mismo período (telas, luz, arriendo, etc.).
             const gananciaReal = totalRecibido + ingresosOperativos - gastosOperativos;
-            const gananciaRealEl = document.getElementById('fdb-ganancia-real');
             if (gananciaRealEl) {
                 gananciaRealEl.textContent = formatoMonedaDashboard.format(gananciaReal);
                 gananciaRealEl.classList.toggle('text-danger', gananciaReal < 0);
             }
 
-            const gananciaDetalleEl = document.getElementById('fdb-ganancia-detalle');
             if (gananciaDetalleEl) {
                 // Se muestra el error en la propia tarjeta (no solo en consola) para
                 // poder diagnosticar en producción sin herramientas de desarrollador.

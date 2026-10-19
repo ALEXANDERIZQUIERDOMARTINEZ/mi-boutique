@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Tema de Fábrica: mismos colores, letra (Poppins) y estilo limpio que
          la tienda mayorista (mayor.html). Solo lo carga este panel. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.1.0">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.2.0">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
@@ -208,110 +208,59 @@
                 </div>
             </section>
 
-            <!-- ── Resumen: inversión, bajo stock y ventas — lo primero que se ve
-                 debajo del saludo; los accesos rápidos van después ── -->
+            <!-- ── Ventas de hoy: el dato principal del día ── -->
             <section class="db-section">
-                <div class="db-head">
-                    <div class="db-head-left">
-                        <span class="db-eyebrow">Resumen</span>
-                        <h1 class="db-title">Inversión y utilidad</h1>
+                <div class="db-panel fdb-today">
+                    <div class="fdb-today-head">
+                        <span class="db-eyebrow" id="fdb-ventas-periodo-title">Ventas de hoy</span>
+                        <a href="#fabrica" class="fdb-link">Ver reporte <i class="bi bi-chevron-right"></i></a>
                     </div>
-                    <div class="db2-time-range">
-                        <button class="db2-range-btn active" data-range="today">Hoy</button>
-                        <button class="db2-range-btn" data-range="week">Semana</button>
-                        <button class="db2-range-btn" data-range="month">Mes</button>
-                        <button class="db2-range-btn" data-range="year">Año</button>
+                    <div class="fdb-today-val" id="fdb-ventas-periodo">$0</div>
+                    <div class="fdb-today-sub" id="fdb-ventas-count">0 ventas</div>
+                </div>
+            </section>
+
+            <!-- ── Inventario: productos, bajo stock e inversión en una fila ── -->
+            <section class="db-section">
+                <span class="db-eyebrow fdb-section-label">Inventario</span>
+                <div class="db-panel fdb-inv">
+                    <div class="fdb-inv-item">
+                        <span class="fdb-inv-label"><i class="bi bi-boxes"></i> Productos</span>
+                        <span class="fdb-inv-val" id="fdb-total-productos">0</span>
+                        <span class="fdb-inv-sub" id="fdb-productos-disponibles">0 disponibles</span>
+                    </div>
+                    <div class="fdb-inv-item">
+                        <span class="fdb-inv-label"><i class="bi bi-exclamation-triangle"></i> Bajo stock</span>
+                        <span class="fdb-inv-val" id="fdb-bajo-stock">0</span>
+                        <span class="fdb-inv-sub">2 und. o menos</span>
+                    </div>
+                    <div class="fdb-inv-item">
+                        <span class="fdb-inv-label"><i class="bi bi-box-seam"></i> Inversión</span>
+                        <span class="fdb-inv-val" id="fdb-inversion-inventario">$0</span>
+                        <span class="fdb-inv-sub" id="fdb-inventario-unidades">0 unidades</span>
                     </div>
                 </div>
             </section>
 
+            <!-- ── Accesos rápidos: las 4 secciones más usadas, en una sola fila ── -->
             <section class="db-section">
-                <div class="db-panel db-stat-strip">
-                    <div class="db-stat">
-                        <div class="db-stat-icon fin2-skpi-icon--blue"><i class="bi bi-boxes"></i></div>
-                        <div class="db-stat-body">
-                            <div class="db-stat-val" id="fdb-total-productos">0</div>
-                            <div class="db-stat-name">Productos</div>
-                            <div class="db-stat-sub" id="fdb-productos-disponibles">0 disponibles</div>
-                        </div>
-                    </div>
-                    <div class="db-stat">
-                        <div class="db-stat-icon fin2-skpi-icon--amber"><i class="bi bi-exclamation-triangle-fill"></i></div>
-                        <div class="db-stat-body">
-                            <div class="db-stat-val" id="fdb-bajo-stock">0</div>
-                            <div class="db-stat-name">Bajo stock</div>
-                            <div class="db-stat-sub">2 unidades o menos</div>
-                        </div>
-                    </div>
-                    <div class="db-stat">
-                        <div class="db-stat-icon fin2-skpi-icon--slate"><i class="bi bi-box-seam-fill"></i></div>
-                        <div class="db-stat-body">
-                            <div class="db-stat-val" id="fdb-inversion-inventario">$0</div>
-                            <div class="db-stat-name">Inversión inventario</div>
-                            <div class="db-stat-sub" id="fdb-inventario-unidades">0 unidades</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="db-section">
-                <div class="db-panel db-compare">
-                    <div class="db-panel-head">
-                        <span class="db-panel-title">Ventas</span>
-                        <a href="#fabrica" class="db-panel-link db-report-link"><i class="bi bi-graph-up-arrow"></i> Ver reporte</a>
-                    </div>
-                    <div class="db-compare-grid">
-                        <div class="db-compare-col">
-                            <div class="db-compare-kpis">
-                                <div class="db-compare-kpi">
-                                    <span class="db-compare-kpi-label" id="fdb-ventas-periodo-title">Ventas hoy</span>
-                                    <span class="db-compare-kpi-val" id="fdb-ventas-periodo">$0</span>
-                                    <span class="db-compare-kpi-sub" id="fdb-ventas-count">0 ventas</span>
-                                </div>
-                                <div class="db-compare-kpi">
-                                    <span class="db-compare-kpi-label">Ganancia real</span>
-                                    <span class="db-compare-kpi-val" id="fdb-ganancia-real">$0</span>
-                                    <span class="db-compare-kpi-sub" id="fdb-ganancia-detalle">Sin gastos registrados</span>
-                                </div>
-                                <div class="db-compare-kpi">
-                                    <span class="db-compare-kpi-label">Utilidad potencial</span>
-                                    <span class="db-compare-kpi-val" id="fdb-utilidad-potencial">$0</span>
-                                    <span class="db-compare-kpi-sub" id="fdb-margen-utilidad">0% de margen</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ── Accesos rápidos: solo las 4 secciones más usadas (el resto está
-                 en el menú lateral / "Más" en el celular) ── -->
-            <section class="db-section">
-                <div class="db-head">
-                    <div class="db-head-left">
-                        <span class="db-eyebrow">Accesos rápidos</span>
-                    </div>
-                </div>
-                <div class="db-menu-grid db-menu-grid--quick">
-                    <a href="#pedidos-web" class="db-menu-tile" data-permiso="pedidos_web_ver">
-                        <span class="db-menu-tile-icon"><i class="bi bi-bag-check"></i></span>
-                        <span class="db-menu-tile-label">Pedidos Web</span>
-                        <i class="bi bi-chevron-right db-menu-tile-arrow"></i>
+                <span class="db-eyebrow fdb-section-label">Accesos rápidos</span>
+                <div class="db-panel fdb-quick">
+                    <a href="#pedidos-web" class="fdb-quick-item" data-permiso="pedidos_web_ver">
+                        <span class="fdb-quick-icon"><i class="bi bi-bag-check"></i></span>
+                        <span class="fdb-quick-label">Pedidos web</span>
                     </a>
-                    <a href="#registrar-venta" class="db-menu-tile" data-permiso="ventas_crear">
-                        <span class="db-menu-tile-icon"><i class="bi bi-plus-circle"></i></span>
-                        <span class="db-menu-tile-label">Registrar Venta</span>
-                        <i class="bi bi-chevron-right db-menu-tile-arrow"></i>
+                    <a href="#registrar-venta" class="fdb-quick-item" data-permiso="ventas_crear">
+                        <span class="fdb-quick-icon"><i class="bi bi-plus-lg"></i></span>
+                        <span class="fdb-quick-label">Nueva venta</span>
                     </a>
-                    <a href="#productos-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
-                        <span class="db-menu-tile-icon"><i class="bi bi-grid-3x3-gap"></i></span>
-                        <span class="db-menu-tile-label">Productos</span>
-                        <i class="bi bi-chevron-right db-menu-tile-arrow"></i>
+                    <a href="#productos-fabrica" class="fdb-quick-item" data-permiso="inventario_fabrica_gestionar">
+                        <span class="fdb-quick-icon"><i class="bi bi-grid-3x3-gap"></i></span>
+                        <span class="fdb-quick-label">Productos</span>
                     </a>
-                    <a href="#inventario-fabrica" class="db-menu-tile" data-permiso="inventario_fabrica_gestionar">
-                        <span class="db-menu-tile-icon"><i class="bi bi-boxes"></i></span>
-                        <span class="db-menu-tile-label">Inventario</span>
-                        <i class="bi bi-chevron-right db-menu-tile-arrow"></i>
+                    <a href="#inventario-fabrica" class="fdb-quick-item" data-permiso="inventario_fabrica_gestionar">
+                        <span class="fdb-quick-icon"><i class="bi bi-boxes"></i></span>
+                        <span class="fdb-quick-label">Inventario</span>
                     </a>
                 </div>
             </section>
