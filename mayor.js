@@ -903,7 +903,24 @@ function renderOrderProgress() {
     `;
 }
 
+// Bolsa de la barra superior: muestra cuántas unidades lleva el pedido y,
+// al tocarla, abre el panel del pedido.
+const topbarBagBtn = document.getElementById('btn-topbar-pedido');
+const topbarBagCountEl = document.getElementById('mayor-topbar-bag-count');
+if (topbarBagBtn) topbarBagBtn.addEventListener('click', () => {
+    if (getTotalGeneral() === 0) {
+        showToast('Aún no has agregado prendas a tu pedido', 'warning');
+        return;
+    }
+    finalizePanelEl?.classList.remove('is-collapsed');
+});
+
 function updateProgress() {
+    const totalUnidadesPedido = getTotalGeneral();
+    if (topbarBagCountEl) {
+        topbarBagCountEl.hidden = totalUnidadesPedido === 0;
+        topbarBagCountEl.textContent = totalUnidadesPedido > 99 ? '99+' : String(totalUnidadesPedido);
+    }
     renderOrderSummary();
     if (totalEstimadoEl) totalEstimadoEl.textContent = formatoMoneda.format(calcularTotalEstimado());
     renderOrderProgress();
@@ -1291,11 +1308,25 @@ function applyFiltersAndRedraw() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => { currentPage = 1; renderProducts(); updateProgress(); }, 200);
 }
+const mayorSearchClearBtn = document.getElementById('mayor-search-clear');
 function handleSearchInput(e) {
     searchTerm = e.target.value;
+    if (mayorSearchClearBtn) mayorSearchClearBtn.hidden = !searchTerm;
     applyFiltersAndRedraw();
 }
-if (mayorSearchInputEl) mayorSearchInputEl.addEventListener('input', handleSearchInput);
+if (mayorSearchInputEl) {
+    mayorSearchInputEl.addEventListener('input', handleSearchInput);
+    // "Buscar" en el teclado del celular: cerrar el teclado para ver resultados.
+    mayorSearchInputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') mayorSearchInputEl.blur();
+    });
+}
+if (mayorSearchClearBtn) mayorSearchClearBtn.addEventListener('click', () => {
+    if (!mayorSearchInputEl) return;
+    mayorSearchInputEl.value = '';
+    mayorSearchInputEl.dispatchEvent(new Event('input'));
+    mayorSearchInputEl.focus();
+});
 
 // ── Filtro rápido de disponibilidad + orden (filas del menú lateral) ────
 if (stockFilterEl) {

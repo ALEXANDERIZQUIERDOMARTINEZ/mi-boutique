@@ -52,91 +52,155 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* ── Barra superior: estilo Gmail — menú hamburguesa, buscador y avatar
-     en una sola pila, siempre visible. Filtros, orden y "Cómo comprar"
-     viven detrás del menú lateral que abre el hamburguesa. ────── */
+  /* ── Barra superior en dos filas: menú + logo + bolsa del pedido, y
+     debajo el buscador a todo el ancho. Filtros, orden y "Cómo comprar"
+     viven en el menú lateral. ─────────────────────────────────────── */
   .mayor-topbar {
     position: sticky;
     top: 0;
     z-index: 500;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.96);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--color-borde);
-    padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+    padding: max(8px, env(safe-area-inset-top)) 12px 10px;
   }
   .mayor-topbar-inner {
     max-width: 900px;
     margin: 0 auto;
   }
-  .mayor-searchbar {
-    display: flex;
+  .mayor-topbar-row {
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
     align-items: center;
-    gap: 10px;
+    margin-bottom: 8px;
   }
-  .mayor-searchbar-menu-btn {
-    flex-shrink: 0;
-    width: 40px;
-    height: 40px;
+  .mayor-topbar-icon-btn {
+    position: relative;
+    width: 44px;
+    height: 44px;
     border: none;
     border-radius: 50%;
-    background: var(--color-fondo-secundario);
+    background: transparent;
     color: var(--color-texto);
-    font-size: 1.1rem;
+    font-size: 1.35rem;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: background 0.2s ease;
   }
-  .mayor-searchbar-menu-btn:hover {
-    background: var(--color-borde);
+  .mayor-topbar-icon-btn:hover {
+    background: var(--color-fondo-secundario);
+  }
+  .mayor-topbar-bag {
+    justify-self: end;
+    font-size: 1.2rem;
+  }
+  .mayor-topbar-bag-count {
+    position: absolute;
+    top: 5px;
+    right: 3px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--color-primario);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    box-shadow: 0 0 0 2px #fff;
+  }
+  .mayor-topbar-bag-count[hidden] {
+    display: none;
+  }
+  /* Logo tipográfico (igual que la imagen de la marca): nombre espaciado
+     y "FÁBRICA" pequeño en rosa debajo. */
+  .mayor-wordmark {
+    justify-self: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    line-height: 1;
+  }
+  .mayor-wordmark-name {
+    font-family: var(--fuente-principal);
+    font-size: 1.12rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    margin-right: -0.22em;
+    color: var(--color-texto);
+  }
+  .mayor-wordmark-sub {
+    margin-top: 4px;
+    font-family: var(--fuente-principal);
+    font-size: 0.56rem;
+    font-weight: 600;
+    letter-spacing: 0.42em;
+    margin-right: -0.42em;
+    color: var(--color-primario-oscuro);
   }
   .mayor-searchbar-field {
     position: relative;
-    flex: 1;
-    min-width: 0;
   }
-  /* Relleno plano sin borde + resplandor suave al enfocar, igual que el
-     buscador del header principal — evita el recuadro duro que desentonaba
-     con el resto del sitio. */
   .mayor-searchbar-field input {
     width: 100%;
+    height: 42px;
     border: 1px solid transparent;
     border-radius: 999px;
-    padding: 10px 16px 10px 38px;
-    font-size: 0.85rem;
+    padding: 0 40px 0 40px;
+    /* 16px: evita que el iPhone haga zoom al enfocar el campo. */
+    font-size: 16px;
     font-family: var(--fuente-principal);
     background: var(--color-fondo-secundario);
     color: var(--color-texto);
+    -webkit-appearance: none;
+    appearance: none;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .mayor-searchbar-field input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+  }
+  .mayor-searchbar-field input::placeholder {
+    color: var(--color-texto-secundario);
+    opacity: 0.8;
   }
   .mayor-searchbar-field input:focus {
     outline: none;
     background: #fff;
-    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.12);
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.15);
   }
-  .mayor-searchbar-field i {
+  .mayor-searchbar-field > .bi-search {
     position: absolute;
-    left: 14px;
+    left: 15px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--color-texto-secundario);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     pointer-events: none;
   }
-  /* Avatar/isotipo circular a la derecha, en el lugar donde Gmail muestra
-     la foto de cuenta — aquí es solo la inicial de la marca. */
-  .mayor-searchbar-avatar {
-    flex-shrink: 0;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: var(--color-primario);
-    color: #fff;
-    font-family: var(--fuente-principal);
-    font-weight: 700;
-    font-size: 0.95rem;
+  .mayor-search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: var(--color-texto-secundario);
+    font-size: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+  }
+  .mayor-search-clear[hidden] {
+    display: none;
   }
 
   /* ── Menú lateral: encabezado de marca, bloque de ayuda (Cómo comprar +
@@ -1439,13 +1503,6 @@
 
   /* ── Densidad compacta en móvil: más prendas visibles por pantalla ── */
   @media (max-width: 991.98px) {
-    .mayor-topbar {
-      padding: 8px 10px;
-    }
-    .mayor-searchbar-field input {
-      padding: 8px 14px 8px 34px;
-      font-size: 0.82rem;
-    }
     .mayor-grid {
       gap: 10px;
       padding: 10px 8px 16px;
@@ -1652,15 +1709,23 @@
 
   <section class="mayor-topbar">
     <div class="mayor-topbar-inner">
-      <div class="mayor-searchbar">
-        <button type="button" class="mayor-searchbar-menu-btn" id="btn-open-mayor-sidebar" aria-label="Abrir menú de filtros">
+      <div class="mayor-topbar-row">
+        <button type="button" class="mayor-topbar-icon-btn" id="btn-open-mayor-sidebar" aria-label="Abrir menú">
           <i class="bi bi-list"></i>
         </button>
-        <div class="mayor-searchbar-field">
-          <i class="bi bi-search"></i>
-          <input type="text" id="mayor-search-input" placeholder="Buscar prendas...">
-        </div>
-        <span class="mayor-searchbar-avatar" aria-hidden="true">M</span>
+        <a href="./" class="mayor-wordmark" aria-label="Mishell'es Fábrica">
+          <span class="mayor-wordmark-name">MISHELL'ES</span>
+          <span class="mayor-wordmark-sub">FÁBRICA</span>
+        </a>
+        <button type="button" class="mayor-topbar-icon-btn mayor-topbar-bag" id="btn-topbar-pedido" aria-label="Ver mi pedido">
+          <i class="bi bi-bag"></i>
+          <span class="mayor-topbar-bag-count" id="mayor-topbar-bag-count" hidden>0</span>
+        </button>
+      </div>
+      <div class="mayor-searchbar-field">
+        <i class="bi bi-search"></i>
+        <input type="search" id="mayor-search-input" placeholder="Buscar por nombre o referencia" autocomplete="off" enterkeyhint="search">
+        <button type="button" class="mayor-search-clear" id="mayor-search-clear" aria-label="Borrar búsqueda" hidden><i class="bi bi-x-circle-fill"></i></button>
       </div>
     </div>
   </section>
@@ -1858,7 +1923,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.9.18"></script>
+<script type="module" src="mayor.js?v=1.9.19"></script>
 
 </body>
 </html>
