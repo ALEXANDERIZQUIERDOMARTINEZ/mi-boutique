@@ -10,7 +10,7 @@
  */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import {
-    initializeFirestore, collection, getDocs, query, where, orderBy, limit, doc,
+    initializeFirestore, enableMultiTabIndexedDbPersistence, collection, getDocs, query, where, orderBy, limit, doc,
     getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp,
     onSnapshot, runTransaction, writeBatch
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
@@ -29,6 +29,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
+});
+// Caché local (IndexedDB) de Firestore: al volver a abrir el admin de
+// Fábrica, los listeners pintan al instante lo que ya estaba guardado en el
+// navegador y luego solo bajan del servidor lo que cambió. Debe llamarse
+// antes de cualquier otra operación sobre `db`. Si el navegador no lo
+// soporta (incógnito, navegadores in-app), se sigue usando solo la red.
+enableMultiTabIndexedDbPersistence(db).catch(err => {
+    console.warn('Fábrica: caché local de Firestore no disponible:', err.code || err);
 });
 export const storage = getStorage(app);
 window.db = db;
