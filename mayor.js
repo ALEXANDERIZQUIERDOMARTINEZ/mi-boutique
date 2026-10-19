@@ -981,15 +981,11 @@ if (gridEl) {
             openMayorZoom(zoomImg.src, p ? p.nombre : '');
             return;
         }
-        const addBtn = e.target.closest('.mayor-add-btn');
-        if (addBtn) {
-            openQuickAddSheet(addBtn.dataset.id);
-            return;
-        }
-        const colorsPreview = e.target.closest('.mayor-card-colors-preview');
-        if (colorsPreview) {
-            openQuickAddSheet(colorsPreview.dataset.id);
-        }
+        // Toda la parte de abajo de la tarjeta (nombre, precio, colores y
+        // botón) abre la hoja de agregar; la foto se reserva para ampliarla.
+        const cardBody = e.target.closest('.mayor-card-body');
+        const card = cardBody && cardBody.closest('.mayor-card');
+        if (card) openQuickAddSheet(card.dataset.productId);
     });
 }
 
