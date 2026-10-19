@@ -186,6 +186,71 @@ body.fab-page::after {
   color: var(--brand-700);
 }
 
+/* Fecha "Lunes, 19 de octubre de 2026": solo la primera letra en
+   mayúscula (antes cada palabra: "De Octubre De"). */
+.db-fabrica .db-greeting-date {
+  text-transform: none;
+}
+.db-fabrica .db-greeting-date::first-letter {
+  text-transform: uppercase;
+}
+
+/* Bajo stock: ámbar sobrio en vez del amarillo de Bootstrap. */
+.db-fabrica #fdb-bajo-stock.text-warning {
+  color: #c27c0e !important;
+}
+
+/* Celular: números en grilla 2 + 1 (Productos | Bajo stock, y la inversión
+   a todo el ancho) en vez de tres tarjetas altas una debajo de otra. */
+@media (max-width: 480px) {
+  .db-fabrica .db-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .db-fabrica .db-stat {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.9rem;
+  }
+  .db-fabrica .db-stat:first-child {
+    border-right: 1px solid var(--border-subtle) !important;
+  }
+  .db-fabrica .db-stat:last-child {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: center;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .db-fabrica .db-stat-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 0.9rem;
+  }
+  .db-fabrica .db-stat-val {
+    font-size: 1.3rem;
+    letter-spacing: -0.5px;
+    margin-bottom: 0.2rem;
+  }
+  .db-fabrica .db-stat-name {
+    font-size: 0.6rem;
+    letter-spacing: 0.06em;
+  }
+  .db-fabrica .db-stat-sub {
+    font-size: 0.7rem;
+  }
+  .db-fabrica .db-greeting-card {
+    padding: 0.95rem 1rem;
+    gap: 0.85rem;
+  }
+  .db-fabrica .db-greeting-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  .db-fabrica .db-greeting-hello {
+    font-size: 0.98rem;
+  }
+}
+
 /* Accesos rápidos: 4 filas compactas (icono + nombre + flecha). */
 .db-fabrica .db-menu-grid--quick {
   grid-template-columns: repeat(2, minmax(0, 1fr));
