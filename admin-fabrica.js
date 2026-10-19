@@ -249,7 +249,13 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         const tituloEl = document.getElementById('fdb-ventas-periodo-title');
         if (tituloEl) tituloEl.textContent = ETIQUETAS_RANGO_DASHBOARD[rango] || 'Ventas de hoy';
 
-        const { inicio, fin } = obtenerRangoFechasDashboard(rango);
+        const { inicio: inicioRango, fin } = obtenerRangoFechasDashboard(rango);
+        // Para "hoy" se traen los últimos 7 días en la misma consulta: así el
+        // Dashboard muestra también lo vendido ayer y el mini gráfico semanal
+        // sin abrir otro listener. Los totales de "hoy" se filtran abajo.
+        const inicioSemana = new Date(inicioRango);
+        if (rango === 'today') inicioSemana.setDate(inicioSemana.getDate() - 6);
+        const inicio = inicioRango;
         // Solo lo propio de Fábrica: tenantId === 'fabrica'. Necesita el
         // mismo índice compuesto (tenantId + timestamp) que
         // productosFabrica/inventarioFabrica — si Firestore lo pide, es
@@ -257,23 +263,55 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         const q = query(
             ventasCollection,
             where('tenantId', '==', 'fabrica'),
-            where('timestamp', '>=', Timestamp.fromDate(inicio)),
+            where('timestamp', '>=', Timestamp.fromDate(inicioSemana)),
             where('timestamp', '<', Timestamp.fromDate(fin)),
             orderBy('timestamp', 'desc')
         );
         cancelarListenerVentasFabrica = onSnapshot(q, async (snapshot) => {
             let totalRecibido = 0;
             let ventasContadas = 0;
+            // Total recibido por día (clave = fecha local AAAA-M-D) para el gráfico.
+            const porDia = new Map();
+            const claveDia = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
             snapshot.forEach(docSnap => {
                 const venta = docSnap.data();
                 const estado = venta.estado || '';
                 if (estado === 'Anulada' || estado === 'Cancelada') return;
-                totalRecibido += (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                const recibido = (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0);
+                const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate() : new Date();
+                porDia.set(claveDia(fecha), (porDia.get(claveDia(fecha)) || 0) + recibido);
+                if (fecha < inicio) return; // días anteriores: solo para el gráfico
+                totalRecibido += recibido;
                 ventasContadas++;
             });
 
             document.getElementById('fdb-ventas-periodo').textContent = formatoMonedaDashboard.format(totalRecibido);
             document.getElementById('fdb-ventas-count').textContent = `${ventasContadas} ${ventasContadas === 1 ? 'venta' : 'ventas'}`;
+            const ticketEl = document.getElementById('fdb-ticket-promedio');
+            if (ticketEl) ticketEl.textContent = formatoMonedaDashboard.format(ventasContadas ? Math.round(totalRecibido / ventasContadas) : 0);
+
+            // Mini gráfico de los últimos 7 días (hoy resaltado) + "Ayer".
+            const barrasEl = document.getElementById('fdb-week-bars');
+            if (barrasEl && rango === 'today') {
+                const dias = [];
+                for (let i = 6; i >= 0; i--) {
+                    const d = new Date(inicio);
+                    d.setDate(d.getDate() - i);
+                    dias.push({ fecha: d, total: porDia.get(claveDia(d)) || 0 });
+                }
+                const max = Math.max(1, ...dias.map(d => d.total));
+                const letras = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+                barrasEl.innerHTML = dias.map((d, i) => {
+                    const alto = d.total > 0 ? Math.max(6, Math.round((d.total / max) * 100)) : 3;
+                    const titulo = `${d.fecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric' })}: ${formatoMonedaDashboard.format(d.total)}`;
+                    return `<div class="fdb-week-col${i === 6 ? ' is-today' : ''}" title="${titulo}">
+                        <span class="fdb-week-bar" style="height:${alto}%"></span>
+                        <span class="fdb-week-day">${i === 6 ? 'Hoy' : letras[d.fecha.getDay()]}</span>
+                    </div>`;
+                }).join('');
+                const ayerEl = document.getElementById('fdb-ventas-ayer');
+                if (ayerEl) ayerEl.textContent = formatoMonedaDashboard.format(dias[5].total);
+            }
 
             // 💸 RESTAR/SUMAR GASTOS E INGRESOS OPERATIVOS del período (telas,
             // luz, arriendo, nómina, hilos...) registrados a mano en Finanzas >
@@ -385,16 +423,22 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
                 const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate() : null;
                 const cuando = fecha ? tiempoRelativoDashboard(fecha) : 'Hace un momento';
                 const anulada = venta.estado === 'Anulada' || venta.estado === 'Cancelada';
+                // Cliente como título y debajo cuántas prendas y cómo pagó, en
+                // vez de repetir "Venta realizada" en cada fila.
+                const prendas = (venta.items || []).reduce((s, it) => s + (parseInt(it.cantidad, 10) || 0), 0);
+                const metodo = { efectivo: 'Efectivo', transferencia: 'Transferencia', mixto: 'Mixto', otro: 'Otro medio' }[(venta.metodoPago || '').toLowerCase()] || '';
+                const detalle = [prendas ? `${prendas} prenda${prendas === 1 ? '' : 's'}` : '', metodo].filter(Boolean).join(' · ');
+                const iniciales = (venta.clienteNombre || 'Cliente General').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase();
                 return `
-                    <div class="db-activity-item">
-                        <span class="db-activity-icon"><i class="bi bi-cart-check-fill"></i></span>
-                        <div class="db-activity-body">
-                            <div class="db-activity-title">${anulada ? 'Venta anulada' : 'Venta realizada'}</div>
-                            <div class="db-activity-sub">${venta.clienteNombre || 'Cliente General'}</div>
+                    <div class="fdb-sale${anulada ? ' is-void' : ''}">
+                        <span class="fdb-sale-avatar">${iniciales || 'CG'}</span>
+                        <div class="fdb-sale-body">
+                            <div class="fdb-sale-name">${venta.clienteNombre || 'Cliente General'}</div>
+                            <div class="fdb-sale-sub">${anulada ? 'Anulada' : (detalle || 'Venta')}</div>
                         </div>
-                        <div class="db-activity-meta">
-                            <span class="db-activity-time">${cuando}</span>
-                            <span class="db-activity-amount">${formatoMonedaDashboard.format(venta.totalVenta || 0)}</span>
+                        <div class="fdb-sale-meta">
+                            <span class="fdb-sale-amount">${formatoMonedaDashboard.format(venta.totalVenta || 0)}</span>
+                            <span class="fdb-sale-time">${cuando}</span>
                         </div>
                     </div>
                 `;
@@ -421,6 +465,29 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     window.addEventListener('hashchange', cargarDashboardSiCorresponde);
     window.addEventListener('admin:section-shown', cargarDashboardSiCorresponde);
     if (!dashboardYaCargado) cargarDashboardSiCorresponde();
+
+    // Saludo con el primer nombre ("Hola, Alexander"): auth.js escribe el
+    // nombre completo en #db-greeting-name; aquí se recorta al primero.
+    const saludoNombreEl = document.getElementById('db-greeting-name');
+    if (saludoNombreEl) {
+        const recortarNombre = () => {
+            const primero = saludoNombreEl.textContent.trim().split(/\s+/)[0];
+            if (primero && primero !== saludoNombreEl.textContent) saludoNombreEl.textContent = primero;
+        };
+        recortarNombre();
+        new MutationObserver(recortarNombre).observe(saludoNombreEl, { childList: true, characterData: true, subtree: true });
+    }
+
+    // "Bajo stock" lleva a Productos con el filtro de bajo stock ya activado.
+    document.getElementById('fdb-bajo-stock-link')?.addEventListener('click', () => {
+        setTimeout(() => {
+            const toggle = document.getElementById('prodfab-filter-bajo-stock');
+            if (toggle && !toggle.checked) {
+                toggle.checked = true;
+                toggle.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }, 50);
+    });
 
     document.getElementById('fdb-ver-todo-actividad')?.addEventListener('click', () => {
         // Deja que el href navegue a #registrar-venta; el historial se abre
@@ -2638,6 +2705,14 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             if (pill && pillCount) { pillCount.textContent = count; pill.style.display = count > 0 ? 'inline-flex' : 'none'; }
             const statPendientes = document.getElementById('pw-stat-pendientes');
             if (statPendientes) statPendientes.textContent = count;
+            const dashAlert = document.getElementById('fdb-pedidos-alert');
+            const dashCount = document.getElementById('fdb-pedidos-count');
+            if (dashAlert && dashCount) {
+                dashCount.textContent = count;
+                dashAlert.hidden = count === 0;
+                const textoEl = dashAlert.querySelector('strong');
+                if (textoEl) textoEl.innerHTML = `<span id="fdb-pedidos-count">${count}</span> ${count === 1 ? 'pedido web por revisar' : 'pedidos web por revisar'}`;
+            }
             ['pendiente', 'aceptado', 'rechazado'].forEach(t => { const b = document.getElementById(`pw-badge-${t}`); if (b) b.textContent = allOrders[t].length; });
             const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
             const aceptadosHoy = allOrders.aceptado.filter(({ order }) => { const f = order.fechaAceptacion?.toDate?.(); return f && f >= hoy; });
