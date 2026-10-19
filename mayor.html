@@ -809,85 +809,135 @@
     color: var(--color-texto-secundario);
   }
 
-  /* ── Hoja de "Agregar rápido": foto + precio + lista de colores (con
-     disponibilidad de cada uno) + tallas/cantidades de la prenda que se
-     está editando. Todo pensado para caber en una pantalla sin necesidad
-     de deslizar: la foto es modesta desde el inicio y se encoge todavía
-     más (`.is-compact`, activado desde mayor.js según cuánto contenido
-     haya) para dejarle sitio a la lista cuando hay varios colores o ya
-     se eligió más de uno. El body conserva overflow-y:auto solo como red
-     de seguridad para el caso extremo de una prenda con muchísimos
-     colores — nunca se oculta contenido. */
-  .mqa-hero-img {
-    display: block;
-    width: 100%;
-    aspect-ratio: 4/5;
-    max-height: 30vh;
-    max-height: 30dvh;
-    /* "contain" (no "cover"): se ve la prenda completa, sin recortar
-       ningún borde de la foto — a costa de dejar franjas vacías arriba/
-       abajo o a los lados si la foto no es 4:5. */
-    object-fit: contain;
-    border-radius: var(--radio-md);
-    background: var(--color-fondo-secundario);
-    transition: max-height 0.2s ease;
+  /* ── Hoja de "Agregar rápido" ───────────────────────────────────────
+     Arriba un resumen (miniatura de la foto + precio), luego "Elige tus
+     colores" (grilla de 2 columnas) y "Tu selección" (talla y cantidad de
+     cada color elegido). La miniatura se amplía a pantalla completa al
+     tocarla, así la foto no le quita espacio a la lista. */
+  .mqa-summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--color-borde);
   }
-  .mqa-hero-wrap {
+  .mqa-thumb {
     position: relative;
-    margin-bottom: 10px;
+    flex-shrink: 0;
+    width: 88px;
+    aspect-ratio: 4 / 5;
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--color-fondo-secundario);
+    cursor: zoom-in;
   }
-  .mayor-quickadd-sheet.is-compact .mqa-hero-img {
-    max-height: 90px;
+  .mqa-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .mqa-thumb-zoom {
+    position: absolute;
+    right: 5px;
+    bottom: 5px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    color: #fff;
+    font-size: 0.66rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mqa-summary-info {
+    flex: 1;
+    min-width: 0;
   }
   .mqa-price {
-    margin-bottom: 12px;
+    margin-bottom: 0;
   }
   .mqa-price .mayor-price-amount {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
   }
   .mqa-price .tier-hint {
-    font-size: 0.78rem;
+    font-size: 0.74rem;
+  }
+  .mqa-ref-note {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 8px 0 0;
+    font-size: 0.72rem;
+    color: var(--color-texto-secundario);
   }
 
-  /* Cuántos colores tiene la prenda, de un vistazo. */
-  .mayor-colors-summary {
-    font-size: 0.8rem;
+  /* Encabezado de cada sección: título en versalitas + dato a la derecha. */
+  .mqa-section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 0.68rem;
     font-weight: 700;
-    color: var(--color-primario-oscuro);
-    margin: 0 0 6px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--color-texto-secundario);
+    margin: 0 0 4px;
   }
-  /* Lista de colores para elegir: grilla de 2 columnas (en vez de una fila
-     por color) para que quepan más sin crecer en alto — clave para que
-     prendas con varios colores no obliguen a hacer scroll. */
+  .mqa-section-head span:last-child {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .mqa-section-hint {
+    font-size: 0.76rem;
+    color: var(--color-texto-secundario);
+    margin: 0 0 10px;
+  }
+
+  /* Colores para elegir: grilla de 2 columnas para que quepan más sin
+     crecer en alto. */
   .mayor-card-colors {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-    margin-bottom: 10px;
+    gap: 8px;
+    margin-bottom: 20px;
   }
   .mayor-card-color-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
     min-width: 0;
     border: 1px solid var(--color-borde);
-    border-radius: var(--radio-sm);
+    border-radius: 12px;
     background: #fff;
-    padding: 7px 8px;
+    padding: 9px 10px;
     cursor: pointer;
     text-align: left;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .mayor-card-color-item:hover {
+      border-color: var(--color-primario);
+    }
   }
   .mayor-card-color-item.is-selected {
     border-color: var(--color-primario);
     background: #fff5f9;
+    box-shadow: 0 0 0 1px var(--color-primario);
   }
   .mayor-card-color-swatch {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     flex-shrink: 0;
-    box-shadow: 0 0 0 1px var(--color-borde);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
   }
   .mayor-color-row-info {
     flex: 1;
@@ -897,131 +947,143 @@
     gap: 1px;
   }
   .mayor-color-row-name {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     font-weight: 600;
     color: var(--color-texto);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .mayor-card-color-item.is-selected .mayor-color-row-name {
-    color: var(--color-primario-oscuro);
+    line-height: 1.25;
   }
   .mayor-color-row-stock {
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     color: var(--color-texto-secundario);
+  }
+  .mayor-color-row-stock.is-low {
+    color: #c62828;
+    font-weight: 600;
   }
   .mayor-color-row-add {
     flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--color-borde);
     color: var(--color-texto-secundario);
-    font-size: 0.82rem;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .mayor-swatch-badge {
     flex-shrink: 0;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 7px;
     border-radius: 999px;
     background: var(--color-primario);
     color: #fff;
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    line-height: 20px;
+    line-height: 24px;
     text-align: center;
   }
-  .mayor-add-hint {
-    font-size: 0.8rem;
-    color: var(--color-texto-secundario);
-    text-align: center;
-    padding: 4px 4px 0;
-  }
-  .mayor-card-toggle-label {
-    font-size: 0.78rem;
-    color: var(--color-primario-oscuro);
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
+
+  /* Tu selección: una tarjeta por color elegido con talla y cantidad. */
   .mayor-selected-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    margin-top: 8px;
   }
   .mayor-selected-item {
     border: 1px solid var(--color-borde);
-    border-radius: var(--radio-sm);
-    background: var(--color-fondo-secundario);
-    padding: 7px 8px;
+    border-radius: 12px;
+    background: #fff;
+    padding: 10px 12px;
   }
   .mayor-selected-head {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 5px;
+    gap: 10px;
   }
   .mayor-selected-swatch {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    box-shadow: 0 0 0 1px var(--color-borde);
-  }
-  .mayor-selected-name {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--color-texto);
-    flex: 1;
-  }
-  .mayor-selected-remove {
     width: 22px;
     height: 22px;
     flex-shrink: 0;
-    border: 1px solid var(--color-borde);
-    border-radius: 6px;
-    background: #fff;
-    color: #c62828;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+  }
+  .mayor-selected-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .mayor-selected-name {
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--color-texto);
+    line-height: 1.25;
+  }
+  .mayor-qty-stock {
     font-size: 0.7rem;
+    color: var(--color-texto-secundario);
+  }
+  .mayor-selected-remove {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    margin-right: -6px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-texto-secundario);
+    font-size: 0.9rem;
     line-height: 1;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease;
   }
   .mayor-selected-remove:hover {
     background: #fdecea;
+    color: #c62828;
   }
   .mayor-talla-pills {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 6px;
+    gap: 6px;
+    margin-top: 10px;
+    padding-left: 32px;
   }
   .mayor-talla-pill {
-    padding: 3px 10px;
-    font-size: 0.74rem;
+    padding: 4px 12px;
+    font-size: 0.76rem;
     min-width: auto;
+    border-width: 1px;
+    border-radius: 999px;
   }
-  .mayor-qty {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .mayor-qty .mp-qty {
-    border-color: var(--color-borde);
+  .mp-qty.mayor-qty {
+    flex-shrink: 0;
+    border: 1px solid var(--color-borde);
+    border-radius: 999px;
   }
   .mayor-qty .mp-qty-btn {
-    width: 26px;
-    height: 26px;
-    font-size: 0.9rem;
+    width: 32px;
+    height: 32px;
+    font-size: 1.05rem;
+    background: transparent;
+  }
+  .mayor-qty .mp-qty-btn:disabled {
+    color: var(--color-borde);
+    cursor: not-allowed;
   }
   .mayor-qty-input {
-    width: 40px;
-    height: 26px;
+    width: 34px;
+    height: 32px;
     border: none;
-    border-left: 1.5px solid var(--color-borde);
-    border-right: 1.5px solid var(--color-borde);
+    padding: 0;
     text-align: center;
-    font-size: 0.78rem;
+    font-size: 0.88rem;
     font-weight: 600;
     font-family: var(--fuente-principal);
-    background: #fff;
+    background: transparent;
     color: var(--color-texto);
     -moz-appearance: textfield;
   }
@@ -1030,9 +1092,16 @@
     -webkit-appearance: none;
     margin: 0;
   }
-  .mayor-qty-stock {
-    font-size: 0.7rem;
-    color: var(--color-texto-secundario);
+
+  /* Botón "Listo" de la hoja: color de la marca y cuántas unidades lleva. */
+  .btn-mayor-send.mqa-done-btn {
+    background: var(--color-primario);
+    border-radius: 12px;
+    padding: 13px;
+    font-weight: 700;
+  }
+  .btn-mayor-send.mqa-done-btn:hover {
+    background: var(--color-primario-oscuro);
   }
 
   /* ── Panel inferior de cierre de pedido ──────────────────────────── */
@@ -1702,16 +1771,21 @@
     <button type="button" class="mayor-fullsheet-close" id="mqa-close-btn" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
   </div>
   <div class="mayor-fullsheet-body">
-    <div class="mqa-hero-wrap">
-      <img src="" id="mqa-img" class="mqa-hero-img" alt="">
-      <span class="mayor-ref-label"><i class="bi bi-camera-fill"></i> Foto de referencia</span>
+    <div class="mqa-summary">
+      <button type="button" class="mqa-thumb" id="mqa-thumb-btn" aria-label="Ampliar foto">
+        <img src="" id="mqa-img" alt="">
+        <span class="mqa-thumb-zoom" aria-hidden="true"><i class="bi bi-arrows-angle-expand"></i></span>
+      </button>
+      <div class="mqa-summary-info">
+        <div class="mqa-price" id="mqa-price"></div>
+        <p class="mqa-ref-note"><i class="bi bi-camera"></i> Foto de referencia · toca para ampliar</p>
+      </div>
     </div>
-    <div class="mqa-price" id="mqa-price"></div>
     <div id="mqa-body"></div>
   </div>
   <div class="mayor-fullsheet-footer">
-    <button type="button" class="btn btn-mayor-send" id="mqa-done-btn">
-      <i class="bi bi-check2"></i> Listo
+    <button type="button" class="btn btn-mayor-send mqa-done-btn" id="mqa-done-btn">
+      <i class="bi bi-check2"></i> <span id="mqa-done-label">Listo</span>
     </button>
   </div>
 </div>
@@ -1745,7 +1819,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.9.15"></script>
+<script type="module" src="mayor.js?v=1.9.16"></script>
 
 </body>
 </html>
