@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Tema de Fábrica: mismos colores, letra (Poppins) y estilo limpio que
          la tienda mayorista (mayor.html). Solo lo carga este panel. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.4.0">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.5.0">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
@@ -395,11 +395,11 @@
                     </div>
                 </div>
 
-                <!-- Resumen -->
-                <div class="sv-section">
+                <!-- Cobro: resumen + método de pago en una sola tarjeta -->
+                <div class="sv-section sv-checkout">
                     <div class="sv-section-header">
                         <i class="bi bi-receipt"></i>
-                        <span>Resumen de venta</span>
+                        <span>Cobro</span>
                     </div>
                     <div class="sv-section-body">
                         <div class="sv-summary-row">
@@ -417,50 +417,40 @@
                             </div>
                         </div>
                         <div class="sv-summary-divider"></div>
-                        <div class="sv-summary-row sv-summary-row--total">
-                            <span>TOTAL</span>
-                            <span id="fv-total">$0</span>
+                        <div class="sv-pay-methods-row" id="fv-metodo-pago-row">
+                            <button type="button" class="sv-pay-method-btn active" data-metodo="efectivo">
+                                <i class="bi bi-cash-coin"></i> Efectivo
+                            </button>
+                            <button type="button" class="sv-pay-method-btn" data-metodo="transferencia">
+                                <i class="bi bi-bank"></i> Transferencia
+                            </button>
+                            <button type="button" class="sv-pay-method-btn" data-metodo="otro">
+                                <i class="bi bi-credit-card"></i> Otro
+                            </button>
                         </div>
+                        <div class="sv-pay-row">
+                            <span class="sv-pay-label">Recibido</span>
+                            <input type="text" inputmode="numeric" id="fv-pago-recibido" class="form-control" placeholder="0" value="0">
+                        </div>
+                        <div class="sv-change-row" id="fv-cambio-row" style="display:none;">
+                            <span>Cambio</span>
+                            <span id="fv-cambio">$0</span>
+                        </div>
+                        <textarea id="fv-observaciones" class="form-control form-control-sm sv-observaciones" rows="1" placeholder="Observaciones (opcional)..."></textarea>
+                        <button type="button" class="sv-btn-save-draft" id="fv-guardar-borrador-btn">
+                            <i class="bi bi-journal-text"></i> Guardar como borrador
+                        </button>
                     </div>
                 </div>
 
-                <!-- Pago -->
-                <div class="sv-payment">
-                    <div class="sv-section-header">
-                        <i class="bi bi-credit-card-fill"></i>
-                        <span>Método de pago</span>
+                <!-- Barra fija: total siempre visible + confirmar -->
+                <div class="sv-checkout-bar">
+                    <div class="sv-checkout-total">
+                        <span>Total</span>
+                        <strong id="fv-total">$0</strong>
                     </div>
-
-                    <div class="sv-pay-methods-row" id="fv-metodo-pago-row">
-                        <button type="button" class="sv-pay-method-btn active" data-metodo="efectivo">
-                            <i class="bi bi-cash-coin"></i> Efectivo
-                        </button>
-                        <button type="button" class="sv-pay-method-btn" data-metodo="transferencia">
-                            <i class="bi bi-bank"></i> Transferencia
-                        </button>
-                        <button type="button" class="sv-pay-method-btn" data-metodo="otro">
-                            <i class="bi bi-credit-card"></i> Otro
-                        </button>
-                    </div>
-
-                    <div class="sv-pay-row">
-                        <span class="sv-pay-label">Recibido</span>
-                        <input type="text" inputmode="numeric" id="fv-pago-recibido" class="form-control" placeholder="0" value="0">
-                    </div>
-
-                    <div class="sv-change-row" id="fv-cambio-row" style="display:none;">
-                        <span>Cambio</span>
-                        <span id="fv-cambio">$0</span>
-                    </div>
-
-                    <textarea id="fv-observaciones" class="form-control form-control-sm sv-observaciones" rows="1" placeholder="Observaciones (opcional)..."></textarea>
-
                     <button type="submit" class="sv-submit-btn">
                         <i class="bi bi-check-circle-fill"></i> Confirmar venta
-                    </button>
-
-                    <button type="button" class="sv-btn-save-draft" id="fv-guardar-borrador-btn">
-                        <i class="bi bi-journal-text"></i> Guardar como borrador
                     </button>
                 </div>
             </form>
