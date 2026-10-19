@@ -795,13 +795,41 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         try { localStorage.removeItem(BORRADOR_VENTA_KEY); } catch (error) { /* localStorage no disponible */ }
     }
 
-    function restaurarBorradorSiExiste() {
-        let borrador;
+    function leerBorrador() {
         try {
             const raw = localStorage.getItem(BORRADOR_VENTA_KEY);
-            if (!raw) return;
-            borrador = JSON.parse(raw);
-        } catch (error) { return; }
+            return raw ? JSON.parse(raw) : null;
+        } catch (error) { return null; }
+    }
+
+    // Nueva venta siempre empieza en blanco. Si hay un borrador guardado se
+    // muestra un aviso para recuperarlo o descartarlo, en vez de cargarlo
+    // solo cada vez que se abre la página.
+    const draftBannerEl = document.getElementById('fv-draft-banner');
+    function mostrarAvisoBorrador() {
+        if (!draftBannerEl) return;
+        const borrador = leerBorrador();
+        const prendas = (borrador?.carrito || []).reduce((s, it) => s + (parseInt(it.cantidad, 10) || 0), 0);
+        if (!borrador || !prendas || carrito.length > 0) { draftBannerEl.hidden = true; return; }
+        const detalleEl = document.getElementById('fv-draft-banner-detail');
+        if (detalleEl) {
+            const total = (borrador.carrito || []).reduce((s, it) => s + (Number(it.total) || 0), 0);
+            detalleEl.textContent = `${prendas} prenda${prendas === 1 ? '' : 's'} · ${formatoMonedaDashboard.format(total)}`;
+        }
+        draftBannerEl.hidden = false;
+    }
+    document.getElementById('fv-draft-restore-btn')?.addEventListener('click', () => {
+        restaurarBorradorSiExiste();
+        if (draftBannerEl) draftBannerEl.hidden = true;
+    });
+    document.getElementById('fv-draft-discard-btn')?.addEventListener('click', () => {
+        limpiarBorrador();
+        if (draftBannerEl) draftBannerEl.hidden = true;
+        showToast('Borrador descartado', 'info');
+    });
+
+    function restaurarBorradorSiExiste() {
+        const borrador = leerBorrador();
         if (!borrador || carrito.length > 0) return; // no pisar una venta ya empezada
 
         if (borrador.clienteId) {
@@ -830,6 +858,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         if (!carrito.length) return;
         if (!confirm('¿Vaciar todo el carrito de esta venta?')) return;
         carrito = [];
+        limpiarBorrador(); // si no, el borrador volvía a aparecer al recargar
         renderCarrito();
     });
 
@@ -2650,7 +2679,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
     });
 
     renderCarrito();
-    restaurarBorradorSiExiste();
+    mostrarAvisoBorrador();
 
     // ────────────────────────────────────────────────────────────────────
     // ── PEDIDOS WEB (mayoristas, desde mayor.html) ─────────────────────
