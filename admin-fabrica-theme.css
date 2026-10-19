@@ -2381,3 +2381,52 @@ body.fab-page.dark-mode .pf-card:active { background: rgba(217,136,185,.08); }
 body.fab-page.dark-mode .pf-btn--ghost { background: rgba(255,255,255,.06); }
 body.fab-page.dark-mode .pf-switch { background: rgba(255,255,255,.04); }
 body.fab-page.dark-mode .pf-photo { background: rgba(217,136,185,.08); }
+
+/* ── Barra inferior del celular ──
+   style.css (tienda) le da forma de píldora flotante (radio 44px, centrada
+   con translateX(-50%)) y admin-styles.css la estira a todo el ancho: la
+   mezcla dejaba una barra ancha con esquinas redondas que en Chrome de
+   iPhone se veía cortada contra el borde. Aquí queda plana, pegada abajo y
+   con el espacio de la barra de inicio del teléfono dentro de ella. */
+@media (max-width: 991.98px) {
+  body.fab-page .mobile-bottom-nav {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0;
+    margin: 0;
+    padding: 0 0 env(safe-area-inset-bottom, 0px);
+    gap: 0;
+    border-radius: 0 !important;
+    border: none;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--surface-raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: 0 -1px 8px rgba(0, 0, 0, 0.04);
+    transform: translate3d(0, 0, 0) !important;
+    -webkit-transform: translate3d(0, 0, 0) !important;
+    transition: none;
+    align-items: stretch;
+  }
+  body.fab-page .mobile-bottom-nav .mbn-item {
+    height: 56px;
+    padding: 6px 2px 4px;
+  }
+  body.fab-page .mobile-bottom-nav .mbn-item span:not(.mbn-badge) {
+    font-size: 0.66rem;
+  }
+  body.fab-page.dark-mode .mobile-bottom-nav {
+    background: #16141f;
+    border-top-color: rgba(255,255,255,0.06);
+  }
+}
+@media (max-width: 991.98px) {
+  /* Que lo último de cada sección no quede tapado por la barra */
+  body.fab-page .admin-content-wrapper {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
