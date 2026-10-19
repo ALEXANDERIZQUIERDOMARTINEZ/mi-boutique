@@ -1926,7 +1926,7 @@ body.fab-page.dark-mode #registrar-venta .sv-cart-empty-cta strong { color: var(
 /* Lista */
 .fab-page .pf-list {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.55rem;
 }
 @media (min-width: 992px) {
@@ -2087,7 +2087,13 @@ body.fab-page.dark-mode .pf-card:active { background: rgba(217,136,185,.08); }
   color: var(--text-tertiary);
   letter-spacing: .03em;
 }
-.fab-page .pf-modal .modal-body { padding: 1.1rem 1.25rem 0.5rem; }
+.fab-page .pf-modal .modal-body { padding: 1.1rem 1.25rem 0.5rem; overflow-x: hidden; }
+/* Safari le da a un <select> el ancho de su opción más larga
+   ("Automático (detecta la tabla…)") y empujaba todo el formulario hacia
+   los lados: se fuerza a no pasar del ancho de su columna. */
+.fab-page .pf-modal .modal-content,
+.fab-page .pf-modal form { max-width: 100%; min-width: 0; }
+.fab-page .pf-modal select.pf-input { max-width: 100%; min-width: 0; width: 100%; }
 .fab-page .pf-modal .modal-footer {
   padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
   gap: 0.6rem;
@@ -2132,9 +2138,9 @@ body.fab-page.dark-mode .pf-card:active { background: rgba(217,136,185,.08); }
   background-size: 12px;
   text-overflow: ellipsis;
 }
-.fab-page .pf-grid-2 { display: grid; grid-template-columns: 1fr; column-gap: 0.75rem; }
-.fab-page .pf-grid-2--always { grid-template-columns: 1fr 1fr; }
-@media (min-width: 576px) { .fab-page .pf-grid-2 { grid-template-columns: 1fr 1fr; } }
+.fab-page .pf-grid-2 { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 0.75rem; }
+.fab-page .pf-grid-2--always { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (min-width: 576px) { .fab-page .pf-grid-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 
 /* Foto + nombre */
 .fab-page .pf-form-top {
