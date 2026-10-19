@@ -668,7 +668,8 @@ function formatCardProductName(nombre) {
 }
 
 // Bolitas de color: la manera de agregar la prenda ahora es tocar el color
-// directamente (un toque la agrega, otro toque la quita), en vez de un botón
+// directamente (el primer toque lo agrega y cada toque siguiente suma una
+// unidad hasta lo disponible; se quita con la papelera), en vez de un botón
 // "Elegir esta prenda" separado seguido de desplegables — así lo primero que
 // el ojo ve (los colores disponibles) es también la forma de comprarlos.
 // Cada color es una fila completa (no una bolita chica): se ve el nombre y
@@ -697,7 +698,7 @@ function buildCardColorsHtml(p) {
     }).join('');
     const n = colores.length;
     const resumen = `<div class="mqa-section-head"><span>Elige tus colores</span><span>${n} disponible${n === 1 ? '' : 's'}</span></div>
-        <p class="mqa-section-hint">Toca un color para agregarlo o quitarlo.</p>`;
+        <p class="mqa-section-hint">Cada toque en un color suma una unidad.</p>`;
     return `${resumen}<div class="mayor-card-colors">${itemsHtml}</div>`;
 }
 
@@ -973,9 +974,17 @@ if (mqaBodyEl) {
             const filas = detalleFilas.get(id) || [];
             const idxExistente = filas.findIndex(f => f.color === color);
             if (idxExistente >= 0) {
-                filas.splice(idxExistente, 1);
-                if (filas.length === 0) detalleFilas.delete(id);
-                else detalleFilas.set(id, filas);
+                // Color ya elegido: cada toque suma una unidad (igual que el
+                // botón +), hasta lo disponible. Para quitarlo está la papelera.
+                const fila = filas[idxExistente];
+                const hasTallas = getTallasConStock(p).length > 0;
+                const disponible = getStockDisponibleFila(p, hasTallas ? fila.talla : null, color, idxExistente);
+                const cantidadActual = parseInt(fila.cantidad, 10) || 0;
+                if (cantidadActual >= disponible) {
+                    showToast(`Ya elegiste las ${disponible} unidades disponibles de este color`, 'warning');
+                    return;
+                }
+                fila.cantidad = cantidadActual + 1;
             } else {
                 const tallas = getTallasConStock(p);
                 const tallasColor = tallas.length > 0 ? getTallasParaColor(p, color) : [];
@@ -1350,7 +1359,7 @@ const MAYOR_TOUR_STEPS = [
     {
         selector: '#mqa-body',
         title: 'Color, talla y cantidad',
-        text: 'Toca un color para agregarlo a tu pedido (puedes elegir varios). Luego elige la talla si aplica y ajusta la cantidad con los botones − y +.',
+        text: 'Toca un color para agregarlo a tu pedido; cada toque más suma una unidad (puedes elegir varios colores). También puedes elegir la talla si aplica y ajustar la cantidad con − y +.',
         onEnter: openDemoTourSheet,
     },
     {
