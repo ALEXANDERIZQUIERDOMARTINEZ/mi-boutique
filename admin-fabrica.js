@@ -869,9 +869,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         return clientesCache;
     }
 
-    function renderClientList(lista) {
+    function renderClientList(lista, termino = '') {
         if (!lista.length) {
-            clientListEl.innerHTML = `<li class="list-group-item text-center text-muted">Sin resultados</li>`;
+            clientListEl.innerHTML = termino
+                ? `<li class="list-group-item text-center text-muted">No hay clientes que coincidan con "${termino}"</li>`
+                : `<li class="list-group-item text-center text-muted">Aún no tienes clientes guardados.<br><small>Créalo con el botón <i class="bi bi-person-plus"></i> junto a "Cliente".</small></li>`;
             return;
         }
         clientListEl.innerHTML = lista.map(c => `
@@ -898,7 +900,7 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         const filtrada = !termino ? lista : lista.filter(c =>
             (c.nombre || '').toLowerCase().includes(termino) || (c.cedula || '').includes(termino)
         );
-        renderClientList(filtrada);
+        renderClientList(filtrada, termino);
     });
 
     clientListEl?.addEventListener('click', (e) => {

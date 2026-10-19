@@ -1463,3 +1463,40 @@ body.fab-page.dark-mode #registrar-venta .sv-cart-empty-cta strong { color: var(
   border: 1px solid var(--border-default);
   border-radius: 12px;
 }
+
+/* ── iPhone: sin zoom automático al tocar un campo ──
+   Safari hace zoom cuando un campo con letra menor a 16px recibe el foco
+   (por ejemplo el buscador de "Buscar cliente", que se enfoca solo al
+   abrir) y la pantalla queda corrida y cortada a la derecha. En el celular
+   todos los campos de texto usan 16px. */
+@media (max-width: 991.98px) {
+  .fab-page input[type="text"],
+  .fab-page input[type="search"],
+  .fab-page input[type="number"],
+  .fab-page input[type="tel"],
+  .fab-page input[type="email"],
+  .fab-page input[type="password"],
+  .fab-page input[type="date"],
+  .fab-page input:not([type]),
+  .fab-page textarea,
+  .fab-page select {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Ventanas emergentes en el celular: pegadas abajo ──
+   admin-styles.css ya las ancla al fondo, pero los diálogos "centered" y
+   "scrollable" de Bootstrap ocupan todo el alto y dejaban la hoja flotando
+   a media pantalla. */
+@media (max-width: 767px) {
+  .fab-page .modal-dialog.modal-dialog-centered,
+  .fab-page .modal-dialog.modal-dialog-scrollable {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 92dvh;
+    display: block;
+  }
+  .fab-page .modal-dialog-scrollable .modal-content {
+    max-height: 92dvh;
+  }
+}
