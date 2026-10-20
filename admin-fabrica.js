@@ -2919,6 +2919,7 @@ window.confirmarFab = confirmarFab;
                 return !searchQuery
                     || (order.clienteNombre || '').toLowerCase().includes(searchQuery)
                     || (order.asesorNombre || '').toLowerCase().includes(searchQuery)
+                    || (searchQuery.replace(/\D/g, '').length >= 3 && String(order.clienteCelular || '').includes(searchQuery.replace(/\D/g, '')))
                     || id.toLowerCase().includes(q);
             });
         }
@@ -2995,6 +2996,25 @@ window.confirmarFab = confirmarFab;
             webOrdersContainer.appendChild(frag);
         }
 
+        // WhatsApp del comprador (lo pide mayor.html desde que existe el campo;
+        // los pedidos anteriores no lo tienen). Celular de Colombia: 10 dígitos.
+        function celularCliente(order) {
+            let d = String(order.clienteCelular || '').replace(/\D/g, '');
+            if (d.length === 12 && d.startsWith('57')) d = d.slice(2);
+            return /^3\d{9}$/.test(d) ? d : '';
+        }
+        function formatearCelularPw(valor) {
+            const d = celularCliente({ clienteCelular: valor });
+            return d ? `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : '';
+        }
+        function enlaceWhatsAppCliente(order, codigo) {
+            const d = celularCliente(order);
+            if (!d) return '';
+            const nombre = order.clienteNombre && order.clienteNombre !== 'Cliente General' ? ` ${order.clienteNombre.split(' ')[0]}` : '';
+            const texto = `¡Hola${nombre}! 👋 Te escribimos de Mishell'es por tu pedido #${codigo} de la tienda mayorista.`;
+            return `https://wa.me/57${d}?text=${encodeURIComponent(texto)}`;
+        }
+
         // Agrupa las líneas del pedido por producto: "Adara — Rosa ×2, Negro ×1"
         // en vez de una fila por color (los pedidos traen muchos colores del
         // mismo producto y la lista se volvía interminable).
@@ -3028,6 +3048,8 @@ window.confirmarFab = confirmarFab;
             const unidades = grupos.reduce((s, g) => s + g.unidades, 0);
             const codigo = orderId.substring(0, 8).toUpperCase();
             const cliente = order.clienteNombre && order.clienteNombre !== 'Cliente General' ? order.clienteNombre : '';
+            const waLink = enlaceWhatsAppCliente(order, codigo);
+            const celularTxt = formatearCelularPw(order.clienteCelular);
 
             const MAX_THUMBS = 4;
             const thumbs = grupos.slice(0, MAX_THUMBS).map(g => g.imagen
@@ -3049,11 +3071,15 @@ window.confirmarFab = confirmarFab;
                 </div>`).join('');
 
             const estadoLabel = { pendiente: 'Por revisar', aceptado: 'Aceptado', rechazado: 'Rechazado' }[estado] || estado;
+            const btnWa = waLink
+                ? `<a class="pw2-btn pw2-btn--wa" href="${waLink}" target="_blank" rel="noopener noreferrer" aria-label="Escribir al cliente por WhatsApp"><i class="bi bi-whatsapp"></i><span>Escribir</span></a>`
+                : '';
             const acciones = isPendiente ? `
-                <div class="pw2-actions">
-                    <button type="button" class="pw2-btn pw2-btn--reject btn-reject-order-fab" data-order-id="${orderId}" aria-label="Rechazar pedido"><i class="bi bi-x-lg"></i> Rechazar</button>
+                <div class="pw2-actions${waLink ? ' pw2-actions--wa' : ''}">
+                    <button type="button" class="pw2-btn pw2-btn--reject btn-reject-order-fab" data-order-id="${orderId}" aria-label="Rechazar pedido"><i class="bi bi-x-lg"></i><span>Rechazar</span></button>
+                    ${btnWa}
                     <button type="button" class="pw2-btn pw2-btn--accept btn-accept-order-fab" data-order-id="${orderId}"><i class="bi bi-check-lg"></i> Aceptar y vender</button>
-                </div>` : '';
+                </div>` : (waLink ? `<div class="pw2-actions pw2-actions--solo">${btnWa}</div>` : '');
 
             card.innerHTML = `
                 <button type="button" class="pw2-summary" aria-expanded="${abierto}">
@@ -3065,9 +3091,13 @@ window.confirmarFab = confirmarFab;
                     <div class="pw2-row pw2-row--meta">
                         <span>${formatFecha(order.timestamp)}</span>
                         <span>${unidades} prenda${unidades === 1 ? '' : 's'}</span>
-                        ${cliente ? `<span>${escPw(cliente)}</span>` : ''}
                         ${!isPendiente ? `<span class="pw2-state">${estadoLabel}</span>` : ''}
                     </div>
+                    ${(cliente || celularTxt) ? `<div class="pw2-client">
+                        <i class="bi bi-person-circle"></i>
+                        <span class="pw2-client-name">${escPw(cliente || 'Cliente')}</span>
+                        ${celularTxt ? `<span class="pw2-client-phone">${celularTxt}</span>` : ''}
+                    </div>` : '<div class="pw2-client pw2-client--none"><i class="bi bi-telephone-x"></i><span>Sin WhatsApp del cliente</span></div>'}
                     <div class="pw2-row pw2-row--products">
                         <span class="pw2-thumbs">${thumbs}</span>
                         <span class="pw2-products-text">${escPw(resumenProductos)}</span>

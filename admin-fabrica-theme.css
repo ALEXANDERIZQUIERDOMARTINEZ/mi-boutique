@@ -3488,3 +3488,38 @@ body.fab-page.dark-mode .alert-success { border-left: 3px solid #6fdc9f !importa
 body.fab-page.dark-mode hr { border-color: var(--border-subtle); opacity: 1; }
 body.fab-page.dark-mode .spinner-border { color: var(--brand-500) !important; }
 body.fab-page.dark-mode ::selection { background: rgba(217,136,185,.35); color: #fff; }
+
+/* ── Pedidos Web: datos del cliente y botón de WhatsApp ── */
+.fab-page .pw2-client {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  min-width: 0;
+}
+.fab-page .pw2-client > i { color: var(--text-tertiary); font-size: 0.9rem; }
+.fab-page .pw2-client-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.fab-page .pw2-client-phone {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.fab-page .pw2-client-phone::before { content: '·'; margin-right: 0.4rem; color: var(--text-tertiary); }
+.fab-page .pw2-client--none { color: var(--text-tertiary); font-size: 0.74rem; }
+.fab-page .pw2-actions--wa { grid-template-columns: auto auto minmax(0, 1fr); }
+.fab-page .pw2-actions--solo { grid-template-columns: auto; justify-content: start; }
+.fab-page .pw2-btn--wa {
+  background: #e8f7ee;
+  color: #15803d;
+  text-decoration: none;
+}
+.fab-page .pw2-btn--wa:hover { background: #d3f0de; color: #116b33; }
+.fab-page .pw2-btn--wa i { font-size: 1rem; }
+@media (max-width: 480px) {
+  .fab-page .pw2-actions--wa .pw2-btn--reject span { display: none; }
+  .fab-page .pw2-actions--wa .pw2-btn--reject { padding: 0 0.8rem; }
+}
+body.fab-page.dark-mode .pw2-btn--wa { background: rgba(37, 211, 102, .13) !important; color: #5fd896 !important; border: none !important; }
+body.fab-page.dark-mode .pw2-btn--wa:hover { background: rgba(37, 211, 102, .2) !important; }

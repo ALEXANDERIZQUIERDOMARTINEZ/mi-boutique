@@ -62,6 +62,50 @@ const finalizePanelEl = document.getElementById('mayor-finalize-panel');
 const finalizeToggleBtn = document.getElementById('btn-toggle-mayor-finalize');
 const waBtn = document.getElementById('btn-send-mayor-whatsapp');
 const obsEl = document.getElementById('mayor-observaciones');
+const celularEl = document.getElementById('mayor-cliente-celular');
+const nombreClienteEl = document.getElementById('mayor-cliente-nombre');
+const contactHintEl = document.getElementById('mayor-contact-hint');
+const CONTACTO_KEY = 'mayor_cliente_contacto';
+const CONTACT_HINT_TEXTO = contactHintEl ? contactHintEl.innerHTML : '';
+
+// WhatsApp del comprador: 10 dígitos que empiezan por 3 (celular de
+// Colombia), con o sin el 57 / +57 delante y con espacios o guiones.
+// Devuelve los 10 dígitos o '' si no es válido.
+function normalizarCelular(valor) {
+    let d = String(valor || '').replace(/\D/g, '');
+    if (d.length === 12 && d.startsWith('57')) d = d.slice(2);
+    return /^3\d{9}$/.test(d) ? d : '';
+}
+function formatearCelular(d) {
+    return d.length === 10 ? `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}` : d;
+}
+function marcarCelularInvalido(invalido) {
+    celularEl?.classList.toggle('is-invalid', invalido);
+    if (!contactHintEl) return;
+    contactHintEl.classList.toggle('is-error', invalido);
+    contactHintEl.innerHTML = invalido
+        ? '<i class="bi bi-exclamation-circle"></i> Escribe tu número de WhatsApp (10 dígitos, ej. 300 123 4567) para poder confirmar tu pedido.'
+        : CONTACT_HINT_TEXTO;
+}
+// Se recuerdan en este teléfono para no volver a escribirlos en la próxima compra.
+try {
+    const guardado = JSON.parse(localStorage.getItem(CONTACTO_KEY) || 'null');
+    if (guardado?.celular && celularEl) celularEl.value = formatearCelular(guardado.celular);
+    if (guardado?.nombre && nombreClienteEl) nombreClienteEl.value = guardado.nombre;
+} catch (_) { /* almacenamiento no disponible */ }
+celularEl?.addEventListener('input', () => {
+    if (celularEl.classList.contains('is-invalid') && normalizarCelular(celularEl.value)) marcarCelularInvalido(false);
+});
+celularEl?.addEventListener('blur', () => {
+    const d = normalizarCelular(celularEl.value);
+    if (d) celularEl.value = formatearCelular(d);
+});
+function leerContactoCliente() {
+    return {
+        celular: normalizarCelular(celularEl?.value),
+        nombre: (nombreClienteEl?.value || '').trim().replace(/\s+/g, ' ').slice(0, 60)
+    };
+}
 const asesorOptionsEl = document.getElementById('mayor-advisor-options');
 const totalEstimadoEl = document.getElementById('mayor-total-estimado');
 const orderSummaryEl = document.getElementById('mayor-order-summary');
@@ -1173,6 +1217,17 @@ function validarPedidoParaEnviar() {
         );
         return false;
     }
+    // Sin un WhatsApp válido no se envía: si el cliente nunca manda el mensaje,
+    // es la única forma de contactarlo desde Pedidos Web.
+    const { celular, nombre } = leerContactoCliente();
+    if (celularEl && !celular) {
+        marcarCelularInvalido(true);
+        celularEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        celularEl.focus({ preventScroll: true });
+        return false;
+    }
+    marcarCelularInvalido(false);
+    try { localStorage.setItem(CONTACTO_KEY, JSON.stringify({ celular, nombre })); } catch (_) { /* sin almacenamiento */ }
     return true;
 }
 
@@ -1216,15 +1271,16 @@ function prepararPedido() {
     const totalEstimado = calcularTotalEstimado();
     const totalUnidades = getTotalGeneral();
     const asesor = getAsesorSeleccionado();
+    const contacto = leerContactoCliente();
 
-    const firma = JSON.stringify({ items, observaciones, asesor: asesor.numero });
+    const firma = JSON.stringify({ items, observaciones, asesor: asesor.numero, contacto });
     let codigoPedido;
     if (ultimoPedidoGuardado && ultimoPedidoGuardado.firma === firma) {
         codigoPedido = ultimoPedidoGuardado.codigoPedido;
     } else {
-        // Sin nombre/celular del comprador (mayor.html no los pide): el pedido
-        // queda a nombre de "Cliente General" con su propio código, para que el
-        // admin lo identifique en Pedidos Web y solo tenga que darle "Aceptar".
+        // Con el WhatsApp (obligatorio) y el nombre (opcional) del comprador,
+        // para que el admin pueda escribirle desde Pedidos Web aunque nunca
+        // llegue el mensaje. Sin nombre queda como "Cliente General".
         //
         // El ID se genera localmente (doc() no llama a la red) para poder abrir
         // WhatsApp de inmediato, en el mismo tick del clic: si esperáramos a que
@@ -1241,9 +1297,9 @@ function prepararPedido() {
             // window.appContext (no existe en esta página pública, sin
             // sesión), va fijo.
             tenantId: 'fabrica',
-            clienteNombre: 'Cliente General',
+            clienteNombre: contacto.nombre || 'Cliente General',
             clienteCedula: '',
-            clienteCelular: '',
+            clienteCelular: contacto.celular,
             clienteCiudad: '',
             clienteBarrio: '',
             clienteDireccion: '',
@@ -1273,6 +1329,7 @@ function prepararPedido() {
 
     let mensaje = `¡Hola! 👋 Quiero hacer este pedido al por mayor:\n\n${bloques.join('\n\n')}\n\n———————————————\nTotal: ${totalUnidades} prenda${totalUnidades === 1 ? '' : 's'} — ${formatoMoneda.format(totalEstimado)}`;
     mensaje += `\n\n🧾 Código de pedido: #${codigoPedido}`;
+    if (contacto.celular) mensaje += `\n👤 ${contacto.nombre ? contacto.nombre + ' · ' : ''}WhatsApp ${formatearCelular(contacto.celular)}`;
     if (observaciones) mensaje += `\n\n📝 Observaciones: ${observaciones}`;
     return { mensaje, asesor };
 }
