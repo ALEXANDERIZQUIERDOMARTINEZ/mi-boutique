@@ -3523,3 +3523,23 @@ body.fab-page.dark-mode ::selection { background: rgba(217,136,185,.35); color: 
 }
 body.fab-page.dark-mode .pw2-btn--wa { background: rgba(37, 211, 102, .13) !important; color: #5fd896 !important; border: none !important; }
 body.fab-page.dark-mode .pw2-btn--wa:hover { background: rgba(37, 211, 102, .2) !important; }
+
+/* Contador de pedidos por revisar en la barra inferior */
+.fab-page .mbn-count:not([hidden]) {
+  position: absolute;
+  top: 3px;
+  left: calc(50% + 6px);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #e5484d;
+  color: #fff;
+  border: 2px solid var(--surface-raised);
+  font-size: 0.6rem !important;
+  font-weight: 700;
+  line-height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
