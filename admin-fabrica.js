@@ -145,6 +145,57 @@ const webOrdersCollection = collection(db, 'pedidosWeb');
 
 const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
+// Cuadro de confirmación con el diseño del panel, en lugar del confirm() del
+// navegador ("fabrica.mishelles.store dice…"). Devuelve una promesa con true
+// si se confirma. tono: 'danger' (rojo) o 'brand' (rosa).
+function confirmarFab({ titulo = '¿Continuar?', mensaje = '', confirmar = 'Aceptar', cancelar = 'Cancelar', tono = 'danger', icono } = {}) {
+    return new Promise(resolve => {
+        const previo = document.activeElement;
+        const overlay = document.createElement('div');
+        overlay.className = `fab-confirm fab-confirm--${tono}`;
+        overlay.setAttribute('role', 'alertdialog');
+        overlay.setAttribute('aria-modal', 'true');
+        const ico = icono || (tono === 'danger' ? 'bi-exclamation-triangle' : 'bi-question-circle');
+        overlay.innerHTML = `
+            <div class="fab-confirm-box">
+                <span class="fab-confirm-icon"><i class="bi ${ico}"></i></span>
+                <h2 class="fab-confirm-title"></h2>
+                <p class="fab-confirm-text"></p>
+                <div class="fab-confirm-actions">
+                    <button type="button" class="fab-confirm-btn fab-confirm-btn--cancel"></button>
+                    <button type="button" class="fab-confirm-btn fab-confirm-btn--ok"></button>
+                </div>
+            </div>`;
+        overlay.querySelector('.fab-confirm-title').textContent = titulo;
+        const texto = overlay.querySelector('.fab-confirm-text');
+        if (mensaje) texto.textContent = mensaje; else texto.remove();
+        const btnOk = overlay.querySelector('.fab-confirm-btn--ok');
+        const btnCancel = overlay.querySelector('.fab-confirm-btn--cancel');
+        btnOk.textContent = confirmar;
+        btnCancel.textContent = cancelar;
+
+        const cerrar = (valor) => {
+            document.removeEventListener('keydown', onKey, true);
+            overlay.classList.remove('is-open');
+            setTimeout(() => overlay.remove(), 180);
+            previo?.focus?.();
+            resolve(valor);
+        };
+        const onKey = (e) => {
+            if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(false); }
+            else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); cerrar(true); }
+        };
+        btnOk.addEventListener('click', () => cerrar(true));
+        btnCancel.addEventListener('click', () => cerrar(false));
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrar(false); });
+        document.addEventListener('keydown', onKey, true);
+
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => { overlay.classList.add('is-open'); btnOk.focus(); });
+    });
+}
+window.confirmarFab = confirmarFab;
+
 // ========================================================================
 // ✅ SECCIÓN: DASHBOARD FÁBRICA — pantalla de inicio estilo app móvil (saludo
 // + cuadrícula de accesos directos), seguida del resumen financiero
@@ -842,11 +893,15 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
     // Cargar un borrador en el formulario (y quitarlo de la lista: pasa a ser
     // la venta en curso; si se vuelve a guardar, queda como borrador nuevo).
-    function recuperarBorrador(id) {
+    async function recuperarBorrador(id) {
         const lista = leerBorradores();
         const borrador = lista.find(b => b.id === id);
         if (!borrador) return;
-        if (carrito.length && !confirm('Tienes productos en la venta actual. ¿Reemplazarlos por este borrador?')) return;
+        if (carrito.length && !(await confirmarFab({
+            titulo: '¿Reemplazar la venta actual?',
+            mensaje: 'Tienes productos en la venta en curso. Se cambiarán por los de este borrador.',
+            confirmar: 'Reemplazar', tono: 'brand', icono: 'bi-arrow-left-right'
+        }))) return;
 
         seleccionarCliente(borrador.clienteId ? {
             id: borrador.clienteId,
@@ -868,8 +923,8 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         showToast('Borrador cargado en la venta', 'info');
     }
 
-    function eliminarBorrador(id) {
-        if (!confirm('¿Eliminar este borrador?')) return;
+    async function eliminarBorrador(id) {
+        if (!(await confirmarFab({ titulo: '¿Eliminar este borrador?', mensaje: 'No se podrá recuperar.', confirmar: 'Eliminar', icono: 'bi-trash3' }))) return;
         escribirBorradores(leerBorradores().filter(b => b.id !== id));
         renderListaBorradores();
     }
@@ -933,9 +988,9 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 
     document.getElementById('fv-guardar-borrador-btn')?.addEventListener('click', guardarBorrador);
 
-    document.getElementById('fv-vaciar-carrito-btn')?.addEventListener('click', () => {
+    document.getElementById('fv-vaciar-carrito-btn')?.addEventListener('click', async () => {
         if (!carrito.length) return;
-        if (!confirm('¿Vaciar todo el carrito de esta venta?')) return;
+        if (!(await confirmarFab({ titulo: '¿Vaciar la venta?', mensaje: 'Se quitarán todas las prendas agregadas.', confirmar: 'Vaciar', icono: 'bi-cart-x' }))) return;
         carrito = [];
         renderCarrito();
     });
@@ -2595,7 +2650,11 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             return;
         }
         if (ventasAnulandoFabrica.has(ventaId)) return; // ya se está procesando (p. ej. doble clic)
-        if (!confirm('¿Estás seguro de que quieres ANULAR esta venta?\nEsta acción repondrá el stock y marcará la venta como "Anulada".')) {
+        if (!(await confirmarFab({
+            titulo: '¿Anular esta venta?',
+            mensaje: 'Se repondrá el stock de las prendas y la venta quedará marcada como "Anulada".',
+            confirmar: 'Anular venta', icono: 'bi-x-octagon'
+        }))) {
             return;
         }
 
@@ -2907,9 +2966,19 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         const escPw = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const capPw = (t) => { const x = String(t || '').toLowerCase().trim(); return x.charAt(0).toUpperCase() + x.slice(1); };
 
+        const bulkBar = document.getElementById('pw-bulk');
+        const bulkText = document.getElementById('pw-bulk-text');
+        const bulkBtn = document.getElementById('pw-bulk-reject');
+
         function renderCurrentTab() {
             webOrdersContainer.querySelectorAll('.pw-order-card, .pw-empty').forEach(el => el.remove());
             const orders = getFiltered(currentTab);
+            if (bulkBar) {
+                bulkBar.hidden = !(currentTab === 'pendiente' && orders.length > 1);
+                if (bulkText) bulkText.textContent = searchQuery
+                    ? `${orders.length} pedidos coinciden con la búsqueda`
+                    : `${orders.length} pedidos por revisar`;
+            }
             if (orders.length === 0) {
                 const empty = document.createElement('div');
                 empty.className = 'pw-empty pw2-empty';
@@ -3044,8 +3113,42 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
             else if (r) { e.preventDefault(); await handleRejectOrder(r.dataset.orderId); }
         });
 
+        // Rechaza de una vez todos los pendientes visibles (respeta la
+        // búsqueda). Las reglas no permiten borrar pedidos, así que pasan a
+        // Rechazados igual que con el botón de cada tarjeta.
+        bulkBtn?.addEventListener('click', async () => {
+            const ids = getFiltered('pendiente').map(o => o.id);
+            if (!ids.length) return;
+            const ok = await confirmarFab({
+                titulo: `¿Rechazar ${ids.length} pedido${ids.length === 1 ? '' : 's'}?`,
+                mensaje: searchQuery
+                    ? 'Se rechazarán todos los pedidos pendientes que coinciden con la búsqueda. Pasarán a la pestaña Rechazados.'
+                    : 'Se rechazarán todos los pedidos pendientes. Pasarán a la pestaña Rechazados.',
+                confirmar: 'Rechazar todos', icono: 'bi-x-circle'
+            });
+            if (!ok) return;
+            bulkBtn.disabled = true;
+            try {
+                for (let i = 0; i < ids.length; i += 450) {
+                    const batch = writeBatch(db);
+                    ids.slice(i, i + 450).forEach(id => batch.update(doc(db, 'pedidosWeb', id), { estado: 'rechazado', fechaRechazo: serverTimestamp() }));
+                    await batch.commit();
+                }
+                showToast(`${ids.length} pedido${ids.length === 1 ? '' : 's'} rechazado${ids.length === 1 ? '' : 's'}`, 'info');
+            } catch (err) {
+                console.error('Error al rechazar pedidos:', err);
+                showToast('No se pudieron rechazar los pedidos', 'error');
+            } finally {
+                bulkBtn.disabled = false;
+            }
+        });
+
         async function handleRejectOrder(orderId) {
-            if (!confirm('¿Estás seguro de que quieres rechazar este pedido?')) return;
+            if (!(await confirmarFab({
+                titulo: '¿Rechazar este pedido?',
+                mensaje: 'Pasará a la pestaña Rechazados.',
+                confirmar: 'Rechazar', icono: 'bi-x-circle'
+            }))) return;
             try {
                 await updateDoc(doc(db, 'pedidosWeb', orderId), { estado: 'rechazado', fechaRechazo: serverTimestamp() });
                 showToast('Pedido rechazado correctamente', 'info');
@@ -3854,8 +3957,8 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
         }
     });
 
-    btnCancelar.addEventListener('click', () => {
-        if (confirm('¿Estás seguro de cancelar? Se perderán los datos cargados.')) {
+    btnCancelar.addEventListener('click', async () => {
+        if (await confirmarFab({ titulo: '¿Cancelar el cargue?', mensaje: 'Se perderán los datos del archivo cargado.', confirmar: 'Sí, cancelar', cancelar: 'Seguir', icono: 'bi-x-circle' })) {
             datosExcel = [];
             inputArchivo.value = '';
             mostrarPaso(pasoSubir);

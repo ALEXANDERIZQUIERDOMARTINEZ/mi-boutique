@@ -44,10 +44,11 @@ function configurarCierreSesionesGlobal(authManager) {
     const btn = document.getElementById('btn-cerrar-todas-sesiones');
     if (!btn) return;
     btn.addEventListener('click', async () => {
-        const confirmado = confirm(
-            'Esto cerrará la sesión de TODOS los usuarios en TODOS los dispositivos ' +
-            '(incluida la tuya) y tendrán que volver a iniciar sesión con su contraseña. ¿Continuar?'
-        );
+        const mensaje = 'Se cerrará la sesión de todos los usuarios en todos los dispositivos ' +
+            '(incluida la tuya) y tendrán que volver a iniciar sesión con su contraseña.';
+        const confirmado = typeof window.confirmarFab === 'function'
+            ? await window.confirmarFab({ titulo: '¿Cerrar todas las sesiones?', mensaje, confirmar: 'Cerrar sesiones', icono: 'bi-box-arrow-right' })
+            : confirm(mensaje + ' ¿Continuar?');
         if (!confirmado) return;
 
         btn.disabled = true;
