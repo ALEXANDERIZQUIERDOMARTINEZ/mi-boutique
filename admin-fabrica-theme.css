@@ -3543,3 +3543,51 @@ body.fab-page.dark-mode .pw2-btn--wa:hover { background: rgba(37, 211, 102, .2) 
   align-items: center;
   justify-content: center;
 }
+
+/* ── Productos: copiar disponibilidad ── */
+.fab-page .pf-head-actions { display: flex; align-items: center; gap: 0.45rem; flex-shrink: 0; }
+.fab-page .pf-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 40px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.84rem;
+  white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.fab-page .pf-copy-btn:hover { border-color: var(--border-brand); }
+.fab-page .pf-copy-btn.is-copied,
+.fab-page .pf-copy-one.is-copied { color: #15803d; border-color: #9ad8b0; background: #e8f7ee; }
+.fab-page .pf-copy-short { display: none; }
+@media (max-width: 575.98px) {
+  .fab-page .pf-copy-long { display: none; }
+  .fab-page .pf-copy-short { display: inline; }
+  .fab-page .pf-copy-btn, .fab-page .pf-new-btn { padding: 0 0.8rem; }
+}
+.fab-page .pf-copy-one {
+  position: absolute;
+  top: 2.65rem;
+  right: 0.35rem;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, color .15s;
+}
+.fab-page .pf-copy-one:hover { background: var(--brand-50); color: var(--brand-600); }
+.fab-page .pf-copy-one.is-copied,
+.fab-page .pf-copy-one.is-copied:hover { color: #15803d; background: #e8f7ee; }
+body.fab-page.dark-mode .pf-copy-btn { background: var(--neutral-100) !important; border-color: var(--border-default) !important; color: var(--text-primary) !important; }
+body.fab-page.dark-mode .pf-copy-btn.is-copied,
+body.fab-page.dark-mode .pf-copy-one.is-copied { background: rgba(37, 211, 102, .13) !important; color: #5fd896 !important; border-color: transparent !important; }

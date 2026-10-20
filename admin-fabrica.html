@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Tema de Fábrica: mismos colores, letra (Poppins) y estilo limpio que
          la tienda mayorista (mayor.html). Solo lo carga este panel. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.19">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.21">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
@@ -570,9 +570,14 @@
                     <h1 class="pf-title">Productos</h1>
                     <p class="pf-subtitle" id="prodfab-resumen">Cargando catálogo...</p>
                 </div>
-                <button type="button" class="pf-new-btn" id="prodfab-btn-nuevo">
-                    <i class="bi bi-plus-lg"></i><span>Nuevo</span>
-                </button>
+                <div class="pf-head-actions">
+                    <button type="button" class="pf-copy-btn" id="prodfab-btn-copiar" title="Copiar la disponibilidad de los productos que estás viendo">
+                        <i class="bi bi-copy"></i><span class="pf-copy-long">Copiar disponibilidad</span><span class="pf-copy-short">Copiar</span>
+                    </button>
+                    <button type="button" class="pf-new-btn" id="prodfab-btn-nuevo">
+                        <i class="bi bi-plus-lg"></i><span>Nuevo</span>
+                    </button>
+                </div>
             </div>
 
             <!-- ── Búsqueda y filtros ── -->
@@ -2078,7 +2083,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 
-    <script type="module" src="admin-fabrica.js?v=1.9.35"></script>
+    <script type="module" src="admin-fabrica.js?v=1.9.37"></script>
     <script type="module" src="admin-fabrica-auth-init.js?v=1.1.1"></script>
 
     <!-- ══ Navegación entre pestañas (rail + móvil) — misma lógica que admin.html, recortada ══ -->

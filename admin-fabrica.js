@@ -4335,24 +4335,78 @@ window.confirmarFab = confirmarFab;
     // a detectar la tabla por el nombre de la categoría; "Ninguno" fuerza
     // siempre el Precio Mayor fijo del producto.
 
-    function renderTabla() {
+    // Productos que pasan la búsqueda (nombre o código) y los filtros actuales.
+    function productosFiltrados() {
         const texto = (searchInput.value || '').trim().toLowerCase();
         const categoriaId = categoriaFilter.value;
         const soloBajoStock = lowStockToggle.checked;
-
-        const filtrados = productos.filter(p => {
-            if (texto && !(p.nombre || '').toLowerCase().includes(texto)) return false;
+        return productos.filter(p => {
+            if (texto && !(p.nombre || '').toLowerCase().includes(texto) && !(p.codigo || '').toLowerCase().includes(texto)) return false;
             if (categoriaId && p.categoriaId !== categoriaId) return false;
             if (soloBajoStock && stockTotal(p) > UMBRAL_BAJO_STOCK) return false;
             return true;
         });
+    }
+
+    // ── Copiar disponibilidad (texto listo para WhatsApp) ──
+    // Solo colores/tallas con unidades; un producto sin stock no se copia.
+    function bloqueDisponibilidad(p) {
+        const conStock = (p.variaciones || [])
+            .filter(v => (parseFloat(v.stock) || 0) > 0)
+            .sort((a, b) => (parseFloat(b.stock) || 0) - (parseFloat(a.stock) || 0));
+        if (!conStock.length) return '';
+        const lineas = conStock.map(v => {
+            const talla = normalizarVariacionProdFab(v.talla) ? ` (talla ${v.talla})` : '';
+            return `   • ${nombreCarrito(v.color || 'Único')}${talla}: ${parseFloat(v.stock) || 0}`;
+        });
+        const unidades = conStock.reduce((s, v) => s + (parseFloat(v.stock) || 0), 0);
+        return `🛍️ *${nombreCarrito(p.nombre || 'Producto')}* — ${formatoMonedaDashboard.format(p.precioMayor || 0)}\n${lineas.join('\n')}\n   _${unidades} disponible${unidades === 1 ? '' : 's'}_`;
+    }
+    async function copiarAlPortapapeles(texto) {
+        try {
+            if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(texto); return true; }
+        } catch (_) { /* respaldo abajo */ }
+        const ta = document.createElement('textarea');
+        ta.value = texto; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        const ok = document.execCommand('copy');
+        ta.remove();
+        return ok;
+    }
+    function marcarCopiado(btn) {
+        btn.classList.add('is-copied');
+        const icono = btn.querySelector('i');
+        if (icono) icono.className = 'bi bi-check2';
+        clearTimeout(btn._t);
+        btn._t = setTimeout(() => { btn.classList.remove('is-copied'); if (icono) icono.className = 'bi bi-copy'; }, 1600);
+    }
+    document.getElementById('prodfab-btn-copiar')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        // Los ocultos no se venden en la tienda: no se incluyen.
+        const bloques = productosFiltrados().filter(p => p.visible !== false).map(bloqueDisponibilidad).filter(Boolean);
+        if (!bloques.length) { showToast('No hay prendas con stock para copiar', 'warning'); return; }
+        const fecha = new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
+        const texto = `✨ *Disponibilidad Mishell'es* — ${fecha}\n\n${bloques.join('\n\n')}`;
+        if (await copiarAlPortapapeles(texto)) {
+            marcarCopiado(btn);
+            showToast(`Disponibilidad copiada (${bloques.length} producto${bloques.length === 1 ? '' : 's'})`, 'success');
+        } else {
+            showToast('No se pudo copiar en este navegador', 'error');
+        }
+    });
+
+    function renderTabla() {
+        const texto = (searchInput.value || '').trim().toLowerCase();
+        const categoriaId = categoriaFilter.value;
+        const soloBajoStock = lowStockToggle.checked;
+        const filtrados = productosFiltrados();
 
         // Resumen del encabezado y contador del chip "Bajo stock"
         const totalBajo = productos.filter(p => stockTotal(p) <= UMBRAL_BAJO_STOCK).length;
         const resumenEl = document.getElementById('prodfab-resumen');
         if (resumenEl) {
             const unidades = productos.reduce((s, p) => s + stockTotal(p), 0);
-            resumenEl.textContent = `${productos.length} producto${productos.length === 1 ? '' : 's'} · ${unidades.toLocaleString('es-CO')} unidades`;
+            resumenEl.textContent = `${productos.length} producto${productos.length === 1 ? '' : 's'} · ${unidades.toLocaleString('es-CO')} und`;
         }
         const bajoCountEl = document.getElementById('prodfab-bajo-count');
         if (bajoCountEl) bajoCountEl.textContent = totalBajo ? totalBajo : '';
@@ -4408,6 +4462,7 @@ window.confirmarFab = confirmarFab;
                             : `<span class="pf-stock pf-stock--out">${variaciones.length ? 'Agotado' : 'Sin colores'}</span>`}
                     </div>
                 </div>
+                ${total > 0 ? `<button type="button" class="pf-copy-one prodfab-btn-copiar-uno" data-id="${p.id}" aria-label="Copiar disponibilidad de ${esc(p.nombre)}"><i class="bi bi-copy"></i></button>` : ''}
                 <button type="button" class="pf-del prodfab-btn-eliminar" data-id="${p.id}" aria-label="Eliminar ${esc(p.nombre)}"><i class="bi bi-trash3"></i></button>
             </article>`;
         }).join('');
@@ -4572,6 +4627,17 @@ window.confirmarFab = confirmarFab;
         }
     });
     tbody.addEventListener('click', (e) => {
+        const btnCopiarUno = e.target.closest('.prodfab-btn-copiar-uno');
+        if (btnCopiarUno) {
+            const p = productos.find(x => x.id === btnCopiarUno.dataset.id);
+            const texto = p ? bloqueDisponibilidad(p) : '';
+            if (!texto) { showToast('Este producto no tiene stock', 'warning'); return; }
+            copiarAlPortapapeles(texto).then(ok => {
+                if (ok) { marcarCopiado(btnCopiarUno); showToast('Disponibilidad copiada', 'success'); }
+                else showToast('No se pudo copiar en este navegador', 'error');
+            });
+            return;
+        }
         const btnEliminar = e.target.closest('.prodfab-btn-eliminar');
         // Toda la tarjeta abre la edición, salvo el botón de eliminar.
         const btnEditar = btnEliminar ? null : e.target.closest('.prodfab-btn-editar');
