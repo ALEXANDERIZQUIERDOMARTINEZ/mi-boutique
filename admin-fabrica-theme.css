@@ -896,19 +896,6 @@ body.fab-page.dark-mode .admin-main .btn-action {
   background: transparent !important;
 }
 
-/* Nueva venta mantiene sus tarjetas claras también en modo oscuro (así
-   estaba diseñada en style.css); aquí solo se evita que las reglas comunes
-   de arriba las oscurezcan a medias. */
-body.fab-page.dark-mode #registrar-venta .sv-section {
-  background: #ffffff !important;
-  border-color: #E5E5E5 !important;
-}
-body.fab-page.dark-mode #registrar-venta .form-control,
-body.fab-page.dark-mode #registrar-venta .form-select {
-  background-color: #f5f5f5 !important;
-  border-color: transparent !important;
-  color: #333333 !important;
-}
 
 body.fab-page.dark-mode .db-fabrica .fdb-week-bar {
   background: rgba(217,136,185,0.22);
@@ -1240,22 +1227,6 @@ body.fab-page:not(.modal-open) {
   opacity: 0.45;
 }
 
-/* Modo oscuro: Nueva venta conserva sus superficies claras. */
-body.fab-page.dark-mode #registrar-venta .sv-section:not(.sv-section--flat),
-body.fab-page.dark-mode #registrar-venta #fv-cart-with-items,
-body.fab-page.dark-mode #registrar-venta .sv-checkout-bar {
-  background: #ffffff !important;
-  border-color: #E5E5E5 !important;
-}
-body.fab-page.dark-mode #registrar-venta .form-control,
-body.fab-page.dark-mode #registrar-venta .form-select,
-body.fab-page.dark-mode #registrar-venta .sv-fake-search-input,
-body.fab-page.dark-mode #registrar-venta .sv-btn-add-client-icon {
-  background-color: #ffffff !important;
-  color: #333333 !important;
-}
-body.fab-page.dark-mode #registrar-venta .sv-checkout-total strong { color: #333333; }
-body.fab-page.dark-mode #registrar-venta .sv-cart-empty-cta strong { color: var(--text-primary); }
 /* Celular: el formulario ocupa toda la pantalla para que la barra del total
    quede siempre justo encima de la navegación, aunque el carrito esté vacío. */
 @media (max-width: 991.98px) {
@@ -3126,3 +3097,394 @@ body.dark-mode .fab-confirm--danger .fab-confirm-icon { background: rgba(239,68,
   body.fab-page.dark-mode .rail-nav .rail-link i { background: rgba(217,136,185,.12); color: var(--brand-400); }
   body.fab-page.dark-mode .rail-nav .rail-link.active i { background: var(--brand-500); color: #fff; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   MODO OSCURO PROFESIONAL
+   Grafito cálido en capas (fondo → tarjeta → elevado), textos con buen
+   contraste (el terciario anterior #4e4762 casi no se leía), tintes de
+   marca translúcidos en vez de rosas claros y botones rosa con texto
+   oscuro (blanco sobre #D988B9 no llega a 2.5:1).
+   ════════════════════════════════════════════════════════════════ */
+body.fab-page.dark-mode {
+  --surface-base:     #0f0e12;
+  --surface-raised:   #17151b;
+  --surface-elevated: #1f1c24;
+  --surface-overlay:  rgba(23, 21, 27, 0.92);
+  --surface-inset:    #121015;
+  --grad-surface:     #17151b;
+  --border-subtle:    rgba(255, 255, 255, 0.06);
+  --border-default:   rgba(255, 255, 255, 0.10);
+  --border-strong:    rgba(255, 255, 255, 0.16);
+  --border-brand:     rgba(217, 136, 185, 0.38);
+  --text-primary:     #ece9f0;
+  --text-secondary:   #a9a3b3;
+  --text-tertiary:    #7d7787;
+  --text-disabled:    #5b5663;
+  --neutral-100:      #221f27;
+  --neutral-200:      #2a2730;
+  --neutral-300:      #36323d;
+
+  --brand-50:  rgba(217, 136, 185, 0.09);
+  --brand-100: rgba(217, 136, 185, 0.15);
+  --brand-200: rgba(217, 136, 185, 0.24);
+  --brand-300: #9c6585;
+  --brand-400: #e7a6cd;
+  --brand-500: #dc8fbe;
+  --brand-600: #e9a9cf;
+  --brand-700: #f2c1dd;
+  --brand-800: #f7d7ea;
+  --grad-brand: linear-gradient(135deg, #e39fc8 0%, #d688b8 100%);
+  --grad-brand-soft: linear-gradient(135deg, rgba(217,136,185,0.16) 0%, rgba(217,136,185,0.06) 100%);
+  --shadow-glow: 0 0 0 3px rgba(217, 136, 185, 0.22);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --fabrica-accent-text: #e9a9cf;
+  --fabrica-accent-soft: rgba(217, 136, 185, 0.15);
+
+  --on-brand: #2a1222;
+  background: var(--surface-base) !important;
+  color: var(--text-primary);
+  color-scheme: dark;
+}
+
+/* Barras y navegación */
+body.fab-page.dark-mode .rail-topbar {
+  background: rgba(15, 14, 18, 0.88) !important;
+  border-bottom-color: var(--border-subtle) !important;
+}
+body.fab-page.dark-mode .admin-topbar {
+  background: rgba(15, 14, 18, 0.85) !important;
+  border-bottom-color: var(--border-subtle) !important;
+}
+body.fab-page.dark-mode .admin-rail { background: var(--surface-raised); border-right-color: var(--border-subtle); }
+body.fab-page.dark-mode .rail-link { color: var(--text-secondary); }
+body.fab-page.dark-mode .rail-link:hover { background: rgba(255,255,255,.04); color: var(--text-primary); }
+body.fab-page.dark-mode .rail-link.active { background: var(--brand-100) !important; color: var(--brand-700) !important; }
+body.fab-page.dark-mode .rail-link.active i { color: var(--brand-600) !important; }
+body.fab-page.dark-mode .rail-switch.active { background: var(--brand-500); }
+body.fab-page.dark-mode .rail-profile-avatar { background: var(--brand-100); border-color: var(--border-brand); color: var(--brand-600); }
+body.fab-page.dark-mode .fab-wordmark-name { color: var(--text-primary); }
+@media (max-width: 991.98px) {
+  body.fab-page.dark-mode .mobile-bottom-nav {
+    background: var(--surface-raised) !important;
+    border-top-color: var(--border-subtle) !important;
+    box-shadow: none !important;
+  }
+  body.fab-page.dark-mode .admin-rail { background: var(--surface-elevated); }
+  body.fab-page.dark-mode .admin-rail::before { background: var(--border-strong); }
+  body.fab-page.dark-mode .rail-nav .rail-link i { background: var(--brand-50) !important; color: var(--brand-600) !important; }
+  body.fab-page.dark-mode .rail-nav .rail-link.active i { background: var(--brand-500) !important; color: var(--on-brand) !important; }
+  body.fab-page.dark-mode .rail-nav .rail-link.active { background: none !important; color: var(--brand-700) !important; }
+}
+body.fab-page.dark-mode .mbn-item { color: var(--text-tertiary); }
+body.fab-page.dark-mode .mbn-item.active,
+body.fab-page.dark-mode .mbn-item.active i { color: var(--brand-600); }
+body.fab-page.dark-mode .mbn-item.active::after { background: var(--brand-600); }
+
+/* Superficies: tarjetas, paneles y bloques */
+body.fab-page.dark-mode .admin-main .card,
+body.fab-page.dark-mode .admin-main .fin2-hero-kpi,
+body.fab-page.dark-mode .admin-main .fin2-skpi-card,
+body.fab-page.dark-mode .admin-main .fin2-table-card,
+body.fab-page.dark-mode .admin-main .inv-filters-block,
+body.fab-page.dark-mode .admin-main .sv-section:not(.sv-section--flat),
+body.fab-page.dark-mode .admin-main .sv-filters,
+body.fab-page.dark-mode .admin-main .pw-order-card,
+body.fab-page.dark-mode .db-fabrica .fdb-card,
+body.fab-page.dark-mode .db-fabrica .fdb-sales,
+body.fab-page.dark-mode .db-fabrica .fdb-inv,
+body.fab-page.dark-mode .db-fabrica .fdb-activity,
+body.fab-page.dark-mode .pf-card,
+body.fab-page.dark-mode #fv-cart-with-items,
+body.fab-page.dark-mode .sv-checkout,
+body.fab-page.dark-mode .sv-checkout-bar,
+body.fab-page.dark-mode .sv-new-client-cta,
+body.fab-page.dark-mode .vf-cart-item,
+body.fab-page.dark-mode .fvps-item {
+  background: var(--surface-raised) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary);
+  box-shadow: none !important;
+}
+body.fab-page.dark-mode .pf-card:hover,
+body.fab-page.dark-mode .admin-main .pw-order-card:hover { border-color: var(--border-brand) !important; }
+body.fab-page.dark-mode .pf-card:active,
+body.fab-page.dark-mode .pw2-summary:active { background: rgba(255,255,255,.025) !important; }
+body.fab-page.dark-mode .admin-main .card-header,
+body.fab-page.dark-mode .admin-main .fin2-table-header { border-bottom-color: var(--border-subtle) !important; background: transparent !important; }
+
+/* Pantallas completas (selector de productos de la venta) y hojas */
+body.fab-page.dark-mode .fvps-screen,
+body.fab-page.dark-mode .fvps-body,
+body.fab-page.dark-mode .fvps-list { background: var(--surface-base) !important; color: var(--text-primary); }
+body.fab-page.dark-mode .fvps-header,
+body.fab-page.dark-mode .fvps-footer,
+body.fab-page.dark-mode .fvps-variation-sheet,
+body.fab-page.dark-mode .fvps-filter-panel {
+  background: var(--surface-raised) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-primary);
+}
+body.fab-page.dark-mode .fvps-sheet-backdrop { background: rgba(0,0,0,.55) !important; }
+
+/* Ventanas emergentes */
+body.fab-page.dark-mode .modal-content {
+  background: var(--surface-elevated) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--text-primary);
+}
+body.fab-page.dark-mode .modal-header,
+body.fab-page.dark-mode .modal-footer {
+  background: transparent !important;
+  border-color: var(--border-subtle) !important;
+}
+body.fab-page.dark-mode .modal-backdrop.show { opacity: .62; }
+body.fab-page.dark-mode .btn-close { filter: invert(1) grayscale(1) brightness(1.6); }
+body.fab-page.dark-mode .fab-confirm { background: rgba(0, 0, 0, 0.6); }
+body.fab-page.dark-mode .fab-confirm-box { background: var(--surface-elevated); border: 1px solid var(--border-subtle); box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+body.fab-page.dark-mode .fab-confirm-btn--cancel { background: var(--neutral-200); color: var(--text-primary); }
+body.fab-page.dark-mode .fab-confirm--danger .fab-confirm-icon { background: rgba(240, 82, 82, .14); color: #ff8a8a; }
+body.fab-page.dark-mode .fab-confirm--danger .fab-confirm-btn--ok { background: #e5484d; color: #fff; }
+
+/* Campos de texto y listas desplegables */
+body.fab-page.dark-mode .form-control,
+body.fab-page.dark-mode .form-select,
+body.fab-page.dark-mode .pf-input,
+body.fab-page.dark-mode .pf-search input,
+body.fab-page.dark-mode .pw2-search input,
+body.fab-page.dark-mode .inv-search-input,
+body.fab-page.dark-mode .inv-select,
+body.fab-page.dark-mode .sv-filter-input,
+body.fab-page.dark-mode .sv-client-input,
+body.fab-page.dark-mode .sv-fake-search-input,
+body.fab-page.dark-mode .sv-change-row,
+body.fab-page.dark-mode .sv-discount-row,
+body.fab-page.dark-mode .fvps-search-bar,
+body.fab-page.dark-mode .fvps-search-input,
+body.fab-page.dark-mode .fvps-item-price-input,
+body.fab-page.dark-mode .vf-qty-input,
+body.fab-page.dark-mode .pf-stepper,
+body.fab-page.dark-mode .sv-filter-search {
+  background-color: var(--surface-inset) !important;
+  border-color: var(--border-default) !important;
+  color: var(--text-primary) !important;
+}
+body.fab-page.dark-mode .pf-stepper .pf-input { background: transparent !important; }
+body.fab-page.dark-mode .form-control::placeholder,
+body.fab-page.dark-mode .pf-input::placeholder,
+body.fab-page.dark-mode input::placeholder,
+body.fab-page.dark-mode textarea::placeholder { color: var(--text-tertiary) !important; opacity: 1; }
+body.fab-page.dark-mode .form-control:focus,
+body.fab-page.dark-mode .form-select:focus,
+body.fab-page.dark-mode .pf-input:focus,
+body.fab-page.dark-mode input:focus {
+  border-color: var(--brand-500) !important;
+  box-shadow: var(--shadow-glow) !important;
+}
+body.fab-page.dark-mode .form-control:disabled,
+body.fab-page.dark-mode .form-control[readonly] { background-color: var(--neutral-100) !important; color: var(--text-secondary) !important; }
+body.fab-page.dark-mode .form-select,
+body.fab-page.dark-mode .pf-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23a9a3b3' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.85rem center !important;
+  background-size: 12px !important;
+}
+body.fab-page.dark-mode select option { background: var(--surface-elevated); color: var(--text-primary); }
+body.fab-page.dark-mode .form-check-input { background-color: var(--neutral-200); border-color: var(--border-strong); }
+body.fab-page.dark-mode .form-check-input:checked { background-color: var(--brand-500); border-color: var(--brand-500); }
+body.fab-page.dark-mode .form-label,
+body.fab-page.dark-mode .form-check-label,
+body.fab-page.dark-mode label { color: var(--text-secondary); }
+
+/* Botones de acción principal: rosa con texto oscuro */
+body.fab-page.dark-mode .btn-primary,
+body.fab-page.dark-mode .pf-new-btn,
+body.fab-page.dark-mode .pf-btn--primary,
+body.fab-page.dark-mode .pw2-btn--accept,
+body.fab-page.dark-mode .sv-submit-btn,
+body.fab-page.dark-mode .fab-confirm--brand .fab-confirm-btn--ok,
+body.fab-page.dark-mode .fvps-footer-confirm,
+body.fab-page.dark-mode .pf-chip--toggle:has(input:checked),
+body.fab-page.dark-mode .fdb-new-sale,
+body.fab-page.dark-mode .admin-main .fin2-filter-btn.active,
+body.fab-page.dark-mode .admin-main .fin2-btn-apply,
+body.fab-page.dark-mode .fv-invoice-btn-primary,
+body.fab-page.dark-mode .modal .btn-primary,
+body.fab-page.dark-mode .admin-main .btn-dark {
+  background: var(--brand-500) !important;
+  border-color: var(--brand-500) !important;
+  color: var(--on-brand) !important;
+  box-shadow: none !important;
+}
+body.fab-page.dark-mode .btn-primary i,
+body.fab-page.dark-mode .pf-new-btn i,
+body.fab-page.dark-mode .pw2-btn--accept i,
+body.fab-page.dark-mode .sv-submit-btn i,
+body.fab-page.dark-mode .pf-chip--toggle:has(input:checked) > i,
+body.fab-page.dark-mode .pf-chip--toggle:has(input:checked) .pf-chip-count { color: var(--on-brand) !important; }
+body.fab-page.dark-mode .pf-chip--toggle:has(input:checked) .pf-chip-count { background: rgba(42,18,34,.15) !important; }
+body.fab-page.dark-mode .btn-primary:hover,
+body.fab-page.dark-mode .pf-new-btn:hover,
+body.fab-page.dark-mode .pf-btn--primary:hover,
+body.fab-page.dark-mode .pw2-btn--accept:hover,
+body.fab-page.dark-mode .sv-submit-btn:hover:not(:disabled) { background: var(--brand-600) !important; border-color: var(--brand-600) !important; }
+body.fab-page.dark-mode .sv-submit-btn:disabled { opacity: .4; }
+
+/* Botones secundarios y chips */
+body.fab-page.dark-mode .btn-outline-secondary,
+body.fab-page.dark-mode .btn-secondary,
+body.fab-page.dark-mode .btn-light,
+body.fab-page.dark-mode .pf-btn--ghost,
+body.fab-page.dark-mode .pw2-btn--reject,
+body.fab-page.dark-mode .pf-chip,
+body.fab-page.dark-mode .pw2-bulk-btn,
+body.fab-page.dark-mode .sv-date-step,
+body.fab-page.dark-mode .rail-close-btn,
+body.fab-page.dark-mode .rail-profile-logout,
+body.fab-page.dark-mode .fvps-chip,
+body.fab-page.dark-mode .fvps-filter-toggle,
+body.fab-page.dark-mode .fvps-icon-btn,
+body.fab-page.dark-mode .fvps-stepper-btn,
+body.fab-page.dark-mode .fvps-item-fav-btn,
+body.fab-page.dark-mode .fvps-choose-variant-btn,
+body.fab-page.dark-mode .sv-pay-method-btn,
+body.fab-page.dark-mode .sv-header-action,
+body.fab-page.dark-mode .sv-drafts-btn,
+body.fab-page.dark-mode .sv-btn-add-more,
+body.fab-page.dark-mode .vf-qty-btn,
+body.fab-page.dark-mode .vf-cart-item-remove,
+body.fab-page.dark-mode .inv-clear-btn,
+body.fab-page.dark-mode .fv-invoice-btn-outline,
+body.fab-page.dark-mode .fv-invoice-btn-secondary {
+  background: var(--neutral-100) !important;
+  border-color: var(--border-default) !important;
+  color: var(--text-primary) !important;
+}
+body.fab-page.dark-mode .btn-outline-secondary:hover,
+body.fab-page.dark-mode .pf-chip:hover,
+body.fab-page.dark-mode .fvps-chip:hover,
+body.fab-page.dark-mode .sv-pay-method-btn:hover { background: var(--neutral-200) !important; }
+body.fab-page.dark-mode .pf-chip > i,
+body.fab-page.dark-mode .pf-btn--ghost { color: var(--text-secondary) !important; }
+body.fab-page.dark-mode .fvps-chip.active,
+body.fab-page.dark-mode .fvps-chip.is-active,
+body.fab-page.dark-mode .sv-pay-method-btn.active,
+body.fab-page.dark-mode .sv-pay-method-btn.is-active,
+body.fab-page.dark-mode .inv-filter-btn.active,
+body.fab-page.dark-mode .fin2-period-btn.active {
+  background: var(--brand-100) !important;
+  border-color: var(--border-brand) !important;
+  color: var(--brand-700) !important;
+}
+body.fab-page.dark-mode .btn-outline-primary { color: var(--brand-600) !important; border-color: var(--border-brand) !important; background: transparent !important; }
+body.fab-page.dark-mode .btn-outline-primary:hover { background: var(--brand-100) !important; }
+body.fab-page.dark-mode .btn-outline-danger { color: #ff8a8a !important; border-color: rgba(240,82,82,.35) !important; background: transparent !important; }
+body.fab-page.dark-mode .btn-outline-danger:hover { background: rgba(240,82,82,.12) !important; }
+body.fab-page.dark-mode .pw2-btn--reject:hover,
+body.fab-page.dark-mode .pw2-bulk-btn:hover,
+body.fab-page.dark-mode .pf-del:hover,
+body.fab-page.dark-mode .pf-var-del:hover { background: rgba(240,82,82,.12) !important; color: #ff8a8a !important; }
+body.fab-page.dark-mode .pw2-bulk-btn { color: #ff8a8a !important; }
+
+/* Tintes de marca (iconos, recuadros de foto, vacíos) */
+body.fab-page.dark-mode .pf-thumb,
+body.fab-page.dark-mode .pf-photo,
+body.fab-page.dark-mode .pw2-thumbs > *,
+body.fab-page.dark-mode .pw2-item-img,
+body.fab-page.dark-mode .sv-cart-empty-icon,
+body.fab-page.dark-mode .sv-new-client-cta-icon,
+body.fab-page.dark-mode .vf-cart-item-img-placeholder,
+body.fab-page.dark-mode .fvps-item-img,
+body.fab-page.dark-mode .fv-draft-item-icon {
+  background: var(--neutral-100) !important;
+  color: var(--text-tertiary) !important;
+  border-color: var(--border-subtle) !important;
+}
+body.fab-page.dark-mode .pw2-thumbs > * { border-color: var(--surface-raised) !important; }
+body.fab-page.dark-mode .pf-photo { border-color: var(--border-brand) !important; }
+body.fab-page.dark-mode .pf-photo-empty { color: var(--brand-600); }
+body.fab-page.dark-mode .sv-cart-empty-cta,
+body.fab-page.dark-mode .pf-empty,
+body.fab-page.dark-mode .pw2-empty,
+body.fab-page.dark-mode .fv-drafts-empty { background: transparent !important; border-color: var(--border-default) !important; color: var(--text-secondary); }
+body.fab-page.dark-mode .pw2-asesor { background: var(--brand-100); color: var(--brand-700); }
+
+/* Chips de estado: fondos translúcidos, texto claro */
+body.fab-page.dark-mode .pf-stock--ok,
+body.fab-page.dark-mode .fvps-item-stock { background: rgba(52, 199, 120, .13) !important; color: #6fdc9f !important; }
+body.fab-page.dark-mode .pf-stock--low,
+body.fab-page.dark-mode .fvps-item-stock--baja,
+body.fab-page.dark-mode .pf-chip-count:not(:empty),
+body.fab-page.dark-mode .pw2-pending,
+body.fab-page.dark-mode .pw2-tabs .pw-tab[data-tab="pendiente"] > .pw2-tab-count:not(:empty) { background: rgba(245, 166, 35, .14) !important; color: #f6c46a !important; }
+body.fab-page.dark-mode .pf-stock--out,
+body.fab-page.dark-mode .fvps-item-stock--out { background: rgba(240, 82, 82, .13) !important; color: #ff8a8a !important; }
+body.fab-page.dark-mode .pf-var,
+body.fab-page.dark-mode .pw2-item-vars > span,
+body.fab-page.dark-mode .pw2-obs,
+body.fab-page.dark-mode .pf-switch,
+body.fab-page.dark-mode .rail-profile,
+body.fab-page.dark-mode .rail-darkmode-btn { background: var(--neutral-100) !important; border-color: var(--border-subtle) !important; }
+body.fab-page.dark-mode .pf-var b,
+body.fab-page.dark-mode .pw2-item-vars b { color: var(--text-primary); }
+body.fab-page.dark-mode .pw2-tabs { background: var(--surface-inset) !important; border-color: var(--border-subtle) !important; }
+body.fab-page.dark-mode .pw2-tabs .pw-tab.active { background: var(--neutral-200) !important; color: var(--text-primary) !important; box-shadow: none !important; }
+body.fab-page.dark-mode .pw2-tabs .pw-tab > span.pw2-tab-count { background: rgba(255,255,255,.07); color: var(--text-secondary); }
+body.fab-page.dark-mode .pf-toolbar,
+body.fab-page.dark-mode .pw2-toolbar { background: var(--surface-base) !important; }
+body.fab-page.dark-mode .pf-margin i,
+body.fab-page.dark-mode .pf-margin strong { color: #6fdc9f; }
+body.fab-page.dark-mode .pf-margin.is-zero i,
+body.fab-page.dark-mode .pf-margin.is-zero strong { color: var(--text-secondary); }
+body.fab-page.dark-mode .badge.bg-secondary { background: var(--neutral-200) !important; color: var(--text-secondary) !important; }
+body.fab-page.dark-mode .badge.bg-success,
+body.fab-page.dark-mode .badge.text-bg-success { background: rgba(52,199,120,.15) !important; color: #6fdc9f !important; }
+body.fab-page.dark-mode .badge.bg-danger:not(.badge-new-order),
+body.fab-page.dark-mode .badge.text-bg-danger { background: rgba(240,82,82,.15) !important; color: #ff8a8a !important; }
+body.fab-page.dark-mode .badge.bg-warning,
+body.fab-page.dark-mode .badge.text-bg-warning { background: rgba(245,166,35,.15) !important; color: #f6c46a !important; }
+
+/* Tablas */
+body.fab-page.dark-mode .admin-main .table,
+body.fab-page.dark-mode .admin-main .fin2-table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--text-primary);
+  --bs-table-striped-bg: rgba(255,255,255,.02);
+  --bs-table-hover-bg: rgba(255,255,255,.03);
+  color: var(--text-primary);
+}
+body.fab-page.dark-mode .admin-main .table > thead > tr > th,
+body.fab-page.dark-mode .admin-main .table thead th,
+body.fab-page.dark-mode .admin-main .fin2-table thead th {
+  background: var(--surface-inset) !important;
+  color: var(--text-tertiary) !important;
+  border-color: var(--border-subtle) !important;
+}
+body.fab-page.dark-mode .admin-main .table td,
+body.fab-page.dark-mode .admin-main .fin2-table td { border-color: var(--border-subtle) !important; color: var(--text-primary); }
+
+/* Textos: nada de gris oscuro sobre negro */
+body.fab-page.dark-mode .text-muted,
+body.fab-page.dark-mode .text-secondary,
+body.fab-page.dark-mode small.text-muted { color: var(--text-secondary) !important; }
+body.fab-page.dark-mode .text-dark,
+body.fab-page.dark-mode .text-body { color: var(--text-primary) !important; }
+body.fab-page.dark-mode .admin-main h1,
+body.fab-page.dark-mode .admin-main h2,
+body.fab-page.dark-mode .admin-main h3,
+body.fab-page.dark-mode .admin-main h4,
+body.fab-page.dark-mode .admin-main h5,
+body.fab-page.dark-mode .admin-main h6 { color: var(--text-primary); }
+body.fab-page.dark-mode .admin-main p { color: inherit; }
+body.fab-page.dark-mode code,
+body.fab-page.dark-mode pre { background: var(--surface-inset) !important; color: var(--brand-600) !important; border-color: var(--border-subtle) !important; }
+body.fab-page.dark-mode .alert { background: var(--surface-raised) !important; border-color: var(--border-default) !important; color: var(--text-primary) !important; }
+body.fab-page.dark-mode .alert-info,
+body.fab-page.dark-mode .alert-primary { border-left: 3px solid var(--brand-500) !important; }
+body.fab-page.dark-mode .alert-warning { border-left: 3px solid #f6c46a !important; }
+body.fab-page.dark-mode .alert-danger { border-left: 3px solid #ff8a8a !important; }
+body.fab-page.dark-mode .alert-success { border-left: 3px solid #6fdc9f !important; }
+body.fab-page.dark-mode hr { border-color: var(--border-subtle); opacity: 1; }
+body.fab-page.dark-mode .spinner-border { color: var(--brand-500) !important; }
+body.fab-page.dark-mode ::selection { background: rgba(217,136,185,.35); color: #fff; }
