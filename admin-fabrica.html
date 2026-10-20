@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Tema de Fábrica: mismos colores, letra (Poppins) y estilo limpio que
          la tienda mayorista (mayor.html). Solo lo carga este panel. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.11">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.13">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
@@ -55,6 +55,9 @@
             <button class="rail-collapse-btn" id="railCollapseBtn" aria-label="Colapsar menú">
                 <i class="bi bi-chevron-left" id="railCollapseIcon"></i>
             </button>
+            <button type="button" class="rail-close-btn" id="railCloseBtn" aria-label="Cerrar menú">
+                <i class="bi bi-x-lg"></i>
+            </button>
         </div>
 
         <!-- Navegación plana -->
@@ -84,7 +87,7 @@
                     <i class="bi bi-grid-3x3-gap"></i><span>Productos</span>
                 </a>
                 <a class="rail-link" href="#inventario-fabrica" data-tooltip="Inventario" data-permiso="inventario_fabrica_gestionar">
-                    <i class="bi bi-boxes"></i><span>Inventario (materia prima)</span>
+                    <i class="bi bi-boxes"></i><span>Inventario</span>
                 </a>
                 <a class="rail-link" href="#categorias-fabrica" data-tooltip="Categorías" data-permiso="categorias_gestionar">
                     <i class="bi bi-tags"></i><span>Categorías</span>
@@ -2299,12 +2302,19 @@
             function openRail() {
                 if (rail)    rail.classList.add('open');
                 if (overlay) overlay.classList.add('show');
+                document.body.classList.add('rail-is-open');
             }
             function closeRail() {
                 if (rail)    rail.classList.remove('open');
                 if (overlay) overlay.classList.remove('show');
+                document.body.classList.remove('rail-is-open');
             }
             if (overlay) overlay.addEventListener('click', closeRail);
+            var railCloseBtn = document.getElementById('railCloseBtn');
+            if (railCloseBtn) railCloseBtn.addEventListener('click', closeRail);
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && rail && rail.classList.contains('open')) closeRail();
+            });
 
             document.querySelectorAll('.mbn-item[data-section]').forEach(function(item) {
                 item.addEventListener('click', function(e) {
