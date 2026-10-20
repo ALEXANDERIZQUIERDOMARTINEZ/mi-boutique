@@ -1560,6 +1560,60 @@
     box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.15);
   }
 
+  /* Tus datos (WhatsApp + nombre) */
+  .mayor-contact { display: grid; gap: 10px; }
+  .mayor-contact-field { display: grid; gap: 5px; margin: 0; }
+  .mayor-contact-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-texto);
+  }
+  .mayor-contact-label .mayor-finalize-optional { font-weight: 400; }
+  .mayor-contact-input-wrap { position: relative; display: block; }
+  .mayor-contact-input-wrap > i {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-texto-secundario);
+    font-size: 1rem;
+    pointer-events: none;
+  }
+  .mayor-contact-field:first-child .mayor-contact-input-wrap > i { color: #25a35a; }
+  .mayor-contact-input {
+    display: block;
+    width: 100%;
+    height: 46px;
+    border: 1px solid var(--color-borde);
+    border-radius: 12px;
+    padding: 0 12px 0 38px;
+    font-size: 16px;
+    font-family: var(--fuente-principal);
+    color: var(--color-texto);
+    background: #fff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .mayor-contact-input::placeholder { color: var(--color-texto-secundario); opacity: 0.75; }
+  .mayor-contact-input:focus {
+    outline: none;
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 3px rgba(217, 136, 185, 0.15);
+  }
+  .mayor-contact-input.is-invalid {
+    border-color: #d92d20;
+    box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.12);
+  }
+  .mayor-contact-hint {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--color-texto-secundario);
+  }
+  .mayor-contact-hint.is-error { color: #d92d20; }
+
   /* Asesor */
   .mayor-advisor-options {
     display: grid;
@@ -2027,6 +2081,24 @@
       </button>
     </div>
     <div class="mayor-summary" id="mayor-order-summary"></div>
+    <p class="mayor-finalize-section">Tus datos</p>
+    <div class="mayor-contact">
+      <label class="mayor-contact-field" for="mayor-cliente-celular">
+        <span class="mayor-contact-label">WhatsApp</span>
+        <span class="mayor-contact-input-wrap">
+          <i class="bi bi-whatsapp"></i>
+          <input type="tel" class="mayor-contact-input" id="mayor-cliente-celular" inputmode="tel" autocomplete="tel" placeholder="300 123 4567" maxlength="16">
+        </span>
+      </label>
+      <label class="mayor-contact-field" for="mayor-cliente-nombre">
+        <span class="mayor-contact-label">Nombre <span class="mayor-finalize-optional">(opcional)</span></span>
+        <span class="mayor-contact-input-wrap">
+          <i class="bi bi-person"></i>
+          <input type="text" class="mayor-contact-input" id="mayor-cliente-nombre" autocomplete="name" placeholder="Tu nombre o el de tu tienda" maxlength="60">
+        </span>
+      </label>
+      <p class="mayor-contact-hint" id="mayor-contact-hint"><i class="bi bi-shield-check"></i> Lo usamos solo para confirmar tu pedido si no nos llega el mensaje.</p>
+    </div>
     <label class="mayor-finalize-section" for="mayor-observaciones">Observaciones <span class="mayor-finalize-optional">(opcional)</span></label>
     <textarea class="mayor-obs-input" id="mayor-observaciones" rows="2" placeholder="Ej: recoger en tienda, entrega en Montería…"></textarea>
     <p class="mayor-finalize-section">Envía tu pedido a</p>
@@ -2143,7 +2215,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
 
 <!-- Scripts de la aplicación -->
-<script type="module" src="mayor.js?v=1.9.24"></script>
+<script type="module" src="mayor.js?v=1.9.25"></script>
 
 </body>
 </html>
