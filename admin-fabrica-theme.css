@@ -3591,3 +3591,42 @@ body.fab-page.dark-mode .pw2-btn--wa:hover { background: rgba(37, 211, 102, .2) 
 body.fab-page.dark-mode .pf-copy-btn { background: var(--neutral-100) !important; border-color: var(--border-default) !important; color: var(--text-primary) !important; }
 body.fab-page.dark-mode .pf-copy-btn.is-copied,
 body.fab-page.dark-mode .pf-copy-one.is-copied { background: rgba(37, 211, 102, .13) !important; color: #5fd896 !important; border-color: transparent !important; }
+
+/* ── Selector de opciones (elegirFab) ── */
+.fab-choose-options { display: grid; gap: 0.5rem; margin-top: 1.1rem; }
+.fab-choose-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border-default, #E5E5E5);
+  border-radius: 14px;
+  background: var(--surface-raised, #fff);
+  color: var(--text-primary, #333);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.fab-choose-option:hover,
+.fab-choose-option:focus-visible { border-color: var(--brand-500, #D988B9); background: var(--brand-50, #fff5f9); outline: none; }
+.fab-choose-option > i {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-50, #fff5f9);
+  color: var(--brand-600, #C273A2);
+  font-size: 1.1rem;
+}
+.fab-choose-option > span { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.fab-choose-option strong { font-size: 0.9rem; font-weight: 600; }
+.fab-choose-option small { font-size: 0.74rem; color: var(--text-secondary, #666); margin-top: 0.1rem; }
+.fab-choose-cancel { width: 100%; margin-top: 0.6rem; }
+body.fab-page.dark-mode .fab-choose-option { background: var(--neutral-100); border-color: var(--border-default); }
+body.fab-page.dark-mode .fab-choose-option:hover,
+body.fab-page.dark-mode .fab-choose-option:focus-visible { background: var(--brand-50); border-color: var(--border-brand); }

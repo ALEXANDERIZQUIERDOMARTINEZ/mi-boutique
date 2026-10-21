@@ -194,6 +194,55 @@ function confirmarFab({ titulo = '¿Continuar?', mensaje = '', confirmar = 'Acep
 }
 window.confirmarFab = confirmarFab;
 
+// Igual que confirmarFab pero con varias opciones (botones grandes). Devuelve
+// la promesa con el "valor" de la opción elegida, o null si se cancela.
+// alElegir(valor) corre dentro del mismo toque (necesario, p. ej., para
+// copiar al portapapeles en Safari de iPhone).
+function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], icono = 'bi-list-check', alElegir } = {}) {
+    return new Promise(resolve => {
+        const previo = document.activeElement;
+        const overlay = document.createElement('div');
+        overlay.className = 'fab-confirm fab-confirm--brand fab-choose';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.innerHTML = `
+            <div class="fab-confirm-box">
+                <span class="fab-confirm-icon"><i class="bi ${icono}"></i></span>
+                <h2 class="fab-confirm-title"></h2>
+                <p class="fab-confirm-text"></p>
+                <div class="fab-choose-options"></div>
+                <button type="button" class="fab-confirm-btn fab-confirm-btn--cancel fab-choose-cancel">Cancelar</button>
+            </div>`;
+        overlay.querySelector('.fab-confirm-title').textContent = titulo;
+        const texto = overlay.querySelector('.fab-confirm-text');
+        if (mensaje) texto.textContent = mensaje; else texto.remove();
+        const cont = overlay.querySelector('.fab-choose-options');
+        opciones.forEach(op => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'fab-choose-option';
+            b.innerHTML = `<i class="bi ${op.icono || 'bi-check2'}"></i><span><strong></strong><small></small></span>`;
+            b.querySelector('strong').textContent = op.titulo;
+            b.querySelector('small').textContent = op.detalle || '';
+            b.addEventListener('click', () => { try { alElegir?.(op.valor); } finally { cerrar(op.valor); } });
+            cont.appendChild(b);
+        });
+        const cerrar = (valor) => {
+            document.removeEventListener('keydown', onKey, true);
+            overlay.classList.remove('is-open');
+            setTimeout(() => overlay.remove(), 180);
+            previo?.focus?.();
+            resolve(valor);
+        };
+        const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(null); } };
+        overlay.querySelector('.fab-choose-cancel').addEventListener('click', () => cerrar(null));
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) cerrar(null); });
+        document.addEventListener('keydown', onKey, true);
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => { overlay.classList.add('is-open'); cont.querySelector('button')?.focus(); });
+    });
+}
+
 // ========================================================================
 // ✅ SECCIÓN: DASHBOARD FÁBRICA — pantalla de inicio estilo app móvil (saludo
 // + cuadrícula de accesos directos), seguida del resumen financiero
@@ -4349,18 +4398,41 @@ window.confirmarFab = confirmarFab;
     }
 
     // ── Copiar disponibilidad (texto listo para WhatsApp) ──
-    // Solo colores/tallas con unidades; un producto sin stock no se copia.
-    function bloqueDisponibilidad(p) {
+    // Por defecto: nombre, descripción y colores disponibles. Con
+    // conCantidad, además las unidades de cada color. Un color sin unidades
+    // nunca se copia, y un producto sin stock tampoco.
+    function bloqueDisponibilidad(p, conCantidad = false) {
         const conStock = (p.variaciones || [])
             .filter(v => (parseFloat(v.stock) || 0) > 0)
             .sort((a, b) => (parseFloat(b.stock) || 0) - (parseFloat(a.stock) || 0));
         if (!conStock.length) return '';
         const lineas = conStock.map(v => {
             const talla = normalizarVariacionProdFab(v.talla) ? ` (talla ${v.talla})` : '';
-            return `   • ${nombreCarrito(v.color || 'Único')}${talla}: ${parseFloat(v.stock) || 0}`;
+            const cant = conCantidad ? `: ${parseFloat(v.stock) || 0}` : '';
+            return `   • ${nombreCarrito(v.color || 'Único')}${talla}${cant}`;
         });
-        const unidades = conStock.reduce((s, v) => s + (parseFloat(v.stock) || 0), 0);
-        return `🛍️ *${nombreCarrito(p.nombre || 'Producto')}* — ${formatoMonedaDashboard.format(p.precioMayor || 0)}\n${lineas.join('\n')}\n   _${unidades} disponible${unidades === 1 ? '' : 's'}_`;
+        const descripcion = (p.descripcion || '').trim().replace(/\s+/g, ' ');
+        let bloque = `🛍️ *${nombreCarrito(p.nombre || 'Producto')}*`;
+        if (descripcion) bloque += `\n${descripcion}`;
+        bloque += `\n${lineas.join('\n')}`;
+        if (conCantidad) {
+            const unidades = conStock.reduce((s, v) => s + (parseFloat(v.stock) || 0), 0);
+            bloque += `\n   _${unidades} disponible${unidades === 1 ? '' : 's'}_`;
+        }
+        return bloque;
+    }
+    // Pregunta si se copian solo los colores o también la cantidad de cada uno.
+    function elegirFormatoCopia(cuantos, alElegir) {
+        return elegirFab({
+            alElegir,
+            titulo: 'Copiar disponibilidad',
+            mensaje: cuantos > 1 ? `${cuantos} productos con stock` : '',
+            icono: 'bi-copy',
+            opciones: [
+                { valor: 'colores', titulo: 'Solo colores', detalle: 'Nombre, descripción y colores disponibles', icono: 'bi-palette' },
+                { valor: 'cantidades', titulo: 'Con cantidad por color', detalle: 'Agrega las unidades de cada color', icono: 'bi-123' }
+            ]
+        });
     }
     async function copiarAlPortapapeles(texto) {
         try {
@@ -4383,16 +4455,21 @@ window.confirmarFab = confirmarFab;
     document.getElementById('prodfab-btn-copiar')?.addEventListener('click', async (e) => {
         const btn = e.currentTarget;
         // Los ocultos no se venden en la tienda: no se incluyen.
-        const bloques = productosFiltrados().filter(p => p.visible !== false).map(bloqueDisponibilidad).filter(Boolean);
-        if (!bloques.length) { showToast('No hay prendas con stock para copiar', 'warning'); return; }
-        const fecha = new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
-        const texto = `✨ *Disponibilidad Mishell'es* — ${fecha}\n\n${bloques.join('\n\n')}`;
-        if (await copiarAlPortapapeles(texto)) {
-            marcarCopiado(btn);
-            showToast(`Disponibilidad copiada (${bloques.length} producto${bloques.length === 1 ? '' : 's'})`, 'success');
-        } else {
-            showToast('No se pudo copiar en este navegador', 'error');
-        }
+        const conStock = productosFiltrados().filter(p => p.visible !== false && bloqueDisponibilidad(p));
+        if (!conStock.length) { showToast('No hay prendas con stock para copiar', 'warning'); return; }
+        elegirFormatoCopia(conStock.length, (formato) => {
+            const bloques = conStock.map(p => bloqueDisponibilidad(p, formato === 'cantidades'));
+            const fecha = new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
+            const texto = `✨ *Disponibilidad Mishell'es* — ${fecha}\n\n${bloques.join('\n\n')}`;
+            copiarAlPortapapeles(texto).then(ok => {
+                if (ok) {
+                    marcarCopiado(btn);
+                    showToast(`Disponibilidad copiada (${bloques.length} producto${bloques.length === 1 ? '' : 's'})`, 'success');
+                } else {
+                    showToast('No se pudo copiar en este navegador', 'error');
+                }
+            });
+        });
     });
 
     function renderTabla() {
@@ -4630,11 +4707,12 @@ window.confirmarFab = confirmarFab;
         const btnCopiarUno = e.target.closest('.prodfab-btn-copiar-uno');
         if (btnCopiarUno) {
             const p = productos.find(x => x.id === btnCopiarUno.dataset.id);
-            const texto = p ? bloqueDisponibilidad(p) : '';
-            if (!texto) { showToast('Este producto no tiene stock', 'warning'); return; }
-            copiarAlPortapapeles(texto).then(ok => {
-                if (ok) { marcarCopiado(btnCopiarUno); showToast('Disponibilidad copiada', 'success'); }
-                else showToast('No se pudo copiar en este navegador', 'error');
+            if (!p || !bloqueDisponibilidad(p)) { showToast('Este producto no tiene stock', 'warning'); return; }
+            elegirFormatoCopia(1, (formato) => {
+                copiarAlPortapapeles(bloqueDisponibilidad(p, formato === 'cantidades')).then(ok => {
+                    if (ok) { marcarCopiado(btnCopiarUno); showToast('Disponibilidad copiada', 'success'); }
+                    else showToast('No se pudo copiar en este navegador', 'error');
+                });
             });
             return;
         }
