@@ -20,7 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<link rel="stylesheet" href="style.css?v=1.9.7">
+<link rel="stylesheet" href="style.css?v=1.9.8">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#D988B9">
@@ -734,105 +734,95 @@
 </div>
 
 <div class="modal fade" id="productModal" tabindex="-1">
-<div class="modal-dialog modal-dialog-centered mpd">
+<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable mpd">
 <div class="modal-content mpc">
 
-  <!-- Cerrar (flotante) -->
-  <button type="button" class="mp-close" data-bs-dismiss="modal" aria-label="Cerrar">
-    <i class="bi bi-x-lg"></i>
-  </button>
+  <!-- Encabezado: nombre + cerrar (igual que la hoja de mayor.html) -->
+  <div class="mp-header">
+    <h2 class="mp-name" id="modal-product-name">Producto</h2>
+    <button type="button" class="mp-close" data-bs-dismiss="modal" aria-label="Cerrar">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
 
-  <div class="mp-grid">
+  <div class="mp-body">
 
-    <!-- Imagen + Galería -->
-    <div class="mp-img-col">
-      <div class="mp-gallery-wrapper">
-        <!-- Thumbnails verticales (izquierda) -->
-        <div class="mp-thumbs" id="modal-gallery-thumbs"></div>
-        <!-- Imagen principal -->
-        <div class="mp-main-img-wrapper">
-          <div class="mp-img-backdrop" id="mp-img-backdrop" aria-hidden="true"></div>
-          <span class="mp-promo-badge" id="mp-promo-badge" hidden></span>
-          <img src="" id="modal-product-image" class="modal-product-image" alt="Producto" loading="lazy">
-          <button class="mp-nav-arrow mp-nav-prev" id="swipe-prev" aria-label="Foto anterior" style="display:none">&#8249;</button>
-          <button class="mp-nav-arrow mp-nav-next" id="swipe-next" aria-label="Foto siguiente" style="display:none">&#8250;</button>
-          <div class="mp-color-dots" id="swipe-color-dots" style="display:none"></div>
-          <div class="mp-swipe-counter" id="swipe-counter" style="display:none"></div>
-          <button class="mp-zoom-btn" id="modal-zoom-btn" aria-label="Ver foto completa">
-            <i class="bi bi-arrows-fullscreen"></i>
-          </button>
+    <!-- Resumen: foto (toca para ampliar) + precio + descripción -->
+    <div class="mp-summary">
+      <div class="mp-img-col">
+        <div class="mp-gallery-wrapper">
+          <div class="mp-thumbs" id="modal-gallery-thumbs"></div>
+          <div class="mp-main-img-wrapper">
+            <span class="mp-promo-badge" id="mp-promo-badge" hidden></span>
+            <img src="" id="modal-product-image" class="modal-product-image" alt="Producto" loading="lazy">
+            <button class="mp-nav-arrow mp-nav-prev" id="swipe-prev" aria-label="Foto anterior" style="display:none">&#8249;</button>
+            <button class="mp-nav-arrow mp-nav-next" id="swipe-next" aria-label="Foto siguiente" style="display:none">&#8250;</button>
+            <div class="mp-color-dots" id="swipe-color-dots" style="display:none"></div>
+            <div class="mp-swipe-counter" id="swipe-counter" style="display:none"></div>
+            <button class="mp-zoom-btn" id="modal-zoom-btn" aria-label="Ver foto completa">
+              <i class="bi bi-arrows-angle-expand"></i>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- Info -->
-    <div class="mp-info-col">
-      <div class="mp-info-scroll">
-
-        <h2 class="mp-name" id="modal-product-name">Producto</h2>
-
-        <!-- Precio -->
+      <div class="mp-summary-info">
         <div class="mp-price-block">
           <div class="price-detal-modal">
             <span class="price-detal" id="modal-price-detal">$0</span>
             <span class="price-detal-old" id="modal-price-old" style="display:none;"></span>
           </div>
         </div>
-
         <p id="modal-product-desc" class="mp-desc"></p>
-
-        <input type="hidden" id="modal-product-id">
-        <input type="hidden" id="selected-talla">
-        <input type="hidden" id="selected-color">
-
-        <!-- Talla -->
-        <div class="mp-group" id="tallas-container">
-          <span class="mp-label">Talla</span>
-          <div id="tallas-buttons" class="size-color-buttons"></div>
-        </div>
-
-        <!-- Color -->
-        <div class="mp-group" id="colores-container">
-          <span class="mp-label">Color <span id="color-name-label" class="color-name-label"></span></span>
-          <div id="color-help-message" class="mp-color-help" style="display:none;">
-            <i class="bi bi-arrow-up-short"></i> Elige primero una talla
-          </div>
-          <div id="color-select-hint" class="color-select-hint">Elige un color para continuar</div>
-          <div id="colores-buttons" class="size-color-buttons"></div>
-        </div>
-
-        <!-- Observación (plegable) -->
-        <details class="mp-note">
-          <summary><i class="bi bi-chat-left-text"></i> Agregar una nota <span class="mp-optional">(opcional)</span></summary>
-          <textarea class="mp-obs" id="product-observation" rows="2" placeholder="Ej: Sin etiqueta, empaque especial..."></textarea>
-        </details>
-
-        <!-- Beneficios -->
-        <ul class="mp-perks">
-          <li><i class="bi bi-truck"></i><span>Envíos a toda Colombia</span></li>
-          <li><i class="bi bi-whatsapp"></i><span>Confirmas tu pedido por WhatsApp</span></li>
-          <li><i class="bi bi-cash-coin"></i><span>Contra entrega en Montería</span></li>
-        </ul>
+        <p class="mp-ref-note"><i class="bi bi-camera"></i> Toca la foto para verla en grande</p>
       </div>
-
-      <!-- Barra de compra: stock + cantidad + agregar -->
-      <div class="mp-actions">
-        <div class="mp-stock" id="stock-display">
-          <span id="stock-text">Selecciona talla y color</span>
-        </div>
-        <div class="mp-actions-row">
-          <div class="mp-qty" aria-label="Cantidad">
-            <button class="mp-qty-btn" id="quantity-minus" type="button" aria-label="Quitar una">−</button>
-            <input type="number" id="select-cantidad" value="1" min="1" readonly aria-label="Cantidad">
-            <button class="mp-qty-btn" id="quantity-plus" type="button" aria-label="Agregar una">+</button>
-          </div>
-          <button class="mp-btn-add" id="btn-add-cart" disabled>
-            Agregar al carrito
-          </button>
-        </div>
-      </div>
-
     </div>
+
+    <input type="hidden" id="modal-product-id">
+    <input type="hidden" id="selected-talla">
+    <input type="hidden" id="selected-color">
+
+    <!-- Talla -->
+    <div class="mp-group" id="tallas-container">
+      <div class="mp-section-head"><span>Elige tu talla</span></div>
+      <div id="tallas-buttons" class="size-color-buttons"></div>
+    </div>
+
+    <!-- Color -->
+    <div class="mp-group" id="colores-container">
+      <div class="mp-section-head"><span>Elige tu color</span><span id="color-name-label" class="color-name-label"></span></div>
+      <div id="color-help-message" class="mp-section-hint" style="display:none;">Primero elige una talla.</div>
+      <div id="color-select-hint" class="color-select-hint">Toca un color para continuar.</div>
+      <div id="colores-buttons" class="size-color-buttons"></div>
+    </div>
+
+    <!-- Cantidad -->
+    <div class="mp-group mp-group--qty">
+      <div class="mp-section-head">
+        <span>Cantidad</span>
+        <span class="mp-stock" id="stock-display"><span id="stock-text">Elige talla y color</span></span>
+      </div>
+      <div class="mp-qty-row">
+        <div class="mp-qty" aria-label="Cantidad">
+          <button class="mp-qty-btn" id="quantity-minus" type="button" aria-label="Quitar una">−</button>
+          <input type="number" id="select-cantidad" value="1" min="1" readonly aria-label="Cantidad">
+          <button class="mp-qty-btn" id="quantity-plus" type="button" aria-label="Agregar una">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Observación -->
+    <div class="mp-group mp-group--obs">
+      <label class="mp-section-head" for="product-observation"><span>Observaciones <span class="mp-optional">(opcional)</span></span></label>
+      <textarea class="mp-obs" id="product-observation" rows="2" placeholder="Ej: Sin etiqueta, empaque especial..."></textarea>
+    </div>
+
+  </div>
+
+  <!-- Pie: botón de la marca a todo el ancho -->
+  <div class="mp-footer">
+    <button class="mp-btn-add" id="btn-add-cart" disabled>
+      Agregar al carrito
+    </button>
   </div>
 
 </div>
@@ -1201,7 +1191,7 @@ Finalizar Pedido
 
 <!-- Scripts de la aplicación -->
 <script type="module" src="analytics.js?v=1.0.0"></script>
-<script type="module" src="app.js?v=1.9.9"></script>
+<script type="module" src="app.js?v=1.9.10"></script>
 
 <!-- QR Zoom overlay -->
 <div id="qr-zoom-overlay" class="qr-zoom-overlay" style="display:none" onclick="coCloseQRZoom()">
