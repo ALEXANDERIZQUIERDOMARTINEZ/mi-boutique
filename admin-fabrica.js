@@ -4414,7 +4414,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         const descripcion = (p.descripcion || '').trim().replace(/\s+/g, ' ');
         let bloque = `🛍️ *${nombreCarrito(p.nombre || 'Producto')}*`;
         if (descripcion) bloque += `\n${descripcion}`;
-        bloque += `\n${lineas.join('\n')}`;
+        bloque += `\nColores disponibles:\n${lineas.join('\n')}`;
         if (conCantidad) {
             const unidades = conStock.reduce((s, v) => s + (parseFloat(v.stock) || 0), 0);
             bloque += `\n   _${unidades} disponible${unidades === 1 ? '' : 's'}_`;
