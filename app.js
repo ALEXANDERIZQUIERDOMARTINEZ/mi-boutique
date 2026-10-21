@@ -996,8 +996,13 @@ function renderSizeButtons(tallas, esTallaUnica, product) {
                 tallasButtons.appendChild(btn);
             });
 
-            // Inicializar área de colores para mostrar mensaje de ayuda
-            renderColorButtons(null, product);
+            // Una sola talla: elegirla de una vez (como pasa con un solo color)
+            if (tallasConStock.length === 1) {
+                selectTalla(tallasConStock[0], product);
+            } else {
+                // Inicializar área de colores para mostrar mensaje de ayuda
+                renderColorButtons(null, product);
+            }
         }
     }
 }
@@ -1093,14 +1098,14 @@ function renderColorButtons(selectedTalla, product) {
             const varianteColor = (product.variantes_color || []).find(
                 vc => vc.nombre && vc.nombre.toLowerCase().trim() === color.toLowerCase().trim()
             );
-            if (varianteColor && (varianteColor.hex || varianteColor.imagenes?.length)) {
-                const swatchStyle = getColorSwatchStyle(varianteColor);
-                btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span><span class="color-swatch-name">${formatColorLabel(color)}</span>`;
-                btn.classList.add('has-swatch');
-                btn.title = formatColorLabel(color);
-            } else {
-                btn.textContent = formatColorLabel(color);
-            }
+            // Siempre bolita + nombre: con foto/hex de variantes_color, o el
+            // hex conocido del nombre del color como respaldo.
+            const swatchStyle = (varianteColor && (varianteColor.hex || varianteColor.imagenes?.length))
+                ? getColorSwatchStyle(varianteColor)
+                : `background-color:${getColorHex(color)};`;
+            btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span><span class="color-swatch-name">${capitalizeFirst(formatColorLabel(color))}</span>`;
+            btn.classList.add('has-swatch');
+            btn.title = formatColorLabel(color);
 
             btn.onclick = () => selectColor(color, product);
             coloresButtons.appendChild(btn);
@@ -1115,7 +1120,7 @@ function renderColorButtons(selectedTalla, product) {
             const colorNameLabelEl = document.getElementById('color-name-label');
             if (colorNameLabelEl) colorNameLabelEl.textContent = '';
             const stockText = document.getElementById('stock-text');
-            stockText.textContent = 'Seleccione un color';
+            stockText.textContent = 'Elige un color';
             document.getElementById('btn-add-cart').disabled = true;
             // Mostrar aviso minimalista de selección de color
             const colorHint = document.getElementById('color-select-hint');
@@ -1161,7 +1166,7 @@ function selectColor(color, product) {
 
     // Actualizar etiqueta con el nombre del color seleccionado
     const colorNameLabel = document.getElementById('color-name-label');
-    if (colorNameLabel) colorNameLabel.textContent = formatColorLabel(color);
+    if (colorNameLabel) colorNameLabel.textContent = capitalizeFirst(formatColorLabel(color));
 
     // Ocultar aviso de selección de color
     const colorHint = document.getElementById('color-select-hint');
@@ -1566,18 +1571,17 @@ function updateStockDisplay(product) {
     });
 
     if (variacion && variacion.stock > 0) {
-        stockText.textContent = `${variacion.stock} disponibles`;
-        stockDisplay.style.color = '#28a06a';
-        stockDisplay.style.background = '';
-        stockDisplay.style.borderColor = '';
+        const pocas = variacion.stock <= 3;
+        stockText.textContent = pocas
+            ? `¡Solo ${variacion.stock === 1 ? 'queda 1' : `quedan ${variacion.stock}`}!`
+            : `${variacion.stock} disponibles`;
+        stockDisplay.dataset.state = pocas ? 'low' : 'ok';
         cantidadInput.setAttribute('max', variacion.stock);
         cantidadInput.value = 1;
         btnAdd.disabled = false;
     } else {
         stockText.textContent = 'Agotado';
-        stockDisplay.style.color = '#c62828';
-        stockDisplay.style.background = '';
-        stockDisplay.style.borderColor = '';
+        stockDisplay.dataset.state = 'out';
         cantidadInput.setAttribute('max', 0);
         cantidadInput.value = 0;
         btnAdd.disabled = true;
@@ -1621,15 +1625,12 @@ function renderGalleryColors(product) {
         btn.className = 'size-color-btn';
         btn.dataset.value = nombre;
 
-        const hasVisual = vc ? (vc.imagenes?.length || vc.hex) : hex;
-        if (hasVisual) {
-            const swatchStyle = vc ? getColorSwatchStyle(vc) : `background-color:${hex};`;
-            btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span><span class="color-swatch-name">${nombre}</span>`;
-            btn.classList.add('has-swatch');
-            btn.title = nombre;
-        } else {
-            btn.textContent = nombre;
-        }
+        const swatchStyle = (vc && (vc.imagenes?.length || vc.hex))
+            ? getColorSwatchStyle(vc)
+            : `background-color:${hex || getColorHex(nombre)};`;
+        btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span><span class="color-swatch-name">${capitalizeFirst(nombre)}</span>`;
+        btn.classList.add('has-swatch');
+        btn.title = nombre;
 
         btn.addEventListener('click', () => {
             coloresButtons.querySelectorAll('.size-color-btn').forEach(b => b.classList.remove('selected'));
@@ -1669,8 +1670,10 @@ function openProductModal(productId) {
     
     const { precioFinal, tienePromo, precioOriginal } = calculatePromotionPrice(product);
 
-    document.getElementById('modal-product-name').textContent = product.nombre;
-    document.getElementById('modal-product-desc').textContent = product.descripcion || 'No hay descripción disponible.';
+    document.getElementById('modal-product-name').textContent = formatCardProductName(product.nombre);
+    const descEl = document.getElementById('modal-product-desc');
+    descEl.textContent = product.descripcion ? capitalizeFirst(product.descripcion) : '';
+    descEl.hidden = !product.descripcion;
 
     // Imagen inicial: primera foto del primer color con stock.
     // Fallback a imagenUrl si no hay imágenes en la galería.
@@ -1696,12 +1699,17 @@ function openProductModal(productId) {
     // Inicializar galería deslizable con todas las imágenes de todos los colores
     initSwipeGallery(product);
     
+    const promoBadgeEl = document.getElementById('mp-promo-badge');
     if (tienePromo) {
         document.getElementById('modal-price-old').textContent = formatoMoneda.format(precioOriginal);
         document.getElementById('modal-price-old').style.display = 'inline';
+        const pct = precioOriginal > 0 ? Math.round((1 - precioFinal / precioOriginal) * 100) : 0;
+        if (promoBadgeEl) { promoBadgeEl.textContent = pct > 0 ? `−${pct}%` : 'OFERTA'; promoBadgeEl.hidden = false; }
     } else {
         document.getElementById('modal-price-old').style.display = 'none';
+        if (promoBadgeEl) promoBadgeEl.hidden = true;
     }
+    document.querySelector('#productModal .price-detal-modal')?.classList.toggle('is-promo', !!tienePromo);
     const precioModalMostrado = isWholesaleActive ? precioMayorNum : precioFinal;
     document.getElementById('modal-price-detal').textContent = formatoMoneda.format(precioModalMostrado);
 
@@ -1737,10 +1745,10 @@ function openProductModal(productId) {
     const stockDisplay = document.getElementById('stock-display');
     const stockText = document.getElementById('stock-text');
     const btnAddCart = document.getElementById('btn-add-cart');
-    stockText.textContent = 'Selecciona talla y color';
-    stockDisplay.style.color = '';
-    stockDisplay.style.background = '';
-    stockDisplay.style.borderColor = '';
+    stockText.textContent = 'Elige talla y color';
+    delete stockDisplay.dataset.state;
+    const noteEl = document.querySelector('#productModal .mp-note');
+    if (noteEl) noteEl.open = false;
     btnAddCart.disabled = true;
     btnAddCart.textContent = 'Agregar al carrito';
     document.getElementById('select-cantidad').value = 1;
@@ -1780,7 +1788,6 @@ function openProductModal(productId) {
 function renderCart() {
     const container = document.getElementById('cart-items-container');
     const footer = document.getElementById('cart-footer');
-    const badgeDesktop = document.getElementById('cart-badge-desktop');
     const badgeMobile = document.getElementById('cart-badge-mobile');
     const empty = document.getElementById('cart-empty');
 
@@ -1790,10 +1797,6 @@ function renderCart() {
     if (cart.length === 0) {
         if (empty) empty.style.display = 'block';
         if (footer) footer.style.display = 'none';
-        if (badgeDesktop) {
-            badgeDesktop.textContent = '0';
-            badgeDesktop.style.opacity = '0';
-        }
         if (badgeMobile) {
             badgeMobile.textContent = '0';
             badgeMobile.style.display = 'none';
@@ -1874,10 +1877,10 @@ function renderCart() {
         itemCount += item.cantidad;
     });
     document.getElementById('cart-total').textContent = formatoMoneda.format(total);
-    badgeDesktop.textContent = itemCount;
-    badgeMobile.textContent = itemCount;
-    badgeDesktop.style.opacity = '1';
-    badgeMobile.style.display = 'flex';
+    if (badgeMobile) {
+        badgeMobile.textContent = itemCount;
+        badgeMobile.style.display = 'flex';
+    }
 }
 
 window.confirmRemoveFromCart = function(cartItemId) {
@@ -2305,6 +2308,18 @@ document.addEventListener('DOMContentLoaded', () => {
         searchTimeout = setTimeout(applyFiltersAndRender, 200);
     }
     
+    // Fondo difuminado detrás de la foto del modal: copia la foto actual, así
+    // los espacios a los lados de la prenda no quedan en un gris plano.
+    const modalImgEl = document.getElementById('modal-product-image');
+    const modalImgBackdropEl = document.getElementById('mp-img-backdrop');
+    if (modalImgEl && modalImgBackdropEl) {
+        const syncBackdrop = () => {
+            const src = modalImgEl.getAttribute('src');
+            modalImgBackdropEl.style.backgroundImage = src ? `url("${src}")` : '';
+        };
+        new MutationObserver(syncBackdrop).observe(modalImgEl, { attributes: true, attributeFilter: ['src'] });
+    }
+
     // Listeners del MODAL DE PRODUCTO ya no son necesarios
     // La lógica ahora se maneja con las funciones selectTalla() y selectColor()
 
