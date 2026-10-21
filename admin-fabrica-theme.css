@@ -1724,6 +1724,84 @@ body.fab-page:not(.modal-open) {
   display: none;
 }
 
+/* ── Registrar venta en computador: dos columnas ──
+   Izquierda: cliente, buscador y carrito. Derecha: cobro + total y
+   "Confirmar venta", fijos mientras se desplaza el carrito.
+   En celular .sv-side no existe para el diseño (display: contents). */
+.fab-page #registrar-venta .sv-side { display: contents; }
+@media (min-width: 992px) {
+  .fab-page #registrar-venta .sv-header,
+  .fab-page #registrar-venta #fv-sales-form-view {
+    max-width: 1180px;
+  }
+  .fab-page #registrar-venta #fvForm {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-rows: auto 1fr;
+    gap: 1rem 1.5rem;
+    max-width: none;
+    align-items: start;
+  }
+  .fab-page #registrar-venta .sv-client-section { grid-column: 1; grid-row: 1; }
+  .fab-page #registrar-venta .sv-products-section { grid-column: 1; grid-row: 2; }
+  .fab-page #registrar-venta .sv-side {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    position: sticky;
+    top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* Cobro siempre visible (con el carrito vacío muestra $0). */
+  .fab-page #registrar-venta .sv-form:has(#fv-cart-with-items[style*="none"]) .sv-checkout {
+    display: block;
+  }
+  .fab-page #registrar-venta .sv-checkout .sv-section-header {
+    padding: 1rem 1.15rem 0.15rem;
+  }
+  .fab-page #registrar-venta .sv-checkout .sv-section-body {
+    padding: 0.5rem 1.15rem 1.1rem;
+  }
+  /* En la columna angosta "Transferencia" no cabe con el ícono. */
+  .fab-page #registrar-venta .sv-pay-method-btn i { display: none; }
+
+  /* Total arriba y el botón a lo ancho debajo. */
+  .fab-page #registrar-venta .sv-checkout-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: 0;
+    padding: 1rem 1.15rem 1.15rem;
+    border-radius: 14px;
+  }
+  .fab-page #registrar-venta .sv-checkout-total {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .fab-page #registrar-venta .sv-checkout-total span { font-size: 0.72rem; }
+  .fab-page #registrar-venta .sv-checkout-total strong { font-size: 1.6rem; }
+  .fab-page #registrar-venta .sv-checkout-bar .sv-submit-btn {
+    flex: none;
+    padding: 0.95rem;
+    font-size: 0.95rem;
+  }
+
+  /* Carrito (vacío o con productos) en una tarjeta que llena la columna. */
+  .fab-page #registrar-venta .sv-cart-empty-cta {
+    justify-content: center;
+    min-height: 340px;
+    border: 1px dashed var(--border-default);
+    border-radius: 14px;
+    background: var(--surface-raised);
+  }
+  .fab-page #registrar-venta #fv-cart-with-items {
+    padding: 0.9rem 1.15rem;
+  }
+}
+
 /* ════════════════════════════════════════════════════════════════
    PRODUCTOS — lista de tarjetas en vez de tabla de 7 columnas: foto,
    nombre + precio, código/categoría/grupo en una línea y el stock por

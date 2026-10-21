@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Tema de Fábrica: mismos colores, letra (Poppins) y estilo limpio que
          la tienda mayorista (mayor.html). Solo lo carga este panel. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.22">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.23">
 
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
@@ -415,6 +415,9 @@
                     </div>
                 </div>
 
+                <!-- Columna de cobro: en computador va a la derecha y fija;
+                     en celular no cambia nada (display: contents). -->
+                <div class="sv-side">
                 <!-- Cobro: resumen + método de pago en una sola tarjeta -->
                 <div class="sv-section sv-checkout">
                     <div class="sv-section-header">
@@ -473,6 +476,7 @@
                         <i class="bi bi-check-circle-fill"></i> Confirmar venta
                     </button>
                 </div>
+                </div><!-- /sv-side -->
             </form>
             </div><!-- /fv-sales-form-view -->
 
