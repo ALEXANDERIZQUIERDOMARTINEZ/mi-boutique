@@ -1007,6 +1007,15 @@ function renderSizeButtons(tallas, esTallaUnica, product) {
     }
 }
 
+// '', 'unica' y 'única' cuentan como la misma talla.
+function isSameTalla(a, b) {
+    const norm = t => {
+        const n = (t || 'unica').toLowerCase().trim();
+        return (n === '' || n === 'única') ? 'unica' : n;
+    };
+    return norm(a) === norm(b);
+}
+
 function renderColorButtons(selectedTalla, product) {
     const coloresButtons = document.getElementById('colores-buttons');
     const coloresContainer = document.getElementById('colores-container');
@@ -1024,7 +1033,7 @@ function renderColorButtons(selectedTalla, product) {
 
     // Si hay talla seleccionada, ocultar el mensaje de ayuda
     if (colorHelpMessage) colorHelpMessage.style.display = 'none';
-    coloresButtons.style.display = 'flex';
+    coloresButtons.style.display = '';
 
     const variaciones = product.variaciones || [];
 
@@ -1098,12 +1107,20 @@ function renderColorButtons(selectedTalla, product) {
             const varianteColor = (product.variantes_color || []).find(
                 vc => vc.nombre && vc.nombre.toLowerCase().trim() === color.toLowerCase().trim()
             );
-            // Siempre bolita + nombre: con foto/hex de variantes_color, o el
-            // hex conocido del nombre del color como respaldo.
+            // Tarjeta como en mayor.html: bolita (foto/hex de variantes_color,
+            // o el hex conocido del nombre) + nombre + unidades de esa talla.
             const swatchStyle = (varianteColor && (varianteColor.hex || varianteColor.imagenes?.length))
                 ? getColorSwatchStyle(varianteColor)
                 : `background-color:${getColorHex(color)};`;
-            btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span><span class="color-swatch-name">${capitalizeFirst(formatColorLabel(color))}</span>`;
+            const stockColor = variaciones
+                .filter(v => (v.color || '').toLowerCase().trim() === color.toLowerCase().trim() && isSameTalla(v.talla, selectedTalla))
+                .reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
+            btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span>
+                <span class="mp-color-info">
+                    <span class="color-swatch-name">${capitalizeFirst(formatColorLabel(color))}</span>
+                    <span class="mp-color-stock">${stockColor} disponible${stockColor === 1 ? '' : 's'}</span>
+                </span>
+                <span class="mp-color-check" aria-hidden="true"><i class="bi bi-plus-lg"></i><i class="bi bi-check-lg"></i></span>`;
             btn.classList.add('has-swatch');
             btn.title = formatColorLabel(color);
 
@@ -1602,7 +1619,7 @@ function renderGalleryColors(product) {
 
     if (colorHint) colorHint.classList.remove('visible');
     coloresButtons.innerHTML = '';
-    coloresButtons.style.display = 'flex';
+    coloresButtons.style.display = '';
     coloresContainer.style.display = 'block';
 
     // Preferir variantes_color (tienen hex real e imágenes), si no usar nombres de variaciones
@@ -1628,7 +1645,8 @@ function renderGalleryColors(product) {
         const swatchStyle = (vc && (vc.imagenes?.length || vc.hex))
             ? getColorSwatchStyle(vc)
             : `background-color:${hex || getColorHex(nombre)};`;
-        btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span><span class="color-swatch-name">${capitalizeFirst(nombre)}</span>`;
+        btn.innerHTML = `<span class="color-swatch-circle" style="${swatchStyle}"></span>
+            <span class="mp-color-info"><span class="color-swatch-name">${capitalizeFirst(nombre)}</span><span class="mp-color-stock is-low">Agotado</span></span>`;
         btn.classList.add('has-swatch');
         btn.title = nombre;
 
@@ -1747,8 +1765,6 @@ function openProductModal(productId) {
     const btnAddCart = document.getElementById('btn-add-cart');
     stockText.textContent = 'Elige talla y color';
     delete stockDisplay.dataset.state;
-    const noteEl = document.querySelector('#productModal .mp-note');
-    if (noteEl) noteEl.open = false;
     btnAddCart.disabled = true;
     btnAddCart.textContent = 'Agregar al carrito';
     document.getElementById('select-cantidad').value = 1;
@@ -2308,18 +2324,6 @@ document.addEventListener('DOMContentLoaded', () => {
         searchTimeout = setTimeout(applyFiltersAndRender, 200);
     }
     
-    // Fondo difuminado detrás de la foto del modal: copia la foto actual, así
-    // los espacios a los lados de la prenda no quedan en un gris plano.
-    const modalImgEl = document.getElementById('modal-product-image');
-    const modalImgBackdropEl = document.getElementById('mp-img-backdrop');
-    if (modalImgEl && modalImgBackdropEl) {
-        const syncBackdrop = () => {
-            const src = modalImgEl.getAttribute('src');
-            modalImgBackdropEl.style.backgroundImage = src ? `url("${src}")` : '';
-        };
-        new MutationObserver(syncBackdrop).observe(modalImgEl, { attributes: true, attributeFilter: ['src'] });
-    }
-
     // Listeners del MODAL DE PRODUCTO ya no son necesarios
     // La lógica ahora se maneja con las funciones selectTalla() y selectColor()
 
