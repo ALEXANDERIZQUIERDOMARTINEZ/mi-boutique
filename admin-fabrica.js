@@ -4398,7 +4398,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
     }
 
     // ── Copiar disponibilidad (texto listo para WhatsApp) ──
-    // Por defecto: nombre, descripción y colores disponibles. Con
+    // Por defecto: nombre, precio, descripción y colores disponibles. Con
     // conCantidad, además las unidades de cada color. Un color sin unidades
     // nunca se copia, y un producto sin stock tampoco.
     function bloqueDisponibilidad(p, conCantidad = false) {
@@ -4412,7 +4412,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             return `   • ${nombreCarrito(v.color || 'Único')}${talla}${cant}`;
         });
         const descripcion = (p.descripcion || '').trim().replace(/\s+/g, ' ');
-        let bloque = `🛍️ *${nombreCarrito(p.nombre || 'Producto')}*`;
+        let bloque = `🛍️ *${nombreCarrito(p.nombre || 'Producto')}* — ${formatoMonedaDashboard.format(p.precioMayor || 0)}`;
         if (descripcion) bloque += `\n${descripcion}`;
         bloque += `\nColores disponibles:\n${lineas.join('\n')}`;
         if (conCantidad) {
@@ -4429,7 +4429,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             mensaje: cuantos > 1 ? `${cuantos} productos con stock` : '',
             icono: 'bi-copy',
             opciones: [
-                { valor: 'colores', titulo: 'Solo colores', detalle: 'Nombre, descripción y colores disponibles', icono: 'bi-palette' },
+                { valor: 'colores', titulo: 'Solo colores', detalle: 'Nombre, precio, descripción y colores disponibles', icono: 'bi-palette' },
                 { valor: 'cantidades', titulo: 'Con cantidad por color', detalle: 'Agrega las unidades de cada color', icono: 'bi-123' }
             ]
         });
