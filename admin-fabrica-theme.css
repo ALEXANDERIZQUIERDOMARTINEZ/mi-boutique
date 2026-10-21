@@ -2142,6 +2142,23 @@ body.fab-page.dark-mode .pf-card:active { background: rgba(217,136,185,.08); }
    los lados: se fuerza a no pasar del ancho de su columna. */
 .fab-page .pf-modal .modal-content,
 .fab-page .pf-modal form { max-width: 100%; min-width: 0; }
+/* El <form> envuelve encabezado, cuerpo y pie: con modal-dialog-scrollable
+   tiene que ser una columna flexible del alto de la ventana para que solo
+   el cuerpo se desplace (si no, el contenido se corta y el pie con
+   "Guardar" queda escondido). */
+.fab-page .pf-modal .modal-dialog-scrollable form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+}
+.fab-page .pf-modal .modal-dialog-scrollable form > .modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .fab-page .pf-modal select.pf-input { max-width: 100%; min-width: 0; width: 100%; }
 .fab-page .pf-modal .modal-footer {
   padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
