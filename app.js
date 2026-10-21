@@ -150,7 +150,7 @@ let advancedFilters = {
     selectedColors: new Set(),
     inStockOnly: false,
     promoOnly: false,
-    sortBy: 'newest'
+    sortBy: 'bestseller'
 };
 let allAvailableColors = new Set();
 let promoPriceCache = new Map();
@@ -545,7 +545,7 @@ function getPromoPrice(product) {
 function applyFiltersAndRender() {
     promoPriceCache.clear();
     currentPage = 1;
-    const activeFilterEl = document.querySelector('.filter-group.active');
+    const activeFilterEl = document.querySelector('#tienda-category-filter .filter-group.active');
 
     // Si no hay filtro activo, mostrar productos disponibles por defecto
     const activeFilter = activeFilterEl ? activeFilterEl.dataset.filter : 'disponible';
@@ -635,10 +635,7 @@ function applyFiltersAndRender() {
 
     // 4. Ordenamiento
     // En la vista "disponible" con el orden por defecto, mostrar primero los más vendidos
-    const effectiveSortBy = (activeFilter === 'disponible' && advancedFilters.sortBy === 'newest')
-        ? 'bestseller'
-        : advancedFilters.sortBy;
-    filtered = sortProducts(filtered, effectiveSortBy);
+    filtered = sortProducts(filtered, advancedFilters.sortBy);
 
     // 📊 Tracking: Búsqueda o vista de categoría
     if (finalSearchTerm) {
@@ -702,6 +699,16 @@ function sortProducts(products, sortBy) {
     return ordered;
 }
 
+// Nombres como en mayor.html: "VESTIDO LUNA" → "Vestido Luna"
+function formatCardProductName(nombre) {
+    return (nombre || '').toLowerCase().replace(/(^|\s)(\p{L})/gu, (m, sp, l) => sp + l.toUpperCase());
+}
+// Solo la primera letra en mayúscula: "VESTIDOS CORTOS" → "Vestidos cortos"
+function capitalizeFirst(text) {
+    const lower = (text || '').toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+}
+
 // ✅ RENDERIZAR PRODUCTOS CON COLORES REALES Y PAGINACIÓN
 function renderProducts(products) {
     const container = document.getElementById('products-container');
@@ -734,9 +741,8 @@ function renderProducts(products) {
     const pageProducts = products.slice(start, start + PRODUCTS_PER_PAGE);
 
     const fragment = document.createDocumentFragment();
-    pageProducts.forEach((product, index) => {
+    pageProducts.forEach((product) => {
         const stockTotal = (product.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-        const isAgotado = stockTotal <= 0;
         const { precioFinal, tienePromo, precioOriginal } = getPromoPrice(product);
         const precioMostrado = isWholesaleActive ? getEffectiveWholesalePrice(product) : precioFinal;
         const descuentoPct = (tienePromo && precioOriginal > 0) ? Math.round((1 - precioFinal / precioOriginal) * 100) : 0;
@@ -790,48 +796,51 @@ function renderProducts(products) {
             imgUrl = product.imagenUrl || imgUrl;
         }
 
+        // Lista "Colores disponibles" como en mayor.html, pero sin unidades
+        // (tienda al detal). Tocar un color cambia la foto de la tarjeta.
         const coloresHtml = coloresParaCard.map(({ nombre, hex, imgUrl: cImg, dotPos }, i) => {
             const dotStyle = cImg
                 ? `background-image:url('${cImg}');background-size:400%;background-position:${dotPos.x}% ${dotPos.y}%;`
                 : `background:${hex};`;
-            return `<button class="card-color-dot${i === activeColorIdx ? ' active' : ''}" style="${dotStyle}" title="${nombre}" data-color-img="${cImg}" type="button"></button>`;
+            const label = capitalizeFirst(nombre);
+            return `<li><button class="tienda-card-color-row${i === activeColorIdx ? ' active' : ''}" data-color-img="${cImg}" type="button"><span class="tienda-card-color-dot" style="${dotStyle}"></span><span class="tienda-card-color-name">${label}</span></button></li>`;
         }).join('');
+        const coloresExtra = coloresConStock.length - coloresBaseList.length;
 
-        const tallasHtml = tallasUnicas.slice(0, 5).map(t => `<span class="card-size-chip">${t}</span>`).join('');
+        const tallasHtml = tallasUnicas.slice(0, 6).map(t => `<span class="tienda-card-size">${t}</span>`).join('');
 
-        const desc = product.descripcion ? product.descripcion.substring(0, 55) : '';
+        const coloresBoxHtml = (coloresHtml || tallasHtml) ? `
+                    <div class="tienda-card-colors-box">
+                        ${coloresHtml ? `<div class="tienda-card-colors-head">Colores disponibles</div>
+                        <ul class="tienda-card-colors-list">${coloresHtml}</ul>
+                        ${coloresExtra > 0 ? `<div class="tienda-card-color-more">+${coloresExtra} más</div>` : ''}` : ''}
+                        ${tallasHtml ? `<div class="tienda-card-sizes">${tallasHtml}</div>` : ''}
+                    </div>` : '<div class="tienda-card-colors-box is-empty"></div>';
 
-        const col = document.createElement('div');
-        col.className = 'col-6 col-md-4 col-lg-3';
+        const card = document.createElement('div');
+        card.className = 'tienda-card';
+        card.dataset.productId = product.id;
+        card.dataset.stock = stockTotal;
 
-        const delay = Math.min(index * 0.04, 0.8);
-        col.innerHTML = `
-            <div class="product-card" data-product-id="${product.id}" data-stock="${stockTotal}" style="animation-delay: ${delay}s">
-                <div class="product-image-wrapper">
+        card.innerHTML = `
+                <div class="tienda-card-img">
                     <img src="${imgUrl}" alt="${product.nombre}" loading="lazy">
-                    ${isAgotado ? '<span class="badge-agotado">AGOTADO</span>' : ''}
-                    ${tienePromo ? `<span class="badge-promo">${descuentoPct > 0 ? `−${descuentoPct}%` : 'OFERTA'}</span>` : ''}
+                    ${tienePromo ? `<span class="tienda-card-badge">${descuentoPct > 0 ? `−${descuentoPct}%` : 'OFERTA'}</span>` : ''}
                 </div>
-                <div class="product-card-body">
-                    <h3 class="product-title">${product.nombre}</h3>
-                    ${desc ? `<p class="product-card-desc">${desc}</p>` : ''}
-                    ${coloresHtml || tallasHtml ? `
-                    <div class="card-meta-row">
-                        ${coloresHtml ? `<div class="card-colors">${coloresHtml}</div>` : ''}
-                        ${tallasHtml ? `<div class="card-sizes">${tallasHtml}</div>` : ''}
-                    </div>` : ''}
-                    <div class="card-bottom">
-                        <div class="price-detal-card">
-                            ${tienePromo ? `<span class="price-detal-old-card">${formatoMoneda.format(precioOriginal)}</span>` : ''}
-                            ${(isWholesaleActive && resolveWholesaleGroup(product, categoriesMap)) ? `<small class="d-block text-muted" style="font-size:0.68rem;">Desde, baja por cantidad</small>` : ''}
-                            ${formatoMoneda.format(precioMostrado)}
-                        </div>
-                        ${!isAgotado ? '<button class="btn-add-card" type="button">Agregar</button>' : ''}
+                <div class="tienda-card-body">
+                    <h3 class="tienda-card-name">${formatCardProductName(product.nombre)}</h3>
+                    <div class="tienda-card-price${tienePromo ? ' is-promo' : ''}">
+                        <span class="tienda-price-amount">${formatoMoneda.format(precioMostrado)}</span>
+                        ${tienePromo ? `<span class="tienda-price-old">${formatoMoneda.format(precioOriginal)}</span>` : ''}
+                        ${(isWholesaleActive && resolveWholesaleGroup(product, categoriesMap)) ? '<span class="tienda-price-hint">Desde, baja por cantidad</span>' : ''}
+                    </div>
+                    ${coloresBoxHtml}
+                    <div class="tienda-card-action">
+                        <button class="tienda-add-btn" type="button"><i class="bi bi-plus-lg"></i> Agregar</button>
                     </div>
                 </div>
-            </div>
         `;
-        fragment.appendChild(col);
+        fragment.appendChild(card);
     });
     container.appendChild(fragment);
     renderPagination(products.length);
@@ -2009,7 +2018,7 @@ function resetAllFilters() {
         selectedColors: new Set(),
         inStockOnly: false,
         promoOnly: false,
-        sortBy: 'newest'
+        sortBy: 'bestseller'
     };
 
     // Resetear inputs de precio (si existen)
@@ -2039,7 +2048,7 @@ function resetAllFilters() {
 
     // Resetear ordenamiento
     const sortEl = document.getElementById('sort-products');
-    if (sortEl) sortEl.value = 'newest';
+    if (sortEl) sortEl.value = 'bestseller';
 
     applyFiltersAndRender();
 }
@@ -2082,13 +2091,26 @@ document.addEventListener('DOMContentLoaded', () => {
     loadGlobalPromotions(); // ✅ Cargar promociones globales (Black Friday, etc.)
     // loadPromotions(); // ✅ Ya no necesario - las promociones se leen del campo producto.promocion
 
-    const categoryDropdownMenu = document.getElementById('category-dropdown-menu');
-    const categoryDropdownMenuMobile = document.getElementById('category-dropdown-menu-mobile');
-    const categoryDropdownButton = document.getElementById('category-dropdown-button');
+    const categoryFilterEl = document.getElementById('tienda-category-filter');
+    const sortFilterEl = document.getElementById('tienda-sort-filter');
 
-    // ✅ Cargar Categorías con Badges
-    const trendingCategories = ['Vestidos', 'Blusas', 'Pantalones']; // Categorías en tendencia
-    const newCategories = ['Accesorios', 'Zapatos']; // Categorías nuevas
+    // ── Menú lateral (igual que mayor.html): categorías y orden ──
+    const tiendaSidebarEl = document.getElementById('tienda-sidebar');
+    const tiendaSidebarBackdropEl = document.getElementById('tienda-sidebar-backdrop');
+    function openTiendaSidebar() {
+        tiendaSidebarEl?.classList.add('is-open');
+        tiendaSidebarBackdropEl?.classList.add('is-open');
+    }
+    function closeTiendaSidebar() {
+        tiendaSidebarEl?.classList.remove('is-open');
+        tiendaSidebarBackdropEl?.classList.remove('is-open');
+    }
+    document.getElementById('btn-open-tienda-sidebar')?.addEventListener('click', openTiendaSidebar);
+    tiendaSidebarBackdropEl?.addEventListener('click', closeTiendaSidebar);
+    document.getElementById('tienda-sidebar-close')?.addEventListener('click', closeTiendaSidebar);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && tiendaSidebarEl?.classList.contains('is-open')) closeTiendaSidebar();
+    });
 
     let latestCategoriesList = []; // última lista de categorías de Firestore (sin filtrar por stock)
 
@@ -2105,55 +2127,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     }
 
-    // Una categoría solo aparece en el menú si tiene al menos un producto con
-    // stock — evita listar categorías vacías. Se recalcula cada vez que
-    // cambian las categorías o los productos (el stock puede vaciar una
-    // categoría o llenarla de nuevo).
+    function getActiveFilter() {
+        return categoryFilterEl?.querySelector('.filter-group.active')?.dataset.filter || 'disponible';
+    }
+
+    // Opciones del menú: "Todas las prendas", "Descuentos" (si hay) y una por
+    // categoría con prendas en stock, cada una con su cantidad. Se recalcula
+    // cuando cambian las categorías o los productos.
     function renderCategoryDropdown() {
-        if (!categoryDropdownMenu) return;
-        const visibleCategories = latestCategoriesList.filter(cat => allProducts.some(p => {
-            const stock = (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0);
-            return stock > 0 && productBelongsToCategory(p, cat.nombre);
-        }));
+        if (!categoryFilterEl) return;
+        let activeFilter = getActiveFilter();
+        const disponibles = allProducts.filter(p =>
+            (p.variaciones || []).reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0) > 0);
+        const promoCount = isWholesaleActive ? 0 : disponibles.filter(p => p.promocion?.activa || globalPromotion).length;
+        const visibleCategories = latestCategoriesList
+            .map(cat => ({ cat, count: disponibles.filter(p => productBelongsToCategory(p, cat.nombre)).length }))
+            .filter(({ count }) => count > 0);
 
-        categoryDropdownMenu.innerHTML = '';
-        visibleCategories.forEach(cat => {
-            const catName = cat.nombre;
-            const li = document.createElement('li');
-            let badgeHTML = '';
+        const items = [{ filtro: 'disponible', label: 'Todas las prendas', icon: 'bi-grid', count: disponibles.length }];
+        if (promoCount > 0) items.push({ filtro: 'promocion', label: 'Descuentos', icon: 'bi-tag-fill', count: promoCount, promo: true });
+        visibleCategories.forEach(({ cat, count }) => items.push({ filtro: cat.nombre, label: capitalizeFirst(cat.nombre), icon: 'bi-tag', count }));
 
-            if (trendingCategories.includes(catName)) {
-                badgeHTML = '<span class="category-badge badge-trending">🔥 Tendencia</span>';
-            } else if (newCategories.includes(catName)) {
-                badgeHTML = '<span class="category-badge badge-new">✨ Nuevo</span>';
-            }
-
-            li.innerHTML = `<a class="dropdown-item filter-group" href="#" data-filter="${catName}">
-                <span>${catName}</span>
-                ${badgeHTML}
-            </a>`;
-            categoryDropdownMenu.appendChild(li);
-        });
-
-        // Populate mobile dropdown — incluye "Disponibles" (para volver a la
-        // vista general, ya que el menú hamburguesa es la única forma de
-        // llegar ahí en móvil) y "Descuentos" destacados al inicio.
-        if (categoryDropdownMenuMobile) {
-            const disponibleHeader = `<li>
-                <a class="dropdown-item filter-group" href="#" data-filter="disponible">
-                    <span>Disponibles</span>
-                </a>
-            </li>`;
-            const promoHeader = `<li>
-                <a class="dropdown-item filter-group dropdown-promo-item" href="#" data-filter="promocion">
-                    <i class="bi bi-tag-fill"></i>
-                    <span>Descuentos</span>
-                    <span class="badge-sale-menu">% OFERTA</span>
-                </a>
-            </li>
-            <li><hr class="dropdown-divider my-1"></li>`;
-            categoryDropdownMenuMobile.innerHTML = disponibleHeader + promoHeader + categoryDropdownMenu.innerHTML;
-        }
+        if (!items.some(item => item.filtro === activeFilter)) activeFilter = 'disponible';
+        categoryFilterEl.innerHTML = items.map(item =>
+            `<button type="button" class="tienda-sidebar-item filter-group${item.promo ? ' is-promo' : ''}${item.filtro === activeFilter ? ' active' : ''}" data-filter="${item.filtro}"><i class="bi ${item.icon}"></i><span class="tienda-sidebar-item-label">${item.label}</span><span class="tienda-sidebar-count">${item.count}</span></button>`
+        ).join('');
     }
 
     // ✅ Cargar categorías sin índice (ordenar en memoria)
@@ -2179,54 +2177,33 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`✅ ${categories.length} categorías cargadas correctamente`);
     }, (error) => {
         console.error("❌ Error al cargar categorías:", error);
-        categoryDropdownMenu.innerHTML = '<li><a class="dropdown-item text-danger" href="#">Error al cargar</a></li>';
-        if (categoryDropdownMenuMobile) {
-            categoryDropdownMenuMobile.innerHTML = '<li><a class="dropdown-item text-danger" href="#">Error al cargar</a></li>';
-        }
     });
 
-    // Event delegation: un único listener en el contenedor padre evita la acumulación
-    // de handlers duplicados cada vez que onSnapshot reconstruye el HTML interior.
-    categoryDropdownMenu.addEventListener('click', (e) => {
-        if (e.target.closest('.filter-group')) handleFilterClick(e);
-    });
-    if (categoryDropdownMenuMobile) {
-        categoryDropdownMenuMobile.addEventListener('click', (e) => {
-            if (e.target.closest('.filter-group')) handleFilterClick(e);
-        });
-    }
-
-    document.querySelectorAll('.header-left .filter-group, .header-left-mobile .filter-group').forEach(btn => {
-        btn.addEventListener('click', handleFilterClick);
-    });
-
-    function handleFilterClick(e) {
-        e.preventDefault();
-        const clickedFilter = e.target.closest('.filter-group') || e.currentTarget;
-
-        // Ignorar el botón hamburguesa y otros toggles de dropdown sin filtro propio
-        if (clickedFilter.dataset.bsToggle === 'dropdown' && !clickedFilter.dataset.filter) {
-            return;
-        }
-
-        document.querySelectorAll('.header-left .filter-group.active, .header-left-mobile .filter-group.active').forEach(b => b.classList.remove('active'));
-
-        if (clickedFilter.classList.contains('dropdown-item')) {
-            // Si es un item del dropdown (categoría), activar el botón del dropdown
-            categoryDropdownButton.classList.add('active');
-            categoryDropdownButton.dataset.filter = clickedFilter.dataset.filter;
-            categoryDropdownButton.innerHTML = `${clickedFilter.textContent} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
-        } else {
-            // Si es un botón normal (Todos, Disponibles, Promociones)
-            clickedFilter.classList.add('active');
-            // Resetear el botón del dropdown
-            categoryDropdownButton.classList.remove('active');
-            categoryDropdownButton.removeAttribute('data-filter');
-            categoryDropdownButton.innerHTML = `Categorías <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
-        }
-
+    // Activa un filtro del menú (también lo usan las sugerencias del buscador).
+    function setActiveFilter(filterValue) {
+        if (!categoryFilterEl) return;
+        categoryFilterEl.querySelectorAll('.filter-group').forEach(b =>
+            b.classList.toggle('active', b.dataset.filter === filterValue));
         applyFiltersAndRender();
     }
+
+    // Event delegation: un único listener aunque onSnapshot reconstruya el menú.
+    categoryFilterEl?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-group');
+        if (!btn) return;
+        setActiveFilter(btn.dataset.filter);
+        closeTiendaSidebar();
+        document.getElementById('collection-header-anchor')?.scrollIntoView({ block: 'start' });
+    });
+
+    sortFilterEl?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.tienda-sidebar-item');
+        if (!btn) return;
+        sortFilterEl.querySelectorAll('.tienda-sidebar-item').forEach(b => b.classList.toggle('active', b === btn));
+        advancedFilters.sortBy = btn.dataset.sort;
+        applyFiltersAndRender();
+        closeTiendaSidebar();
+    });
 
 
     // ✅ Carga inicial de productos (sin índice compuesto)
@@ -2300,23 +2277,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ✅ Event delegation para clicks en tarjetas de producto (un solo listener global)
     document.getElementById('products-container').addEventListener('click', (e) => {
-        // Clic en bolita de color → cambiar imagen de la tarjeta sin abrir modal
-        const dot = e.target.closest('.card-color-dot');
+        // Clic en un color → cambiar la foto de la tarjeta sin abrir el modal
+        const dot = e.target.closest('.tienda-card-color-row');
         if (dot) {
             e.stopPropagation();
             const colorImg = dot.dataset.colorImg;
             if (colorImg) {
-                const card = dot.closest('.product-card');
-                const img = card?.querySelector('.product-image-wrapper img');
+                const card = dot.closest('.tienda-card');
+                const img = card?.querySelector('.tienda-card-img img');
                 if (img) img.src = colorImg;
-                // Marcar punto activo
-                card?.querySelectorAll('.card-color-dot').forEach(d => d.classList.remove('active'));
+                card?.querySelectorAll('.tienda-card-color-row').forEach(d => d.classList.remove('active'));
                 dot.classList.add('active');
+                return;
             }
-            return;
         }
-        // Clic en el resto de la tarjeta → abrir modal
-        const card = e.target.closest('.product-card');
+        // Clic en el resto de la tarjeta (o en "Agregar") → abrir modal
+        const card = e.target.closest('.tienda-card');
         if (card) openProductModal(card.dataset.productId);
     });
 
@@ -3600,16 +3576,13 @@ document.addEventListener('DOMContentLoaded', () => {
         navSearchSuggestions.querySelectorAll('.nss-cat-chip').forEach(chip => {
             chip.addEventListener('click', () => {
                 const catName = chip.dataset.cat;
-                // Activar el filtro de esa categoría usando la lógica existente
-                document.querySelectorAll(
-                    '.header-left .filter-group.active, .header-left-mobile .filter-group.active'
-                ).forEach(b => b.classList.remove('active'));
-                categoryDropdownButton.classList.add('active');
-                categoryDropdownButton.dataset.filter = catName;
-                categoryDropdownButton.innerHTML = `${catName} <i class="bi bi-chevron-down" style="font-size: 0.8em;"></i>`;
+                // Activar esa categoría en el menú lateral y limpiar la búsqueda
+                navSearchInput.value = '';
+                document.getElementById('search-input').value = '';
+                nisClearBtn.style.display = 'none';
                 hideSearchSuggestions();
                 navSearchInput.blur();
-                applyFiltersAndRender();
+                setActiveFilter(catName);
             });
         });
     }
