@@ -4475,16 +4475,15 @@ body.dark-mode .sv-quote-btn {
    productos estilo "Treinta" (.fvps-*): tarjetas blancas redondeadas,
    sin bordes duros en los campos (relleno claro en vez de línea gris),
    iconos en placa rosa pastel, acentos en degradado de marca.
-   #registrar-venta es exclusivo de admin-fabrica.html (Boutique usa
-   #ventas), así que estas reglas no tocan la pantalla de Boutique aunque
-   compartan las mismas clases .sv-*.
+   Aplica a #registrar-venta (admin-fabrica.html) y a #ventas (admin.html):
+   los dos paneles registran ventas con el mismo diseño.
    ════════════════════════════════════════════════════════════════ */
 /* Espacio holgado: ya no se prioriza que quepa todo sin scroll — se
    prioriza que se vea prolijo y bien separado. */
-#registrar-venta { padding-top: 2px; }
-#registrar-venta .sv-header { margin: 2px 0 14px; align-items: flex-start; }
-#registrar-venta .sv-title { font-size: 1.3rem; line-height: 1.35; }
-#registrar-venta .sv-form { gap: 14px; }
+:is(#registrar-venta, #ventas) { padding-top: 2px; }
+:is(#registrar-venta, #ventas) .sv-header { margin: 2px 0 14px; align-items: flex-start; }
+:is(#registrar-venta, #ventas) .sv-title { font-size: 1.3rem; line-height: 1.35; }
+:is(#registrar-venta, #ventas) .sv-form { gap: 14px; }
 
 /* ── Encabezado: título + subtítulo + botón Historial/Nueva venta ── */
 .sv-header-brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-top: 1px; }
@@ -4511,9 +4510,9 @@ body.dark-mode .sv-quote-btn {
     margin-top: 2px;
     transition: background 0.15s ease;
 }
-#registrar-venta .sv-header-action:hover { background: #e5e7eb; }
+:is(#registrar-venta, #ventas) .sv-header-action:hover { background: #e5e7eb; }
 
-#registrar-venta .sv-section-header {
+:is(#registrar-venta, #ventas) .sv-section-header {
     background: transparent;
     border-bottom: none;
     padding: 14px 16px 8px;
@@ -4521,7 +4520,7 @@ body.dark-mode .sv-quote-btn {
     font-size: 0.72rem;
 }
 
-#registrar-venta .sv-section-header i {
+:is(#registrar-venta, #ventas) .sv-section-header i {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -4533,26 +4532,26 @@ body.dark-mode .sv-quote-btn {
     font-size: 0.85rem;
 }
 
-#registrar-venta .sv-section-body {
+:is(#registrar-venta, #ventas) .sv-section-body {
     padding: 6px 16px 16px;
     gap: 10px;
 }
 
-#registrar-venta .sv-section,
-#registrar-venta .sv-payment {
+:is(#registrar-venta, #ventas) .sv-section,
+:is(#registrar-venta, #ventas) .sv-payment {
     border-radius: 16px;
     border-color: #ececec;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
-#registrar-venta .sv-payment { padding: 4px 16px 16px; }
+:is(#registrar-venta, #ventas) .sv-payment { padding: 4px 16px 16px; }
 
 /* Campos de formulario: relleno claro sin borde duro, en vez del
    .form-control gris de Bootstrap — mismo tacto que .fvps-search-input
    y .fvps-item-price-input del selector de productos. */
-#registrar-venta .sv-client-input,
-#registrar-venta .sv-client-meta .form-control,
-#registrar-venta .sv-payment textarea.form-control {
+:is(#registrar-venta, #ventas) .sv-client-input,
+:is(#registrar-venta, #ventas) .sv-client-meta .form-control,
+:is(#registrar-venta, #ventas) .sv-payment textarea.form-control {
     background: #f5f5f6;
     border: 1.5px solid transparent;
     border-radius: 11px;
@@ -4563,8 +4562,8 @@ body.dark-mode .sv-quote-btn {
     text-overflow: ellipsis;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
-#registrar-venta .sv-discount-row .form-control,
-#registrar-venta .sv-discount-row .form-select {
+:is(#registrar-venta, #ventas) .sv-discount-row .form-control,
+:is(#registrar-venta, #ventas) .sv-discount-row .form-select {
     background: #f5f5f6;
     border: 1.5px solid transparent;
     border-radius: 9px;
@@ -4573,11 +4572,11 @@ body.dark-mode .sv-quote-btn {
     font-size: 0.8rem;
     transition: background 0.15s ease, border-color 0.15s ease;
 }
-#registrar-venta .sv-client-input:focus,
-#registrar-venta .sv-client-meta .form-control:focus,
-#registrar-venta .sv-payment textarea.form-control:focus,
-#registrar-venta .sv-discount-row .form-control:focus,
-#registrar-venta .sv-discount-row .form-select:focus {
+:is(#registrar-venta, #ventas) .sv-client-input:focus,
+:is(#registrar-venta, #ventas) .sv-client-meta .form-control:focus,
+:is(#registrar-venta, #ventas) .sv-payment textarea.form-control:focus,
+:is(#registrar-venta, #ventas) .sv-discount-row .form-control:focus,
+:is(#registrar-venta, #ventas) .sv-discount-row .form-select:focus {
     background: #fff;
     border-color: #1a1a2e;
     box-shadow: none;
@@ -4782,7 +4781,7 @@ body.dark-mode .sv-quote-btn {
     box-shadow: 0 3px 10px rgba(0,0,0,0.18);
 }
 
-#registrar-venta #fv-carrito {
+:is(#registrar-venta, #ventas) #fv-carrito {
     background: #fff;
     border: 1px solid #ececec;
     border-radius: 12px;
@@ -4828,7 +4827,7 @@ body.dark-mode .sv-quote-btn {
     color: #1a1a2e;
 }
 
-#registrar-venta .sv-btn-search-product {
+:is(#registrar-venta, #ventas) .sv-btn-search-product {
     border-radius: 14px;
 }
 
@@ -4923,14 +4922,14 @@ body.dark-mode .sv-quote-btn {
 
 .sv-observaciones { margin-bottom: 14px; min-height: 40px; }
 
-#registrar-venta .sv-submit-btn {
+:is(#registrar-venta, #ventas) .sv-submit-btn {
     border-radius: 13px;
     padding: 13px 16px;
     font-size: 0.92rem;
     background: #1a1a2e;
     box-shadow: 0 4px 14px rgba(26, 26, 46, 0.3);
 }
-#registrar-venta .sv-submit-btn:hover {
+:is(#registrar-venta, #ventas) .sv-submit-btn:hover {
     background: #000;
     box-shadow: 0 6px 18px rgba(26, 26, 46, 0.4);
 }
@@ -4953,88 +4952,88 @@ body.dark-mode .sv-quote-btn {
 
 /* Filas del carrito embebido en Productos: mismas clases .vf-cart-item*
    que usa Boutique. */
-#registrar-venta .vf-cart-item { padding: 10px 12px; gap: 10px; }
-#registrar-venta .vf-cart-item-img,
-#registrar-venta .vf-cart-item-img-placeholder { width: 44px; height: 44px; border-radius: 9px; }
-#registrar-venta .vf-cart-item-name { font-size: 0.86rem; -webkit-line-clamp: 1; }
-#registrar-venta .vf-cart-item-variant { font-size: 0.74rem; margin-top: 1px; color: #6b7280; }
-#registrar-venta .vf-cart-item-controls { gap: 8px; }
-#registrar-venta .vf-qty-control { height: 32px; border-radius: 9px; }
-#registrar-venta .vf-qty-btn { width: 28px; font-size: 0.95rem; color: #1a1a2e; }
-#registrar-venta .vf-qty-btn:hover { background: #e5e7eb; color: #1a1a2e; }
-#registrar-venta .vf-qty-input { width: 30px; font-size: 0.8rem; }
-#registrar-venta .vf-cart-item-total { font-size: 0.84rem; min-width: 62px; color: #1a1a2e; }
-#registrar-venta .vf-cart-item-remove { padding: 4px 5px; font-size: 0.86rem; color: #9ca3af; }
-#registrar-venta .vf-cart-item-remove:hover { background: #f3f4f6; color: #1a1a2e; }
+:is(#registrar-venta, #ventas) .vf-cart-item { padding: 10px 12px; gap: 10px; }
+:is(#registrar-venta, #ventas) .vf-cart-item-img,
+:is(#registrar-venta, #ventas) .vf-cart-item-img-placeholder { width: 44px; height: 44px; border-radius: 9px; }
+:is(#registrar-venta, #ventas) .vf-cart-item-name { font-size: 0.86rem; -webkit-line-clamp: 1; }
+:is(#registrar-venta, #ventas) .vf-cart-item-variant { font-size: 0.74rem; margin-top: 1px; color: #6b7280; }
+:is(#registrar-venta, #ventas) .vf-cart-item-controls { gap: 8px; }
+:is(#registrar-venta, #ventas) .vf-qty-control { height: 32px; border-radius: 9px; }
+:is(#registrar-venta, #ventas) .vf-qty-btn { width: 28px; font-size: 0.95rem; color: #1a1a2e; }
+:is(#registrar-venta, #ventas) .vf-qty-btn:hover { background: #e5e7eb; color: #1a1a2e; }
+:is(#registrar-venta, #ventas) .vf-qty-input { width: 30px; font-size: 0.8rem; }
+:is(#registrar-venta, #ventas) .vf-cart-item-total { font-size: 0.84rem; min-width: 62px; color: #1a1a2e; }
+:is(#registrar-venta, #ventas) .vf-cart-item-remove { padding: 4px 5px; font-size: 0.86rem; color: #9ca3af; }
+:is(#registrar-venta, #ventas) .vf-cart-item-remove:hover { background: #f3f4f6; color: #1a1a2e; }
 
 /* ── Historial de ventas (Fábrica): mismas tarjetas/filtros que usa
    Boutique en su propio historial (.sv-filters, .venta-card, etc. son
    clases compartidas), pero recoloreadas al blanco y negro de
    Registrar Venta en vez del rosa/verde/azul de Boutique. ── */
-#registrar-venta .sv-filters {
+:is(#registrar-venta, #ventas) .sv-filters {
     border-color: #ececec;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
-#registrar-venta .sv-filter-search:focus-within {
+:is(#registrar-venta, #ventas) .sv-filter-search:focus-within {
     border-color: #1a1a2e;
 }
-#registrar-venta #fv-filtro-fecha-ventas {
+:is(#registrar-venta, #ventas) #fv-filtro-fecha-ventas {
     border: 1.5px solid #e9ecef;
     border-radius: 10px;
     font-size: 0.85rem;
     color: #1a1a2e;
 }
-#registrar-venta #fv-btn-limpiar-filtro-ventas {
+:is(#registrar-venta, #ventas) #fv-btn-limpiar-filtro-ventas {
     border: 1.5px solid #ececec;
     border-radius: 10px;
     color: #1a1a2e;
     background: #fff;
 }
-#registrar-venta #fv-btn-limpiar-filtro-ventas:hover {
+:is(#registrar-venta, #ventas) #fv-btn-limpiar-filtro-ventas:hover {
     background: #f5f5f5;
     border-color: #ececec;
     color: #1a1a2e;
 }
 
-#registrar-venta .venta-card {
+:is(#registrar-venta, #ventas) .venta-card {
     border-color: #ececec;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
-#registrar-venta .venta-card:hover {
+:is(#registrar-venta, #ventas) .venta-card:hover {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
-#registrar-venta .venta-card::before {
+:is(#registrar-venta, #ventas) .venta-card::before {
     background: #1a1a2e;
     opacity: 1;
 }
-#registrar-venta .venta-card[data-estado="Anulada"]::before,
-#registrar-venta .venta-card[data-estado="Cancelada"]::before {
+:is(#registrar-venta, #ventas) .venta-card[data-estado="Anulada"]::before,
+:is(#registrar-venta, #ventas) .venta-card[data-estado="Cancelada"]::before {
     background: #ef4444;
 }
-#registrar-venta .venta-card[data-estado="Pendiente"]::before {
+:is(#registrar-venta, #ventas) .venta-card[data-estado="Pendiente"]::before {
     background: #f59e0b;
 }
-#registrar-venta .venta-card-fecha,
-#registrar-venta .venta-prod-detail,
-#registrar-venta .venta-card-entrega {
+:is(#registrar-venta, #ventas) .venta-card-fecha,
+:is(#registrar-venta, #ventas) .venta-prod-detail,
+:is(#registrar-venta, #ventas) .venta-card-entrega {
     color: #9ca3af;
 }
-#registrar-venta .venta-prod-detail .text-primary {
+:is(#registrar-venta, #ventas) .venta-prod-detail .text-primary {
     color: #1a1a2e !important;
 }
-#registrar-venta .venta-card-total {
+:is(#registrar-venta, #ventas) .venta-card-total {
     color: #1a1a2e;
 }
-#registrar-venta .venta-pago-badge.efec,
-#registrar-venta .venta-pago-badge.transf {
+:is(#registrar-venta, #ventas) .venta-pago-badge.efec,
+:is(#registrar-venta, #ventas) .venta-pago-badge.transf {
     background: #f3f4f6;
     color: #1a1a2e;
 }
-#registrar-venta .venta-card-meta-top .badge.bg-success {
+:is(#registrar-venta, #ventas) .venta-card-meta-top .badge.bg-success {
     background: #1a1a2e !important;
     color: #fff !important;
 }
-#registrar-venta .venta-card-cliente-row .badge.bg-info {
+:is(#registrar-venta, #ventas) .venta-card-cliente-row .badge.bg-info {
     background: #f3f4f6 !important;
     color: #1a1a2e !important;
 }
