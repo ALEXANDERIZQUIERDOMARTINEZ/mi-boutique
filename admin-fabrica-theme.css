@@ -797,7 +797,7 @@ body.fab-page {
 .fab-page .sv-btn-barcode,
 .fab-page .sv-btn-add-product-cta,
 .fab-page .sv-pay-method-btn.active,
-.fab-page #registrar-venta .sv-submit-btn,
+.fab-page :is(#registrar-venta, #ventas) .sv-submit-btn,
 .fab-page .fvps-chip.active,
 .fab-page .fvps-filter-panel .fvps-chip.active,
 .fab-page .fvps-stepper-btn--plus,
@@ -810,7 +810,7 @@ body.fab-page {
   color: #fff !important;
 }
 .fab-page .fvps-filter-dot,
-.fab-page #registrar-venta .venta-card::before {
+.fab-page :is(#registrar-venta, #ventas) .venta-card::before {
   background: var(--brand-500) !important;
 }
 
@@ -937,12 +937,12 @@ body.fab-page:not(.modal-open) {
   overflow-y: visible !important;
 }
 
-.fab-page #registrar-venta .sv-header {
+.fab-page :is(#registrar-venta, #ventas) .sv-header {
   align-items: center;
   margin-bottom: 0.9rem;
 }
-.fab-page #registrar-venta .sv-subtitle { display: none; }
-.fab-page #registrar-venta .sv-header-action {
+.fab-page :is(#registrar-venta, #ventas) .sv-subtitle { display: none; }
+.fab-page :is(#registrar-venta, #ventas) .sv-header-action {
   border: 1px solid var(--border-default);
   background: var(--surface-raised);
   box-shadow: none;
@@ -951,34 +951,34 @@ body.fab-page:not(.modal-open) {
   font-weight: 600;
   padding: 0.45rem 0.8rem;
 }
-.fab-page #registrar-venta .sv-form { gap: 0.75rem; }
+.fab-page :is(#registrar-venta, #ventas) .sv-form { gap: 0.75rem; }
 
 /* Secciones planas (cliente y productos): sin tarjeta ni título. */
-.fab-page #registrar-venta .sv-section--flat {
+.fab-page :is(#registrar-venta, #ventas) .sv-section--flat {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
 }
-.fab-page #registrar-venta .sv-section--flat > .sv-section-header { display: none; }
-.fab-page #registrar-venta .sv-section--flat > .sv-section-body {
+.fab-page :is(#registrar-venta, #ventas) .sv-section--flat > .sv-section-header { display: none; }
+.fab-page :is(#registrar-venta, #ventas) .sv-section--flat > .sv-section-body {
   padding: 0 !important;
   gap: 0.6rem;
 }
 
 /* Cliente: fila tocable "Cliente · Cliente General ›" + botón nuevo cliente. */
-.fab-page #registrar-venta .sv-client-section .sv-field-row { gap: 0.5rem; }
-.fab-page #registrar-venta .sv-client-pick {
+.fab-page :is(#registrar-venta, #ventas) .sv-client-section .sv-field-row { gap: 0.5rem; }
+.fab-page :is(#registrar-venta, #ventas) .sv-client-pick {
   position: relative;
   flex: 1;
   min-width: 0;
 }
-.fab-page #registrar-venta .sv-client-pick .sv-input-icon {
+.fab-page :is(#registrar-venta, #ventas) .sv-client-pick .sv-input-icon {
   left: 14px;
   color: var(--brand-600);
   font-size: 1rem;
 }
-.fab-page #registrar-venta .sv-client-pick-label {
+.fab-page :is(#registrar-venta, #ventas) .sv-client-pick-label {
   position: absolute;
   left: 40px;
   top: 8px;
@@ -990,7 +990,7 @@ body.fab-page:not(.modal-open) {
   pointer-events: none;
   z-index: 2;
 }
-.fab-page #registrar-venta .sv-client-input {
+.fab-page :is(#registrar-venta, #ventas) .sv-client-input {
   height: 54px;
   padding: 20px 36px 6px 40px !important;
   border: 1px solid var(--border-default) !important;
@@ -1006,7 +1006,7 @@ body.fab-page:not(.modal-open) {
   background-repeat: no-repeat !important;
   background-position: right 14px center !important;
 }
-.fab-page #registrar-venta .sv-btn-add-client-icon {
+.fab-page :is(#registrar-venta, #ventas) .sv-btn-add-client-icon {
   width: 54px;
   height: 54px;
   flex-shrink: 0;
@@ -1016,20 +1016,20 @@ body.fab-page:not(.modal-open) {
   color: var(--brand-600) !important;
   font-size: 1.1rem;
 }
-.fab-page #registrar-venta .sv-btn-add-client-icon:hover {
+.fab-page :is(#registrar-venta, #ventas) .sv-btn-add-client-icon:hover {
   border-color: var(--brand-500) !important;
 }
-.fab-page #registrar-venta .sv-new-client-cta { display: none !important; }
+.fab-page :is(#registrar-venta, #ventas) .sv-new-client-cta { display: none !important; }
 /* Celular y dirección solo si el cliente los tiene. */
-.fab-page #registrar-venta .sv-client-meta:not(:has(input:not(:placeholder-shown))) {
+.fab-page :is(#registrar-venta, #ventas) .sv-client-meta:not(:has(input:not(:placeholder-shown))) {
   display: none !important;
 }
 
 /* Buscador grande con el escáner adentro. */
-.fab-page #registrar-venta .sv-products-section .sv-field-row {
+.fab-page :is(#registrar-venta, #ventas) .sv-products-section .sv-field-row {
   position: relative;
 }
-.fab-page #registrar-venta .sv-fake-search-input {
+.fab-page :is(#registrar-venta, #ventas) .sv-fake-search-input {
   height: 52px;
   padding-right: 56px;
   border: 1.5px solid var(--brand-300);
@@ -1039,8 +1039,8 @@ body.fab-page:not(.modal-open) {
   color: var(--text-secondary);
   box-shadow: 0 0 0 4px rgba(217,136,185,0.08);
 }
-.fab-page #registrar-venta .sv-fake-search-input i { color: var(--brand-600); }
-.fab-page #registrar-venta .sv-btn-barcode {
+.fab-page :is(#registrar-venta, #ventas) .sv-fake-search-input i { color: var(--brand-600); }
+.fab-page :is(#registrar-venta, #ventas) .sv-btn-barcode {
   position: absolute;
   right: 6px;
   top: 50%;
@@ -1054,7 +1054,7 @@ body.fab-page:not(.modal-open) {
 }
 
 /* Carrito vacío: mensaje limpio, sin recuadro punteado. */
-.fab-page #registrar-venta .sv-cart-empty-cta {
+.fab-page :is(#registrar-venta, #ventas) .sv-cart-empty-cta {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1064,7 +1064,7 @@ body.fab-page:not(.modal-open) {
   background: transparent;
   text-align: center;
 }
-.fab-page #registrar-venta .sv-cart-empty-icon {
+.fab-page :is(#registrar-venta, #ventas) .sv-cart-empty-icon {
   display: flex;
   width: 52px;
   height: 52px;
@@ -1077,17 +1077,17 @@ body.fab-page:not(.modal-open) {
   font-size: 1.3rem;
   box-shadow: none;
 }
-.fab-page #registrar-venta .sv-cart-empty-cta strong {
+.fab-page :is(#registrar-venta, #ventas) .sv-cart-empty-cta strong {
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--text-primary);
 }
-.fab-page #registrar-venta .sv-cart-empty-cta small {
+.fab-page :is(#registrar-venta, #ventas) .sv-cart-empty-cta small {
   font-size: 0.78rem;
   color: var(--text-secondary);
   max-width: 260px;
 }
-.fab-page #registrar-venta .sv-btn-add-product-cta {
+.fab-page :is(#registrar-venta, #ventas) .sv-btn-add-product-cta {
   margin-top: 0.6rem;
   background: transparent !important;
   color: var(--brand-600) !important;
@@ -1097,26 +1097,26 @@ body.fab-page:not(.modal-open) {
   font-weight: 600;
   padding: 0.35rem 0.6rem;
 }
-.fab-page #registrar-venta .sv-btn-add-product-cta:hover {
+.fab-page :is(#registrar-venta, #ventas) .sv-btn-add-product-cta:hover {
   color: var(--brand-700) !important;
   text-decoration: underline;
 }
 
 /* Carrito con productos: lista en una tarjeta blanca. */
-.fab-page #registrar-venta #fv-cart-with-items {
+.fab-page :is(#registrar-venta, #ventas) #fv-cart-with-items {
   border: 1px solid var(--border-default);
   border-radius: 14px;
   background: var(--surface-raised);
   padding: 0.75rem 0.9rem;
 }
-.fab-page #registrar-venta .sv-cart-subheader {
+.fab-page :is(#registrar-venta, #ventas) .sv-cart-subheader {
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-secondary);
 }
-.fab-page #registrar-venta .sv-btn-add-more {
+.fab-page :is(#registrar-venta, #ventas) .sv-btn-add-more {
   border: 1px dashed var(--border-brand) !important;
   color: var(--brand-600) !important;
   background: transparent !important;
@@ -1124,31 +1124,31 @@ body.fab-page:not(.modal-open) {
 }
 
 /* Cobro: solo cuando el carrito tiene productos. */
-.fab-page #registrar-venta .sv-form:has(#fv-cart-with-items[style*="none"]) .sv-checkout {
+.fab-page :is(#registrar-venta, #ventas) .sv-form:has(#fv-cart-with-items[style*="none"]) .sv-checkout {
   display: none;
 }
-.fab-page #registrar-venta .sv-checkout { border-radius: 14px !important; }
-.fab-page #registrar-venta .sv-checkout .sv-section-header {
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout { border-radius: 14px !important; }
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout .sv-section-header {
   padding: 0.85rem 1rem 0.1rem;
 }
-.fab-page #registrar-venta .sv-checkout .sv-section-header > i { display: none; }
-.fab-page #registrar-venta .sv-checkout .sv-section-header > span {
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout .sv-section-header > i { display: none; }
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout .sv-section-header > span {
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-secondary);
 }
-.fab-page #registrar-venta .sv-checkout .sv-section-body {
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout .sv-section-body {
   padding: 0.4rem 1rem 0.9rem;
   gap: 0.55rem;
 }
-.fab-page #registrar-venta .sv-checkout .sv-summary-row {
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout .sv-summary-row {
   font-size: 0.86rem;
   padding: 0.1rem 0;
 }
-.fab-page #registrar-venta .sv-checkout .sv-summary-divider { margin: 0.15rem 0; }
-.fab-page #registrar-venta .sv-pay-methods-row {
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout .sv-summary-divider { margin: 0.15rem 0; }
+.fab-page :is(#registrar-venta, #ventas) .sv-pay-methods-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
@@ -1156,7 +1156,7 @@ body.fab-page:not(.modal-open) {
   border-radius: 12px;
   background: #F2F2F2;
 }
-.fab-page #registrar-venta .sv-pay-method-btn {
+.fab-page :is(#registrar-venta, #ventas) .sv-pay-method-btn {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
@@ -1172,27 +1172,27 @@ body.fab-page:not(.modal-open) {
   white-space: nowrap;
   min-width: 0;
 }
-.fab-page #registrar-venta .sv-pay-method-btn i { margin: 0; }
-.fab-page #registrar-venta .sv-pay-method-btn.active {
+.fab-page :is(#registrar-venta, #ventas) .sv-pay-method-btn i { margin: 0; }
+.fab-page :is(#registrar-venta, #ventas) .sv-pay-method-btn.active {
   background: var(--surface-raised) !important;
   color: var(--brand-700) !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
 }
-.fab-page #registrar-venta .sv-pay-row {
+.fab-page :is(#registrar-venta, #ventas) .sv-pay-row {
   background: transparent;
   padding: 0;
 }
-.fab-page #registrar-venta .sv-btn-save-draft {
+.fab-page :is(#registrar-venta, #ventas) .sv-btn-save-draft {
   margin-top: 0;
   font-size: 0.78rem;
 }
 @media (max-width: 575.98px) {
-  .fab-page #registrar-venta .sv-pay-method-btn i { display: none; }
+  .fab-page :is(#registrar-venta, #ventas) .sv-pay-method-btn i { display: none; }
 }
 
 /* Barra fija con el total y "Confirmar venta", encima de la barra de
    navegación del celular. Con el carrito vacío el botón se ve apagado. */
-.fab-page #registrar-venta .sv-checkout-bar {
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout-bar {
   position: sticky;
   bottom: calc(68px + env(safe-area-inset-bottom, 0px));
   z-index: 20;
@@ -1209,29 +1209,29 @@ body.fab-page:not(.modal-open) {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
 }
 @media (min-width: 992px) {
-  .fab-page #registrar-venta .sv-checkout-bar { bottom: 1rem; }
+  .fab-page :is(#registrar-venta, #ventas) .sv-checkout-bar { bottom: 1rem; }
 }
-.fab-page #registrar-venta .sv-checkout-total {
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout-total {
   display: flex;
   flex-direction: column;
   min-width: 0;
   line-height: 1.15;
 }
-.fab-page #registrar-venta .sv-checkout-total span {
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout-total span {
   font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-secondary);
 }
-.fab-page #registrar-venta .sv-checkout-total strong {
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout-total strong {
   font-size: 1.35rem;
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.fab-page #registrar-venta .sv-checkout-bar .sv-submit-btn {
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout-bar .sv-submit-btn {
   flex: 1;
   margin: 0;
   padding: 0.85rem 0.9rem;
@@ -1239,19 +1239,19 @@ body.fab-page:not(.modal-open) {
   font-size: 0.9rem;
   white-space: nowrap;
 }
-.fab-page #registrar-venta .sv-form:has(#fv-cart-with-items[style*="none"]) .sv-checkout-bar .sv-submit-btn {
+.fab-page :is(#registrar-venta, #ventas) .sv-form:has(#fv-cart-with-items[style*="none"]) .sv-checkout-bar .sv-submit-btn {
   opacity: 0.45;
 }
 
 /* Celular: el formulario ocupa toda la pantalla para que la barra del total
    quede siempre justo encima de la navegación, aunque el carrito esté vacío. */
 @media (max-width: 991.98px) {
-  .fab-page #registrar-venta #fvForm {
+  .fab-page :is(#registrar-venta, #ventas) #fvForm {
     display: flex;
     flex-direction: column;
     min-height: calc(100dvh - 215px - env(safe-area-inset-bottom, 0px));
   }
-  .fab-page #registrar-venta #fvForm > .sv-checkout-bar {
+  .fab-page :is(#registrar-venta, #ventas) #fvForm > .sv-checkout-bar {
     margin-top: auto;
   }
 }
@@ -1259,13 +1259,13 @@ body.fab-page:not(.modal-open) {
 /* ── Carrito: filas de dos líneas, sin recuadro dentro del recuadro ──
    Arriba: nombre + total de la línea. Abajo: variante y precio unitario,
    cantidad (− 1 +) y quitar. */
-.fab-page #registrar-venta .sv-btn-add-more { display: none !important; }
-.fab-page #registrar-venta #fv-carrito {
+.fab-page :is(#registrar-venta, #ventas) .sv-btn-add-more { display: none !important; }
+.fab-page :is(#registrar-venta, #ventas) #fv-carrito {
   border: none;
   background: transparent;
   padding: 0;
 }
-.fab-page #registrar-venta .vf-cart-item {
+.fab-page :is(#registrar-venta, #ventas) .vf-cart-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   grid-template-areas:
@@ -1280,19 +1280,19 @@ body.fab-page:not(.modal-open) {
   background: transparent;
   box-shadow: none;
 }
-.fab-page #registrar-venta .vf-cart-item + .vf-cart-item {
+.fab-page :is(#registrar-venta, #ventas) .vf-cart-item + .vf-cart-item {
   border-top: 1px solid var(--border-subtle);
 }
-.fab-page #registrar-venta .vf-cart-item-img,
-.fab-page #registrar-venta .vf-cart-item-img-placeholder {
+.fab-page :is(#registrar-venta, #ventas) .vf-cart-item-img,
+.fab-page :is(#registrar-venta, #ventas) .vf-cart-item-img-placeholder {
   display: none;
 }
-.fab-page #registrar-venta .vf-cart-item-info {
+.fab-page :is(#registrar-venta, #ventas) .vf-cart-item-info {
   grid-area: info;
   min-width: 0;
   align-self: start;
 }
-.fab-page #registrar-venta .vf-cart-item-name {
+.fab-page :is(#registrar-venta, #ventas) .vf-cart-item-name {
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -1300,16 +1300,16 @@ body.fab-page:not(.modal-open) {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.fab-page #registrar-venta .vf-cart-item-variant {
+.fab-page :is(#registrar-venta, #ventas) .vf-cart-item-variant {
   margin-top: 0.1rem;
   font-size: 0.74rem;
   color: var(--text-secondary);
   text-transform: none;
 }
-.fab-page #registrar-venta .vf-cart-item-controls {
+.fab-page :is(#registrar-venta, #ventas) .vf-cart-item-controls {
   display: contents;
 }
-.fab-page #registrar-venta .vf-cart-item-total {
+.fab-page :is(#registrar-venta, #ventas) .vf-cart-item-total {
   grid-area: total;
   justify-self: end;
   font-size: 0.9rem;
@@ -1317,7 +1317,7 @@ body.fab-page:not(.modal-open) {
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
-.fab-page #registrar-venta .vf-qty-control {
+.fab-page :is(#registrar-venta, #ventas) .vf-qty-control {
   grid-area: qty;
   justify-self: end;
   border: 1px solid var(--border-default);
@@ -1325,7 +1325,7 @@ body.fab-page:not(.modal-open) {
   overflow: hidden;
   background: var(--surface-raised);
 }
-.fab-page #registrar-venta .vf-qty-btn {
+.fab-page :is(#registrar-venta, #ventas) .vf-qty-btn {
   width: 30px;
   height: 30px;
   border: none;
@@ -1333,7 +1333,7 @@ body.fab-page:not(.modal-open) {
   color: var(--text-primary);
   font-size: 1rem;
 }
-.fab-page #registrar-venta .vf-qty-input {
+.fab-page :is(#registrar-venta, #ventas) .vf-qty-input {
   width: 32px;
   height: 30px;
   border: none !important;
@@ -1344,7 +1344,7 @@ body.fab-page:not(.modal-open) {
   box-shadow: none !important;
   padding: 0;
 }
-.fab-page #registrar-venta .vf-cart-item-remove {
+.fab-page :is(#registrar-venta, #ventas) .vf-cart-item-remove {
   grid-area: remove;
   width: 30px;
   height: 30px;
@@ -1353,7 +1353,7 @@ body.fab-page:not(.modal-open) {
   background: transparent;
   color: var(--text-tertiary);
 }
-.fab-page #registrar-venta .vf-cart-item-remove:hover {
+.fab-page :is(#registrar-venta, #ventas) .vf-cart-item-remove:hover {
   background: #fdecea;
   color: #c62828;
 }
@@ -1491,19 +1491,19 @@ body.fab-page:not(.modal-open) {
 }
 
 /* ── Borradores de venta ── */
-.fab-page #registrar-venta .sv-header-actions {
+.fab-page :is(#registrar-venta, #ventas) .sv-header-actions {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   flex-shrink: 0;
 }
-.fab-page #registrar-venta .sv-drafts-btn {
+.fab-page :is(#registrar-venta, #ventas) .sv-drafts-btn {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
 }
-.fab-page #registrar-venta .sv-drafts-count {
+.fab-page :is(#registrar-venta, #ventas) .sv-drafts-count {
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
@@ -1515,14 +1515,14 @@ body.fab-page:not(.modal-open) {
   line-height: 18px;
   text-align: center;
 }
-.fab-page #registrar-venta .sv-drafts-count[hidden] { display: none; }
+.fab-page :is(#registrar-venta, #ventas) .sv-drafts-count[hidden] { display: none; }
 @media (max-width: 420px) {
   /* En pantallas angostas "Borradores" queda solo con ícono + contador. */
-  .fab-page #registrar-venta .sv-drafts-btn-label { display: none; }
+  .fab-page :is(#registrar-venta, #ventas) .sv-drafts-btn-label { display: none; }
 }
 
 /* Aviso (con la venta vacía) que lleva a la lista de borradores */
-.fab-page #registrar-venta .sv-draft-banner {
+.fab-page :is(#registrar-venta, #ventas) .sv-draft-banner {
   display: flex;
   align-items: center;
   gap: 0.7rem;
@@ -1535,28 +1535,28 @@ body.fab-page:not(.modal-open) {
   color: var(--text-primary);
   cursor: pointer;
 }
-.fab-page #registrar-venta .sv-draft-banner[hidden] { display: none; }
-.fab-page #registrar-venta .sv-draft-banner:hover { background: var(--brand-100); }
-.fab-page #registrar-venta .sv-draft-banner > .bi-journal-text {
+.fab-page :is(#registrar-venta, #ventas) .sv-draft-banner[hidden] { display: none; }
+.fab-page :is(#registrar-venta, #ventas) .sv-draft-banner:hover { background: var(--brand-100); }
+.fab-page :is(#registrar-venta, #ventas) .sv-draft-banner > .bi-journal-text {
   color: var(--brand-600);
   font-size: 1.1rem;
 }
-.fab-page #registrar-venta .sv-draft-banner > .bi-chevron-right {
+.fab-page :is(#registrar-venta, #ventas) .sv-draft-banner > .bi-chevron-right {
   color: var(--brand-600);
   font-size: 0.8rem;
 }
-.fab-page #registrar-venta .sv-draft-banner-text {
+.fab-page :is(#registrar-venta, #ventas) .sv-draft-banner-text {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   line-height: 1.3;
 }
-.fab-page #registrar-venta .sv-draft-banner-text strong {
+.fab-page :is(#registrar-venta, #ventas) .sv-draft-banner-text strong {
   font-size: 0.82rem;
   font-weight: 600;
 }
-.fab-page #registrar-venta .sv-draft-banner-text small {
+.fab-page :is(#registrar-venta, #ventas) .sv-draft-banner-text small {
   font-size: 0.72rem;
   color: var(--text-secondary);
 }
@@ -1663,7 +1663,7 @@ body.fab-page:not(.modal-open) {
 
 /* "Confirmar venta" estático: la barra del total queda en su lugar, al final
    de la venta, en vez de quedarse fija abajo mientras se desplaza. */
-.fab-page #registrar-venta .sv-checkout-bar {
+.fab-page :is(#registrar-venta, #ventas) .sv-checkout-bar {
   position: static;
   box-shadow: none;
   background: var(--surface-raised);
@@ -1671,10 +1671,10 @@ body.fab-page:not(.modal-open) {
   backdrop-filter: none;
 }
 @media (max-width: 991.98px) {
-  .fab-page #registrar-venta #fvForm {
+  .fab-page :is(#registrar-venta, #ventas) #fvForm {
     min-height: 0;
   }
-  .fab-page #registrar-venta #fvForm > .sv-checkout-bar {
+  .fab-page :is(#registrar-venta, #ventas) #fvForm > .sv-checkout-bar {
     margin-top: 0.25rem;
   }
 }
@@ -1736,7 +1736,7 @@ body.fab-page:not(.modal-open) {
 .fab-page .sv-hist-summary strong { color: var(--text-primary); font-weight: 700; }
 
 /* En el historial no aplica el botón de borradores */
-.fab-page #registrar-venta:has(#fv-sales-list-view:not([style*="none"])) .sv-drafts-btn {
+.fab-page :is(#registrar-venta, #ventas):has(#fv-sales-list-view:not([style*="none"])) .sv-drafts-btn {
   display: none;
 }
 
@@ -1744,13 +1744,13 @@ body.fab-page:not(.modal-open) {
    Izquierda: cliente, buscador y carrito. Derecha: cobro + total y
    "Confirmar venta", fijos mientras se desplaza el carrito.
    En celular .sv-side no existe para el diseño (display: contents). */
-.fab-page #registrar-venta .sv-side { display: contents; }
+.fab-page :is(#registrar-venta, #ventas) .sv-side { display: contents; }
 @media (min-width: 992px) {
-  .fab-page #registrar-venta .sv-header,
-  .fab-page #registrar-venta #fv-sales-form-view {
+  .fab-page :is(#registrar-venta, #ventas) .sv-header,
+  .fab-page :is(#registrar-venta, #ventas) #fv-sales-form-view {
     max-width: 1180px;
   }
-  .fab-page #registrar-venta #fvForm {
+  .fab-page :is(#registrar-venta, #ventas) #fvForm {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 360px;
     grid-template-rows: auto 1fr;
@@ -1758,9 +1758,9 @@ body.fab-page:not(.modal-open) {
     max-width: none;
     align-items: start;
   }
-  .fab-page #registrar-venta .sv-client-section { grid-column: 1; grid-row: 1; }
-  .fab-page #registrar-venta .sv-products-section { grid-column: 1; grid-row: 2; }
-  .fab-page #registrar-venta .sv-side {
+  .fab-page :is(#registrar-venta, #ventas) .sv-client-section { grid-column: 1; grid-row: 1; }
+  .fab-page :is(#registrar-venta, #ventas) .sv-products-section { grid-column: 1; grid-row: 2; }
+  .fab-page :is(#registrar-venta, #ventas) .sv-side {
     grid-column: 2;
     grid-row: 1 / span 2;
     position: sticky;
@@ -1771,20 +1771,20 @@ body.fab-page:not(.modal-open) {
   }
 
   /* Cobro siempre visible (con el carrito vacío muestra $0). */
-  .fab-page #registrar-venta .sv-form:has(#fv-cart-with-items[style*="none"]) .sv-checkout {
+  .fab-page :is(#registrar-venta, #ventas) .sv-form:has(#fv-cart-with-items[style*="none"]) .sv-checkout {
     display: block;
   }
-  .fab-page #registrar-venta .sv-checkout .sv-section-header {
+  .fab-page :is(#registrar-venta, #ventas) .sv-checkout .sv-section-header {
     padding: 1rem 1.15rem 0.15rem;
   }
-  .fab-page #registrar-venta .sv-checkout .sv-section-body {
+  .fab-page :is(#registrar-venta, #ventas) .sv-checkout .sv-section-body {
     padding: 0.5rem 1.15rem 1.1rem;
   }
   /* En la columna angosta "Transferencia" no cabe con el ícono. */
-  .fab-page #registrar-venta .sv-pay-method-btn i { display: none; }
+  .fab-page :is(#registrar-venta, #ventas) .sv-pay-method-btn i { display: none; }
 
   /* Total arriba y el botón a lo ancho debajo. */
-  .fab-page #registrar-venta .sv-checkout-bar {
+  .fab-page :is(#registrar-venta, #ventas) .sv-checkout-bar {
     flex-direction: column;
     align-items: stretch;
     gap: 0.75rem;
@@ -1792,29 +1792,233 @@ body.fab-page:not(.modal-open) {
     padding: 1rem 1.15rem 1.15rem;
     border-radius: 14px;
   }
-  .fab-page #registrar-venta .sv-checkout-total {
+  .fab-page :is(#registrar-venta, #ventas) .sv-checkout-total {
     flex-direction: row;
     justify-content: space-between;
     align-items: baseline;
   }
-  .fab-page #registrar-venta .sv-checkout-total span { font-size: 0.72rem; }
-  .fab-page #registrar-venta .sv-checkout-total strong { font-size: 1.6rem; }
-  .fab-page #registrar-venta .sv-checkout-bar .sv-submit-btn {
+  .fab-page :is(#registrar-venta, #ventas) .sv-checkout-total span { font-size: 0.72rem; }
+  .fab-page :is(#registrar-venta, #ventas) .sv-checkout-total strong { font-size: 1.6rem; }
+  .fab-page :is(#registrar-venta, #ventas) .sv-checkout-bar .sv-submit-btn {
     flex: none;
     padding: 0.95rem;
     font-size: 0.95rem;
   }
 
   /* Carrito (vacío o con productos) en una tarjeta que llena la columna. */
-  .fab-page #registrar-venta .sv-cart-empty-cta {
+  .fab-page :is(#registrar-venta, #ventas) .sv-cart-empty-cta {
     justify-content: center;
     min-height: 340px;
     border: 1px dashed var(--border-default);
     border-radius: 14px;
     background: var(--surface-raised);
   }
-  .fab-page #registrar-venta #fv-cart-with-items {
+  .fab-page :is(#registrar-venta, #ventas) #fv-cart-with-items {
     padding: 0.9rem 1.15rem;
+  }
+}
+
+/* ── Ventas de la tienda (admin.html #ventas) ──
+   Usa las mismas reglas que Registrar Venta de Fábrica (:is(#registrar-venta,
+   #ventas)); aquí solo lo que la tienda tiene de más: Nueva / Historial /
+   Cotizaciones arriba, tipo de venta y entrega, domicilio, apartado,
+   catálogo, lector de código de barras y cotización. */
+.fab-page #ventas .sv-header-action.active {
+  background: var(--brand-100);
+  border-color: var(--border-brand);
+  color: var(--brand-700);
+}
+.fab-page #ventas .sv-header-action .pw-tab-badge { margin-left: 0.15rem; }
+@media (max-width: 420px) {
+  .fab-page #ventas .sv-header-action { padding: 0.45rem 0.65rem; }
+  .fab-page #ventas .sv-header-action > i { display: none; }
+}
+.fab-page #ventas .sv-type-section > .sv-section-body { gap: 0.6rem; }
+/* La "T" de Poppins sobresale un poco a la izquierda: sin recorte. */
+.fab-page #ventas .sv-section--flat { overflow: visible; }
+.fab-page #ventas .vf-cart-item-unit {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+.fab-page #ventas .sv-type-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.fab-page #ventas .sv-type-row.delivery-fields[style*="flex"] { display: grid !important; }
+.fab-page #ventas .sv-type-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+  margin: 0;
+}
+.fab-page #ventas .sv-type-label {
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.fab-page #ventas .sv-type-field .form-select,
+.fab-page #ventas .sv-type-field .form-control {
+  height: 44px;
+  border-radius: 12px !important;
+  font-size: 16px;
+}
+.fab-page #ventas .producto-tienda-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.fab-page #ventas .producto-tienda-field .sv-field-row { position: relative; }
+.fab-page #ventas .sv-barcode-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.fab-page #ventas .sv-barcode-field > i {
+  position: absolute;
+  left: 14px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+.fab-page #ventas .sv-barcode-field .form-control {
+  height: 42px;
+  padding-left: 40px;
+  border-radius: 12px !important;
+  font-size: 16px;
+}
+.fab-page #ventas .producto-catalogo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.fab-page #ventas .sv-catalog-row {
+  display: flex;
+  gap: 0.4rem;
+}
+.fab-page #ventas .sv-catalog-row .form-control { height: 42px; border-radius: 12px !important; }
+.fab-page #ventas .sv-catalog-qty { max-width: 76px; }
+.fab-page #ventas #btn-agregar-item-catalogo {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+/* Cotizaciones: el título "Ventas" ya está arriba; solo la explicación. */
+.fab-page #ventas #sales-quotes-view .pw-header h1 { display: none; }
+/* Carrito: tarjeta blanca (vacío o con productos) */
+.fab-page #ventas .sv-cart {
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--surface-raised);
+  padding: 0.75rem 0.9rem;
+}
+.fab-page #ventas .sv-cart-subheader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.fab-page #ventas .sv-cart-count {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--brand-700);
+  background: var(--brand-100);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+}
+.fab-page #ventas .vf-cart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.6rem 1rem 1.2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+.fab-page #ventas .vf-cart-empty i { color: var(--brand-500); }
+/* Cobro */
+.fab-page #ventas .sv-payment-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+}
+.fab-page #ventas .sv-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.fab-page #ventas .sv-pay-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.fab-page #ventas .sv-pay-label {
+  flex-shrink: 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.fab-page #ventas .sv-pay-row .form-control {
+  height: 42px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 16px;
+  border-radius: 12px !important;
+}
+.fab-page #ventas .sv-change-info {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: #1e8e5a;
+}
+.fab-page #ventas .sv-change-info.sv-change-danger { color: #c62828; }
+.fab-page #ventas .sv-quote-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px dashed var(--border-brand);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--brand-600);
+  font-weight: 600;
+}
+.fab-page #ventas .sv-quote-btn:hover { background: var(--brand-50); }
+
+/* Computador: dos columnas, igual que Fábrica */
+@media (min-width: 992px) {
+  .fab-page #ventas .sv-header,
+  .fab-page #ventas #sales-form-view {
+    max-width: 1180px;
+  }
+  .fab-page #ventas #form-venta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-rows: auto auto 1fr;
+    gap: 1rem 1.5rem;
+    max-width: none;
+    align-items: start;
+  }
+  .fab-page #ventas .sv-client-section { grid-column: 1; grid-row: 1; }
+  .fab-page #ventas .sv-type-section { grid-column: 1; grid-row: 2; }
+  .fab-page #ventas .sv-products-section { grid-column: 1; grid-row: 3; }
+  .fab-page #ventas .sv-side {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+  .fab-page #ventas .vf-cart-empty {
+    justify-content: center;
+    min-height: 260px;
   }
 }
 
