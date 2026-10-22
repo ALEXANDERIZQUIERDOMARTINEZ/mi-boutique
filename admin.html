@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Mismo tema que admin-fabrica.html (colores, Poppins, tarjetas, menú
          "Más" en el celular y modo oscuro). Todo va bajo body.fab-page. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.27">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.28">
 
     <!-- Logo/Icon -->
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -925,7 +925,7 @@
                 <!-- ── ENCABEZADO: mismo estilo que Registrar Venta de Fábrica ── -->
                 <div class="sv-header">
                     <div class="sv-header-brand">
-                        <h1 class="sv-title">Ventas</h1>
+                        <h1 class="sv-title" id="ventas-view-title">Nueva venta</h1>
                     </div>
                     <div class="sv-header-actions">
                         <button type="button" id="toggle-sales-form-view-btn" class="sv-header-action active">
@@ -1078,9 +1078,13 @@
                                         <span class="sv-cart-count" id="venta-items-count">0 items</span>
                                     </div>
                                     <div id="venta-carrito" class="sv-cart-body">
-                                        <div class="vf-cart-empty">
-                                            <i class="bi bi-bag fs-4 d-block mb-1"></i>
-                                            <small>Aún no has agregado productos</small>
+                                        <div class="sv-cart-empty-cta">
+                                            <span class="sv-cart-empty-icon"><i class="bi bi-bag"></i></span>
+                                            <strong>El carrito está vacío</strong>
+                                            <small>Busca un producto o escanea su código para empezar.</small>
+                                            <button type="button" class="sv-btn-add-product-cta" data-bs-toggle="modal" data-bs-target="#searchProductModal">
+                                                <i class="bi bi-grid-3x3-gap"></i> Ver catálogo
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -4442,7 +4446,7 @@
     </script>
 
     <script src="connection-status.js?v=1.0.0" defer></script>
-    <script type="module" src="admin.js?v=3.8.11"></script>
+    <script type="module" src="admin.js?v=3.8.12"></script>
     <script type="module" src="admin-auth-init.js?v=1.1.0"></script>
     <script type="module" src="auditoria.js?v=1.0.1"></script>
 

@@ -3508,9 +3508,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (window.ventaItems.length === 0) {
                 ventaCarritoTbody.innerHTML = `
-                    <div class="vf-cart-empty">
-                        <i class="bi bi-cart-x fs-4 d-block mb-1"></i>
-                        <small>Aún no has agregado productos</small>
+                    <div class="sv-cart-empty-cta">
+                        <span class="sv-cart-empty-icon"><i class="bi bi-bag"></i></span>
+                        <strong>El carrito está vacío</strong>
+                        <small>Busca un producto o escanea su código para empezar.</small>
+                        <button type="button" class="sv-btn-add-product-cta" data-bs-toggle="modal" data-bs-target="#searchProductModal">
+                            <i class="bi bi-grid-3x3-gap"></i> Ver catálogo
+                        </button>
                     </div>`;
                 return;
             }
@@ -8025,6 +8029,21 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             }
         };
 
+    })();
+
+    // Título de Ventas según la vista, como en Registrar Venta de Fábrica.
+    (() => {
+        const tituloEl = document.getElementById('ventas-view-title');
+        const titulos = {
+            'toggle-sales-form-view-btn': 'Nueva venta',
+            'toggle-sales-list-view-btn': 'Historial de ventas',
+            'toggle-sales-quotes-view-btn': 'Cotizaciones'
+        };
+        Object.entries(titulos).forEach(([id, titulo]) => {
+            document.getElementById(id)?.addEventListener('click', () => {
+                if (tituloEl) tituloEl.textContent = titulo;
+            });
+        });
     })();
 
     // ========================================================================
