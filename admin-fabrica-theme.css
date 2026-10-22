@@ -3,9 +3,10 @@
    mayorista (mayor.html / style.css): rosa #D988B9, Poppins, fondo cálido
    claro, tarjetas blancas con borde suave y etiquetas en versalitas.
 
-   Solo lo carga admin-fabrica.html y todo va bajo body.fab-page, así que
-   el admin de Boutique (admin.html) no cambia aunque comparta
-   admin-styles.css. Los tokens de marca se definen en <body> a propósito:
+   Lo cargan admin-fabrica.html y admin.html (Boutique), para que los dos
+   paneles se vean iguales; todo va bajo body.fab-page. Las reglas de cada
+   sección usan clases o ids propios de Fábrica, así que en admin.html solo
+   aplica lo común (marco, tarjetas, tablas, botones, modales, modo oscuro). Los tokens de marca se definen en <body> a propósito:
    tenant-branding.js pinta --brand-* en <html>, y aquí se fijan los de la
    tienda mayorista para que Fábrica se vea igual que mayor.html.
    ═══════════════════════════════════════════════════════════════════════ */

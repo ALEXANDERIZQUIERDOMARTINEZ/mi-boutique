@@ -11,17 +11,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="style.css?v=1.9.6">
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
+    <!-- Mismo tema que admin-fabrica.html (colores, Poppins, tarjetas, menú
+         "Más" en el celular y modo oscuro). Todo va bajo body.fab-page. -->
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.24">
 
     <!-- Logo/Icon -->
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <meta name="theme-color" content="#D988B9">
 
     </head>
-<body class="admin-page">
+<body class="admin-page fab-page">
 
     <!-- ══ AUTH GATE — bloquea la vista hasta verificar sesión/permisos ══ -->
     <div id="admin-auth-gate" style="position:fixed;inset:0;z-index:99999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
@@ -71,10 +74,16 @@
         <div class="rail-brand">
             <div class="rail-brand-inner">
                 <img src="icon.svg" alt="M" class="rail-logo-img">
-                <span class="rail-brand-name">Mishell</span>
+                <span class="fab-wordmark" aria-label="Mishell'es Boutique">
+                    <span class="fab-wordmark-name">MISHELL'ES</span>
+                    <span class="fab-wordmark-sub">BOUTIQUE</span>
+                </span>
             </div>
             <button class="rail-collapse-btn" id="railCollapseBtn" aria-label="Colapsar menú">
                 <i class="bi bi-chevron-left" id="railCollapseIcon"></i>
+            </button>
+            <button type="button" class="rail-close-btn" id="railCloseBtn" aria-label="Cerrar menú">
+                <i class="bi bi-x-lg"></i>
             </button>
         </div>
 
@@ -83,8 +92,9 @@
 
             <!-- Principal -->
             <div class="rail-group">
+                <span class="rail-group-label">General</span>
                 <a class="rail-link" href="#dashboard" data-tooltip="Dashboard" data-permiso="dashboard_ver">
-                    <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
+                    <i class="bi bi-speedometer2"></i><span>Dashboard</span>
                 </a>
             </div>
 
@@ -195,7 +205,7 @@
             <div class="rail-darkmode-wrap">
                 <button class="rail-link rail-darkmode-btn w-100" id="darkModeToggle" title="Dark mode">
                     <i class="bi bi-moon" id="darkModeIcon"></i>
-                    <span class="rail-label">Dark mode</span>
+                    <span class="rail-label">Modo oscuro</span>
                     <span class="rail-switch ms-auto" id="darkModeSwitch">
                         <span class="rail-switch-thumb"></span>
                     </span>
@@ -4265,14 +4275,21 @@
             function openRail() {
                 if (rail)    rail.classList.add('open');
                 if (overlay) overlay.classList.add('show');
+                document.body.classList.add('rail-is-open');
             }
             function closeRail() {
                 if (rail)    rail.classList.remove('open');
                 if (overlay) overlay.classList.remove('show');
+                document.body.classList.remove('rail-is-open');
             }
 
             if (toggle)  toggle.addEventListener('click',  openRail);
             if (overlay) overlay.addEventListener('click', closeRail);
+            var railCloseBtn = document.getElementById('railCloseBtn');
+            if (railCloseBtn) railCloseBtn.addEventListener('click', closeRail);
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && rail && rail.classList.contains('open')) closeRail();
+            });
 
             /* ─── Bottom nav: clics en items de sección ─── */
             document.querySelectorAll('.mbn-item[data-section]').forEach(function(item) {
