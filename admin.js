@@ -1799,6 +1799,7 @@ document.addEventListener('DOMContentLoaded', () => {
             snapshot.forEach(docSnap => {
                 localProductsMap.set(docSnap.id, docSnap.data());
             });
+            window.dispatchEvent(new CustomEvent('admin:productos-actualizados'));
 
             // Buscador del punto de venta: si por casualidad ya está abierto
             // cuando llega este snapshot (p. ej. una venta concurrente baja
@@ -3508,13 +3509,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (window.ventaItems.length === 0) {
                 ventaCarritoTbody.innerHTML = `
-                    <div class="sv-cart-empty-cta">
-                        <span class="sv-cart-empty-icon"><i class="bi bi-bag"></i></span>
-                        <strong>El carrito está vacío</strong>
-                        <small>Busca un producto o escanea su código para empezar.</small>
-                        <button type="button" class="sv-btn-add-product-cta" data-bs-toggle="modal" data-bs-target="#searchProductModal">
-                            <i class="bi bi-grid-3x3-gap"></i> Ver catálogo
-                        </button>
+                    <div class="pos-ticket-empty">
+                        <i class="bi bi-receipt"></i>
+                        <span>Toca un producto o escanea su código para agregarlo.</span>
                     </div>`;
                 return;
             }
@@ -8029,6 +8026,124 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             }
         };
 
+    })();
+
+    // ========================================================================
+    // CAJA TIPO POS (Registrar Venta): catálogo con foto a la izquierda.
+    // Tocar un producto abre la misma elección de talla/color que el buscador
+    // (openVariationModal), que lo agrega al ticket. El precio que se muestra
+    // sigue el tipo de venta (detal o mayorista). Para no reconstruir cientos
+    // de tarjetas con imagen en cada venta, solo se pinta con Ventas abierta
+    // y de a POS_PAGINA productos ("Ver más" carga otros).
+    // ========================================================================
+    (() => {
+        const gridEl = document.getElementById('pos-grid');
+        const catsEl = document.getElementById('pos-cats');
+        const searchEl = document.getElementById('pos-search');
+        const tipoVentaEl = document.getElementById('tipo-venta-select');
+        if (!gridEl) return;
+
+        const POS_PAGINA = 60;
+        let categoriaActiva = '';
+        let limite = POS_PAGINA;
+        let sucio = true;
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const normalizar = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+        function productosDisponibles() {
+            const lista = [];
+            localProductsMap.forEach((p, id) => {
+                const stock = obtenerStockTotalProducto(p);
+                if (stock > 0) lista.push({ id, p, stock });
+            });
+            return lista.sort((a, b) => (a.p.nombre || '').localeCompare(b.p.nombre || ''));
+        }
+
+        function pintarCategorias(disponibles) {
+            if (!catsEl) return;
+            const nombres = window.categoriesMap || new Map();
+            const conteo = new Map();
+            disponibles.forEach(({ p }) => { if (p.categoriaId) conteo.set(p.categoriaId, (conteo.get(p.categoriaId) || 0) + 1); });
+            if (categoriaActiva && !conteo.has(categoriaActiva)) categoriaActiva = '';
+            const cats = [...conteo.keys()]
+                .map(id => ({ id, nombre: nombres.get(id) || 'Sin categoría' }))
+                .sort((a, b) => a.nombre.localeCompare(b.nombre));
+            const capital = (t) => { const l = String(t).toLowerCase(); return l.charAt(0).toUpperCase() + l.slice(1); };
+            catsEl.innerHTML = `<button type="button" class="pos-cat${categoriaActiva ? '' : ' active'}" data-cat="">Todos <b>${disponibles.length}</b></button>`
+                + cats.map(c => `<button type="button" class="pos-cat${c.id === categoriaActiva ? ' active' : ''}" data-cat="${esc(c.id)}">${esc(capital(c.nombre))} <b>${conteo.get(c.id)}</b></button>`).join('');
+        }
+
+        function pintar() {
+            sucio = false;
+            const disponibles = productosDisponibles();
+            pintarCategorias(disponibles);
+            const texto = normalizar(searchEl?.value);
+            const mayorista = tipoVentaEl?.value === 'mayorista';
+            const filtrados = disponibles.filter(({ p }) =>
+                (!categoriaActiva || p.categoriaId === categoriaActiva) &&
+                (!texto || normalizar(p.nombre).includes(texto) || normalizar(p.codigo).includes(texto) || String(p.codigoBarras || '').includes(texto)));
+
+            if (!filtrados.length) {
+                gridEl.innerHTML = `<div class="pos-grid-empty"><i class="bi bi-${texto || categoriaActiva ? 'search' : 'box-seam'}"></i> ${texto || categoriaActiva ? 'Sin resultados' : 'No hay productos con stock'}</div>`;
+                return;
+            }
+            const visibles = filtrados.slice(0, limite);
+            gridEl.innerHTML = visibles.map(({ id, p, stock }) => {
+                const precio = mayorista && p.precioMayor ? p.precioMayor : (p.precioDetal || 0);
+                const img = p.imagenUrl
+                    ? `<img src="${esc(p.imagenUrl)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'bi bi-image'}))">`
+                    : '<i class="bi bi-image"></i>';
+                return `<button type="button" class="pos-tile" data-id="${id}" title="${esc(p.nombre)}">
+                    <span class="pos-tile-img">${img}<span class="pos-tile-stock${stock <= 2 ? ' is-low' : ''}">${stock}</span></span>
+                    <span class="pos-tile-name">${esc(p.nombre || 'Sin nombre')}</span>
+                    <span class="pos-tile-price">${formatoMoneda.format(precio)}</span>
+                </button>`;
+            }).join('') + (filtrados.length > visibles.length
+                ? `<button type="button" class="pos-more" id="pos-more">Ver más (${filtrados.length - visibles.length})</button>` : '');
+        }
+
+        function pintarSiVisible() {
+            if ((window.location.hash || '#dashboard') === '#ventas') pintar();
+            else sucio = true;
+        }
+
+        gridEl.addEventListener('click', (e) => {
+            if (e.target.closest('#pos-more')) { limite += POS_PAGINA; pintar(); return; }
+            const tile = e.target.closest('.pos-tile');
+            if (tile && typeof window.openVariationModal === 'function') window.openVariationModal(tile.dataset.id);
+        });
+        catsEl?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.pos-cat');
+            if (!btn) return;
+            categoriaActiva = btn.dataset.cat;
+            limite = POS_PAGINA;
+            pintar();
+        });
+        let busquedaTimer;
+        searchEl?.addEventListener('input', () => {
+            clearTimeout(busquedaTimer);
+            busquedaTimer = setTimeout(() => { limite = POS_PAGINA; pintar(); }, 150);
+        });
+        tipoVentaEl?.addEventListener('change', pintarSiVisible);
+        window.addEventListener('admin:productos-actualizados', pintarSiVisible);
+        alEntrarSeccion('#ventas', () => { if (sucio) pintar(); });
+
+        // Celular: barra fija con el total que lleva al ticket.
+        const barra = document.getElementById('pos-mobile-bar');
+        const totalEl = document.getElementById('venta-total');
+        const countEl = document.getElementById('venta-items-count');
+        const barraTotal = document.getElementById('pos-mobile-total');
+        const barraCount = document.getElementById('pos-mobile-count');
+        const sincronizarBarra = () => {
+            if (barraTotal && totalEl) barraTotal.textContent = totalEl.textContent;
+            if (barraCount && countEl) barraCount.textContent = parseInt(countEl.textContent, 10) || 0;
+        };
+        if (totalEl) new MutationObserver(sincronizarBarra).observe(totalEl, { childList: true, characterData: true, subtree: true });
+        if (countEl) new MutationObserver(sincronizarBarra).observe(countEl, { childList: true, characterData: true, subtree: true });
+        sincronizarBarra();
+        barra?.addEventListener('click', () => {
+            document.getElementById('form-venta')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
     })();
 
     // Título de Ventas según la vista, como en Registrar Venta de Fábrica.
