@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Mismo tema que admin-fabrica.html (colores, Poppins, tarjetas, menú
          "Más" en el celular y modo oscuro). Todo va bajo body.fab-page. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.28">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.29">
 
     <!-- Logo/Icon -->
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -945,19 +945,56 @@
                 </div>
 
                 <!-- ══════════════════════════════════════════
-                     REGISTRAR VENTA — mismo diseño que Fábrica: cliente en una
-                     fila, buscador grande, carrito en tarjeta y el cobro (con el
-                     total y "Registrar venta") a la derecha en computador.
+                     REGISTRAR VENTA — caja tipo POS: a la izquierda el catálogo
+                     (buscador, categorías y productos con foto; tocar uno abre la
+                     elección de talla/color) y a la derecha el ticket (cliente,
+                     productos, cobro y "Cobrar"). En el celular el ticket va
+                     debajo y una barra fija muestra el total.
                 ══════════════════════════════════════════ -->
                 <div id="sales-form-view">
-                    <form id="form-venta" class="sv-form">
-                        <input type="hidden" id="venta-cliente-id">
-                        <input type="hidden" id="venta-cliente-cedula">
+                    <div class="pos-layout">
 
-                        <!-- Cliente: una fila compacta (toca para cambiar) -->
-                        <div class="sv-section sv-section--flat sv-client-section">
-                            <div class="sv-section-body">
-                                <div class="sv-field-row">
+                        <!-- ── Catálogo ── -->
+                        <section class="pos-catalog" aria-label="Catálogo de productos">
+                            <div class="pos-catalog-tools">
+                                <div class="pos-search">
+                                    <i class="bi bi-search"></i>
+                                    <input type="search" id="pos-search" placeholder="Buscar producto o código" autocomplete="off">
+                                </div>
+                                <div class="producto-tienda-field">
+                                <div class="pos-tools-row">
+                                    <div class="pos-barcode">
+                                        <i class="bi bi-upc-scan"></i>
+                                        <input type="text" id="barcode-scanner-input" class="form-control"
+                                               placeholder="Escanear código de barras..." autocomplete="off">
+                                    </div>
+                                    <button type="button" class="pos-tool-btn d-md-none" id="btn-camera-scanner"
+                                            data-bs-toggle="modal" data-bs-target="#cameraScannerModal"
+                                            title="Escanear con cámara" aria-label="Escanear con cámara">
+                                        <i class="bi bi-camera"></i>
+                                    </button>
+                                    <button type="button" class="pos-tool-btn" data-bs-toggle="modal" data-bs-target="#searchProductModal"
+                                            title="Búsqueda avanzada" aria-label="Búsqueda avanzada">
+                                        <i class="bi bi-sliders"></i>
+                                    </button>
+                                    <input type="text" id="venta-producto" style="display:none;" readonly>
+                                </div>
+                                </div>
+                                <div class="pos-cats" id="pos-cats" role="group" aria-label="Categorías"></div>
+                            </div>
+                            <div class="pos-grid" id="pos-grid">
+                                <div class="pos-grid-empty"><span class="spinner-border spinner-border-sm"></span> Cargando productos...</div>
+                            </div>
+                        </section>
+
+                        <!-- ── Ticket ── -->
+                        <form id="form-venta" class="pos-ticket">
+                            <input type="hidden" id="venta-cliente-id">
+                            <input type="hidden" id="venta-cliente-cedula">
+
+                            <div class="pos-ticket-scroll">
+                                <!-- Cliente -->
+                                <div class="sv-field-row pos-client">
                                     <div class="sv-input-icon-wrap sv-client-pick">
                                         <i class="bi bi-person sv-input-icon"></i>
                                         <span class="sv-client-pick-label">Cliente</span>
@@ -972,28 +1009,21 @@
                                         <i class="bi bi-person-plus"></i>
                                     </button>
                                 </div>
-                                <!-- Celular y dirección: solo si el cliente los tiene -->
                                 <div class="sv-client-meta">
                                     <div class="sv-input-icon-wrap">
                                         <i class="bi bi-telephone sv-input-icon"></i>
-                                        <input type="text" id="venta-cliente-celular" class="form-control form-control-sm"
-                                               placeholder="Celular" readonly disabled>
+                                        <input type="text" id="venta-cliente-celular" class="form-control form-control-sm" placeholder="Celular" readonly disabled>
                                     </div>
                                     <div class="sv-input-icon-wrap">
                                         <i class="bi bi-geo-alt sv-input-icon"></i>
-                                        <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm"
-                                               placeholder="Dirección" readonly disabled>
+                                        <input type="text" id="venta-cliente-direccion" class="form-control form-control-sm" placeholder="Dirección" readonly disabled>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Tipo de venta + entrega -->
-                        <div class="sv-section sv-section--flat sv-type-section">
-                            <div class="sv-section-body">
-                                <div class="sv-type-row">
-                                    <label class="sv-type-field">
-                                        <span class="sv-type-label">Tipo de venta</span>
+                                <!-- Tipo de venta + entrega -->
+                                <div class="pos-type-row">
+                                    <label class="pos-type-field">
+                                        <span>Venta</span>
                                         <select id="tipo-venta-select" name="tipo-venta" class="form-select form-select-sm">
                                             <option value="detal" selected>Detal</option>
                                             <option value="mayorista">Mayorista</option>
@@ -1001,121 +1031,73 @@
                                             <option value="catalogo">Por catálogo</option>
                                         </select>
                                     </label>
-                                    <label class="sv-type-field">
-                                        <span class="sv-type-label">Entrega</span>
+                                    <label class="pos-type-field">
+                                        <span>Entrega</span>
                                         <select id="tipo-entrega-select" name="tipo-entrega" class="form-select form-select-sm">
                                             <option value="tienda" selected>Recoge en tienda</option>
                                             <option value="domicilio">Domicilio</option>
                                         </select>
                                     </label>
                                 </div>
-
-                                <!-- Fecha límite del apartado (solo en Apartado) -->
                                 <div class="apartado-fecha-field" style="display:none;">
-                                    <label class="sv-type-field">
-                                        <span class="sv-type-label">Fecha límite del apartado</span>
+                                    <label class="pos-type-field">
+                                        <span>Fecha límite del apartado</span>
                                         <input type="date" id="apartado-fecha-max" class="form-control form-control-sm">
                                     </label>
                                 </div>
-
-                                <!-- Domicilio (solo si la entrega es a domicilio) -->
-                                <div class="sv-type-row delivery-fields" style="display:none;">
-                                    <label class="sv-type-field">
-                                        <span class="sv-type-label">Repartidor</span>
+                                <div class="pos-type-row delivery-fields" style="display:none;">
+                                    <label class="pos-type-field">
+                                        <span>Repartidor</span>
                                         <select id="venta-repartidor" class="form-select form-select-sm"></select>
                                     </label>
-                                    <label class="sv-type-field">
-                                        <span class="sv-type-label">Costo de la ruta ($)</span>
+                                    <label class="pos-type-field">
+                                        <span>Costo ruta ($)</span>
                                         <input type="text" inputmode="numeric" id="costo-ruta" class="form-control form-control-sm" value="0">
                                     </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Productos + carrito -->
-                        <div class="sv-section sv-section--flat sv-products-section">
-                            <div class="sv-section-body">
-                                <!-- Buscador grande (abre el inventario) con la cámara adentro en el celular -->
-                                <div class="producto-tienda-field">
-                                    <div class="sv-field-row">
-                                        <button type="button" class="sv-fake-search-input"
-                                                data-bs-toggle="modal" data-bs-target="#searchProductModal">
-                                            <i class="bi bi-search"></i>
-                                            <span>Buscar producto en inventario...</span>
-                                        </button>
-                                        <button type="button" class="sv-btn-barcode d-md-none" id="btn-camera-scanner"
-                                                data-bs-toggle="modal" data-bs-target="#cameraScannerModal"
-                                                title="Escanear con cámara" aria-label="Escanear con cámara">
-                                            <i class="bi bi-camera"></i>
-                                        </button>
-                                    </div>
-                                    <!-- Lector de código de barras (pistola) -->
-                                    <div class="sv-barcode-field">
-                                        <i class="bi bi-upc-scan"></i>
-                                        <input type="text" id="barcode-scanner-input" class="form-control"
-                                               placeholder="Escanear código de barras..." autocomplete="off">
-                                    </div>
-                                    <input type="text" id="venta-producto" style="display:none;" readonly>
                                 </div>
 
                                 <!-- Item de catálogo (solo en "Por catálogo") -->
                                 <div class="producto-catalogo-field" style="display:none;">
-                                    <span class="sv-type-label">Item de catálogo</span>
+                                    <span class="pos-label">Item de catálogo</span>
                                     <div class="sv-catalog-row">
-                                        <input type="text" id="catalogo-descripcion" class="form-control form-control-sm" placeholder="Descripción del producto">
+                                        <input type="text" id="catalogo-descripcion" class="form-control form-control-sm" placeholder="Descripción">
                                         <input type="number" id="catalogo-cantidad" class="form-control form-control-sm sv-catalog-qty" placeholder="Cant." min="1" value="1">
-                                        <input type="text" inputmode="numeric" id="catalogo-precio" class="form-control form-control-sm" placeholder="Precio unitario">
+                                        <input type="text" inputmode="numeric" id="catalogo-precio" class="form-control form-control-sm" placeholder="Precio">
                                         <button type="button" class="btn btn-primary btn-sm" id="btn-agregar-item-catalogo" aria-label="Agregar item">
                                             <i class="bi bi-plus-lg"></i>
                                         </button>
                                     </div>
                                 </div>
 
-                                <!-- Carrito -->
-                                <div class="sv-cart">
-                                    <div class="sv-cart-subheader">
-                                        <span>Productos agregados</span>
+                                <!-- Productos del ticket -->
+                                <div class="pos-items">
+                                    <div class="pos-items-head">
+                                        <span>Ticket</span>
                                         <span class="sv-cart-count" id="venta-items-count">0 items</span>
                                     </div>
                                     <div id="venta-carrito" class="sv-cart-body">
-                                        <div class="sv-cart-empty-cta">
-                                            <span class="sv-cart-empty-icon"><i class="bi bi-bag"></i></span>
-                                            <strong>El carrito está vacío</strong>
-                                            <small>Busca un producto o escanea su código para empezar.</small>
-                                            <button type="button" class="sv-btn-add-product-cta" data-bs-toggle="modal" data-bs-target="#searchProductModal">
-                                                <i class="bi bi-grid-3x3-gap"></i> Ver catálogo
-                                            </button>
+                                        <div class="pos-ticket-empty">
+                                            <i class="bi bi-receipt"></i>
+                                            <span>Toca un producto o escanea su código para agregarlo.</span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Columna de cobro: en computador va a la derecha y fija;
-                             en celular no cambia el orden (display: contents). -->
-                        <div class="sv-side">
-                            <div class="sv-section sv-checkout">
-                                <div class="sv-section-header">
-                                    <span>Cobro</span>
-                                </div>
-                                <div class="sv-section-body">
+                                <!-- Cobro -->
+                                <div class="pos-pay">
                                     <div class="sv-summary-row sv-summary-row--discount">
                                         <span>Descuento</span>
                                         <div class="sv-discount-row">
-                                            <input type="text" inputmode="numeric" id="venta-descuento"
-                                                   class="form-control form-control-sm" value="0">
+                                            <input type="text" inputmode="numeric" id="venta-descuento" class="form-control form-control-sm" value="0">
                                             <select class="form-select form-select-sm" id="venta-descuento-tipo">
                                                 <option value="fijo">$ Fijo</option>
                                                 <option value="porcentaje">%</option>
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="sv-summary-divider"></div>
 
                                     <!-- Radio oculto para compatibilidad JS (siempre efectivo) -->
                                     <input type="radio" class="btn-check" name="metodo-pago-radio" id="metodo-efectivo" value="efectivo" checked style="display:none;">
-
-                                    <!-- Recibe (siempre efectivo) -->
                                     <div id="efectivo-fields" class="sv-pay-input">
                                         <div class="sv-pay-row">
                                             <span class="sv-pay-label">Recibido</span>
@@ -1126,8 +1108,7 @@
                                         </div>
                                     </div>
 
-                                    <textarea id="venta-observaciones" class="form-control form-control-sm sv-observaciones"
-                                              rows="1" placeholder="Observaciones (opcional)..."></textarea>
+                                    <textarea id="venta-observaciones" class="form-control form-control-sm sv-observaciones" rows="1" placeholder="Observaciones (opcional)..."></textarea>
 
                                     <div class="sv-payment-options">
                                         <label class="sv-toggle-label">
@@ -1139,25 +1120,32 @@
                                             <span>Ruta pagada por transferencia</span>
                                         </label>
                                     </div>
-
-                                    <button type="button" id="btn-enviar-cotizacion" class="sv-btn-save-draft sv-quote-btn">
+                                    <button type="button" id="btn-enviar-cotizacion" class="sv-quote-btn">
                                         <i class="bi bi-send"></i> Enviar cotización al cliente
                                     </button>
                                 </div>
                             </div>
 
-                            <!-- Total + Registrar venta -->
-                            <div class="sv-checkout-bar">
-                                <div class="sv-checkout-total">
+                            <!-- Total + Cobrar -->
+                            <div class="pos-checkout">
+                                <div class="pos-total">
                                     <span>Total</span>
                                     <strong id="venta-total">$0</strong>
                                 </div>
-                                <button type="submit" class="sv-submit-btn">
-                                    <i class="bi bi-check-circle-fill"></i> Registrar venta
+                                <button type="submit" class="sv-submit-btn pos-charge-btn">
+                                    <i class="bi bi-check-circle-fill"></i> Cobrar
                                 </button>
                             </div>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
+
+                    <!-- Celular: acceso rápido al ticket -->
+                    <button type="button" class="pos-mobile-bar" id="pos-mobile-bar">
+                        <span class="pos-mobile-bar-count" id="pos-mobile-count">0</span>
+                        <span class="pos-mobile-bar-label">Ver ticket</span>
+                        <strong class="pos-mobile-bar-total" id="pos-mobile-total">$0</strong>
+                        <i class="bi bi-chevron-down"></i>
+                    </button>
                 </div>
 
                 <!-- ══════════════════════════════════════════
@@ -4446,7 +4434,7 @@
     </script>
 
     <script src="connection-status.js?v=1.0.0" defer></script>
-    <script type="module" src="admin.js?v=3.8.12"></script>
+    <script type="module" src="admin.js?v=3.8.13"></script>
     <script type="module" src="admin-auth-init.js?v=1.1.0"></script>
     <script type="module" src="auditoria.js?v=1.0.1"></script>
 
