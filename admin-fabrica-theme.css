@@ -1908,6 +1908,13 @@ body.fab-page:not(.modal-open) {
 }
 /* Cotizaciones: el título "Ventas" ya está arriba; solo la explicación. */
 .fab-page #ventas #sales-quotes-view .pw-header h1 { display: none; }
+/* Carrito vacío: igual que Fábrica (sin tarjeta, aviso con "Ver catálogo") */
+.fab-page #ventas .sv-cart:has(.sv-cart-empty-cta) {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.fab-page #ventas .sv-cart:has(.sv-cart-empty-cta) .sv-cart-subheader { display: none; }
 /* Carrito: tarjeta blanca (vacío o con productos) */
 .fab-page #ventas .sv-cart {
   border: 1px solid var(--border-default);
