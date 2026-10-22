@@ -1901,6 +1901,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (localProductsMap.size === 0) {
                 if (emptyRow) {
+                    emptyRow.innerHTML = '<i class="bi bi-box-seam"></i><strong>Aún no hay productos</strong><span>Crea el primero con el botón Nuevo.</span>';
                     emptyRow.style.display = '';
                     productListTableBody.appendChild(emptyRow);
                 }
@@ -1908,86 +1909,86 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             if (emptyRow) emptyRow.style.display = 'none';
-            await loadExternalLib('jsbarcode');
 
+            // Tarjetas con el mismo diseño que Productos de Fábrica: foto,
+            // nombre + precio detal, referencia/categoría/proveedor y el stock
+            // por talla/color en chips. Toda la tarjeta abre la edición; los
+            // botones de la derecha son promo, encargo y eliminar.
+            const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const UMBRAL_BAJO = 2;
+            let unidadesTotales = 0;
+            let bajoStockCount = 0;
+            const fragment = document.createDocumentFragment();
             localProductsMap.forEach((d, id) => {
                 const stockTotal = obtenerStockTotalProducto(d);
-                const defaultImgTabla = 'https://placehold.co/60x80/f0f0f0/cccccc?text=Foto';
-                const imagenUrl = d.imagenUrl || defaultImgTabla;
+                unidadesTotales += stockTotal;
+                if (stockTotal <= UMBRAL_BAJO) bajoStockCount++;
+                const estadoStock = stockTotal <= 0 ? 'out' : (stockTotal <= UMBRAL_BAJO ? 'low' : 'ok');
 
-                let variacionesHtml = (d.variaciones || [])
-                    .map(v => `<span class="badge bg-light text-dark me-1">${normalizeTalla(v.talla)} / ${normalizeColor(v.color)} (Stock: ${v.stock})</span>`)
-                    .join(' ');
-                if (variacionesHtml === '') variacionesHtml = '<small class="text-muted">Sin variaciones</small>';
+                const variaciones = (d.variaciones || []).slice().sort((x, y) => (parseInt(y.stock, 10) || 0) - (parseInt(x.stock, 10) || 0));
+                const conStock = variaciones.filter(v => (parseInt(v.stock, 10) || 0) > 0);
+                const agotadas = variaciones.length - conStock.length;
+                const MAX_CHIPS = 4;
+                const etiquetaVar = (v) => {
+                    const talla = normalizeTalla(v.talla);
+                    const color = normalizeColor(v.color);
+                    return [color, talla && talla.toLowerCase() !== 'única' && talla.toLowerCase() !== 'unica' ? talla : ''].filter(Boolean).join(' ') || 'Única';
+                };
+                const chips = conStock.slice(0, MAX_CHIPS)
+                    .map(v => `<span class="pf-var">${esc(etiquetaVar(v))}<b>${parseInt(v.stock, 10) || 0}</b></span>`).join('')
+                    + (conStock.length > MAX_CHIPS ? `<span class="pf-var pf-var--more">+${conStock.length - MAX_CHIPS}</span>` : '')
+                    + (agotadas ? `<span class="pf-var is-out">${agotadas} agotado${agotadas === 1 ? '' : 's'}</span>` : '');
 
-                let categoryName = 'Sin Categoría';
-                if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) {
-                    categoryName = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
-                }
-
-                // Verificar si tiene promoción
+                const categoryName = (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) ? categoriesMap.get(d.categoriaId) : '';
                 const hasPromo = d.promocion && d.promocion.activa;
-                const promoHtml = hasPromo
-                    ? `<button class="btn btn-action btn-action-warning btn-manage-promo">
-                        <i class="bi bi-tag-fill"></i><span class="btn-action-text">${d.promocion.tipo === 'porcentaje' ? d.promocion.descuento + '%' : 'Promo'}</span>
-                       </button>`
-                    : `<button class="btn btn-action btn-action-edit btn-manage-promo">
-                        <i class="bi bi-tag"></i><span class="btn-action-text">+ Promo</span>
-                       </button>`;
+                const promoLabel = hasPromo ? (d.promocion.tipo === 'porcentaje' ? `−${d.promocion.descuento}%` : 'Promo') : '';
+                const img = d.imagenUrl
+                    ? `<img src="${esc(d.imagenUrl)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'bi bi-image'}))">`
+                    : `<i class="bi bi-image"></i>`;
 
-                // Generar columna de código de barras
-                let barcodeHtml = '';
-                if (d.codigoBarras) {
-                    barcodeHtml = `
-                        <div class="barcode-cell">
-                            <svg id="barcode-mini-${id}" class="barcode-mini"></svg>
-                            <small class="d-block text-muted mt-1">${d.codigoBarras}</small>
-                            <button class="btn btn-sm btn-outline-primary mt-1 btn-ver-barcode" data-product-id="${id}">
-                                <i class="bi bi-eye"></i> Ver
-                            </button>
+                const card = document.createElement('article');
+                card.className = 'pf-card btn-edit-product' + (d.visible === false ? ' is-hidden' : '');
+                card.dataset.id = id;
+                card.setAttribute('role', 'button');
+                card.tabIndex = 0;
+                card.setAttribute('aria-label', `Editar ${d.nombre || ''}`);
+                card.innerHTML = `
+                    <div class="pf-thumb">${img}</div>
+                    <div class="pf-body">
+                        <div class="pf-row">
+                            <h3 class="pf-name product-name">${esc(d.nombre || 'Sin nombre')}</h3>
+                            <span class="pf-price">${formatoMoneda.format(d.precioDetal || 0)}</span>
                         </div>
-                    `;
-                } else {
-                    barcodeHtml = '<small class="text-muted">Sin código</small>';
-                }
-
-                const tr = document.createElement('tr');
-                tr.dataset.id = id;
-                tr.innerHTML = `<td><img src="${imagenUrl}" alt="${d.nombre}" class="table-product-img" onerror="this.src='${defaultImgTabla}'"></td>
-                                <td class="product-name">${d.nombre}<small class="text-muted d-block">Código: ${d.codigo || id.substring(0,6)}</small></td>
-                                <td>${categoryName}</td> <td><div class="variaciones-cell">${variacionesHtml}</div></td>
-                                <td>${formatoMoneda.format(d.precioDetal || 0)}</td>
-                                <td>${formatoMoneda.format(d.precioMayor || 0)}</td>
-                                <td>${stockTotal}</td>
-                                <td>${barcodeHtml}</td>
-                                <td>${promoHtml}</td>
-                                <td><span class="badge ${d.visible ? 'bg-success' : 'bg-secondary'}">${d.visible ? 'Visible' : 'Oculto'}</span></td>
-                                <td><span class="badge ${d.bajoEncargo ? 'bg-info text-dark' : 'bg-light text-muted border'} btn-toggle-encargo" role="button" style="cursor:pointer;" title="Clic para activar/desactivar en encargo.html">${d.bajoEncargo ? 'Sí' : 'No'}</span></td>
-                                <td class="action-buttons">
-                                    <button class="btn btn-action btn-action-edit btn-edit-product">
-                                        <i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span>
-                                    </button>
-                                    <button class="btn btn-action btn-action-delete btn-delete-product">
-                                        <i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span>
-                                    </button>
-                                </td>`;
-                productListTableBody.appendChild(tr);
-
-                // Generar código de barras visual en miniatura
-                if (d.codigoBarras) {
-                    try {
-                        JsBarcode(`#barcode-mini-${id}`, d.codigoBarras, {
-                            format: "EAN13",
-                            width: 1,
-                            height: 30,
-                            displayValue: false,
-                            margin: 2
-                        });
-                    } catch (e) {
-                        console.error('Error generando código de barras:', e);
-                    }
-                }
+                        <div class="pf-meta">
+                            <span>${esc(d.codigo || id.substring(0, 6))}</span>
+                            ${categoryName ? `<span>${esc(categoryName)}</span>` : ''}
+                            ${d.precioMayor ? `<span>Mayor ${formatoMoneda.format(d.precioMayor)}</span>` : ''}
+                            ${d.proveedor ? `<span>${esc(d.proveedor)}</span>` : ''}
+                            ${d.visible === false ? '<span class="pf-hidden-tag"><i class="bi bi-eye-slash"></i> Oculto</span>' : ''}
+                        </div>
+                        <div class="pf-vars">
+                            ${stockTotal > 0
+                                ? `<span class="pf-stock pf-stock--${estadoStock}">${stockTotal} und</span>${chips}`
+                                : `<span class="pf-stock pf-stock--out">${variaciones.length ? 'Agotado' : 'Sin variaciones'}</span>`}
+                            ${hasPromo ? `<span class="pf-tag pf-tag--promo"><i class="bi bi-tag-fill"></i> ${esc(promoLabel)}</span>` : ''}
+                            ${d.bajoEncargo ? '<span class="pf-tag"><i class="bi bi-bag-heart"></i> Encargo</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="pf-actions">
+                        <button type="button" class="pf-act btn-manage-promo${hasPromo ? ' is-on' : ''}" title="${hasPromo ? 'Editar promoción' : 'Agregar promoción'}" aria-label="Promoción"><i class="bi bi-tag${hasPromo ? '-fill' : ''}"></i></button>
+                        <button type="button" class="pf-act btn-toggle-encargo${d.bajoEncargo ? ' is-on' : ''}" title="${d.bajoEncargo ? 'Quitar de Bajo Encargo' : 'Agregar a Bajo Encargo'}" aria-label="Bajo encargo"><i class="bi bi-bag-heart${d.bajoEncargo ? '-fill' : ''}"></i></button>
+                        ${d.codigoBarras ? `<button type="button" class="pf-act btn-ver-barcode" data-product-id="${id}" title="Ver código de barras" aria-label="Código de barras"><i class="bi bi-upc"></i></button>` : ''}
+                        <button type="button" class="pf-act pf-act--del btn-delete-product" title="Eliminar" aria-label="Eliminar ${esc(d.nombre || '')}"><i class="bi bi-trash3"></i></button>
+                    </div>`;
+                fragment.appendChild(card);
             });
+            productListTableBody.appendChild(fragment);
+            if (emptyRow) productListTableBody.appendChild(emptyRow);
+
+            const resumenEl = document.getElementById('prod-resumen');
+            if (resumenEl) resumenEl.textContent = `${localProductsMap.size} producto${localProductsMap.size === 1 ? '' : 's'} · ${unidadesTotales.toLocaleString('es-CO')} und`;
+            const bajoCountEl = document.getElementById('prod-bajo-count');
+            if (bajoCountEl) bajoCountEl.textContent = bajoStockCount ? bajoStockCount : '';
 
             applyInventoryFilters();
             productosTablaSucia = false;
@@ -1997,7 +1998,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // pestaña Productos, sin importar si la navegación vino del rail de
         // escritorio o de la barra inferior móvil.
         alEntrarSeccion('#productos', () => { if (productosTablaSucia) pintarTablaProductos(); });
-        onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); window.reportConnError?.('productos', e); if(productListTableBody) productListTableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error.</td></tr>';});
+        onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); window.reportConnError?.('productos', e); if(productListTableBody) productListTableBody.innerHTML = `<div class="pf-empty pf-empty--error"><i class="bi bi-exclamation-triangle"></i><strong>No se pudo cargar</strong><span>${e.message || ''}</span></div>`;});
         
         // ─── GALERÍA POR COLOR ──────────────────────────────────────────────────
         // colorVariantsState: array de objetos {id, nombre, hex, imagenes (URLs ya guardadas), newFiles (File[])}
@@ -2415,13 +2416,51 @@ document.addEventListener('DOMContentLoaded', () => {
             rows.forEach((row) => { row.remove(); });
             aVR();
             clearColorVariants();
-            document.getElementById('product-form-title').textContent = "Agregar Producto";
+            document.getElementById('product-form-title').textContent = "Nuevo producto";
             imagenInput.required = true;
+            window.setProductPhotoPreview?.('');
             const mostrarFotoChk = document.getElementById('mostrar-foto-principal');
             if (mostrarFotoChk) mostrarFotoChk.checked = true;
         }
         
         if (clearFormBtn) clearFormBtn.addEventListener('click', (e) => { e.preventDefault(); window.clearProductForm(); });
+
+        // Teclado: Enter o espacio sobre una tarjeta del inventario la edita.
+        if (productListTableBody) productListTableBody.addEventListener('keydown', (e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.classList?.contains('pf-card')) {
+                e.preventDefault();
+                e.target.click();
+            }
+        });
+
+        // Contador − / + de unidades en cada fila de talla/color.
+        if (variationsContainer) variationsContainer.addEventListener('click', (e) => {
+            const step = e.target.closest('.pf-step');
+            if (!step) return;
+            e.preventDefault();
+            const input = step.parentElement.querySelector('input[type="number"]');
+            if (!input) return;
+            const valor = (parseInt(input.value, 10) || 0) + parseInt(step.dataset.step, 10);
+            input.value = Math.max(0, valor);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+
+        // Vista previa de la foto principal en el recuadro del formulario.
+        const fotoPreviewEl = document.getElementById('producto-imagen-preview');
+        const fotoCuadroEl = document.getElementById('producto-photo');
+        window.setProductPhotoPreview = function(url) {
+            if (!fotoPreviewEl || !fotoCuadroEl) return;
+            if (url) { fotoPreviewEl.src = url; fotoPreviewEl.style.display = ''; }
+            else { fotoPreviewEl.removeAttribute('src'); fotoPreviewEl.style.display = 'none'; }
+            fotoCuadroEl.classList.toggle('has-photo', !!url);
+        };
+        if (imagenInput) imagenInput.addEventListener('change', () => {
+            const archivo = imagenInput.files && imagenInput.files[0];
+            if (!archivo) return;
+            const lector = new FileReader();
+            lector.onload = () => window.setProductPhotoPreview(lector.result);
+            lector.readAsDataURL(archivo);
+        });
         
         if (productForm) productForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -2579,7 +2618,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (productListTableBody) productListTableBody.addEventListener('click', async (e) => {
             const encargoBadge = e.target.closest('.btn-toggle-encargo');
             if (encargoBadge) {
-                const tr = encargoBadge.closest('tr'); const id = tr?.dataset.id;
+                const tr = encargoBadge.closest('[data-id]'); const id = tr?.dataset.id;
                 const producto = id ? localProductsMap.get(id) : null;
                 if (!id || !producto) return;
                 const nuevoValor = !producto.bajoEncargo;
@@ -2592,8 +2631,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             }
-            const target = e.target.closest('button'); if (!target) return; e.preventDefault();
-            const tr = target.closest('tr'); const id = tr.dataset.id; const nameTd = tr.querySelector('.product-name'); if (!id || !nameTd) return;
+            // Un botón de la tarjeta, o la tarjeta misma (abre la edición).
+            if (e.target.closest('.btn-manage-promo')) return; // lo maneja el listener de promociones
+            const target = e.target.closest('button') || e.target.closest('.pf-card'); if (!target) return; e.preventDefault();
+            const tr = target.closest('[data-id]'); if (!tr) return; const id = tr.dataset.id; const nameTd = tr.querySelector('.product-name'); if (!id || !nameTd) return;
 
              if (target.classList.contains('btn-ver-barcode')) {
                  const producto = localProductsMap.get(id);
@@ -2601,7 +2642,7 @@ document.addEventListener('DOMContentLoaded', () => {
                      await window.mostrarBarcodeModal(producto);
                  }
              } else if (target.classList.contains('btn-delete-product')) {
-                 const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'productos'; deleteItemNameEl.textContent = `Producto: ${nameTd.firstChild.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
+                 const confirmDeleteBtn = document.getElementById('confirm-delete-btn'); const deleteItemNameEl = document.getElementById('delete-item-name'); if(confirmDeleteBtn && deleteConfirmModalInstance && deleteItemNameEl){ confirmDeleteBtn.dataset.deleteId = id; confirmDeleteBtn.dataset.deleteCollection = 'productos'; deleteItemNameEl.textContent = `Producto: ${nameTd.textContent}`; deleteConfirmModalInstance.show(); } else { console.error("Delete modal elements missing."); showToast('Error al eliminar.', 'error'); }
              } else if (target.classList.contains('btn-edit-product')) {
                  showToast("Cargando datos...", 'info');
                  try {
@@ -2636,7 +2677,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (mostrarFotoCheckbox) mostrarFotoCheckbox.checked = product.mostrarFotoPrincipal !== false;
                         imagenInput.required = false;
                         imagenInput.value = '';
-                        document.getElementById('product-form-title').textContent = `Editando: ${product.nombre}`;
+                        document.getElementById('product-form-title').textContent = `Editar producto`;
+                        window.setProductPhotoPreview?.(product.imagenUrl || '');
                         
                         variationsContainer.innerHTML = '';
                         if (product.variaciones && product.variaciones.length > 0) {
@@ -3139,7 +3181,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const supplierVal = supplierSelectInventory ? supplierSelectInventory.value : '';
             const showLowStockOnly = lowStockCheckbox ? lowStockCheckbox.checked : false;
 
-            const allRows = inventoryBody.querySelectorAll('tr[data-id]');
+            const allRows = inventoryBody.querySelectorAll('.pf-card[data-id]');
             let hasVisibleRows = false;
 
             allRows.forEach(row => {
@@ -3176,6 +3218,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const emptyRow = document.getElementById('empty-inventory-row');
             if (emptyRow) {
+                if (!hasVisibleRows && allRows.length) {
+                    emptyRow.innerHTML = '<i class="bi bi-search"></i><strong>Sin resultados</strong><span>Prueba con otro nombre o quita los filtros.</span>';
+                }
                 emptyRow.style.display = hasVisibleRows ? 'none' : '';
             }
         }
@@ -3267,7 +3312,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btn = e.target.closest('.btn-manage-promo');
                 if (!btn) return;
 
-                const tr = btn.closest('tr');
+                const tr = btn.closest('[data-id]');
                 const productId = tr.dataset.id;
                 const product = localProductsMap.get(productId);
 
