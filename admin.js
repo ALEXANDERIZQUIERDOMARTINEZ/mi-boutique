@@ -8114,7 +8114,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     const ETIQUETAS_RANGO_VENTAS = {
-        today: 'Ventas hoy',
+        today: 'Ventas de hoy',
         week: 'Ventas esta semana',
         month: 'Ventas este mes',
         year: 'Ventas este año'
@@ -8128,7 +8128,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // hasta que llega la confirmación real, que la quita.
     const DASHBOARD_VENTAS_CACHE_KEY = 'mishellDashboardVentasCache_v1';
     const DASHBOARD_VENTAS_CACHE_IDS = [
-        'db-ventas-hoy', 'db-ventas-count',
+        'db-ventas-hoy', 'db-ventas-count', 'db-ticket-promedio',
         'db-boutique-ganancia', 'db-ganancia-detalle'
     ];
 
@@ -8258,12 +8258,16 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
 
                     // Actualizar UI
                     dbVentasHoyEl.textContent = formatoMoneda.format(totalDineroRecibido);
-                    dbVentasHoyEl.classList.add('text-success');
+                    dbVentasHoyEl.classList.remove('text-danger');
 
                     // Actualizar contador de ventas
                     const dbVentasCountEl = document.getElementById('db-ventas-count');
                     if (dbVentasCountEl) {
                         dbVentasCountEl.textContent = `${ventasContadas} ${ventasContadas === 1 ? 'venta' : 'ventas'}`;
+                    }
+                    const dbTicketEl = document.getElementById('db-ticket-promedio');
+                    if (dbTicketEl) {
+                        dbTicketEl.textContent = formatoMoneda.format(ventasContadas ? Math.round(totalDineroRecibido / ventasContadas) : 0);
                     }
 
                     // 💸 RESTAR/SUMAR GASTOS E INGRESOS OPERATIVOS del período (arriendo,
@@ -8510,6 +8514,11 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 if (dbPedidosWebEl) {
                     dbPedidosWebEl.textContent = pedidosPendientes;
                 }
+                // Aviso "N pedidos web por revisar": solo se ve si hay alguno.
+                const dbPedidosAlertEl = document.getElementById('db-pedidos-alert');
+                if (dbPedidosAlertEl) dbPedidosAlertEl.hidden = pedidosPendientes === 0;
+                const dbPedidosLabelEl = document.getElementById('db-pedidos-web-label');
+                if (dbPedidosLabelEl) dbPedidosLabelEl.textContent = pedidosPendientes === 1 ? 'pedido web por revisar' : 'pedidos web por revisar';
 
                 console.log(`✅ Pedidos web pendientes: ${pedidosPendientes}`);
             });
@@ -8856,9 +8865,83 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     }
 
     // ================================================================
+    // 📊 ÚLTIMOS 7 DÍAS: mini gráfico de barras (hoy resaltado) + "Ayer"
+    // Mismo criterio que "Ventas de hoy": dinero recibido (efectivo +
+    // transferencia) de ventas al detal no anuladas, más los abonos de
+    // apartados de cada día. Mismo diseño que el Dashboard de Fábrica.
+    // ================================================================
+    function calcularUltimos7Dias() {
+        const barrasEl = document.getElementById('db-week-bars');
+        if (!barrasEl) return;
+
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const inicio = new Date(hoy);
+        inicio.setDate(inicio.getDate() - 6);
+        const fin = new Date(hoy);
+        fin.setDate(fin.getDate() + 1);
+        const claveDia = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
+        const q = query(
+            salesCollection,
+            where('timestamp', '>=', Timestamp.fromDate(inicio)),
+            where('timestamp', '<', Timestamp.fromDate(fin)),
+            orderBy('timestamp', 'desc')
+        );
+        onSnapshot(q, async (snapshot) => {
+            if (snapshot.metadata.fromCache && snapshot.empty) return;
+            const porDia = new Map();
+            const sumar = (fecha, monto) => porDia.set(claveDia(fecha), (porDia.get(claveDia(fecha)) || 0) + monto);
+            snapshot.forEach(docSnap => {
+                const venta = docSnap.data();
+                if (venta.tipoVenta === 'mayorista') return;
+                if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
+                const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate() : new Date();
+                sumar(fecha, (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0));
+            });
+            try {
+                const abonosSnap = await getDocs(query(
+                    collection(db, 'abonos'),
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<', Timestamp.fromDate(fin))
+                ));
+                abonosSnap.forEach(docSnap => {
+                    const abono = docSnap.data();
+                    const fecha = abono.timestamp?.toDate ? abono.timestamp.toDate() : null;
+                    if (fecha) sumar(fecha, abono.monto || 0);
+                });
+            } catch (err) {
+                console.error('Error sumando abonos de los últimos 7 días:', err);
+            }
+
+            const dias = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(hoy);
+                d.setDate(d.getDate() - i);
+                dias.push({ fecha: d, total: porDia.get(claveDia(d)) || 0 });
+            }
+            const max = Math.max(1, ...dias.map(d => d.total));
+            const letras = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+            barrasEl.innerHTML = dias.map((d, i) => {
+                const alto = d.total > 0 ? Math.max(6, Math.round((d.total / max) * 100)) : 3;
+                const titulo = `${d.fecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric' })}: ${formatoMoneda.format(d.total)}`;
+                return `<div class="fdb-week-col${i === 6 ? ' is-today' : ''}" title="${titulo}">
+                    <span class="fdb-week-bar" style="height:${alto}%"></span>
+                    <span class="fdb-week-day">${i === 6 ? 'Hoy' : letras[d.fecha.getDay()]}</span>
+                </div>`;
+            }).join('');
+            const ayerEl = document.getElementById('db-ventas-ayer');
+            if (ayerEl) ayerEl.textContent = formatoMoneda.format(dias[5].total);
+        }, (error) => {
+            console.error('Error al calcular los últimos 7 días:', error);
+        });
+    }
+
+    // ================================================================
     // 🚀 INICIALIZAR TODAS LAS FUNCIONES
     // ================================================================
     calcularVentasRango('today');
+    calcularUltimos7Dias();
     document.querySelectorAll('.db2-range-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.db2-range-btn').forEach(b => b.classList.remove('active'));
@@ -8884,6 +8967,23 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
             day: 'numeric'
         });
     }
+
+    // Saludo con el primer nombre ("Hola, Alexander"): auth.js escribe el
+    // nombre completo en #db-greeting-name; aquí se recorta al primero.
+    const saludoNombreEl = document.getElementById('db-greeting-name');
+    if (saludoNombreEl) {
+        const recortarNombre = () => {
+            const primero = saludoNombreEl.textContent.trim().split(/\s+/)[0];
+            if (primero && primero !== saludoNombreEl.textContent) saludoNombreEl.textContent = primero;
+        };
+        recortarNombre();
+        new MutationObserver(recortarNombre).observe(saludoNombreEl, { childList: true, characterData: true, subtree: true });
+    }
+
+    // "Ver todas" (últimas ventas) abre Ventas directamente en el historial.
+    document.getElementById('db-ver-todo-actividad')?.addEventListener('click', () => {
+        setTimeout(() => document.getElementById('toggle-sales-list-view-btn')?.click(), 50);
+    });
 
     console.log("✅ Dashboard inicializado correctamente");
 
@@ -9185,56 +9285,47 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     // ================================================================
     // TIMELINE: ACTIVIDAD RECIENTE
     // ================================================================
-    async function actualizarActividadReciente() {
+    // Últimas 5 ventas al detal, en tiempo real, con el mismo diseño que el
+    // Dashboard de Fábrica: iniciales del cliente, cuántas prendas y cómo
+    // pagó, total y hace cuánto. Las mayoristas son de Fábrica y se omiten.
+    function actualizarActividadReciente() {
         const timelineContainer = document.getElementById('db-actividad-reciente');
         if (!timelineContainer) return;
 
-        try {
-            // Obtener últimas 5 ventas
-            const q = query(
-                salesCollection,
-                orderBy('timestamp', 'desc'),
-                limit(5)
-            );
-
-            const snapshot = await getDocs(q);
-
-            if (snapshot.empty) {
-                timelineContainer.innerHTML = '<div class="text-center text-muted py-3">No hay actividad reciente</div>';
+        const q = query(salesCollection, orderBy('timestamp', 'desc'), limit(15));
+        onSnapshot(q, (snapshot) => {
+            const ventas = snapshot.docs.map(d => d.data()).filter(v => v.tipoVenta !== 'mayorista').slice(0, 5);
+            if (ventas.length === 0) {
+                timelineContainer.innerHTML = '<div class="text-center text-muted py-3">No hay ventas recientes</div>';
                 return;
             }
-
-            let html = '';
-
-            snapshot.forEach(doc => {
-                const venta = doc.data();
-                const fecha = venta.timestamp?.toDate();
-                const tiempoRelativo = fecha ? obtenerTiempoRelativo(fecha) : 'Hace un momento';
-
-                const iconoEstado = venta.estado === 'Completada' ? 'check-circle-fill text-success' :
-                                    venta.estado === 'Pendiente' ? 'clock-fill text-warning' :
-                                    'x-circle-fill text-danger';
-
-                html += `
-                    <div class="activity-item d-flex align-items-start gap-3 py-2 px-3 border-bottom">
-                        <i class="bi bi-${iconoEstado} fs-5 mt-1"></i>
-                        <div class="flex-grow-1">
-                            <div class="fw-semibold text-dark">Venta ${venta.estado}</div>
-                            <div class="small text-muted">
-                                ${venta.clienteNombre || 'Cliente'} • ${formatoMoneda.format(venta.totalVenta || 0)}
-                            </div>
+            timelineContainer.innerHTML = ventas.map(venta => {
+                const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate() : null;
+                const cuando = fecha ? obtenerTiempoRelativo(fecha) : 'Hace un momento';
+                const anulada = venta.estado === 'Anulada' || venta.estado === 'Cancelada';
+                const prendas = (venta.items || venta.productos || []).reduce((sum, it) => sum + (parseInt(it.cantidad, 10) || 0), 0);
+                const metodo = { efectivo: 'Efectivo', transferencia: 'Transferencia', mixto: 'Mixto', otro: 'Otro medio' }[(venta.metodoPago || '').toLowerCase()] || venta.metodoPago || '';
+                const detalle = [prendas ? `${prendas} prenda${prendas === 1 ? '' : 's'}` : '', metodo].filter(Boolean).join(' · ');
+                const nombre = venta.clienteNombre || 'Cliente General';
+                const iniciales = nombre.trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase();
+                return `
+                    <div class="fdb-sale${anulada ? ' is-void' : ''}">
+                        <span class="fdb-sale-avatar">${iniciales || 'CG'}</span>
+                        <div class="fdb-sale-body">
+                            <div class="fdb-sale-name">${nombre}</div>
+                            <div class="fdb-sale-sub">${anulada ? 'Anulada' : (detalle || 'Venta')}</div>
                         </div>
-                        <small class="text-muted text-nowrap">${tiempoRelativo}</small>
+                        <div class="fdb-sale-meta">
+                            <span class="fdb-sale-amount">${formatoMoneda.format(venta.totalVenta || 0)}</span>
+                            <span class="fdb-sale-time">${cuando}</span>
+                        </div>
                     </div>
                 `;
-            });
-
-            timelineContainer.innerHTML = html;
-
-        } catch (error) {
+            }).join('');
+        }, (error) => {
             console.error("❌ Error al actualizar actividad:", error);
-            timelineContainer.innerHTML = '<div class="text-center text-danger py-3">Error al cargar</div>';
-        }
+            timelineContainer.innerHTML = '<div class="text-center text-danger py-3">No se pudo cargar</div>';
+        });
     }
 
     // Función auxiliar para tiempo relativo

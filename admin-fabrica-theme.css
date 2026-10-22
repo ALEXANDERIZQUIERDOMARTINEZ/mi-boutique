@@ -395,7 +395,22 @@ body.fab-page::after {
   color: var(--text-tertiary);
 }
 /* Bajo stock: ámbar sobrio en vez del amarillo de Bootstrap. */
-.db-fabrica #fdb-bajo-stock.text-warning { color: #c27c0e !important; }
+.db-fabrica #fdb-bajo-stock.text-warning,
+.db-fabrica #db-bajo-stock.text-warning,
+.db-fabrica #db-apartados-vencer.text-warning { color: #c27c0e !important; }
+/* Dashboard de la tienda (admin.html): datos que abren una ventana son
+   <button>, sin el estilo de botón del navegador; y "0 apartados" no va en
+   verde. */
+.db-fabrica button.fdb-inv-item {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.db-fabrica button.fdb-inv-item.fdb-inv-item--wide { border-top: 1px solid var(--border-subtle); }
+.db-fabrica #db-apartados-vencer.text-success { color: var(--text-primary) !important; }
+.db-fabrica > .alert { margin-bottom: 0.85rem; }
 
 /* Últimas ventas */
 .db-fabrica .fdb-activity {
