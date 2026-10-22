@@ -2103,6 +2103,14 @@ body.fab-page:not(.modal-open) {
 .fab-page #ventas .pos-cat b { font-size: 0.68rem; font-weight: 600; color: var(--text-tertiary); }
 .fab-page #ventas .pos-cat.active { background: var(--brand-500); border-color: var(--brand-500); color: #fff; }
 .fab-page #ventas .pos-cat.active b { color: rgba(255,255,255,.8); }
+.fab-page #ventas .pos-grid-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
 .fab-page #ventas .pos-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
@@ -2110,6 +2118,9 @@ body.fab-page:not(.modal-open) {
 }
 @media (max-width: 575.98px) {
   .fab-page #ventas .pos-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+  /* Fotos cuadradas: los 6 más vendidos y "Ver más" caben sin desplazarse */
+  .fab-page #ventas .pos-grid .pos-tile-img { aspect-ratio: 1 / 1; }
+  .fab-page #ventas .pos-grid .pos-tile-name { -webkit-line-clamp: 1; }
 }
 .fab-page #ventas .pos-tile {
   display: flex;
