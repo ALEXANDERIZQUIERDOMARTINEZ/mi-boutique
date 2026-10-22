@@ -2027,21 +2027,21 @@ body.fab-page:not(.modal-open) {
    nombre + precio, código/categoría/grupo en una línea y el stock por
    color en chips. Toda la tarjeta abre la edición.
    ════════════════════════════════════════════════════════════════ */
-.fab-page #productos-fabrica .pf-head {
+.fab-page :is(#productos-fabrica, #productos) .pf-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   margin-bottom: 0.85rem;
 }
-.fab-page #productos-fabrica .pf-title {
+.fab-page :is(#productos-fabrica, #productos) .pf-title {
   font-size: 1.35rem;
   font-weight: 700;
   margin: 0;
   color: var(--text-primary);
   letter-spacing: -0.01em;
 }
-.fab-page #productos-fabrica .pf-subtitle {
+.fab-page :is(#productos-fabrica, #productos) .pf-subtitle {
   margin: 0.1rem 0 0;
   font-size: 0.8rem;
   color: var(--text-secondary);
@@ -2338,6 +2338,175 @@ body.fab-page.dark-mode .pf-stock--low { background: rgba(245,158,11,.15); color
 body.fab-page.dark-mode .pf-stock--out { background: rgba(239,68,68,.15); color: #fca5a5; }
 body.fab-page.dark-mode .pf-var { background: rgba(255,255,255,.04); }
 body.fab-page.dark-mode .pf-card:active { background: rgba(217,136,185,.08); }
+
+/* ── Productos de la tienda (admin.html #productos) ──
+   Mismas tarjetas que Fábrica; aquí lo que la tienda tiene de más:
+   botones de promoción, bajo encargo y código de barras en cada tarjeta,
+   filtro de proveedor y el formulario como hoja en la página (no ventana). */
+.fab-page #productos .pf-card {
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  padding-right: 0.5rem;
+}
+.fab-page #productos .pf-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 32px);
+  align-content: start;
+  gap: 0.15rem;
+  margin: -0.2rem -0.1rem -0.2rem 0;
+}
+.fab-page #productos .pf-act {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-tertiary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+.fab-page #productos .pf-act:hover { background: var(--brand-50); color: var(--brand-600); }
+.fab-page #productos .pf-act.is-on { color: var(--brand-600); }
+.fab-page #productos .pf-act--del:hover { background: #fde7e7; color: #b42318; }
+.fab-page #productos .pf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 22px;
+  padding: 0 0.5rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--brand-50);
+  color: var(--brand-700);
+  white-space: nowrap;
+}
+.fab-page #productos .pf-tag--promo { background: #fde7e7; color: #b42318; }
+.fab-page #productos .pf-filters { flex-wrap: wrap; }
+.fab-page #productos .pf-chip--clear { color: var(--text-secondary); background: transparent; }
+.fab-page #productos .pf-chip--clear:hover { color: var(--brand-700); border-color: var(--border-brand); }
+/* Con el formulario abierto, sin "Nuevo" arriba */
+.fab-page #productos:has(#form-view[style*="block"]) .pf-head-actions { display: none; }
+
+/* Formulario como hoja: misma cara que la ventana de Fábrica */
+.fab-page #productos .pf-sheet {
+  max-width: 760px;
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  background: var(--surface-raised);
+}
+.fab-page #productos .pf-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 0.85rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.fab-page #productos .pf-sheet-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.fab-page #productos .pf-sheet-close {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.fab-page #productos .pf-sheet-close:hover { background: var(--neutral-100, #F3F3F3); color: var(--text-primary); }
+.fab-page #productos .pf-sheet-body { padding: 1.1rem 1.25rem 0.5rem; }
+.fab-page #productos .pf-sheet-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-raised);
+  border-radius: 0 0 16px 16px;
+}
+@media (max-width: 991.98px) {
+  /* Encima de la barra de navegación del celular */
+  .fab-page #productos .pf-sheet-footer { bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 767.98px) {
+  .fab-page #productos .pf-sheet-footer .pf-btn--primary { flex: 1 1 auto; }
+}
+/* La foto: el <input type="file"> queda invisible pero enfocable, para que
+   el aviso de "campo obligatorio" del navegador funcione. */
+.fab-page #productos .pf-photo-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.fab-page #productos .pf-hint {
+  display: block;
+  margin: -0.35rem 0 0.85rem;
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  line-height: 1.35;
+}
+.fab-page #productos .pf-field .pf-hint { margin: 0.1rem 0 0; }
+.fab-page #productos .pf-hint:empty { display: none; }
+.fab-page #productos .pf-grid-3 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 0.75rem;
+}
+@media (min-width: 576px) {
+  .fab-page #productos .pf-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.fab-page #productos .pf-input-group { display: flex; gap: 0.4rem; }
+.fab-page #productos .pf-input-group .pf-input { flex: 1 1 auto; }
+.fab-page #productos .pf-input-btn {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  color: var(--brand-600);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.fab-page #productos .pf-input-btn:hover { border-color: var(--brand-500); background: var(--brand-50); }
+.fab-page #productos .pf-input:disabled { background: var(--neutral-100, #FAFAFA); color: var(--text-secondary); }
+.fab-page #productos .pf-section-link {
+  border: none;
+  background: transparent;
+  color: var(--brand-600);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+}
+.fab-page #productos .pf-switch + .pf-switch { margin-top: -0.4rem; }
+/* Galería por color: bloques suaves */
+.fab-page #productos .color-variant-block {
+  border: 1px solid var(--border-default) !important;
+  border-radius: 12px !important;
+  background: var(--neutral-100, #FAFAFA);
+}
+.fab-page #productos .color-variant-block .form-control { border-radius: 10px !important; }
+body.fab-page.dark-mode #productos .color-variant-block { background: rgba(255,255,255,.03); }
 
 /* ════════════════════════════════════════════════════════════════
    FORMULARIO DE PRODUCTO (nuevo / editar) — foto + nombre arriba,

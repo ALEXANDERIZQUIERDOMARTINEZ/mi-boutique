@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Mismo tema que admin-fabrica.html (colores, Poppins, tarjetas, menú
          "Más" en el celular y modo oscuro). Todo va bajo body.fab-page. -->
-    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.26">
+    <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.27">
 
     <!-- Logo/Icon -->
     <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -520,71 +520,176 @@
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="productos"> 
-                <div class="d-flex justify-content-between align-items-center mb-3"> 
-                    <h1 class="h2 mb-0">Productos</h1> 
-                    <div class="btn-group"> 
-                        <button type="button" id="toggle-inventory-view-btn" class="btn btn-sm btn-outline-secondary active"><i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline"> Inventario</span></button> 
-                        <button type="button" id="toggle-form-view-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-plus-circle me-1"></i><span class="d-none d-md-inline"> Agregar/Editar</span></button> 
-                    </div> 
+            <!-- Productos con el mismo diseño que los de Fábrica: lista de
+                 tarjetas (toda la tarjeta abre la edición) y el formulario
+                 por secciones. Los ids son los que usa admin.js. -->
+            <div class="tab-pane fade" id="productos">
+
+                <!-- ── Encabezado ── -->
+                <div class="pf-head">
+                    <div class="pf-head-text">
+                        <h1 class="pf-title">Productos</h1>
+                        <p class="pf-subtitle" id="prod-resumen">Cargando inventario...</p>
+                    </div>
+                    <div class="pf-head-actions">
+                        <button type="button" class="pf-new-btn" id="toggle-form-view-btn">
+                            <i class="bi bi-plus-lg"></i><span>Nuevo</span>
+                        </button>
+                    </div>
                 </div>
-                
-                <div class="row align-items-center mb-2 variation-row d-none" id="variation-template">
-                    <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_talla[]" placeholder="Talla"> </div>
-                    <div class="col-md-4"> <input type="text" class="form-control form-control-sm" name="variation_color[]" placeholder="Color"> </div>
-                    <div class="col-md-3"> <input type="number" class="form-control form-control-sm" name="variation_stock[]" min="0" value="1" placeholder="Stock"> </div>
-                    <div class="col-md-1 text-end"> <button type="button" class="btn btn-sm btn-outline-danger remove-variation-btn p-1"> <i class="bi bi-trash3"></i> </button> </div>
+
+                <!-- Fila de talla/color/unidades (plantilla que clona admin.js) -->
+                <div class="pf-var-row variation-row d-none" id="variation-template">
+                    <input type="text" class="pf-input" name="variation_color[]" placeholder="Color" aria-label="Color" list="variation-colors-list" autocomplete="off">
+                    <input type="text" class="pf-input" name="variation_talla[]" placeholder="Talla" aria-label="Talla" autocomplete="off">
+                    <div class="pf-stepper">
+                        <button type="button" class="pf-step" data-step="-1" aria-label="Restar"><i class="bi bi-dash"></i></button>
+                        <input type="number" class="pf-input" name="variation_stock[]" min="0" value="1" inputmode="numeric" aria-label="Unidades">
+                        <button type="button" class="pf-step" data-step="1" aria-label="Sumar"><i class="bi bi-plus"></i></button>
+                    </div>
+                    <button type="button" class="pf-var-del remove-variation-btn" aria-label="Quitar"><i class="bi bi-x-lg"></i></button>
                 </div>
-                
-                <div id="form-view" style="display: none;"> 
-                    <div class="card"> 
-                        <div class="card-header bg-white border-0 pt-3"><h3 class="h5 mb-0" id="product-form-title">Formulario Producto</h3></div> 
-                        <div class="card-body"> 
-                            <form id="form-producto"> 
-                                <input type="hidden" id="producto-id"> 
-                                <div class="row">
-                                    <div class="col-md-6 mb-3"> <label for="nombre" class="form-label">Nombre:</label> <input type="text" class="form-control" id="nombre" required> </div>
-                                    <div class="col-md-3 mb-3"> <label for="codigo" class="form-label">Código:</label> <input type="text" class="form-control" id="codigo" placeholder="Autogenerado" readonly disabled> </div>
-                                    <div class="col-md-3 mb-3">
-                                        <label for="codigo-barras" class="form-label">Código de Barras:</label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" id="codigo-barras" placeholder="Ej: 7501234567890" maxlength="13">
-                                            <button class="btn btn-outline-primary" type="button" id="btn-generar-barcode" title="Generar código automático"><i class="bi bi-upc-scan"></i></button>
-                                        </div>
-                                        <small class="form-text text-muted">EAN-13 o UPC</small>
+
+                <!-- ── Formulario (nuevo / editar) ── -->
+                <div id="form-view" style="display: none;">
+                    <form id="form-producto" class="pf-form pf-sheet">
+                        <div class="pf-sheet-header">
+                            <div class="pf-form-head">
+                                <h2 class="pf-sheet-title" id="product-form-title">Nuevo producto</h2>
+                            </div>
+                            <button type="button" class="pf-sheet-close" id="toggle-inventory-view-btn" aria-label="Volver al inventario">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                        <div class="pf-sheet-body">
+                            <input type="hidden" id="producto-id">
+
+                            <!-- Foto + nombre -->
+                            <div class="pf-form-top">
+                                <label class="pf-photo" for="imagen" id="producto-photo">
+                                    <img id="producto-imagen-preview" src="" alt="" style="display:none;">
+                                    <span class="pf-photo-empty">
+                                        <i class="bi bi-camera"></i>
+                                        <span>Foto principal</span>
+                                    </span>
+                                    <span class="pf-photo-edit"><i class="bi bi-pencil"></i></span>
+                                    <input type="file" class="pf-photo-input" id="imagen" accept="image/*" multiple>
+                                </label>
+                                <div class="pf-form-top-fields">
+                                    <div class="pf-field">
+                                        <label class="pf-label" for="nombre">Nombre</label>
+                                        <input type="text" class="pf-input" id="nombre" placeholder="Ej. Vestido Luna" autocomplete="off" required>
                                     </div>
+                                    <label class="pf-switch" for="visibilidad">
+                                        <span class="pf-switch-text">
+                                            <strong>Visible en la tienda</strong>
+                                            <small>En el catálogo público</small>
+                                        </span>
+                                        <span class="form-check form-switch m-0">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked>
+                                        </span>
+                                    </label>
                                 </div>
-                                <div class="row">
-                                    <div class="col-md-12 mb-3">
-                                        <label for="proveedor-producto" class="form-label">Proveedor:</label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal" style="cursor: pointer;">
+                            </div>
+                            <small class="pf-hint" id="image-upload-label">La foto principal se usa como portada si no hay galería por color. Si editas y no subes una nueva, se mantiene la anterior.</small>
+
+                            <div class="pf-field">
+                                <label class="pf-label" for="descripcion">Descripción <span class="pf-optional">opcional</span></label>
+                                <textarea class="pf-input" id="descripcion" rows="2" placeholder="Tela, corte, detalles..."></textarea>
+                            </div>
+
+                            <!-- Clasificación -->
+                            <div class="pf-form-section">
+                                <div class="pf-form-section-title">Clasificación</div>
+                                <div class="pf-grid-2">
+                                    <div class="pf-field">
+                                        <label class="pf-label" for="categoria-producto">Categoría</label>
+                                        <select class="pf-input pf-select" id="categoria-producto"><option value="">Selecciona...</option></select>
+                                    </div>
+                                    <div class="pf-field">
+                                        <label class="pf-label" for="proveedor-producto">Proveedor</label>
+                                        <div class="pf-input-group">
+                                            <input type="text" class="pf-input" id="proveedor-producto" placeholder="Seleccionar..." readonly data-bs-toggle="modal" data-bs-target="#searchSupplierModal" style="cursor: pointer;">
                                             <input type="hidden" id="proveedor-producto-id">
-                                            <button class="btn btn-outline-secondary add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Agregar">+</button>
+                                            <button class="pf-input-btn add-supplier-btn" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Nuevo proveedor" aria-label="Nuevo proveedor"><i class="bi bi-plus-lg"></i></button>
                                         </div>
                                     </div>
-                                </div> 
-                                <div class="mb-3"> <label for="descripcion" class="form-label">Descripción:</label> <textarea class="form-control" id="descripcion" rows="2"></textarea> </div> 
-                                <div class="mb-3"> <label for="categoria-producto" class="form-label">Categoría:</label> <select class="form-select" id="categoria-producto"><option value="">Selecciona...</option></select> </div> 
-                                <hr class="my-4"> 
-                                <h5 class="mb-3">Precios</h5> 
-                                <div class="row"> 
-                                    <div class="col-md-4 mb-3"> <label for="costo-compra" class="form-label">Costo ($):</label> <input type="number" class="form-control" id="costo-compra" step="0.01" min="0" required> </div> 
-                                    <div class="col-md-4 mb-3"> <label for="precio-detal" class="form-label">P. Detal ($):</label> <input type="number" class="form-control" id="precio-detal" step="0.01" min="0" required> <small id="margen-detal-info" class="form-text text-muted"></small> </div> 
-                                    <div class="col-md-4 mb-3"> <label for="precio-mayor" class="form-label">P. Mayor ($):</label> <input type="number" class="form-control" id="precio-mayor" step="0.01" min="0"> <small id="margen-mayor-info" class="form-text text-muted"></small> </div> 
-                                </div> 
-                                <hr class="my-4"> 
-                                <h5 class="mb-3">Variaciones</h5> 
-                                <div id="variaciones-container"> </div> 
-                                <button type="button" id="add-variation-btn" class="btn btn-sm btn-outline-primary mt-2"> <i class="bi bi-plus-lg"></i> Añadir</button> 
-                                <hr class="my-4">
-                                <!-- ▼ GALERÍA POR COLOR ▼ -->
-                                <div class="d-flex align-items-center justify-content-between mb-3">
-                                    <h5 class="mb-0">Galería por Color</h5>
-                                    <button type="button" id="add-color-variant-btn" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-plus-lg"></i> Añadir color
-                                    </button>
                                 </div>
+                                <div class="pf-field">
+                                    <label class="pf-label" for="grupo-mayorista">Tabla de precios mayorista</label>
+                                    <select class="pf-input pf-select" id="grupo-mayorista">
+                                                <option value="">Automático (detecta la tabla por la categoría)</option>
+                                                <option value="ninguno">Ninguno — forzar Precio Mayor fijo</option>
+                                                <option value="bodys">Bodys básicos</option>
+                                                <option value="bodyMallatex">Body en mallatex</option>
+                                                <option value="bodyElaborados">Body Elaborados</option>
+                                                <option value="vestidosLargos">Vestidos largos / Conjuntos</option>
+                                                <option value="vestidosLargosElaborados">Vestidos largos Elaborados</option>
+                                                <option value="vestidosCortos">Vestidos cortos básicos</option>
+                                                <option value="vestidosCortosElaborados">Vestidos cortos elaborados</option>
+                                                <option value="vestidosCortosSemiElaborados">Vestidos cortos semi elaborados</option>
+                                            </select>
+                                    <small class="pf-hint">"Automático" aplica la tabla si la categoría coincide (ej. BODYS). "Ninguno" cobra siempre el precio mayor fijo.</small>
+                                </div>
+                            </div>
+
+                            <!-- Códigos -->
+                            <div class="pf-form-section">
+                                <div class="pf-form-section-title">Códigos</div>
+                                <div class="pf-grid-2 pf-grid-2--always">
+                                    <div class="pf-field">
+                                        <label class="pf-label" for="codigo">Referencia</label>
+                                        <input type="text" class="pf-input" id="codigo" placeholder="Automática" readonly disabled>
+                                    </div>
+                                    <div class="pf-field">
+                                        <label class="pf-label" for="codigo-barras">Código de barras</label>
+                                        <div class="pf-input-group">
+                                            <input type="text" class="pf-input" id="codigo-barras" placeholder="EAN-13" maxlength="13" inputmode="numeric">
+                                            <button class="pf-input-btn" type="button" id="btn-generar-barcode" title="Generar código automático" aria-label="Generar código"><i class="bi bi-upc-scan"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Precios -->
+                            <div class="pf-form-section">
+                                <div class="pf-form-section-title">Precios</div>
+                                <div class="pf-grid-3">
+                                    <div class="pf-field">
+                                        <label class="pf-label" for="costo-compra">Costo</label>
+                                        <div class="pf-money"><span>$</span><input type="number" class="pf-input" id="costo-compra" step="0.01" min="0" inputmode="decimal" placeholder="0" required></div>
+                                    </div>
+                                    <div class="pf-field">
+                                        <label class="pf-label" for="precio-detal">Precio detal</label>
+                                        <div class="pf-money"><span>$</span><input type="number" class="pf-input" id="precio-detal" step="0.01" min="0" inputmode="decimal" placeholder="0" required></div>
+                                        <small id="margen-detal-info" class="pf-hint"></small>
+                                    </div>
+                                    <div class="pf-field">
+                                        <label class="pf-label" for="precio-mayor">Precio mayor</label>
+                                        <div class="pf-money"><span>$</span><input type="number" class="pf-input" id="precio-mayor" step="0.01" min="0" inputmode="decimal" placeholder="0"></div>
+                                        <small id="margen-mayor-info" class="pf-hint"></small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Colores, tallas y stock -->
+                            <div class="pf-form-section">
+                                <div class="pf-form-section-title">Colores, tallas y stock</div>
+                                <div class="pf-var-head" aria-hidden="true">
+                                    <span>Color</span><span>Talla</span><span>Unidades</span><span></span>
+                                </div>
+                                <div id="variaciones-container" class="pf-var-list"></div>
+                                <button type="button" id="add-variation-btn" class="pf-var-add"><i class="bi bi-plus-lg"></i> Agregar color / talla</button>
+                            </div>
+
+                            <!-- Galería por color -->
+                            <div class="pf-form-section">
+                                <div class="pf-form-section-title">
+                                    <span>Galería por color</span>
+                                    <button type="button" id="add-color-variant-btn" class="pf-section-link"><i class="bi bi-plus-lg"></i> Añadir color</button>
+                                </div>
+                                <!-- Datalist de colores sugeridos (se llena desde las Variaciones) -->
+                                <datalist id="variation-colors-list"></datalist>
                                 <div id="color-variants-container"></div>
 
                                 <!-- Datalist de colores sugeridos (se llena desde las Variaciones) -->
@@ -620,117 +725,81 @@
                                         </div>
                                     </div>
                                 </div>
-                                <!-- ▲ FIN GALERÍA POR COLOR ▲ -->
-
-                                <hr class="my-4">
-                                <div class="row">
-                                    <div class="col-md-8 mb-3">
-                                        <label for="imagen" class="form-label">Foto principal (portada):</label>
-                                        <input type="file" class="form-control" id="imagen" accept="image/*" multiple>
-                                        <small class="text-muted" id="image-upload-label">Se usa como portada si no hay galería de colores. Si editas y no subes una nueva, se mantiene la anterior.</small>
-                                        <div class="form-check form-switch mt-2">
-                                            <input class="form-check-input" type="checkbox" role="switch" id="mostrar-foto-principal" checked>
-                                            <label class="form-check-label" for="mostrar-foto-principal">Mostrar foto principal en catálogo</label>
-                                        </div>
-                                        <small class="text-muted d-block">Desactiva si el producto tiene galería de colores y no quieres mostrar la portada cuando no hay foto por color</small>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label class="form-label d-block">Visibilidad en Tienda:</label>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" role="switch" id="visibilidad" checked style="width: 3em; height: 1.5em;">
-                                            <label class="form-check-label ms-2" for="visibilidad" style="font-size: 1.1rem; font-weight: 500;">Visible</label>
-                                        </div>
-                                        <small class="text-muted d-block mt-1">Activa para mostrar en catálogo público</small>
-                                        <div class="form-check form-switch mt-3">
-                                            <input class="form-check-input" type="checkbox" role="switch" id="bajo-encargo" style="width: 3em; height: 1.5em;">
-                                            <label class="form-check-label ms-2" for="bajo-encargo" style="font-size: 1.1rem; font-weight: 500;">Bajo Encargo</label>
-                                        </div>
-                                        <small class="text-muted d-block mt-1">Activa para mostrar en <a href="encargo.html" target="_blank">encargo.html</a></small>
-                                        <div class="mt-3">
-                                            <label for="grupo-mayorista" class="form-label mb-1">Grupo de precio mayorista:</label>
-                                            <select class="form-select form-select-sm" id="grupo-mayorista">
-                                                <option value="">Automático (detecta la tabla por la categoría)</option>
-                                                <option value="ninguno">Ninguno — forzar Precio Mayor fijo</option>
-                                                <option value="bodys">Bodys básicos</option>
-                                                <option value="bodyMallatex">Body en mallatex</option>
-                                                <option value="bodyElaborados">Body Elaborados</option>
-                                                <option value="vestidosLargos">Vestidos largos / Conjuntos</option>
-                                                <option value="vestidosLargosElaborados">Vestidos largos Elaborados</option>
-                                                <option value="vestidosCortos">Vestidos cortos básicos</option>
-                                                <option value="vestidosCortosElaborados">Vestidos cortos elaborados</option>
-                                                <option value="vestidosCortosSemiElaborados">Vestidos cortos semi elaborados</option>
-                                            </select>
-                                            <small class="text-muted d-block mt-1">"Automático" aplica la tabla de precios si la categoría coincide (ej. BODYS), aunque no elijas nada aquí. Usa "Ninguno" para que ESTE producto siempre cobre el Precio Mayor fijo, sin importar su categoría.</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <hr class="my-4"> 
-                                <button type="submit" class="btn btn-primary" id="btn-save-product"> <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span> <span class="save-text">Guardar</span> </button> 
-                                <button type="button" id="btn-clear-product-form" class="btn btn-outline-secondary ms-2">Limpiar</button> 
-                            </form> 
-                        </div> 
-                    </div> 
-                </div> 
-                
-                <!-- ✅ INVENTARIO MEJORADO CON FILTROS -->
-                <div id="inventory-view">
-
-                    <!-- FILTROS -->
-                    <div class="inv-filters-block">
-                        <div class="inv-filters-grid">
-                            <div class="inv-search-wrap">
-                                <span class="inv-search-icon"><i class="bi bi-search"></i></span>
-                                <input type="search" id="search-inventory" class="inv-search-input" placeholder="Buscar por nombre o código...">
                             </div>
-                            <select id="filter-category-inventory" class="inv-select">
-                                <option value="">Todas las categorías</option>
-                            </select>
-                            <select id="filter-supplier-inventory" class="inv-select">
-                                <option value="">Todos los proveedores</option>
-                            </select>
-                            <div class="inv-filters-row2">
-                                <label class="inv-toggle-label" for="filter-low-stock-inventory">
-                                    <i class="bi bi-exclamation-triangle text-warning"></i> Pocas unidades
-                                    <div class="form-check form-switch ms-1 mb-0">
-                                        <input class="form-check-input" type="checkbox" id="filter-low-stock-inventory">
-                                    </div>
+
+                            <!-- Opciones -->
+                            <div class="pf-form-section">
+                                <div class="pf-form-section-title">Opciones</div>
+                                <label class="pf-switch" for="mostrar-foto-principal">
+                                    <span class="pf-switch-text">
+                                        <strong>Mostrar la foto principal en el catálogo</strong>
+                                        <small>Desactívalo si solo quieres mostrar las fotos de la galería por color</small>
+                                    </span>
+                                    <span class="form-check form-switch m-0">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="mostrar-foto-principal" checked>
+                                    </span>
                                 </label>
-                                <button type="button" id="clear-filters-inventory" class="inv-clear-btn">
-                                    <i class="bi bi-x-circle me-1"></i>Limpiar
-                                </button>
+                                <label class="pf-switch" for="bajo-encargo">
+                                    <span class="pf-switch-text">
+                                        <strong>Bajo encargo</strong>
+                                        <small>Se muestra en <a href="encargo.html" target="_blank">encargo.html</a></small>
+                                    </span>
+                                    <span class="form-check form-switch m-0">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="bajo-encargo">
+                                    </span>
+                                </label>
                             </div>
+                        </div>
+                        <div class="pf-sheet-footer">
+                            <button type="button" id="btn-clear-product-form" class="pf-btn pf-btn--ghost">Limpiar</button>
+                            <button type="submit" class="pf-btn pf-btn--primary" id="btn-save-product">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                                <span class="save-text">Guardar</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ── Inventario ── -->
+                <div id="inventory-view">
+                    <!-- Búsqueda y filtros -->
+                    <div class="pf-toolbar">
+                        <div class="pf-search">
+                            <i class="bi bi-search"></i>
+                            <input type="search" id="search-inventory" placeholder="Buscar producto o código" autocomplete="off">
+                        </div>
+                        <div class="pf-filters">
+                            <div class="pf-chip pf-chip--select">
+                                <i class="bi bi-tag"></i>
+                                <select id="filter-category-inventory" aria-label="Categoría">
+                                    <option value="">Todas las categorías</option>
+                                </select>
+                                <i class="bi bi-chevron-down pf-chip-caret"></i>
+                            </div>
+                            <div class="pf-chip pf-chip--select">
+                                <i class="bi bi-building"></i>
+                                <select id="filter-supplier-inventory" aria-label="Proveedor">
+                                    <option value="">Todos los proveedores</option>
+                                </select>
+                                <i class="bi bi-chevron-down pf-chip-caret"></i>
+                            </div>
+                            <label class="pf-chip pf-chip--toggle" for="filter-low-stock-inventory">
+                                <input type="checkbox" id="filter-low-stock-inventory">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <span>Bajo stock</span>
+                                <span class="pf-chip-count" id="prod-bajo-count"></span>
+                            </label>
+                            <button type="button" id="clear-filters-inventory" class="pf-chip pf-chip--clear" aria-label="Quitar filtros">
+                                <i class="bi bi-x-lg"></i><span>Limpiar</span>
+                            </button>
                         </div>
                     </div>
-                    
-                    <!-- TABLA DE INVENTARIO -->
-                    <div class="tbl-wrap">
-                        <div class="tbl-head">
-                            <span class="tbl-title"><i class="bi bi-boxes"></i>Inventario de productos</span>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Foto</th>
-                                        <th>Nombre</th>
-                                        <th>Categoría</th>
-                                        <th>Variaciones</th>
-                                        <th>Detal</th>
-                                        <th>Mayor</th>
-                                        <th>Stock</th>
-                                        <th>Barras</th>
-                                        <th>Promo</th>
-                                        <th>Estado</th>
-                                        <th>Encargo</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="lista-inventario-productos">
-                                    <tr id="empty-inventory-row">
-                                        <td colspan="11" class="text-center text-muted">Cargando...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+
+                    <!-- Lista -->
+                    <div class="pf-list" id="lista-inventario-productos">
+                        <div class="pf-empty" id="empty-inventory-row">
+                            <span class="spinner-border spinner-border-sm"></span>
+                            <span>Cargando productos...</span>
                         </div>
                     </div>
                 </div>
@@ -4373,7 +4442,7 @@
     </script>
 
     <script src="connection-status.js?v=1.0.0" defer></script>
-    <script type="module" src="admin.js?v=3.8.10"></script>
+    <script type="module" src="admin.js?v=3.8.11"></script>
     <script type="module" src="admin-auth-init.js?v=1.1.0"></script>
     <script type="module" src="auditoria.js?v=1.0.1"></script>
 
