@@ -8043,10 +8043,43 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         const tipoVentaEl = document.getElementById('tipo-venta-select');
         if (!gridEl) return;
 
-        const POS_PAGINA = 60;
+        // Celular: pocos productos (los más vendidos) para no tener que
+        // desplazarse; computador: una página más amplia.
+        const esCelular = window.matchMedia('(max-width: 991.98px)');
+        const tamPagina = () => (esCelular.matches ? 6 : 60);
+        let POS_PAGINA = tamPagina();
         let categoriaActiva = '';
         let limite = POS_PAGINA;
         let sucio = true;
+        esCelular.addEventListener?.('change', () => { POS_PAGINA = tamPagina(); limite = POS_PAGINA; if (!sucio) pintar(); });
+
+        // Unidades vendidas por producto en los últimos 60 días (ventas no
+        // anuladas). Se calcula al abrir Ventas y se refresca cada 10 minutos
+        // como máximo; "ventas" del producto (pedidos web) queda de respaldo.
+        const vendidos = new Map();
+        let vendidosCargadosEn = 0;
+        async function cargarMasVendidos() {
+            if (Date.now() - vendidosCargadosEn < 10 * 60 * 1000) return;
+            vendidosCargadosEn = Date.now();
+            try {
+                const desde = new Date();
+                desde.setDate(desde.getDate() - 60);
+                const snap = await getDocs(query(salesCollection, where('timestamp', '>=', Timestamp.fromDate(desde))));
+                vendidos.clear();
+                snap.forEach(docSnap => {
+                    const venta = docSnap.data();
+                    if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
+                    (venta.items || []).forEach(it => {
+                        if (!it.productoId) return;
+                        vendidos.set(it.productoId, (vendidos.get(it.productoId) || 0) + (parseInt(it.cantidad, 10) || 0));
+                    });
+                });
+                if (!sucio) pintar();
+            } catch (err) {
+                vendidosCargadosEn = 0;
+                console.error('Error calculando los más vendidos del POS:', err);
+            }
+        }
         const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         const normalizar = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -8056,7 +8089,8 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const stock = obtenerStockTotalProducto(p);
                 if (stock > 0) lista.push({ id, p, stock });
             });
-            return lista.sort((a, b) => (a.p.nombre || '').localeCompare(b.p.nombre || ''));
+            const puntaje = ({ id, p }) => (vendidos.get(id) || 0) * 1000 + (p.ventas || 0);
+            return lista.sort((a, b) => (puntaje(b) - puntaje(a)) || (a.p.nombre || '').localeCompare(b.p.nombre || ''));
         }
 
         function pintarCategorias(disponibles) {
@@ -8083,6 +8117,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 (!categoriaActiva || p.categoriaId === categoriaActiva) &&
                 (!texto || normalizar(p.nombre).includes(texto) || normalizar(p.codigo).includes(texto) || String(p.codigoBarras || '').includes(texto)));
 
+            const tituloGridEl = document.getElementById('pos-grid-title');
+            if (tituloGridEl) {
+                const nombreCat = categoriaActiva ? ((window.categoriesMap || new Map()).get(categoriaActiva) || '') : '';
+                tituloGridEl.textContent = texto ? `Resultados (${filtrados.length})`
+                    : (nombreCat ? `Lo más vendido · ${nombreCat.charAt(0).toUpperCase() + nombreCat.slice(1).toLowerCase()}` : 'Lo más vendido');
+            }
             if (!filtrados.length) {
                 gridEl.innerHTML = `<div class="pos-grid-empty"><i class="bi bi-${texto || categoriaActiva ? 'search' : 'box-seam'}"></i> ${texto || categoriaActiva ? 'Sin resultados' : 'No hay productos con stock'}</div>`;
                 return;
@@ -8126,7 +8166,7 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         });
         tipoVentaEl?.addEventListener('change', pintarSiVisible);
         window.addEventListener('admin:productos-actualizados', pintarSiVisible);
-        alEntrarSeccion('#ventas', () => { if (sucio) pintar(); });
+        alEntrarSeccion('#ventas', () => { if (sucio) pintar(); cargarMasVendidos(); });
 
         // Celular: barra fija con el total que lleva al ticket.
         const barra = document.getElementById('pos-mobile-bar');
