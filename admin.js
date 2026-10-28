@@ -2058,6 +2058,47 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // ── Copiar disponibilidad (texto listo para WhatsApp) ──
+        // Nombre, precio (con promoción si está activa) y los colores con
+        // stock, cada uno con sus tallas. Lo agotado nunca se copia.
+        function textoDisponibilidadProducto(d) {
+            const porColor = new Map();
+            (d.variaciones || []).forEach(v => {
+                if ((parseInt(v.stock, 10) || 0) <= 0) return;
+                const nombreColor = normalizeColor(v.color);
+                const color = nombreColor ? nombreColor.charAt(0).toUpperCase() + nombreColor.slice(1) : 'Único';
+                const talla = normalizeTalla(v.talla);
+                const tallas = porColor.get(color) || [];
+                if (talla && !['única', 'unica'].includes(talla.toLowerCase()) && !tallas.includes(talla)) tallas.push(talla);
+                porColor.set(color, tallas);
+            });
+            if (!porColor.size) return '';
+
+            const precio = d.precioDetal || 0;
+            let precioTexto = formatoMoneda.format(precio);
+            if (d.promocion?.activa) {
+                const promo = d.promocion.tipo === 'porcentaje'
+                    ? precio * (1 - (parseFloat(d.promocion.descuento) || 0) / 100)
+                    : (parseFloat(d.promocion.precioFijo) || 0);
+                if (promo > 0 && promo < precio) precioTexto = `~${formatoMoneda.format(precio)}~ ${formatoMoneda.format(promo)}`;
+            }
+            const lineas = [...porColor].map(([color, tallas]) =>
+                `   • ${color}${tallas.length ? `: ${tallas.join(', ')}` : ''}`);
+            return `🛍️ *${d.nombre || 'Producto'}* — ${precioTexto}\nDisponible:\n${lineas.join('\n')}`;
+        }
+
+        async function copiarTextoAlPortapapeles(texto) {
+            try {
+                if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(texto); return true; }
+            } catch (_) { /* respaldo abajo */ }
+            const ta = document.createElement('textarea');
+            ta.value = texto; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            const ok = document.execCommand('copy');
+            ta.remove();
+            return ok;
+        }
+
         // Reconstruye la tabla de inventario (filas + códigos de barras) a
         // partir de localProductsMap, ya poblado por renderProducts().
         async function pintarTablaProductos() {
@@ -2144,6 +2185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button type="button" class="pf-act btn-manage-promo${hasPromo ? ' is-on' : ''}" title="${hasPromo ? 'Editar promoción' : 'Agregar promoción'}" aria-label="Promoción"><i class="bi bi-tag${hasPromo ? '-fill' : ''}"></i></button>
                         <button type="button" class="pf-act btn-toggle-encargo${d.bajoEncargo ? ' is-on' : ''}" title="${d.bajoEncargo ? 'Quitar de Bajo Encargo' : 'Agregar a Bajo Encargo'}" aria-label="Bajo encargo"><i class="bi bi-bag-heart${d.bajoEncargo ? '-fill' : ''}"></i></button>
                         ${d.codigoBarras ? `<button type="button" class="pf-act btn-ver-barcode" data-product-id="${id}" title="Ver código de barras" aria-label="Código de barras"><i class="bi bi-upc"></i></button>` : ''}
+                        ${stockTotal > 0 ? `<button type="button" class="pf-act btn-copiar-disponibilidad" title="Copiar disponibilidad" aria-label="Copiar disponibilidad de ${esc(d.nombre || '')}"><i class="bi bi-copy"></i></button>` : ''}
                         <button type="button" class="pf-act pf-act--del btn-delete-product" title="Eliminar" aria-label="Eliminar ${esc(d.nombre || '')}"><i class="bi bi-trash3"></i></button>
                     </div>`;
                 fragment.appendChild(card);
@@ -2794,6 +2836,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (err) {
                     console.error("Error actualizando bajoEncargo:", err);
                     showToast("Error al actualizar Bajo Encargo", 'error');
+                }
+                return;
+            }
+            const copiarBtn = e.target.closest('.btn-copiar-disponibilidad');
+            if (copiarBtn) {
+                const producto = localProductsMap.get(copiarBtn.closest('[data-id]')?.dataset.id);
+                const texto = producto ? textoDisponibilidadProducto(producto) : '';
+                if (!texto) { showToast('Este producto no tiene unidades disponibles', 'warning'); return; }
+                if (await copiarTextoAlPortapapeles(texto)) {
+                    const icono = copiarBtn.querySelector('i');
+                    if (icono) icono.className = 'bi bi-check2';
+                    clearTimeout(copiarBtn._t);
+                    copiarBtn._t = setTimeout(() => { if (icono) icono.className = 'bi bi-copy'; }, 1600);
+                    showToast('Disponibilidad copiada', 'success');
+                } else {
+                    showToast('No se pudo copiar en este navegador', 'error');
                 }
                 return;
             }
