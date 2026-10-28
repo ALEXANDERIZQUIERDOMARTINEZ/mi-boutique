@@ -8225,3 +8225,103 @@ img, video, iframe, embed, object {
         min-height: 0;
     }
 }
+
+/* ── Calendario del historial de ventas: punto en los días con ventas ── */
+.sv-date-picker { position: relative; flex: 1; min-width: 140px; }
+.sv-date-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.sv-date-btn i { color: #9ca3af; }
+.sv-cal-popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 1060;
+    width: 280px;
+    max-width: calc(100vw - 32px);
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(17, 24, 39, 0.15);
+    border: 1px solid #f1f1f4;
+    padding: 12px;
+}
+.sv-cal-popover[hidden] { display: none; }
+.sv-cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.sv-cal-title { font-weight: 600; font-size: 0.92rem; color: #1a1a2e; }
+.sv-cal-nav {
+    border: none;
+    background: #f5f5f8;
+    border-radius: 8px;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+}
+.sv-cal-nav:hover { background: #ececf2; }
+.sv-cal-weekdays,
+.sv-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    text-align: center;
+}
+.sv-cal-weekdays span { font-size: 0.7rem; font-weight: 600; color: #9ca3af; padding: 4px 0; }
+.sv-cal-grid.is-loading { opacity: 0.6; }
+.sv-cal-day {
+    position: relative;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    height: 34px;
+    font-size: 0.85rem;
+    color: #1a1a2e;
+}
+.sv-cal-day:hover { background: #f5f5f8; }
+.sv-cal-day.is-today { font-weight: 700; box-shadow: inset 0 0 0 1px #d1d5db; }
+.sv-cal-day.is-selected { background: #1a1a2e; color: #fff; }
+.sv-cal-day.has-sales::after,
+.sv-cal-dot {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #ec4899;
+}
+.sv-cal-day.has-sales::after {
+    position: absolute;
+    left: 50%;
+    bottom: 3px;
+    transform: translateX(-50%);
+}
+.sv-cal-day.is-selected.has-sales::after { background: #fff; }
+.sv-cal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f1f1f4;
+}
+.sv-cal-legend { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #6b7280; }
+.sv-cal-today {
+    border: none;
+    background: transparent;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #ec4899;
+}
