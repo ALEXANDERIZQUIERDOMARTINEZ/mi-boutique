@@ -225,6 +225,171 @@ const closingsCollection = collection(db, 'cierresCaja');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const cotizacionesCollection = collection(db, 'cotizaciones');
 
+// ✅ CALENDARIO CON VENTAS: reemplaza un <input type="date"> por un calendario
+// propio que marca con un punto los días que tienen ventas (el selector nativo
+// no permite marcar días). El input sigue guardando el valor "YYYY-MM-DD" y
+// dispara 'change', así que el código que lo lee no cambia.
+// Cache por mes ("YYYY-MM" -> Set de días), compartida entre calendarios.
+// El mes en curso se vuelve a consultar porque sigue recibiendo ventas.
+const diasConVentasCache = new Map();
+
+async function obtenerDiasConVentas(y, m) {
+    const mesKey = `${y}-${String(m + 1).padStart(2, '0')}`;
+    const hoy = new Date();
+    const esMesActual = y === hoy.getFullYear() && m === hoy.getMonth();
+    if (!esMesActual && diasConVentasCache.has(mesKey)) return diasConVentasCache.get(mesKey);
+
+    const inicio = new Date(y, m, 1, 0, 0, 0, 0);
+    const fin = new Date(y, m + 1, 0, 23, 59, 59, 999);
+    const snap = await getDocs(query(
+        salesCollection,
+        where('timestamp', '>=', Timestamp.fromDate(inicio)),
+        where('timestamp', '<=', Timestamp.fromDate(fin))
+    ));
+    const dias = new Set();
+    snap.forEach(d => {
+        const ts = d.data().timestamp;
+        if (ts?.toDate) dias.add(ts.toDate().getDate());
+    });
+    diasConVentasCache.set(mesKey, dias);
+    return dias;
+}
+
+function crearCalendarioVentas(input) {
+    if (!input) return { sync() {} };
+
+    const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const pad = n => String(n).padStart(2, '0');
+    const toKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'sv-date-picker';
+    wrapper.innerHTML = `
+        <button type="button" class="${input.className} sv-date-btn" aria-haspopup="dialog" aria-expanded="false">
+            <i class="bi bi-calendar3"></i><span class="sv-date-label">dd/mm/aaaa</span>
+        </button>
+        <div class="sv-cal-popover" role="dialog" aria-label="Calendario de ventas" hidden>
+            <div class="sv-cal-header">
+                <button type="button" class="sv-cal-nav" data-nav="-1" aria-label="Mes anterior"><i class="bi bi-chevron-left"></i></button>
+                <span class="sv-cal-title"></span>
+                <button type="button" class="sv-cal-nav" data-nav="1" aria-label="Mes siguiente"><i class="bi bi-chevron-right"></i></button>
+            </div>
+            <div class="sv-cal-weekdays">
+                <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sá</span><span>Do</span>
+            </div>
+            <div class="sv-cal-grid"></div>
+            <div class="sv-cal-footer">
+                <span class="sv-cal-legend"><span class="sv-cal-dot"></span>Días con ventas</span>
+                <button type="button" class="sv-cal-today">Hoy</button>
+            </div>
+        </div>`;
+    input.parentNode.insertBefore(wrapper, input);
+    wrapper.appendChild(input);
+    input.type = 'hidden';
+
+    const btn = wrapper.querySelector('.sv-date-btn');
+    const label = wrapper.querySelector('.sv-date-label');
+    const popover = wrapper.querySelector('.sv-cal-popover');
+    const grid = wrapper.querySelector('.sv-cal-grid');
+    const title = wrapper.querySelector('.sv-cal-title');
+    let vista = new Date();
+    vista.setDate(1);
+    let renderToken = 0;
+
+    function actualizarLabel() {
+        const v = input.value;
+        if (!v) { label.textContent = 'dd/mm/aaaa'; return; }
+        const [y, m, d] = v.split('-').map(Number);
+        label.textContent = `${pad(d)}/${pad(m)}/${y}`;
+    }
+
+    async function render() {
+        const y = vista.getFullYear();
+        const m = vista.getMonth();
+        const token = ++renderToken;
+        title.textContent = `${MESES[m]} ${y}`;
+
+        const hoy = new Date();
+        const hoyKey = toKey(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+        const offset = (new Date(y, m, 1).getDay() + 6) % 7; // semana empieza en lunes
+        const diasMes = new Date(y, m + 1, 0).getDate();
+
+        const celdas = [];
+        for (let i = 0; i < offset; i++) celdas.push('<span class="sv-cal-empty"></span>');
+        for (let d = 1; d <= diasMes; d++) {
+            const key = toKey(y, m, d);
+            const clases = ['sv-cal-day'];
+            if (key === hoyKey) clases.push('is-today');
+            if (key === input.value) clases.push('is-selected');
+            celdas.push(`<button type="button" class="${clases.join(' ')}" data-date="${key}" data-day="${d}">${d}</button>`);
+        }
+        grid.innerHTML = celdas.join('');
+        grid.classList.add('is-loading');
+
+        try {
+            const dias = await obtenerDiasConVentas(y, m);
+            if (token !== renderToken) return; // el usuario ya cambió de mes
+            grid.querySelectorAll('.sv-cal-day').forEach(el => {
+                el.classList.toggle('has-sales', dias.has(Number(el.dataset.day)));
+            });
+        } catch (e) {
+            console.error('Error cargando días con ventas:', e);
+        } finally {
+            if (token === renderToken) grid.classList.remove('is-loading');
+        }
+    }
+
+    function abrir() {
+        if (input.value) {
+            const [y, m] = input.value.split('-').map(Number);
+            vista = new Date(y, m - 1, 1);
+        }
+        popover.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+        // Mantener el calendario dentro de la pantalla (en móvil el campo puede estar a la derecha)
+        popover.style.left = '0px';
+        const rect = popover.getBoundingClientRect();
+        const sobra = rect.right - (window.innerWidth - 8);
+        if (sobra > 0) popover.style.left = `${-Math.min(sobra, rect.left - 8)}px`;
+        render();
+    }
+
+    function cerrar() {
+        popover.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+    }
+
+    function seleccionar(key) {
+        input.value = key;
+        actualizarLabel();
+        cerrar();
+        input.dispatchEvent(new Event('change'));
+    }
+
+    btn.addEventListener('click', () => (popover.hidden ? abrir() : cerrar()));
+    wrapper.querySelectorAll('.sv-cal-nav').forEach(nav => nav.addEventListener('click', () => {
+        vista = new Date(vista.getFullYear(), vista.getMonth() + Number(nav.dataset.nav), 1);
+        render();
+    }));
+    wrapper.querySelector('.sv-cal-today').addEventListener('click', () => {
+        const hoy = new Date();
+        seleccionar(toKey(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
+    });
+    grid.addEventListener('click', (e) => {
+        const dayBtn = e.target.closest('.sv-cal-day');
+        if (dayBtn) seleccionar(dayBtn.dataset.date);
+    });
+    document.addEventListener('click', (e) => {
+        if (!popover.hidden && !wrapper.contains(e.target)) cerrar();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !popover.hidden) cerrar();
+    });
+
+    actualizarLabel();
+    return { sync: actualizarLabel };
+}
+
 // Solo las prendas cuyo proveedor sea exactamente "Mishelles Boutique" pueden
 // venderse al por mayor (tablas de precio por cantidad). Cualquier otro
 // proveedor queda restringido a venta al detal.
@@ -3930,141 +4095,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // ✅ CALENDARIO DEL HISTORIAL: marca con un punto los días que tienen ventas
-        const svCal = (() => {
-            const btn = document.getElementById('filtro-fecha-ventas-btn');
-            const label = document.getElementById('filtro-fecha-ventas-label');
-            const popover = document.getElementById('sv-cal-popover');
-            const grid = document.getElementById('sv-cal-grid');
-            const title = document.getElementById('sv-cal-title');
-            const wrapper = document.getElementById('sv-date-picker');
-            if (!filtroFechaInput || !btn || !popover || !grid) return { sync() {} };
-
-            const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            const pad = n => String(n).padStart(2, '0');
-            const toKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
-            // Cache por mes ("YYYY-MM" -> Set de días con ventas). El mes en curso
-            // se vuelve a consultar cada vez porque sigue recibiendo ventas.
-            const diasConVentasCache = new Map();
-            let vista = new Date();
-            vista.setDate(1);
-            let renderToken = 0;
-
-            async function obtenerDiasConVentas(y, m) {
-                const mesKey = `${y}-${pad(m + 1)}`;
-                const hoy = new Date();
-                const esMesActual = y === hoy.getFullYear() && m === hoy.getMonth();
-                if (!esMesActual && diasConVentasCache.has(mesKey)) return diasConVentasCache.get(mesKey);
-
-                const inicio = new Date(y, m, 1, 0, 0, 0, 0);
-                const fin = new Date(y, m + 1, 0, 23, 59, 59, 999);
-                const snap = await getDocs(query(
-                    salesCollection,
-                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
-                    where('timestamp', '<=', Timestamp.fromDate(fin))
-                ));
-                const dias = new Set();
-                snap.forEach(d => {
-                    const ts = d.data().timestamp;
-                    if (ts?.toDate) dias.add(ts.toDate().getDate());
-                });
-                diasConVentasCache.set(mesKey, dias);
-                return dias;
-            }
-
-            function actualizarLabel() {
-                const v = filtroFechaInput.value;
-                if (!v) { label.textContent = 'Seleccionar fecha'; return; }
-                const [y, m, d] = v.split('-').map(Number);
-                label.textContent = `${pad(d)}/${pad(m)}/${y}`;
-            }
-
-            async function render() {
-                const y = vista.getFullYear();
-                const m = vista.getMonth();
-                const token = ++renderToken;
-                title.textContent = `${MESES[m]} ${y}`;
-
-                const hoy = new Date();
-                const hoyKey = toKey(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-                const offset = (new Date(y, m, 1).getDay() + 6) % 7; // semana empieza en lunes
-                const diasMes = new Date(y, m + 1, 0).getDate();
-
-                const celdas = [];
-                for (let i = 0; i < offset; i++) celdas.push('<span class="sv-cal-empty"></span>');
-                for (let d = 1; d <= diasMes; d++) {
-                    const key = toKey(y, m, d);
-                    const clases = ['sv-cal-day'];
-                    if (key === hoyKey) clases.push('is-today');
-                    if (key === filtroFechaInput.value) clases.push('is-selected');
-                    celdas.push(`<button type="button" class="${clases.join(' ')}" data-date="${key}" data-day="${d}">${d}</button>`);
-                }
-                grid.innerHTML = celdas.join('');
-                grid.classList.add('is-loading');
-
-                try {
-                    const dias = await obtenerDiasConVentas(y, m);
-                    if (token !== renderToken) return; // el usuario ya cambió de mes
-                    grid.querySelectorAll('.sv-cal-day').forEach(el => {
-                        el.classList.toggle('has-sales', dias.has(Number(el.dataset.day)));
-                    });
-                } catch (e) {
-                    console.error('Error cargando días con ventas:', e);
-                } finally {
-                    if (token === renderToken) grid.classList.remove('is-loading');
-                }
-            }
-
-            function abrir() {
-                const v = filtroFechaInput.value;
-                if (v) {
-                    const [y, m] = v.split('-').map(Number);
-                    vista = new Date(y, m - 1, 1);
-                }
-                popover.hidden = false;
-                btn.setAttribute('aria-expanded', 'true');
-                render();
-            }
-
-            function cerrar() {
-                popover.hidden = true;
-                btn.setAttribute('aria-expanded', 'false');
-            }
-
-            function seleccionar(key) {
-                filtroFechaInput.value = key;
-                actualizarLabel();
-                cerrar();
-                filtroFechaInput.dispatchEvent(new Event('change'));
-            }
-
-            btn.addEventListener('click', () => (popover.hidden ? abrir() : cerrar()));
-            document.getElementById('sv-cal-prev')?.addEventListener('click', () => {
-                vista = new Date(vista.getFullYear(), vista.getMonth() - 1, 1);
-                render();
-            });
-            document.getElementById('sv-cal-next')?.addEventListener('click', () => {
-                vista = new Date(vista.getFullYear(), vista.getMonth() + 1, 1);
-                render();
-            });
-            document.getElementById('sv-cal-today')?.addEventListener('click', () => {
-                const hoy = new Date();
-                seleccionar(toKey(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
-            });
-            grid.addEventListener('click', (e) => {
-                const dayBtn = e.target.closest('.sv-cal-day');
-                if (dayBtn) seleccionar(dayBtn.dataset.date);
-            });
-            document.addEventListener('click', (e) => {
-                if (!popover.hidden && !wrapper.contains(e.target)) cerrar();
-            });
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && !popover.hidden) cerrar();
-            });
-
-            actualizarLabel();
-            return { sync: actualizarLabel };
-        })();
+        // ✅ Calendario con punto en los días que tienen ventas
+        const svCal = crearCalendarioVentas(filtroFechaInput);
 
         if (btnLimpiarFiltro) {
             btnLimpiarFiltro.addEventListener('click', () => {
@@ -10339,6 +10371,10 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
     const btnCalc        = document.getElementById('fin2-btn-calc');
     const loadingDiv     = document.getElementById('fin2-loading');
     const resultadosDiv  = document.getElementById('fin2-resultados');
+
+    // Calendarios Desde/Hasta con punto en los días que tienen ventas
+    crearCalendarioVentas(inputDesde);
+    crearCalendarioVentas(inputHasta);
 
     // ── DOM refs: gastos e ingresos operativos (movimientosBoutique) ──
     const btnNuevoIngreso  = document.getElementById('bout-btn-nuevo-ingreso');
