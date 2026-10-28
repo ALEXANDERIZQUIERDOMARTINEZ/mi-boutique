@@ -3930,6 +3930,142 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // ✅ CALENDARIO DEL HISTORIAL: marca con un punto los días que tienen ventas
+        const svCal = (() => {
+            const btn = document.getElementById('filtro-fecha-ventas-btn');
+            const label = document.getElementById('filtro-fecha-ventas-label');
+            const popover = document.getElementById('sv-cal-popover');
+            const grid = document.getElementById('sv-cal-grid');
+            const title = document.getElementById('sv-cal-title');
+            const wrapper = document.getElementById('sv-date-picker');
+            if (!filtroFechaInput || !btn || !popover || !grid) return { sync() {} };
+
+            const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const pad = n => String(n).padStart(2, '0');
+            const toKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
+            // Cache por mes ("YYYY-MM" -> Set de días con ventas). El mes en curso
+            // se vuelve a consultar cada vez porque sigue recibiendo ventas.
+            const diasConVentasCache = new Map();
+            let vista = new Date();
+            vista.setDate(1);
+            let renderToken = 0;
+
+            async function obtenerDiasConVentas(y, m) {
+                const mesKey = `${y}-${pad(m + 1)}`;
+                const hoy = new Date();
+                const esMesActual = y === hoy.getFullYear() && m === hoy.getMonth();
+                if (!esMesActual && diasConVentasCache.has(mesKey)) return diasConVentasCache.get(mesKey);
+
+                const inicio = new Date(y, m, 1, 0, 0, 0, 0);
+                const fin = new Date(y, m + 1, 0, 23, 59, 59, 999);
+                const snap = await getDocs(query(
+                    salesCollection,
+                    where('timestamp', '>=', Timestamp.fromDate(inicio)),
+                    where('timestamp', '<=', Timestamp.fromDate(fin))
+                ));
+                const dias = new Set();
+                snap.forEach(d => {
+                    const ts = d.data().timestamp;
+                    if (ts?.toDate) dias.add(ts.toDate().getDate());
+                });
+                diasConVentasCache.set(mesKey, dias);
+                return dias;
+            }
+
+            function actualizarLabel() {
+                const v = filtroFechaInput.value;
+                if (!v) { label.textContent = 'Seleccionar fecha'; return; }
+                const [y, m, d] = v.split('-').map(Number);
+                label.textContent = `${pad(d)}/${pad(m)}/${y}`;
+            }
+
+            async function render() {
+                const y = vista.getFullYear();
+                const m = vista.getMonth();
+                const token = ++renderToken;
+                title.textContent = `${MESES[m]} ${y}`;
+
+                const hoy = new Date();
+                const hoyKey = toKey(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+                const offset = (new Date(y, m, 1).getDay() + 6) % 7; // semana empieza en lunes
+                const diasMes = new Date(y, m + 1, 0).getDate();
+
+                const celdas = [];
+                for (let i = 0; i < offset; i++) celdas.push('<span class="sv-cal-empty"></span>');
+                for (let d = 1; d <= diasMes; d++) {
+                    const key = toKey(y, m, d);
+                    const clases = ['sv-cal-day'];
+                    if (key === hoyKey) clases.push('is-today');
+                    if (key === filtroFechaInput.value) clases.push('is-selected');
+                    celdas.push(`<button type="button" class="${clases.join(' ')}" data-date="${key}" data-day="${d}">${d}</button>`);
+                }
+                grid.innerHTML = celdas.join('');
+                grid.classList.add('is-loading');
+
+                try {
+                    const dias = await obtenerDiasConVentas(y, m);
+                    if (token !== renderToken) return; // el usuario ya cambió de mes
+                    grid.querySelectorAll('.sv-cal-day').forEach(el => {
+                        el.classList.toggle('has-sales', dias.has(Number(el.dataset.day)));
+                    });
+                } catch (e) {
+                    console.error('Error cargando días con ventas:', e);
+                } finally {
+                    if (token === renderToken) grid.classList.remove('is-loading');
+                }
+            }
+
+            function abrir() {
+                const v = filtroFechaInput.value;
+                if (v) {
+                    const [y, m] = v.split('-').map(Number);
+                    vista = new Date(y, m - 1, 1);
+                }
+                popover.hidden = false;
+                btn.setAttribute('aria-expanded', 'true');
+                render();
+            }
+
+            function cerrar() {
+                popover.hidden = true;
+                btn.setAttribute('aria-expanded', 'false');
+            }
+
+            function seleccionar(key) {
+                filtroFechaInput.value = key;
+                actualizarLabel();
+                cerrar();
+                filtroFechaInput.dispatchEvent(new Event('change'));
+            }
+
+            btn.addEventListener('click', () => (popover.hidden ? abrir() : cerrar()));
+            document.getElementById('sv-cal-prev')?.addEventListener('click', () => {
+                vista = new Date(vista.getFullYear(), vista.getMonth() - 1, 1);
+                render();
+            });
+            document.getElementById('sv-cal-next')?.addEventListener('click', () => {
+                vista = new Date(vista.getFullYear(), vista.getMonth() + 1, 1);
+                render();
+            });
+            document.getElementById('sv-cal-today')?.addEventListener('click', () => {
+                const hoy = new Date();
+                seleccionar(toKey(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
+            });
+            grid.addEventListener('click', (e) => {
+                const dayBtn = e.target.closest('.sv-cal-day');
+                if (dayBtn) seleccionar(dayBtn.dataset.date);
+            });
+            document.addEventListener('click', (e) => {
+                if (!popover.hidden && !wrapper.contains(e.target)) cerrar();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !popover.hidden) cerrar();
+            });
+
+            actualizarLabel();
+            return { sync: actualizarLabel };
+        })();
+
         if (btnLimpiarFiltro) {
             btnLimpiarFiltro.addEventListener('click', () => {
                 if (filtroFechaInput) {
@@ -3939,6 +4075,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const mes = String(hoy.getMonth() + 1).padStart(2, '0');
                     const dia = String(hoy.getDate()).padStart(2, '0');
                     filtroFechaInput.value = `${año}-${mes}-${dia}`;
+                    svCal.sync();
 
                     // Limpiar otros filtros
                     const filtroBuscar = document.getElementById('filtro-buscar-ventas');

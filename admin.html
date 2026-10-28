@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=1.9.9">
+    <link rel="stylesheet" href="style.css?v=1.9.10">
     <link rel="stylesheet" href="admin-styles.css?v=2.5.8">
     <!-- Mismo tema que admin-fabrica.html (colores, Poppins, tarjetas, menú
          "Más" en el celular y modo oscuro). Todo va bajo body.fab-page. -->
@@ -1163,7 +1163,28 @@
                             <select id="filtro-categoria-ventas" class="form-select form-select-sm">
                                 <option value="">Todas las categorías</option>
                             </select>
-                            <input type="date" id="filtro-fecha-ventas" class="form-control form-control-sm">
+                            <div class="sv-date-picker" id="sv-date-picker">
+                                <input type="hidden" id="filtro-fecha-ventas">
+                                <button type="button" id="filtro-fecha-ventas-btn" class="form-control form-control-sm sv-date-btn" aria-haspopup="dialog" aria-expanded="false">
+                                    <i class="bi bi-calendar3"></i>
+                                    <span id="filtro-fecha-ventas-label">Seleccionar fecha</span>
+                                </button>
+                                <div class="sv-cal-popover" id="sv-cal-popover" role="dialog" aria-label="Calendario de ventas" hidden>
+                                    <div class="sv-cal-header">
+                                        <button type="button" class="sv-cal-nav" id="sv-cal-prev" aria-label="Mes anterior"><i class="bi bi-chevron-left"></i></button>
+                                        <span class="sv-cal-title" id="sv-cal-title"></span>
+                                        <button type="button" class="sv-cal-nav" id="sv-cal-next" aria-label="Mes siguiente"><i class="bi bi-chevron-right"></i></button>
+                                    </div>
+                                    <div class="sv-cal-weekdays">
+                                        <span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sá</span><span>Do</span>
+                                    </div>
+                                    <div class="sv-cal-grid" id="sv-cal-grid"></div>
+                                    <div class="sv-cal-footer">
+                                        <span class="sv-cal-legend"><span class="sv-cal-dot"></span>Días con ventas</span>
+                                        <button type="button" class="sv-cal-today" id="sv-cal-today">Hoy</button>
+                                    </div>
+                                </div>
+                            </div>
                             <button type="button" id="btn-limpiar-filtro-ventas" class="btn btn-sm btn-outline-secondary">
                                 <i class="bi bi-x-circle me-1"></i>Limpiar
                             </button>
@@ -4435,7 +4456,7 @@
     </script>
 
     <script src="connection-status.js?v=1.0.0" defer></script>
-    <script type="module" src="admin.js?v=3.8.14"></script>
+    <script type="module" src="admin.js?v=3.8.15"></script>
     <script type="module" src="admin-auth-init.js?v=1.1.0"></script>
     <script type="module" src="auditoria.js?v=1.0.1"></script>
 
