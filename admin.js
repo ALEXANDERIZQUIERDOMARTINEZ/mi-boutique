@@ -726,159 +726,164 @@ function obtenerStockTotalProducto(producto) {
     return parseInt(producto.stock, 10) || 0;
 }
 
-async function actualizarStock(itemsVendido, accion = 'restar') {
-    if (!itemsVendido || itemsVendido.length === 0) return;
+// ── Stock en TRANSACCIÓN (lee del servidor, no de la copia local) ─────────
+// Antes, el stock nuevo se calculaba con localProductsMap (la copia local
+// del catálogo) y se escribía encima la lista completa de variaciones. Con
+// dos celulares vendiendo a la vez, o con la caché local de Firestore
+// todavía sin sincronizar, eso dejaba vender prendas ya agotadas y además
+// PISABA el descuento hecho por el otro dispositivo (inventario incorrecto).
+// Ahora cada ajuste lee el documento real dentro de una transacción de
+// Firestore (que nunca usa la caché y se reintenta sola si otro dispositivo
+// cambió el producto en medio) — igual que actualizarStockFabrica en
+// admin-fabrica.js.
+//
+// deltas:  Map productoId -> Map('talla|color' -> unidades a sumar/restar)
+// nombres: Map productoId -> nombre (para los mensajes)
+// validar: si es true, un delta negativo que deje la variación por debajo
+//          de 0 cancela TODO (no se escribe nada) con error.agotados.
+// Devuelve la lista de items que no se pudieron ajustar (producto o
+// variación inexistente), igual que antes.
+function etiquetaVariacion(nombre, talla, color) {
+    const partes = [talla, color].filter(x => {
+        const n = (x || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+        return n && n !== 'unica' && n !== 'unico';
+    });
+    return partes.length ? `${nombre} (${partes.join(' / ')})` : nombre;
+}
 
-    const batch = writeBatch(db);
-    let productosParaActualizar = new Map();
-    const stockPlanoDeltas = new Map(); // productoId -> delta de unidades (productos sin variaciones)
-    const itemsOmitidos = [];
-
-    for (const item of itemsVendido) {
-        if (!item.productoId) {
-            console.warn("Item en carrito sin productoId, omitiendo stock:", item);
-            itemsOmitidos.push(item.nombre || item.nombreCompleto || 'producto sin ID');
-            continue;
+async function aplicarDeltasStock(deltas, nombres, { validar = false } = {}) {
+    if (!deltas.size) return [];
+    return runTransaction(db, async (tx) => {
+        // Firestore exige leer todo antes de escribir en una transacción.
+        const snaps = new Map();
+        for (const productoId of deltas.keys()) {
+            snaps.set(productoId, await tx.get(doc(db, 'productos', productoId)));
         }
 
-        const productoActual = localProductsMap.get(item.productoId);
-        if (!productoActual) {
-            console.error(`Producto ${item.productoId} no encontrado en localProductsMap. Omitiendo stock.`);
-            itemsOmitidos.push(item.nombre || item.nombreCompleto || item.productoId);
-            continue;
-        }
+        const omitidos = [];
+        const agotados = [];
+        const escrituras = [];
 
-        const cantidad = parseInt(item.cantidad, 10) || 0;
-
-        // Producto sin talla/color: el stock vive en el campo plano `stock`,
-        // no en `variaciones` (que queda vacío para este tipo de producto).
-        if (!Array.isArray(productoActual.variaciones) || productoActual.variaciones.length === 0) {
-            const signo = accion === 'restar' ? -1 : 1;
-            stockPlanoDeltas.set(item.productoId, (stockPlanoDeltas.get(item.productoId) || 0) + signo * cantidad);
-            continue;
-        }
-
-        if (!productosParaActualizar.has(item.productoId)) {
-            productosParaActualizar.set(item.productoId, JSON.parse(JSON.stringify(productoActual.variaciones)));
-        }
-
-        let variaciones = productosParaActualizar.get(item.productoId);
-        let variacionEncontrada = false;
-
-        let nuevasVariaciones = variaciones.map(v => {
-            if (coincideVariacion(v.talla, item.talla) && coincideVariacion(v.color, item.color)) {
-                variacionEncontrada = true;
-                const stockActual = parseInt(v.stock, 10) || 0;
-
-                if (accion === 'restar') {
-                    v.stock = stockActual - cantidad;
-                } else if (accion === 'sumar') {
-                    v.stock = stockActual + cantidad;
-                }
+        deltas.forEach((porVariacion, productoId) => {
+            const nombre = nombres.get(productoId) || productoId;
+            const snap = snaps.get(productoId);
+            if (!snap.exists()) {
+                omitidos.push(nombre);
+                return;
             }
-            return v;
+            const producto = snap.data();
+
+            // Producto sin talla/color: el stock vive en el campo plano `stock`.
+            if (!Array.isArray(producto.variaciones) || producto.variaciones.length === 0) {
+                let deltaTotal = 0;
+                porVariacion.forEach(d => { deltaTotal += d; });
+                if (!deltaTotal) return;
+                const stockActual = parseInt(producto.stock, 10) || 0;
+                if (validar && deltaTotal < 0 && stockActual + deltaTotal < 0) {
+                    agotados.push(`${nombre} (quedan ${Math.max(stockActual, 0)})`);
+                    return;
+                }
+                escrituras.push([productoId, { stock: stockActual + deltaTotal }]);
+                return;
+            }
+
+            const variaciones = JSON.parse(JSON.stringify(producto.variaciones));
+            let huboCambio = false;
+            porVariacion.forEach((delta, clave) => {
+                if (!delta) return;
+                const [talla, color] = clave.split('|');
+                const variacion = variaciones.find(v => coincideVariacion(v.talla, talla) && coincideVariacion(v.color, color));
+                if (!variacion) {
+                    console.warn(`No se encontró la variación ${talla}/${color} para el producto ${productoId}`);
+                    omitidos.push(etiquetaVariacion(nombre, talla, color));
+                    return;
+                }
+                const stockActual = parseInt(variacion.stock, 10) || 0;
+                if (validar && delta < 0 && stockActual + delta < 0) {
+                    agotados.push(`${etiquetaVariacion(nombre, talla, color)} — quedan ${Math.max(stockActual, 0)}`);
+                    return;
+                }
+                variacion.stock = stockActual + delta;
+                huboCambio = true;
+            });
+            if (huboCambio) escrituras.push([productoId, { variaciones }]);
         });
 
-        if (variacionEncontrada) {
-            productosParaActualizar.set(item.productoId, nuevasVariaciones);
-        } else {
-            console.warn(`No se encontró la variación ${item.talla}/${item.color} para el producto ${item.productoId}`);
-            itemsOmitidos.push(item.nombre || item.nombreCompleto || item.productoId);
+        if (agotados.length) {
+            const error = new Error(`No hay stock suficiente de: ${agotados.join(', ')}.`);
+            error.agotados = agotados;
+            throw error;
         }
-    }
-
-    productosParaActualizar.forEach((nuevasVariaciones, productoId) => {
-        const productRef = doc(db, 'productos', productoId);
-        batch.update(productRef, { variaciones: nuevasVariaciones });
+        escrituras.forEach(([productoId, datos]) => tx.update(doc(db, 'productos', productoId), datos));
+        return omitidos;
     });
+}
 
-    stockPlanoDeltas.forEach((delta, productoId) => {
-        if (!delta) return;
-        const productoActual = localProductsMap.get(productoId);
-        const stockActual = parseInt(productoActual?.stock, 10) || 0;
-        batch.update(doc(db, 'productos', productoId), { stock: stockActual + delta });
+function acumularDeltas(deltas, nombres, items, signo) {
+    const sinId = [];
+    (items || []).forEach(item => {
+        if (!item.productoId) {
+            sinId.push(item.nombre || item.nombreCompleto || 'producto sin ID');
+            return;
+        }
+        const cantidad = parseInt(item.cantidad, 10) || 0;
+        if (!cantidad) return;
+        if (!deltas.has(item.productoId)) deltas.set(item.productoId, new Map());
+        const porVariacion = deltas.get(item.productoId);
+        const clave = `${item.talla || ''}|${item.color || ''}`;
+        porVariacion.set(clave, (porVariacion.get(clave) || 0) + signo * cantidad);
+        if (!nombres.has(item.productoId)) nombres.set(item.productoId, item.nombre || item.nombreCompleto || item.productoId);
     });
+    return sinId;
+}
+
+// Suma o resta el stock de los items de una venta. Con { validarStock: true }
+// (al registrar una venta) se llama ANTES de guardarla: si alguna prenda no
+// alcanza, lanza el error y no se descuenta nada. Sin validarStock (reponer
+// stock al anular/cancelar) nunca lanza: avisa con un toast, como antes.
+async function actualizarStock(itemsVendido, accion = 'restar', { validarStock = false } = {}) {
+    if (!itemsVendido || itemsVendido.length === 0) return;
+    const deltas = new Map();
+    const nombres = new Map();
+    const sinId = acumularDeltas(deltas, nombres, itemsVendido, accion === 'restar' ? -1 : 1);
+    sinId.forEach(n => console.warn("Item en carrito sin productoId, omitiendo stock:", n));
 
     try {
-        await batch.commit();
+        const omitidos = [...sinId, ...await aplicarDeltasStock(deltas, nombres, { validar: validarStock && accion === 'restar' })];
         console.log(`Stock actualizado (acción: ${accion}) correctamente.`);
-        if (itemsOmitidos.length > 0) {
-            showToast(`Venta guardada, pero el inventario NO se ajustó para: ${itemsOmitidos.join(', ')}. Revísalo manualmente.`, 'error');
+        if (omitidos.length > 0) {
+            showToast(`Venta guardada, pero el inventario NO se ajustó para: ${omitidos.join(', ')}. Revísalo manualmente.`, 'error');
         }
     } catch (error) {
-        console.error("Error al actualizar stock en batch:", error);
+        if (validarStock) {
+            if (!error.agotados) {
+                // Sin conexión o error del servidor: la transacción necesita
+                // confirmar el stock real, así que la venta no se registra.
+                console.error('No se pudo verificar el stock:', error);
+                const sinRed = error.code === 'unavailable' || !navigator.onLine;
+                throw new Error(sinRed
+                    ? 'Sin conexión: no se pudo verificar el stock. La venta no se registró; inténtalo de nuevo.'
+                    : `No se pudo verificar el stock (${error.message}). La venta no se registró.`);
+            }
+            error.message += ' La venta no se registró.';
+            throw error;
+        }
+        console.error("Error al actualizar stock:", error);
         showToast('Venta guardada, pero falló la actualización de stock.', 'error');
     }
 }
 
-// Reconcilia el stock al editar los items de una venta ya existente: calcula, por producto,
-// el delta neto (repone lo original y descuenta lo nuevo) y lo aplica en un solo batch por
-// producto para no pisar cambios cuando el mismo producto aparece en ambas listas.
+// Reconcilia el stock al editar los items de una venta ya existente: repone
+// lo original y descuenta lo nuevo como un delta neto por variación, en una
+// sola transacción. Si lo nuevo no alcanza en el stock real, lanza error y no
+// toca nada (el que llama no guarda la edición).
 async function reconciliarStockEdicionVenta(itemsOriginales, itemsNuevos) {
-    const deltas = new Map(); // productoId -> Map(`${talla}|${color}` -> deltaNeto)
-
-    const acumular = (items, signo) => {
-        (items || []).forEach(item => {
-            if (!item.productoId) return;
-            const cantidad = parseInt(item.cantidad, 10) || 0;
-            if (!cantidad) return;
-            if (!deltas.has(item.productoId)) deltas.set(item.productoId, new Map());
-            const porVariacion = deltas.get(item.productoId);
-            const clave = `${item.talla || ''}|${item.color || ''}`;
-            porVariacion.set(clave, (porVariacion.get(clave) || 0) + signo * cantidad);
-        });
-    };
-
-    acumular(itemsOriginales, 1);   // reponer lo que tenía la venta antes de editar
-    acumular(itemsNuevos, -1);      // descontar lo que queda tras la edición
-
-    const batch = writeBatch(db);
-    let huboCambios = false;
-
-    deltas.forEach((porVariacion, productoId) => {
-        const producto = localProductsMap.get(productoId);
-        if (!producto) {
-            console.warn(`Producto ${productoId} no encontrado en localProductsMap. Omitiendo ajuste de stock.`);
-            return;
-        }
-
-        // Producto sin talla/color: el stock vive en el campo plano `stock`,
-        // así que el delta se aplica de una vez sin distinguir variación.
-        if (!Array.isArray(producto.variaciones) || producto.variaciones.length === 0) {
-            let deltaTotal = 0;
-            porVariacion.forEach(delta => { deltaTotal += delta; });
-            if (deltaTotal) {
-                const stockActual = parseInt(producto.stock, 10) || 0;
-                batch.update(doc(db, 'productos', productoId), { stock: stockActual + deltaTotal });
-                huboCambios = true;
-            }
-            return;
-        }
-
-        const nuevasVariaciones = JSON.parse(JSON.stringify(producto.variaciones));
-        let productoTuvoCambio = false;
-
-        porVariacion.forEach((delta, clave) => {
-            if (!delta) return;
-            const [talla, color] = clave.split('|');
-            const variacion = nuevasVariaciones.find(v => coincideVariacion(v.talla, talla) && coincideVariacion(v.color, color));
-            if (variacion) {
-                variacion.stock = (parseInt(variacion.stock, 10) || 0) + delta;
-                productoTuvoCambio = true;
-            } else {
-                console.warn(`No se encontró la variación ${talla}/${color} para el producto ${productoId} al ajustar stock.`);
-            }
-        });
-
-        if (productoTuvoCambio) {
-            batch.update(doc(db, 'productos', productoId), { variaciones: nuevasVariaciones });
-            huboCambios = true;
-        }
-    });
-
-    if (huboCambios) {
-        await batch.commit();
-    }
+    const deltas = new Map();
+    const nombres = new Map();
+    acumularDeltas(deltas, nombres, itemsOriginales, 1);   // reponer lo que tenía la venta
+    acumularDeltas(deltas, nombres, itemsNuevos, -1);      // descontar lo que queda tras editar
+    const omitidos = await aplicarDeltasStock(deltas, nombres, { validar: true });
+    if (omitidos.length) console.warn('Stock no ajustado al editar la venta para:', omitidos.join(', '));
 }
 
 // ========================================================================
@@ -3709,7 +3714,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ventas → src/admin/secciones/ventas.js. window.asegurarModuloVentas()
     // lo carga desde otras partes que necesitan el carrito (pedidos web,
     // modal de variaciones, factura tras un abono) antes de entrar a Ventas.
-    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=2'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
+    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=3'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
     // Apartados → src/admin/secciones/apartados.js
     cargarSeccionDiferida('#apartados', () => import('./src/admin/secciones/apartados.js?v=1'), { abonoApartadoModalInstance, actualizarStock, apartadosCollection, db, eliminarFormatoNumero, formatoMoneda, localProductsMap, openWhatsApp, showToast, verApartadoModalInstance });
     // Finanzas (versión anterior: ingresos/gastos y cierre de caja) →
