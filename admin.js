@@ -1599,9 +1599,55 @@ document.addEventListener('DOMContentLoaded', () => {
         const ventaClienteInput = document.getElementById('venta-cliente'); const ventaCelularInput = document.getElementById('venta-cliente-celular'); const ventaDireccionInput = document.getElementById('venta-cliente-direccion'); const ventaCedulaInput = document.getElementById('venta-cliente-cedula');
         if (!addForm || !editForm || !clientListTable || !searchModalList) { console.warn("Elementos de Clientes no encontrados."); return; }
 
-        const renderClients = (snapshot) => { localClientsMap.clear(); if(clientListTable) clientListTable.innerHTML = ''; if(searchModalList) searchModalList.innerHTML = ''; localClientsMap.set("Cliente General", {id: null, celular: "", direccion: "", nombre: "Cliente General", cedula: ""}); if(searchModalList) { const liGen = document.createElement('li'); liGen.className = 'list-group-item list-group-item-action client-search-item'; liGen.dataset.name = "Cliente General"; liGen.dataset.id = ""; liGen.textContent = "Cliente General"; searchModalList.appendChild(liGen); } if (snapshot.empty) { if(clientListTable) clientListTable.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>'; return; } snapshot.forEach(docSnap => { const d = docSnap.data(); if (d.tenantId && d.tenantId !== 'boutique') return; const id = docSnap.id; const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre; localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "", nombre: d.nombre || "", cedula: d.cedula || "" }); localClientsMap.set(id, d); if (clientListTable) { const tr = document.createElement('tr'); tr.dataset.id = id; tr.innerHTML = `<td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-view btn-client-history" data-client-name="${d.nombre}" data-client-celular="${d.celular || ''}"><i class="bi bi-clock-history"></i><span class="btn-action-text">Historial</span></button> <button class="btn btn-action btn-action-edit btn-edit-client"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-client"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td>`; clientListTable.appendChild(tr); }
-            const li = document.createElement('li'); li.className = 'list-group-item list-group-item-action client-search-item'; li.dataset.name = dataListValue; li.dataset.id = id; li.textContent = dataListValue; searchModalList.appendChild(li);
-        }); document.dispatchEvent(new CustomEvent('clientsLoaded', { detail: { clientsMap: localClientsMap } })); window.fillClientInfoSales(); };
+        // Los datos de clientes (localClientsMap) se cargan apenas llegan,
+        // porque Ventas los usa para autocompletar. La tabla de la pestaña
+        // Clientes y la lista del buscador de clientes (cientos de filas)
+        // antes se armaban también al abrir el panel aunque nadie las viera;
+        // ahora se arman la primera vez que se entra a Clientes o se abre el
+        // buscador, y se rearman si llegan cambios mientras están a la vista.
+        const escCliente = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        let ultimoSnapClientes = null;
+        let clientesDomSucio = true;
+        const clientesVisibles = () =>
+            (window.location.hash || '#dashboard') === '#clientes' ||
+            !!document.getElementById('searchClientModal')?.classList.contains('show');
+        const pintarClientesDom = () => {
+            const snapshot = ultimoSnapClientes;
+            if (!snapshot) return;
+            clientesDomSucio = false;
+            const filas = [];
+            const items = ['<li class="list-group-item list-group-item-action client-search-item" data-name="Cliente General" data-id="">Cliente General</li>'];
+            snapshot.forEach(docSnap => {
+                const d = docSnap.data();
+                if (d.tenantId && d.tenantId !== 'boutique') return;
+                const id = docSnap.id;
+                const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre;
+                filas.push(`<tr data-id="${escCliente(id)}"><td class="client-name">${d.nombre}</td> <td>${d.cedula || '-'}</td> <td>${d.celular || '-'}</td> <td>${d.direccion || '-'}</td> <td>${d.ultimaCompra?.toDate ? d.ultimaCompra.toDate().toLocaleDateString('es-CO') : '-'}</td> <td class="action-buttons"><button class="btn btn-action btn-action-view btn-client-history" data-client-name="${escCliente(d.nombre)}" data-client-celular="${escCliente(d.celular || '')}"><i class="bi bi-clock-history"></i><span class="btn-action-text">Historial</span></button> <button class="btn btn-action btn-action-edit btn-edit-client"><i class="bi bi-pencil"></i><span class="btn-action-text">Editar</span></button> <button class="btn btn-action btn-action-delete btn-delete-client"><i class="bi bi-trash"></i><span class="btn-action-text">Eliminar</span></button></td></tr>`);
+                items.push(`<li class="list-group-item list-group-item-action client-search-item" data-name="${escCliente(dataListValue)}" data-id="${escCliente(id)}">${escCliente(dataListValue)}</li>`);
+            });
+            if (clientListTable) clientListTable.innerHTML = filas.length ? filas.join('') : '<tr><td colspan="6" class="text-center text-muted">No hay clientes.</td></tr>';
+            if (searchModalList) searchModalList.innerHTML = items.join('');
+        };
+        alEntrarSeccion('#clientes', () => { if (clientesDomSucio) pintarClientesDom(); });
+        document.getElementById('searchClientModal')?.addEventListener('show.bs.modal', () => { if (clientesDomSucio) pintarClientesDom(); });
+
+        const renderClients = (snapshot) => {
+            localClientsMap.clear();
+            localClientsMap.set("Cliente General", { id: null, celular: "", direccion: "", nombre: "Cliente General", cedula: "" });
+            snapshot.forEach(docSnap => {
+                const d = docSnap.data();
+                if (d.tenantId && d.tenantId !== 'boutique') return;
+                const id = docSnap.id;
+                const dataListValue = d.cedula ? `${d.cedula} - ${d.nombre}` : d.nombre;
+                localClientsMap.set(dataListValue, { id: id, celular: d.celular || "", direccion: d.direccion || "", nombre: d.nombre || "", cedula: d.cedula || "" });
+                localClientsMap.set(id, d);
+            });
+            ultimoSnapClientes = snapshot;
+            clientesDomSucio = true;
+            if (clientesVisibles()) pintarClientesDom();
+            document.dispatchEvent(new CustomEvent('clientsLoaded', { detail: { clientsMap: localClientsMap } }));
+            window.fillClientInfoSales();
+        };
 
         window.fillClientInfoSales = function() {
             if (!ventaClienteInput || !ventaCelularInput || !ventaDireccionInput) return;
@@ -2051,14 +2097,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchProductModalEl = document.getElementById('searchProductModal');
 
         const renderProducts = (snapshot) => {
-            // Avisar de inmediato a los suscriptores ligeros (dashboard) con
-            // el snapshot crudo, antes de reconstruir el mapa y el HTML de
-            // abajo — igual que se hace con repartidores.
+            // Primero el mapa (doc.data() convierte cada documento, y es caro:
+            // se hace UNA vez por producto) y después los suscriptores
+            // (dashboard), que leen localProductsMap en vez de volver a
+            // convertir los 541 documentos.
+            localProductsMap.clear();
+            snapshot.forEach(docSnap => {
+                localProductsMap.set(docSnap.id, docSnap.data());
+            });
             productsSubscribers.forEach(cb => {
                 try { cb(snapshot); } catch (e) { console.error('Error en suscriptor de productos:', e); }
             });
-
-            localProductsMap.clear();
 
             // (El filtro de categorías de esta pestaña ya no se copia del
             // desplegable del formulario aquí: si los productos llegaban antes
@@ -2068,9 +2117,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if(!productListTableBody) return;
 
-            snapshot.forEach(docSnap => {
-                localProductsMap.set(docSnap.id, docSnap.data());
-            });
             window.dispatchEvent(new CustomEvent('admin:productos-actualizados'));
 
             // Buscador del punto de venta: si por casualidad ya está abierto
@@ -2094,89 +2140,105 @@ document.addEventListener('DOMContentLoaded', () => {
         // localProductsMap, ya poblado por renderProducts().
         // Con el modal abierto, varios snapshots seguidos (p. ej. una venta
         // que toca varios productos) se agrupan en un solo repintado. Con el
-        // modal cerrado, la lista se prepara en segundo plano para que abrirlo
-        // sea inmediato.
+        // modal cerrado, la lista se prepara en segundo plano y POR PARTES
+        // (en los ratos libres del navegador), así abrirla es inmediato y
+        // prepararla no congela la pantalla: antes era un solo bloque de
+        // ~0,5 s en un celular.
         let pintadoModalTimer = null;
+        let construccionModal = null; // { completar() } mientras se arma por partes
         function programarPintadoModalBusqueda() {
             clearTimeout(pintadoModalTimer);
             if (searchProductModalEl?.classList.contains('show')) {
                 pintadoModalTimer = setTimeout(pintarModalBusquedaProductos, 400);
             } else {
-                const preparar = () => { if (productSearchModalSucia) pintarModalBusquedaProductos(); };
-                if ('requestIdleCallback' in window) requestIdleCallback(preparar, { timeout: 4000 });
-                else pintadoModalTimer = setTimeout(preparar, 1500);
+                pintadoModalTimer = setTimeout(() => {
+                    if (productSearchModalSucia) pintarModalBusquedaProductos({ porPartes: true });
+                }, 1500);
             }
         }
 
-        function pintarModalBusquedaProductos() {
-            if (!productSearchModalList) return;
-            clearTimeout(pintadoModalTimer);
-            const scrollBox = productSearchModalList; // .pm-list es la que hace scroll
-            const scrollPrevio = scrollBox.scrollTop;
-            const fragmento = document.createDocumentFragment();
-
-            localProductsMap.forEach((d, id) => {
-                const stockTotal = obtenerStockTotalProducto(d);
-
-                const li = document.createElement('li');
-                li.className = 'list-group-item list-group-item-action product-search-item';
-                li.dataset.productId = id;
-                li.dataset.productName = d.nombre.toLowerCase();
-                li.dataset.productCode = (d.codigo || '').toLowerCase();
-                li.dataset.categoria = d.categoriaId || '';
-                li.dataset.stock = stockTotal;
-                li.dataset.visible = d.visible ? 'true' : 'false';
-                li.dataset.precioOriginal = d.precioDetal || 0;
-                li.dataset.totalSales = window.productSalesCount.get(id) || 0;
-
-                const defaultImgModal = 'https://placehold.co/70x90.png?text=Sin+Foto';
-                const imagenUrlModal = urlMiniatura(d) || defaultImgModal;
-
-                let categoryNameModal = 'Sin Categoría';
-                if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) {
-                    categoryNameModal = categoriesMap.get(d.categoriaId) || 'Sin Categoría';
-                }
-
-                li.innerHTML = `
-                    <div class="pm-product-item">
-                        <img src="${imagenUrlModal}" alt="${d.nombre}" class="product-search-img" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${defaultImgModal}'">
-                        <div class="pm-product-body">
-                            <div class="product-search-name">${d.nombre}</div>
-                            <div class="pm-product-meta">
-                                <span class="pm-product-cat">${categoryNameModal}</span>
-                                ${d.codigo ? `<span class="pm-product-code"># ${d.codigo}</span>` : ''}
-                            </div>
-                            <div class="pm-product-footer">
-                                <div class="price-info" data-precio-detal="${d.precioDetal || 0}" data-precio-mayor="${d.precioMayor || 0}">
-                                    ${formatoMoneda.format(d.precioDetal || 0)}
-                                </div>
-                                ${d.precioMayor ? `<div class="pm-price-mayor text-muted" style="font-size:0.72rem;">Mayor: ${formatoMoneda.format(d.precioMayor)}</div>` : ''}
-                                <div class="stock-info">Stock: ${stockTotal}</div>
-                            </div>
+        const escBusqueda = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const IMG_DEFECTO_BUSQUEDA = 'https://placehold.co/70x90.png?text=Sin+Foto';
+        function htmlItemBusqueda(id, d) {
+            const stockTotal = obtenerStockTotalProducto(d);
+            const categoria = (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map)
+                ? (categoriesMap.get(d.categoriaId) || 'Sin Categoría') : 'Sin Categoría';
+            const agotado = stockTotal <= 0;
+            return `<li class="list-group-item list-group-item-action product-search-item${agotado ? ' disabled' : ''}"${agotado ? ' style="opacity:0.5;cursor:not-allowed"' : ''}
+                data-product-id="${escBusqueda(id)}" data-product-name="${escBusqueda((d.nombre || '').toLowerCase())}"
+                data-product-code="${escBusqueda((d.codigo || '').toLowerCase())}" data-categoria="${escBusqueda(d.categoriaId || '')}"
+                data-stock="${stockTotal}" data-visible="${d.visible ? 'true' : 'false'}" data-precio-original="${d.precioDetal || 0}"
+                data-total-sales="${window.productSalesCount.get(id) || 0}">
+                <div class="pm-product-item">
+                    <img src="${escBusqueda(urlMiniatura(d) || IMG_DEFECTO_BUSQUEDA)}" alt="${escBusqueda(d.nombre)}" class="product-search-img" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${IMG_DEFECTO_BUSQUEDA}'">
+                    <div class="pm-product-body">
+                        <div class="product-search-name">${escBusqueda(d.nombre)}</div>
+                        <div class="pm-product-meta">
+                            <span class="pm-product-cat">${escBusqueda(categoria)}</span>
+                            ${d.codigo ? `<span class="pm-product-code"># ${escBusqueda(d.codigo)}</span>` : ''}
+                        </div>
+                        <div class="pm-product-footer">
+                            <div class="price-info" data-precio-detal="${d.precioDetal || 0}" data-precio-mayor="${d.precioMayor || 0}">${formatoMoneda.format(d.precioDetal || 0)}</div>
+                            ${d.precioMayor ? `<div class="pm-price-mayor text-muted" style="font-size:0.72rem;">Mayor: ${formatoMoneda.format(d.precioMayor)}</div>` : ''}
+                            <div class="stock-info">Stock: ${stockTotal}</div>
                         </div>
                     </div>
-                `;
+                </div>
+            </li>`;
+        }
 
-                if(stockTotal <= 0) {
-                    li.classList.add('disabled');
-                    li.style.opacity = '0.5';
-                    li.style.cursor = 'not-allowed';
-                }
-                fragmento.appendChild(li);
-            });
-
-            productSearchModalList.replaceChildren(fragmento);
-            // Aplicar ordenamiento al modal de búsqueda
-            if (typeof applyProductModalFilters === 'function') {
-                applyProductModalFilters();
+        // Reconstruye la lista del buscador a partir de localProductsMap.
+        // porPartes: en segundo plano, de a ~6 ms por vez; si el modal se
+        // abre a mitad de camino, completar() termina en el momento.
+        function pintarModalBusquedaProductos({ porPartes = false } = {}) {
+            if (!productSearchModalList) return;
+            clearTimeout(pintadoModalTimer);
+            construccionModal?.cancelar();
+            const entradas = [...localProductsMap];
+            const partes = [];
+            let i = 0;
+            const terminar = () => {
+                const scrollPrevio = productSearchModalList.scrollTop; // .pm-list es la que hace scroll
+                productSearchModalList.innerHTML = partes.join('');
+                if (typeof applyProductModalFilters === 'function') applyProductModalFilters();
+                productSearchModalList.scrollTop = scrollPrevio;
+                productSearchModalSucia = false;
+                construccionModal = null;
+            };
+            if (!porPartes) {
+                for (; i < entradas.length; i++) partes.push(htmlItemBusqueda(...entradas[i]));
+                terminar();
+                return;
             }
-            if (scrollBox) scrollBox.scrollTop = scrollPrevio;
-            productSearchModalSucia = false;
+            let cancelado = false, idle = null;
+            const programar = (fn) => ('requestIdleCallback' in window)
+                ? (idle = requestIdleCallback(fn, { timeout: 3000 }))
+                : (idle = setTimeout(() => fn(null), 16));
+            const paso = (deadline) => {
+                if (cancelado) return;
+                const hasta = performance.now() + 6;
+                while (i < entradas.length && (deadline ? deadline.timeRemaining() > 1 : performance.now() < hasta)) {
+                    partes.push(htmlItemBusqueda(...entradas[i++]));
+                }
+                if (i < entradas.length) programar(paso); else terminar();
+            };
+            construccionModal = {
+                cancelar() { cancelado = true; if ('cancelIdleCallback' in window) cancelIdleCallback(idle); clearTimeout(idle); construccionModal = null; },
+                completar() {
+                    cancelado = true;
+                    if ('cancelIdleCallback' in window) cancelIdleCallback(idle);
+                    clearTimeout(idle);
+                    for (; i < entradas.length; i++) partes.push(htmlItemBusqueda(...entradas[i]));
+                    terminar();
+                },
+            };
+            programar(paso);
         }
 
         if (searchProductModalEl) {
             searchProductModalEl.addEventListener('show.bs.modal', () => {
-                if (productSearchModalSucia) pintarModalBusquedaProductos();
+                if (construccionModal) construccionModal.completar();
+                else if (productSearchModalSucia) pintarModalBusquedaProductos();
                 // Primera apertura: se pinta ya con el orden por stock y,
                 // cuando terminen de llegar las ventas, se reordena por
                 // más vendidos.
@@ -3145,6 +3207,10 @@ document.addEventListener('DOMContentLoaded', () => {
              }
          });
 
+        // localeCompare crea un comparador nuevo en cada llamada; ordenar
+        // ~540 productos hace miles de comparaciones. Uno solo, reutilizado.
+        const collatorBusqueda = new Intl.Collator('es');
+
         // Función avanzada de filtrado de productos
         function applyProductModalFilters() {
             const searchTerm = (document.getElementById('product-modal-search')?.value || '').toLowerCase();
@@ -3210,9 +3276,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // PRIORIDAD 3: Aplicar ordenamiento seleccionado
                 switch(sortBy) {
                     case 'name-asc':
-                        return aName.localeCompare(bName);
+                        return collatorBusqueda.compare(aName, bName);
                     case 'name-desc':
-                        return bName.localeCompare(aName);
+                        return collatorBusqueda.compare(bName, aName);
                     case 'price-asc':
                         return aPrice - bPrice;
                     case 'price-desc':
@@ -3220,7 +3286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'stock-desc':
                         return bStock - aStock;
                     default:
-                        return aName.localeCompare(bName);
+                        return collatorBusqueda.compare(aName, bName);
                 }
             });
 
@@ -4842,9 +4908,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const productos = [];
                 window.productosBajoStock = [];
 
-                snapshot.forEach(doc => {
-                    const producto = doc.data();
-                    const productoId = doc.id;
+                // localProductsMap ya tiene los datos de este snapshot
+                // (renderProducts lo llena antes de avisar).
+                localProductsMap.forEach((producto, productoId) => {
                     totalProductos++;
                     if (producto.visible) productosDisponibles++;
 
