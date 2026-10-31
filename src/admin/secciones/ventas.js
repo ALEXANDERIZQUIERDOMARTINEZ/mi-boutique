@@ -1937,135 +1937,34 @@ export function init(ctx) {
             });
         }
 
-        // --- Botón Eliminar Venta ---
-        const btnDeleteSale = document.getElementById('btn-delete-sale');
-        if (btnDeleteSale) {
-            btnDeleteSale.addEventListener('click', () => {
-                if (!currentVentaId) {
-                    showToast('Error: No hay venta seleccionada', 'error');
-                    return;
-                }
-
-                // Cerrar modal de detalles y abrir modal de contraseña. Se espera a
-                // que termine de ocultarse el primero (hidden.bs.modal) antes de
-                // abrir el segundo: mostrar ambos a la vez dejaba a Bootstrap con
-                // dos backdrops en transición, y el que se cerraba a veces borraba
-                // también el del modal nuevo — ese backdrop huérfano se quedaba
-                // sobre toda la página bloqueando cualquier clic hasta recargar
-                // (mismo bug ya resuelto en generarYMostrarFactura).
-                const viewSaleModalEl = document.getElementById('viewSaleModal');
-                const deletePasswordModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteConfirmPassword'));
-                if (viewSaleModalEl) {
-                    viewSaleModalEl.addEventListener('hidden.bs.modal', () => deletePasswordModal.show(), { once: true });
-                }
-                viewSaleModalInstance.hide();
-            });
-        }
-
-        // --- Formulario Eliminar con Contraseña ---
-        const formDeletePassword = document.getElementById('form-delete-sale-password');
-        if (formDeletePassword) {
-            formDeletePassword.addEventListener('submit', async (e) => {
-                e.preventDefault();
-
-                const passwordInput = document.getElementById('delete-sale-password');
-                const password = passwordInput.value;
-
-                // Verificar contraseña
-                if (password !== ADMIN_PASSWORD) {
-                    showToast('❌ Contraseña incorrecta', 'error');
-                    passwordInput.value = '';
-                    return;
-                }
-
-                try {
-                    // Reponer stock
-                    await actualizarStock(currentVentaData.items, 'sumar');
-
-                    // Eliminar venta
-                    await deleteDoc(doc(db, 'ventas', currentVentaId));
-
-                    showToast('✅ Venta eliminada y stock repuesto correctamente', 'success');
-
-                    registrarAuditoria({
-                        accion: 'eliminar',
-                        modulo: 'venta',
-                        entidadId: currentVentaId,
-                        entidadNombre: `Venta de ${currentVentaData?.clienteNombre || 'Cliente General'}`,
-                        descripcion: `Eliminó la venta de "${currentVentaData?.clienteNombre || 'Cliente General'}" por ${formatoMoneda.format(currentVentaData?.totalVenta || 0)}`,
-                        detalles: { tipoVenta: currentVentaData?.tipoVenta, totalVenta: currentVentaData?.totalVenta }
-                    });
-
-                    // Cerrar modales
-                    bootstrap.Modal.getInstance(document.getElementById('deleteConfirmPassword')).hide();
-                    passwordInput.value = '';
-
-                    // Limpiar variables
-                    currentVentaId = null;
-                    currentVentaData = null;
-
-                } catch (error) {
-                    console.error('Error al eliminar venta:', error);
-                    showToast('Error al eliminar venta: ' + error.message, 'error');
-                }
-            });
-        }
-
-        // --- Botón Editar Venta ---
-        const btnEditSale = document.getElementById('btn-edit-sale');
-        if (btnEditSale) {
-            btnEditSale.addEventListener('click', () => {
-                if (!currentVentaData) {
-                    showToast('Error: No hay datos de venta', 'error');
-                    return;
-                }
-
-                // Cargar datos en el formulario de ventas
-                loadSaleDataToForm(currentVentaData, currentVentaId);
-
-                // Cerrar modal
-                viewSaleModalInstance.hide();
-
-                // Ir a la pestaña de ventas
-                if (window.adminShowSection) { window.adminShowSection('#ventas'); window.adminMarkActive('#ventas'); }
-
-                showToast('📝 Editando venta - Modifica los datos y guarda', 'info');
-            });
-        }
-
-        // Función para cargar datos de venta en el formulario
-        function loadSaleDataToForm(ventaData, ventaId) {
-            // Cargar items en el carrito
-            window.ventaItems = [...ventaData.items];
-            actualizarCarritoVenta();
-
-            // Cargar datos del cliente
-            const ventaClienteInput = document.getElementById('venta-cliente');
-            const ventaCelularInput = document.getElementById('venta-cliente-celular');
-            const ventaDireccionInput = document.getElementById('venta-cliente-direccion');
-
-            if (ventaClienteInput) ventaClienteInput.value = ventaData.clienteNombre || '';
-            if (ventaCelularInput) ventaCelularInput.value = ventaData.clienteCelular || '';
-            if (ventaDireccionInput) ventaDireccionInput.value = ventaData.clienteDireccion || '';
-
-            // Cargar tipo de venta
-            const tipoVentaSelect = document.getElementById('tipo-venta');
-            if (tipoVentaSelect) tipoVentaSelect.value = ventaData.tipoVenta || 'detal';
-
-            // Cargar tipo de entrega
-            const tipoEntregaSelect = document.getElementById('tipo-entrega');
-            if (tipoEntregaSelect) {
-                tipoEntregaSelect.value = ventaData.tipoEntrega || 'tienda';
-                tipoEntregaSelect.dispatchEvent(new Event('change'));
+        // --- Botones "Eliminar Venta" / "Editar Venta" del modal Ver venta ---
+        // Usan el mismo flujo que los botones de cada tarjeta de la lista
+        // (abrirModalEliminarVenta / abrirModalEditarVenta, con su chequeo de
+        // permisos). Antes tenían su propio flujo, que ya no funcionaba:
+        // Eliminar abría un modal de contraseña (#deleteConfirmPassword) que
+        // ya no existe en admin.html, y Editar llamaba a una función
+        // inexistente (actualizarCarritoVenta) después de reemplazar en
+        // silencio el carrito de la venta en curso.
+        // Se espera a que el modal de detalle termine de ocultarse
+        // (hidden.bs.modal) antes de abrir el siguiente, para no dejar dos
+        // backdrops de Bootstrap en transición a la vez (mismo bug ya resuelto
+        // en generarYMostrarFactura).
+        const abrirDesdeVerVenta = (abrir) => {
+            if (!currentVentaId) {
+                showToast('Error: No hay venta seleccionada', 'error');
+                return;
             }
-
-            // Cargar observaciones
-            const ventaObservaciones = document.getElementById('venta-observaciones');
-            if (ventaObservaciones) ventaObservaciones.value = ventaData.observaciones || '';
-
-            // Guardar ID para actualizar en lugar de crear nueva
-            window.editingVentaId = ventaId;
-        }
+            const ventaId = currentVentaId;
+            const viewSaleModalEl = document.getElementById('viewSaleModal');
+            if (viewSaleModalEl && viewSaleModalEl.classList.contains('show')) {
+                viewSaleModalEl.addEventListener('hidden.bs.modal', () => abrir(ventaId), { once: true });
+                viewSaleModalInstance.hide();
+            } else {
+                abrir(ventaId);
+            }
+        };
+        document.getElementById('btn-delete-sale')?.addEventListener('click', () => abrirDesdeVerVenta(abrirModalEliminarVenta));
+        document.getElementById('btn-edit-sale')?.addEventListener('click', () => abrirDesdeVerVenta(abrirModalEditarVenta));
 
         // Modificar función handleViewSale para guardar datos
         const originalHandleViewSale = handleViewSale;
