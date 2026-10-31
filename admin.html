@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="style.css?v=1.9.11">
-    <link rel="stylesheet" href="admin-styles.css?v=2.6.0">
+    <link rel="stylesheet" href="admin-styles.css?v=2.6.2">
     <!-- Mismo tema que admin-fabrica.html (colores, Poppins, tarjetas, menú
          "Más" en el celular y modo oscuro). Todo va bajo body.fab-page. -->
     <link rel="stylesheet" href="admin-fabrica-theme.css?v=1.9.32">
@@ -536,6 +536,19 @@
                             <i class="bi bi-plus-lg"></i><span>Nuevo</span>
                         </button>
                     </div>
+                </div>
+
+                <!-- Optimizar fotos existentes (miniaturas). Solo aparece si
+                     faltan y con permiso productos_editar — ver admin.js. -->
+                <div class="pf-thumbs-banner" id="miniaturas-banner" hidden>
+                    <i class="bi bi-lightning-charge-fill pf-thumbs-icon"></i>
+                    <div class="pf-thumbs-text">
+                        <strong>Fotos más livianas</strong>
+                        <span id="miniaturas-detalle"></span>
+                    </div>
+                    <button type="button" class="pf-thumbs-btn" id="miniaturas-btn">
+                        <i class="bi bi-lightning-charge-fill"></i> Optimizar
+                    </button>
                 </div>
 
                 <!-- Fila de talla/color/unidades (plantilla que clona admin.js) -->
@@ -4435,7 +4448,7 @@
     </script>
 
     <script src="connection-status.js?v=1.0.0" defer></script>
-    <script type="module" src="admin.js?v=3.13.3"></script>
+    <script type="module" src="admin.js?v=3.14.0"></script>
     <script type="module" src="admin-auth-init.js?v=1.1.1"></script>
     <script type="module" src="auditoria.js?v=1.0.1"></script>
 

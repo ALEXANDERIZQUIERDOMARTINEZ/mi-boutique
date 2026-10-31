@@ -13,6 +13,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js?v=1.0.1";
 import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin, WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js?v=2";
 import { resolveTenant } from "./src/core/tenant-resolver.js";
+import { urlMiniatura, necesitaMiniatura, crearMiniatura, miniaturaDesdeUrl } from "./src/core/miniaturas.js?v=1";
 import { activarCacheLocal } from "./src/core/firestore-cache.js?v=2";
 import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=3";
 import { vigilarConexion } from "./src/core/conexion.js?v=1";
@@ -132,6 +133,27 @@ function withWriteTimeout(promise, label) {
         promise,
         new Promise((_, reject) => setTimeout(() => reject(new Error(`Se agotó el tiempo de espera guardando ${label}. Revisa tu conexión e intenta de nuevo.`)), WRITE_TIMEOUT_MS))
     ]);
+}
+
+// Sube la miniatura de una foto de producto (ver src/core/miniaturas.js) y
+// devuelve los campos a guardar en el producto. Nunca lanza: si no se puede
+// (HEIC, red), se guarda imagenThumbUrl: null y se sigue usando la foto
+// completa.
+async function camposMiniaturaProducto(fuente, imagenUrl) {
+    try {
+        const mini = fuente instanceof Blob ? await crearMiniatura(fuente) : await miniaturaDesdeUrl(imagenUrl);
+        if (!mini) return { imagenThumbUrl: null, imagenThumbDe: imagenUrl };
+        const nombre = `product_images/thumb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+        const subida = await withWriteTimeout(uploadBytes(ref(storage, nombre), mini, {
+            contentType: 'image/jpeg', cacheControl: 'public, max-age=31536000, immutable'
+        }), 'la miniatura');
+        return { imagenThumbUrl: await getDownloadURL(subida.ref), imagenThumbDe: imagenUrl };
+    } catch (e) {
+        console.warn('No se pudo crear la miniatura:', e);
+        // `error` lo usa la optimización masiva para no marcar el producto
+        // como procesado y reintentarlo después.
+        return { imagenThumbUrl: null, imagenThumbDe: imagenUrl, error: true };
+    }
 }
 
 // ── Carga diferida de librerías pesadas de terceros ─────────────────────
@@ -1221,7 +1243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemsHtml = (order.items || []).map(item => {
                 const product = localProductsMap.get(item.productoId);
                 const imgHtml = product?.imagenUrl
-                    ? `<img src="${product.imagenUrl}" class="pw-item-img" alt="${item.nombre}">`
+                    ? `<img src="${urlMiniatura(product)}" class="pw-item-img" alt="${item.nombre}" loading="lazy" decoding="async">`
                     : `<div class="pw-item-img-placeholder"><i class="bi bi-image"></i></div>`;
                 return `<div class="pw-item-row">
                     ${imgHtml}
@@ -2108,7 +2130,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.dataset.totalSales = window.productSalesCount.get(id) || 0;
 
                 const defaultImgModal = 'https://placehold.co/70x90.png?text=Sin+Foto';
-                const imagenUrlModal = d.imagenUrl || defaultImgModal;
+                const imagenUrlModal = urlMiniatura(d) || defaultImgModal;
 
                 let categoryNameModal = 'Sin Categoría';
                 if (typeof categoriesMap !== 'undefined' && categoriesMap instanceof Map) {
@@ -2261,7 +2283,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const hasPromo = d.promocion && d.promocion.activa;
                 const promoLabel = hasPromo ? (d.promocion.tipo === 'porcentaje' ? `−${d.promocion.descuento}%` : 'Promo') : '';
                 const img = d.imagenUrl
-                    ? `<img src="${esc(d.imagenUrl)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'bi bi-image'}))">`
+                    ? `<img src="${esc(urlMiniatura(d))}" alt="" loading="lazy" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'bi bi-image'}))">`
                     : `<i class="bi bi-image"></i>`;
 
                 const card = document.createElement('article');
@@ -2317,6 +2339,81 @@ document.addEventListener('DOMContentLoaded', () => {
         // pestaña Productos, sin importar si la navegación vino del rail de
         // escritorio o de la barra inferior móvil.
         alEntrarSeccion('#productos', () => { if (productosTablaSucia) pintarTablaProductos(); });
+
+        // ── Optimizar fotos existentes (miniaturas) ──────────────────────
+        // Los productos nuevos o con foto cambiada ya guardan su miniatura al
+        // guardarse. Para los que ya existían, un aviso en Productos (solo
+        // con permiso productos_editar) genera las que faltan: descarga cada
+        // foto, la achica en el navegador, sube la miniatura y guarda los
+        // productos de a 25 (pocos repintados de la lista).
+        const miniBanner = document.getElementById('miniaturas-banner');
+        const miniDetalle = document.getElementById('miniaturas-detalle');
+        const miniBtn = document.getElementById('miniaturas-btn');
+        let miniEnCurso = false;
+        const puedeEditarProductos = () => {
+            const ctx = window.appContext;
+            if (!ctx) return false;
+            return ctx.isSuperAdmin || ctx.permisos?.productos_editar === true;
+        };
+        const pendientesMiniatura = () => [...localProductsMap].filter(([, p]) => necesitaMiniatura(p));
+        function actualizarBannerMiniaturas() {
+            if (!miniBanner || miniEnCurso) return;
+            const pendientes = puedeEditarProductos() ? pendientesMiniatura().length : 0;
+            miniBanner.hidden = pendientes === 0;
+            if (pendientes) {
+                miniDetalle.textContent = `${pendientes} foto${pendientes === 1 ? '' : 's'} sin versión liviana. Optimizarlas hace que la tienda y el panel carguen mucho más rápido.`;
+            }
+        }
+        window.addEventListener('admin:productos-actualizados', actualizarBannerMiniaturas);
+        window.addEventListener('adminAuthReady', actualizarBannerMiniaturas);
+
+        miniBtn?.addEventListener('click', async () => {
+            if (miniEnCurso) return;
+            const lista = pendientesMiniatura().map(([id, p]) => ({ id, url: p.imagenUrl }));
+            if (!lista.length) return;
+            const mbAprox = Math.max(1, Math.round(lista.length * 0.5));
+            if (!confirm(`Se van a optimizar ${lista.length} fotos. Esto descarga cada foto una vez (~${mbAprox} MB), así que conviene hacerlo con wifi y dejar esta pantalla abierta hasta que termine. ¿Empezar?`)) return;
+            miniEnCurso = true;
+            miniBtn.disabled = true;
+            let hechos = 0, fallos = 0;
+            const porGuardar = [];
+            const guardar = async () => {
+                if (!porGuardar.length) return;
+                const batch = writeBatch(db);
+                porGuardar.splice(0).forEach(({ id, campos }) => batch.update(doc(db, 'productos', id), campos));
+                await batch.commit();
+            };
+            const pintar = () => {
+                miniDetalle.textContent = `Optimizando fotos… ${hechos + fallos} de ${lista.length}. Deja esta pantalla abierta.`;
+                miniBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> ${Math.round(((hechos + fallos) / lista.length) * 100)}%`;
+            };
+            pintar();
+            try {
+                let i = 0;
+                const trabajador = async () => {
+                    while (i < lista.length) {
+                        const { id, url } = lista[i++];
+                        const { error, ...campos } = await camposMiniaturaProducto(null, url);
+                        if (error) { fallos++; } else { hechos++; porGuardar.push({ id, campos }); }
+                        if (porGuardar.length >= 25) await guardar();
+                        pintar();
+                    }
+                };
+                await Promise.all([trabajador(), trabajador(), trabajador()]);
+                await guardar();
+                showToast(fallos
+                    ? `Fotos optimizadas: ${hechos}. ${fallos} no se pudieron; vuelve a intentarlo más tarde.`
+                    : `¡Listo! ${hechos} fotos optimizadas.`, fallos ? 'warning' : 'success');
+            } catch (e) {
+                console.error('Error optimizando fotos:', e);
+                showToast('Se detuvo la optimización de fotos: ' + e.message, 'error');
+            } finally {
+                miniEnCurso = false;
+                miniBtn.disabled = false;
+                miniBtn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Optimizar';
+                actualizarBannerMiniaturas();
+            }
+        });
         onSnapshot(query(productsCollection, orderBy('timestamp', 'desc')), renderProducts, e => { console.error("Error products:", e); window.reportConnError?.('productos', e); if(productListTableBody) productListTableBody.innerHTML = `<div class="pf-empty pf-empty--error"><i class="bi bi-exclamation-triangle"></i><strong>No se pudo cargar</strong><span>${e.message || ''}</span></div>`;});
         
         // ─── GALERÍA POR COLOR ──────────────────────────────────────────────────
@@ -2842,6 +2939,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const uploadResult = await withWriteTimeout(uploadBytes(storageRef, firstFile, { cacheControl: 'public, max-age=31536000, immutable' }), 'la imagen');
                     productData.imagenUrl = await withWriteTimeout(getDownloadURL(uploadResult.ref), 'la imagen');
                     console.log("Imagen subida:", productData.imagenUrl);
+                    // Miniatura para tarjetas y listas (tienda, buscador, etc.)
+                    const { error: _errMini, ...camposMini } = await camposMiniaturaProducto(firstFile, productData.imagenUrl);
+                    Object.assign(productData, camposMini);
                 }
 
                 // ─── Subir imágenes de galería por color ───────────────────────────
@@ -3779,9 +3879,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ventas → src/admin/secciones/ventas.js. window.asegurarModuloVentas()
     // lo carga desde otras partes que necesitan el carrito (pedidos web,
     // modal de variaciones, factura tras un abono) antes de entrar a Ventas.
-    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=3'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
+    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=4'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
     // Apartados → src/admin/secciones/apartados.js
-    cargarSeccionDiferida('#apartados', () => import('./src/admin/secciones/apartados.js?v=1'), { abonoApartadoModalInstance, actualizarStock, apartadosCollection, db, eliminarFormatoNumero, formatoMoneda, localProductsMap, openWhatsApp, showToast, verApartadoModalInstance });
+    cargarSeccionDiferida('#apartados', () => import('./src/admin/secciones/apartados.js?v=2'), { abonoApartadoModalInstance, actualizarStock, apartadosCollection, db, eliminarFormatoNumero, formatoMoneda, localProductsMap, openWhatsApp, showToast, verApartadoModalInstance });
     // Finanzas (versión anterior: ingresos/gastos y cierre de caja) →
     // src/admin/secciones/finanzas-caja.js. Su pantalla ya no existe en
     // admin.html, pero igual consultaba las ventas del día al abrir el panel
@@ -3894,7 +3994,7 @@ document.addEventListener('DOMContentLoaded', () => {
             gridEl.innerHTML = visibles.map(({ id, p, stock }) => {
                 const precio = mayorista && p.precioMayor ? p.precioMayor : (p.precioDetal || 0);
                 const img = p.imagenUrl
-                    ? `<img src="${esc(p.imagenUrl)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'bi bi-image'}))">`
+                    ? `<img src="${esc(urlMiniatura(p))}" alt="" loading="lazy" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('i'),{className:'bi bi-image'}))">`
                     : '<i class="bi bi-image"></i>';
                 return `<button type="button" class="pos-tile" data-id="${id}" title="${esc(p.nombre)}">
                     <span class="pos-tile-img">${img}<span class="pos-tile-stock${stock <= 2 ? ' is-low' : ''}">${stock}</span></span>
