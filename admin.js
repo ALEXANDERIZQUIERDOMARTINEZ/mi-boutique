@@ -432,9 +432,15 @@ if (!window.productSalesCount) {
 }
 
 // Function to calculate total sales per product
+// Solo cuenta los últimos 90 días (igual que "más vendidas" en Fábrica):
+// antes descargaba TODAS las ventas de la historia la primera vez que se
+// abría el buscador de productos, lo que hacía lenta esa primera apertura.
+const DIAS_VENTAS_POR_PRODUCTO = 90;
 async function calculateProductSales() {
     try {
-        const salesSnapshot = await getDocs(salesCollection);
+        const desde = new Date();
+        desde.setDate(desde.getDate() - DIAS_VENTAS_POR_PRODUCTO);
+        const salesSnapshot = await getDocs(query(salesCollection, where('timestamp', '>=', Timestamp.fromDate(desde))));
         const salesMap = new Map();
 
         salesSnapshot.forEach(saleDoc => {
@@ -2050,9 +2056,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // stock de un producto listado), se repinta de una vez para que
             // no se quede desactualizado; si no, se deja pendiente.
             productSearchModalSucia = true;
-            if (searchProductModalEl?.classList.contains('show')) {
-                pintarModalBusquedaProductos();
-            }
+            programarPintadoModalBusqueda();
 
             // Pestaña Productos visible ahora mismo: pintar la tabla de una
             // vez. Si no, dejarla pendiente para cuando se entre a ella.
@@ -2066,9 +2070,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reconstruye la lista del buscador de productos del punto de venta
         // (modal "Buscar producto" al registrar una venta) a partir de
         // localProductsMap, ya poblado por renderProducts().
+        // Con el modal abierto, varios snapshots seguidos (p. ej. una venta
+        // que toca varios productos) se agrupan en un solo repintado. Con el
+        // modal cerrado, la lista se prepara en segundo plano para que abrirlo
+        // sea inmediato.
+        let pintadoModalTimer = null;
+        function programarPintadoModalBusqueda() {
+            clearTimeout(pintadoModalTimer);
+            if (searchProductModalEl?.classList.contains('show')) {
+                pintadoModalTimer = setTimeout(pintarModalBusquedaProductos, 400);
+            } else {
+                const preparar = () => { if (productSearchModalSucia) pintarModalBusquedaProductos(); };
+                if ('requestIdleCallback' in window) requestIdleCallback(preparar, { timeout: 4000 });
+                else pintadoModalTimer = setTimeout(preparar, 1500);
+            }
+        }
+
         function pintarModalBusquedaProductos() {
             if (!productSearchModalList) return;
-            productSearchModalList.innerHTML = '';
+            clearTimeout(pintadoModalTimer);
+            const scrollBox = productSearchModalList; // .pm-list es la que hace scroll
+            const scrollPrevio = scrollBox.scrollTop;
+            const fragmento = document.createDocumentFragment();
 
             localProductsMap.forEach((d, id) => {
                 const stockTotal = obtenerStockTotalProducto(d);
@@ -2094,7 +2117,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 li.innerHTML = `
                     <div class="pm-product-item">
-                        <img src="${imagenUrlModal}" alt="${d.nombre}" class="product-search-img" onerror="this.src='${defaultImgModal}'">
+                        <img src="${imagenUrlModal}" alt="${d.nombre}" class="product-search-img" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${defaultImgModal}'">
                         <div class="pm-product-body">
                             <div class="product-search-name">${d.nombre}</div>
                             <div class="pm-product-meta">
@@ -2117,13 +2140,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     li.style.opacity = '0.5';
                     li.style.cursor = 'not-allowed';
                 }
-                productSearchModalList.appendChild(li);
+                fragmento.appendChild(li);
             });
 
+            productSearchModalList.replaceChildren(fragmento);
             // Aplicar ordenamiento al modal de búsqueda
             if (typeof applyProductModalFilters === 'function') {
                 applyProductModalFilters();
             }
+            if (scrollBox) scrollBox.scrollTop = scrollPrevio;
             productSearchModalSucia = false;
         }
 
@@ -2133,7 +2158,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Primera apertura: se pinta ya con el orden por stock y,
                 // cuando terminen de llegar las ventas, se reordena por
                 // más vendidos.
-                if (!productSalesPromise) asegurarVentasPorProducto().then(pintarModalBusquedaProductos);
+                // Cuando llegan, solo se actualiza el dato y se reordena (antes
+                // se reconstruía toda la lista con el modal abierto).
+                if (!productSalesPromise) asegurarVentasPorProducto().then(() => {
+                    productSearchModalList?.querySelectorAll('.product-search-item').forEach(li => {
+                        li.dataset.totalSales = window.productSalesCount.get(li.dataset.productId) || 0;
+                    });
+                    applyProductModalFilters();
+                });
             });
         }
 
@@ -3093,11 +3125,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Aplicar visibilidad y orden
-            items.forEach(item => item.style.display = 'none');
-            visibleItems.forEach((item, index) => {
-                item.style.display = '';
-                productSearchModalList.appendChild(item); // Reordenar
-            });
+            // Ocultar/mostrar y reordenar en un solo paso (un solo reflow).
+            const visiblesSet = new Set(visibleItems);
+            items.forEach(item => { if (!visiblesSet.has(item)) item.style.display = 'none'; });
+            const orden = document.createDocumentFragment();
+            visibleItems.forEach(item => { item.style.display = ''; orden.appendChild(item); });
+            items.forEach(item => { if (!visiblesSet.has(item)) orden.appendChild(item); });
+            productSearchModalList.appendChild(orden);
 
             // Actualizar contador
             const countEl = document.getElementById('product-modal-count');
@@ -3108,7 +3142,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Event listeners para filtros
         if (productSearchInput) {
-            productSearchInput.addEventListener('input', applyProductModalFilters);
+            // Espera a que termine de escribir (antes reordenaba los ~540
+            // productos con cada letra).
+            let busquedaModalTimer = null;
+            productSearchInput.addEventListener('input', () => {
+                clearTimeout(busquedaModalTimer);
+                busquedaModalTimer = setTimeout(applyProductModalFilters, 150);
+            });
         }
 
         const productModalCategory = document.getElementById('product-modal-category');
