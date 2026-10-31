@@ -724,17 +724,28 @@ export function init(ctx) {
 
                 } else {
                     // MODO CREACIÓN: Registrar nueva venta
-                    docRef = await addDoc(salesCollection, ventaData);
-                    ventaId = docRef.id;
-                    console.log("✅ Venta registrada con ID:", ventaId);
-
-                    // Actualizar stock (solo si no es catálogo externo)
+                    // Descuenta el stock ANTES de registrar la venta, en una
+                    // transacción contra el servidor (no contra la copia local,
+                    // que puede no estar al día si otro celular acaba de
+                    // vender la misma prenda). Si alguna no alcanza, lanza el
+                    // error "No hay stock suficiente de: …", no se descuenta
+                    // nada y la venta no se guarda (lo muestra el catch de abajo).
                     if (!esCatalogo) {
-                        await actualizarStock(ventaData.items, 'restar');
-                        console.log("✅ Stock actualizado correctamente");
+                        await actualizarStock(ventaData.items, 'restar', { validarStock: true });
+                        console.log("✅ Stock verificado y descontado");
                     } else {
                         console.log("ℹ️ Venta por catálogo externo - Stock NO afectado");
                     }
+
+                    try {
+                        docRef = await addDoc(salesCollection, ventaData);
+                    } catch (errVenta) {
+                        // No quedar con el stock descontado de una venta que no existe.
+                        if (!esCatalogo) await actualizarStock(ventaData.items, 'sumar');
+                        throw errVenta;
+                    }
+                    ventaId = docRef.id;
+                    console.log("✅ Venta registrada con ID:", ventaId);
 
                     registrarAuditoria({
                         accion: 'crear',
@@ -849,7 +860,10 @@ export function init(ctx) {
                 console.error("❌ [VENTA] Tipo de error:", err.name);
                 console.error("❌ [VENTA] Mensaje:", err.message);
                 console.error("❌ [VENTA] Stack:", err.stack);
-                showToast(`Error al guardar venta: ${err.message}`, 'error');
+                // Stock insuficiente / sin conexión ya traen un mensaje completo.
+                showToast(err.agotados || /La venta no se registró/.test(err.message || '')
+                    ? err.message
+                    : `Error al guardar venta: ${err.message}`, 'error');
             }
         });
 
@@ -2674,32 +2688,10 @@ export function init(ctx) {
                 // que nunca descontó stock al crearse.
                 const yaSeRepusoStock = ventaData.estado === 'Anulada' || ventaData.estado === 'Cancelada';
                 if (!yaSeRepusoStock && !ventaData.esCatalogoExterno && ventaData.items && Array.isArray(ventaData.items)) {
-                    for (const item of ventaData.items) {
-                        if (!item.productoId) continue;
-                        const prodRef = doc(db, 'productos', item.productoId);
-                        const prodSnap = await getDoc(prodRef);
-
-                        if (prodSnap.exists()) {
-                            const prodData = prodSnap.data();
-
-                            if (Array.isArray(prodData.variaciones) && prodData.variaciones.length > 0) {
-                                // Producto con variaciones
-                                const variaciones = prodData.variaciones;
-                                const varIndex = variaciones.findIndex(v =>
-                                    coincideVariacion(v.talla, item.talla) && coincideVariacion(v.color, item.color)
-                                );
-
-                                if (varIndex !== -1) {
-                                    variaciones[varIndex].stock = (parseInt(variaciones[varIndex].stock, 10) || 0) + (parseFloat(item.cantidad) || 0);
-                                    await updateDoc(prodRef, { variaciones: variaciones });
-                                }
-                            } else {
-                                // Producto simple (sin talla/color)
-                                const nuevoStock = (parseInt(prodData.stock, 10) || 0) + (parseFloat(item.cantidad) || 0);
-                                await updateDoc(prodRef, { stock: nuevoStock });
-                            }
-                        }
-                    }
+                    // Devuelve las prendas al inventario en una transacción
+                    // contra el servidor (ver aplicarDeltasStock en admin.js):
+                    // no pisa ventas hechas a la vez desde otro dispositivo.
+                    await reconciliarStockEdicionVenta(ventaData.items, []);
                 }
 
                 // Eliminar venta
