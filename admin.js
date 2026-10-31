@@ -7799,7 +7799,12 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
              }
          };
 
-         onSnapshot(query(closingsCollection, orderBy('timestamp', 'desc')), renderClosings, e => { console.error("Error closings:", e); if(closingHistoryTableBody) closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error.</td></tr>';});
+         // El historial de cierres traía TODOS los cierres de la historia en
+         // cada carga del panel, aunque la tabla #lista-historial-cierres ya no
+         // existe en admin.html (renderClosings salía sin pintar nada). Solo se
+         // escucha si la tabla está, y limitado a los más recientes: las
+         // tarjetas de resumen solo miran hoy, ayer y los últimos 7 días.
+         if (closingHistoryTableBody) onSnapshot(query(closingsCollection, orderBy('timestamp', 'desc'), limit(60)), renderClosings, e => { console.error("Error closings:", e); if(closingHistoryTableBody) closingHistoryTableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error.</td></tr>';});
 
         // ═══════════════════════════════════════════════════════════════════
         // VISUALIZACIÓN Y GESTIÓN DE MOVIMIENTOS FINANCIEROS
@@ -12861,8 +12866,15 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
         }
     }
 
-    // Inicializar
-    cargarDatosIniciales();
+    // Inicializar: categorías y proveedores solo hacen falta dentro de
+    // Cargue Masivo, así que se consultan la primera vez que se entra ahí
+    // en vez de en cada carga del panel.
+    let datosInicialesCargados = false;
+    alEntrarSeccion('#cargue-masivo', () => {
+        if (datosInicialesCargados) return;
+        datosInicialesCargados = true;
+        cargarDatosIniciales();
+    });
 
     console.log("✅ Módulo de Cargue Masivo de Productos inicializado");
 })();
@@ -14297,7 +14309,10 @@ document.addEventListener('click', (e) => {
     window.addEventListener('admin:section-shown', (e) => {
         if (e.detail && e.detail.hash === '#inventario-fabrica') cargarInventario();
     });
-    cargarInventario();
+    // Antes se consultaba al cargar el panel aunque no se entrara a esta
+    // sección; ahora solo si se abre directo en #inventario-fabrica (los
+    // listeners de arriba cubren el resto de entradas).
+    if ((window.location.hash || '') === '#inventario-fabrica') cargarInventario();
 
     console.log("✅ Módulo Inventario Fábrica inicializado (Hilazas, Hilos, Telas)");
 })();
@@ -15254,7 +15269,14 @@ document.addEventListener('click', (e) => {
             console.error('Error al cargar categorías para Cargue Masivo:', error);
         }
     }
-    cargarDatosIniciales();
+    // Igual que en Cargue Masivo de Boutique: se consulta al entrar a la
+    // sección, no en cada carga del panel.
+    let datosInicialesCargados = false;
+    alEntrarSeccion('#cargue-masivo-fabrica', () => {
+        if (datosInicialesCargados) return;
+        datosInicialesCargados = true;
+        cargarDatosIniciales();
+    });
 
     console.log("✅ Módulo Cargue Masivo Fábrica inicializado");
 })();
