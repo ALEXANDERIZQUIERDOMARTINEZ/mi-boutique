@@ -20,7 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<link rel="stylesheet" href="style.css?v=1.9.14">
+<link rel="stylesheet" href="style.css?v=1.9.15">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#D988B9">
@@ -701,18 +701,6 @@
 
 <span id="collection-header-anchor" style="position:relative;top:-120px;display:block;visibility:hidden;"></span>
 
-<!-- Categoría activa (sobre todo para quien abre un link ?categoria=…) -->
-<div class="categoria-activa-bar" id="categoria-activa-bar" style="display:none">
-    <div class="categoria-activa-texto">
-        <i class="bi bi-tag"></i>
-        <span class="categoria-activa-nombre"></span>
-        <span class="categoria-activa-count"></span>
-    </div>
-    <button type="button" class="categoria-activa-ver-todo"
-            onclick="document.querySelector('#tienda-category-filter .filter-group[data-filter=&quot;disponible&quot;]')?.click()">
-        Ver todo
-    </button>
-</div>
 
 <!-- Grid de productos -->
 <div class="tienda-grid" id="products-container">
@@ -1205,7 +1193,7 @@ Finalizar Pedido
 
 <!-- Scripts de la aplicación -->
 <script type="module" src="analytics.js?v=1.0.0"></script>
-<script type="module" src="app.js?v=1.9.13"></script>
+<script type="module" src="app.js?v=1.9.14"></script>
 
 <!-- QR Zoom overlay -->
 <div id="qr-zoom-overlay" class="qr-zoom-overlay" style="display:none" onclick="coCloseQRZoom()">

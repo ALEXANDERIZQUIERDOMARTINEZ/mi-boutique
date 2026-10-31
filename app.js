@@ -637,8 +637,6 @@ function applyFiltersAndRender() {
     // En la vista "disponible" con el orden por defecto, mostrar primero los más vendidos
     filtered = sortProducts(filtered, advancedFilters.sortBy);
 
-    actualizarBarraCategoriaActiva(activeFilter, filtered.length);
-
     // 📊 Tracking: Búsqueda o vista de categoría
     if (finalSearchTerm) {
         analytics.trackSearch(finalSearchTerm, filtered.length);
@@ -706,23 +704,6 @@ function formatCardProductName(nombre) {
     return (nombre || '').toLowerCase().replace(/(^|\s)(\p{L})/gu, (m, sp, l) => sp + l.toUpperCase());
 }
 // Solo la primera letra en mayúscula: "VESTIDOS CORTOS" → "Vestidos cortos"
-// Barra sobre las prendas con la categoría activa ("Conjunto de falda · 11
-// prendas" + "Ver todo"). Sirve sobre todo a quien abre un link directo a una
-// categoría (?categoria=…) desde el celular, donde el menú está escondido.
-function actualizarBarraCategoriaActiva(filtro, cantidad) {
-    const barra = document.getElementById('categoria-activa-bar');
-    if (!barra) return;
-    if (!filtro || filtro === 'disponible' || filtro === 'all') {
-        barra.style.display = 'none';
-        return;
-    }
-    barra.querySelector('.categoria-activa-nombre').textContent =
-        filtro === 'promocion' ? 'Descuentos' : capitalizeFirst(filtro);
-    barra.querySelector('.categoria-activa-count').textContent =
-        `${cantidad} ${cantidad === 1 ? 'prenda' : 'prendas'}`;
-    barra.style.display = 'flex';
-}
-
 function capitalizeFirst(text) {
     const lower = (text || '').toLowerCase();
     return lower.charAt(0).toUpperCase() + lower.slice(1);
