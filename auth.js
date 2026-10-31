@@ -5,7 +5,7 @@
 
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { borrarCacheLocal } from "./src/core/firestore-cache.js";
+import { borrarCacheLocal } from "./src/core/firestore-cache.js?v=2";
 
 // Caché en localStorage (sobrevive a cerrar la pestaña/app, a diferencia de
 // sessionStorage) del último usuario verificado con éxito. admin-auth-init.js
