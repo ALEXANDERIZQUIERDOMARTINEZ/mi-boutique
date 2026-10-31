@@ -5,6 +5,7 @@
 
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { borrarCacheLocal } from "./src/core/firestore-cache.js";
 
 // Caché en localStorage (sobrevive a cerrar la pestaña/app, a diferencia de
 // sessionStorage) del último usuario verificado con éxito. admin-auth-init.js
@@ -493,6 +494,9 @@ export class AuthManager {
             localStorage.removeItem(USER_CACHE_KEY);
             this.currentUser = null;
             this.userPermissions = [];
+            // No dejar datos de la empresa guardados en el dispositivo
+            // (equipos compartidos). Nunca tarda más de ~2 s.
+            await borrarCacheLocal(this.db);
             this.redirectToLogin();
         } catch (error) {
             console.error('Error al cerrar sesión:', error);
