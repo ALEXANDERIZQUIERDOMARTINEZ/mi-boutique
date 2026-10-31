@@ -637,6 +637,8 @@ function applyFiltersAndRender() {
     // En la vista "disponible" con el orden por defecto, mostrar primero los más vendidos
     filtered = sortProducts(filtered, advancedFilters.sortBy);
 
+    actualizarBarraCategoriaActiva(activeFilter, filtered.length);
+
     // 📊 Tracking: Búsqueda o vista de categoría
     if (finalSearchTerm) {
         analytics.trackSearch(finalSearchTerm, filtered.length);
@@ -704,6 +706,23 @@ function formatCardProductName(nombre) {
     return (nombre || '').toLowerCase().replace(/(^|\s)(\p{L})/gu, (m, sp, l) => sp + l.toUpperCase());
 }
 // Solo la primera letra en mayúscula: "VESTIDOS CORTOS" → "Vestidos cortos"
+// Barra sobre las prendas con la categoría activa ("Conjunto de falda · 11
+// prendas" + "Ver todo"). Sirve sobre todo a quien abre un link directo a una
+// categoría (?categoria=…) desde el celular, donde el menú está escondido.
+function actualizarBarraCategoriaActiva(filtro, cantidad) {
+    const barra = document.getElementById('categoria-activa-bar');
+    if (!barra) return;
+    if (!filtro || filtro === 'disponible' || filtro === 'all') {
+        barra.style.display = 'none';
+        return;
+    }
+    barra.querySelector('.categoria-activa-nombre').textContent =
+        filtro === 'promocion' ? 'Descuentos' : capitalizeFirst(filtro);
+    barra.querySelector('.categoria-activa-count').textContent =
+        `${cantidad} ${cantidad === 1 ? 'prenda' : 'prendas'}`;
+    barra.style.display = 'flex';
+}
+
 function capitalizeFirst(text) {
     const lower = (text || '').toLowerCase();
     return lower.charAt(0).toUpperCase() + lower.slice(1);
@@ -2133,6 +2152,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let latestCategoriesList = []; // última lista de categorías de Firestore (sin filtrar por stock)
 
+    // ── Link directo a una categoría ─────────────────────────────────────
+    // Al elegir una categoría, la dirección del navegador pasa a
+    // ?categoria=<nombre> (sin recargar), así que copiar el link desde la barra
+    // de arriba y enviarlo abre la tienda directo en esa categoría.
+    // "Descuentos" es ?categoria=descuentos; "Todas las prendas" deja la
+    // dirección limpia.
+    function slugCategoria(nombre) {
+        return (nombre || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+    function slugDeFiltro(filtro) {
+        if (!filtro || filtro === 'disponible' || filtro === 'all') return '';
+        if (filtro === 'promocion') return 'descuentos';
+        return slugCategoria(filtro);
+    }
+    function actualizarUrlCategoria(filtro) {
+        try {
+            const url = new URL(window.location.href);
+            const slug = slugDeFiltro(filtro);
+            if (slug) url.searchParams.set('categoria', slug);
+            else url.searchParams.delete('categoria');
+            if (url.href !== window.location.href) history.replaceState(history.state, '', url);
+        } catch (e) { /* navegador sin URL/history: el filtro igual funciona */ }
+    }
+    // Categoría pedida en el link con el que se abrió la tienda. Se aplica
+    // cuando ya cargaron categorías y productos (el menú solo lista las
+    // categorías con prendas en stock).
+    let categoriaPendienteUrl = (() => {
+        try { return slugCategoria(new URLSearchParams(window.location.search).get('categoria') || ''); }
+        catch (e) { return ''; }
+    })();
+
     // Compara la categoría de un producto contra un valor de filtro (nombre o
     // id de categoría), aceptando cualquiera de las dos formas.
     function productBelongsToCategory(p, filterValue) {
@@ -2167,10 +2218,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (promoCount > 0) items.push({ filtro: 'promocion', label: 'Descuentos', icon: 'bi-tag-fill', count: promoCount, promo: true });
         visibleCategories.forEach(({ cat, count }) => items.push({ filtro: cat.nombre, label: capitalizeFirst(cat.nombre), icon: 'bi-tag', count }));
 
+        // Link directo (?categoria=…): esperar a que haya productos cargados
+        // para saber si esa categoría tiene prendas disponibles.
+        let aplicarCategoriaUrl = false;
+        if (categoriaPendienteUrl && allProducts.length > 0 && latestCategoriesList.length > 0) {
+            const pedida = items.find(item => slugDeFiltro(item.filtro) === categoriaPendienteUrl);
+            if (pedida) {
+                activeFilter = pedida.filtro;
+                aplicarCategoriaUrl = true;
+            } else {
+                showToast('Esa categoría no tiene prendas disponibles en este momento. Te mostramos todas.', 'warning');
+                actualizarUrlCategoria('disponible');
+            }
+            categoriaPendienteUrl = '';
+        }
+
         if (!items.some(item => item.filtro === activeFilter)) activeFilter = 'disponible';
         categoryFilterEl.innerHTML = items.map(item =>
             `<button type="button" class="tienda-sidebar-item filter-group${item.promo ? ' is-promo' : ''}${item.filtro === activeFilter ? ' active' : ''}" data-filter="${item.filtro}"><i class="bi ${item.icon}"></i><span class="tienda-sidebar-item-label">${item.label}</span><span class="tienda-sidebar-count">${item.count}</span></button>`
         ).join('');
+
+        if (aplicarCategoriaUrl) {
+            // Filtrar la cuadrícula y llevar al cliente directo a las prendas.
+            applyFiltersAndRender();
+            requestAnimationFrame(() =>
+                document.getElementById('collection-header-anchor')?.scrollIntoView({ block: 'start' }));
+        }
     }
 
     // ✅ Cargar categorías sin índice (ordenar en memoria)
@@ -2203,6 +2276,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!categoryFilterEl) return;
         categoryFilterEl.querySelectorAll('.filter-group').forEach(b =>
             b.classList.toggle('active', b.dataset.filter === filterValue));
+        categoriaPendienteUrl = ''; // el cliente eligió otra: ya no aplicar la del link
+        actualizarUrlCategoria(filterValue);
         applyFiltersAndRender();
     }
 

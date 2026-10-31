@@ -5899,6 +5899,56 @@ input[type="datetime-local"] {
     justify-content: space-between;
     gap: 10px;
 }
+/* ─── Barra de categoría activa (tienda) ─── */
+.categoria-activa-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    /* Alineada con .tienda-grid (index.html): 10px en celular, 24px/48px más ancho */
+    max-width: 1900px;
+    margin: 12px 10px 0;
+    padding: 10px 12px 10px 14px;
+    background: #fdf2f8;
+    border: 1px solid #fbcfe8;
+    border-radius: 12px;
+}
+.categoria-activa-texto {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+.categoria-activa-texto .bi { color: #be185d; align-self: center; }
+.categoria-activa-nombre {
+    font-weight: 700;
+    font-size: 15px;
+    color: #831843;
+}
+.categoria-activa-count {
+    font-size: 13px;
+    color: #9d7184;
+}
+.categoria-activa-ver-todo {
+    flex-shrink: 0;
+    border: 1px solid #f9a8d4;
+    background: #fff;
+    color: #be185d;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+}
+.categoria-activa-ver-todo:hover { background: #fce7f3; }
+@media (min-width: 480px) {
+    .categoria-activa-bar { margin: 14px 24px 0; }
+}
+@media (min-width: 1200px) {
+    .categoria-activa-bar { margin: 14px 48px 0; }
+}
+
 /* Tarifa de domicilio de cada barrio (solo Montería) */
 .neighborhood-suggestion-fee {
     flex-shrink: 0;
