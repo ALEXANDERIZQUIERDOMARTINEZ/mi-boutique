@@ -5,6 +5,7 @@
 // admin.js (db, colecciones, helpers, modales) llega ahora en `ctx`.
 import { Timestamp, addDoc, collection, doc, getDoc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { registrarAuditoria } from "../../../auditoria.js?v=1.0.1";
+import { urlMiniatura } from "../../core/miniaturas.js?v=1";
 
 export function init(ctx) {
     const { abonoApartadoModalInstance, actualizarStock, apartadosCollection, db, eliminarFormatoNumero, formatoMoneda, localProductsMap, openWhatsApp, showToast, verApartadoModalInstance } = ctx;
@@ -60,7 +61,7 @@ export function init(ctx) {
                         const product = localProductsMap.get(item.productoId);
                         if (!product) return '';
 
-                        const imagenUrl = product.imagenUrl || product.imageUrl || 'https://placehold.co/40x40/f0f0f0/cccccc?text=?';
+                        const imagenUrl = urlMiniatura(product) || product.imageUrl || 'https://placehold.co/40x40/f0f0f0/cccccc?text=?';
                         const nombre = product.nombre || item.nombre || 'Producto';
 
                         // Resolver categoría desde categoriesMap

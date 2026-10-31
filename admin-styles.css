@@ -2554,6 +2554,40 @@ td.action-buttons .btn-action + .btn-action { margin-top: 0.4rem; }
 }
 
 /* Lista ocupa todo el espacio restante */
+/* Aviso "Fotos más livianas" en Productos (generar miniaturas) */
+.pf-thumbs-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  background: #fdf2f8;
+  border: 1px solid #fbcfe8;
+  border-radius: 14px;
+}
+.pf-thumbs-banner[hidden] { display: none; }
+.pf-thumbs-icon { color: #be185d; font-size: 1.25rem; flex-shrink: 0; }
+.pf-thumbs-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; font-size: .82rem; color: #6b4a5a; }
+.pf-thumbs-text strong { color: #831843; font-size: .9rem; }
+.pf-thumbs-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: #D988B9;
+  color: #fff;
+  font-weight: 600;
+  font-size: .85rem;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.pf-thumbs-btn:disabled { opacity: .85; cursor: progress; }
+body.dark-mode .pf-thumbs-banner { background: rgba(217,136,185,.12); border-color: rgba(217,136,185,.35); }
+body.dark-mode .pf-thumbs-text { color: #e9cfdc; }
+body.dark-mode .pf-thumbs-text strong { color: #f5c2dd; }
+
 .pm-list {
   flex: 1;
   overflow-y: auto;

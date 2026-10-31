@@ -6,6 +6,8 @@ import { initializeFirestore, collection, addDoc, onSnapshot, query, where, orde
 import analytics from './analytics.js';
 import { WHOLESALE_TIER_GROUPS, getHybridTierPrice, getBaseTierPrice, resolveWholesaleGroup, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js?v=2';
 import { resolveTenant } from './src/core/tenant-resolver.js';
+// Miniatura liviana para tarjetas y carrito (la foto completa pesa ~500 KB).
+import { urlMiniatura } from './src/core/miniaturas.js?v=1';
 
 // *** CONFIGURACIÓN DE FIREBASE ***
 const firebaseConfig = {
@@ -793,7 +795,7 @@ function renderProducts(products) {
             }
         }
         if (activeColorIdx === -1 && product.mostrarFotoPrincipal !== false) {
-            imgUrl = product.imagenUrl || imgUrl;
+            imgUrl = urlMiniatura(product) || imgUrl;
         }
 
         // Lista "Colores disponibles" como en mayor.html, pero sin unidades
@@ -2442,7 +2444,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 color: formatColorLabel(color),
                 cantidad,
                 total: cantidad * precioUnitarioFinal,
-                imagenUrl: product.imagenUrl || '',
+                imagenUrl: urlMiniatura(product) || '',
                 observacion: observacion || ''
             };
             cart.push(newCartItem);

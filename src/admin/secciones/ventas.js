@@ -6,6 +6,7 @@
 import { Timestamp, addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, updateDoc, where } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { getFirstRealTierMin, getHybridTierInfo, isSurtidoGroup, resolveWholesaleGroupConRespaldo } from "../../../wholesale-tiers.js?v=2";
 import { registrarAuditoria } from "../../../auditoria.js?v=1.0.1";
+import { urlMiniatura } from "../../core/miniaturas.js?v=1";
 
 export function init(ctx) {
     const { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance } = ctx;
@@ -82,7 +83,7 @@ export function init(ctx) {
                     total: totalItem,
                     talla,
                     color,
-                    imagenUrl: prod?.imagenUrl || ''
+                    imagenUrl: urlMiniatura(prod) || ''
                 });
             }
             recalcularPreciosMayoristas();
@@ -395,7 +396,7 @@ export function init(ctx) {
                 if (d.items && d.items.length > 0) {
                     productosHtml = d.items.map(item => {
                         const product = localProductsMap.get(item.productoId);
-                        const imagenUrl = (product && (product.imagenUrl || product.imageUrl)) || '';
+                        const imagenUrl = (product && (urlMiniatura(product) || product.imageUrl)) || '';
                         const nombre = (product && product.nombre) || item.nombre || item.nombreCompleto || 'Producto';
                         const variacion = (item.talla && item.color) ? `${item.talla} · ${item.color}` : (item.talla || item.color || '');
                         const precioNum = parseFloat(item.precio) || 0;
@@ -1228,7 +1229,7 @@ export function init(ctx) {
                 
                 let itemsHtml = d.items.map(item => {
                     const product = localProductsMap.get(item.productoId);
-                    const imgUrl = (product && (product.imagenUrl || product.imageUrl)) || '';
+                    const imgUrl = (product && (urlMiniatura(product) || product.imageUrl)) || '';
                     const imgHtml = imgUrl
                         ? `<img src="${imgUrl}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;border:1px solid #e9ecef;flex-shrink:0;" alt="" loading="lazy">`
                         : `<div style="width:44px;height:44px;background:#f0f0f0;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#adb5bd;flex-shrink:0;border:1px solid #e9ecef;"><i class="bi bi-image" style="font-size:1.1rem;"></i></div>`;
