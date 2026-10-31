@@ -48,7 +48,7 @@ function falloReciente() {
 }
 
 /**
- * Lo llama src/core/sync-indicator.js cuando el servidor no confirmó en 10 s
+ * Lo llama src/core/sync-indicator.js cuando el servidor no confirmó en 15 s
  * teniendo internet. Si la caché estaba activa, la desactiva en este
  * dispositivo para las próximas aperturas (la actual ya no se puede cambiar).
  */
