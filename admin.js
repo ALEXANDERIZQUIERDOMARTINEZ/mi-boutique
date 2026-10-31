@@ -2032,14 +2032,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             localProductsMap.clear();
 
-            const filterCategoryDropdown = document.getElementById('filter-category-inventory');
-            const productCategoryDropdown = document.getElementById('categoria-producto');
-            if (filterCategoryDropdown && productCategoryDropdown) {
-                if (filterCategoryDropdown.options.length <= 1) {
-                    filterCategoryDropdown.innerHTML = productCategoryDropdown.innerHTML;
-                    filterCategoryDropdown.value = '';
-                }
-            }
+            // (El filtro de categorías de esta pestaña ya no se copia del
+            // desplegable del formulario aquí: si los productos llegaban antes
+            // que las categorías, copiaba un desplegable vacío y el filtro se
+            // quedaba solo con "Selecciona...". Ahora lo llena
+            // loadCategoriesForFilter, más abajo.)
 
             if(!productListTableBody) return;
 
@@ -3455,6 +3452,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 snapshot.forEach(doc => {
                     categoriesMap.set(doc.id, doc.data().nombre);
                 });
+
+                // Filtro "Categoría" de la pestaña Productos (valor = id de
+                // la categoría), conservando la que estuviera elegida.
+                if (categorySelectInventory) {
+                    const actual = categorySelectInventory.value;
+                    categorySelectInventory.innerHTML = '<option value="">Todas las categorías</option>';
+                    snapshot.forEach(doc => {
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = doc.data().nombre || 'Sin nombre';
+                        categorySelectInventory.appendChild(option);
+                    });
+                    categorySelectInventory.value = actual;
+                    if (categorySelectInventory.value !== actual) categorySelectInventory.value = '';
+                }
             });
         }
 
