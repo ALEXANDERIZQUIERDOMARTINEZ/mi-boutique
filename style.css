@@ -5894,6 +5894,35 @@ input[type="datetime-local"] {
     font-size: 14px;
     color: #374151;
     border-bottom: 1px solid #fce7f3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+/* Tarifa de domicilio de cada barrio (solo Montería) */
+.neighborhood-suggestion-fee {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9ca3af;
+}
+/* "Agregar … como barrio nuevo" */
+.neighborhood-suggestion-new {
+    color: #be185d;
+    background: #fff7fb;
+}
+.neighborhood-suggestion-new .bi { margin-right: 4px; }
+.neighborhood-suggestion-new .neighborhood-suggestion-fee { color: #be185d; }
+/* Aviso bajo el campo cuando el barrio es nuevo */
+.neighborhood-hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #be185d;
+}
+/* Barrio escrito pero no elegido de la lista */
+.co-input.co-input-error {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, .12);
 }
 .neighborhood-suggestion-item:last-child { border-bottom: none; }
 .neighborhood-suggestion-item:hover,

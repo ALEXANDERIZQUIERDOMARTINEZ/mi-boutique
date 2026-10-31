@@ -5717,14 +5717,42 @@ const BARRIOS_MONTERIA_DEFAULT = [
 let _domicilioBarrios = [];   // [{nombre, tarifa}, ...]
 let _dominicilioFiltro = '';  // texto de búsqueda activo
 
+// Barrios que agregan los clientes en el checkout de la tienda (colección
+// 'barrios', con tarifa de barrio nuevo $7.000). Se muestran aquí marcados
+// "cliente" para ajustarles el precio; al guardar pasan a la lista normal.
+// Como esa colección no permite borrar, los que se eliminan aquí se anotan
+// en barriosEliminados y la tienda deja de ofrecerlos.
+const TARIFA_BARRIO_NUEVO = 7000;
+let _domicilioEliminados = [];
+function normBarrio(s) {
+    return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
 async function loadDomicilioBarrios() {
     try {
         const snap = await getDoc(doc(db, 'config', 'domicilioBarrios'));
         if (snap.exists() && snap.data().barrios) {
-            _domicilioBarrios = snap.data().barrios;
+            _domicilioBarrios = snap.data().barrios.map(b => ({ nombre: b.nombre, tarifa: b.tarifa }));
         } else {
             // Primera vez: cargar defaults
             _domicilioBarrios = BARRIOS_MONTERIA_DEFAULT.map(b => ({ ...b }));
+        }
+        _domicilioEliminados = (snap.exists() && snap.data().barriosEliminados) || [];
+        try {
+            const enLista = new Set(_domicilioBarrios.map(b => normBarrio(b.nombre)));
+            const eliminados = new Set(_domicilioEliminados.map(normBarrio));
+            const deClientes = await getDocs(query(collection(db, 'barrios'), where('ciudad', '==', 'Montería')));
+            deClientes.forEach(d => {
+                const nombre = (d.data().nombre || '').trim();
+                const n = normBarrio(nombre);
+                if (!n || enLista.has(n) || eliminados.has(n)) return;
+                enLista.add(n);
+                const t = d.data().tarifa;
+                _domicilioBarrios.push({ nombre, tarifa: Number.isFinite(t) ? t : TARIFA_BARRIO_NUEVO, deCliente: true });
+            });
+        } catch (e) {
+            console.warn('No se pudieron cargar los barrios agregados por clientes:', e);
         }
         if (snap.exists() && snap.data().updatedAt) {
             const d = snap.data().updatedAt.toDate();
@@ -5761,7 +5789,7 @@ function domicilioRenderTabla() {
     tbody.innerHTML = visible.map((b) => {
         const idx = _domicilioBarrios.indexOf(b);
         return `<div data-idx="${idx}" style="display:flex;align-items:center;padding:7px 14px;border-bottom:1px solid #f0f0f0;min-height:46px;">
-            <span style="flex:1;font-size:14px;padding-right:8px;word-break:break-word;">${escHtml(b.nombre)}</span>
+            <span style="flex:1;font-size:14px;padding-right:8px;word-break:break-word;">${escHtml(b.nombre)}${b.deCliente ? ' <span title="Agregado por un cliente en la tienda; revisa su tarifa y guarda" style="font-size:11px;font-weight:600;color:#be185d;background:#fdf2f8;border-radius:999px;padding:1px 7px;margin-left:4px;white-space:nowrap;">cliente</span>' : ''}</span>
             <div style="display:flex;align-items:center;width:115px;flex-shrink:0;border:1px solid #dee2e6;border-radius:6px;overflow:hidden;background:#fff;">
                 <span style="padding:0 6px;font-size:13px;color:#6c757d;background:#f8f9fa;border-right:1px solid #dee2e6;line-height:36px;height:36px;">$</span>
                 <input type="number" min="0" step="500"
@@ -5794,6 +5822,9 @@ window.domicilioSetTarifa = function(idx, valor) {
 window.domicilioEliminar = function(idx) {
     const nombre = _domicilioBarrios[idx]?.nombre || '';
     if (!confirm(`¿Eliminar "${nombre}" de la lista?`)) return;
+    // Que la tienda no lo vuelva a ofrecer (puede venir de la colección
+    // 'barrios' de clientes, que no se puede borrar). Se aplica al guardar.
+    if (!_domicilioEliminados.some(n => normBarrio(n) === normBarrio(nombre))) _domicilioEliminados.push(nombre);
     _domicilioBarrios.splice(idx, 1);
     domicilioRenderTabla();
 };
@@ -5802,13 +5833,14 @@ window.domicilioAgregarFila = function() {
     const nombre = prompt('Nombre del barrio:');
     if (!nombre || !nombre.trim()) return;
     const nombreTrim = nombre.trim();
-    if (_domicilioBarrios.some(b => b.nombre.toLowerCase() === nombreTrim.toLowerCase())) {
+    if (_domicilioBarrios.some(b => normBarrio(b.nombre) === normBarrio(nombreTrim))) {
         alert('Ese barrio ya está en la lista.');
         return;
     }
     const tarifa = parseInt(prompt('Costo de domicilio ($):', '5000'), 10);
     if (isNaN(tarifa) || tarifa < 0) { alert('Tarifa no válida.'); return; }
     _domicilioBarrios.push({ nombre: nombreTrim, tarifa });
+    _domicilioEliminados = _domicilioEliminados.filter(n => normBarrio(n) !== normBarrio(nombreTrim));
     _domicilioBarrios.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
     document.getElementById('barrio-search').value = '';
     _dominicilioFiltro = '';
@@ -5832,9 +5864,13 @@ window.saveDomicilioBarrios = async function() {
             }
         });
         await setDoc(doc(db, 'config', 'domicilioBarrios'), {
-            barrios: _domicilioBarrios,
+            // Al guardar, los agregados por clientes pasan a la lista normal.
+            barrios: _domicilioBarrios.map(b => ({ nombre: b.nombre, tarifa: b.tarifa })),
+            barriosEliminados: _domicilioEliminados,
             updatedAt: serverTimestamp()
         });
+        _domicilioBarrios.forEach(b => { delete b.deCliente; });
+        domicilioRenderTabla();
         showToast('✅ Tarifas guardadas correctamente', 'success');
         statusEl.style.display = 'inline';
         document.getElementById('tarifas-last-update').textContent = 'Última actualización: ' + new Date().toLocaleString('es-CO');

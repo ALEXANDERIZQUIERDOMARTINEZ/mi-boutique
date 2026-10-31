@@ -2465,6 +2465,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (clientData.barrio) {
                         setTimeout(() => {
                             document.getElementById('checkout-neighborhood').value = clientData.barrio;
+                            // Solo queda elegido si sigue existiendo en la lista.
+                            _asegurarBarrioSeleccionado();
                             coUpdateNextBtn2();
                         }, 150);
                     }
@@ -2547,12 +2549,33 @@ document.addEventListener('DOMContentLoaded', () => {
         { nombre: 'Villa Natalia', tarifa: 6000 }, { nombre: 'Villa Orieta', tarifa: 6000 },
     ];
 
+    // Barrio que no está en la lista: el cliente lo agrega como nuevo y se
+    // guarda (colección 'barrios') con esta tarifa, hasta que el admin le
+    // ponga otra en "Tarifas de domicilio".
+    const TARIFA_BARRIO_NUEVO = 7000;
+
+    // Compara nombres de barrio sin importar mayúsculas, tildes ni espacios
+    // de más ("villa rosario" = "Villa  Rosario" = "VILLA ROSARIO").
+    function _normBarrio(s) {
+        return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase().replace(/\s+/g, ' ').trim();
+    }
+
+    // Barrios agregados por clientes que el admin eliminó de la lista
+    // (config/domicilioBarrios.barriosEliminados): no se vuelven a ofrecer.
+    let _barriosEliminados = new Set();
+
     function _buildBarrioMap(lista) {
         _barrioTarifaMap = {};
         _barriosMonteriaLista = lista.map(b => b.nombre);
-        lista.forEach(b => { _barrioTarifaMap[b.nombre.toLowerCase()] = b.tarifa; });
+        lista.forEach(b => { _barrioTarifaMap[_normBarrio(b.nombre)] = b.tarifa; });
     }
     _buildBarrioMap(_BARRIOS_DEFAULT);
+
+    // Barrio elegido en el checkout: { nombre, nuevo }. Escribir en el campo
+    // lo borra; solo se puede seguir eligiendo uno de la lista o agregándolo
+    // explícitamente como nuevo.
+    let _barrioSeleccionado = null;
 
     // Cargar barrios desde Firestore al iniciar
     (async () => {
@@ -2560,6 +2583,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const snap = await getDoc(doc(db, 'config', 'domicilioBarrios'));
             if (snap.exists() && snap.data().barrios?.length) {
                 _buildBarrioMap(snap.data().barrios);
+                _barriosEliminados = new Set((snap.data().barriosEliminados || []).map(_normBarrio));
                 // Si ya hay una ciudad seleccionada con Montería, actualizar la lista activa
                 const cityInput = document.getElementById('checkout-city');
                 if (cityInput && cityInput.value === 'Montería' && _currentNeighborhoodList.length > 0) {
@@ -2575,12 +2599,73 @@ document.addEventListener('DOMContentLoaded', () => {
     function calcularCostoEnvio(ciudad, barrio) {
         if (!ciudad || ciudad !== 'Montería') return 0;
         if (!barrio) return 0;
-        const key = barrio.trim().toLowerCase();
+        const key = _normBarrio(barrio);
         if (Object.prototype.hasOwnProperty.call(_barrioTarifaMap, key)) {
             return _barrioTarifaMap[key];
         }
-        // Barrio no encontrado → 5.000 por defecto
-        return 5000;
+        // Barrio nuevo (no está en la lista) → tarifa de barrio nuevo
+        return TARIFA_BARRIO_NUEVO;
+    }
+
+    // Busca un barrio de la lista activa ignorando mayúsculas/tildes.
+    function _barrioExistente(texto) {
+        const n = _normBarrio(texto);
+        if (!n) return null;
+        return _currentNeighborhoodList.find(b => _normBarrio(b) === n) || null;
+    }
+
+    function _seleccionarBarrio(nombre, nuevo) {
+        const input = document.getElementById('checkout-neighborhood');
+        _barrioSeleccionado = { nombre, nuevo };
+        if (input) {
+            input.value = nombre;
+            input.classList.remove('co-input-error');
+        }
+        const hint = document.getElementById('neighborhood-hint');
+        if (hint) {
+            const ciudad = (document.getElementById('checkout-city')?.value || '').trim();
+            hint.textContent = nuevo
+                ? (ciudad === 'Montería' ? `Barrio nuevo · domicilio ${formatoMoneda.format(TARIFA_BARRIO_NUEVO)}` : 'Barrio nuevo')
+                : '';
+            hint.style.display = nuevo ? 'block' : 'none';
+        }
+        _hideNeighborhoodSuggestions();
+        updateOrderTotals();
+    }
+
+    // Si lo escrito coincide con un barrio de la lista, lo selecciona solo.
+    // Devuelve true si hay un barrio seleccionado.
+    function _asegurarBarrioSeleccionado() {
+        const input = document.getElementById('checkout-neighborhood');
+        const valor = (input?.value || '').trim();
+        if (_barrioSeleccionado && _normBarrio(_barrioSeleccionado.nombre) === _normBarrio(valor)) return true;
+        const existente = _barrioExistente(valor);
+        if (existente) { _seleccionarBarrio(existente, false); return true; }
+        _barrioSeleccionado = null;
+        return false;
+    }
+
+    // ¿La ciudad elegida pide barrio? (la sección de barrio está visible)
+    function _ciudadPideBarrio() {
+        const sec = document.getElementById('neighborhood-section');
+        return !!sec && sec.style.display !== 'none';
+    }
+
+    // Avisa y abre la lista si falta elegir barrio. Devuelve true si está OK.
+    function _validarBarrioCheckout() {
+        if (!_ciudadPideBarrio()) return true;
+        if (_asegurarBarrioSeleccionado()) return true;
+        const input = document.getElementById('checkout-neighborhood');
+        const valor = (input?.value || '').trim();
+        showToast(valor
+            ? 'Elige tu barrio de la lista o agrégalo como barrio nuevo'
+            : 'Selecciona tu barrio', 'error');
+        if (input) {
+            input.classList.add('co-input-error');
+            input.focus();
+            input.dispatchEvent(new Event('focus'));
+        }
+        return false;
     }
 
     // Definir barrios por ciudad
@@ -2616,10 +2701,19 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const q = query(neighborhoodsCollection, where('ciudad', '==', ciudad));
                 const snapshot = await getDocs(q);
+                const yaEnLista = new Set(allNeighborhoods.map(_normBarrio));
                 snapshot.forEach(doc => {
-                    const customNeighborhood = doc.data().nombre;
-                    if (!allNeighborhoods.includes(customNeighborhood)) {
-                        allNeighborhoods.push(customNeighborhood);
+                    const datos = doc.data();
+                    const customNeighborhood = (datos.nombre || '').trim();
+                    const n = _normBarrio(customNeighborhood);
+                    if (!n || yaEnLista.has(n) || _barriosEliminados.has(n)) return;
+                    yaEnLista.add(n);
+                    allNeighborhoods.push(customNeighborhood);
+                    // Barrio agregado por un cliente: si el admin todavía no
+                    // le puso tarifa en config/domicilioBarrios, cobra la de
+                    // barrio nuevo (antes caía en 5.000).
+                    if (ciudad === 'Montería' && !Object.prototype.hasOwnProperty.call(_barrioTarifaMap, n)) {
+                        _barrioTarifaMap[n] = Number.isFinite(datos.tarifa) ? datos.tarifa : TARIFA_BARRIO_NUEVO;
                     }
                 });
                 allNeighborhoods.sort();
@@ -2628,10 +2722,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             _currentNeighborhoodList = allNeighborhoods;
+            // La lista cambió: revalidar lo que ya estaba escrito/elegido.
+            if (neighborhoodInput.value.trim()) _asegurarBarrioSeleccionado();
         } else {
             // Ocultar sección de barrio si la ciudad no tiene barrios definidos o no se seleccionó ciudad
             neighborhoodSection.style.display = 'none';
             neighborhoodInput.value = '';
+            _barrioSeleccionado = null;
             _currentNeighborhoodList = [];
             _hideNeighborhoodSuggestions();
         }
@@ -2724,37 +2821,50 @@ document.addEventListener('DOMContentLoaded', () => {
         const box = document.getElementById('neighborhood-suggestions');
         if (!box) return;
         box.innerHTML = '';
-        if (filtered.length === 0) {
-            box.style.display = 'none';
-            return;
-        }
+        const ciudad = (document.getElementById('checkout-city')?.value || '').trim();
+        const conTarifa = ciudad === 'Montería';
         filtered.forEach(name => {
             const item = document.createElement('div');
             item.className = 'neighborhood-suggestion-item';
-            item.textContent = name;
+            const nombreEl = document.createElement('span');
+            nombreEl.textContent = name;
+            item.appendChild(nombreEl);
+            if (conTarifa) {
+                const tarifaEl = document.createElement('span');
+                tarifaEl.className = 'neighborhood-suggestion-fee';
+                tarifaEl.textContent = formatoMoneda.format(calcularCostoEnvio(ciudad, name));
+                item.appendChild(tarifaEl);
+            }
             item.addEventListener('mousedown', function(e) {
                 e.preventDefault(); // evitar que el input pierda foco antes del click
-                const input = document.getElementById('checkout-neighborhood');
-                input.value = name;
-                _hideNeighborhoodSuggestions();
-                updateOrderTotals();
+                _seleccionarBarrio(name, false);
             });
             box.appendChild(item);
         });
-        // Si el texto escrito no coincide exactamente con ninguno, ofrecer guardarlo
-        const exactMatch = _currentNeighborhoodList.some(n => n.toLowerCase() === typedValue.toLowerCase());
-        if (typedValue.trim().length > 1 && !exactMatch) {
+        // Lo escrito no está en la lista: ofrecer agregarlo como barrio nuevo
+        const typed = typedValue.trim();
+        if (typed.length > 2 && !_barrioExistente(typed)) {
             const newItem = document.createElement('div');
-            newItem.className = 'neighborhood-suggestion-item';
-            newItem.innerHTML = `${typedValue.trim()} <span class="neighborhood-new-badge">nuevo</span>`;
+            newItem.className = 'neighborhood-suggestion-item neighborhood-suggestion-new';
+            const etiqueta = document.createElement('span');
+            etiqueta.innerHTML = '<i class="bi bi-plus-circle"></i> Agregar <strong></strong> como barrio nuevo';
+            etiqueta.querySelector('strong').textContent = `"${typed}"`;
+            newItem.appendChild(etiqueta);
+            if (conTarifa) {
+                const tarifaEl = document.createElement('span');
+                tarifaEl.className = 'neighborhood-suggestion-fee';
+                tarifaEl.textContent = formatoMoneda.format(TARIFA_BARRIO_NUEVO);
+                newItem.appendChild(tarifaEl);
+            }
             newItem.addEventListener('mousedown', function(e) {
                 e.preventDefault();
-                const input = document.getElementById('checkout-neighborhood');
-                input.value = typedValue.trim();
-                _hideNeighborhoodSuggestions();
-                updateOrderTotals();
+                _seleccionarBarrio(typed, true);
             });
             box.appendChild(newItem);
+        }
+        if (!box.children.length) {
+            box.style.display = 'none';
+            return;
         }
         box.style.display = 'block';
     }
@@ -2762,6 +2872,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const _neighborhoodInput = document.getElementById('checkout-neighborhood');
     _neighborhoodInput.addEventListener('input', function() {
         const val = this.value;
+        // Escribir anula la selección: hay que volver a elegir de la lista.
+        _barrioSeleccionado = null;
+        const hint = document.getElementById('neighborhood-hint');
+        if (hint) hint.style.display = 'none';
         updateOrderTotals();
         if (val.trim().length === 0) {
             // Sin texto: mostrar todos
@@ -2769,27 +2883,29 @@ document.addEventListener('DOMContentLoaded', () => {
             _showNeighborhoodSuggestions(all, val);
             return;
         }
-        const q = val.trim().toLowerCase();
-        const filtered = _currentNeighborhoodList.filter(n => n.toLowerCase().includes(q));
+        const q = _normBarrio(val);
+        const filtered = _currentNeighborhoodList.filter(n => _normBarrio(n).includes(q)).slice(0, 60);
         _showNeighborhoodSuggestions(filtered, val);
     });
     _neighborhoodInput.addEventListener('focus', function() {
         if (_currentNeighborhoodList.length === 0) return;
         const val = this.value.trim();
-        if (val.length === 0) {
-            _showNeighborhoodSuggestions(_currentNeighborhoodList.slice(0, 60), val);
+        if (val.length === 0 || _barrioSeleccionado) {
+            _showNeighborhoodSuggestions(_currentNeighborhoodList.slice(0, 60), '');
         } else {
-            const q = val.toLowerCase();
-            const filtered = _currentNeighborhoodList.filter(n => n.toLowerCase().includes(q));
+            const q = _normBarrio(val);
+            const filtered = _currentNeighborhoodList.filter(n => _normBarrio(n).includes(q)).slice(0, 60);
             _showNeighborhoodSuggestions(filtered, val);
         }
     });
     _neighborhoodInput.addEventListener('blur', function() {
         // Pequeño delay para que el click en sugerencia pueda ejecutarse
-        setTimeout(_hideNeighborhoodSuggestions, 150);
-    });
-    _neighborhoodInput.addEventListener('change', function() {
-        updateOrderTotals();
+        setTimeout(() => {
+            _hideNeighborhoodSuggestions();
+            // Si escribió exactamente un barrio de la lista, se toma ese.
+            if (this.value.trim()) _asegurarBarrioSeleccionado();
+            updateOrderTotals();
+        }, 150);
     });
 
     // Calcular vuelto automáticamente
@@ -2810,7 +2926,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
 
         const ciudad = (document.getElementById('checkout-city')?.value || '').trim();
-        const barrio = (document.getElementById('checkout-neighborhood')?.value || '').trim();
+        // Mientras no haya un barrio elegido (de la lista o agregado como
+        // nuevo) no se muestra domicilio.
+        const barrio = _barrioSeleccionado ? _barrioSeleccionado.nombre : '';
         const envio = calcularCostoEnvio(ciudad, barrio);
         const total = subtotal + envio;
 
@@ -2999,6 +3117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('Selecciona una ciudad de entrega', 'error');
             return;
         }
+        if (!_validarBarrioCheckout()) return;
         if (dir.length < 4) {
             showToast('Ingresa la dirección completa de entrega', 'error');
             document.getElementById('checkout-address')?.focus();
@@ -3219,7 +3338,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const nombre = document.getElementById('checkout-name').value.trim();
         const whatsapp = document.getElementById('checkout-phone').value.trim();
         const ciudad = document.getElementById('checkout-city').value.trim();
-        const barrio = document.getElementById('checkout-neighborhood').value.trim();
+        if (!_validarBarrioCheckout()) return;
+        const barrio = _ciudadPideBarrio() && _barrioSeleccionado ? _barrioSeleccionado.nombre : '';
         const direccion = document.getElementById('checkout-address').value.trim();
         const observaciones = document.getElementById('checkout-notes').value.trim();
         const pago = document.getElementById('checkout-payment').value;
@@ -3399,7 +3519,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 1. Guardar barrio personalizado si es nuevo
             if (barrio && ciudad && neighborhoodsByCity[ciudad]) {
-                const isPredefined = neighborhoodsByCity[ciudad].includes(barrio);
+                // Ya existe (lista del admin o agregado antes por otro
+                // cliente) sin importar mayúsculas/tildes → no duplicar.
+                const isPredefined = !!_barrioExistente(barrio);
                 if (!isPredefined) {
                     // Verificar si ya existe en la base de datos
                     const neighborhoodQuery = query(
@@ -3414,8 +3536,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         await addDoc(neighborhoodsCollection, {
                             ciudad: ciudad,
                             nombre: barrio,
+                            // Tarifa de barrio nuevo; el admin la ajusta en
+                            // "Tarifas de domicilio".
+                            tarifa: TARIFA_BARRIO_NUEVO,
                             fechaCreacion: serverTimestamp()
                         });
+                        _currentNeighborhoodList.push(barrio);
+                        _barrioTarifaMap[_normBarrio(barrio)] = TARIFA_BARRIO_NUEVO;
                     }
                 }
             }
