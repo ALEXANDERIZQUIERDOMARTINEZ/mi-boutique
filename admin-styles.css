@@ -5140,8 +5140,219 @@ body.dark-mode .list-group-item { background: var(--surface-raised); color: var(
 /* Cifra de la última carga (localStorage), pintada de inmediato mientras
    se confirma el dato real con Firestore — ver pintarCacheVentasRango()
    en admin.js. Se quita en cuanto llega la confirmación real. */
-.db-valor-en-cache {
-  opacity: 0.55;
+/* ── Cifras sin confirmar + indicador "Sincronizando…" ─────────────────
+   .db-valor-en-cache: cifra del Dashboard pintada desde localStorage
+   mientras llega la real (admin.js). body.fs-sincronizando: el panel
+   muestra datos de la caché local de Firestore que el servidor aún no
+   confirma (src/core/sync-indicator.js). En ambos casos la cifra brilla
+   con un destello de la marca en vez de verse como dato definitivo. */
+@keyframes fs-brillo {
+  0%   { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+}
+.db-valor-en-cache,
+body.fs-sincronizando #db-ventas-hoy,
+body.fs-sincronizando #db-ventas-count,
+body.fs-sincronizando #db-ticket-promedio,
+body.fs-sincronizando #db-boutique-ganancia,
+body.fs-sincronizando #db-ganancia-detalle,
+body.fs-sincronizando #db-ventas-ayer,
+body.fs-sincronizando #db-apartados-vencer,
+body.fs-sincronizando #db-apartados-total-saldo,
+body.fs-sincronizando #db-total-productos,
+body.fs-sincronizando #db-productos-disponibles,
+body.fs-sincronizando #db-bajo-stock,
+body.fs-sincronizando #db-inversion-inventario,
+body.fs-sincronizando #db-inventario-unidades,
+body.fs-sincronizando #db-utilidad-potencial,
+body.fs-sincronizando #db-margen-utilidad,
+body.fs-sincronizando #db-pedidos-web,
+body.fs-sincronizando #fdb-ventas-periodo,
+body.fs-sincronizando #fdb-ventas-count,
+body.fs-sincronizando #fdb-ticket-promedio,
+body.fs-sincronizando #fdb-ventas-ayer,
+body.fs-sincronizando #fdb-total-productos,
+body.fs-sincronizando #fdb-productos-disponibles,
+body.fs-sincronizando #fdb-bajo-stock,
+body.fs-sincronizando #fdb-inversion-inventario,
+body.fs-sincronizando #fdb-inventario-unidades,
+body.fs-sincronizando #fdb-pedidos-count {
+  background-image: linear-gradient(100deg,
+    currentColor 0%, currentColor 38%,
+    #D988B9 46%, #f3c6df 50%, #D988B9 54%,
+    currentColor 62%, currentColor 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: fs-brillo 1.6s ease-in-out infinite;
+}
+/* Sin conexión: ya no anima, pero sigue viéndose como dato no confirmado */
+body.fs-sin-confirmar #db-ventas-hoy,
+body.fs-sin-confirmar #db-ventas-count,
+body.fs-sin-confirmar #db-ticket-promedio,
+body.fs-sin-confirmar #db-boutique-ganancia,
+body.fs-sin-confirmar #db-ganancia-detalle,
+body.fs-sin-confirmar #db-ventas-ayer,
+body.fs-sin-confirmar #db-apartados-vencer,
+body.fs-sin-confirmar #db-apartados-total-saldo,
+body.fs-sin-confirmar #db-total-productos,
+body.fs-sin-confirmar #db-productos-disponibles,
+body.fs-sin-confirmar #db-bajo-stock,
+body.fs-sin-confirmar #db-inversion-inventario,
+body.fs-sin-confirmar #db-inventario-unidades,
+body.fs-sin-confirmar #db-utilidad-potencial,
+body.fs-sin-confirmar #db-margen-utilidad,
+body.fs-sin-confirmar #db-pedidos-web,
+body.fs-sin-confirmar #fdb-ventas-periodo,
+body.fs-sin-confirmar #fdb-ventas-count,
+body.fs-sin-confirmar #fdb-ticket-promedio,
+body.fs-sin-confirmar #fdb-ventas-ayer,
+body.fs-sin-confirmar #fdb-total-productos,
+body.fs-sin-confirmar #fdb-productos-disponibles,
+body.fs-sin-confirmar #fdb-bajo-stock,
+body.fs-sin-confirmar #fdb-inversion-inventario,
+body.fs-sin-confirmar #fdb-inventario-unidades,
+body.fs-sin-confirmar #fdb-pedidos-count {
+  opacity: 0.6;
+}
+/* Tablas y listas de la sección abierta "respiran" suavemente */
+@keyframes fs-respirar {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.72; }
+}
+body.fs-sincronizando .tab-pane.active tbody {
+  animation: fs-respirar 1.6s ease-in-out infinite;
+}
+
+/* Barra fina superior (progreso indeterminado) */
+.fs-sync-barra {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 100000;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.fs-sync-barra::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 40%;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, rgba(217,136,185,0), #D988B9 40%, #b8649a);
+  box-shadow: 0 0 8px rgba(217,136,185,.6);
+  transform: translateX(-100%);
+}
+.fs-sync-barra--activa { opacity: 1; }
+.fs-sync-barra--activa::before { animation: fs-barra 1.25s cubic-bezier(.65,.05,.35,1) infinite; }
+@keyframes fs-barra {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(260%); }
+}
+
+/* Píldora de estado (abajo al centro; sobre la barra inferior móvil) */
+.fs-sync-pildora {
+  position: fixed;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  z-index: 100000;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .45rem .95rem .45rem .7rem;
+  border-radius: 999px;
+  background: rgba(33, 26, 31, .92);
+  color: #fff;
+  font-size: .8rem;
+  font-weight: 500;
+  letter-spacing: .01em;
+  box-shadow: 0 6px 24px rgba(0,0,0,.18);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 12px);
+  transition: opacity .3s ease, transform .3s ease;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+}
+@media (min-width: 992px) {
+  .fs-sync-pildora { bottom: 24px; }
+}
+.fs-sync-pildora--visible { opacity: 1; transform: translate(-50%, 0); }
+.fs-sync-icono {
+  width: 14px; height: 14px;
+  flex: 0 0 14px;
+  border-radius: 50%;
+  position: relative;
+}
+.fs-sync--cargando .fs-sync-icono {
+  border: 2px solid rgba(255,255,255,.25);
+  border-top-color: #D988B9;
+  animation: fs-girar .8s linear infinite;
+}
+.fs-sync--listo .fs-sync-icono { background: #3fb37f; }
+.fs-sync--listo .fs-sync-icono::after {
+  content: '';
+  position: absolute;
+  left: 4.5px; top: 2px;
+  width: 4px; height: 7px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.fs-sync--sin-conexion .fs-sync-icono { background: #e0a33a; }
+.fs-sync--sin-conexion .fs-sync-icono::after {
+  content: '!';
+  position: absolute;
+  inset: 0;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 14px;
+  text-align: center;
+}
+@keyframes fs-girar { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .db-valor-en-cache,
+  body.fs-sincronizando #db-ventas-hoy,
+  body.fs-sincronizando #db-ventas-count,
+  body.fs-sincronizando #db-ticket-promedio,
+  body.fs-sincronizando #db-boutique-ganancia,
+  body.fs-sincronizando #db-ganancia-detalle,
+  body.fs-sincronizando #db-ventas-ayer,
+  body.fs-sincronizando #db-apartados-vencer,
+  body.fs-sincronizando #db-apartados-total-saldo,
+  body.fs-sincronizando #db-total-productos,
+  body.fs-sincronizando #db-productos-disponibles,
+  body.fs-sincronizando #db-bajo-stock,
+  body.fs-sincronizando #db-inversion-inventario,
+  body.fs-sincronizando #db-inventario-unidades,
+  body.fs-sincronizando #db-utilidad-potencial,
+  body.fs-sincronizando #db-margen-utilidad,
+  body.fs-sincronizando #db-pedidos-web,
+  body.fs-sincronizando #fdb-ventas-periodo,
+  body.fs-sincronizando #fdb-ventas-count,
+  body.fs-sincronizando #fdb-ticket-promedio,
+  body.fs-sincronizando #fdb-ventas-ayer,
+  body.fs-sincronizando #fdb-total-productos,
+  body.fs-sincronizando #fdb-productos-disponibles,
+  body.fs-sincronizando #fdb-bajo-stock,
+  body.fs-sincronizando #fdb-inversion-inventario,
+  body.fs-sincronizando #fdb-inventario-unidades,
+  body.fs-sincronizando #fdb-pedidos-count {
+    animation: none;
+    -webkit-text-fill-color: currentColor;
+    background-image: none;
+    opacity: .6;
+  }
+  body.fs-sincronizando .tab-pane.active tbody,
+  .fs-sync-barra--activa::before,
+  .fs-sync--cargando .fs-sync-icono { animation: none; }
 }
 
 @media (max-width: 479.98px) {

@@ -12,6 +12,8 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js?v=1.0.1";
 import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin, WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js?v=2";
 import { resolveTenant } from "./src/core/tenant-resolver.js";
+import { activarCacheLocal } from "./src/core/firestore-cache.js";
+import { vigilarSincronizacion } from "./src/core/sync-indicator.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -33,6 +35,11 @@ const app = initializeApp(firebaseConfig);
 const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
 });
+// Caché local (IndexedDB): el panel abre con lo guardado en el dispositivo y
+// solo baja lo que cambió. Tiene que activarse antes de cualquier consulta.
+// Ver src/core/firestore-cache.js (se borra si cambia el usuario/empresa y
+// al cerrar sesión).
+activarCacheLocal(db);
 const storage = getStorage(app);
 console.log("Firebase Initialized!");
 
@@ -224,6 +231,11 @@ const productosFabricaCollection = collection(db, 'productosFabrica');
 const closingsCollection = collection(db, 'cierresCaja');
 const webOrdersCollection = collection(db, 'pedidosWeb');
 const cotizacionesCollection = collection(db, 'cotizaciones');
+
+// "Sincronizando…" mientras el servidor confirma lo que se pintó desde la
+// caché local. Es la misma consulta del listener de la pestaña Productos
+// (orderBy timestamp desc), así que Firestore la comparte: sin lecturas extra.
+vigilarSincronizacion([query(productsCollection, orderBy('timestamp', 'desc'))]);
 
 // ✅ CALENDARIO CON VENTAS: reemplaza un <input type="date"> por un calendario
 // propio que marca con un punto los días que tienen ventas (el selector nativo

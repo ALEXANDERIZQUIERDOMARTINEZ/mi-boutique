@@ -15,6 +15,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin } from "./wholesale-tiers.js?v=2";
+import { activarCacheLocal } from "./src/core/firestore-cache.js";
+import { vigilarSincronizacion } from "./src/core/sync-indicator.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -29,6 +31,9 @@ const app = initializeApp(firebaseConfig);
 export const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
 });
+// Caché local (IndexedDB), igual que en admin.js — ver
+// src/core/firestore-cache.js. Tiene que activarse antes de cualquier consulta.
+activarCacheLocal(db, { tenantPagina: 'fabrica' });
 export const storage = getStorage(app);
 window.db = db;
 window.firebaseApp = app;
@@ -134,6 +139,10 @@ function openWhatsApp(url) {
 
 const fabricaCollection = collection(db, 'movimientosFabrica');
 const productosFabricaCollection = collection(db, 'productosFabrica');
+// "Sincronizando…" mientras el servidor confirma lo pintado desde la caché
+// local. Misma consulta que el listener del Dashboard (colección completa),
+// así que Firestore la comparte: sin lecturas extra.
+vigilarSincronizacion([productosFabricaCollection]);
 const categoriasCollection = collection(db, 'categorias');
 const ventasCollection = collection(db, 'ventas');
 // Compartida con Boutique (index.html escribe con tenantId 'boutique', mayor.html
