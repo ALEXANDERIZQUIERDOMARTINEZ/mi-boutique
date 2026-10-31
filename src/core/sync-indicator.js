@@ -15,9 +15,9 @@
 // Escucha las MISMAS consultas que ya abre el panel (con
 // includeMetadataChanges), así que Firestore las comparte con el listener
 // existente: no abre conexiones nuevas ni cobra lecturas adicionales.
-import { onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { reportarSincronizacionTrabada } from "./firestore-cache.js?v=2";
-import { reconectar } from "./conexion.js?v=1";
+import { onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { reportarSincronizacionTrabada } from "./firestore-cache.js?v=3";
+import { reconectar } from "./conexion.js?v=2";
 
 // A los 7 s sin confirmar se renueva la conexión una vez (sin recargar);
 // si a los 15 s sigue sin confirmar, se avisa.

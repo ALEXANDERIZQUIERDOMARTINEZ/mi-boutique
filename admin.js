@@ -1,22 +1,22 @@
 // Import Firebase core and Firestore modules
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 // Import Storage
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js";
 // Import Auditoría (registro de quién crea/edita/elimina). La versión debe
 // coincidir con el <script type="module" src="auditoria.js?v=..."> de
 // admin.html y con el import de usuarios.js: un specifier distinto hace que
 // el navegador cargue auditoria.js como un módulo aparte, con su propio
 // estado y sus propios listeners de 'adminAuthReady' — duplicaba filas y
 // manejadores de clic en la sección Auditoría.
-import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js?v=1.0.1";
+import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js?v=1.1.0";
 import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin, WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js?v=2";
-import { resolveTenant } from "./src/core/tenant-resolver.js";
+import { resolveTenant } from "./src/core/tenant-resolver.js?v=2";
 import { urlMiniatura, necesitaMiniatura, crearMiniatura, miniaturaDesdeUrl } from "./src/core/miniaturas.js?v=1";
-import { activarCacheLocal } from "./src/core/firestore-cache.js?v=2";
-import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=3";
-import { vigilarConexion } from "./src/core/conexion.js?v=1";
+import { activarCacheLocal } from "./src/core/firestore-cache.js?v=3";
+import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=4";
+import { vigilarConexion } from "./src/core/conexion.js?v=2";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -3945,16 +3945,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ventas → src/admin/secciones/ventas.js. window.asegurarModuloVentas()
     // lo carga desde otras partes que necesitan el carrito (pedidos web,
     // modal de variaciones, factura tras un abono) antes de entrar a Ventas.
-    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=4'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
+    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=5'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
     // Apartados → src/admin/secciones/apartados.js
-    cargarSeccionDiferida('#apartados', () => import('./src/admin/secciones/apartados.js?v=2'), { abonoApartadoModalInstance, actualizarStock, apartadosCollection, db, eliminarFormatoNumero, formatoMoneda, localProductsMap, openWhatsApp, showToast, verApartadoModalInstance });
+    cargarSeccionDiferida('#apartados', () => import('./src/admin/secciones/apartados.js?v=3'), { abonoApartadoModalInstance, actualizarStock, apartadosCollection, db, eliminarFormatoNumero, formatoMoneda, localProductsMap, openWhatsApp, showToast, verApartadoModalInstance });
     // Finanzas (versión anterior: ingresos/gastos y cierre de caja) →
     // src/admin/secciones/finanzas-caja.js. Su pantalla ya no existe en
     // admin.html, pero igual consultaba las ventas del día al abrir el panel
     // y escuchaba todos los movimientos financieros al entrar a Finanzas.
     // Solo se carga si vuelve a aparecer alguno de sus elementos.
     if (['form-cierre-caja', 'form-add-income', 'form-add-expense', 'closing-today-view', 'lista-historial-cierres'].some(id => document.getElementById(id))) {
-        cargarSeccionDiferida(null, () => import('./src/admin/secciones/finanzas-caja.js?v=1'), { alEntrarSeccion, closingsCollection, db, eliminarFormatoNumero, financesCollection, formatoMoneda, openWhatsApp, salesCollection, showToast });
+        cargarSeccionDiferida(null, () => import('./src/admin/secciones/finanzas-caja.js?v=2'), { alEntrarSeccion, closingsCollection, db, eliminarFormatoNumero, financesCollection, formatoMoneda, openWhatsApp, salesCollection, showToast });
     }
 
     // ========================================================================
@@ -5518,15 +5518,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Secciones con carga diferida (ver cargarSeccionDiferida) ──
     // Reportes completos → src/admin/secciones/reportes.js (no hay
     // #form-reporte en admin.html hoy, así que no se descarga).
-    if (document.getElementById('form-reporte')) cargarSeccionDiferida(null, () => import('./src/admin/secciones/reportes.js?v=1'));
+    if (document.getElementById('form-reporte')) cargarSeccionDiferida(null, () => import('./src/admin/secciones/reportes.js?v=2'));
     // Finanzas v2 — utilidad real por producto y movimientos de Boutique → src/admin/secciones/finanzas-utilidad.js
-    cargarSeccionDiferida('#finanzas', () => import('./src/admin/secciones/finanzas-utilidad.js?v=1'));
+    cargarSeccionDiferida('#finanzas', () => import('./src/admin/secciones/finanzas-utilidad.js?v=2'));
     // Historial de entregas por repartidor → src/admin/secciones/historial-repartidores.js
-    cargarSeccionDiferida('#repartidores', () => import('./src/admin/secciones/historial-repartidores.js?v=1'));
+    cargarSeccionDiferida('#repartidores', () => import('./src/admin/secciones/historial-repartidores.js?v=2'));
     // Backup / exportación a Excel → src/admin/secciones/backup.js
-    cargarSeccionDiferida('#backup', () => import('./src/admin/secciones/backup.js?v=1'));
+    cargarSeccionDiferida('#backup', () => import('./src/admin/secciones/backup.js?v=2'));
     // Cargue masivo de productos desde Excel → src/admin/secciones/cargue-masivo.js
-    cargarSeccionDiferida('#cargue-masivo', () => import('./src/admin/secciones/cargue-masivo.js?v=1'));
+    cargarSeccionDiferida('#cargue-masivo', () => import('./src/admin/secciones/cargue-masivo.js?v=2'));
 
 // ═══════════════════════════════════════════════════════════════════
 // SECCIÓN: PROMOCIONES GLOBALES
@@ -6117,12 +6117,12 @@ document.addEventListener('click', (e) => {
     // inventario_fabrica_gestionar (auth.js → MODULOS_PERMISOS).
     // ════════════════════════════════════════════════════════════════════
     // Fábrica — gastos vs. ingresos → src/admin/secciones/fabrica.js
-    cargarSeccionDiferida('#fabrica', () => import('./src/admin/secciones/fabrica.js?v=1'));
+    cargarSeccionDiferida('#fabrica', () => import('./src/admin/secciones/fabrica.js?v=2'));
     // Inventario Fábrica — hilazas, hilos y telas → src/admin/secciones/inventario-fabrica.js
-    cargarSeccionDiferida('#inventario-fabrica', () => import('./src/admin/secciones/inventario-fabrica.js?v=1'));
+    cargarSeccionDiferida('#inventario-fabrica', () => import('./src/admin/secciones/inventario-fabrica.js?v=2'));
     // Productos Fábrica → src/admin/secciones/productos-fabrica.js
-    cargarSeccionDiferida('#productos-fabrica', () => import('./src/admin/secciones/productos-fabrica.js?v=1'));
+    cargarSeccionDiferida('#productos-fabrica', () => import('./src/admin/secciones/productos-fabrica.js?v=2'));
     // Cargue masivo Fábrica → src/admin/secciones/cargue-masivo-fabrica.js
-    cargarSeccionDiferida('#cargue-masivo-fabrica', () => import('./src/admin/secciones/cargue-masivo-fabrica.js?v=1'));
+    cargarSeccionDiferida('#cargue-masivo-fabrica', () => import('./src/admin/secciones/cargue-masivo-fabrica.js?v=2'));
 
 });

@@ -3,16 +3,16 @@
  * Maneja CRUD de usuarios y asignación de permisos
  */
 
-import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js';
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js?v=2';
 // La versión debe coincidir con el <script type="module" src="auditoria.js?v=..."> de
 // admin.html / admin-fabrica.html: un specifier de import distinto (con o sin query
 // string distinta) hace que el navegador cargue auditoria.js como un módulo aparte,
 // con su propio estado y sus propios listeners de 'adminAuthReady' — eso duplicaba
 // filas y manejadores de clic en la sección Auditoría.
-import { registrarAuditoria } from './auditoria.js?v=1.0.1';
+import { registrarAuditoria } from './auditoria.js?v=1.1.0';
 
 // Referencias globales
 let usuariosCollection;

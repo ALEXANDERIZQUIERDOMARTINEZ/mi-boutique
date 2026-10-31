@@ -11,13 +11,13 @@
  * Super Admin no pertenece a ningún tenant, así que ese chequeo no aplica
  * aquí; en su lugar se exige rol === 'SUPER_ADMIN' explícitamente.
  */
-import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
     initializeFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc,
     serverTimestamp, orderBy, query, Timestamp
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { AuthManager, ROLES, MODULOS_PERMISOS } from './auth.js';
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { AuthManager, ROLES, MODULOS_PERMISOS } from './auth.js?v=2';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",

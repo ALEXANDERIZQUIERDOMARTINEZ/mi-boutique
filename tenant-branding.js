@@ -6,7 +6,7 @@
  * y admin-fabrica-auth-init.js — cada uno pinta SU propio panel con la marca
  * de SU tenant, nunca la de otro.
  */
-import { doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { doc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 // Valores de siempre, por si el documento tenants/{id} todavía no existe
 // (Boutique nunca lo necesitó para funcionar) o falla la lectura.

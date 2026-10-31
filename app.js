@@ -1,11 +1,11 @@
 // --- IMPORTACIONES DE FIREBASE ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { initializeFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { initializeFirestore, collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs, updateDoc, increment, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 // --- IMPORTACIONES DE ANALYTICS ---
 import analytics from './analytics.js';
 import { WHOLESALE_TIER_GROUPS, getHybridTierPrice, getBaseTierPrice, resolveWholesaleGroup, buildTiersTablesHtml, isSurtidoGroup } from './wholesale-tiers.js?v=2';
-import { resolveTenant } from './src/core/tenant-resolver.js';
+import { resolveTenant } from './src/core/tenant-resolver.js?v=2';
 // Miniatura liviana para tarjetas y carrito (la foto completa pesa ~500 KB).
 import { urlMiniatura } from './src/core/miniaturas.js?v=1';
 

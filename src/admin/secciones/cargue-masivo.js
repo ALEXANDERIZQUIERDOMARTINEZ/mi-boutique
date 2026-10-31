@@ -3,7 +3,7 @@
 // panel: admin.js lo importa la primera vez que se entra a la sección
 // (ver cargarSeccionDiferida en admin.js). Lo que antes leía del closure de
 // admin.js (db, colecciones, helpers) llega ahora en `ctx`.
-import { addDoc, collection, doc, getDocs, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { addDoc, collection, doc, getDocs, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 // ========================================================================
 // MÓDULO: CARGUE MASIVO DE PRODUCTOS DESDE EXCEL

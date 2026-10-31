@@ -7,18 +7,18 @@
  * sus propias funciones de utilidad, aunque el proyecto de Firebase de
  * fondo sea el mismo mientras no exista una migración de datos separada.
  */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import {
     initializeFirestore, collection, getDocs, query, where, orderBy, limit, doc,
     getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp,
     onSnapshot, runTransaction, writeBatch
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js";
 import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin } from "./wholesale-tiers.js?v=2";
-import { activarCacheLocal } from "./src/core/firestore-cache.js?v=2";
-import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=3";
-import { vigilarConexion } from "./src/core/conexion.js?v=1";
+import { activarCacheLocal } from "./src/core/firestore-cache.js?v=3";
+import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=4";
+import { vigilarConexion } from "./src/core/conexion.js?v=2";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
