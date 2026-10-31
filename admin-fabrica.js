@@ -8,6 +8,7 @@
  * fondo sea el mismo mientras no exista una migración de datos separada.
  */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import {
     initializeFirestore, collection, getDocs, query, where, orderBy, limit, doc,
     getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp,
@@ -16,7 +17,8 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
 import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin } from "./wholesale-tiers.js?v=2";
 import { activarCacheLocal } from "./src/core/firestore-cache.js?v=2";
-import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=2";
+import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=3";
+import { vigilarConexion } from "./src/core/conexion.js?v=1";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -28,12 +30,23 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+// Auth se registra ANTES de usar Firestore. Firestore solo le da a Auth un
+// ciclo (setTimeout 0) para aparecer; si no está, arranca SIN usuario y las
+// consultas protegidas que se abran en ese momento fallan con "sin permisos"
+// y ese listener muere para siempre (Dashboard en $0 hasta recargar). Antes
+// Auth recién se cargaba en *-auth-init.js, después de este archivo, así que
+// con red lenta pasaba de forma intermitente. Es el mismo firebase-auth.js
+// que ya se descargaba; con esto Firestore espera la sesión desde el inicio.
+getAuth(app);
 export const db = initializeFirestore(app, {
     experimentalAutoDetectLongPolling: true
 });
 // Caché local (IndexedDB), igual que en admin.js — ver
 // src/core/firestore-cache.js. Tiene que activarse antes de cualquier consulta.
 activarCacheLocal(db, { tenantPagina: 'fabrica' });
+// Renueva la conexión al volver del segundo plano / al volver internet
+// (ver src/core/conexion.js).
+vigilarConexion(db);
 export const storage = getStorage(app);
 window.db = db;
 window.firebaseApp = app;

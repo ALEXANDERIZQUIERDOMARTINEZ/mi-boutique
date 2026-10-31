@@ -1,5 +1,6 @@
 // Import Firebase core and Firestore modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 import { initializeFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, onSnapshot, serverTimestamp, query, where, orderBy, writeBatch, Timestamp, getDoc, deleteField, limit, setDoc, runTransaction } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 // Import Storage
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
@@ -13,7 +14,8 @@ import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProduct
 import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin, WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js?v=2";
 import { resolveTenant } from "./src/core/tenant-resolver.js";
 import { activarCacheLocal } from "./src/core/firestore-cache.js?v=2";
-import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=2";
+import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=3";
+import { vigilarConexion } from "./src/core/conexion.js?v=1";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -28,6 +30,14 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+// Auth se registra ANTES de usar Firestore. Firestore solo le da a Auth un
+// ciclo (setTimeout 0) para aparecer; si no está, arranca SIN usuario y las
+// consultas protegidas que se abran en ese momento fallan con "sin permisos"
+// y ese listener muere para siempre (Dashboard en $0 hasta recargar). Antes
+// Auth recién se cargaba en *-auth-init.js, después de este archivo, así que
+// con red lenta pasaba de forma intermitente. Es el mismo firebase-auth.js
+// que ya se descargaba; con esto Firestore espera la sesión desde el inicio.
+getAuth(app);
 // Evita que la conexión en tiempo real se quede colgada en redes móviles o
 // navegadores in-app que bloquean WebSockets (ver mismo fix en app.js).
 // auth.js / admin-auth-init.js reutilizan esta misma instancia (mismo
@@ -40,6 +50,9 @@ const db = initializeFirestore(app, {
 // Ver src/core/firestore-cache.js (se borra si cambia el usuario/empresa y
 // al cerrar sesión).
 activarCacheLocal(db);
+// Renueva la conexión al volver del segundo plano / al volver internet
+// (ver src/core/conexion.js).
+vigilarConexion(db);
 const storage = getStorage(app);
 console.log("Firebase Initialized!");
 

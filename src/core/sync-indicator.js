@@ -8,7 +8,8 @@
 //   - <body> lleva la clase 'fs-sincronizando', que hace brillar las cifras
 //     del Dashboard y respirar las tablas (estilos en admin-styles.css).
 // Al confirmar, la píldora muestra "Actualizado" un momento y desaparece.
-// Si no confirma en 10 s pasa a "Sin conexión · mostrando datos guardados"
+// A los 7 s sin confirmar renueva la conexión (src/core/conexion.js); si a
+// los 15 s sigue sin confirmar pasa a "Sin conexión · mostrando datos guardados"
 // (o "Conexión lenta · reintentando…" si el navegador sí tiene red).
 //
 // Escucha las MISMAS consultas que ya abre el panel (con
@@ -16,8 +17,12 @@
 // existente: no abre conexiones nuevas ni cobra lecturas adicionales.
 import { onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { reportarSincronizacionTrabada } from "./firestore-cache.js?v=2";
+import { reconectar } from "./conexion.js?v=1";
 
-const ESPERA_SIN_CONEXION_MS = 10000;
+// A los 7 s sin confirmar se renueva la conexión una vez (sin recargar);
+// si a los 15 s sigue sin confirmar, se avisa.
+const ESPERA_RECONEXION_MS = 7000;
+const ESPERA_SIN_CONEXION_MS = 15000;
 
 function crearUI() {
     const barra = document.createElement('div');
@@ -59,6 +64,7 @@ export function vigilarSincronizacion(consultas) {
         if (terminado) return;
         terminado = true;
         clearTimeout(timerSinConexion);
+        clearTimeout(timerReconexion);
         window.removeEventListener('offline', marcarSinConexion);
         body.classList.remove('fs-sincronizando', 'fs-sin-confirmar');
         ui.barra.classList.remove('fs-sync-barra--activa');
@@ -81,6 +87,9 @@ export function vigilarSincronizacion(consultas) {
             ? 'Conexión lenta · reintentando…'
             : 'Sin conexión · mostrando datos guardados');
     };
+    const timerReconexion = setTimeout(() => {
+        if (!terminado && navigator.onLine) reconectar('sin respuesta del servidor al abrir');
+    }, ESPERA_RECONEXION_MS);
     const timerSinConexion = setTimeout(marcarSinConexion, ESPERA_SIN_CONEXION_MS);
     window.addEventListener('offline', marcarSinConexion);
 
