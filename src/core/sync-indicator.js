@@ -15,6 +15,7 @@
 // includeMetadataChanges), así que Firestore las comparte con el listener
 // existente: no abre conexiones nuevas ni cobra lecturas adicionales.
 import { onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { reportarSincronizacionTrabada } from "./firestore-cache.js?v=2";
 
 const ESPERA_SIN_CONEXION_MS = 10000;
 
@@ -73,6 +74,9 @@ export function vigilarSincronizacion(consultas) {
         body.classList.remove('fs-sincronizando');
         body.classList.add('fs-sin-confirmar');
         ui.barra.classList.remove('fs-sync-barra--activa');
+        // Con internet pero sin respuesta: si la causa es la caché local, la
+        // próxima apertura en este dispositivo ya no la usa.
+        if (navigator.onLine) reportarSincronizacionTrabada();
         estado('fs-sync--sin-conexion', navigator.onLine
             ? 'Conexión lenta · reintentando…'
             : 'Sin conexión · mostrando datos guardados');

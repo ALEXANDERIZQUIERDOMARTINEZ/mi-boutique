@@ -12,8 +12,8 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 import { registrarAuditoria, describirCambiosProducto, resumenVariacionesProducto } from "./auditoria.js?v=1.0.1";
 import { resolveWholesaleGroupConRespaldo, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin, WHOLESALE_TIER_GROUPS } from "./wholesale-tiers.js?v=2";
 import { resolveTenant } from "./src/core/tenant-resolver.js";
-import { activarCacheLocal } from "./src/core/firestore-cache.js";
-import { vigilarSincronizacion } from "./src/core/sync-indicator.js";
+import { activarCacheLocal } from "./src/core/firestore-cache.js?v=2";
+import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=2";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {

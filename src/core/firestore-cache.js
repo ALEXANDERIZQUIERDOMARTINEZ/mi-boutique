@@ -6,6 +6,9 @@
 // completa). Mientras el servidor no confirma, src/core/sync-indicator.js
 // muestra "Sincronizando…" y marca las cifras como no confirmadas.
 //
+// No se activa en Safari/iOS ni en un dispositivo donde ya se trabó (ver
+// esWebKit y reportarSincronizacionTrabada).
+//
 // Privacidad en equipos compartidos: la caché pertenece a un usuario y una
 // empresa ("dueño"). Si al abrir el panel el dueño cambió, la caché anterior
 // se borra ANTES de que Firestore la abra, así nunca se ven datos de otra
@@ -15,6 +18,45 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
 const DUENO_KEY = 'mishellFirestoreCacheDueno';
+const FALLO_KEY = 'mishellFirestoreCacheFallo';
+const FALLO_DURACION_MS = 7 * 24 * 60 * 60 * 1000;
+
+let cacheActiva = false;
+export function cacheLocalActiva() { return cacheActiva; }
+
+// Safari / iPhone / iPad (todo navegador en iOS usa WebKit): en producción la
+// caché en IndexedDB dejó pestañas sin recibir nunca datos del servidor
+// (todas las consultas esperando, "Conexión lenta · reintentando…"),
+// probablemente por cómo WebKit congela pestañas en segundo plano y maneja
+// IndexedDB. Ahí se trabaja sin caché, como antes.
+function esWebKit() {
+    const ua = navigator.userAgent || '';
+    const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const safari = /AppleWebKit/.test(ua) && !/Chrome|Chromium|Edg|OPR|Android|SamsungBrowser/.test(ua);
+    return ios || safari;
+}
+
+// Si en este dispositivo la caché ya dejó el panel sin confirmar datos del
+// servidor teniendo internet, se desactiva aquí por 7 días.
+function falloReciente() {
+    try {
+        const t = parseInt(localStorage.getItem(FALLO_KEY) || '0', 10);
+        return t && (Date.now() - t) < FALLO_DURACION_MS;
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Lo llama src/core/sync-indicator.js cuando el servidor no confirmó en 10 s
+ * teniendo internet. Si la caché estaba activa, la desactiva en este
+ * dispositivo para las próximas aperturas (la actual ya no se puede cambiar).
+ */
+export function reportarSincronizacionTrabada() {
+    if (!cacheActiva) return;
+    try { localStorage.setItem(FALLO_KEY, String(Date.now())); } catch (e) { /* ignorar */ }
+    console.warn('Caché local de Firestore: sin confirmar del servidor; se desactiva en este dispositivo por 7 días.');
+}
 
 // Mismo usuario que leen admin.js / auth.js al arrancar (sessionStorage al
 // llegar desde login.html, localStorage al reabrir).
@@ -59,18 +101,21 @@ export function activarCacheLocal(db, { tenantPagina = null } = {}) {
         }
         // Sin usuario conocido no se guarda nada en el dispositivo.
         if (!dueno) return Promise.resolve(false);
+        if (esWebKit() || falloReciente()) return Promise.resolve(false);
         localStorage.setItem(DUENO_KEY, dueno);
     } catch (e) {
         // Sin localStorage/IndexedDB (modo privado estricto): sin caché.
         return Promise.resolve(false);
     }
 
+    cacheActiva = true;
     return enableMultiTabIndexedDbPersistence(db)
         .then(() => true)
         .catch(err => {
             // 'failed-precondition' (otra pestaña sin modo multi-pestaña) o
             // 'unimplemented' (navegador sin soporte): se sigue sin caché.
             console.warn('Caché local de Firestore no disponible:', err.code || err);
+            cacheActiva = false;
             return false;
         });
 }
