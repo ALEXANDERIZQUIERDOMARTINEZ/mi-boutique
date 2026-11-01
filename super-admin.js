@@ -17,7 +17,7 @@ import {
     initializeFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc,
     serverTimestamp, orderBy, query, Timestamp
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-import { AuthManager, ROLES, MODULOS_PERMISOS } from './auth.js?v=2';
+import { AuthManager, ROLES, MODULOS_PERMISOS } from './auth.js?v=3';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -997,6 +997,11 @@ document.getElementById('sa-dashboard-error-retry')?.addEventListener('click', a
 
     try {
         const usuario = await authManager.init();
+        // Avisar si en este dispositivo se cierra la sesión o entra otro
+        // usuario mientras este panel está abierto (ver auth.js).
+        authManager.vigilarSesionYUsuario(() => {
+            if (authManager.currentUser?.rol !== 'SUPER_ADMIN') window.location.reload();
+        });
 
         if (usuario.rol !== 'SUPER_ADMIN') {
             alert('⛔ Acceso denegado. Solo Super Admin puede entrar a este panel.');

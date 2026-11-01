@@ -7,10 +7,10 @@
  * cual, sin cambios, igual que en Boutique.
  */
 
-import { AuthManager } from './auth.js?v=2';
+import { AuthManager } from './auth.js?v=3';
 // Versión debe coincidir con el import de usuarios.js en admin-auth-init.js
 // (Vercel cachea .js hasta 1h; bump este número cuando usuarios.js cambie).
-import { initUsuariosManager } from './usuarios.js?v=1.2.0';
+import { initUsuariosManager } from './usuarios.js?v=1.3.0';
 import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js?v=2';
 
 function ocultarGate() {
@@ -159,6 +159,16 @@ function renderizarSesion(authManager, usuario) {
             configurarCierreSesionesGlobal(authManager);
         }
         authManager.escucharInvalidacionSesiones();
+        // Si en este dispositivo entra otro usuario o se cierra la sesión, o
+        // si un administrador cambia los permisos de este usuario, el panel
+        // se entera al momento (ver vigilarSesionYUsuario en auth.js).
+        authManager.vigilarSesionYUsuario((actualizado) => {
+            window.appContext = {
+                ...construirAppContext(actualizado),
+            };
+            aplicarPermisosNav();
+            window.dispatchEvent(new CustomEvent('adminPermisosActualizados', { detail: window.appContext }));
+        });
         ocultarGate();
     } catch (error) {
         if (error instanceof Error && error.message === 'TIMEOUT_VERIFICACION_SESION') {
