@@ -10,7 +10,7 @@
 // reconectar() cierra y vuelve a abrir la conexión (disableNetwork +
 // enableNetwork). Los listeners existentes NO se pierden: Firestore los
 // vuelve a registrar solo y entrega lo que haya cambiado.
-import { disableNetwork, enableNetwork } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { disableNetwork, enableNetwork } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const SEGUNDO_PLANO_MINIMO_MS = 20000;
 

@@ -17,7 +17,7 @@
  *   });
  */
 
-import { collection, addDoc, query, orderBy, where, limit, startAfter, getDocs, Timestamp, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { collection, addDoc, query, orderBy, where, limit, startAfter, getDocs, Timestamp, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const COLLECTION_NAME = 'auditoria';
 const PAGE_SIZE = 50;

@@ -3,7 +3,7 @@
 // panel: admin.js lo importa la primera vez que se entra a la sección
 // (ver cargarSeccionDiferida en admin.js). Lo que antes leía del closure de
 // admin.js (db, colecciones, helpers) llega ahora en `ctx`.
-import { Timestamp, getDocs, orderBy, query, where } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { Timestamp, getDocs, orderBy, query, where } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 // ========================================================================
 // ✅ SECCIÓN: REPORTES COMPLETOS

@@ -4,7 +4,7 @@
 // (ver cargarSeccionDiferida en admin.js). Lo que antes leía del closure de
 // admin.js (db, colecciones, helpers) llega ahora en `ctx`.
 import { WHOLESALE_TIER_GROUPS } from "../../../wholesale-tiers.js?v=2";
-import { addDoc, collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { addDoc, collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 // ========================================================================
 // ✅ SECCIÓN: CARGUE MASIVO FÁBRICA — mismo asistente de 3 pasos que

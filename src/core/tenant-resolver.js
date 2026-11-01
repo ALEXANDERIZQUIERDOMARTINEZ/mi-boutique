@@ -10,7 +10,7 @@
  * Cuando se migren los datos (fase posterior de este plan), dejará de ser
  * silencioso y pasará a exigir un tenant válido.
  */
-import { collection, query, where, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { collection, query, where, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 let currentTenant = null;
 
@@ -43,7 +43,7 @@ function extractTenantSlug() {
 /**
  * Resuelve el tenant actual contra Firestore e inyecta su branding.
  * No lanza errores hacia arriba: un fallo aquí nunca debe tumbar la app.
- * @param {import("https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js").Firestore} db
+ * @param {import("https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js").Firestore} db
  * @returns {Promise<Object|null>} el tenant resuelto, o null si no aplica todavía
  */
 export async function resolveTenant(db) {

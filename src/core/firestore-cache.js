@@ -15,7 +15,7 @@
 // persona. Al cerrar sesión también se borra (borrarCacheLocal, auth.js).
 import {
     enableMultiTabIndexedDbPersistence, terminate, clearIndexedDbPersistence
-} from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const DUENO_KEY = 'mishellFirestoreCacheDueno';
 const FALLO_KEY = 'mishellFirestoreCacheFallo';

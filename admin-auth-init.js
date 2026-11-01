@@ -5,14 +5,14 @@
  * conecta el panel de gestión de Usuarios (usuarios.js).
  */
 
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-import { AuthManager } from './auth.js';
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { AuthManager } from './auth.js?v=2';
 // Versionado por lo mismo que auditoria.js más abajo: usuarios.js no tiene
 // ninguna otra referencia versionada en el proyecto, así que Vercel puede
 // servir una copia vieja en caché (max-age=3600) hasta una hora después de
 // cada cambio. Bump este número cuando usuarios.js cambie.
-import { initUsuariosManager } from './usuarios.js?v=1.1.0';
-import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js';
+import { initUsuariosManager } from './usuarios.js?v=1.2.0';
+import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js?v=2';
 
 function ocultarGate() {
     document.getElementById('admin-auth-gate')?.remove();

@@ -3,7 +3,7 @@
 // panel: admin.js lo importa la primera vez que hace falta (ver
 // cargarSeccionDiferida en admin.js). Lo que antes leía del closure de
 // admin.js (db, colecciones, helpers, modales) llega ahora en `ctx`.
-import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+import { Timestamp, addDoc, collection, deleteDoc, doc, getDocs, limit, onSnapshot, orderBy, query, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 export function init(ctx) {
     const { alEntrarSeccion, closingsCollection, db, eliminarFormatoNumero, financesCollection, formatoMoneda, openWhatsApp, salesCollection, showToast } = ctx;
