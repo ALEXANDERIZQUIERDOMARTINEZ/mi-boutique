@@ -485,9 +485,81 @@ export class AuthManager {
     }
 
     /**
+     * Vigila, mientras el panel está abierto, que la sesión y los permisos
+     * sigan siendo los mismos con los que se cargó la página.
+     *
+     * 1) Sesión: el inicio de sesión de Firebase es UNO por navegador (se
+     *    comparte entre pestañas). Si en este mismo dispositivo otra persona
+     *    entra con su usuario (login.html / "Cambiar cuenta") o se cierra la
+     *    sesión, esta pestaña seguía mostrando al usuario anterior mientras
+     *    Firestore ya hablaba como el nuevo (o como nadie): todo empezaba a
+     *    fallar con "sin permisos" sin explicación. Ahora se avisa y se
+     *    recarga con el usuario real, o se vuelve al login.
+     * 2) Usuario: escucha su propio documento en 'usuarios'. Si un
+     *    administrador le cambia el rol o los permisos, se aplican al
+     *    momento (onUsuarioActualizado) en vez de seguir con los de cuando
+     *    cargó la página; si lo desactivan, se cierra su sesión.
+     */
+    vigilarSesionYUsuario(onUsuarioActualizado) {
+        const uidInicial = this.currentUser?.uid;
+        if (!uidInicial || this._vigilando) return;
+        this._vigilando = true;
+
+        onAuthStateChanged(this.auth, (user) => {
+            if (this._cerrandoSesion) return;
+            if (!user) {
+                this._cerrandoSesion = true;
+                sessionStorage.removeItem('adminUser');
+                alert('Tu sesión se cerró en este dispositivo (por ejemplo, desde otra pestaña). Vuelve a iniciar sesión.');
+                this.redirectToLogin();
+            } else if (user.uid !== uidInicial) {
+                this._cerrandoSesion = true;
+                // sessionStorage es por pestaña y todavía tiene al usuario
+                // anterior: sin borrarlo, la recarga pintaría al anterior.
+                sessionStorage.removeItem('adminUser');
+                alert('Se inició sesión con otro usuario en este dispositivo. El panel se va a recargar con ese usuario.');
+                window.location.reload();
+            }
+        });
+
+        onSnapshot(doc(this.db, 'usuarios', uidInicial), (snap) => {
+            if (this._cerrandoSesion) return;
+            // Solo datos confirmados por el servidor (no la caché local).
+            if (snap.metadata.fromCache) return;
+            const data = snap.exists() ? snap.data() : null;
+            if (!data || !data.activo) {
+                alert('Tu cuenta fue desactivada. Contacta al administrador.');
+                this.logout();
+                return;
+            }
+            const actualizado = {
+                ...this.currentUser,
+                nombre: data.nombre,
+                rol: data.rol,
+                tenantId: data.tenantId ?? null,
+                permisos: data.permisos || {}
+            };
+            const clave = u => JSON.stringify([u.nombre, u.rol, u.tenantId, Object.keys(u.permisos || {}).filter(k => u.permisos[k] === true).sort()]);
+            if (clave(actualizado) === clave(this.currentUser)) return;
+            this.currentUser = actualizado;
+            this.userPermissions = actualizado.permisos;
+            try {
+                sessionStorage.setItem('adminUser', JSON.stringify(actualizado));
+                localStorage.setItem(USER_CACHE_KEY, JSON.stringify(actualizado));
+            } catch (e) { /* almacenamiento no disponible: no es crítico */ }
+            this.updateUserInfo(actualizado);
+            console.info('Permisos del usuario actualizados en vivo.');
+            if (typeof onUsuarioActualizado === 'function') onUsuarioActualizado(actualizado);
+        }, (error) => {
+            console.warn('No se pudo escuchar los cambios del usuario:', error.code || error);
+        });
+    }
+
+    /**
      * Cierra sesión
      */
     async logout() {
+        this._cerrandoSesion = true;
         try {
             await signOut(this.auth);
             sessionStorage.removeItem('adminUser');
@@ -499,6 +571,7 @@ export class AuthManager {
             await borrarCacheLocal(this.db);
             this.redirectToLogin();
         } catch (error) {
+            this._cerrandoSesion = false;
             console.error('Error al cerrar sesión:', error);
             throw error;
         }

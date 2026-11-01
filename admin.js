@@ -2428,6 +2428,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         window.addEventListener('admin:productos-actualizados', actualizarBannerMiniaturas);
         window.addEventListener('adminAuthReady', actualizarBannerMiniaturas);
+        window.addEventListener('adminPermisosActualizados', actualizarBannerMiniaturas);
 
         miniBtn?.addEventListener('click', async () => {
             if (miniEnCurso) return;
