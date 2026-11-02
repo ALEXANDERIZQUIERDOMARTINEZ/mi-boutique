@@ -669,6 +669,7 @@ export function init(ctx) {
                 }
             }
             
+            let avisoStockSinPermiso = '';
             try {
                 let docRef;
                 let ventaId;
@@ -732,8 +733,9 @@ export function init(ctx) {
                     // error "No hay stock suficiente de: …", no se descuenta
                     // nada y la venta no se guarda (lo muestra el catch de abajo).
                     if (!esCatalogo) {
-                        await actualizarStock(ventaData.items, 'restar', { validarStock: true });
-                        console.log("✅ Stock verificado y descontado");
+                        const resultadoStock = await actualizarStock(ventaData.items, 'restar', { validarStock: true });
+                        avisoStockSinPermiso = resultadoStock?.sinPermisoStock || '';
+                        console.log(avisoStockSinPermiso ? "⚠️ Stock verificado, pero sin permiso para descontarlo" : "✅ Stock verificado y descontado");
                     } else {
                         console.log("ℹ️ Venta por catálogo externo - Stock NO afectado");
                     }
@@ -818,6 +820,12 @@ export function init(ctx) {
                     // Mostrar mensaje según si fue edición o creación
                     const mensaje = isEditMode ? "Venta actualizada exitosamente!" : "Venta registrada exitosamente!";
                     showToast(mensaje, 'success');
+                }
+
+                // Stock que el usuario no pudo descontar (producto de otra
+                // empresa / sin empresa): se avisa después del mensaje de éxito.
+                if (avisoStockSinPermiso) {
+                    setTimeout(() => showToast(`⚠️ Venta registrada, pero tu usuario no tiene permiso para descontar el stock de: ${avisoStockSinPermiso}. Avísale al administrador para ajustarlo.`, 'warning'), 3800);
                 }
 
                 // Solo para ventas nuevas (no ediciones): preguntar si desea facturar ya mismo
