@@ -12,7 +12,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-aut
 import {
     initializeFirestore, collection, getDocs, query, where, orderBy, limit, doc,
     getDoc, deleteDoc, updateDoc, addDoc, serverTimestamp, Timestamp,
-    onSnapshot, runTransaction, writeBatch
+    onSnapshot, runTransaction, writeBatch, setDoc
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js";
 import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin } from "./wholesale-tiers.js?v=2";
@@ -4596,6 +4596,87 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
     searchInput.addEventListener('input', renderTabla);
     categoriaFilter.addEventListener('change', renderTabla);
     lowStockToggle.addEventListener('change', renderTabla);
+
+    // ── "Inventario en 0" (uso único) ──
+    // Pone en 0 el stock de todas las tallas/colores de todos los productos
+    // de Fábrica (los productos y sus variaciones se conservan). Una vez
+    // usado, se guarda config/inventarioFabricaEnCero y el botón desaparece
+    // para todos los usuarios y dispositivos. Solo lo ve quien tiene
+    // inventario_fabrica_gestionar.
+    const btnCero = document.getElementById('prodfab-btn-cero');
+    const refInventarioEnCero = doc(db, 'config', 'inventarioFabricaEnCero');
+    let inventarioEnCeroUsado = true; // oculto hasta confirmar que no se ha usado
+    let ponerEnCeroEnCurso = false;
+    const puedeGestionarInventario = () => {
+        const ctx = window.appContext;
+        if (!ctx) return false;
+        return ctx.isSuperAdmin || ctx.permisos?.inventario_fabrica_gestionar === true;
+    };
+    const actualizarBotonCero = () => {
+        if (!btnCero) return;
+        btnCero.hidden = inventarioEnCeroUsado || !puedeGestionarInventario();
+    };
+    onSnapshot(refInventarioEnCero, (snap) => {
+        inventarioEnCeroUsado = snap.exists() && snap.data().hecho === true;
+        actualizarBotonCero();
+    }, (error) => {
+        console.warn('No se pudo leer el estado de "Inventario en 0":', error);
+    });
+    window.addEventListener('adminAuthReady', actualizarBotonCero);
+    window.addEventListener('adminPermisosActualizados', actualizarBotonCero);
+
+    btnCero?.addEventListener('click', async () => {
+        if (ponerEnCeroEnCurso || inventarioEnCeroUsado || !puedeGestionarInventario()) return;
+        const conStock = productos.filter(p => stockTotal(p) > 0);
+        const unidades = conStock.reduce((s, p) => s + stockTotal(p), 0);
+        if (!conStock.length) {
+            showToast('No hay productos con stock: el inventario ya está en 0.', 'info');
+            return;
+        }
+        const ok = await confirmarFab({
+            titulo: '¿Poner todo el inventario en 0?',
+            mensaje: `Se va a dejar en 0 el stock de ${conStock.length} producto${conStock.length === 1 ? '' : 's'} (${unidades} unidades en total). Los productos, tallas y colores se conservan. Esto no se puede deshacer y el botón desaparecerá después de usarlo.`,
+            confirmar: 'Sí, poner en 0',
+            tono: 'danger',
+            icono: 'bi-arrow-counterclockwise'
+        });
+        if (!ok) return;
+
+        ponerEnCeroEnCurso = true;
+        btnCero.disabled = true;
+        const textoOriginal = btnCero.innerHTML;
+        btnCero.innerHTML = '<span class="spinner-border spinner-border-sm"></span><span>Poniendo en 0…</span>';
+        try {
+            // Lotes de 400 (Firestore admite 500 escrituras por lote).
+            for (let i = 0; i < conStock.length; i += 400) {
+                const batch = writeBatch(db);
+                conStock.slice(i, i + 400).forEach(p => {
+                    const variaciones = (p.variaciones || []).map(v => ({ ...v, stock: 0 }));
+                    batch.update(doc(db, 'productosFabrica', p.id), { variaciones });
+                });
+                await batch.commit();
+            }
+            const ctx = window.appContext || {};
+            await setDoc(refInventarioEnCero, {
+                hecho: true,
+                fecha: serverTimestamp(),
+                porUid: ctx.userId || null,
+                porNombre: ctx.nombre || null,
+                productos: conStock.length,
+                unidades
+            });
+            inventarioEnCeroUsado = true;
+            actualizarBotonCero();
+            showToast(`Listo: ${conStock.length} productos quedaron con stock en 0.`, 'success');
+        } catch (error) {
+            console.error('Error poniendo el inventario en 0:', error);
+            showToast('No se pudo poner el inventario en 0: ' + error.message, 'error');
+        } finally {
+            ponerEnCeroEnCurso = false;
+            btnCero.disabled = false;
+            btnCero.innerHTML = textoOriginal;
+        }
+    });
 
     // ── Variaciones dinámicas (mismo patrón que el catálogo de Boutique) ──
     // 'stockOriginal' guarda el stock que tenía la fila cuando se pintó, y
