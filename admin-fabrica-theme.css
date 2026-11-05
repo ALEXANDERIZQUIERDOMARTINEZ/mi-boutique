@@ -4399,6 +4399,11 @@ body.fab-page.dark-mode .pw2-btn--wa:hover { background: rgba(37, 211, 102, .2) 
 .fab-page .pf-copy-btn:hover { border-color: var(--border-brand); }
 .fab-page .pf-copy-btn.is-copied,
 .fab-page .pf-copy-one.is-copied { color: #15803d; border-color: #9ad8b0; background: #e8f7ee; }
+/* "Inventario en 0" (uso único): rojo suave para distinguirlo */
+.fab-page .pf-zero-btn { color: #b42318; border-color: #f4c7c3; }
+.fab-page .pf-zero-btn:hover { border-color: #e48b85; background: #fef3f2; }
+.fab-page .pf-zero-btn[hidden] { display: none; }
+body.fab-page.dark-mode .pf-zero-btn { color: #fda29b !important; }
 .fab-page .pf-copy-short { display: none; }
 @media (max-width: 575.98px) {
   .fab-page .pf-copy-long { display: none; }
