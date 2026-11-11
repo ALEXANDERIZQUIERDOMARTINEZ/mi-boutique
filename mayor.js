@@ -50,6 +50,12 @@ let productsData = []; // productos ya filtrados (categoría/búsqueda) que se e
 const categoriesMap = new Map(); // categoriaId <-> nombre (bidireccional, igual que app.js)
 let latestCategories = []; // última lista de categorías recibida de Firestore (sin filtrar por stock)
 let activeFilter = 'disponible';
+// Categoría pedida en el enlace (?categoria=Nombre). Se guarda aparte hasta que
+// lleguen categorías y productos, porque antes de eso la categoría todavía no
+// aparece en el menú y se descartaría.
+let pendingUrlCategory = new URLSearchParams(window.location.search).get('categoria');
+let categoriesLoaded = false;
+let productsLoaded = false;
 let searchTerm = '';
 let stockFilterMode = 'all'; // 'all' | 'low'
 let sortMode = 'relevancia'; // 'relevancia' | 'precio-asc' | 'precio-desc' | 'stock-desc' | 'stock-asc'
@@ -570,12 +576,39 @@ function renderCategoryFilterButtons() {
         .filter(({ count }) => count > 0);
     const items = [{ filtro: 'disponible', label: 'Todas las prendas', icon: 'bi-grid', count: disponibles.length },
         ...visibleCategories.map(({ cat, count }) => ({ filtro: cat.nombre, label: formatCardColorName(cat.nombre), icon: 'bi-tag', count }))];
+    if (pendingUrlCategory) {
+        const wanted = pendingUrlCategory.trim().toLowerCase();
+        const match = items.find(item => item.filtro !== 'disponible' && item.filtro.trim().toLowerCase() === wanted);
+        if (match) {
+            activeFilter = match.filtro;
+            pendingUrlCategory = null;
+        } else if (categoriesLoaded && productsLoaded) {
+            // Ya cargó todo y la categoría no existe (o no tiene stock): se ignora.
+            pendingUrlCategory = null;
+            syncCategoryInUrl();
+        }
+    }
     if (activeFilter !== 'disponible' && !items.some(item => item.filtro === activeFilter)) {
         activeFilter = 'disponible';
+        if (categoriesLoaded && productsLoaded) syncCategoryInUrl();
     }
     categoryFilterEl.innerHTML = items.map(item =>
         `<button type="button" class="mayor-sidebar-item${item.filtro === activeFilter ? ' active' : ''}" data-filter="${item.filtro}"><i class="bi ${item.icon}"></i><span class="mayor-sidebar-item-label">${item.label}</span><span class="mayor-sidebar-count">${item.count}</span></button>`
     ).join('');
+}
+
+// Refleja la categoría activa en la URL (?categoria=Nombre) para que, al
+// copiar y compartir el enlace, quien lo abra entre directo a esa categoría.
+function syncCategoryInUrl() {
+    try {
+        const url = new URL(window.location.href);
+        if (activeFilter && activeFilter !== 'disponible' && activeFilter !== 'all') {
+            url.searchParams.set('categoria', activeFilter);
+        } else {
+            url.searchParams.delete('categoria');
+        }
+        window.history.replaceState(window.history.state, '', url.toString());
+    } catch (_) { /* navegadores sin History API: no pasa nada */ }
 }
 
 // ── Filtro por categoría/búsqueda (solo prendas con stock y precio mayorista) ──
@@ -1438,6 +1471,8 @@ if (categoryFilterEl) {
         categoryFilterEl.querySelectorAll('.mayor-sidebar-item').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         activeFilter = btn.dataset.filter || 'disponible';
+        pendingUrlCategory = null;
+        syncCategoryInUrl();
         currentPage = 1;
         renderProducts();
         updateProgress();
@@ -1457,6 +1492,7 @@ onSnapshot(categoriesCollection, (snapshot) => {
     });
 
     latestCategories = categories;
+    categoriesLoaded = true;
     renderCategoryFilterButtons();
 
     renderProducts();
@@ -1600,6 +1636,7 @@ onSnapshot(productsCollection, (snapshot) => {
         if (data.visible === false) return;
         allProducts.push({ id: docSnap.id, ...data });
     });
+    productsLoaded = true;
     renderCategoryFilterButtons();
     renderProducts();
     updateProgress();
