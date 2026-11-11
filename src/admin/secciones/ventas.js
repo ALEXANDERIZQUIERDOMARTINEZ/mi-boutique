@@ -684,7 +684,7 @@ export function init(ctx) {
                 }
             }
             
-            let avisoStockSinPermiso = '';
+            let apartadoCreadoEnTransaccion = null;
             try {
                 let docRef;
                 let ventaId;
@@ -747,38 +747,51 @@ export function init(ctx) {
                     // vender la misma prenda). Si alguna no alcanza, lanza el
                     // error "No hay stock suficiente de: …", no se descuenta
                     // nada y la venta no se guarda (lo muestra el catch de abajo).
-                    // El id se genera antes para enlazar el historial de stock con
-                    // esta venta. Cada venta guarda además el resultado del stock
-                    // (stockEstado): 'descontado', 'pendiente' (no se pudo
-                    // descontar; aparece marcada en la lista con "Descontar
-                    // ahora"), 'parcial' o 'no_aplica' (catálogo externo).
+                    // ── REGLA: sin descuento en la base de datos NO hay venta ──
+                    // Todo va en UNA transacción de Firestore: se lee el stock real
+                    // de cada prenda, se valida (existe, talla/color existe, alcanza),
+                    // se descuenta, se crea la venta, el apartado (si es apartado) y
+                    // se marca aceptado el pedido web (si viene de uno). O se guarda
+                    // todo en el servidor, o no se guarda nada: sin conexión, sin
+                    // permiso, prenda sin producto enlazado o sin stock → la venta
+                    // NO se registra. (Excepción: venta por catálogo externo, que por
+                    // definición no sale del inventario.)
                     const nuevaVentaRef = doc(salesCollection);
                     const folioStock = nuevaVentaRef.id.substring(0, 8).toUpperCase();
-                    if (!esCatalogo) {
-                        const resultadoStock = await actualizarStock(ventaData.items, 'restar', {
-                            validarStock: true, motivo: `Venta ${folioStock}`, ventaId: nuevaVentaRef.id
-                        });
-                        avisoStockSinPermiso = resultadoStock?.sinPermisoStock || '';
-                        ventaData.stockEstado = {
-                            estado: resultadoStock?.estado || 'descontado',
-                            pendientes: resultadoStock?.omitidos || [],
-                        };
-                        console.log(avisoStockSinPermiso ? "⚠️ Stock verificado, pero sin permiso para descontarlo" : "✅ Stock verificado y descontado");
-                    } else {
-                        ventaData.stockEstado = { estado: 'no_aplica', pendientes: [] };
-                        console.log("ℹ️ Venta por catálogo externo - Stock NO afectado");
-                    }
+                    ventaData.stockEstado = { estado: esCatalogo ? 'no_aplica' : 'descontado', pendientes: [] };
 
-                    try {
-                        await setDoc(nuevaVentaRef, ventaData);
-                        docRef = nuevaVentaRef;
-                    } catch (errVenta) {
-                        // No quedar con el stock descontado de una venta que no existe.
-                        if (!esCatalogo && ventaData.stockEstado.estado !== 'pendiente') {
-                            await actualizarStock(ventaData.items, 'sumar', { motivo: `Venta ${folioStock} no se pudo guardar (se devolvió el stock)`, ventaId: nuevaVentaRef.id });
+                    // Pedido web cargado con "Aceptar" (admin.js): solo se enlaza si
+                    // sus prendas siguen en esta venta.
+                    const pedidoEnCurso = window.pedidoWebEnVenta;
+                    const pedidoRef = pedidoEnCurso && pedidoEnCurso.productos.every(pid => (ventaData.items || []).some(it => it.productoId === pid))
+                        ? doc(db, 'pedidosWeb', pedidoEnCurso.id) : null;
+                    if (pedidoRef) ventaData.pedidoWebId = pedidoEnCurso.id;
+
+                    // Apartado: se crea en la misma transacción que la venta.
+                    const apartadoNuevo = ventaData.tipoVenta === 'apartado' ? construirApartado(nuevaVentaRef.id, ventaData) : null;
+                    const apartadoRefNuevo = apartadoNuevo ? doc(apartadosCollection) : null;
+
+                    const errorNegocio = (msg) => Object.assign(new Error(msg), { esDeNegocio: true });
+                    await actualizarStock(esCatalogo ? [] : ventaData.items, 'restar', {
+                        validarStock: true, estricto: true,
+                        motivo: `Venta ${folioStock}`, ventaId: nuevaVentaRef.id,
+                        leerExtra: pedidoRef ? (tx) => tx.get(pedidoRef) : null,
+                        escribirExtra: (tx, pedidoSnap) => {
+                            if (pedidoRef) {
+                                if (!pedidoSnap?.exists()) throw errorNegocio('El pedido web ya no existe. La venta no se registró.');
+                                const pedidoActual = pedidoSnap.data();
+                                if (pedidoActual.ventaId || pedidoActual.estado !== 'pendiente') {
+                                    throw errorNegocio('Este pedido web ya fue procesado en otro dispositivo (aceptado o rechazado). La venta no se registró.');
+                                }
+                                tx.update(pedidoRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp(), totalPedido: pedidoEnCurso.totalPedido, ventaId: nuevaVentaRef.id });
+                            }
+                            tx.set(nuevaVentaRef, ventaData);
+                            if (apartadoRefNuevo) tx.set(apartadoRefNuevo, apartadoNuevo.apartadoData);
                         }
-                        throw errVenta;
-                    }
+                    });
+                    window.pedidoWebEnVenta = null;
+                    apartadoCreadoEnTransaccion = apartadoNuevo;
+                    docRef = nuevaVentaRef;
                     ventaId = docRef.id;
                     console.log("✅ Venta registrada con ID:", ventaId);
 
@@ -792,8 +805,11 @@ export function init(ctx) {
                     });
                 }
 
-                // ✅ PASO 3: Si es apartado, crear documento apartado
-                if (ventaData.tipoVenta === 'apartado') {
+                // ✅ PASO 3: Si es apartado, crear documento apartado (las ventas
+                // nuevas ya lo crearon dentro de la transacción de la venta)
+                if (apartadoCreadoEnTransaccion) {
+                    showToast(`Apartado creado! Saldo: ${formatoMoneda.format(apartadoCreadoEnTransaccion.saldoPendiente)}. Vence: ${apartadoCreadoEnTransaccion.fechaVencimiento.toLocaleDateString('es-CO')}`, 'success');
+                } else if (ventaData.tipoVenta === 'apartado') {
                     const abonoInicial = ventaData.totalVenta; // Ahora totalVenta = abono inicial
                     const totalProducto = ventaData.montoTotalProducto; // Total completo del producto
                     const saldoPendiente = totalProducto - abonoInicial;
@@ -854,11 +870,6 @@ export function init(ctx) {
                     showToast(mensaje, 'success');
                 }
 
-                // Stock que el usuario no pudo descontar (producto de otra
-                // empresa / sin empresa): se avisa después del mensaje de éxito.
-                if (avisoStockSinPermiso) {
-                    setTimeout(() => showToast(`⚠️ Venta registrada, pero tu usuario no tiene permiso para descontar el stock de: ${avisoStockSinPermiso}. Avísale al administrador para ajustarlo.`, 'warning'), 3800);
-                }
 
                 // Solo para ventas nuevas (no ediciones): preguntar si desea facturar ya mismo
                 if (!isEditMode && facturaPreguntaModalInstance) {
@@ -902,7 +913,7 @@ export function init(ctx) {
                 console.error("❌ [VENTA] Mensaje:", err.message);
                 console.error("❌ [VENTA] Stack:", err.stack);
                 // Stock insuficiente / sin conexión ya traen un mensaje completo.
-                showToast(err.agotados || /La venta no se registró/.test(err.message || '')
+                showToast(err.agotados || /no se registró/i.test(err.message || '')
                     ? err.message
                     : `Error al guardar venta: ${err.message}`, 'error');
             }
@@ -1200,33 +1211,38 @@ export function init(ctx) {
                     return;
                 }
                 
-                // Si la venta no es un apartado, o si es un apartado ya completado, reponer stock.
-                // Si es un apartado PENDIENTE, la función de cancelar apartado se encarga.
-                // Si el stock de esta venta nunca se descontó (stockEstado
-                // 'pendiente'/'no_aplica'), devolverlo inflaría el inventario.
-                const stockNuncaDescontado = ['pendiente', 'no_aplica'].includes(ventaData.stockEstado?.estado);
+                // Anular = UNA transacción: se vuelve a leer la venta (que siga sin
+                // anular y con las mismas prendas), se devuelve el stock al
+                // inventario si se había descontado, y se marcan "Anulada" la
+                // venta y "Cancelado" su apartado. O todo o nada (antes eran pasos
+                // sueltos, y anular un apartado PENDIENTE no devolvía las prendas).
+                const stockNuncaDescontado = ['pendiente', 'no_aplica'].includes(ventaData.stockEstado?.estado) || ventaData.esCatalogoExterno;
                 const folioAnulada = ventaId.substring(0, 8).toUpperCase();
-                if (ventaData.tipoVenta !== 'apartado' && !stockNuncaDescontado) {
-                    await actualizarStock(ventaData.items, 'sumar', { motivo: `Venta ${folioAnulada} anulada`, ventaId });
-                }
-
-                await updateDoc(ventaRef, {
-                    estado: 'Anulada'
+                const apartadosDeVenta = ventaData.tipoVenta === 'apartado'
+                    ? (await getDocs(query(apartadosCollection, where("ventaId", "==", ventaId)))).docs
+                    : [];
+                // Si su apartado ya se canceló antes, esa cancelación ya devolvió el stock.
+                const apartadoYaCancelado = apartadosDeVenta.some(d => d.data().estado === 'Cancelado');
+                const devolverStock = !stockNuncaDescontado && !apartadoYaCancelado;
+                const firmaItems = JSON.stringify(ventaData.items || []);
+                const errorNegocioAnular = (msg) => Object.assign(new Error(msg), { esDeNegocio: true });
+                await actualizarStock(devolverStock ? (ventaData.items || []) : [], 'sumar', {
+                    estricto: true,
+                    motivo: `Venta ${folioAnulada} anulada`, ventaId,
+                    leerExtra: async (tx) => ({
+                        venta: await tx.get(ventaRef),
+                        apartados: await Promise.all(apartadosDeVenta.map(d => tx.get(d.ref)))
+                    }),
+                    escribirExtra: (tx, { venta, apartados }) => {
+                        if (!venta.exists()) throw errorNegocioAnular('La venta ya no existe.');
+                        const actual = venta.data();
+                        if (actual.estado === 'Anulada' || actual.estado === 'Cancelada') throw errorNegocioAnular('Esta venta ya fue anulada en otro dispositivo.');
+                        if (JSON.stringify(actual.items || []) !== firmaItems) throw errorNegocioAnular('La venta cambió mientras la anulabas. Vuelve a intentarlo.');
+                        if (apartados.some(a => a.exists() && a.data().estado === 'Cancelado') !== apartadoYaCancelado) throw errorNegocioAnular('El apartado cambió mientras anulabas. Vuelve a intentarlo.');
+                        tx.update(ventaRef, { estado: 'Anulada' });
+                        apartados.forEach(a => { if (a.exists() && a.data().estado !== 'Cancelado') tx.update(a.ref, { estado: 'Cancelado' }); });
+                    }
                 });
-                
-                // Si es un apartado, también cancelarlo
-                if (ventaData.tipoVenta === 'apartado') {
-                     const q = query(apartadosCollection, where("ventaId", "==", ventaId));
-                     const apartadosSnap = await getDocs(q);
-                     apartadosSnap.forEach(async (docSnap) => {
-                         await updateDoc(docSnap.ref, { estado: "Cancelado" });
-                         // Si el apartado estaba PENDIENTE, el stock ya se repuso.
-                         // Si estaba COMPLETADO, debemos reponerlo ahora.
-                         if (ventaData.estado === 'Completada' && !stockNuncaDescontado) {
-                             await actualizarStock(ventaData.items, 'sumar', { motivo: `Apartado de la venta ${folioAnulada} anulado`, ventaId });
-                         }
-                     });
-                }
 
                 showToast('Venta anulada y stock repuesto.', 'info');
 
@@ -2122,6 +2138,41 @@ export function init(ctx) {
             }
         }
 
+        // Datos del apartado de una venta tipo 'apartado' (se guarda en la misma
+        // transacción que la venta y el descuento del stock).
+        function construirApartado(ventaIdApartado, ventaData) {
+            const abonoInicial = ventaData.totalVenta; // totalVenta = abono inicial
+            const totalProducto = ventaData.montoTotalProducto;
+            const saldoPendiente = totalProducto - abonoInicial;
+            const apartadoFechaInput = document.getElementById('apartado-fecha-max');
+            let fechaVencimiento;
+            if (apartadoFechaInput && apartadoFechaInput.value) {
+                fechaVencimiento = new Date(apartadoFechaInput.value + 'T23:59:59');
+            } else {
+                fechaVencimiento = new Date();
+                fechaVencimiento.setDate(fechaVencimiento.getDate() + 15);
+            }
+            const metodoPagoInicial = ventaData.pagoEfectivo > 0 && ventaData.pagoTransferencia > 0 ? 'Mixto'
+                : ventaData.pagoEfectivo > 0 ? 'Efectivo' : 'Transferencia';
+            return {
+                saldoPendiente, fechaVencimiento,
+                apartadoData: {
+                    ventaId: ventaIdApartado,
+                    clienteNombre: ventaData.clienteNombre,
+                    clienteCelular: ventaData.clienteCelular,
+                    total: totalProducto,
+                    abonado: abonoInicial,
+                    saldo: saldoPendiente,
+                    fechaCreacion: serverTimestamp(),
+                    fechaVencimiento: Timestamp.fromDate(fechaVencimiento),
+                    estado: 'Pendiente',
+                    items: ventaData.items,
+                    tenantId: ventaData.tenantId,
+                    abonos: [{ fecha: Timestamp.fromDate(new Date()), monto: abonoInicial, metodoPago: metodoPagoInicial, observaciones: 'Abono inicial' }]
+                }
+            };
+        }
+
         // Estado local de los productos de la venta que se está editando
         let editSaleItemsState = [];
         let editSaleVentaData = null;
@@ -2643,19 +2694,22 @@ export function init(ctx) {
                 // Ajustar stock: reponer lo que tenía la venta antes y descontar lo que quedó tras la edición
                 // (Si el stock de la venta nunca se descontó, reconciliar repondría
                 // prendas que no salieron: se deja pendiente.)
-                if (!editSaleVentaData?.esCatalogoExterno && !['pendiente', 'no_aplica'].includes(editSaleVentaData?.stockEstado?.estado)) {
-                    console.log('📦 [EDICIÓN] Reconciliando stock de productos...');
-                    await reconciliarStockEdicionVenta(editSaleVentaData?.items || [], itemsActualizados, {
-                        motivo: `Venta ${ventaId.substring(0, 8).toUpperCase()} editada`, ventaId
-                    });
-                    console.log('✅ [EDICIÓN] Stock reconciliado');
-                }
-
-                // Actualizar venta en Firestore
-                console.log('💾 [EDICIÓN] Actualizando venta en Firestore...');
-                console.log('📋 [EDICIÓN] Objeto updateData:', updateData);
-
-                await updateDoc(ventaRef, updateData);
+                // Stock y venta en UNA transacción: o se ajusta el inventario y se
+                // guarda la edición, o no se guarda nada.
+                const sinStockVenta = editSaleVentaData?.esCatalogoExterno || ['pendiente', 'no_aplica'].includes(editSaleVentaData?.stockEstado?.estado);
+                const firmaItemsEdicion = JSON.stringify(editSaleVentaData?.items || []);
+                console.log('📦 [EDICIÓN] Ajustando stock y guardando la venta en una transacción...');
+                await reconciliarStockEdicionVenta(sinStockVenta ? [] : (editSaleVentaData?.items || []), sinStockVenta ? [] : itemsActualizados, {
+                    estricto: true,
+                    motivo: `Venta ${ventaId.substring(0, 8).toUpperCase()} editada`, ventaId,
+                    leerExtra: (tx) => tx.get(ventaRef),
+                    escribirExtra: (tx, ventaSnapTx) => {
+                        const actual = ventaSnapTx?.exists() ? ventaSnapTx.data() : null;
+                        if (!actual) throw Object.assign(new Error('La venta ya no existe.'), { esDeNegocio: true });
+                        if (JSON.stringify(actual.items || []) !== firmaItemsEdicion) throw Object.assign(new Error('La venta cambió mientras la editabas. Ciérrala y vuelve a abrirla.'), { esDeNegocio: true });
+                        tx.update(ventaRef, updateData);
+                    }
+                });
 
                 console.log('✅ [EDICIÓN] Venta actualizada exitosamente en Firestore');
                 showToast('Venta actualizada exitosamente', 'success');
@@ -2781,15 +2835,18 @@ export function init(ctx) {
                 // que nunca descontó stock al crearse.
                 const yaSeRepusoStock = ventaData.estado === 'Anulada' || ventaData.estado === 'Cancelada'
                     || ['pendiente', 'no_aplica'].includes(ventaData.stockEstado?.estado); // nunca se descontó
-                if (!yaSeRepusoStock && !ventaData.esCatalogoExterno && ventaData.items && Array.isArray(ventaData.items)) {
-                    // Devuelve las prendas al inventario en una transacción
-                    // contra el servidor (ver aplicarDeltasStock en admin.js):
-                    // no pisa ventas hechas a la vez desde otro dispositivo.
-                    await reconciliarStockEdicionVenta(ventaData.items, [], { motivo: `Venta ${ventaId.substring(0, 8).toUpperCase()} eliminada`, ventaId });
-                }
-
-                // Eliminar venta
-                await deleteDoc(ventaRef);
+                // Devolver el stock y eliminar la venta en UNA transacción.
+                await reconciliarStockEdicionVenta(
+                    (!yaSeRepusoStock && !ventaData.esCatalogoExterno && Array.isArray(ventaData.items)) ? ventaData.items : [], [], {
+                    estricto: true,
+                    motivo: `Venta ${ventaId.substring(0, 8).toUpperCase()} eliminada`, ventaId,
+                    leerExtra: (tx) => tx.get(ventaRef),
+                    escribirExtra: (tx, ventaSnapTx) => {
+                        if (!ventaSnapTx?.exists()) throw Object.assign(new Error('La venta ya fue eliminada.'), { esDeNegocio: true });
+                        if (ventaSnapTx.data().estado !== ventaData.estado) throw Object.assign(new Error('La venta cambió mientras la eliminabas. Vuelve a intentarlo.'), { esDeNegocio: true });
+                        tx.delete(ventaRef);
+                    }
+                });
 
                 showToast('Venta eliminada exitosamente. Stock restaurado.', 'success');
 

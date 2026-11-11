@@ -792,16 +792,23 @@ function etiquetaVariacion(nombre, talla, color) {
     return partes.length ? `${nombre} (${partes.join(' / ')})` : nombre;
 }
 
-async function aplicarDeltasStock(deltas, nombres, { validar = false } = {}) {
-    if (!deltas.size) return { omitidos: [], cambios: [] };
+// estricto: un producto o una talla/color que no existe en la base de datos
+//   cancela TODO (en vez de "omitirse" y seguir).
+// leerExtra(tx) / escribirExtra(tx, extra): lecturas y escrituras adicionales
+//   en la MISMA transacción (crear la venta, aceptar el pedido web, anular...):
+//   o se guarda todo junto con el descuento del stock, o no se guarda nada.
+async function aplicarDeltasStock(deltas, nombres, { validar = false, estricto = false, leerExtra = null, escribirExtra = null } = {}) {
+    if (!deltas.size && !escribirExtra) return { omitidos: [], cambios: [] };
     return runTransaction(db, async (tx) => {
         // Firestore exige leer todo antes de escribir en una transacción.
+        const extra = leerExtra ? await leerExtra(tx) : null;
         const snaps = new Map();
         for (const productoId of deltas.keys()) {
             snaps.set(productoId, await tx.get(doc(db, 'productos', productoId)));
         }
 
         const omitidos = [];
+        const omitidosAlDescontar = []; // los que bloquean en modo estricto
         const agotados = [];
         const escrituras = [];
         // Lo que de verdad cambió (antes → después) según el stock leído en
@@ -813,6 +820,7 @@ async function aplicarDeltasStock(deltas, nombres, { validar = false } = {}) {
             const snap = snaps.get(productoId);
             if (!snap.exists()) {
                 omitidos.push(nombre);
+                if ([...porVariacion.values()].some(d => d < 0)) omitidosAlDescontar.push(`${nombre} (el producto ya no existe)`);
                 return;
             }
             const producto = snap.data();
@@ -841,6 +849,7 @@ async function aplicarDeltasStock(deltas, nombres, { validar = false } = {}) {
                 if (!variacion) {
                     console.warn(`No se encontró la variación ${talla}/${color} para el producto ${productoId}`);
                     omitidos.push(etiquetaVariacion(nombre, talla, color));
+                    if (delta < 0) omitidosAlDescontar.push(etiquetaVariacion(nombre, talla, color));
                     return;
                 }
                 const stockActual = parseInt(variacion.stock, 10) || 0;
@@ -860,7 +869,13 @@ async function aplicarDeltasStock(deltas, nombres, { validar = false } = {}) {
             error.agotados = agotados;
             throw error;
         }
+        if (estricto && omitidosAlDescontar.length) {
+            const error = new Error(`Estas prendas no existen en el inventario (producto o talla/color): ${omitidosAlDescontar.join(', ')}.`);
+            error.agotados = omitidosAlDescontar;
+            throw error;
+        }
         escrituras.forEach(([productoId, datos]) => tx.update(doc(db, 'productos', productoId), datos));
+        if (escribirExtra) escribirExtra(tx, extra);
         return { omitidos, cambios };
     });
 }
@@ -926,15 +941,18 @@ function acumularDeltas(deltas, nombres, items, signo) {
 // stock al anular/cancelar) nunca lanza: avisa con un toast, como antes.
 // Devuelve el resultado para que la venta lo guarde (stockEstado):
 //   { estado: 'descontado' | 'parcial' | 'pendiente' | 'error', ... }
-async function actualizarStock(itemsVendido, accion = 'restar', { validarStock = false, motivo = null, ventaId = null } = {}) {
-    if (!itemsVendido || itemsVendido.length === 0) return { estado: 'descontado', omitidos: [] };
+async function actualizarStock(itemsVendido, accion = 'restar', { validarStock = false, motivo = null, ventaId = null, estricto = false, leerExtra = null, escribirExtra = null } = {}) {
+    if ((!itemsVendido || itemsVendido.length === 0) && !escribirExtra) return { estado: 'descontado', omitidos: [] };
     const deltas = new Map();
     const nombres = new Map();
-    const sinId = acumularDeltas(deltas, nombres, itemsVendido, accion === 'restar' ? -1 : 1);
+    const sinId = acumularDeltas(deltas, nombres, itemsVendido || [], accion === 'restar' ? -1 : 1);
     sinId.forEach(n => console.warn("Item en carrito sin productoId, omitiendo stock:", n));
+    if (estricto && sinId.length) {
+        throw new Error(`Solo se puede vender lo que está en el inventario. Estas prendas no están enlazadas a un producto: ${sinId.join(', ')}. La venta no se registró.`);
+    }
 
     try {
-        const resultado = await aplicarDeltasStock(deltas, nombres, { validar: validarStock && accion === 'restar' });
+        const resultado = await aplicarDeltasStock(deltas, nombres, { validar: validarStock && accion === 'restar', estricto, leerExtra, escribirExtra });
         const omitidos = [...sinId, ...resultado.omitidos];
         console.log(`Stock actualizado (acción: ${accion}) correctamente.`);
         registrarMovimientosStock(resultado.cambios, { motivo: motivo || (accion === 'restar' ? 'Venta' : 'Devolución al inventario'), ventaId });
@@ -943,6 +961,20 @@ async function actualizarStock(itemsVendido, accion = 'restar', { validarStock =
         }
         return { estado: omitidos.length ? 'parcial' : 'descontado', omitidos };
     } catch (error) {
+        if (estricto) {
+            // Modo estricto (registrar/anular/editar/eliminar ventas): nada
+            // se guarda si el stock no se pudo escribir en la base de datos.
+            if (error.agotados) { error.message += ' La venta no se registró.'; throw error; }
+            if (error.esDeNegocio) throw error;
+            const sinRed = error.code === 'unavailable' || !navigator.onLine;
+            const sinPermiso = error.code === 'permission-denied';
+            console.error('Operación de stock rechazada:', error);
+            throw new Error(sinRed
+                ? 'Sin conexión con la base de datos: no se pudo descontar el stock, así que la operación NO se registró. Inténtalo de nuevo.'
+                : sinPermiso
+                    ? 'La base de datos no permitió descontar el stock de estos productos con tu usuario (pertenecen a otra empresa o falta el permiso), así que la operación NO se registró. Avísale al administrador.'
+                    : `No se pudo descontar el stock (${error.message}), así que la operación NO se registró.`);
+        }
         if (validarStock && error.code === 'permission-denied') {
             // La transacción YA validó el stock real (si algo estaba agotado,
             // habría fallado antes con error.agotados); lo que Firestore
@@ -980,12 +1012,13 @@ async function actualizarStock(itemsVendido, accion = 'restar', { validarStock =
 // lo original y descuenta lo nuevo como un delta neto por variación, en una
 // sola transacción. Si lo nuevo no alcanza en el stock real, lanza error y no
 // toca nada (el que llama no guarda la edición).
-async function reconciliarStockEdicionVenta(itemsOriginales, itemsNuevos, { motivo = 'Edición de venta', ventaId = null } = {}) {
+async function reconciliarStockEdicionVenta(itemsOriginales, itemsNuevos, { motivo = 'Edición de venta', ventaId = null, leerExtra = null, escribirExtra = null, estricto = false } = {}) {
     const deltas = new Map();
     const nombres = new Map();
     acumularDeltas(deltas, nombres, itemsOriginales, 1);   // reponer lo que tenía la venta
-    acumularDeltas(deltas, nombres, itemsNuevos, -1);      // descontar lo que queda tras editar
-    const { omitidos, cambios } = await aplicarDeltasStock(deltas, nombres, { validar: true });
+    const sinId = acumularDeltas(deltas, nombres, itemsNuevos, -1);      // descontar lo que queda tras editar
+    if (estricto && sinId.length) throw new Error(`Solo se puede vender lo que está en el inventario. Sin producto enlazado: ${sinId.join(', ')}.`);
+    const { omitidos, cambios } = await aplicarDeltasStock(deltas, nombres, { validar: true, estricto, leerExtra, escribirExtra });
     registrarMovimientosStock(cambios, { motivo, ventaId });
     if (omitidos.length) console.warn('Stock no ajustado al editar la venta para:', omitidos.join(', '));
 }
@@ -1459,13 +1492,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const subtotal = orderData.subtotalProductos || orderData.totalPedido || 0;
                 await preFillSalesForm(orderData, orderId, 0, subtotal);
-                showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
+                // El pedido NO se marca "aceptado" aquí: pasa a aceptado en la
+                // MISMA transacción que descuenta el stock y crea la venta (ver
+                // ventas.js). Antes quedaba aceptado aunque la venta nunca se
+                // registrara, y el stock no bajaba.
+                window.pedidoWebEnVenta = {
+                    id: orderId,
+                    totalPedido: subtotal,
+                    productos: (orderData.items || []).map(it => it.productoId).filter(Boolean)
+                };
+                showToast('Pedido cargado. Al registrar la venta quedará aceptado.', 'success');
                 if (window.adminShowSection) { window.adminShowSection('#ventas'); window.adminMarkActive('#ventas'); }
                 const btn = document.getElementById('toggle-sales-form-view-btn');
                 if (btn) btn.click();
-
-                updateDoc(orderRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp(), totalPedido: subtotal })
-                    .catch(err => { console.error('Error al marcar pedido como aceptado:', err); showToast('El pedido pasó al formulario, pero no se pudo marcar como aceptado. Verifica tu conexión.', 'error'); });
             } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
         }
 
@@ -4185,9 +4224,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ventas → src/admin/secciones/ventas.js. window.asegurarModuloVentas()
     // lo carga desde otras partes que necesitan el carrito (pedidos web,
     // modal de variaciones, factura tras un abono) antes de entrar a Ventas.
-    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=7'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
+    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=8'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
     // Apartados → src/admin/secciones/apartados.js
-    cargarSeccionDiferida('#apartados', () => import('./src/admin/secciones/apartados.js?v=4'), { abonoApartadoModalInstance, actualizarStock, apartadosCollection, db, eliminarFormatoNumero, formatoMoneda, localProductsMap, openWhatsApp, showToast, verApartadoModalInstance });
+    cargarSeccionDiferida('#apartados', () => import('./src/admin/secciones/apartados.js?v=5'), { abonoApartadoModalInstance, actualizarStock, apartadosCollection, db, eliminarFormatoNumero, formatoMoneda, localProductsMap, openWhatsApp, showToast, verApartadoModalInstance });
     // Finanzas (versión anterior: ingresos/gastos y cierre de caja) →
     // src/admin/secciones/finanzas-caja.js. Su pantalla ya no existe en
     // admin.html, pero igual consultaba las ventas del día al abrir el panel

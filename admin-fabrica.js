@@ -1903,8 +1903,13 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
     // (quien registra la venta los avisa DESPUÉS de su mensaje de éxito, que
     // antes tapaba este aviso) y el antes → después real de cada talla, que
     // queda en el historial de stock de la prenda.
-    async function actualizarStockFabrica(items, accion = 'restar', { motivo = null, ventaId = null } = {}) {
-        if (!items.length) return { omitidos: [], cambios: [] };
+    // estricto: (registrar una venta) toda prenda debe estar enlazada a un
+    //   producto que exista; si no, no se guarda NADA.
+    // leerExtra / escribirExtra: lecturas y escrituras en la MISMA
+    //   transacción (crear la venta y aceptar el pedido web): o se guarda todo
+    //   junto con el descuento del stock en la base de datos, o nada.
+    async function actualizarStockFabrica(items, accion = 'restar', { motivo = null, ventaId = null, estricto = false, leerExtra = null, escribirExtra = null } = {}) {
+        if (!items.length && !escribirExtra) return { omitidos: [], cambios: [] };
         const itemsPorProducto = new Map();
         const sinProducto = [];
         for (const item of items) {
@@ -1917,7 +1922,12 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             itemsPorProducto.get(item.productoId).push(item);
         }
 
+        if (estricto && sinProducto.length) {
+            throw Object.assign(new Error(`Solo se puede vender lo que está en el inventario. Estas prendas no están enlazadas a un producto: ${sinProducto.join(', ')}.`), { agotados: sinProducto });
+        }
+
         const { omitidos: itemsOmitidos, cambios } = await runTransaction(db, async (tx) => {
+            const extra = leerExtra ? await leerExtra(tx) : null;
             const omitidos = [];
             const cambios = [];
             const refs = new Map();
@@ -1990,6 +2000,10 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                 if (cambiado) tx.update(refs.get(productoId), { variaciones });
             }
 
+            if (estricto && omitidos.length) {
+                throw Object.assign(new Error(`Estas prendas no existen en el inventario: ${omitidos.join(', ')}.`), { agotados: omitidos });
+            }
+            if (escribirExtra) escribirExtra(tx, extra);
             return { omitidos, cambios };
         });
 
@@ -2624,35 +2638,49 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             // lanza un error y ni se descuenta nada ni se guarda la venta —
             // antes se guardaba la venta primero y el stock quedaba en
             // negativo sin avisar.
-            // El id se genera antes para enlazar el historial de stock con
-            // esta venta; la venta guarda además el resultado del stock.
+            // ── REGLA: sin descuento en la base de datos NO hay venta ──
+            // UNA transacción de Firestore: lee el stock real, valida cada
+            // prenda (enlazada a un producto, talla/color existe, alcanza), lo
+            // descuenta, crea la venta y marca aceptado el pedido web si viene
+            // de uno. O se guarda todo en el servidor o nada: sin conexión, sin
+            // permiso, prenda escrita a mano o sin stock → NO hay venta.
             const ventaRef = doc(ventasCollection);
             const folioVenta = ventaRef.id.substring(0, 8).toUpperCase();
-            const resultadoStock = await actualizarStockFabrica(carrito, 'restar', { motivo: `Venta ${folioVenta}`, ventaId: ventaRef.id });
-            ventaData.stockEstado = {
-                estado: resultadoStock.omitidos.length ? 'parcial' : 'descontado',
-                pendientes: resultadoStock.omitidos
-            };
-            if (pedidoWebEnVenta) ventaData.pedidoWebId = pedidoWebEnVenta;
+            ventaData.stockEstado = { estado: 'descontado', pendientes: [] };
+            const pedidoRefVenta = pedidoWebEnVenta ? doc(db, 'pedidosWeb', pedidoWebEnVenta) : null;
+            if (pedidoRefVenta) ventaData.pedidoWebId = pedidoWebEnVenta;
             try {
-                await setDoc(ventaRef, ventaData);
-            } catch (errVenta) {
-                // No dejar el stock descontado de una venta que no existe.
-                await actualizarStockFabrica(carrito, 'sumar', { motivo: `Venta ${folioVenta} no se pudo guardar (se devolvió el stock)`, ventaId: ventaRef.id }).catch(() => {});
-                throw errVenta;
+                await actualizarStockFabrica(carrito, 'restar', {
+                    estricto: true, motivo: `Venta ${folioVenta}`, ventaId: ventaRef.id,
+                    leerExtra: pedidoRefVenta ? (tx) => tx.get(pedidoRefVenta) : null,
+                    escribirExtra: (tx, pedidoSnap) => {
+                        if (pedidoRefVenta) {
+                            const pedidoActual = pedidoSnap?.exists() ? pedidoSnap.data() : null;
+                            if (!pedidoActual) throw new Error('El pedido web ya no existe.');
+                            if (pedidoActual.ventaId || pedidoActual.estado === 'rechazado') {
+                                throw new Error('Este pedido web ya fue procesado en otro dispositivo (tiene venta o fue rechazado).');
+                            }
+                            tx.update(pedidoRefVenta, {
+                                estado: 'aceptado', ventaId: ventaRef.id,
+                                ...(pedidoActual.estado === 'aceptado' ? {} : { fechaAceptacion: serverTimestamp() })
+                            });
+                        }
+                        tx.set(ventaRef, ventaData);
+                    }
+                });
+            } catch (errStock) {
+                if (errStock.agotados) throw errStock;
+                const sinRed = errStock.code === 'unavailable' || !navigator.onLine;
+                const sinPermiso = errStock.code === 'permission-denied';
+                throw new Error(sinRed
+                    ? 'Sin conexión con la base de datos: no se pudo descontar el stock, así que la venta NO se registró. Inténtalo de nuevo.'
+                    : sinPermiso
+                        ? 'La base de datos no permitió descontar el stock con tu usuario, así que la venta NO se registró. Avísale al administrador.'
+                        : `${errStock.message} La venta NO se registró.`);
             }
-            if (pedidoWebEnVenta) {
-                updateDoc(doc(db, 'pedidosWeb', pedidoWebEnVenta), { ventaId: ventaRef.id })
-                    .catch(err => console.warn('No se pudo enlazar el pedido web con la venta:', err));
-                pedidoWebEnVenta = null;
-            }
+            pedidoWebEnVenta = null;
 
             showToast('Venta registrada', 'success');
-            // Lo que no se pudo descontar se avisa DESPUÉS (antes el mensaje
-            // de éxito tapaba este aviso y nadie se enteraba).
-            if (resultadoStock.omitidos.length) {
-                setTimeout(() => showToast(`⚠️ Venta registrada, pero el stock NO se descontó para: ${resultadoStock.omitidos.join(', ')}. Ajústalo en Productos.`, 'warning'), 3600);
-            }
             recalcularMasVendidasFabrica();
 
             // Pregunta si se quiere facturar ya mismo (ventaData se conserva
@@ -2676,7 +2704,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         } catch (error) {
             console.error('Error al registrar venta de fábrica:', error);
             if (error.agotados) {
-                showToast(`No se pudo registrar la venta: agotado ${error.agotados.join(', ')}`, 'error');
+                showToast(`La venta NO se registró. ${/no existen|no están enlazadas/.test(error.message) ? error.message : `Sin stock suficiente: ${error.agotados.join(', ')}`}`, 'error');
             } else {
                 showToast('No se pudo registrar la venta: ' + error.message, 'error');
             }
@@ -3410,10 +3438,11 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
 
                 mostrarVistaFormulario();
                 if (window.adminShowSection) { window.adminShowSection('#registrar-venta'); window.adminMarkActive('#registrar-venta'); }
-                showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
+                showToast('Pedido cargado. Al registrar la venta quedará aceptado.', 'success');
 
-                if (!yaAceptado) updateDoc(orderRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp() })
-                    .catch(err => { console.error('Error al marcar pedido como aceptado:', err); showToast('El pedido pasó al formulario, pero no se pudo marcar como aceptado. Verifica tu conexión.', 'error'); });
+                // El pedido pasa a "aceptado" en la MISMA transacción que
+                // descuenta el stock y crea la venta (ver el registro de la
+                // venta): ya no puede quedar aceptado sin venta.
             } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
         }
     })();
