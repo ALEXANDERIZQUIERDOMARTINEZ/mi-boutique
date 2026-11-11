@@ -15,6 +15,8 @@ import {
     onSnapshot, runTransaction, writeBatch, setDoc
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js";
+// Mismo especificador que usuarios.js (una sola instancia del módulo).
+import { registrarAuditoria } from "./auditoria.js?v=1.1.0";
 import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup, getHybridTierInfo, isSurtidoGroup, getFirstRealTierMin } from "./wholesale-tiers.js?v=2";
 import { activarCacheLocal } from "./src/core/firestore-cache.js?v=3";
 import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=4";
@@ -168,6 +170,44 @@ const formatoMonedaDashboard = new Intl.NumberFormat('es-CO', { style: 'currency
 // Cuadro de confirmación con el diseño del panel, en lugar del confirm() del
 // navegador ("fabrica.mishelles.store dice…"). Devuelve una promesa con true
 // si se confirma. tono: 'danger' (rojo) o 'brand' (rosa).
+// ── Historial de stock de Fábrica ──────────────────────────────────────
+// Igual que en Boutique (admin.js): cada cambio de stock de una prenda
+// (venta, anulación, edición del producto, cargue masivo, inventario en 0)
+// queda en 'auditoria' (accion 'stock', entidadId = id del producto) con el
+// antes → después de cada talla/color, el motivo, la venta y el usuario.
+// El botón "Historial de stock" de cada producto lo muestra y comprueba que
+// cuadre con el stock actual. Nunca lanza.
+function etiquetaTallaColorFab(talla, color) {
+    return [color, talla].filter(x => {
+        const n = (x || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+        return n && n !== 'unica' && n !== 'unico';
+    }).join(' / ') || 'Única';
+}
+function registrarMovimientosStockFab(cambios, { motivo = 'Ajuste de stock', ventaId = null } = {}) {
+    if (!cambios || !cambios.length) return;
+    const porProducto = new Map();
+    cambios.forEach(c => {
+        if (c.antes === c.despues) return;
+        if (!porProducto.has(c.productoId)) porProducto.set(c.productoId, { nombre: c.nombre, lineas: [] });
+        porProducto.get(c.productoId).lineas.push(c);
+    });
+    porProducto.forEach(({ nombre, lineas }, productoId) => {
+        registrarAuditoria({
+            accion: 'stock',
+            modulo: 'stock',
+            entidadId: productoId,
+            entidadNombre: nombre || productoId,
+            descripcion: `${motivo}: ${lineas.map(l => `${etiquetaTallaColorFab(l.talla, l.color)} ${l.antes} → ${l.despues}`).join(', ')}`,
+            detalles: {
+                motivo,
+                ventaId,
+                coleccion: 'productosFabrica',
+                cambios: lineas.map(l => ({ talla: l.talla, color: l.color, antes: l.antes, despues: l.despues, diferencia: l.despues - l.antes }))
+            }
+        });
+    });
+}
+
 function confirmarFab({ titulo = '¿Continuar?', mensaje = '', confirmar = 'Aceptar', cancelar = 'Cancelar', tono = 'danger', icono } = {}) {
     return new Promise(resolve => {
         const previo = document.activeElement;
@@ -634,6 +674,10 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
     const CLIENTE_GENERAL_DEFAULT = { id: null, nombre: 'Cliente General', celular: '', direccion: '' };
 
     let carrito = [];
+    // Pedido web (tienda mayorista) que se cargó en el carrito con "Aceptar":
+    // la venta guarda pedidoWebId y el pedido el ventaId, así se puede ver
+    // qué pedidos aceptados nunca se registraron como venta (stock sin bajar).
+    let pedidoWebEnVenta = null;
     let clienteSeleccionado = null;
     let productosCache = [];
     let clientesCache = null;
@@ -779,6 +823,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
     };
 
     function renderCarrito() {
+        if (carrito.length === 0) pedidoWebEnVenta = null; // carrito vaciado: ya no es ese pedido
         recalcularPreciosCarrito();
         const vacio = carrito.length === 0;
         cartEmptyCtaEl.style.display = vacio ? '' : 'none';
@@ -1854,17 +1899,27 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
     // dejando el inventario incorrecto de forma intermitente. La
     // transacción elimina ese riesgo sin importar qué tan al día esté la
     // caché.
-    async function actualizarStockFabrica(items, accion = 'restar') {
-        if (!items.length) return;
+    // Devuelve { omitidos, cambios }: los items que no se pudieron ajustar
+    // (quien registra la venta los avisa DESPUÉS de su mensaje de éxito, que
+    // antes tapaba este aviso) y el antes → después real de cada talla, que
+    // queda en el historial de stock de la prenda.
+    async function actualizarStockFabrica(items, accion = 'restar', { motivo = null, ventaId = null } = {}) {
+        if (!items.length) return { omitidos: [], cambios: [] };
         const itemsPorProducto = new Map();
+        const sinProducto = [];
         for (const item of items) {
-            if (!item.productoId) continue;
+            if (!item.productoId) {
+                // Antes se saltaba en silencio: la venta salía y el stock no.
+                sinProducto.push(`${item.nombre || 'Producto'} (sin producto enlazado)`);
+                continue;
+            }
             if (!itemsPorProducto.has(item.productoId)) itemsPorProducto.set(item.productoId, []);
             itemsPorProducto.get(item.productoId).push(item);
         }
 
-        const itemsOmitidos = await runTransaction(db, async (tx) => {
+        const { omitidos: itemsOmitidos, cambios } = await runTransaction(db, async (tx) => {
             const omitidos = [];
+            const cambios = [];
             const refs = new Map();
             const snaps = new Map();
 
@@ -1923,22 +1978,25 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                     );
                     if (encontrada) {
                         const signo = accion === 'restar' ? -1 : 1;
-                        encontrada.stock = (parseInt(encontrada.stock, 10) || 0) + signo * item.cantidad;
+                        const antes = parseInt(encontrada.stock, 10) || 0;
+                        encontrada.stock = antes + signo * item.cantidad;
+                        cambios.push({ productoId, nombre: snap.data().nombre || item.nombre, talla: encontrada.talla || '', color: encontrada.color || '', antes, despues: encontrada.stock });
                         cambiado = true;
                     } else {
-                        omitidos.push(item.nombre || item.productoId);
+                        const variante = [item.color, item.talla].filter(x => normalizarVariacion(x)).join(' / ');
+                        omitidos.push(`${item.nombre || item.productoId}${variante ? ` (${variante}: no existe en el producto)` : ''}`);
                     }
                 }
                 if (cambiado) tx.update(refs.get(productoId), { variaciones });
             }
 
-            return omitidos;
+            return { omitidos, cambios };
         });
 
-        if (itemsOmitidos.length) {
-            console.warn('Stock no ajustado para:', itemsOmitidos);
-            showToast(`El stock no se ajustó para: ${itemsOmitidos.join(', ')}. Revísalo manualmente.`, 'error');
-        }
+        registrarMovimientosStockFab(cambios, { motivo: motivo || (accion === 'restar' ? 'Venta' : 'Devolución al inventario'), ventaId });
+        const todosOmitidos = [...sinProducto, ...itemsOmitidos];
+        if (todosOmitidos.length) console.warn('Stock no ajustado para:', todosOmitidos);
+        return { omitidos: todosOmitidos, cambios };
     }
 
     // ── Factura de venta (PDF) ───────────────────────────────────────────
@@ -2566,10 +2624,35 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             // lanza un error y ni se descuenta nada ni se guarda la venta —
             // antes se guardaba la venta primero y el stock quedaba en
             // negativo sin avisar.
-            await actualizarStockFabrica(carrito);
-            const ventaRef = await addDoc(ventasCollection, ventaData);
+            // El id se genera antes para enlazar el historial de stock con
+            // esta venta; la venta guarda además el resultado del stock.
+            const ventaRef = doc(ventasCollection);
+            const folioVenta = ventaRef.id.substring(0, 8).toUpperCase();
+            const resultadoStock = await actualizarStockFabrica(carrito, 'restar', { motivo: `Venta ${folioVenta}`, ventaId: ventaRef.id });
+            ventaData.stockEstado = {
+                estado: resultadoStock.omitidos.length ? 'parcial' : 'descontado',
+                pendientes: resultadoStock.omitidos
+            };
+            if (pedidoWebEnVenta) ventaData.pedidoWebId = pedidoWebEnVenta;
+            try {
+                await setDoc(ventaRef, ventaData);
+            } catch (errVenta) {
+                // No dejar el stock descontado de una venta que no existe.
+                await actualizarStockFabrica(carrito, 'sumar', { motivo: `Venta ${folioVenta} no se pudo guardar (se devolvió el stock)`, ventaId: ventaRef.id }).catch(() => {});
+                throw errVenta;
+            }
+            if (pedidoWebEnVenta) {
+                updateDoc(doc(db, 'pedidosWeb', pedidoWebEnVenta), { ventaId: ventaRef.id })
+                    .catch(err => console.warn('No se pudo enlazar el pedido web con la venta:', err));
+                pedidoWebEnVenta = null;
+            }
 
             showToast('Venta registrada', 'success');
+            // Lo que no se pudo descontar se avisa DESPUÉS (antes el mensaje
+            // de éxito tapaba este aviso y nadie se enteraba).
+            if (resultadoStock.omitidos.length) {
+                setTimeout(() => showToast(`⚠️ Venta registrada, pero el stock NO se descontó para: ${resultadoStock.omitidos.join(', ')}. Ajústalo en Productos.`, 'warning'), 3600);
+            }
             recalcularMasVendidasFabrica();
 
             // Pregunta si se quiere facturar ya mismo (ventaData se conserva
@@ -2730,7 +2813,9 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         ventasAnulandoFabrica.add(ventaId);
         const ventaRef = doc(db, 'ventas', ventaId);
         try {
+            const cambiosAnulacion = [];
             const itemsOmitidos = await runTransaction(db, async (tx) => {
+                cambiosAnulacion.length = 0; // la transacción puede reintentarse
                 const ventaSnap = await tx.get(ventaRef);
                 if (!ventaSnap.exists()) throw new Error('VENTA_NO_ENCONTRADA');
                 const ventaData = ventaSnap.data();
@@ -2769,7 +2854,9 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                             normalizarVariacion(v.color) === normalizarVariacion(item.color)
                         );
                         if (encontrada) {
-                            encontrada.stock = (parseInt(encontrada.stock, 10) || 0) + (parseInt(item.cantidad, 10) || 0);
+                            const antes = parseInt(encontrada.stock, 10) || 0;
+                            encontrada.stock = antes + (parseInt(item.cantidad, 10) || 0);
+                            cambiosAnulacion.push({ productoId, nombre: snap.data().nombre || item.nombre, talla: encontrada.talla || '', color: encontrada.color || '', antes, despues: encontrada.stock });
                             cambiado = true;
                         } else {
                             omitidos.push(item.nombre || item.productoId);
@@ -2782,6 +2869,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                 return omitidos;
             });
 
+            registrarMovimientosStockFab(cambiosAnulacion, { motivo: `Venta ${ventaId.substring(0, 8).toUpperCase()} anulada`, ventaId });
             showToast('Venta anulada y stock repuesto.', 'info');
             recalcularMasVendidasFabrica();
             if (itemsOmitidos.length) {
@@ -2893,6 +2981,14 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         const estado = v.estado || 'Completada';
         const estaAnulada = (estado === 'Anulada' || estado === 'Cancelada');
         const estadoBadgeClass = estaAnulada ? 'bg-danger' : 'bg-success';
+        // Venta registrada con prendas cuyo stock NO se descontó (talla/color
+        // que no existe en el producto, o producto sin enlazar): se marca
+        // para ajustarlas a mano en Productos.
+        const stockPendienteFab = !estaAnulada && ['parcial', 'pendiente'].includes(v.stockEstado?.estado);
+        const escVenta = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const avisoStockFab = stockPendienteFab
+            ? `<div class="venta-stock-pendiente"><i class="bi bi-exclamation-triangle-fill"></i><span>Stock sin descontar${(v.stockEstado.pendientes || []).length ? `: ${escVenta(v.stockEstado.pendientes.join(', '))}` : ''}. Ajústalo en Productos.</span></div>`
+            : '';
 
         return `
             <div class="venta-card" data-id="${v.id}">
@@ -2907,6 +3003,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                     </div>
                 </div>
                 <div class="venta-card-products">${productosHtml}</div>
+                ${avisoStockFab}
                 <div class="venta-card-foot">
                     <div class="venta-card-foot-left">
                         <div class="venta-card-pago">${pagoHtml}</div>
@@ -3145,7 +3242,17 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             const btnWa = waLink
                 ? `<a class="pw2-btn pw2-btn--wa" href="${waLink}" target="_blank" rel="noopener noreferrer" aria-label="Escribir al cliente por WhatsApp"><i class="bi bi-whatsapp"></i><span>Escribir</span></a>`
                 : '';
-            const acciones = isPendiente ? `
+            // Pedido aceptado que nunca se registró como venta: su stock NO se
+            // descontó. Solo se puede saber para los aceptados desde que el
+            // pedido guarda el ventaId (esta versión); los anteriores no se marcan.
+            const fechaAcept = order.fechaAceptacion?.toDate?.();
+            const sinVenta = estado === 'aceptado' && !order.ventaId && fechaAcept && fechaAcept >= PEDIDOS_CON_VENTA_ENLAZADA_DESDE;
+            const acciones = sinVenta ? `
+                <div class="pw-sin-venta">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Aceptado pero <b>sin venta registrada</b>: el stock de estas prendas no se ha descontado.</span>
+                    <button type="button" class="btn-accept-order-fab pw-sin-venta-btn" data-order-id="${orderId}">Registrar venta</button>
+                </div>` : isPendiente ? `
                 <div class="pw2-actions${waLink ? ' pw2-actions--wa' : ''}">
                     <button type="button" class="pw2-btn pw2-btn--reject btn-reject-order-fab" data-order-id="${orderId}" aria-label="Rechazar pedido"><i class="bi bi-x-lg"></i><span>Rechazar</span></button>
                     ${btnWa}
@@ -3181,6 +3288,8 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
 
             return card;
         }
+
+        const PEDIDOS_CON_VENTA_ENLAZADA_DESDE = new Date('2026-11-11T00:00:00');
 
         ['pendiente', 'aceptado', 'rechazado'].forEach(estado => {
             const q = query(webOrdersCollection, where('estado', '==', estado), orderBy('timestamp', 'desc'), limit(100));
@@ -3259,7 +3368,8 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         async function handleAcceptOrder(orderId) {
             try {
                 const orderRef = doc(db, 'pedidosWeb', orderId);
-                const cached = allOrders.pendiente.find(o => o.id === orderId);
+                const cached = allOrders.pendiente.find(o => o.id === orderId) || allOrders.aceptado.find(o => o.id === orderId);
+                const yaAceptado = !!allOrders.aceptado.find(o => o.id === orderId);
                 let orderData = cached?.order;
                 if (!orderData) {
                     const orderSnap = await getDoc(orderRef);
@@ -3270,8 +3380,12 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                 // Precarga el catálogo si aún no está en caché, para que el carrito
                 // pueda mostrar imagen y respetar el stock real disponible; no bloquea
                 // el resto del flujo si tarda.
-                if (productosCache.length === 0) cargarProductosCache().then(renderCarrito).catch(() => {});
+                // (cargarProductosCache no existe: llamarla lanzaba un error y el
+                // pedido no pasaba al formulario cuando el catálogo aún no había
+                // llegado. El catálogo lo mantiene al día su listener en tiempo
+                // real; el carrito se repinta solo cuando llega.)
 
+                pedidoWebEnVenta = orderId;
                 carrito = (orderData.items || []).map(item => ({
                     productoId: item.productoId,
                     codigo: item.codigo || '',
@@ -3298,7 +3412,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                 if (window.adminShowSection) { window.adminShowSection('#registrar-venta'); window.adminMarkActive('#registrar-venta'); }
                 showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
 
-                updateDoc(orderRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp() })
+                if (!yaAceptado) updateDoc(orderRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp() })
                     .catch(err => { console.error('Error al marcar pedido como aceptado:', err); showToast('El pedido pasó al formulario, pero no se pudo marcar como aceptado. Verifica tu conexión.', 'error'); });
             } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
         }
@@ -3487,9 +3601,13 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
     // se parte del stock real, sin importar cuánto haya pasado.
     async function fusionarVariacionesEnTransaccion(productoId, nuevasVariaciones, accion) {
         const ref = doc(db, 'productosFabrica', productoId);
+        const cambios = [];
         await runTransaction(db, async (tx) => {
+            cambios.length = 0; // la transacción puede reintentarse
             const snap = await tx.get(ref);
-            const variacionesActuales = snap.exists() ? [...(snap.data().variaciones || [])] : [];
+            const variacionesActuales = snap.exists() ? (snap.data().variaciones || []).map(v => ({ ...v })) : [];
+            const nombreProducto = snap.exists() ? snap.data().nombre : productoId;
+            const anotar = (talla, color, antes, despues) => cambios.push({ productoId, nombre: nombreProducto, talla, color, antes, despues });
 
             nuevasVariaciones.forEach(nuevaVar => {
                 const tallaVar = nuevaVar.talla || '';
@@ -3498,18 +3616,22 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                 const indexExistente = variacionesActuales.findIndex(v => claveVariacionCM(v.talla, v.color) === claveNueva);
 
                 if (indexExistente >= 0) {
+                    const antes = parseFloat(variacionesActuales[indexExistente].stock) || 0;
                     if (accion === 'reemplazar') {
                         variacionesActuales[indexExistente].stock = nuevaVar.cantidad;
                     } else {
-                        variacionesActuales[indexExistente].stock = (parseFloat(variacionesActuales[indexExistente].stock) || 0) + nuevaVar.cantidad;
+                        variacionesActuales[indexExistente].stock = antes + nuevaVar.cantidad;
                     }
+                    anotar(variacionesActuales[indexExistente].talla || '', variacionesActuales[indexExistente].color || '', antes, variacionesActuales[indexExistente].stock);
                 } else {
                     variacionesActuales.push({ talla: tallaVar, color: colorVar, stock: nuevaVar.cantidad });
+                    anotar(tallaVar, colorVar, 0, nuevaVar.cantidad);
                 }
             });
 
             tx.update(ref, { variaciones: variacionesActuales });
         });
+        registrarMovimientosStockFab(cambios, { motivo: accion === 'reemplazar' ? 'Cargue masivo (reemplazar)' : 'Cargue masivo (sumar)' });
     }
 
     // ── 1) Leer Excel ──
@@ -3741,6 +3863,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             stock: v.cantidad || 0
         }));
         await updateDoc(productoRef, { variaciones: variacionesArray });
+        registrarMovimientosStockFab(variacionesArray.map(v => ({ productoId, nombre: productoId, talla: v.talla, color: v.color, antes: 0, despues: v.stock })), { motivo: 'Producto creado (cargue masivo)' });
     }
 
     // ── 7) Historial del cargue ──
@@ -4561,6 +4684,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                             : `<span class="pf-stock pf-stock--out">${variaciones.length ? 'Agotado' : 'Sin colores'}</span>`}
                     </div>
                 </div>
+                ${puedeVerHistorialStockFab() ? `<button type="button" class="pf-copy-one pf-hist-one prodfab-btn-historial" data-id="${p.id}" title="Historial de stock" aria-label="Historial de stock de ${esc(p.nombre)}"><i class="bi bi-clock-history"></i></button>` : ''}
                 ${total > 0 ? `<button type="button" class="pf-copy-one prodfab-btn-copiar-uno" data-id="${p.id}" aria-label="Copiar disponibilidad de ${esc(p.nombre)}"><i class="bi bi-copy"></i></button>` : ''}
                 <button type="button" class="pf-del prodfab-btn-eliminar" data-id="${p.id}" aria-label="Eliminar ${esc(p.nombre)}"><i class="bi bi-trash3"></i></button>
             </article>`;
@@ -4623,6 +4747,10 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         console.warn('No se pudo leer el estado de "Inventario en 0":', error);
     });
     window.addEventListener('adminAuthReady', actualizarBotonCero);
+    // El botón de historial depende del permiso de Auditoría: repintar las
+    // tarjetas cuando se conocen (o cambian) los permisos.
+    window.addEventListener('adminAuthReady', () => renderTabla());
+    window.addEventListener('adminPermisosActualizados', () => renderTabla());
     window.addEventListener('adminPermisosActualizados', actualizarBotonCero);
 
     btnCero?.addEventListener('click', async () => {
@@ -4656,6 +4784,9 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                 });
                 await batch.commit();
             }
+            registrarMovimientosStockFab(conStock.flatMap(p => (p.variaciones || []).map(v => ({
+                productoId: p.id, nombre: p.nombre, talla: v.talla || '', color: v.color || '', antes: parseInt(v.stock, 10) || 0, despues: 0
+            }))), { motivo: 'Inventario puesto en 0' });
             const ctx = window.appContext || {};
             await setDoc(refInventarioEnCero, {
                 hecho: true,
@@ -4806,7 +4937,101 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             e.target.click();
         }
     });
+    // ── Historial de stock de una prenda (y comprobación) ──
+    // Mismo funcionamiento que en Boutique (admin.js): lista los movimientos
+    // registrados de la prenda y comprueba que el stock actual cuadre con
+    // ellos; si no, muestra dónde hubo un cambio sin registrar. Requiere
+    // permiso de ver Auditoría.
+    function puedeVerHistorialStockFab() {
+        const ctx = window.appContext;
+        return !!ctx && (ctx.isSuperAdmin || ctx.permisos?.auditoria_ver === true);
+    }
+        let historialModalEl = null;
+        function asegurarModalHistorial() {
+            if (historialModalEl) return historialModalEl;
+            historialModalEl = document.createElement('div');
+            historialModalEl.className = 'modal fade';
+            historialModalEl.id = 'historialStockModal';
+            historialModalEl.tabIndex = -1;
+            historialModalEl.innerHTML = `
+                <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i><span class="hs-titulo">Historial de stock</span></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="modal-body hs-cuerpo"></div>
+                    </div>
+                </div>`;
+            document.body.appendChild(historialModalEl);
+            return historialModalEl;
+        }
+        const normHs = (t) => (t || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/^unic[oa]$/, '');
+        const fechaHs = (f) => f?.toDate ? f.toDate() : null;
+        const fmtFechaHs = (f) => { const d = fechaHs(f); return d ? d.toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'ahora'; };
+        const escHs = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+        async function abrirHistorialStock(productoId) {
+            const producto = productoId ? productos.find(x => x.id === productoId) : null;
+            if (!producto) return;
+            const modalEl = asegurarModalHistorial();
+            modalEl.querySelector('.hs-titulo').textContent = `Historial · ${producto.nombre || ''}`;
+            const cuerpo = modalEl.querySelector('.hs-cuerpo');
+            cuerpo.innerHTML = '<div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Cargando movimientos…</div>';
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            try {
+                const snap = await getDocs(query(collection(db, 'auditoria'), where('entidadId', '==', productoId), limit(500)));
+                const movs = snap.docs.map(d => d.data())
+                    .filter(m => m.modulo === 'stock' && Array.isArray(m.detalles?.cambios))
+                    .sort((a, b) => (fechaHs(a.fecha)?.getTime() || Date.now()) - (fechaHs(b.fecha)?.getTime() || Date.now()));
+
+                // Comprobación de continuidad por talla/color
+                const ultimo = new Map();
+                const saltos = [];
+                const etiquetaHs = (c) => [c.color, c.talla].filter(x => normHs(x)).join(' / ') || 'Única';
+                movs.forEach(m => m.detalles.cambios.forEach(c => {
+                    const k = normHs(c.color) + '|' + normHs(c.talla);
+                    const prev = ultimo.get(k);
+                    if (prev && prev.despues !== c.antes) {
+                        saltos.push(`<b>${escHs(etiquetaHs(c))}</b>: quedó en <b>${prev.despues}</b> (${fmtFechaHs(prev.fecha)}) pero el siguiente movimiento (${fmtFechaHs(m.fecha)}) partió de <b>${c.antes}</b>.`);
+                    }
+                    ultimo.set(k, { despues: c.despues, fecha: m.fecha });
+                }));
+                (producto.variaciones || []).forEach(v => {
+                    const k = normHs(v.color) + '|' + normHs(v.talla);
+                    const prev = ultimo.get(k);
+                    const actual = parseInt(v.stock, 10) || 0;
+                    if (prev && prev.despues !== actual) {
+                        saltos.push(`<b>${escHs(etiquetaHs(v))}</b>: el último movimiento lo dejó en <b>${prev.despues}</b> (${fmtFechaHs(prev.fecha)}), pero hoy tiene <b>${actual}</b>.`);
+                    }
+                });
+
+                const stockHoy = (producto.variaciones || []).map(v => `<span class="hs-chip">${escHs(etiquetaHs(v))}: <b>${parseInt(v.stock, 10) || 0}</b></span>`).join('');
+                const resumen = !movs.length
+                    ? '<div class="hs-aviso hs-aviso--info"><i class="bi bi-info-circle"></i> Todavía no hay movimientos registrados de esta prenda. El historial empieza a llenarse con las próximas ventas, anulaciones y ediciones.</div>'
+                    : saltos.length
+                        ? `<div class="hs-aviso hs-aviso--mal"><i class="bi bi-exclamation-triangle-fill"></i><div><b>El stock no cuadra con el historial.</b> Hubo cambios que no quedaron registrados:<ul>${saltos.map(t => `<li>${t}</li>`).join('')}</ul></div></div>`
+                        : '<div class="hs-aviso hs-aviso--ok"><i class="bi bi-check-circle-fill"></i> El stock actual coincide con todos los movimientos registrados.</div>';
+                const lista = movs.slice().reverse().map(m => `
+                    <div class="hs-mov">
+                        <div class="hs-mov-top"><span class="hs-motivo">${escHs(m.detalles.motivo || 'Movimiento')}</span><span class="hs-fecha">${fmtFechaHs(m.fecha)}</span></div>
+                        <div class="hs-cambios">${m.detalles.cambios.map(c => {
+                            const dif = (c.despues ?? 0) - (c.antes ?? 0);
+                            return `<span class="hs-cambio ${dif < 0 ? 'is-baja' : 'is-sube'}">${escHs(etiquetaHs(c))}: ${c.antes} → ${c.despues} <b>(${dif > 0 ? '+' : ''}${dif})</b></span>`;
+                        }).join('')}</div>
+                        <div class="hs-usuario"><i class="bi bi-person"></i> ${escHs(m.usuarioNombre || 'Desconocido')}</div>
+                    </div>`).join('');
+                cuerpo.innerHTML = `${resumen}<div class="hs-hoy"><span class="hs-hoy-titulo">Stock actual</span>${stockHoy || '<span class="text-muted">Sin variaciones</span>'}</div>${lista}`;
+            } catch (error) {
+                console.error('Error cargando historial de stock:', error);
+                cuerpo.innerHTML = `<div class="hs-aviso hs-aviso--mal"><i class="bi bi-exclamation-triangle-fill"></i> No se pudo cargar el historial (${escHs(error.code || error.message)}).</div>`;
+            }
+        }
+
+
     tbody.addEventListener('click', (e) => {
+        const btnHistorial = e.target.closest('.prodfab-btn-historial');
+        if (btnHistorial) { abrirHistorialStock(btnHistorial.dataset.id); return; }
         const btnCopiarUno = e.target.closest('.prodfab-btn-copiar-uno');
         if (btnCopiarUno) {
             const p = productos.find(x => x.id === btnCopiarUno.dataset.id);
@@ -4959,7 +5184,9 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                 // al abrir el modal) sobre el stock real más reciente, dentro
                 // de una transacción.
                 const originales = productoEditandoVariacionesOriginales || new Set();
+                const cambiosEdicion = [];
                 await runTransaction(db, async (tx) => {
+                    cambiosEdicion.length = 0; // la transacción puede reintentarse
                     const ref = doc(db, 'productosFabrica', id);
                     const snap = await tx.get(ref);
                     if (!snap.exists()) {
@@ -5024,17 +5251,28 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                         variacionesFrescas.set(clave, { talla, color, stock });
                     });
 
+                    // Historial: qué cambió de verdad (stock real antes → después).
+                    const antesPorClave = new Map((snap.data().variaciones || []).map(v => [claveVariacionFabrica(v.talla, v.color), v]));
+                    const despuesPorClave = new Map(Array.from(variacionesFrescas.entries()));
+                    new Set([...antesPorClave.keys(), ...despuesPorClave.keys()]).forEach(clave => {
+                        const a = antesPorClave.get(clave), d = despuesPorClave.get(clave);
+                        const antes = parseFloat(a?.stock) || 0, despues = parseFloat(d?.stock) || 0;
+                        if (antes !== despues) cambiosEdicion.push({ productoId: id, nombre, talla: (d || a).talla || '', color: (d || a).color || '', antes, despues });
+                    });
+
                     tx.update(ref, { ...datosBase, variaciones: Array.from(variacionesFrescas.values()) });
                 });
+                registrarMovimientosStockFab(cambiosEdicion, { motivo: 'Ajuste manual (edición del producto)' });
                 showToast('Producto actualizado', 'success');
             } else {
                 const variaciones = filasForm.map(({ talla, color, stock }) => ({ talla, color, stock }));
-                await addDoc(productosFabricaCollection, {
+                const nuevoRef = await addDoc(productosFabricaCollection, {
                     ...datosBase,
                     variaciones,
                     codigo: 'PF' + Date.now().toString().slice(-6),
                     timestamp: serverTimestamp()
                 });
+                registrarMovimientosStockFab(variaciones.map(v => ({ productoId: nuevoRef.id, nombre, talla: v.talla, color: v.color, antes: 0, despues: v.stock })), { motivo: 'Producto creado' });
                 showToast('Producto guardado', 'success');
             }
 

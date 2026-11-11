@@ -2559,6 +2559,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // pestaña Productos, sin importar si la navegación vino del rail de
         // escritorio o de la barra inferior móvil.
         alEntrarSeccion('#productos', () => { if (productosTablaSucia) pintarTablaProductos(); });
+        // El botón "Historial de stock" depende del permiso de Auditoría:
+        // repintar las tarjetas cuando se conocen (o cambian) los permisos.
+        const repintarPorPermisos = () => {
+            if (!localProductsMap.size) return; // aún no llegan los productos: se pintarán al llegar
+            if ((window.location.hash || '#dashboard') === '#productos') pintarTablaProductos();
+            else productosTablaSucia = true;
+        };
+        window.addEventListener('adminAuthReady', repintarPorPermisos);
+        window.addEventListener('adminPermisosActualizados', repintarPorPermisos);
 
         // ── Optimizar fotos existentes (miniaturas) ──────────────────────
         // Los productos nuevos o con foto cambiada ya guardan su miniatura al
@@ -6352,8 +6361,8 @@ document.addEventListener('click', (e) => {
     // Inventario Fábrica — hilazas, hilos y telas → src/admin/secciones/inventario-fabrica.js
     cargarSeccionDiferida('#inventario-fabrica', () => import('./src/admin/secciones/inventario-fabrica.js?v=2'));
     // Productos Fábrica → src/admin/secciones/productos-fabrica.js
-    cargarSeccionDiferida('#productos-fabrica', () => import('./src/admin/secciones/productos-fabrica.js?v=2'));
+    cargarSeccionDiferida('#productos-fabrica', () => import('./src/admin/secciones/productos-fabrica.js?v=3'));
     // Cargue masivo Fábrica → src/admin/secciones/cargue-masivo-fabrica.js
-    cargarSeccionDiferida('#cargue-masivo-fabrica', () => import('./src/admin/secciones/cargue-masivo-fabrica.js?v=2'));
+    cargarSeccionDiferida('#cargue-masivo-fabrica', () => import('./src/admin/secciones/cargue-masivo-fabrica.js?v=3'));
 
 });

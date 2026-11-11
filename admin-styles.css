@@ -5532,3 +5532,30 @@ body.dark-mode .venta-stock-pendiente { background: rgba(234,88,12,.12); border-
 #historialStockModal .hs-usuario { font-size: .75rem; color: #71717a; }
 body.dark-mode #historialStockModal .hs-mov { border-color: #3f3f46; }
 body.dark-mode #historialStockModal .hs-chip { background: #27272a; }
+
+/* ── Pedido web aceptado sin venta registrada (Fábrica) ───────────────── */
+.pw-sin-venta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 12px 12px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: .8rem;
+}
+.pw-sin-venta span { flex: 1; min-width: 0; }
+.pw-sin-venta-btn {
+  border: none;
+  border-radius: 999px;
+  background: #ea580c;
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+body.dark-mode .pw-sin-venta { background: rgba(234,88,12,.12); border-color: rgba(234,88,12,.4); color: #fdba74; }
