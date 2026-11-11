@@ -3,7 +3,7 @@
 // panel: admin.js lo importa la primera vez que hace falta (ver
 // cargarSeccionDiferida en admin.js). Lo que antes leía del closure de
 // admin.js (db, colecciones, helpers, modales) llega ahora en `ctx`.
-import { Timestamp, addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { Timestamp, addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 import { getFirstRealTierMin, getHybridTierInfo, isSurtidoGroup, resolveWholesaleGroupConRespaldo } from "../../../wholesale-tiers.js?v=2";
 import { registrarAuditoria } from "../../../auditoria.js?v=1.1.0";
 import { urlMiniatura } from "../../core/miniaturas.js?v=1";
@@ -420,6 +420,20 @@ export function init(ctx) {
                     productosHtml = '<span class="text-muted small">Sin productos registrados</span>';
                 }
 
+                // Venta cuyo stock no se pudo descontar al registrarla (ver
+                // stockEstado en el registro de la venta): se marca aquí para
+                // revisarla, con "Descontar ahora" para quien puede editar
+                // productos.
+                const stockEstadoVenta = d.stockEstado?.estado;
+                const stockPendiente = !estaAnulada && ['pendiente', 'parcial'].includes(stockEstadoVenta);
+                const escStock = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+                const avisoStockHtml = stockPendiente ? `
+                    <div class="venta-stock-pendiente">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>Stock sin descontar${(d.stockEstado.pendientes || []).length ? `: ${escStock(d.stockEstado.pendientes.join(', '))}` : ''}</span>
+                        ${stockEstadoVenta === 'pendiente' && puedeHacer('productos_editar') ? '<button type="button" class="btn-descontar-stock">Descontar ahora</button>' : ''}
+                    </div>` : '';
+
                 card.innerHTML = `
                     <div class="venta-card-head">
                         <div class="venta-card-meta-top">
@@ -432,6 +446,7 @@ export function init(ctx) {
                         </div>
                     </div>
                     <div class="venta-card-products">${productosHtml}</div>
+                    ${avisoStockHtml}
                     <div class="venta-card-foot">
                         <div class="venta-card-foot-left">
                             <div class="venta-card-pago">${pagoHtml}</div>
@@ -732,19 +747,36 @@ export function init(ctx) {
                     // vender la misma prenda). Si alguna no alcanza, lanza el
                     // error "No hay stock suficiente de: …", no se descuenta
                     // nada y la venta no se guarda (lo muestra el catch de abajo).
+                    // El id se genera antes para enlazar el historial de stock con
+                    // esta venta. Cada venta guarda además el resultado del stock
+                    // (stockEstado): 'descontado', 'pendiente' (no se pudo
+                    // descontar; aparece marcada en la lista con "Descontar
+                    // ahora"), 'parcial' o 'no_aplica' (catálogo externo).
+                    const nuevaVentaRef = doc(salesCollection);
+                    const folioStock = nuevaVentaRef.id.substring(0, 8).toUpperCase();
                     if (!esCatalogo) {
-                        const resultadoStock = await actualizarStock(ventaData.items, 'restar', { validarStock: true });
+                        const resultadoStock = await actualizarStock(ventaData.items, 'restar', {
+                            validarStock: true, motivo: `Venta ${folioStock}`, ventaId: nuevaVentaRef.id
+                        });
                         avisoStockSinPermiso = resultadoStock?.sinPermisoStock || '';
+                        ventaData.stockEstado = {
+                            estado: resultadoStock?.estado || 'descontado',
+                            pendientes: resultadoStock?.omitidos || [],
+                        };
                         console.log(avisoStockSinPermiso ? "⚠️ Stock verificado, pero sin permiso para descontarlo" : "✅ Stock verificado y descontado");
                     } else {
+                        ventaData.stockEstado = { estado: 'no_aplica', pendientes: [] };
                         console.log("ℹ️ Venta por catálogo externo - Stock NO afectado");
                     }
 
                     try {
-                        docRef = await addDoc(salesCollection, ventaData);
+                        await setDoc(nuevaVentaRef, ventaData);
+                        docRef = nuevaVentaRef;
                     } catch (errVenta) {
                         // No quedar con el stock descontado de una venta que no existe.
-                        if (!esCatalogo) await actualizarStock(ventaData.items, 'sumar');
+                        if (!esCatalogo && ventaData.stockEstado.estado !== 'pendiente') {
+                            await actualizarStock(ventaData.items, 'sumar', { motivo: `Venta ${folioStock} no se pudo guardar (se devolvió el stock)`, ventaId: nuevaVentaRef.id });
+                        }
                         throw errVenta;
                     }
                     ventaId = docRef.id;
@@ -1170,8 +1202,12 @@ export function init(ctx) {
                 
                 // Si la venta no es un apartado, o si es un apartado ya completado, reponer stock.
                 // Si es un apartado PENDIENTE, la función de cancelar apartado se encarga.
-                if (ventaData.tipoVenta !== 'apartado') {
-                    await actualizarStock(ventaData.items, 'sumar'); 
+                // Si el stock de esta venta nunca se descontó (stockEstado
+                // 'pendiente'/'no_aplica'), devolverlo inflaría el inventario.
+                const stockNuncaDescontado = ['pendiente', 'no_aplica'].includes(ventaData.stockEstado?.estado);
+                const folioAnulada = ventaId.substring(0, 8).toUpperCase();
+                if (ventaData.tipoVenta !== 'apartado' && !stockNuncaDescontado) {
+                    await actualizarStock(ventaData.items, 'sumar', { motivo: `Venta ${folioAnulada} anulada`, ventaId });
                 }
 
                 await updateDoc(ventaRef, {
@@ -1186,8 +1222,8 @@ export function init(ctx) {
                          await updateDoc(docSnap.ref, { estado: "Cancelado" });
                          // Si el apartado estaba PENDIENTE, el stock ya se repuso.
                          // Si estaba COMPLETADO, debemos reponerlo ahora.
-                         if (ventaData.estado === 'Completada') {
-                             await actualizarStock(ventaData.items, 'sumar');
+                         if (ventaData.estado === 'Completada' && !stockNuncaDescontado) {
+                             await actualizarStock(ventaData.items, 'sumar', { motivo: `Apartado de la venta ${folioAnulada} anulado`, ventaId });
                          }
                      });
                 }
@@ -2036,11 +2072,55 @@ export function init(ctx) {
                 abrirModalEditarVenta(id);
             }
 
+            // Descontar el stock que quedó pendiente al registrar la venta
+            if(target.classList.contains('btn-descontar-stock')) {
+                descontarStockPendiente(id, target);
+            }
+
             // Eliminar venta
             if(target.classList.contains('btn-delete-sale')) {
                 abrirModalEliminarVenta(id);
             }
         });
+
+        // Descuenta del inventario lo de una venta registrada con stock
+        // pendiente (el usuario que la registró no podía descontarlo). Usa la
+        // misma transacción que una venta nueva: si ya no alcanza el stock,
+        // avisa y no toca nada.
+        async function descontarStockPendiente(ventaId, boton) {
+            const ventaRef = doc(db, 'ventas', ventaId);
+            try {
+                const snap = await getDoc(ventaRef);
+                if (!snap.exists()) { showToast('Venta no encontrada', 'error'); return; }
+                const venta = snap.data();
+                if (venta.stockEstado?.estado !== 'pendiente') {
+                    showToast('El stock de esta venta ya no está pendiente.', 'info');
+                    return;
+                }
+                const folio = ventaId.substring(0, 8).toUpperCase();
+                const resumen = (venta.items || []).map(it => `• ${it.nombre || 'Producto'}${[it.color, it.talla].filter(Boolean).length ? ` (${[it.color, it.talla].filter(Boolean).join(' / ')})` : ''} x${it.cantidad || 0}`).join('\n');
+                if (!confirm(`¿Descontar del inventario lo vendido en la venta ${folio}?\n\n${resumen}`)) return;
+                if (boton) { boton.disabled = true; boton.textContent = 'Descontando…'; }
+                const r = await actualizarStock(venta.items || [], 'restar', {
+                    validarStock: true, motivo: `Venta ${folio} (descuento que había quedado pendiente)`, ventaId
+                });
+                if (r?.estado === 'pendiente') {
+                    showToast('Tu usuario tampoco tiene permiso para descontar el stock de estos productos (pertenecen a otra empresa).', 'error');
+                    return;
+                }
+                await updateDoc(ventaRef, {
+                    stockEstado: { estado: r?.estado || 'descontado', pendientes: r?.omitidos || [], descontadoDespues: true, fechaDescuento: serverTimestamp() }
+                });
+                showToast(r?.estado === 'parcial'
+                    ? `Descontado, salvo: ${(r.omitidos || []).join(', ')} (revísalos a mano).`
+                    : `Stock de la venta ${folio} descontado.`, r?.estado === 'parcial' ? 'warning' : 'success');
+            } catch (error) {
+                console.error('Error descontando stock pendiente:', error);
+                showToast((error.message || 'No se pudo descontar el stock').replace(' La venta no se registró.', ''), 'error');
+            } finally {
+                if (boton && boton.isConnected) { boton.disabled = false; boton.textContent = 'Descontar ahora'; }
+            }
+        }
 
         // Estado local de los productos de la venta que se está editando
         let editSaleItemsState = [];
@@ -2561,9 +2641,13 @@ export function init(ctx) {
                 }
 
                 // Ajustar stock: reponer lo que tenía la venta antes y descontar lo que quedó tras la edición
-                if (!editSaleVentaData?.esCatalogoExterno) {
+                // (Si el stock de la venta nunca se descontó, reconciliar repondría
+                // prendas que no salieron: se deja pendiente.)
+                if (!editSaleVentaData?.esCatalogoExterno && !['pendiente', 'no_aplica'].includes(editSaleVentaData?.stockEstado?.estado)) {
                     console.log('📦 [EDICIÓN] Reconciliando stock de productos...');
-                    await reconciliarStockEdicionVenta(editSaleVentaData?.items || [], itemsActualizados);
+                    await reconciliarStockEdicionVenta(editSaleVentaData?.items || [], itemsActualizados, {
+                        motivo: `Venta ${ventaId.substring(0, 8).toUpperCase()} editada`, ventaId
+                    });
                     console.log('✅ [EDICIÓN] Stock reconciliado');
                 }
 
@@ -2695,12 +2779,13 @@ export function init(ctx) {
                 // estaba Anulada/Cancelada, el stock ya se repuso al anularla — repetirlo
                 // aquí lo duplicaría. Tampoco aplica si era una venta por catálogo externo,
                 // que nunca descontó stock al crearse.
-                const yaSeRepusoStock = ventaData.estado === 'Anulada' || ventaData.estado === 'Cancelada';
+                const yaSeRepusoStock = ventaData.estado === 'Anulada' || ventaData.estado === 'Cancelada'
+                    || ['pendiente', 'no_aplica'].includes(ventaData.stockEstado?.estado); // nunca se descontó
                 if (!yaSeRepusoStock && !ventaData.esCatalogoExterno && ventaData.items && Array.isArray(ventaData.items)) {
                     // Devuelve las prendas al inventario en una transacción
                     // contra el servidor (ver aplicarDeltasStock en admin.js):
                     // no pisa ventas hechas a la vez desde otro dispositivo.
-                    await reconciliarStockEdicionVenta(ventaData.items, []);
+                    await reconciliarStockEdicionVenta(ventaData.items, [], { motivo: `Venta ${ventaId.substring(0, 8).toUpperCase()} eliminada`, ventaId });
                 }
 
                 // Eliminar venta

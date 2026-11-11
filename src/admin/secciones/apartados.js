@@ -535,9 +535,14 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                         const ventaData = ventaSnap.data();
 
                         // Solo devolver stock si la venta no estaba ya cancelada
-                        if (ventaData.estado !== 'Cancelada' && ventaData.estado !== 'Anulada') {
+                        // ni si su stock nunca se descontó (stockEstado 'pendiente').
+                        const stockNuncaDescontado = ['pendiente', 'no_aplica'].includes(ventaData.stockEstado?.estado);
+                        if (ventaData.estado !== 'Cancelada' && ventaData.estado !== 'Anulada' && !stockNuncaDescontado) {
                             console.log('📦 Devolviendo stock...');
-                            await actualizarStock(ventaData.items, 'sumar');
+                            await actualizarStock(ventaData.items, 'sumar', {
+                                motivo: `Apartado de la venta ${apartadoData.ventaId.substring(0, 8).toUpperCase()} cancelado`,
+                                ventaId: apartadoData.ventaId
+                            });
                         } else {
                             console.log('⚠️ Venta ya estaba cancelada, no se devuelve stock');
                         }
