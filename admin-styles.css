@@ -5482,3 +5482,80 @@ input[type="datetime-local"] {
     font-size: 16px !important;
   }
 }
+
+/* ── Stock sin descontar (tarjeta de venta) ───────────────────────────── */
+.venta-stock-pendiente {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: .8rem;
+  font-weight: 600;
+}
+.venta-stock-pendiente span { flex: 1; min-width: 0; }
+.btn-descontar-stock {
+  border: none;
+  border-radius: 999px;
+  background: #ea580c;
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  cursor: pointer;
+}
+.btn-descontar-stock:disabled { opacity: .7; cursor: progress; }
+body.dark-mode .venta-stock-pendiente { background: rgba(234,88,12,.12); border-color: rgba(234,88,12,.4); color: #fdba74; }
+
+/* ── Historial de stock de una prenda ─────────────────────────────────── */
+#historialStockModal .hs-aviso { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; font-size: .85rem; margin-bottom: 12px; }
+#historialStockModal .hs-aviso ul { margin: 6px 0 0; padding-left: 18px; }
+#historialStockModal .hs-aviso--ok { background: #ecfdf3; color: #067647; }
+#historialStockModal .hs-aviso--mal { background: #fef3f2; color: #b42318; }
+#historialStockModal .hs-aviso--info { background: #f0f6ff; color: #1d4ed8; }
+#historialStockModal .hs-hoy { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; font-size: .8rem; }
+#historialStockModal .hs-hoy-titulo { font-weight: 700; margin-right: 4px; }
+#historialStockModal .hs-chip { background: #f4f4f5; border-radius: 999px; padding: 2px 9px; }
+#historialStockModal .hs-mov { border: 1px solid #eee; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; }
+#historialStockModal .hs-mov-top { display: flex; justify-content: space-between; gap: 8px; font-size: .84rem; }
+#historialStockModal .hs-motivo { font-weight: 700; }
+#historialStockModal .hs-fecha { color: #71717a; white-space: nowrap; }
+#historialStockModal .hs-cambios { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+#historialStockModal .hs-cambio { font-size: .78rem; border-radius: 8px; padding: 2px 8px; }
+#historialStockModal .hs-cambio.is-baja { background: #fef3f2; color: #b42318; }
+#historialStockModal .hs-cambio.is-sube { background: #ecfdf3; color: #067647; }
+#historialStockModal .hs-usuario { font-size: .75rem; color: #71717a; }
+body.dark-mode #historialStockModal .hs-mov { border-color: #3f3f46; }
+body.dark-mode #historialStockModal .hs-chip { background: #27272a; }
+
+/* ── Pedido web aceptado sin venta registrada (Fábrica) ───────────────── */
+.pw-sin-venta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 12px 12px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  font-size: .8rem;
+}
+.pw-sin-venta span { flex: 1; min-width: 0; }
+.pw-sin-venta-btn {
+  border: none;
+  border-radius: 999px;
+  background: #ea580c;
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+body.dark-mode .pw-sin-venta { background: rgba(234,88,12,.12); border-color: rgba(234,88,12,.4); color: #fdba74; }

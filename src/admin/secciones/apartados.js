@@ -526,34 +526,30 @@ ${saldo > 0 ? '¿Cuándo podrías realizar el siguiente abono? 😊' : '🎉 ¡T
                 const apartadoData = apartadoSnap.data();
                 console.log('📦 Datos del apartado:', apartadoData);
 
-                if (apartadoData.ventaId) {
-                    console.log('🔗 Procesando venta asociada:', apartadoData.ventaId);
-                    const ventaRef = doc(db, 'ventas', apartadoData.ventaId);
-                    const ventaSnap = await getDoc(ventaRef);
-
-                    if (ventaSnap.exists()) {
-                        const ventaData = ventaSnap.data();
-
-                        // Solo devolver stock si la venta no estaba ya cancelada
-                        if (ventaData.estado !== 'Cancelada' && ventaData.estado !== 'Anulada') {
-                            console.log('📦 Devolviendo stock...');
-                            await actualizarStock(ventaData.items, 'sumar');
-                        } else {
-                            console.log('⚠️ Venta ya estaba cancelada, no se devuelve stock');
-                        }
-
-                        await updateDoc(ventaRef, {
-                            estado: 'Cancelada'
-                        });
-                        console.log('✅ Venta marcada como cancelada');
+                // Cancelar = UNA transacción: se vuelven a leer el apartado y su
+                // venta, se devuelve el stock (si se había descontado y la venta
+                // no estaba ya anulada) y se marcan apartado y venta como
+                // cancelados. O todo o nada.
+                if (apartadoData.estado === 'Cancelado') { showToast('Este apartado ya estaba cancelado.', 'info'); return; }
+                const ventaRef = apartadoData.ventaId ? doc(db, 'ventas', apartadoData.ventaId) : null;
+                const ventaSnap = ventaRef ? await getDoc(ventaRef) : null;
+                const ventaData = ventaSnap?.exists() ? ventaSnap.data() : null;
+                const stockNuncaDescontado = ['pendiente', 'no_aplica'].includes(ventaData?.stockEstado?.estado) || ventaData?.esCatalogoExterno;
+                const devolver = ventaData && ventaData.estado !== 'Cancelada' && ventaData.estado !== 'Anulada' && !stockNuncaDescontado;
+                const errNeg = (msg) => Object.assign(new Error(msg), { esDeNegocio: true });
+                await actualizarStock(devolver ? (ventaData.items || []) : [], 'sumar', {
+                    estricto: true,
+                    motivo: `Apartado de la venta ${(apartadoData.ventaId || apartadoId).substring(0, 8).toUpperCase()} cancelado`,
+                    ventaId: apartadoData.ventaId || null,
+                    leerExtra: async (tx) => ({ apartado: await tx.get(apartadoRef), venta: ventaRef ? await tx.get(ventaRef) : null }),
+                    escribirExtra: (tx, { apartado, venta }) => {
+                        if (!apartado.exists() || apartado.data().estado === 'Cancelado') throw errNeg('Este apartado ya fue cancelado en otro dispositivo.');
+                        if (venta && ventaData && venta.exists() && venta.data().estado !== ventaData.estado) throw errNeg('La venta del apartado cambió. Vuelve a intentarlo.');
+                        if (venta && venta.exists()) tx.update(ventaRef, { estado: 'Cancelada' });
+                        tx.update(apartadoRef, { estado: 'Cancelado', fechaCancelacion: serverTimestamp() });
                     }
-                }
-
-                await updateDoc(apartadoRef, {
-                    estado: 'Cancelado',
-                    fechaCancelacion: serverTimestamp()
                 });
-                console.log('✅ Apartado marcado como cancelado');
+                console.log('✅ Apartado y venta cancelados, stock devuelto');
 
                 showToast('Apartado cancelado y stock devuelto', 'info');
 

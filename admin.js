@@ -792,24 +792,35 @@ function etiquetaVariacion(nombre, talla, color) {
     return partes.length ? `${nombre} (${partes.join(' / ')})` : nombre;
 }
 
-async function aplicarDeltasStock(deltas, nombres, { validar = false } = {}) {
-    if (!deltas.size) return [];
+// estricto: un producto o una talla/color que no existe en la base de datos
+//   cancela TODO (en vez de "omitirse" y seguir).
+// leerExtra(tx) / escribirExtra(tx, extra): lecturas y escrituras adicionales
+//   en la MISMA transacción (crear la venta, aceptar el pedido web, anular...):
+//   o se guarda todo junto con el descuento del stock, o no se guarda nada.
+async function aplicarDeltasStock(deltas, nombres, { validar = false, estricto = false, leerExtra = null, escribirExtra = null } = {}) {
+    if (!deltas.size && !escribirExtra) return { omitidos: [], cambios: [] };
     return runTransaction(db, async (tx) => {
         // Firestore exige leer todo antes de escribir en una transacción.
+        const extra = leerExtra ? await leerExtra(tx) : null;
         const snaps = new Map();
         for (const productoId of deltas.keys()) {
             snaps.set(productoId, await tx.get(doc(db, 'productos', productoId)));
         }
 
         const omitidos = [];
+        const omitidosAlDescontar = []; // los que bloquean en modo estricto
         const agotados = [];
         const escrituras = [];
+        // Lo que de verdad cambió (antes → después) según el stock leído en
+        // ESTA transacción: alimenta el historial de stock de cada prenda.
+        const cambios = [];
 
         deltas.forEach((porVariacion, productoId) => {
             const nombre = nombres.get(productoId) || productoId;
             const snap = snaps.get(productoId);
             if (!snap.exists()) {
                 omitidos.push(nombre);
+                if ([...porVariacion.values()].some(d => d < 0)) omitidosAlDescontar.push(`${nombre} (el producto ya no existe)`);
                 return;
             }
             const producto = snap.data();
@@ -825,6 +836,7 @@ async function aplicarDeltasStock(deltas, nombres, { validar = false } = {}) {
                     return;
                 }
                 escrituras.push([productoId, { stock: stockActual + deltaTotal }]);
+                cambios.push({ productoId, nombre, talla: '', color: '', antes: stockActual, despues: stockActual + deltaTotal });
                 return;
             }
 
@@ -837,6 +849,7 @@ async function aplicarDeltasStock(deltas, nombres, { validar = false } = {}) {
                 if (!variacion) {
                     console.warn(`No se encontró la variación ${talla}/${color} para el producto ${productoId}`);
                     omitidos.push(etiquetaVariacion(nombre, talla, color));
+                    if (delta < 0) omitidosAlDescontar.push(etiquetaVariacion(nombre, talla, color));
                     return;
                 }
                 const stockActual = parseInt(variacion.stock, 10) || 0;
@@ -845,6 +858,7 @@ async function aplicarDeltasStock(deltas, nombres, { validar = false } = {}) {
                     return;
                 }
                 variacion.stock = stockActual + delta;
+                cambios.push({ productoId, nombre, talla: variacion.talla || '', color: variacion.color || '', antes: stockActual, despues: stockActual + delta });
                 huboCambio = true;
             });
             if (huboCambio) escrituras.push([productoId, { variaciones }]);
@@ -855,8 +869,51 @@ async function aplicarDeltasStock(deltas, nombres, { validar = false } = {}) {
             error.agotados = agotados;
             throw error;
         }
+        if (estricto && omitidosAlDescontar.length) {
+            const error = new Error(`Estas prendas no existen en el inventario (producto o talla/color): ${omitidosAlDescontar.join(', ')}.`);
+            error.agotados = omitidosAlDescontar;
+            throw error;
+        }
         escrituras.forEach(([productoId, datos]) => tx.update(doc(db, 'productos', productoId), datos));
-        return omitidos;
+        if (escribirExtra) escribirExtra(tx, extra);
+        return { omitidos, cambios };
+    });
+}
+
+// ── Historial de stock por prenda ───────────────────────────────────────
+// Cada cambio de stock (venta, anulación, edición/eliminación de venta,
+// apartado cancelado, ajuste manual al editar el producto) queda registrado
+// en 'auditoria' (accion 'stock', entidadId = id del producto) con el
+// antes → después de cada talla/color, el motivo, la venta y quién lo hizo.
+// Así se puede revisar prenda por prenda de dónde salió su stock actual
+// (botón "Historial de stock" en la tarjeta del producto). Nunca lanza.
+function etiquetaTallaColor(talla, color) {
+    return [color, talla].filter(x => {
+        const n = (x || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+        return n && n !== 'unica' && n !== 'unico';
+    }).join(' / ') || 'Única';
+}
+function registrarMovimientosStock(cambios, { motivo = 'Ajuste de stock', ventaId = null } = {}) {
+    if (!cambios || !cambios.length) return;
+    const porProducto = new Map();
+    cambios.forEach(c => {
+        if (c.antes === c.despues) return;
+        if (!porProducto.has(c.productoId)) porProducto.set(c.productoId, { nombre: c.nombre, lineas: [] });
+        porProducto.get(c.productoId).lineas.push(c);
+    });
+    porProducto.forEach(({ nombre, lineas }, productoId) => {
+        registrarAuditoria({
+            accion: 'stock',
+            modulo: 'stock',
+            entidadId: productoId,
+            entidadNombre: nombre || productoId,
+            descripcion: `${motivo}: ${lineas.map(l => `${etiquetaTallaColor(l.talla, l.color)} ${l.antes} → ${l.despues}`).join(', ')}`,
+            detalles: {
+                motivo,
+                ventaId,
+                cambios: lineas.map(l => ({ talla: l.talla, color: l.color, antes: l.antes, despues: l.despues, diferencia: l.despues - l.antes }))
+            }
+        });
     });
 }
 
@@ -882,20 +939,42 @@ function acumularDeltas(deltas, nombres, items, signo) {
 // (al registrar una venta) se llama ANTES de guardarla: si alguna prenda no
 // alcanza, lanza el error y no se descuenta nada. Sin validarStock (reponer
 // stock al anular/cancelar) nunca lanza: avisa con un toast, como antes.
-async function actualizarStock(itemsVendido, accion = 'restar', { validarStock = false } = {}) {
-    if (!itemsVendido || itemsVendido.length === 0) return;
+// Devuelve el resultado para que la venta lo guarde (stockEstado):
+//   { estado: 'descontado' | 'parcial' | 'pendiente' | 'error', ... }
+async function actualizarStock(itemsVendido, accion = 'restar', { validarStock = false, motivo = null, ventaId = null, estricto = false, leerExtra = null, escribirExtra = null } = {}) {
+    if ((!itemsVendido || itemsVendido.length === 0) && !escribirExtra) return { estado: 'descontado', omitidos: [] };
     const deltas = new Map();
     const nombres = new Map();
-    const sinId = acumularDeltas(deltas, nombres, itemsVendido, accion === 'restar' ? -1 : 1);
+    const sinId = acumularDeltas(deltas, nombres, itemsVendido || [], accion === 'restar' ? -1 : 1);
     sinId.forEach(n => console.warn("Item en carrito sin productoId, omitiendo stock:", n));
+    if (estricto && sinId.length) {
+        throw new Error(`Solo se puede vender lo que está en el inventario. Estas prendas no están enlazadas a un producto: ${sinId.join(', ')}. La venta no se registró.`);
+    }
 
     try {
-        const omitidos = [...sinId, ...await aplicarDeltasStock(deltas, nombres, { validar: validarStock && accion === 'restar' })];
+        const resultado = await aplicarDeltasStock(deltas, nombres, { validar: validarStock && accion === 'restar', estricto, leerExtra, escribirExtra });
+        const omitidos = [...sinId, ...resultado.omitidos];
         console.log(`Stock actualizado (acción: ${accion}) correctamente.`);
+        registrarMovimientosStock(resultado.cambios, { motivo: motivo || (accion === 'restar' ? 'Venta' : 'Devolución al inventario'), ventaId });
         if (omitidos.length > 0) {
             showToast(`Venta guardada, pero el inventario NO se ajustó para: ${omitidos.join(', ')}. Revísalo manualmente.`, 'error');
         }
+        return { estado: omitidos.length ? 'parcial' : 'descontado', omitidos };
     } catch (error) {
+        if (estricto) {
+            // Modo estricto (registrar/anular/editar/eliminar ventas): nada
+            // se guarda si el stock no se pudo escribir en la base de datos.
+            if (error.agotados) { error.message += ' La venta no se registró.'; throw error; }
+            if (error.esDeNegocio) throw error;
+            const sinRed = error.code === 'unavailable' || !navigator.onLine;
+            const sinPermiso = error.code === 'permission-denied';
+            console.error('Operación de stock rechazada:', error);
+            throw new Error(sinRed
+                ? 'Sin conexión con la base de datos: no se pudo descontar el stock, así que la operación NO se registró. Inténtalo de nuevo.'
+                : sinPermiso
+                    ? 'La base de datos no permitió descontar el stock de estos productos con tu usuario (pertenecen a otra empresa o falta el permiso), así que la operación NO se registró. Avísale al administrador.'
+                    : `No se pudo descontar el stock (${error.message}), así que la operación NO se registró.`);
+        }
         if (validarStock && error.code === 'permission-denied') {
             // La transacción YA validó el stock real (si algo estaba agotado,
             // habría fallado antes con error.agotados); lo que Firestore
@@ -908,7 +987,7 @@ async function actualizarStock(itemsVendido, accion = 'restar', { validarStock =
             console.warn('Sin permiso para descontar stock (empresa del producto distinta):', nombresProductos, error);
             // Quien registra la venta muestra este aviso después de su
             // mensaje de éxito (si se mostrara aquí, el de éxito lo taparía).
-            return { sinPermisoStock: nombresProductos };
+            return { estado: 'pendiente', sinPermisoStock: nombresProductos, omitidos: [...nombres.values()] };
         }
         if (validarStock) {
             if (!error.agotados) {
@@ -925,6 +1004,7 @@ async function actualizarStock(itemsVendido, accion = 'restar', { validarStock =
         }
         console.error("Error al actualizar stock:", error);
         showToast('Venta guardada, pero falló la actualización de stock.', 'error');
+        return { estado: 'error', error: error.message };
     }
 }
 
@@ -932,12 +1012,14 @@ async function actualizarStock(itemsVendido, accion = 'restar', { validarStock =
 // lo original y descuenta lo nuevo como un delta neto por variación, en una
 // sola transacción. Si lo nuevo no alcanza en el stock real, lanza error y no
 // toca nada (el que llama no guarda la edición).
-async function reconciliarStockEdicionVenta(itemsOriginales, itemsNuevos) {
+async function reconciliarStockEdicionVenta(itemsOriginales, itemsNuevos, { motivo = 'Edición de venta', ventaId = null, leerExtra = null, escribirExtra = null, estricto = false } = {}) {
     const deltas = new Map();
     const nombres = new Map();
     acumularDeltas(deltas, nombres, itemsOriginales, 1);   // reponer lo que tenía la venta
-    acumularDeltas(deltas, nombres, itemsNuevos, -1);      // descontar lo que queda tras editar
-    const omitidos = await aplicarDeltasStock(deltas, nombres, { validar: true });
+    const sinId = acumularDeltas(deltas, nombres, itemsNuevos, -1);      // descontar lo que queda tras editar
+    if (estricto && sinId.length) throw new Error(`Solo se puede vender lo que está en el inventario. Sin producto enlazado: ${sinId.join(', ')}.`);
+    const { omitidos, cambios } = await aplicarDeltasStock(deltas, nombres, { validar: true, estricto, leerExtra, escribirExtra });
+    registrarMovimientosStock(cambios, { motivo, ventaId });
     if (omitidos.length) console.warn('Stock no ajustado al editar la venta para:', omitidos.join(', '));
 }
 
@@ -1410,13 +1492,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 const subtotal = orderData.subtotalProductos || orderData.totalPedido || 0;
                 await preFillSalesForm(orderData, orderId, 0, subtotal);
-                showToast('Pedido aceptado. Completa el formulario de venta.', 'success');
+                // El pedido NO se marca "aceptado" aquí: pasa a aceptado en la
+                // MISMA transacción que descuenta el stock y crea la venta (ver
+                // ventas.js). Antes quedaba aceptado aunque la venta nunca se
+                // registrara, y el stock no bajaba.
+                window.pedidoWebEnVenta = {
+                    id: orderId,
+                    totalPedido: subtotal,
+                    productos: (orderData.items || []).map(it => it.productoId).filter(Boolean)
+                };
+                showToast('Pedido cargado. Al registrar la venta quedará aceptado.', 'success');
                 if (window.adminShowSection) { window.adminShowSection('#ventas'); window.adminMarkActive('#ventas'); }
                 const btn = document.getElementById('toggle-sales-form-view-btn');
                 if (btn) btn.click();
-
-                updateDoc(orderRef, { estado: 'aceptado', fechaAceptacion: serverTimestamp(), totalPedido: subtotal })
-                    .catch(err => { console.error('Error al marcar pedido como aceptado:', err); showToast('El pedido pasó al formulario, pero no se pudo marcar como aceptado. Verifica tu conexión.', 'error'); });
             } catch (err) { console.error('Error al aceptar:', err); showToast('Error al procesar el pedido', 'error'); }
         }
 
@@ -2308,6 +2396,100 @@ document.addEventListener('DOMContentLoaded', () => {
             return ok;
         }
 
+        // ── Historial de stock de una prenda (y comprobación) ──────────────
+        // Lee los movimientos de stock de ese producto (auditoria, accion
+        // 'stock': ver registrarMovimientosStock) y comprueba que cuadren:
+        // por cada talla/color, el "antes" de cada movimiento debe ser el
+        // "después" del anterior, y el último "después" debe ser el stock
+        // actual. Si no, el stock cambió por un camino que no quedó
+        // registrado (otra pantalla, Excel, versión vieja de la app...) y se
+        // muestra cuándo. Requiere permiso de ver Auditoría.
+        function puedeVerHistorialStock() {
+            const ctx = window.appContext;
+            return !!ctx && (ctx.isSuperAdmin || ctx.permisos?.auditoria_ver === true);
+        }
+        let historialModalEl = null;
+        function asegurarModalHistorial() {
+            if (historialModalEl) return historialModalEl;
+            historialModalEl = document.createElement('div');
+            historialModalEl.className = 'modal fade';
+            historialModalEl.id = 'historialStockModal';
+            historialModalEl.tabIndex = -1;
+            historialModalEl.innerHTML = `
+                <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i><span class="hs-titulo">Historial de stock</span></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="modal-body hs-cuerpo"></div>
+                    </div>
+                </div>`;
+            document.body.appendChild(historialModalEl);
+            return historialModalEl;
+        }
+        const normHs = (t) => (t || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/^unic[oa]$/, '');
+        const fechaHs = (f) => f?.toDate ? f.toDate() : null;
+        const fmtFechaHs = (f) => { const d = fechaHs(f); return d ? d.toLocaleString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'ahora'; };
+        const escHs = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+        async function abrirHistorialStock(productoId) {
+            const producto = productoId ? localProductsMap.get(productoId) : null;
+            if (!producto) return;
+            const modalEl = asegurarModalHistorial();
+            modalEl.querySelector('.hs-titulo').textContent = `Historial · ${producto.nombre || ''}`;
+            const cuerpo = modalEl.querySelector('.hs-cuerpo');
+            cuerpo.innerHTML = '<div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>Cargando movimientos…</div>';
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            try {
+                const snap = await getDocs(query(collection(db, 'auditoria'), where('entidadId', '==', productoId), limit(500)));
+                const movs = snap.docs.map(d => d.data())
+                    .filter(m => m.modulo === 'stock' && Array.isArray(m.detalles?.cambios))
+                    .sort((a, b) => (fechaHs(a.fecha)?.getTime() || Date.now()) - (fechaHs(b.fecha)?.getTime() || Date.now()));
+
+                // Comprobación de continuidad por talla/color
+                const ultimo = new Map();
+                const saltos = [];
+                const etiquetaHs = (c) => [c.color, c.talla].filter(x => normHs(x)).join(' / ') || 'Única';
+                movs.forEach(m => m.detalles.cambios.forEach(c => {
+                    const k = normHs(c.color) + '|' + normHs(c.talla);
+                    const prev = ultimo.get(k);
+                    if (prev && prev.despues !== c.antes) {
+                        saltos.push(`<b>${escHs(etiquetaHs(c))}</b>: quedó en <b>${prev.despues}</b> (${fmtFechaHs(prev.fecha)}) pero el siguiente movimiento (${fmtFechaHs(m.fecha)}) partió de <b>${c.antes}</b>.`);
+                    }
+                    ultimo.set(k, { despues: c.despues, fecha: m.fecha });
+                }));
+                (producto.variaciones || []).forEach(v => {
+                    const k = normHs(v.color) + '|' + normHs(v.talla);
+                    const prev = ultimo.get(k);
+                    const actual = parseInt(v.stock, 10) || 0;
+                    if (prev && prev.despues !== actual) {
+                        saltos.push(`<b>${escHs(etiquetaHs(v))}</b>: el último movimiento lo dejó en <b>${prev.despues}</b> (${fmtFechaHs(prev.fecha)}), pero hoy tiene <b>${actual}</b>.`);
+                    }
+                });
+
+                const stockHoy = (producto.variaciones || []).map(v => `<span class="hs-chip">${escHs(etiquetaHs(v))}: <b>${parseInt(v.stock, 10) || 0}</b></span>`).join('');
+                const resumen = !movs.length
+                    ? '<div class="hs-aviso hs-aviso--info"><i class="bi bi-info-circle"></i> Todavía no hay movimientos registrados de esta prenda. El historial empieza a llenarse con las próximas ventas, anulaciones y ediciones.</div>'
+                    : saltos.length
+                        ? `<div class="hs-aviso hs-aviso--mal"><i class="bi bi-exclamation-triangle-fill"></i><div><b>El stock no cuadra con el historial.</b> Hubo cambios que no quedaron registrados:<ul>${saltos.map(t => `<li>${t}</li>`).join('')}</ul></div></div>`
+                        : '<div class="hs-aviso hs-aviso--ok"><i class="bi bi-check-circle-fill"></i> El stock actual coincide con todos los movimientos registrados.</div>';
+                const lista = movs.slice().reverse().map(m => `
+                    <div class="hs-mov">
+                        <div class="hs-mov-top"><span class="hs-motivo">${escHs(m.detalles.motivo || 'Movimiento')}</span><span class="hs-fecha">${fmtFechaHs(m.fecha)}</span></div>
+                        <div class="hs-cambios">${m.detalles.cambios.map(c => {
+                            const dif = (c.despues ?? 0) - (c.antes ?? 0);
+                            return `<span class="hs-cambio ${dif < 0 ? 'is-baja' : 'is-sube'}">${escHs(etiquetaHs(c))}: ${c.antes} → ${c.despues} <b>(${dif > 0 ? '+' : ''}${dif})</b></span>`;
+                        }).join('')}</div>
+                        <div class="hs-usuario"><i class="bi bi-person"></i> ${escHs(m.usuarioNombre || 'Desconocido')}</div>
+                    </div>`).join('');
+                cuerpo.innerHTML = `${resumen}<div class="hs-hoy"><span class="hs-hoy-titulo">Stock actual</span>${stockHoy || '<span class="text-muted">Sin variaciones</span>'}</div>${lista}`;
+            } catch (error) {
+                console.error('Error cargando historial de stock:', error);
+                cuerpo.innerHTML = `<div class="hs-aviso hs-aviso--mal"><i class="bi bi-exclamation-triangle-fill"></i> No se pudo cargar el historial (${escHs(error.code || error.message)}).</div>`;
+            }
+        }
+
         // Reconstruye la tabla de inventario (filas + códigos de barras) a
         // partir de localProductsMap, ya poblado por renderProducts().
         async function pintarTablaProductos() {
@@ -2395,6 +2577,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button type="button" class="pf-act btn-toggle-encargo${d.bajoEncargo ? ' is-on' : ''}" title="${d.bajoEncargo ? 'Quitar de Bajo Encargo' : 'Agregar a Bajo Encargo'}" aria-label="Bajo encargo"><i class="bi bi-bag-heart${d.bajoEncargo ? '-fill' : ''}"></i></button>
                         ${d.codigoBarras ? `<button type="button" class="pf-act btn-ver-barcode" data-product-id="${id}" title="Ver código de barras" aria-label="Código de barras"><i class="bi bi-upc"></i></button>` : ''}
                         ${stockTotal > 0 ? `<button type="button" class="pf-act btn-copiar-disponibilidad" title="Copiar disponibilidad" aria-label="Copiar disponibilidad de ${esc(d.nombre || '')}"><i class="bi bi-copy"></i></button>` : ''}
+                        ${puedeVerHistorialStock() ? `<button type="button" class="pf-act btn-historial-stock" title="Historial de stock" aria-label="Historial de stock de ${esc(d.nombre || '')}"><i class="bi bi-clock-history"></i></button>` : ''}
                         <button type="button" class="pf-act pf-act--del btn-delete-product" title="Eliminar" aria-label="Eliminar ${esc(d.nombre || '')}"><i class="bi bi-trash3"></i></button>
                     </div>`;
                 fragment.appendChild(card);
@@ -2415,6 +2598,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // pestaña Productos, sin importar si la navegación vino del rail de
         // escritorio o de la barra inferior móvil.
         alEntrarSeccion('#productos', () => { if (productosTablaSucia) pintarTablaProductos(); });
+        // El botón "Historial de stock" depende del permiso de Auditoría:
+        // repintar las tarjetas cuando se conocen (o cambian) los permisos.
+        const repintarPorPermisos = () => {
+            if (!localProductsMap.size) return; // aún no llegan los productos: se pintarán al llegar
+            if ((window.location.hash || '#dashboard') === '#productos') pintarTablaProductos();
+            else productosTablaSucia = true;
+        };
+        window.addEventListener('adminAuthReady', repintarPorPermisos);
+        window.addEventListener('adminPermisosActualizados', repintarPorPermisos);
 
         // ── Optimizar fotos existentes (miniaturas) ──────────────────────
         // Los productos nuevos o con foto cambiada ya guardan su miniatura al
@@ -3003,6 +3195,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const variationRows = variationsContainer.querySelectorAll('.variation-row:not(#variation-template)');
+            const filasVariacion = [];
+            variationRows.forEach(row => {
+                const talla = row.querySelector('[name="variation_talla[]"]').value.trim();
+                const color = row.querySelector('[name="variation_color[]"]').value.trim();
+                const stock = parseInt(row.querySelector('[name="variation_stock[]"]').value, 10) || 0;
+                if (!(talla || color || stock > 0 || row.dataset.esOriginal)) return;
+                filasVariacion.push({
+                    talla, color, stock,
+                    esOriginal: row.dataset.esOriginal === '1',
+                    origTalla: row.dataset.origTalla || '',
+                    origColor: row.dataset.origColor || '',
+                    stockOriginal: parseInt(row.dataset.stockOriginal, 10) || 0
+                });
+            });
             variationRows.forEach(row => { const talla = row.querySelector('[name="variation_talla[]"]').value.trim(); const color = row.querySelector('[name="variation_color[]"]').value.trim(); const stock = parseInt(row.querySelector('[name="variation_stock[]"]').value, 10) || 0; if (talla || color || stock > 0) { productData.variaciones.push({ talla, color, stock }); } });
 
             try {
@@ -3043,7 +3249,50 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!productData.imagenUrl) {
                         productData.imagenUrl = existingDoc?.imagenUrl || null;
                     }
-                    await withWriteTimeout(updateDoc(doc(db, "productos", productId), productData), 'el producto');
+                    // Antes se escribía la lista de tallas tal como estaba en el
+                    // formulario: si mientras estaba abierto se vendía una prenda,
+                    // al guardar (p. ej. solo para cambiar el precio) esa prenda
+                    // VOLVÍA a aparecer en el stock. Ahora, en una transacción, se
+                    // lee el stock real y a cada talla que ya existía se le suma
+                    // solo la diferencia que la persona escribió (mismo criterio que
+                    // Productos de Fábrica). Tallas nuevas: el stock escrito. Tallas
+                    // que la persona quitó: se quitan. Tallas agregadas por otro
+                    // dispositivo mientras tanto: se conservan.
+                    const productoRef = doc(db, "productos", productId);
+                    const cambiosStockEdicion = await withWriteTimeout(runTransaction(db, async (tx) => {
+                        const snap = await tx.get(productoRef);
+                        const actuales = snap.exists() ? (snap.data().variaciones || []) : [];
+                        const alAbrir = filasVariacion.filter(f => f.esOriginal);
+                        const usadas = new Set();
+                        const resultado = [];
+                        const cambios = [];
+                        filasVariacion.forEach(f => {
+                            if (!f.esOriginal) {
+                                resultado.push({ talla: f.talla, color: f.color, stock: Math.max(0, f.stock) });
+                                if (f.stock) cambios.push({ productoId: productId, nombre: productData.nombre, talla: f.talla, color: f.color, antes: 0, despues: Math.max(0, f.stock) });
+                                return;
+                            }
+                            const idx = actuales.findIndex((v, i) => !usadas.has(i) && coincideVariacion(v.talla, f.origTalla) && coincideVariacion(v.color, f.origColor));
+                            if (idx >= 0) usadas.add(idx);
+                            const stockReal = idx >= 0 ? (parseInt(actuales[idx].stock, 10) || 0) : f.stockOriginal;
+                            const nuevo = Math.max(0, stockReal + (f.stock - f.stockOriginal));
+                            resultado.push({ ...(idx >= 0 ? actuales[idx] : {}), talla: f.talla, color: f.color, stock: nuevo });
+                            if (nuevo !== stockReal) cambios.push({ productoId: productId, nombre: productData.nombre, talla: f.talla, color: f.color, antes: stockReal, despues: nuevo });
+                        });
+                        actuales.forEach((v, i) => {
+                            if (usadas.has(i)) return;
+                            const estabaAlAbrir = alAbrir.some(f => coincideVariacion(v.talla, f.origTalla) && coincideVariacion(v.color, f.origColor));
+                            if (!estabaAlAbrir) {
+                                resultado.push(v); // la agregó otro dispositivo: se conserva
+                            } else if (parseInt(v.stock, 10)) {
+                                cambios.push({ productoId: productId, nombre: productData.nombre, talla: v.talla || '', color: v.color || '', antes: parseInt(v.stock, 10) || 0, despues: 0 });
+                            }
+                        });
+                        tx.update(productoRef, { ...productData, variaciones: resultado });
+                        productData.variaciones = resultado; // para la auditoría de abajo
+                        return cambios;
+                    }), 'el producto');
+                    registrarMovimientosStock(cambiosStockEdicion, { motivo: 'Ajuste manual (edición del producto)' });
                     imagenInput.value = '';
                     showToast("Producto actualizado!");
 
@@ -3082,6 +3331,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     productData.codigo = "P" + Date.now().toString().slice(-5);
                     const docRef = await withWriteTimeout(addDoc(productsCollection, productData), 'el producto');
                     showToast("Producto guardado!");
+                    registrarMovimientosStock((productData.variaciones || []).map(v => ({
+                        productoId: docRef.id, nombre: productData.nombre, talla: v.talla, color: v.color, antes: 0, despues: v.stock
+                    })), { motivo: 'Producto creado' });
 
                     registrarAuditoria({
                         accion: 'crear',
@@ -3125,6 +3377,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error("Error actualizando bajoEncargo:", err);
                     showToast("Error al actualizar Bajo Encargo", 'error');
                 }
+                return;
+            }
+            const historialBtn = e.target.closest('.btn-historial-stock');
+            if (historialBtn) {
+                abrirHistorialStock(historialBtn.closest('[data-id]')?.dataset.id);
                 return;
             }
             const copiarBtn = e.target.closest('.btn-copiar-disponibilidad');
@@ -3200,6 +3457,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                 nR.querySelector('[name="variation_talla[]"]').value = v.talla || '';
                                 nR.querySelector('[name="variation_color[]"]').value = v.color || '';
                                 nR.querySelector('[name="variation_stock[]"]').value = v.stock || 0;
+                                // Identidad y stock de esta talla AL ABRIR: al guardar se
+                                // aplica solo la diferencia que la persona escribió
+                                // sobre el stock real del momento (ver guardado).
+                                nR.dataset.esOriginal = '1';
+                                nR.dataset.origTalla = v.talla || '';
+                                nR.dataset.origColor = v.color || '';
+                                nR.dataset.stockOriginal = String(parseInt(v.stock, 10) || 0);
                                 nR.querySelector('.remove-variation-btn').addEventListener('click', (ev)=>{ ev.preventDefault(); nR.remove(); });
                                 variationsContainer.appendChild(nR);
                             });
@@ -3960,9 +4224,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ventas → src/admin/secciones/ventas.js. window.asegurarModuloVentas()
     // lo carga desde otras partes que necesitan el carrito (pedidos web,
     // modal de variaciones, factura tras un abono) antes de entrar a Ventas.
-    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=6'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
+    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=8'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
     // Apartados → src/admin/secciones/apartados.js
-    cargarSeccionDiferida('#apartados', () => import('./src/admin/secciones/apartados.js?v=3'), { abonoApartadoModalInstance, actualizarStock, apartadosCollection, db, eliminarFormatoNumero, formatoMoneda, localProductsMap, openWhatsApp, showToast, verApartadoModalInstance });
+    cargarSeccionDiferida('#apartados', () => import('./src/admin/secciones/apartados.js?v=5'), { abonoApartadoModalInstance, actualizarStock, apartadosCollection, db, eliminarFormatoNumero, formatoMoneda, localProductsMap, openWhatsApp, showToast, verApartadoModalInstance });
     // Finanzas (versión anterior: ingresos/gastos y cierre de caja) →
     // src/admin/secciones/finanzas-caja.js. Su pantalla ya no existe en
     // admin.html, pero igual consultaba las ventas del día al abrir el panel
@@ -6136,8 +6400,8 @@ document.addEventListener('click', (e) => {
     // Inventario Fábrica — hilazas, hilos y telas → src/admin/secciones/inventario-fabrica.js
     cargarSeccionDiferida('#inventario-fabrica', () => import('./src/admin/secciones/inventario-fabrica.js?v=2'));
     // Productos Fábrica → src/admin/secciones/productos-fabrica.js
-    cargarSeccionDiferida('#productos-fabrica', () => import('./src/admin/secciones/productos-fabrica.js?v=2'));
+    cargarSeccionDiferida('#productos-fabrica', () => import('./src/admin/secciones/productos-fabrica.js?v=3'));
     // Cargue masivo Fábrica → src/admin/secciones/cargue-masivo-fabrica.js
-    cargarSeccionDiferida('#cargue-masivo-fabrica', () => import('./src/admin/secciones/cargue-masivo-fabrica.js?v=2'));
+    cargarSeccionDiferida('#cargue-masivo-fabrica', () => import('./src/admin/secciones/cargue-masivo-fabrica.js?v=3'));
 
 });

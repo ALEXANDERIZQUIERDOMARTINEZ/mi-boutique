@@ -4,7 +4,7 @@
 // (ver cargarSeccionDiferida en admin.js). Lo que antes leía del closure de
 // admin.js (db, colecciones, helpers) llega ahora en `ctx`.
 import { WHOLESALE_TIER_GROUPS } from "../../../wholesale-tiers.js?v=2";
-import { addDoc, deleteDoc, doc, getDocs, orderBy, query, serverTimestamp, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { addDoc, deleteDoc, doc, getDocs, orderBy, query, runTransaction, serverTimestamp, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 import { getDownloadURL, ref, uploadBytes } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js";
 
 // ========================================================================
@@ -151,10 +151,18 @@ export function init(ctx) {
     lowStockToggle.addEventListener('change', renderTabla);
 
     // ── Variaciones dinámicas (mismo patrón que el catálogo de Boutique) ──
-    function agregarFilaVariacion(talla = '', color = '', stock = 1) {
+    function agregarFilaVariacion(talla = '', color = '', stock = 1, esOriginal = false) {
         const fila = variationTemplate.cloneNode(true);
         fila.classList.remove('d-none');
         fila.removeAttribute('id');
+        if (esOriginal) {
+            // Identidad y stock de esta talla AL ABRIR (para guardar solo la
+            // diferencia sobre el stock real; ver el guardado).
+            fila.dataset.esOriginal = '1';
+            fila.dataset.origTalla = talla || '';
+            fila.dataset.origColor = color || '';
+            fila.dataset.stockOriginal = String(parseFloat(stock) || 0);
+        }
         fila.querySelector('[name="prodfab_variation_talla[]"]').value = talla;
         fila.querySelector('[name="prodfab_variation_color[]"]').value = color;
         fila.querySelector('[name="prodfab_variation_stock[]"]').value = stock;
@@ -169,7 +177,12 @@ export function init(ctx) {
             const fila = input.closest('.variation-row');
             const color = fila.querySelector('[name="prodfab_variation_color[]"]').value.trim();
             const stock = fila.querySelector('[name="prodfab_variation_stock[]"]').value;
-            return { talla: input.value.trim(), color, stock: parseFloat(stock) || 0 };
+            return {
+                talla: input.value.trim(), color, stock: parseFloat(stock) || 0,
+                esOriginal: fila.dataset.esOriginal === '1',
+                origTalla: fila.dataset.origTalla || '', origColor: fila.dataset.origColor || '',
+                stockOriginal: parseFloat(fila.dataset.stockOriginal) || 0
+            };
         }).filter(v => v.talla || v.color);
     }
 
@@ -216,7 +229,7 @@ export function init(ctx) {
             }
             variacionesContainer.innerHTML = '';
             (p.variaciones && p.variaciones.length ? p.variaciones : [{}]).forEach(v =>
-                agregarFilaVariacion(v.talla, v.color, v.stock ?? 1));
+                agregarFilaVariacion(v.talla, v.color, v.stock ?? 1, true));
             modalTitle.textContent = 'Editar producto';
             getModal('prodFabModal').show();
         }
@@ -286,16 +299,46 @@ export function init(ctx) {
                 precioMayor,
                 visible: visibleCheckbox.checked,
                 imagenUrl,
-                variaciones: leerVariacionesDelForm(),
-                tenantId: window.expectedTenantId
             };
+            const filas = leerVariacionesDelForm();
 
             if (id) {
-                await updateDoc(doc(db, 'productosFabrica', id), datos);
+                // Antes se reescribían las tallas con lo que tenía el
+                // formulario al abrirse (si mientras tanto se vendía una prenda
+                // en Fábrica, volvía a aparecer) y se cambiaba la empresa del
+                // producto por la de este panel (Boutique), con lo que el
+                // producto desaparecía de admin-fabrica. Ahora: en una
+                // transacción se aplica solo la diferencia escrita sobre el
+                // stock real, y la empresa (tenantId) no se toca.
+                const norm = (t) => (t || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/^unic[oa]$/, '');
+                const igual = (v, talla, color) => norm(v.talla) === norm(talla) && norm(v.color) === norm(color);
+                const productoRef = doc(db, 'productosFabrica', id);
+                await runTransaction(db, async (tx) => {
+                    const snap = await tx.get(productoRef);
+                    if (!snap.exists()) throw new Error('Este producto ya no existe.');
+                    const actuales = snap.data().variaciones || [];
+                    const usadas = new Set();
+                    const resultado = filas.map(f => {
+                        if (!f.esOriginal) return { talla: f.talla, color: f.color, stock: Math.max(0, f.stock) };
+                        const idx = actuales.findIndex((v, i) => !usadas.has(i) && igual(v, f.origTalla, f.origColor));
+                        if (idx >= 0) usadas.add(idx);
+                        const real = idx >= 0 ? (parseFloat(actuales[idx].stock) || 0) : f.stockOriginal;
+                        return { talla: f.talla, color: f.color, stock: Math.max(0, real + (f.stock - f.stockOriginal)) };
+                    });
+                    const alAbrir = filas.filter(f => f.esOriginal);
+                    actuales.forEach((v, i) => {
+                        if (!usadas.has(i) && !alAbrir.some(f => igual(v, f.origTalla, f.origColor))) resultado.push(v); // agregada por otro dispositivo
+                    });
+                    tx.update(productoRef, { ...datos, variaciones: resultado });
+                });
                 showToast('Producto actualizado', 'success');
             } else {
                 await addDoc(productosFabricaCollection, {
                     ...datos,
+                    variaciones: filas.map(({ talla, color, stock }) => ({ talla, color, stock })),
+                    // Los productos de Fábrica pertenecen a la empresa 'fabrica'
+                    // (admin-fabrica.html solo muestra esos), no a la de este panel.
+                    tenantId: 'fabrica',
                     codigo: 'PF' + Date.now().toString().slice(-6),
                     timestamp: serverTimestamp()
                 });

@@ -4,7 +4,7 @@
 // (ver cargarSeccionDiferida en admin.js). Lo que antes leía del closure de
 // admin.js (db, colecciones, helpers) llega ahora en `ctx`.
 import { WHOLESALE_TIER_GROUPS } from "../../../wholesale-tiers.js?v=2";
-import { addDoc, collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { addDoc, collection, doc, getDocs, query, serverTimestamp, updateDoc, where, runTransaction } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 // ========================================================================
 // ✅ SECCIÓN: CARGUE MASIVO FÁBRICA — mismo asistente de 3 pasos que
@@ -43,6 +43,27 @@ export function init(ctx) {
     let productosExistentes = [];
 
     // ── 1) Leer Excel ──
+    // Fusiona las filas del Excel de UN producto contra su stock real, dentro
+    // de una transacción (mismo criterio que el cargue masivo de admin-fabrica).
+    const normCM = (v) => { const n = (v || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase(); return (n === 'unica' || n === 'unico') ? '' : n; };
+    async function fusionarVariacionesEnTransaccion(productoId, nuevasVariaciones, accion) {
+        const ref = doc(db, 'productosFabrica', productoId);
+        await runTransaction(db, async (tx) => {
+            const snap = await tx.get(ref);
+            const actuales = snap.exists() ? (snap.data().variaciones || []).map(v => ({ ...v })) : [];
+            nuevasVariaciones.forEach(nuevaVar => {
+                const talla = nuevaVar.talla || '', color = nuevaVar.color || '';
+                const idx = actuales.findIndex(v => normCM(v.talla) === normCM(talla) && normCM(v.color) === normCM(color));
+                if (idx >= 0) {
+                    actuales[idx].stock = accion === 'reemplazar' ? nuevaVar.cantidad : (parseFloat(actuales[idx].stock) || 0) + nuevaVar.cantidad;
+                } else {
+                    actuales.push({ talla, color, stock: nuevaVar.cantidad });
+                }
+            });
+            tx.update(ref, { variaciones: actuales });
+        });
+    }
+
     async function leerExcel(archivo) {
         mostrarLoader('Leyendo archivo...', 10);
         await loadExternalLib('xlsx');
@@ -548,48 +569,16 @@ export function init(ctx) {
                 if (producto.esDuplicado) {
                     if (producto.accionDuplicado === 'omitir') { contador++; continue; }
 
-                    const productoRef = doc(db, 'productosFabrica', producto.productoExistenteId);
-                    const productoExistente = producto.productoExistente;
-                    const variacionesActuales = [...(productoExistente.variaciones || [])];
-
-                    producto.variaciones.forEach(nuevaVar => {
-                        const tallaVar = nuevaVar.talla || '';
-                        const colorVar = nuevaVar.color || '';
-                        const indexExistente = variacionesActuales.findIndex(v => (v.talla || '') === tallaVar && (v.color || '') === colorVar);
-
-                        if (indexExistente >= 0) {
-                            if (producto.accionDuplicado === 'sumar') {
-                                variacionesActuales[indexExistente].stock = (parseFloat(variacionesActuales[indexExistente].stock) || 0) + nuevaVar.cantidad;
-                            } else if (producto.accionDuplicado === 'reemplazar') {
-                                variacionesActuales[indexExistente].stock = nuevaVar.cantidad;
-                            }
-                        } else {
-                            variacionesActuales.push({ talla: tallaVar, color: colorVar, stock: nuevaVar.cantidad });
-                        }
-                    });
-
-                    await updateDoc(productoRef, { variaciones: variacionesActuales });
+                    // Fusión contra el stock REAL del momento, en transacción (antes
+                    // se escribía encima lo leído al empezar el cargue y se perdían
+                    // las ventas hechas mientras tanto).
+                    await fusionarVariacionesEnTransaccion(producto.productoExistenteId, producto.variaciones, producto.accionDuplicado === 'reemplazar' ? 'reemplazar' : 'sumar');
                 } else {
                     const nombreNorm = producto.nombre.toLowerCase().trim();
                     const productoConMismoNombre = productosExistentes.find(p => p.nombre === nombreNorm);
 
                     if (productoConMismoNombre) {
-                        const productoRef = doc(db, 'productosFabrica', productoConMismoNombre.id);
-                        const variacionesActuales = [...(productoConMismoNombre.variaciones || [])];
-
-                        producto.variaciones.forEach(nuevaVar => {
-                            const tallaVar = nuevaVar.talla || '';
-                            const colorVar = nuevaVar.color || '';
-                            const indexExistente = variacionesActuales.findIndex(v => (v.talla || '') === tallaVar && (v.color || '') === colorVar);
-
-                            if (indexExistente >= 0) {
-                                variacionesActuales[indexExistente].stock = (parseFloat(variacionesActuales[indexExistente].stock) || 0) + nuevaVar.cantidad;
-                            } else {
-                                variacionesActuales.push({ talla: tallaVar, color: colorVar, stock: nuevaVar.cantidad });
-                            }
-                        });
-
-                        await updateDoc(productoRef, { variaciones: variacionesActuales });
+                        await fusionarVariacionesEnTransaccion(productoConMismoNombre.id, producto.variaciones, 'sumar');
                     } else {
                         const productoId = await guardarProductoFirestore(producto);
                         await guardarVariacionesFirestore(productoId, producto.variaciones);
