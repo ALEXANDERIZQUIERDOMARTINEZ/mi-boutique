@@ -2267,8 +2267,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? (categoriesMap.get(d.categoriaId) || 'Sin Categoría') : 'Sin Categoría';
             const agotado = stockTotal <= 0;
             return `<li class="list-group-item list-group-item-action product-search-item${agotado ? ' disabled' : ''}"${agotado ? ' style="opacity:0.5;cursor:not-allowed"' : ''}
-                data-product-id="${escBusqueda(id)}" data-product-name="${escBusqueda((d.nombre || '').toLowerCase())}"
-                data-product-code="${escBusqueda((d.codigo || '').toLowerCase())}" data-categoria="${escBusqueda(d.categoriaId || '')}"
+                data-product-id="${escBusqueda(id)}" data-product-name="${escBusqueda(String(d.nombre ?? '').toLowerCase())}"
+                data-product-code="${escBusqueda(String(d.codigo ?? '').toLowerCase())}" data-categoria="${escBusqueda(d.categoriaId || '')}"
                 data-stock="${stockTotal}" data-visible="${d.visible ? 'true' : 'false'}" data-precio-original="${d.precioDetal || 0}"
                 data-total-sales="${window.productSalesCount.get(id) || 0}">
                 <div class="pm-product-item">
@@ -3966,7 +3966,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 snapshot.forEach(doc => {
                     const supplier = doc.data();
                     const option = document.createElement('option');
-                    option.value = supplier.nombre; // Usar nombre en vez de ID
+                    option.value = String(supplier.nombre ?? '').trim(); // Usar nombre en vez de ID (igual que el producto: recortado)
                     option.textContent = supplier.nombre || 'Sin nombre';
                     supplierSelectInventory.appendChild(option);
                 });
@@ -3997,10 +3997,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                const productName = (product.nombre || '').toLowerCase();
-                const productCode = (product.codigo || '').toLowerCase();
-                const categoryId = product.categoriaId || '';
-                const supplierName = (product.proveedor || '').trim(); // Usar proveedor en vez de proveedorId
+                const productName = String(product.nombre ?? '').toLowerCase();
+                const productCode = String(product.codigo ?? '').toLowerCase();
+                const categoryId = String(product.categoriaId ?? '');
+                const supplierName = String(product.proveedor ?? '').trim(); // Usar proveedor en vez de proveedorId
 
                 // Calcular stock total del producto
                 const stockTotal = obtenerStockTotalProducto(product);
