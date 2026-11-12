@@ -4473,3 +4473,55 @@ body.fab-page.dark-mode .pf-copy-one.is-copied { background: rgba(37, 211, 102, 
 body.fab-page.dark-mode .fab-choose-option { background: var(--neutral-100); border-color: var(--border-default); }
 body.fab-page.dark-mode .fab-choose-option:hover,
 body.fab-page.dark-mode .fab-choose-option:focus-visible { background: var(--brand-50); border-color: var(--border-brand); }
+
+/* ── Pedido web: revisión en físico de cada prenda antes de vender ── */
+.fab-page #registrar-venta .fv-verif-banner {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  margin-bottom: 0.4rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: #fff7e6;
+  border: 1px solid #f3d38a;
+  color: #7a5200;
+}
+.fab-page #registrar-venta .fv-verif-banner.ok {
+  background: #ecf8ef;
+  border-color: #a9dcb5;
+  color: #1e6b34;
+}
+.fab-page #registrar-venta .fv-verif-banner i { font-size: 1.1rem; line-height: 1.2; }
+.fab-page #registrar-venta .fv-verif-banner strong { display: block; font-size: 0.85rem; }
+.fab-page #registrar-venta .fv-verif-banner small { display: block; font-size: 0.74rem; line-height: 1.35; }
+.fab-page #registrar-venta .fv-verif-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin-top: 0.35rem;
+}
+.fab-page #registrar-venta .fv-verif-stock {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #666);
+}
+.fab-page #registrar-venta .fv-verif-stock.falta { color: #c0392b; font-weight: 600; }
+.fab-page #registrar-venta .fv-verif-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #d9d9d9;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #444;
+  cursor: pointer;
+  user-select: none;
+}
+.fab-page #registrar-venta .fv-verif-check input { width: 1rem; height: 1rem; margin: 0; accent-color: #1e8a3e; }
+.fab-page #registrar-venta .fv-verif-check.on {
+  background: #ecf8ef;
+  border-color: #a9dcb5;
+  color: #1e6b34;
+}
