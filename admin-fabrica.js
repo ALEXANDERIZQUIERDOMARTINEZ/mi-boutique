@@ -160,6 +160,32 @@ const productosFabricaCollection = collection(db, 'productosFabrica');
 vigilarSincronizacion([productosFabricaCollection]);
 const categoriasCollection = collection(db, 'categorias');
 const ventasCollection = collection(db, 'ventas');
+
+// El nombre real del asesor no sale en facturas ni observaciones: se muestra
+// "Asesor 1" / "Asesor 2" (igual que en mayor.html). Los pedidos nuevos traen
+// asesorEtiqueta; los anteriores solo asesorNombre, que se traduce aquí.
+const ETIQUETAS_ASESOR_FAB = [
+    { etiqueta: 'Asesor 1', nombres: ['mishell espitia solano'] },
+    { etiqueta: 'Asesor 2', nombres: ['alexander izquierdo'] }
+];
+function normalizarNombreAsesorFab(n) {
+    return (n || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+function etiquetaAsesorFab(order) {
+    if (order?.asesorEtiqueta) return order.asesorEtiqueta;
+    const nombre = normalizarNombreAsesorFab(order?.asesorNombre);
+    if (!nombre) return '';
+    const encontrado = ETIQUETAS_ASESOR_FAB.find(a => a.nombres.some(n => nombre.startsWith(n) || n.startsWith(nombre)));
+    return encontrado ? encontrado.etiqueta : 'Asesor';
+}
+// Quita el nombre real del asesor de observaciones ya guardadas (ventas
+// registradas antes de este cambio): "Asesor: Mishell Espitia Solano" → "Asesor: Asesor 1".
+function ocultarNombreAsesorFab(texto) {
+    return (texto || '').replace(/Asesor:\s*([^\n·]+)/g, (completo, nombre) => {
+        const etiqueta = etiquetaAsesorFab({ asesorNombre: nombre });
+        return etiqueta && /^Asesor \d/.test(etiqueta) ? etiqueta : (/^Asesor \d/.test(nombre.trim()) ? nombre.trim() : 'Asesor');
+    });
+}
 // Compartida con Boutique (index.html escribe con tenantId 'boutique', mayor.html
 // con tenantId 'fabrica') — ver SECCIÓN: PEDIDOS WEB más abajo, que filtra por
 // tenantId en JS para quedarse solo con los pedidos mayoristas de Fábrica.
@@ -2373,7 +2399,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(9);
             pdf.setTextColor(...TEXT);
-            const obsLines = pdf.splitTextToSize(ventaData.observaciones, PW - M * 2);
+            const obsLines = pdf.splitTextToSize(ocultarNombreAsesorFab(ventaData.observaciones), PW - M * 2);
             pdf.text(obsLines, M, y);
             y += obsLines.length * 5;
         }
@@ -3458,7 +3484,8 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                     direccion: orderData.clienteDireccion || ''
                 });
                 let obs = `Pedido Web #${orderId.substring(0, 8).toUpperCase()}`;
-                if (orderData.asesorNombre) obs += ` · Asesor: ${orderData.asesorNombre}`;
+                const asesorEtiqueta = etiquetaAsesorFab(orderData);
+                if (asesorEtiqueta) obs += ` · ${asesorEtiqueta}`;
                 if (orderData.observaciones) obs += `\n${orderData.observaciones}`;
                 if (observacionesInput) observacionesInput.value = obs;
                 renderCarrito();

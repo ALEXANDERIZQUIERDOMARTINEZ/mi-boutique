@@ -32,8 +32,8 @@ const formatoMoneda = new Intl.NumberFormat('es-CO', { style: 'currency', curren
 // En la página se muestran como "Asesor 1" / "Asesor 2"; `nombre` solo se
 // guarda en el pedido (asesorNombre) para que el admin sepa a quién llegó.
 const ASESORES = {
-    asesor1: { nombre: 'Mishell Espitia Solano', numero: '573046084971' },
-    asesor2: { nombre: 'Alexander Izquierdo', numero: '573017850041' }
+    asesor1: { nombre: 'Mishell Espitia Solano', etiqueta: 'Asesor 1', numero: '573046084971' },
+    asesor2: { nombre: 'Alexander Izquierdo', etiqueta: 'Asesor 2', numero: '573017850041' }
 };
 
 const MIN_POR_PRENDA = 6;
@@ -1347,7 +1347,8 @@ function prepararPedido() {
             timestamp: serverTimestamp(),
             origen: 'web',
             tipoVenta: 'Mayorista',
-            asesorNombre: asesor.nombre
+            asesorNombre: asesor.nombre,
+            asesorEtiqueta: asesor.etiqueta
         }).then(() => Promise.all(
             items
                 .filter(item => item.productoId)
