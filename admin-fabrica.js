@@ -1908,10 +1908,21 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
     // leerExtra / escribirExtra: lecturas y escrituras en la MISMA
     //   transacción (crear la venta y aceptar el pedido web): o se guarda todo
     //   junto con el descuento del stock en la base de datos, o nada.
+    // Cantidad de una línea como entero (los pedidos web pueden traerla como
+    // texto); 0 si no es un número entero positivo.
+    function cantidadItemStock(item) {
+        const n = Number(item?.cantidad);
+        return Number.isInteger(n) && n > 0 ? n : 0;
+    }
+
     async function actualizarStockFabrica(items, accion = 'restar', { motivo = null, ventaId = null, estricto = false, leerExtra = null, escribirExtra = null } = {}) {
         if (!items.length && !escribirExtra) return { omitidos: [], cambios: [] };
         const itemsPorProducto = new Map();
         const sinProducto = [];
+        const cantidadesInvalidas = items.filter(item => cantidadItemStock(item) <= 0);
+        if (cantidadesInvalidas.length) {
+            throw Object.assign(new Error(`Cantidad inválida en: ${cantidadesInvalidas.map(i => i.nombre || i.productoId).join(', ')}.`), { agotados: cantidadesInvalidas.map(i => i.nombre || i.productoId) });
+        }
         for (const item of items) {
             if (!item.productoId) {
                 // Antes se saltaba en silencio: la venta salía y el stock no.
@@ -1954,15 +1965,26 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                 for (const [productoId, itemsDelProducto] of itemsPorProducto) {
                     const snap = snaps.get(productoId);
                     const variaciones = snap.exists() ? (snap.data().variaciones || []) : [];
+                    // Se SUMA lo pedido por talla/color antes de comparar: si la
+                    // misma prenda quedó en dos líneas del carrito (3 + 3 con
+                    // stock 5), comparar cada línea sola dejaba pasar la venta
+                    // y el stock quedaba en negativo.
+                    const pedidoPorVariante = new Map();
                     for (const item of itemsDelProducto) {
+                        const clave = `${normalizarVariacion(item.talla)}||${normalizarVariacion(item.color)}`;
+                        if (!pedidoPorVariante.has(clave)) pedidoPorVariante.set(clave, { item, cantidad: 0 });
+                        pedidoPorVariante.get(clave).cantidad += cantidadItemStock(item);
+                    }
+                    for (const { item, cantidad } of pedidoPorVariante.values()) {
                         const encontrada = variaciones.find(v =>
                             normalizarVariacion(v.talla) === normalizarVariacion(item.talla) &&
                             normalizarVariacion(v.color) === normalizarVariacion(item.color)
                         );
                         const stockActual = encontrada ? (parseInt(encontrada.stock, 10) || 0) : 0;
-                        if (stockActual < item.cantidad) {
+                        if (stockActual < cantidad) {
                             const variante = [item.talla, item.color].filter(x => x && normalizarVariacion(x) !== '').join(' / ');
-                            agotados.push(variante ? `${item.nombre || productoId} (${variante})` : (item.nombre || productoId));
+                            const nombre = variante ? `${item.nombre || productoId} (${variante})` : (item.nombre || productoId);
+                            agotados.push(`${nombre}: pides ${cantidad}, hay ${Math.max(stockActual, 0)}`);
                         }
                     }
                 }
@@ -1989,7 +2011,12 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                     if (encontrada) {
                         const signo = accion === 'restar' ? -1 : 1;
                         const antes = parseInt(encontrada.stock, 10) || 0;
-                        encontrada.stock = antes + signo * item.cantidad;
+                        encontrada.stock = antes + signo * cantidadItemStock(item);
+                        // Última barrera: una venta nunca deja stock negativo
+                        // en la base de datos (aborta toda la transacción).
+                        if (accion === 'restar' && encontrada.stock < 0) {
+                            throw Object.assign(new Error(`Sin stock suficiente para ${item.nombre || productoId}.`), { agotados: [item.nombre || productoId] });
+                        }
                         cambios.push({ productoId, nombre: snap.data().nombre || item.nombre, talla: encontrada.talla || '', color: encontrada.color || '', antes, despues: encontrada.stock });
                         cambiado = true;
                     } else {
@@ -2704,7 +2731,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         } catch (error) {
             console.error('Error al registrar venta de fábrica:', error);
             if (error.agotados) {
-                showToast(`La venta NO se registró. ${/no existen|no están enlazadas/.test(error.message) ? error.message : `Sin stock suficiente: ${error.agotados.join(', ')}`}`, 'error');
+                showToast(`La venta NO se registró. ${/no existen|no están enlazadas|Cantidad inválida/.test(error.message) ? error.message : `Sin stock suficiente: ${error.agotados.join(', ')}`}`, 'error');
             } else {
                 showToast('No se pudo registrar la venta: ' + error.message, 'error');
             }
