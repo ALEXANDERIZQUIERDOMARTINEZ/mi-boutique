@@ -18,8 +18,12 @@ export const MARCA_DEFAULT = {
 // Únicas empresas con panel propio construido hoy (ver Fase 6 del plan).
 // Una empresa nueva creada desde Super Admin sin panel real aquí se
 // muestra en el selector como "Próximamente", no rompe nada.
+// 'tenant_mishell_001' es la MISMA tienda que 'boutique' (identificador que
+// dejó la migración de tenantId; ver esTiendaPrincipal() en firestore.rules):
+// los usuarios de la tienda con ese tenantId entran al mismo panel.
 export const PANEL_POR_TENANT = {
     boutique: 'admin.html',
+    tenant_mishell_001: 'admin.html',
     fabrica: 'admin-fabrica.html'
 };
 
