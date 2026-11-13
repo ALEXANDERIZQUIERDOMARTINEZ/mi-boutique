@@ -935,6 +935,42 @@ function acumularDeltas(deltas, nombres, items, signo) {
     return sinId;
 }
 
+// Cuando Firestore rechaza la transacción de stock (permission-denied), dice
+// el motivo concreto en vez de un genérico "pertenecen a otra empresa o
+// falta el permiso": revisa, con la copia local del catálogo y los permisos
+// del usuario, las mismas condiciones que exige firestore.rules.
+function diagnosticarPermisoStock(deltas, nombres) {
+    const ctx = window.appContext || {};
+    if (ctx.isSuperAdmin) return 'Avísale al administrador.';
+    const permisos = ctx.permisos || {};
+    const miEmpresa = ctx.tenantId ?? null;
+    const motivos = [];
+
+    if (!miEmpresa) {
+        // Usuario creado por Sistema antes del arreglo de usuarios.js: quedó
+        // sin empresa y las reglas lo tratan como ajeno a todos los productos.
+        motivos.push('tu usuario no tiene empresa asignada (el administrador debe abrirlo en Usuarios y darle Guardar; luego cierra sesión y vuelve a entrar)');
+    }
+    if (permisos.ventas_crear !== true) {
+        motivos.push('tu usuario no tiene el permiso "Registrar Venta" guardado (pídele al administrador que lo vuelva a marcar y guarde, y luego cierra sesión y vuelve a entrar)');
+    }
+    const otraEmpresa = [];
+    const sinEmpresa = [];
+    deltas.forEach((_, productoId) => {
+        const p = localProductsMap.get(productoId);
+        if (!p) return;
+        const nombre = nombres.get(productoId) || p.nombre || productoId;
+        if (p.tenantId == null || p.tenantId === '') sinEmpresa.push(nombre);
+        else if (miEmpresa && p.tenantId !== miEmpresa) otraEmpresa.push(`${nombre} (empresa "${p.tenantId}")`);
+    });
+    if (sinEmpresa.length) motivos.push(`estos productos no tienen empresa asignada: ${sinEmpresa.join(', ')}`);
+    if (otraEmpresa.length) motivos.push(`estos productos son de otra empresa distinta a la tuya ("${miEmpresa}"): ${otraEmpresa.join(', ')}`);
+
+    return motivos.length
+        ? `Motivo: ${motivos.join('; ')}. Avísale al administrador.`
+        : 'Avísale al administrador (puede que las reglas de la base de datos no estén actualizadas).';
+}
+
 // Suma o resta el stock de los items de una venta. Con { validarStock: true }
 // (al registrar una venta) se llama ANTES de guardarla: si alguna prenda no
 // alcanza, lanza el error y no se descuenta nada. Sin validarStock (reponer
@@ -972,7 +1008,7 @@ async function actualizarStock(itemsVendido, accion = 'restar', { validarStock =
             throw new Error(sinRed
                 ? 'Sin conexión con la base de datos: no se pudo descontar el stock, así que la operación NO se registró. Inténtalo de nuevo.'
                 : sinPermiso
-                    ? 'La base de datos no permitió descontar el stock de estos productos con tu usuario (pertenecen a otra empresa o falta el permiso), así que la operación NO se registró. Avísale al administrador.'
+                    ? `La base de datos no permitió guardar esta operación con tu usuario, así que NO se registró. ${diagnosticarPermisoStock(deltas, nombres)}`
                     : `No se pudo descontar el stock (${error.message}), así que la operación NO se registró.`);
         }
         if (validarStock && error.code === 'permission-denied') {
@@ -2267,8 +2303,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? (categoriesMap.get(d.categoriaId) || 'Sin Categoría') : 'Sin Categoría';
             const agotado = stockTotal <= 0;
             return `<li class="list-group-item list-group-item-action product-search-item${agotado ? ' disabled' : ''}"${agotado ? ' style="opacity:0.5;cursor:not-allowed"' : ''}
-                data-product-id="${escBusqueda(id)}" data-product-name="${escBusqueda((d.nombre || '').toLowerCase())}"
-                data-product-code="${escBusqueda((d.codigo || '').toLowerCase())}" data-categoria="${escBusqueda(d.categoriaId || '')}"
+                data-product-id="${escBusqueda(id)}" data-product-name="${escBusqueda(String(d.nombre ?? '').toLowerCase())}"
+                data-product-code="${escBusqueda(String(d.codigo ?? '').toLowerCase())}" data-categoria="${escBusqueda(d.categoriaId || '')}"
                 data-stock="${stockTotal}" data-visible="${d.visible ? 'true' : 'false'}" data-precio-original="${d.precioDetal || 0}"
                 data-total-sales="${window.productSalesCount.get(id) || 0}">
                 <div class="pm-product-item">
@@ -3966,7 +4002,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 snapshot.forEach(doc => {
                     const supplier = doc.data();
                     const option = document.createElement('option');
-                    option.value = supplier.nombre; // Usar nombre en vez de ID
+                    option.value = String(supplier.nombre ?? '').trim(); // Usar nombre en vez de ID (igual que el producto: recortado)
                     option.textContent = supplier.nombre || 'Sin nombre';
                     supplierSelectInventory.appendChild(option);
                 });
@@ -3997,10 +4033,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                const productName = (product.nombre || '').toLowerCase();
-                const productCode = (product.codigo || '').toLowerCase();
-                const categoryId = product.categoriaId || '';
-                const supplierName = (product.proveedor || '').trim(); // Usar proveedor en vez de proveedorId
+                const productName = String(product.nombre ?? '').toLowerCase();
+                const productCode = String(product.codigo ?? '').toLowerCase();
+                const categoryId = String(product.categoriaId ?? '');
+                const supplierName = String(product.proveedor ?? '').trim(); // Usar proveedor en vez de proveedorId
 
                 // Calcular stock total del producto
                 const stockTotal = obtenerStockTotalProducto(product);

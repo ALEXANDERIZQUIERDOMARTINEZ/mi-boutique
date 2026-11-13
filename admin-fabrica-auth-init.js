@@ -10,7 +10,7 @@
 import { AuthManager } from './auth.js?v=3';
 // Versión debe coincidir con el import de usuarios.js en admin-auth-init.js
 // (Vercel cachea .js hasta 1h; bump este número cuando usuarios.js cambie).
-import { initUsuariosManager } from './usuarios.js?v=1.3.0';
+import { initUsuariosManager } from './usuarios.js?v=1.3.1';
 import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js?v=2';
 
 function ocultarGate() {

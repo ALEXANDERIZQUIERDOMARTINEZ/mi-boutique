@@ -25,6 +25,17 @@ let allUsuarios = [];
  * Convierte un arreglo de permisos ['ventas_ver', ...] al mapa
  * { ventas_ver: true, ... } que exigen las Security Rules de Firestore.
  */
+// Empresa a la que pertenece un usuario nuevo (o uno viejo que quedó sin
+// empresa). Antes se copiaba la del creador: si lo creaba Sistema (Super
+// Admin, que no pertenece a ninguna empresa) el usuario quedaba con
+// tenantId null y firestore.rules le negaba descontar stock y registrar
+// ventas aunque tuviera todos los permisos marcados. Mismo criterio que
+// auth.js: la empresa que se está viendo, la del creador, o 'boutique'.
+function empresaParaUsuario(rol) {
+    if (rol === 'SUPER_ADMIN') return null;
+    return window.expectedTenantId || currentAuthManager?.getCurrentUser()?.tenantId || 'boutique';
+}
+
 function permisosArrayAMapa(permisosArray) {
     const mapa = {};
     (permisosArray || []).forEach(p => { mapa[p] = true; });
@@ -381,7 +392,7 @@ async function createUsuario(email, password, nombre, rol, permisosArray, activo
             email,
             rol,
             permisos: permisosArrayAMapa(permisosArray),
-            tenantId: currentAuthManager?.getCurrentUser()?.tenantId ?? null,
+            tenantId: empresaParaUsuario(rol),
             activo,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
@@ -412,15 +423,24 @@ async function createUsuario(email, password, nombre, rol, permisosArray, activo
 async function updateUsuario(usuarioId, nombre, email, rol, permisosArray, activo) {
     try {
         const usuarioRef = doc(db, 'usuarios', usuarioId);
-
-        await updateDoc(usuarioRef, {
+        const cambios = {
             nombre,
             email, // Nota: cambiar email en Authentication requiere reautenticación
             rol,
             permisos: permisosArrayAMapa(permisosArray),
             activo,
             updatedAt: serverTimestamp()
-        });
+        };
+
+        // Usuario creado sin empresa (ver empresaParaUsuario): al guardarlo
+        // se le asigna, para que pueda vender. Solo cuando no tiene ninguna;
+        // nunca se le cambia una empresa que ya tenga.
+        const actual = await getDoc(usuarioRef);
+        if (actual.exists() && !actual.data().tenantId && rol !== 'SUPER_ADMIN') {
+            cambios.tenantId = empresaParaUsuario(rol);
+        }
+
+        await updateDoc(usuarioRef, cambios);
 
         console.log('Usuario actualizado exitosamente');
 

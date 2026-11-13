@@ -251,12 +251,15 @@ service cloud.firestore {
       // (ventas_anular) una venta — ninguno de los dos implica
       // productos_editar, pero SÍ necesitan poder ajustar stock al vender o
       // reponerlo al anular, sin que eso dé permiso de tocar precio/nombre/etc.
-      // Se restringe a que el único campo que cambie sea variaciones.
+      // Se restringe a que solo cambie el stock: variaciones (productos con
+      // talla/color) o stock (productos sin talla/color, que guardan las
+      // unidades en el campo plano `stock`; antes este caso se rechazaba y
+      // esos productos no se podían vender sin productos_editar).
       allow update: if belongsToTenant(resource.data.tenantId) &&
                       isNotChangingTenant() &&
                       (hasPermission('productos_editar') ||
                        ((hasPermission('ventas_crear') || hasPermission('ventas_anular')) &&
-                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['variaciones'])));
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['variaciones', 'stock'])));
 
       // Eliminar: Solo del mismo tenant
       allow delete: if hasPermission('productos_eliminar') &&
