@@ -21,6 +21,7 @@ import { WHOLESALE_TIER_GROUPS, resolveWholesaleGroup, getHybridTierInfo, isSurt
 import { activarCacheLocal } from "./src/core/firestore-cache.js?v=3";
 import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=4";
 import { vigilarConexion } from "./src/core/conexion.js?v=2";
+import { mejorarChipSelects } from "./src/core/chip-select.js?v=1";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
@@ -3577,6 +3578,30 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
 
     let idPendienteEliminar = null;
 
+    // Filtro de categorías: la colección es compartida con la tienda, pero
+    // aquí solo salen las que tienen algún producto de Fábrica (con cuántos).
+    // Antes listaba todas las de la tienda, aunque en Fábrica no hubiera
+    // nada. Se rehace cuando llegan las categorías y cada vez que cambian
+    // los productos; si la elegida se queda sin productos, se conserva para
+    // no cambiarle el filtro a quien lo está usando.
+    function pintarFiltroCategorias() {
+        const conteo = new Map();
+        productos.forEach(p => { if (p.categoriaId) conteo.set(p.categoriaId, (conteo.get(p.categoriaId) || 0) + 1); });
+        const actual = categoriaFilter.value;
+        const ids = [...conteo.keys()];
+        if (actual && !conteo.has(actual)) ids.push(actual);
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const opciones = ids
+            .map(id => [id, categoriasMap.get(id) || 'Sin nombre'])
+            .sort((a, b) => a[1].localeCompare(b[1], 'es'));
+        const html = '<option value="">Todas las categorías</option>' + opciones.map(([id, nombre]) =>
+            `<option value="${esc(id)}" data-label="${esc(nombre)}" data-count="${conteo.get(id) || 0}">${esc(nombre)} (${conteo.get(id) || 0})</option>`).join('');
+        if (categoriaFilter.innerHTML !== html) {
+            categoriaFilter.innerHTML = html;
+            categoriaFilter.value = actual;
+        }
+    }
+
     function getModal(id) {
         const el = document.getElementById(id);
         return bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el);
@@ -4646,8 +4671,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             const opciones = Array.from(categoriasMap.entries()).sort((a, b) => a[1].localeCompare(b[1]));
             categoriaSelect.innerHTML = '<option value="">Selecciona...</option>' +
                 opciones.map(([id, nombre]) => `<option value="${id}">${nombre}</option>`).join('');
-            categoriaFilter.innerHTML = '<option value="">Todas las categorías</option>' +
-                opciones.map(([id, nombre]) => `<option value="${id}">${nombre}</option>`).join('');
+            pintarFiltroCategorias();
         } catch (error) {
             console.error('Error al cargar categorías:', error);
         }
@@ -4846,6 +4870,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         // consulta — mismo patrón que window.localProductsMap en Boutique.
         window.fabricaProductsMap = new Map(productos.map(p => [p.id, p]));
         window.fabricaCategoriasMap = categoriasMap;
+        pintarFiltroCategorias();
         renderTabla();
     }, (error) => {
         console.error('Error al cargar productos de fábrica:', error);
@@ -6216,3 +6241,5 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
     console.log("✅ Módulo Fábrica inicializado (Gastos vs. Ingresos)");
 })();
 
+// Filtros tipo chip: menú con diseño en computador (ver src/core/chip-select.js).
+mejorarChipSelects();
