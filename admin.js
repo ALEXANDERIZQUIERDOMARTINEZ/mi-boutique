@@ -17,6 +17,7 @@ import { urlMiniatura, necesitaMiniatura, crearMiniatura, miniaturaDesdeUrl } fr
 import { activarCacheLocal } from "./src/core/firestore-cache.js?v=3";
 import { vigilarSincronizacion } from "./src/core/sync-indicator.js?v=4";
 import { vigilarConexion } from "./src/core/conexion.js?v=2";
+import { mejorarChipSelects } from "./src/core/chip-select.js?v=1";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -6441,3 +6442,6 @@ document.addEventListener('click', (e) => {
     cargarSeccionDiferida('#cargue-masivo-fabrica', () => import('./src/admin/secciones/cargue-masivo-fabrica.js?v=3'));
 
 });
+
+// Filtros tipo chip: menú con diseño en computador (ver src/core/chip-select.js).
+mejorarChipSelects();
