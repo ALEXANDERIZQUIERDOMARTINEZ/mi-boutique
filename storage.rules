@@ -1,0 +1,54 @@
+rules_version = '2';
+
+// Reglas de Firebase Storage (fotos de productos).
+//
+// Se publican en Firebase → Storage → Reglas (son DISTINTAS a las de
+// Firestore). Antes no estaban en el proyecto: solo vivían en la consola, y
+// un usuario con permiso de productos (p. ej. rol Inventario) recibía
+// "storage/unauthorized" al subir la foto.
+//
+// Lee los permisos del mismo documento usuarios/{uid} que firestore.rules,
+// así un permiso dado en el panel de Usuarios vale para las fotos también.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function usuario() {
+      return firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function puedeSubirFotos() {
+      return request.auth != null &&
+             firestore.exists(/databases/(default)/documents/usuarios/$(request.auth.uid)) &&
+             usuario().activo == true &&
+             (usuario().rol == 'SUPER_ADMIN' ||
+              usuario().permisos.get('productos_crear', false) == true ||
+              usuario().permisos.get('productos_editar', false) == true ||
+              usuario().permisos.get('inventario_fabrica_gestionar', false) == true);
+    }
+
+    // Solo imágenes y de hasta 10 MB (la app ya las comprime antes de subir).
+    function esImagenValida() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Foto principal y miniaturas: product_images/...
+    match /product_images/{archivo} {
+      allow read: if true; // el catálogo público las muestra
+      allow create, update: if puedeSubirFotos() && esImagenValida();
+      allow delete: if puedeSubirFotos();
+    }
+
+    // Galería por color: {empresa}/productos/{productoId}/...
+    match /{empresa}/productos/{productoId}/{archivo} {
+      allow read: if true;
+      allow create, update: if puedeSubirFotos() && esImagenValida();
+      allow delete: if puedeSubirFotos();
+    }
+
+    // Cualquier otra ruta: cerrada.
+    match /{todo=**} {
+      allow read, write: if false;
+    }
+  }
+}
