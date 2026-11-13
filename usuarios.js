@@ -6,7 +6,7 @@
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js?v=3';
+import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js?v=4';
 // La versión debe coincidir con el <script type="module" src="auditoria.js?v=..."> de
 // admin.html / admin-fabrica.html: un specifier de import distinto (con o sin query
 // string distinta) hace que el navegador cargue auditoria.js como un módulo aparte,
@@ -31,9 +31,36 @@ let allUsuarios = [];
 // tenantId null y firestore.rules le negaba descontar stock y registrar
 // ventas aunque tuviera todos los permisos marcados. Mismo criterio que
 // auth.js: la empresa que se está viendo, la del creador, o 'boutique'.
+//
+// Sistema (Super Admin) no tiene empresa: si entró sin ?empresa=, se toma
+// la de los productos del catálogo que está viendo (la empresa real de la
+// tienda, p. ej. 'tenant_mishell_001'). Antes caía en 'boutique' y el
+// vendedor quedaba en una empresa sin productos: no podía vender.
+function empresaDelCatalogo() {
+    const mapa = window.localProductsMap || window.fabricaProductsMap;
+    if (!mapa || !mapa.size) return null;
+    const conteo = new Map();
+    mapa.forEach(p => { if (p?.tenantId) conteo.set(p.tenantId, (conteo.get(p.tenantId) || 0) + 1); });
+    let mejor = null, max = 0;
+    conteo.forEach((n, t) => { if (n > max) { mejor = t; max = n; } });
+    return mejor;
+}
+
 function empresaParaUsuario(rol) {
     if (rol === 'SUPER_ADMIN') return null;
-    return window.expectedTenantId || currentAuthManager?.getCurrentUser()?.tenantId || 'boutique';
+    return window.expectedTenantId || currentAuthManager?.getCurrentUser()?.tenantId || empresaDelCatalogo() || 'boutique';
+}
+
+// ¿La empresa guardada del usuario está mal? Vacía, o 'boutique' (lo que
+// asignaba la versión anterior por defecto) cuando ningún producto del
+// catálogo es de 'boutique' y la tienda real es otra.
+function empresaEquivocada(tenantIdActual) {
+    if (!tenantIdActual) return true;
+    if (tenantIdActual !== 'boutique') return false;
+    const real = empresaDelCatalogo();
+    if (!real || real === 'boutique') return false;
+    const mapa = window.localProductsMap || window.fabricaProductsMap;
+    return ![...mapa.values()].some(p => p?.tenantId === 'boutique');
 }
 
 function permisosArrayAMapa(permisosArray) {
@@ -432,11 +459,11 @@ async function updateUsuario(usuarioId, nombre, email, rol, permisosArray, activ
             updatedAt: serverTimestamp()
         };
 
-        // Usuario creado sin empresa (ver empresaParaUsuario): al guardarlo
-        // se le asigna, para que pueda vender. Solo cuando no tiene ninguna;
-        // nunca se le cambia una empresa que ya tenga.
+        // Usuario sin empresa o con la 'boutique' por defecto que no es la
+        // de la tienda (ver empresaEquivocada): al guardarlo se le corrige,
+        // para que pueda vender. Nunca se toca una empresa real que ya tenga.
         const actual = await getDoc(usuarioRef);
-        if (actual.exists() && !actual.data().tenantId && rol !== 'SUPER_ADMIN') {
+        if (actual.exists() && rol !== 'SUPER_ADMIN' && empresaEquivocada(actual.data().tenantId)) {
             cambios.tenantId = empresaParaUsuario(rol);
         }
 
