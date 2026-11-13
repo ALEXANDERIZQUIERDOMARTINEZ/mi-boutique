@@ -961,6 +961,8 @@ function diagnosticarPermisoStock(deltas, nombres) {
         const p = localProductsMap.get(productoId);
         if (!p) return;
         const nombre = nombres.get(productoId) || p.nombre || productoId;
+        const tienda = (t) => t == null || t === '' || t === 'boutique' || t === 'tenant_mishell_001';
+        if (tienda(p.tenantId) && tienda(miEmpresa)) return; // misma tienda (ver esTiendaPrincipal en firestore.rules)
         if (p.tenantId == null || p.tenantId === '') sinEmpresa.push(nombre);
         else if (miEmpresa && p.tenantId !== miEmpresa) otraEmpresa.push(`${nombre} (empresa "${p.tenantId}")`);
     });
@@ -1458,8 +1460,23 @@ document.addEventListener('DOMContentLoaded', () => {
         // a admin-fabrica.html — así no se filtra por índice compuesto
         // nuevo y sin desplegar, y los pedidos de Boutique (o los antiguos
         // sin tenantId) se siguen viendo igual que antes.
+        //
+        // Usuarios que NO son Sistema (p. ej. Vendedor): firestore.rules no
+        // filtra, valida — una consulta que podría traer pedidos de Fábrica
+        // se rechaza ENTERA y la lista se quedaba cargando para siempre. Para
+        // ellos se piden solo los de la tienda (sus identificadores, ver
+        // esTiendaPrincipal() en firestore.rules), sin orderBy para no
+        // necesitar un índice compuesto nuevo: se ordena y recorta aquí.
+        const ctxPedidos = window.appContext || {};
+        const TIENDA_IDS = ['boutique', 'tenant_mishell_001'];
+        const tenantPropio = ctxPedidos.tenantId;
+        const filtrarPorTienda = !ctxPedidos.isSuperAdmin;
+        const idsTienda = (tenantPropio && !TIENDA_IDS.includes(tenantPropio)) ? [tenantPropio] : TIENDA_IDS;
+        const msPedido = (o) => o.timestamp?.toMillis ? o.timestamp.toMillis() : (o.timestamp?.seconds ? o.timestamp.seconds * 1000 : 0);
         ['pendiente', 'aceptado', 'rechazado'].forEach(estado => {
-            const q = query(webOrdersCollection, where('estado', '==', estado), orderBy('timestamp', 'desc'), limit(100));
+            const q = filtrarPorTienda
+                ? query(webOrdersCollection, where('tenantId', 'in', idsTienda), where('estado', '==', estado))
+                : query(webOrdersCollection, where('estado', '==', estado), orderBy('timestamp', 'desc'), limit(100));
             onSnapshot(q, snapshot => {
                 allOrders[estado] = [];
                 snapshot.forEach(d => {
@@ -1467,10 +1484,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (order.tenantId === 'fabrica') return;
                     allOrders[estado].push({ id: d.id, order });
                 });
+                if (filtrarPorTienda) {
+                    allOrders[estado].sort((a, b) => msPedido(b.order) - msPedido(a.order));
+                    allOrders[estado] = allOrders[estado].slice(0, 100);
+                }
                 if (loadingWebOrders) loadingWebOrders.style.display = 'none';
                 updateStats();
                 if (estado === currentTab) renderCurrentTab();
-            }, err => console.error(`Error pedidos ${estado}:`, err));
+            }, err => {
+                console.error(`Error pedidos ${estado}:`, err);
+                // Antes el error solo iba a la consola y la lista se quedaba
+                // en "Cargando..." sin explicación.
+                if (loadingWebOrders) {
+                    loadingWebOrders.style.display = '';
+                    loadingWebOrders.textContent = err.code === 'permission-denied'
+                        ? 'Tu usuario no tiene permiso para ver los pedidos web. Avísale al administrador.'
+                        : `No se pudieron cargar los pedidos web (${err.message}).`;
+                }
+            });
         });
 
         // ── Click delegation ─────────────────────────────────────────────────

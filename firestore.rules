@@ -60,7 +60,20 @@ service cloud.firestore {
     // Verifica si el usuario pertenece a un tenant específico
     function belongsToTenant(tenantId) {
       return isActiveUser() &&
-             (getUserData().tenantId == tenantId || isSuperAdmin());
+             (getUserData().tenantId == tenantId || isSuperAdmin() ||
+              (esTiendaPrincipal(tenantId) && esTiendaPrincipal(getUserData().tenantId)));
+    }
+
+    // La tienda al detal quedó con TRES identificadores en los datos, que son
+    // la misma empresa: 'tenant_mishell_001' (la migración de tenantId, 330
+    // productos), 'boutique' (lo que escribe el catálogo app.js en los
+    // pedidos web y el valor por defecto en todo el código) y sin tenantId
+    // (212 productos anteriores a la migración). Antes solo coincidía el
+    // valor exacto: un vendedor de 'tenant_mishell_001' no podía vender los
+    // productos sin empresa ni ver los pedidos web ('boutique'). Fábrica
+    // ('fabrica') y cualquier empresa nueva siguen separadas.
+    function esTiendaPrincipal(tenantId) {
+      return tenantId == null || tenantId == 'boutique' || tenantId == 'tenant_mishell_001';
     }
 
     // Verifica si el documento que se está creando tiene el tenantId correcto
@@ -255,7 +268,7 @@ service cloud.firestore {
       // talla/color) o stock (productos sin talla/color, que guardan las
       // unidades en el campo plano `stock`; antes este caso se rechazaba y
       // esos productos no se podían vender sin productos_editar).
-      allow update: if belongsToTenant(resource.data.tenantId) &&
+      allow update: if belongsToTenant(resource.data.get('tenantId', null)) &&
                       isNotChangingTenant() &&
                       (hasPermission('productos_editar') ||
                        ((hasPermission('ventas_crear') || hasPermission('ventas_anular')) &&
@@ -263,7 +276,7 @@ service cloud.firestore {
 
       // Eliminar: Solo del mismo tenant
       allow delete: if hasPermission('productos_eliminar') &&
-                      belongsToTenant(resource.data.tenantId);
+                      belongsToTenant(resource.data.get('tenantId', null));
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -389,11 +402,11 @@ service cloud.firestore {
 
       // Leer: Solo del mismo tenant
       allow read: if hasPermission('pedidos_web_ver') &&
-                    belongsToTenant(resource.data.tenantId);
+                    belongsToTenant(resource.data.get('tenantId', null));
 
       // Actualizar: Solo del mismo tenant, sin cambiar tenantId
       allow update: if hasPermission('pedidos_web_gestionar') &&
-                      belongsToTenant(resource.data.tenantId) &&
+                      belongsToTenant(resource.data.get('tenantId', null)) &&
                       isNotChangingTenant();
 
       // No eliminar pedidos
