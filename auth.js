@@ -194,6 +194,23 @@ export const ROLES = {
     }
 };
 
+// Permisos con los que se arma el panel. En los roles fijos (Vendedor,
+// Inventario, …) el documento del usuario guarda una COPIA de los permisos
+// del rol tomada al guardarlo: si después se le quita algo al rol aquí (p.
+// ej. Dashboard al Vendedor), los usuarios ya guardados lo seguían viendo
+// hasta que alguien los volviera a guardar. Ahora se recortan a lo que el
+// rol permite hoy. Solo quita, nunca agrega (lo que no está guardado igual
+// lo niega firestore.rules). Personalizado y Super Admin quedan tal cual.
+export function permisosEfectivos(usuario) {
+    const guardados = usuario?.permisos || {};
+    const rol = ROLES[usuario?.rol];
+    if (!rol || usuario.rol === 'SUPER_ADMIN') return guardados;
+    const delRol = new Set(rol.permisos);
+    const efectivos = {};
+    Object.keys(guardados).forEach(p => { if (guardados[p] === true && delRol.has(p)) efectivos[p] = true; });
+    return efectivos;
+}
+
 // Clase principal de autenticación
 export class AuthManager {
     constructor(firebaseApp) {
@@ -323,7 +340,7 @@ export class AuthManager {
                         permisos: userData.permisos || {}
                     };
 
-                    this.userPermissions = this.currentUser.permisos;
+                    this.userPermissions = permisosEfectivos(this.currentUser);
 
                     // Guardar en sessionStorage y en el caché persistente
                     sessionStorage.setItem('adminUser', JSON.stringify(this.currentUser));
@@ -543,7 +560,7 @@ export class AuthManager {
             const clave = u => JSON.stringify([u.nombre, u.rol, u.tenantId, Object.keys(u.permisos || {}).filter(k => u.permisos[k] === true).sort()]);
             if (clave(actualizado) === clave(this.currentUser)) return;
             this.currentUser = actualizado;
-            this.userPermissions = actualizado.permisos;
+            this.userPermissions = permisosEfectivos(actualizado);
             try {
                 sessionStorage.setItem('adminUser', JSON.stringify(actualizado));
                 localStorage.setItem(USER_CACHE_KEY, JSON.stringify(actualizado));

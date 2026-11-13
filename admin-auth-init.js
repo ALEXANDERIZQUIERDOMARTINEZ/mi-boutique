@@ -6,12 +6,12 @@
  */
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-import { AuthManager } from './auth.js?v=4';
+import { AuthManager, permisosEfectivos } from './auth.js?v=5';
 // Versionado por lo mismo que auditoria.js más abajo: usuarios.js no tiene
 // ninguna otra referencia versionada en el proyecto, así que Vercel puede
 // servir una copia vieja en caché (max-age=3600) hasta una hora después de
 // cada cambio. Bump este número cuando usuarios.js cambie.
-import { initUsuariosManager } from './usuarios.js?v=1.3.2';
+import { initUsuariosManager } from './usuarios.js?v=1.3.3';
 import { obtenerMarcaTenant, aplicarMarcaEnPanel } from './tenant-branding.js?v=2';
 
 function ocultarGate() {
@@ -144,7 +144,7 @@ function construirAppContext(usuario) {
         email: usuario.email,
         nombre: usuario.nombre,
         rol: usuario.rol,
-        permisos: usuario.permisos || {},
+        permisos: permisosEfectivos(usuario),
         tenantId: usuario.tenantId ?? null,
         isSuperAdmin: usuario.rol === 'SUPER_ADMIN',
         modulosEfectivos: null // se llena de forma asíncrona, ver aplicarModulosEfectivos()
@@ -231,7 +231,7 @@ function renderizarSesion(authManager, usuario) {
     const usuarioCache = authManager.getCachedUser();
     if (usuarioCache) {
         authManager.currentUser = usuarioCache;
-        authManager.userPermissions = usuarioCache.permisos || {};
+        authManager.userPermissions = permisosEfectivos(usuarioCache);
         renderizarSesion(authManager, usuarioCache);
         initUsuariosManager(window.db, authManager);
         configurarCierreSesionesGlobal(authManager);
