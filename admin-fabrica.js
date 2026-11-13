@@ -3578,30 +3578,6 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
 
     let idPendienteEliminar = null;
 
-    // Filtro de categorías: la colección es compartida con la tienda, pero
-    // aquí solo salen las que tienen algún producto de Fábrica (con cuántos).
-    // Antes listaba todas las de la tienda, aunque en Fábrica no hubiera
-    // nada. Se rehace cuando llegan las categorías y cada vez que cambian
-    // los productos; si la elegida se queda sin productos, se conserva para
-    // no cambiarle el filtro a quien lo está usando.
-    function pintarFiltroCategorias() {
-        const conteo = new Map();
-        productos.forEach(p => { if (p.categoriaId) conteo.set(p.categoriaId, (conteo.get(p.categoriaId) || 0) + 1); });
-        const actual = categoriaFilter.value;
-        const ids = [...conteo.keys()];
-        if (actual && !conteo.has(actual)) ids.push(actual);
-        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        const opciones = ids
-            .map(id => [id, categoriasMap.get(id) || 'Sin nombre'])
-            .sort((a, b) => a[1].localeCompare(b[1], 'es'));
-        const html = '<option value="">Todas las categorías</option>' + opciones.map(([id, nombre]) =>
-            `<option value="${esc(id)}" data-label="${esc(nombre)}" data-count="${conteo.get(id) || 0}">${esc(nombre)} (${conteo.get(id) || 0})</option>`).join('');
-        if (categoriaFilter.innerHTML !== html) {
-            categoriaFilter.innerHTML = html;
-            categoriaFilter.value = actual;
-        }
-    }
-
     function getModal(id) {
         const el = document.getElementById(id);
         return bootstrap.Modal.getInstance(el) || bootstrap.Modal.getOrCreateInstance(el);
@@ -4660,6 +4636,30 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
 
     function stockTotal(producto) {
         return (producto.variaciones || []).reduce((s, v) => s + (parseFloat(v.stock) || 0), 0);
+    }
+
+    // Filtro de categorías: la colección es compartida con la tienda, pero
+    // aquí solo salen las que tienen algún producto de Fábrica (con cuántos).
+    // Antes listaba todas las de la tienda, aunque en Fábrica no hubiera
+    // nada. Se rehace cuando llegan las categorías y cada vez que cambian
+    // los productos; si la elegida se queda sin productos, se conserva para
+    // no cambiarle el filtro a quien lo está usando.
+    function pintarFiltroCategorias() {
+        const conteo = new Map();
+        productos.forEach(p => { if (p.categoriaId) conteo.set(p.categoriaId, (conteo.get(p.categoriaId) || 0) + 1); });
+        const actual = categoriaFilter.value;
+        const ids = [...conteo.keys()];
+        if (actual && !conteo.has(actual)) ids.push(actual);
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        const opciones = ids
+            .map(id => [id, categoriasMap.get(id) || 'Sin nombre'])
+            .sort((a, b) => a[1].localeCompare(b[1], 'es'));
+        const html = '<option value="">Todas las categorías</option>' + opciones.map(([id, nombre]) =>
+            `<option value="${esc(id)}" data-label="${esc(nombre)}" data-count="${conteo.get(id) || 0}">${esc(nombre)} (${conteo.get(id) || 0})</option>`).join('');
+        if (categoriaFilter.innerHTML !== html) {
+            categoriaFilter.innerHTML = html;
+            categoriaFilter.value = actual;
+        }
     }
 
     // ── Categorías (compartidas con Boutique: son solo taxonomía, sin datos
