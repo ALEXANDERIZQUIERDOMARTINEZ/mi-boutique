@@ -133,8 +133,9 @@ export const ROLES = {
     VENDEDOR: {
         nombre: 'Vendedor',
         descripcion: 'Registra ventas, ve inventario y gestiona clientes y apartados',
+        // Sin Dashboard: ahí están las ventas, utilidad e inversión del
+        // negocio, que son solo para el administrador.
         permisos: [
-            PERMISOS.DASHBOARD_VER,
             PERMISOS.VENTAS_VER,
             PERMISOS.VENTAS_CREAR,
             PERMISOS.VENTAS_EDITAR,

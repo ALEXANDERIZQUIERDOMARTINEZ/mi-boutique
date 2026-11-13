@@ -17,7 +17,7 @@ import {
     initializeFirestore, collection, getDocs, doc, getDoc, setDoc, updateDoc,
     serverTimestamp, orderBy, query, Timestamp
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-import { AuthManager, ROLES, MODULOS_PERMISOS } from './auth.js?v=3';
+import { AuthManager, ROLES, MODULOS_PERMISOS } from './auth.js?v=4';
 
 const firebaseConfig = {
     apiKey: "AIzaSyBB55I4aWpH5hOtqK6FdNzZCuYCRm1siiI",
