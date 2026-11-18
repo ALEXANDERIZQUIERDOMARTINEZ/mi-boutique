@@ -82,8 +82,15 @@ service cloud.firestore {
     // él sin un atajo — igual que hasPermission() y belongsToTenant(),
     // se le deja crear con cualquier tenantId que el cliente ya validó
     // (window.expectedTenantId, fijo por página).
+    // Mismos alias de la tienda que belongsToTenant (esTiendaPrincipal): el
+    // celular puede tener guardada la sesión con la empresa vieja
+    // ('boutique' o vacía) y la venta se etiqueta con esa, mientras el
+    // usuario en la base ya es 'tenant_mishell_001'. Antes eso rechazaba la
+    // venta aunque fuera la misma tienda.
     function isCreatingWithCorrectTenant() {
-      return isSuperAdmin() || request.resource.data.tenantId == getUserData().tenantId;
+      return isSuperAdmin() ||
+             request.resource.data.tenantId == getUserData().tenantId ||
+             (esTiendaPrincipal(request.resource.data.tenantId) && esTiendaPrincipal(getUserData().tenantId));
     }
 
     // Verifica que no se intente cambiar el tenantId en una actualización

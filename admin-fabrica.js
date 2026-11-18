@@ -849,25 +849,6 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         return s.charAt(0).toUpperCase() + s.slice(1);
     };
 
-    // Stock que la base de datos tiene ahora para la talla/color de una línea
-    // (productosCache se mantiene al día con onSnapshot). null = no se sabe.
-    function stockEnSistemaItem(item) {
-        const producto = productosCache.find(p => p.id === item.productoId);
-        if (!producto) return null;
-        const variacion = (producto.variaciones || []).find(v =>
-            normalizarVariacion(v.talla) === normalizarVariacion(item.talla) &&
-            normalizarVariacion(v.color) === normalizarVariacion(item.color)
-        );
-        return variacion ? (parseInt(variacion.stock, 10) || 0) : 0;
-    }
-
-    // Pedido web: antes de venderlo, cada prenda se marca "La tengo" tras
-    // verla en físico. El sistema solo sabe lo que tiene anotado; esta
-    // revisión evita vender una prenda que figura en stock pero ya no está.
-    function prendasSinVerificar() {
-        return pedidoWebEnVenta ? carrito.filter(item => !item.verificada) : [];
-    }
-
     function renderCarrito() {
         if (carrito.length === 0) pedidoWebEnVenta = null; // carrito vaciado: ya no es ese pedido
         recalcularPreciosCarrito();
@@ -875,18 +856,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         cartEmptyCtaEl.style.display = vacio ? '' : 'none';
         cartWithItemsEl.style.display = vacio ? 'none' : '';
         if (!vacio) {
-            const sinVerificar = prendasSinVerificar().length;
-            const avisoPedidoWeb = pedidoWebEnVenta ? `
-                <div class="fv-verif-banner${sinVerificar ? '' : ' ok'}">
-                    <i class="bi ${sinVerificar ? 'bi-box-seam' : 'bi-check-circle-fill'}"></i>
-                    <div>
-                        <strong>${sinVerificar ? 'Revisa cada prenda en físico' : 'Todas las prendas revisadas'}</strong>
-                        <small>${sinVerificar
-                            ? `Marca "La tengo" en cada una (${carrito.length - sinVerificar} de ${carrito.length}). Las que no estén, quítalas con la papelera.`
-                            : 'Ya puedes registrar la venta.'}</small>
-                    </div>
-                </div>` : '';
-            carritoEl.innerHTML = avisoPedidoWeb + carrito.map((item, idx) => {
+            carritoEl.innerHTML = carrito.map((item, idx) => {
                 const producto = productosCache.find(p => p.id === item.productoId);
                 const imgHtml = producto?.imagenUrl
                     ? `<img src="${producto.imagenUrl}" alt="${item.nombre}" class="vf-cart-item-img" onerror="this.style.display='none'">`
@@ -898,16 +868,6 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                         <div class="vf-cart-item-info">
                             <div class="vf-cart-item-name">${nombreCarrito(item.nombre)}</div>
                             <div class="vf-cart-item-variant">${variante ? variante + ' · ' : ''}${formatoMonedaDashboard.format(item.precio)} c/u</div>
-                            ${pedidoWebEnVenta ? (() => {
-                                const stock = stockEnSistemaItem(item);
-                                const falta = stock !== null && stock < item.cantidad;
-                                return `<div class="fv-verif-row">
-                                    <span class="fv-verif-stock${falta ? ' falta' : ''}">${stock === null ? 'Stock: cargando…' : falta ? `Sin stock suficiente (hay ${stock})` : `En sistema: ${stock}`}</span>
-                                    <label class="fv-verif-check${item.verificada ? ' on' : ''}">
-                                        <input type="checkbox" class="fv-verif-input" data-idx="${idx}" ${item.verificada ? 'checked' : ''}> La tengo
-                                    </label>
-                                </div>`;
-                            })() : ''}
                         </div>
                         <div class="vf-cart-item-controls">
                             <div class="vf-qty-control">
@@ -960,20 +920,12 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             const max = maxCantidadParaItemCarrito(item);
             if (item.cantidad >= max) { showToast(`Solo hay ${max} unidades disponibles`, 'warning'); return; }
             item.cantidad += 1;
-            item.verificada = false; // más unidades: hay que volver a revisarlas
             item.total = item.cantidad * item.precio;
             renderCarrito();
         }
     });
 
     carritoEl.addEventListener('change', (e) => {
-        const verif = e.target.closest('.fv-verif-input');
-        if (verif) {
-            const item = carrito[parseInt(verif.dataset.idx, 10)];
-            if (item) item.verificada = verif.checked;
-            renderCarrito();
-            return;
-        }
         const input = e.target.closest('.fv-qty-input');
         if (!input) return;
         const idx = parseInt(input.dataset.idx, 10);
@@ -990,7 +942,6 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
             showToast(`Solo hay ${max} unidades disponibles`, 'warning');
             nuevaCantidad = max;
         }
-        if (nuevaCantidad > item.cantidad) item.verificada = false;
         item.cantidad = nuevaCantidad;
         item.total = item.cantidad * item.precio;
         renderCarrito();
@@ -1319,8 +1270,6 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         // datos frescos (nuevo stock tras una venta en otra pestaña, un
         // producto nuevo, etc.).
         if (fvScreenEl.classList.contains('active')) renderProductList();
-        // Pedido web en el carrito: el "En sistema: N" de cada prenda al día.
-        if (pedidoWebEnVenta && carrito.length) renderCarrito();
     }, (error) => {
         console.error('Error en el listener de catálogo de fábrica (Registrar Venta):', error);
     });
@@ -2694,12 +2643,6 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (carrito.length === 0) { showToast('Agrega al menos un producto', 'warning'); return; }
-        const pendientesRevision = prendasSinVerificar();
-        if (pendientesRevision.length) {
-            showToast(`Pedido web: falta marcar "La tengo" en ${pendientesRevision.length} prenda${pendientesRevision.length === 1 ? '' : 's'}. Si no la tienes, quítala del pedido.`, 'warning');
-            carritoEl.querySelector('.fv-verif-banner')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
 
         // Si por algún motivo no quedó ningún método de pago marcado como
         // activo, se asume Efectivo en vez de bloquear la venta.
@@ -2729,7 +2672,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
                 clienteNombre: clienteSeleccionado?.nombre || 'Cliente General',
                 clienteCelular: clienteSeleccionado?.celular || '',
                 clienteDireccion: clienteSeleccionado?.direccion || '',
-                items: carrito.map(({ verificada, ...item }) => item),
+                items: carrito,
                 observaciones: observacionesInput.value.trim(),
                 descuento: limpiarNumero(descuentoInput.value),
                 descuentoTipo: descuentoTipoSelect.value,

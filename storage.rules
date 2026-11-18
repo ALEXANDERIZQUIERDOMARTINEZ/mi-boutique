@@ -1,0 +1,36 @@
+rules_version = '2';
+
+// Reglas de Firebase Storage (fotos de productos de la tienda y Fábrica).
+// Se publican en Firebase → Storage → Reglas (distintas a las de Firestore).
+//
+// Solo el personal tiene cuenta (las crea el administrador en Usuarios; el
+// catálogo público nunca inicia sesión), así que basta con exigir sesión
+// iniciada. No se lee Firestore desde aquí: eso exige un permiso extra en
+// Google Cloud y, si falta, TODA subida falla con storage/unauthorized.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function esImagenValida() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 15 * 1024 * 1024;
+    }
+
+    // Foto principal y miniaturas
+    match /product_images/{archivo} {
+      allow read: if true;
+      allow create, update: if request.auth != null && esImagenValida();
+      allow delete: if request.auth != null;
+    }
+
+    // Galería por color: {empresa}/productos/{productoId}/...
+    match /{empresa}/productos/{productoId}/{archivo} {
+      allow read: if true;
+      allow create, update: if request.auth != null && esImagenValida();
+      allow delete: if request.auth != null;
+    }
+
+    match /{todo=**} {
+      allow read, write: if false;
+    }
+  }
+}
