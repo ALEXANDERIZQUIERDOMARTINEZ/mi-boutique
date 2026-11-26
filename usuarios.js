@@ -704,7 +704,7 @@ function prepararUIContrasenas() {
             <small class="text-muted d-block mt-1">
                 Se cambia al tocar <strong>Guardar Usuario</strong>. La persona deberá usar la nueva contraseña desde ese momento.
             </small>
-            <button type="button" class="btn btn-link btn-sm px-0 text-start" id="btn-reset-email">
+            <button type="button" class="btn btn-link btn-sm px-0 text-start" style="white-space:normal;" id="btn-reset-email">
                 <i class="bi bi-envelope me-1"></i>O enviarle un enlace para que la cambie (solo si su correo es real)
             </button>
         </div>
@@ -768,9 +768,14 @@ async function restablecerPassword(usuarioId, password, nombre, email) {
 
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
-        if (data.code === 'not-configured' || resp.status === 404) {
-            throw new Error('Los datos se guardaron, pero el cambio de contraseña aún no está activado en el servidor ' +
-                '(falta configurar FIREBASE_SERVICE_ACCOUNT en Vercel). Mientras tanto puedes usar "enviarle un enlace".');
+        if (data.code === 'not-configured') {
+            throw new Error('Los datos se guardaron, pero la contraseña NO se cambió: el servidor no encuentra la variable ' +
+                'FIREBASE_SERVICE_ACCOUNT. Agrégala en Vercel (Settings → Environment Variables, entorno Production) ' +
+                'y luego haz Redeploy: Vercel solo lee las variables nuevas al volver a desplegar.');
+        }
+        if (resp.status === 404) {
+            throw new Error('Los datos se guardaron, pero la contraseña NO se cambió: la función del servidor ' +
+                '(api/usuarios-password) no está publicada en este dominio. Revisa que el último despliegue de Vercel la incluya.');
         }
         throw new Error('Los datos se guardaron, pero la contraseña no se cambió: ' + (data.error || `error ${resp.status}`));
     }
