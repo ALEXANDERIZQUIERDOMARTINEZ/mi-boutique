@@ -4292,7 +4292,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ventas → src/admin/secciones/ventas.js. window.asegurarModuloVentas()
     // lo carga desde otras partes que necesitan el carrito (pedidos web,
     // modal de variaciones, factura tras un abono) antes de entrar a Ventas.
-    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=8'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
+    window.asegurarModuloVentas = cargarSeccionDiferida('#ventas', () => import('./src/admin/secciones/ventas.js?v=9'), { actualizarStock, apartadosCollection, aplicarFormatoDinero, coincideVariacion, cotizacionesCollection, crearCalendarioVentas, db, eliminarFormatoNumero, esProveedorBoutique, facturaAccionesModalInstance, facturaPreguntaModalInstance, formatoMoneda, loadExternalLib, localProductsMap, openWhatsApp, reconciliarStockEdicionVenta, repartidoresMap, salesCollection, showToast, subscribeCategories, viewSaleModalInstance });
     // Apartados → src/admin/secciones/apartados.js
     cargarSeccionDiferida('#apartados', () => import('./src/admin/secciones/apartados.js?v=5'), { abonoApartadoModalInstance, actualizarStock, apartadosCollection, db, eliminarFormatoNumero, formatoMoneda, localProductsMap, openWhatsApp, showToast, verApartadoModalInstance });
     // Finanzas (versión anterior: ingresos/gastos y cierre de caja) →

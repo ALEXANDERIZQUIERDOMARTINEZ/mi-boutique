@@ -276,6 +276,22 @@ export function init(ctx) {
          if (transferenciaMixtoRecibidaInput) transferenciaMixtoRecibidaInput.addEventListener('input', calcularResumenMixto);
 
          // --- Helper de permisos para ventas ---
+         // Firma de los items de una venta que no depende del orden de las
+         // claves: Firestore no garantiza el orden de los campos de un mapa,
+         // así que JSON.stringify podía dar "la venta cambió" sin que nada
+         // hubiera cambiado.
+         function firmaEstable(valor) {
+             const normalizar = (v) => {
+                 if (Array.isArray(v)) return v.map(normalizar);
+                 if (v && typeof v === 'object') {
+                     if (typeof v.toMillis === 'function') return v.toMillis();
+                     return Object.keys(v).sort().reduce((o, k) => { o[k] = normalizar(v[k]); return o; }, {});
+                 }
+                 return v;
+             };
+             return JSON.stringify(normalizar(valor));
+         }
+
          function puedeHacer(permiso) {
              if (!window.appContext) return true; // sin contexto = acceso directo, permitir
              if (window.appContext.isSuperAdmin) return true;
@@ -1224,7 +1240,7 @@ export function init(ctx) {
                 // Si su apartado ya se canceló antes, esa cancelación ya devolvió el stock.
                 const apartadoYaCancelado = apartadosDeVenta.some(d => d.data().estado === 'Cancelado');
                 const devolverStock = !stockNuncaDescontado && !apartadoYaCancelado;
-                const firmaItems = JSON.stringify(ventaData.items || []);
+                const firmaItems = firmaEstable(ventaData.items || []);
                 const errorNegocioAnular = (msg) => Object.assign(new Error(msg), { esDeNegocio: true });
                 await actualizarStock(devolverStock ? (ventaData.items || []) : [], 'sumar', {
                     estricto: true,
@@ -1237,7 +1253,7 @@ export function init(ctx) {
                         if (!venta.exists()) throw errorNegocioAnular('La venta ya no existe.');
                         const actual = venta.data();
                         if (actual.estado === 'Anulada' || actual.estado === 'Cancelada') throw errorNegocioAnular('Esta venta ya fue anulada en otro dispositivo.');
-                        if (JSON.stringify(actual.items || []) !== firmaItems) throw errorNegocioAnular('La venta cambió mientras la anulabas. Vuelve a intentarlo.');
+                        if (firmaEstable(actual.items || []) !== firmaItems) throw errorNegocioAnular('La venta cambió mientras la anulabas. Vuelve a intentarlo.');
                         if (apartados.some(a => a.exists() && a.data().estado === 'Cancelado') !== apartadoYaCancelado) throw errorNegocioAnular('El apartado cambió mientras anulabas. Vuelve a intentarlo.');
                         tx.update(ventaRef, { estado: 'Anulada' });
                         apartados.forEach(a => { if (a.exists() && a.data().estado !== 'Cancelado') tx.update(a.ref, { estado: 'Cancelado' }); });
@@ -1257,7 +1273,8 @@ export function init(ctx) {
 
             } catch (error) {
                 console.error("Error al anular la venta:", error);
-                showToast('Error al anular la venta.', 'error');
+                const detalle = error?.message || error?.code || 'error desconocido';
+                showToast(`No se pudo anular la venta: ${detalle}`, 'error');
             }
         }
         
@@ -2697,7 +2714,7 @@ export function init(ctx) {
                 // Stock y venta en UNA transacción: o se ajusta el inventario y se
                 // guarda la edición, o no se guarda nada.
                 const sinStockVenta = editSaleVentaData?.esCatalogoExterno || ['pendiente', 'no_aplica'].includes(editSaleVentaData?.stockEstado?.estado);
-                const firmaItemsEdicion = JSON.stringify(editSaleVentaData?.items || []);
+                const firmaItemsEdicion = firmaEstable(editSaleVentaData?.items || []);
                 console.log('📦 [EDICIÓN] Ajustando stock y guardando la venta en una transacción...');
                 await reconciliarStockEdicionVenta(sinStockVenta ? [] : (editSaleVentaData?.items || []), sinStockVenta ? [] : itemsActualizados, {
                     estricto: true,
@@ -2706,7 +2723,7 @@ export function init(ctx) {
                     escribirExtra: (tx, ventaSnapTx) => {
                         const actual = ventaSnapTx?.exists() ? ventaSnapTx.data() : null;
                         if (!actual) throw Object.assign(new Error('La venta ya no existe.'), { esDeNegocio: true });
-                        if (JSON.stringify(actual.items || []) !== firmaItemsEdicion) throw Object.assign(new Error('La venta cambió mientras la editabas. Ciérrala y vuelve a abrirla.'), { esDeNegocio: true });
+                        if (firmaEstable(actual.items || []) !== firmaItemsEdicion) throw Object.assign(new Error('La venta cambió mientras la editabas. Ciérrala y vuelve a abrirla.'), { esDeNegocio: true });
                         tx.update(ventaRef, updateData);
                     }
                 });
