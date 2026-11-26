@@ -4,7 +4,7 @@
  */
 
 import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut as signOutSecondary } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 import { ROLES, PERMISOS, MODULOS_PERMISOS } from './auth.js?v=5';
 // La versión debe coincidir con el <script type="module" src="auditoria.js?v=..."> de
@@ -79,6 +79,7 @@ export function initUsuariosManager(firebaseDb, authManager) {
     usuariosCollection = collection(db, 'usuarios');
 
     renderPermisosCheckboxes();
+    prepararUIContrasenas();
 
     // Event Listeners
     setupEventListeners();
@@ -275,6 +276,9 @@ function showAddUsuarioModal() {
     document.getElementById('usuario-activo').checked = true;
     document.getElementById('password-group').style.display = 'block';
     document.getElementById('usuario-password').required = true;
+    document.getElementById('usuario-password').type = 'password';
+    document.querySelector('#toggle-password i')?.classList.replace('bi-eye-slash', 'bi-eye');
+    document.getElementById('reset-password-group').style.display = 'none';
     document.getElementById('permisos-personalizados').style.display = 'none';
 
     // Limpiar todos los checkboxes de módulos
@@ -307,6 +311,16 @@ window.editUsuario = async function(usuarioId) {
         document.getElementById('password-group').style.display = 'none';
         document.getElementById('usuario-password').required = false;
         document.getElementById('usuario-password').value = '';
+
+        // Restablecer contraseña: solo si quien edita puede hacerlo (un
+        // Admin no puede tocar la contraseña del Super Admin).
+        const resetGroup = document.getElementById('reset-password-group');
+        const puedeResetear = currentAuthManager?.isSuperAdmin() || usuario.rol !== 'SUPER_ADMIN';
+        resetGroup.style.display = puedeResetear ? 'block' : 'none';
+        const resetInput = document.getElementById('reset-password');
+        resetInput.value = '';
+        resetInput.type = 'password';
+        document.querySelector('#toggle-reset-password i')?.classList.replace('bi-eye-slash', 'bi-eye');
 
         // Cargar módulos si es personalizado
         if (usuario.rol === 'PERSONALIZADO') {
@@ -354,6 +368,14 @@ async function handleUsuarioFormSubmit(e) {
     const password = document.getElementById('usuario-password').value;
     const rol = document.getElementById('usuario-rol').value;
     const activo = document.getElementById('usuario-activo').checked;
+    const nuevaPassword = mode === 'edit' && document.getElementById('reset-password-group').style.display !== 'none'
+        ? document.getElementById('reset-password').value
+        : '';
+
+    if (nuevaPassword && nuevaPassword.length < 6) {
+        alert('La nueva contraseña debe tener al menos 6 caracteres');
+        return;
+    }
 
     // Obtener permisos según el rol
     let permisos = [];
@@ -380,6 +402,9 @@ async function handleUsuarioFormSubmit(e) {
         } else {
             // Actualizar usuario existente
             await updateUsuario(usuarioId, nombre, email, rol, permisos, activo);
+            if (nuevaPassword) {
+                await restablecerPassword(usuarioId, nuevaPassword, nombre, email);
+            }
         }
 
         // Cerrar modal
@@ -387,6 +412,13 @@ async function handleUsuarioFormSubmit(e) {
 
         // Mostrar mensaje de éxito
         showToast(`Usuario ${mode === 'add' ? 'creado' : 'actualizado'} exitosamente`, 'success');
+
+        // Mostrar las credenciales para entregárselas al usuario
+        if (mode === 'add') {
+            mostrarCredenciales(nombre, email, password, 'Usuario creado');
+        } else if (nuevaPassword) {
+            mostrarCredenciales(nombre, email, nuevaPassword, 'Contraseña restablecida');
+        }
     } catch (error) {
         console.error('Error al guardar usuario:', error);
         alert(`Error: ${error.message}`);
@@ -587,6 +619,249 @@ function handleUsuarioSearch(e) {
     }
 
     filteredUsuarios.forEach(usuario => renderUsuarioRow(usuario, tbody));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CONTRASEÑAS: sugerir, copiar y restablecer
+// ═══════════════════════════════════════════════════════════════════
+
+// Palabras cortas y fáciles de dictar (sin tildes ni ñ, para que se puedan
+// escribir en cualquier teclado).
+const PALABRAS_PASSWORD = [
+    'Rosa', 'Luna', 'Sol', 'Mar', 'Cielo', 'Flor', 'Perla', 'Seda', 'Brisa', 'Coral',
+    'Lino', 'Jade', 'Rubi', 'Oro', 'Plata', 'Nube', 'Gato', 'Tigre', 'Puma', 'Lobo',
+    'Oso', 'Faro', 'Rio', 'Lago', 'Palma', 'Menta', 'Lima', 'Coco', 'Mango', 'Kiwi',
+    'Fresa', 'Cereza', 'Canela', 'Vainilla', 'Cacao', 'Moda', 'Estilo', 'Brillo', 'Encaje', 'Satin'
+];
+const SIMBOLOS_PASSWORD = '!#$%*?@&';
+
+function aleatorio(max) {
+    const arr = new Uint32Array(1);
+    crypto.getRandomValues(arr);
+    return arr[0] % max;
+}
+
+/**
+ * Sugiere una contraseña fácil de recordar y de dictar, pero no trivial:
+ * dos palabras + dos dígitos + un símbolo. Ej.: "LunaCoral47#"
+ */
+export function sugerirPassword() {
+    const w1 = PALABRAS_PASSWORD[aleatorio(PALABRAS_PASSWORD.length)];
+    let w2;
+    do { w2 = PALABRAS_PASSWORD[aleatorio(PALABRAS_PASSWORD.length)]; } while (w2 === w1);
+    const num = String(aleatorio(90) + 10);
+    const sim = SIMBOLOS_PASSWORD[aleatorio(SIMBOLOS_PASSWORD.length)];
+    return `${w1}${w2}${num}${sim}`;
+}
+
+async function copiarAlPortapapeles(texto) {
+    try {
+        await navigator.clipboard.writeText(texto);
+        return true;
+    } catch {
+        // Respaldo para navegadores sin Clipboard API (o sin HTTPS)
+        const ta = document.createElement('textarea');
+        ta.value = texto;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch { /* nada */ }
+        ta.remove();
+        return ok;
+    }
+}
+
+/**
+ * Agrega al modal de usuario (admin.html y admin-fabrica.html comparten
+ * este módulo) los botones "Sugerir" y "Copiar" junto a la contraseña, y la
+ * sección "Restablecer contraseña" que solo se ve al editar.
+ */
+function prepararUIContrasenas() {
+    const passwordGroup = document.getElementById('password-group');
+    if (!passwordGroup || document.getElementById('reset-password-group')) return;
+
+    // ── Crear usuario: Sugerir + Copiar ──
+    const inputGroup = passwordGroup.querySelector('.input-group');
+    inputGroup.insertAdjacentHTML('beforeend', `
+        <button class="btn btn-outline-secondary" type="button" id="btn-sugerir-password" title="Sugerir contraseña"><i class="bi bi-magic"></i></button>
+        <button class="btn btn-outline-secondary" type="button" id="btn-copiar-password" title="Copiar contraseña"><i class="bi bi-clipboard"></i></button>
+    `);
+    const passwordHint = passwordGroup.querySelector('small');
+    if (passwordHint) passwordHint.innerHTML = 'Mínimo 6 caracteres. Toca <i class="bi bi-magic"></i> para que te sugiera una.';
+
+    // ── Editar usuario: Restablecer contraseña ──
+    passwordGroup.insertAdjacentHTML('afterend', `
+        <div class="mb-3" id="reset-password-group" style="display:none;">
+            <label for="reset-password" class="form-label">Nueva contraseña <span class="text-muted fw-normal">(opcional)</span>:</label>
+            <div class="input-group">
+                <input type="password" class="form-control" id="reset-password" minlength="6" autocomplete="new-password" placeholder="Déjala vacía para no cambiarla">
+                <button class="btn btn-outline-secondary" type="button" id="toggle-reset-password" title="Mostrar/ocultar"><i class="bi bi-eye"></i></button>
+                <button class="btn btn-outline-secondary" type="button" id="btn-sugerir-reset" title="Sugerir contraseña"><i class="bi bi-magic"></i></button>
+                <button class="btn btn-outline-secondary" type="button" id="btn-copiar-reset" title="Copiar contraseña"><i class="bi bi-clipboard"></i></button>
+            </div>
+            <small class="text-muted d-block mt-1">
+                Se cambia al tocar <strong>Guardar Usuario</strong>. La persona deberá usar la nueva contraseña desde ese momento.
+            </small>
+            <button type="button" class="btn btn-link btn-sm px-0 text-start" id="btn-reset-email">
+                <i class="bi bi-envelope me-1"></i>O enviarle un enlace para que la cambie (solo si su correo es real)
+            </button>
+        </div>
+    `);
+
+    const vincular = (inputId, toggleId, sugerirId, copiarId, enlazarToggle = true) => {
+        const input = document.getElementById(inputId);
+        const mostrar = () => {
+            input.type = 'text';
+            document.querySelector(`#${toggleId} i`)?.classList.replace('bi-eye', 'bi-eye-slash');
+        };
+        if (enlazarToggle) document.getElementById(toggleId).addEventListener('click', () => {
+            const icon = document.querySelector(`#${toggleId} i`);
+            if (input.type === 'password') {
+                mostrar();
+            } else {
+                input.type = 'password';
+                icon?.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        });
+        document.getElementById(sugerirId).addEventListener('click', () => {
+            input.value = sugerirPassword();
+            mostrar(); // que se vea la sugerencia para poder anotarla
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        document.getElementById(copiarId).addEventListener('click', async () => {
+            if (!input.value) {
+                showToast('Primero escribe o sugiere una contraseña', 'warning');
+                return;
+            }
+            const ok = await copiarAlPortapapeles(input.value);
+            showToast(ok ? 'Contraseña copiada' : 'No se pudo copiar', ok ? 'success' : 'error');
+        });
+    };
+    // 'toggle-password' ya tiene su listener en setupEventListeners
+    vincular('usuario-password', 'toggle-password', 'btn-sugerir-password', 'btn-copiar-password', false);
+    vincular('reset-password', 'toggle-reset-password', 'btn-sugerir-reset', 'btn-copiar-reset');
+
+    document.getElementById('btn-reset-email').addEventListener('click', enviarEnlaceRestablecimiento);
+}
+
+/**
+ * Cambia la contraseña de otro usuario. Necesita el servidor
+ * (api/usuarios-password.js): el SDK cliente de Firebase solo permite
+ * cambiar la contraseña propia.
+ */
+async function restablecerPassword(usuarioId, password, nombre, email) {
+    const idToken = await auth.currentUser?.getIdToken();
+    if (!idToken) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+
+    let resp;
+    try {
+        resp = await fetch('/api/usuarios-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+            body: JSON.stringify({ uid: usuarioId, password })
+        });
+    } catch {
+        throw new Error('Los datos se guardaron, pero no hay conexión para cambiar la contraseña. Inténtalo de nuevo.');
+    }
+
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+        if (data.code === 'not-configured' || resp.status === 404) {
+            throw new Error('Los datos se guardaron, pero el cambio de contraseña aún no está activado en el servidor ' +
+                '(falta configurar FIREBASE_SERVICE_ACCOUNT en Vercel). Mientras tanto puedes usar "enviarle un enlace".');
+        }
+        throw new Error('Los datos se guardaron, pero la contraseña no se cambió: ' + (data.error || `error ${resp.status}`));
+    }
+
+    registrarAuditoria({
+        accion: 'editar',
+        modulo: 'usuario',
+        entidadId: usuarioId,
+        entidadNombre: nombre,
+        descripcion: `Restableció la contraseña del usuario "${nombre}" (${email})`,
+        detalles: { email, cambio: 'password' }
+    });
+}
+
+/**
+ * Alternativa sin servidor: Firebase envía al correo del usuario un enlace
+ * para que él mismo elija una nueva contraseña.
+ */
+async function enviarEnlaceRestablecimiento() {
+    const email = document.getElementById('usuario-email').value.trim();
+    const nombre = document.getElementById('usuario-nombre').value.trim();
+    if (!email) return;
+    if (!confirm(`¿Enviar a ${email} un enlace para restablecer su contraseña?\n\nSolo funciona si ese correo existe y la persona tiene acceso a él.`)) return;
+
+    try {
+        await sendPasswordResetEmail(auth, email);
+        showToast(`Enlace enviado a ${email}`, 'success');
+        registrarAuditoria({
+            accion: 'editar',
+            modulo: 'usuario',
+            entidadId: document.getElementById('usuario-id').value,
+            entidadNombre: nombre,
+            descripcion: `Envió un enlace de restablecimiento de contraseña a "${nombre}" (${email})`,
+            detalles: { email, cambio: 'password_email' }
+        });
+    } catch (error) {
+        console.error('Error al enviar enlace de restablecimiento:', error);
+        alert('No se pudo enviar el enlace: ' + getAuthErrorMessage(error.code));
+    }
+}
+
+/**
+ * Muestra las credenciales recién creadas/cambiadas para entregárselas a la
+ * persona (con botón para copiarlas).
+ */
+function mostrarCredenciales(nombre, email, password, titulo) {
+    let modalEl = document.getElementById('credencialesModal');
+    if (!modalEl) {
+        document.body.insertAdjacentHTML('beforeend', `
+            <div class="modal fade" id="credencialesModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5"><i class="bi bi-key me-2"></i><span id="credenciales-titulo"></span></h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-2">Entrégale estos datos a <strong id="credenciales-nombre"></strong>:</p>
+                            <div class="border rounded p-3 bg-body-tertiary" style="word-break:break-all;">
+                                <div class="small text-muted">Correo</div>
+                                <div class="fw-semibold mb-2" id="credenciales-email"></div>
+                                <div class="small text-muted">Contraseña</div>
+                                <div class="fw-semibold font-monospace fs-5" id="credenciales-password"></div>
+                            </div>
+                            <small class="text-muted d-block mt-2">Por seguridad no se vuelve a mostrar. Cópiala ahora si la necesitas.</small>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <button type="button" class="btn btn-primary" id="btn-copiar-credenciales"><i class="bi bi-clipboard me-2"></i>Copiar datos</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+        modalEl = document.getElementById('credencialesModal');
+        document.getElementById('btn-copiar-credenciales').addEventListener('click', async () => {
+            const texto = `Usuario: ${document.getElementById('credenciales-email').textContent}\nContraseña: ${document.getElementById('credenciales-password').textContent}`;
+            const ok = await copiarAlPortapapeles(texto);
+            showToast(ok ? 'Datos copiados' : 'No se pudo copiar', ok ? 'success' : 'error');
+        });
+        // No dejar la contraseña en el DOM al cerrar
+        modalEl.addEventListener('hidden.bs.modal', () => {
+            document.getElementById('credenciales-password').textContent = '';
+        });
+    }
+
+    document.getElementById('credenciales-titulo').textContent = titulo;
+    document.getElementById('credenciales-nombre').textContent = nombre;
+    document.getElementById('credenciales-email').textContent = email;
+    document.getElementById('credenciales-password').textContent = password;
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
 /**
