@@ -4660,18 +4660,20 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         if (!conStock.length) return '';
         const lineas = conStock.map(v => {
             const talla = normalizarVariacionProdFab(v.talla) ? ` (talla ${v.talla})` : '';
-            const cant = conCantidad ? `: ${parseFloat(v.stock) || 0}` : '';
-            return `   • ${nombreCarrito(v.color || 'Único')}${talla}${cant}`;
+            const n = parseFloat(v.stock) || 0;
+            const cant = conCantidad ? ` → *${n}* und.` : '';
+            return `▫️ ${nombreCarrito(v.color || 'Único')}${talla}${cant}`;
         });
         const descripcion = (p.descripcion || '').trim().replace(/\s+/g, ' ');
-        let bloque = `🛍️ *${nombreCarrito(p.nombre || 'Producto')}* — ${formatoMonedaDashboard.format(p.precioMayor || 0)}`;
-        if (descripcion) bloque += `\n${descripcion}`;
-        bloque += `\nColores disponibles:\n${lineas.join('\n')}`;
+        const partes = [`🛍️ *${nombreCarrito(p.nombre || 'Producto').toUpperCase()}*`];
+        if (descripcion) partes[0] += `\n_${descripcion}_`;
+        partes.push(`💰 Precio: *${formatoMonedaDashboard.format(p.precioMayor || 0)}*`);
+        partes.push(`🎨 *Colores disponibles:*\n${lineas.join('\n')}`);
         if (conCantidad) {
             const unidades = conStock.reduce((s, v) => s + (parseFloat(v.stock) || 0), 0);
-            bloque += `\n   _${unidades} disponible${unidades === 1 ? '' : 's'}_`;
+            partes.push(`📦 *Total: ${unidades} unidad${unidades === 1 ? '' : 'es'}*`);
         }
-        return bloque;
+        return partes.join('\n\n');
     }
     // Pregunta si se copian solo los colores o también la cantidad de cada uno.
     function elegirFormatoCopia(cuantos, alElegir) {
@@ -4712,7 +4714,7 @@ function elegirFab({ titulo = 'Elige una opción', mensaje = '', opciones = [], 
         elegirFormatoCopia(conStock.length, (formato) => {
             const bloques = conStock.map(p => bloqueDisponibilidad(p, formato === 'cantidades'));
             const fecha = new Date().toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
-            const texto = `✨ *Disponibilidad Mishell'es* — ${fecha}\n\n${bloques.join('\n\n')}`;
+            const texto = `✨ *DISPONIBILIDAD MISHELL'ES* ✨\n📅 ${fecha}\n\n${bloques.join('\n\n━━━━━━━━━━━━━━━\n\n')}`;
             copiarAlPortapapeles(texto).then(ok => {
                 if (ok) {
                     marcarCopiado(btn);
