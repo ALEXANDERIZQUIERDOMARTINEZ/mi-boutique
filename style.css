@@ -3241,12 +3241,14 @@ textarea.form-control-modern {
     top: 6px;
     left: 6px;
     z-index: 3;
-    background: #c62828;
+    background: rgba(11, 11, 11, 0.88);
     color: #fff;
-    font-size: 0.62rem;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 999px;
+    font-size: 0.66rem;
+    font-weight: 800;
+    padding: 3px 7px 4px;
+    border-radius: 6px;
+    border-bottom: 2px solid #e11d2e;
+    font-variant-numeric: tabular-nums;
 }
 #productModal .mp-promo-badge[hidden] { display: none; }
 #productModal .mp-summary-info {

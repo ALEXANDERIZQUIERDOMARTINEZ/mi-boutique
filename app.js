@@ -857,7 +857,7 @@ function renderProducts(products) {
         card.innerHTML = `
                 <div class="tienda-card-img">
                     <img src="${imgUrl}" alt="${product.nombre}" loading="lazy">
-                    ${tienePromo ? `<span class="tienda-card-badge">${descuentoPct > 0 ? `−${descuentoPct}%` : 'OFERTA'}</span>` : ''}
+                    ${tienePromo ? `<span class="tienda-card-badge"><span class="tcb-label">${globalPromotion?.tema === 'blackfriday' ? 'Black Friday' : 'Oferta'}</span>${descuentoPct > 0 ? `<span class="tcb-pct">−${descuentoPct}%</span>` : ''}</span>` : ''}
                 </div>
                 <div class="tienda-card-body">
                     <h3 class="tienda-card-name">${formatCardProductName(product.nombre)}</h3>
