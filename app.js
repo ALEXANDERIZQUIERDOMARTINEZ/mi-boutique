@@ -407,7 +407,8 @@ function loadGlobalPromotions() {
                     nombre: promo.nombre,
                     descuento: promo.descuento,
                     tipo: promo.tipo || 'porcentaje',
-                    tema: promo.tema || 'default' // ej: 'blackfriday', 'navidad', etc.
+                    tema: promo.tema || 'default', // ej: 'blackfriday', 'navidad', etc.
+                    fin
                 };
 
                 // Aplicar tema visual si es Black Friday
@@ -431,33 +432,62 @@ function loadGlobalPromotions() {
     });
 }
 
-function showGlobalPromoBanner() {
-    const existingBanner = document.getElementById('global-promo-banner');
-    if (existingBanner) return; // Ya existe
+let promoCountdownTimer = null;
 
-    const banner = document.createElement('div');
-    banner.id = 'global-promo-banner';
-    banner.className = 'global-promo-banner blackfriday-banner';
+function showGlobalPromoBanner() {
+    let banner = document.getElementById('global-promo-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'global-promo-banner';
+        banner.className = 'global-promo-banner blackfriday-banner';
+        banner.setAttribute('role', 'region');
+        banner.setAttribute('aria-label', 'Promoción');
+        const header = document.querySelector('header.site-header') || document.querySelector('header');
+        if (!header) return;
+        header.parentNode.insertBefore(banner, header);
+    }
+
+    const nombre = String(globalPromotion.nombre || 'Black Friday').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const descuento = Number(globalPromotion.descuento) || 0;
+    const tieneFin = globalPromotion.fin instanceof Date;
+
     banner.innerHTML = `
-        <div class="container">
-            <div class="promo-content">
-                <span class="promo-icon">🔥</span>
-                <span class="promo-text">
-                    <strong>${globalPromotion.nombre || 'BLACK FRIDAY'}</strong> -
-                    ${globalPromotion.descuento}% de descuento en toda la tienda
-                </span>
-                <span class="promo-icon">🔥</span>
-            </div>
+        <div class="promo-content">
+            <span class="promo-title">${nombre}</span>
+            <span class="promo-divider" aria-hidden="true"></span>
+            <span class="promo-offer">
+                <span class="promo-pill">-${descuento}%</span>
+                <span class="promo-offer-text">en toda la tienda</span>
+            </span>
+            ${tieneFin ? `
+            <span class="promo-divider promo-hide-sm" aria-hidden="true"></span>
+            <span class="promo-countdown" aria-live="off">
+                <span class="promo-countdown-label">Termina en</span>
+                <span class="promo-time"><b data-u="d">00</b><small>d</small></span>
+                <span class="promo-time"><b data-u="h">00</b><small>h</small></span>
+                <span class="promo-time"><b data-u="m">00</b><small>m</small></span>
+                <span class="promo-time"><b data-u="s">00</b><small>s</small></span>
+            </span>` : ''}
         </div>
     `;
 
-    const header = document.querySelector('header.site-header') || document.querySelector('header');
-    if (header) {
-        header.parentNode.insertBefore(banner, header);
+    clearInterval(promoCountdownTimer);
+    if (tieneFin) {
+        const pad = (n) => String(n).padStart(2, '0');
+        const tick = () => {
+            const diff = Math.max(0, globalPromotion?.fin - Date.now() || 0);
+            const t = Math.floor(diff / 1000);
+            const vals = { d: Math.floor(t / 86400), h: Math.floor(t / 3600) % 24, m: Math.floor(t / 60) % 60, s: t % 60 };
+            banner.querySelectorAll('[data-u]').forEach(el => { el.textContent = pad(vals[el.dataset.u]); });
+            if (diff <= 0) clearInterval(promoCountdownTimer);
+        };
+        tick();
+        promoCountdownTimer = setInterval(tick, 1000);
     }
 }
 
 function hideGlobalPromoBanner() {
+    clearInterval(promoCountdownTimer);
     const banner = document.getElementById('global-promo-banner');
     if (banner) {
         banner.remove();
