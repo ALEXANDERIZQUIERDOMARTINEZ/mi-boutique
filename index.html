@@ -439,17 +439,50 @@
   }
   .tienda-card-badge {
     position: absolute;
-    top: 8px;
-    left: 8px;
-    background: #c62828;
-    color: #fff;
-    font-size: 0.64rem;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    padding: 4px 9px;
-    border-radius: 999px;
-    box-shadow: var(--sombra-sm);
+    top: 10px;
+    left: 10px;
     z-index: 2;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 6px 10px 7px;
+    border-radius: 8px;
+    background: rgba(11, 11, 11, 0.88);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    line-height: 1;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+    overflow: hidden;
+  }
+  .tienda-card-badge::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: #e11d2e;
+  }
+  .tienda-card-badge .tcb-label {
+    font-size: 0.5rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.7);
+  }
+  .tienda-card-badge .tcb-pct {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  @media (max-width: 479.98px) {
+    .tienda-card-badge { top: 7px; left: 7px; padding: 5px 8px 6px; border-radius: 7px; }
+    .tienda-card-badge .tcb-label { font-size: 0.44rem; letter-spacing: 0.16em; }
+    .tienda-card-badge .tcb-pct { font-size: 0.9rem; }
   }
   .tienda-card-body {
     padding: 9px 11px 11px;
