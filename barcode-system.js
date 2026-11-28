@@ -473,6 +473,71 @@
             });
         }
 
+        // ====================================================================
+        // LECTOR SIN HACER CLIC: en Registrar Venta se detecta el escaneo
+        // esté donde esté el cursor.
+        // Un lector USB/Bluetooth "escribe" el código como un teclado muy
+        // rápido (< 50 ms entre teclas) y termina con Enter; una persona no
+        // escribe 4+ caracteres seguidos a esa velocidad. Al detectarlo:
+        //  - se cancela el Enter (no envía formularios ni dispara búsquedas),
+        //  - se devuelve el campo donde estaba el cursor a como estaba antes
+        //    (los números no quedan escritos en "Cliente", "Buscar", etc.),
+        //  - se busca el producto y se abre la ventana de talla/color.
+        // ====================================================================
+        if (barcodeScannerInput) {
+            const MAX_MS_ENTRE_TECLAS = 50;
+            const MIN_CARACTERES = 4;
+            let rafaga = null; // { texto, ultimo, rapida, campo, valorAntes }
+
+            const enRegistrarVenta = () => barcodeScannerInput.offsetParent !== null;
+            const hayModalAbierto = () => !!document.querySelector('.modal.show');
+            const esCampoDeTexto = (el) => el && (el.tagName === 'TEXTAREA' ||
+                (el.tagName === 'INPUT' && /^(text|search|tel|number|email|)$/i.test(el.type || '')));
+
+            document.addEventListener('keydown', async (e) => {
+                if (e.ctrlKey || e.altKey || e.metaKey) { rafaga = null; return; }
+                const ahora = performance.now();
+
+                if (e.key === 'Enter') {
+                    const r = rafaga;
+                    rafaga = null;
+                    if (!r || !r.rapida || r.texto.length < MIN_CARACTERES) return;
+                    if (ahora - r.ultimo > MAX_MS_ENTRE_TECLAS * 2) return;
+                    if (!enRegistrarVenta() || hayModalAbierto()) return;
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // Quitar lo que el lector escribió en el campo con el cursor
+                    if (r.campo && r.campo.value !== r.valorAntes) {
+                        r.campo.value = r.valorAntes;
+                        r.campo.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+
+                    const codigo = r.texto.trim();
+                    barcodeScannerInput.classList.add('is-scanned');
+                    setTimeout(() => barcodeScannerInput.classList.remove('is-scanned'), 600);
+
+                    const producto = await window.buscarProductoPorBarcode(codigo);
+                    if (producto) {
+                        window.openVariationModal(producto.id);
+                        showToast(`Producto encontrado: ${producto.nombre}`, 'success');
+                    }
+                    barcodeScannerInput.value = '';
+                    return;
+                }
+
+                if (e.key.length !== 1) return; // Shift, flechas, etc.
+
+                if (!rafaga || ahora - rafaga.ultimo > MAX_MS_ENTRE_TECLAS) {
+                    const campo = esCampoDeTexto(document.activeElement) ? document.activeElement : null;
+                    rafaga = { texto: '', ultimo: ahora, rapida: true, campo, valorAntes: campo ? campo.value : '' };
+                }
+                rafaga.texto += e.key;
+                rafaga.ultimo = ahora;
+            }, true);
+        }
+
         // ========================================================================
         // DESCARGA MASIVA DE CÓDIGOS DE BARRAS EN EXCEL
         // ========================================================================
