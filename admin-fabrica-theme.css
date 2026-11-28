@@ -4724,3 +4724,10 @@ body.fab-page.dark-mode .pf-copy-one.is-copied { background: rgba(37, 211, 102, 
 body.fab-page.dark-mode .fab-choose-option { background: var(--neutral-100); border-color: var(--border-default); }
 body.fab-page.dark-mode .fab-choose-option:hover,
 body.fab-page.dark-mode .fab-choose-option:focus-visible { background: var(--brand-50); border-color: var(--border-brand); }
+
+/* Lector de código de barras: destello al detectar un escaneo */
+#barcode-scanner-input.is-scanned {
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px var(--brand-200);
+  transition: box-shadow 0.15s ease;
+}
