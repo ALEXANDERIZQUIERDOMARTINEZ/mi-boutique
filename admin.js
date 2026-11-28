@@ -5377,6 +5377,46 @@ document.addEventListener('DOMContentLoaded', () => {
         fin.setDate(fin.getDate() + 1);
         const claveDia = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
+        // Mismos 7 días, pero del año pasado (misma fecha: 28 nov 2025 junto
+        // a 28 nov 2026). Son ventas cerradas, así que se leen una sola vez.
+        const haceUnAnio = (d) => { const x = new Date(d); x.setFullYear(x.getFullYear() - 1); return x; };
+        const inicioAnt = haceUnAnio(inicio);
+        const finAnt = haceUnAnio(fin);
+        let porDiaAnteriorPromise = null;
+        const cargarAnioAnterior = () => {
+            if (porDiaAnteriorPromise) return porDiaAnteriorPromise;
+            porDiaAnteriorPromise = (async () => {
+                const porDia = new Map();
+                const sumar = (fecha, monto) => porDia.set(claveDia(fecha), (porDia.get(claveDia(fecha)) || 0) + monto);
+                const [ventasSnap, abonosSnap] = await Promise.all([
+                    getDocs(query(salesCollection,
+                        where('timestamp', '>=', Timestamp.fromDate(inicioAnt)),
+                        where('timestamp', '<', Timestamp.fromDate(finAnt)))),
+                    getDocs(query(collection(db, 'abonos'),
+                        where('timestamp', '>=', Timestamp.fromDate(inicioAnt)),
+                        where('timestamp', '<', Timestamp.fromDate(finAnt)))).catch(() => null)
+                ]);
+                ventasSnap.forEach(docSnap => {
+                    const venta = docSnap.data();
+                    if (venta.tipoVenta === 'mayorista') return;
+                    if (venta.estado === 'Anulada' || venta.estado === 'Cancelada') return;
+                    const fecha = venta.timestamp?.toDate ? venta.timestamp.toDate() : null;
+                    if (fecha) sumar(fecha, (venta.pagoEfectivo || 0) + (venta.pagoTransferencia || 0));
+                });
+                abonosSnap?.forEach(docSnap => {
+                    const abono = docSnap.data();
+                    const fecha = abono.timestamp?.toDate ? abono.timestamp.toDate() : null;
+                    if (fecha) sumar(fecha, abono.monto || 0);
+                });
+                return porDia;
+            })().catch(err => {
+                console.error('Error cargando las ventas del año pasado:', err);
+                porDiaAnteriorPromise = null; // reintentar en la próxima actualización
+                return new Map();
+            });
+            return porDiaAnteriorPromise;
+        };
+
         const q = query(
             salesCollection,
             where('timestamp', '>=', Timestamp.fromDate(inicio)),
@@ -5409,22 +5449,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Error sumando abonos de los últimos 7 días:', err);
             }
 
+            const porDiaAnt = await cargarAnioAnterior();
+
             const dias = [];
             for (let i = 6; i >= 0; i--) {
                 const d = new Date(hoy);
                 d.setDate(d.getDate() - i);
-                dias.push({ fecha: d, total: porDia.get(claveDia(d)) || 0 });
+                dias.push({ fecha: d, total: porDia.get(claveDia(d)) || 0, anterior: porDiaAnt.get(claveDia(haceUnAnio(d))) || 0 });
             }
-            const max = Math.max(1, ...dias.map(d => d.total));
+            // Misma escala para los dos años, para que se puedan comparar.
+            const max = Math.max(1, ...dias.map(d => Math.max(d.total, d.anterior)));
+            const altoDe = (v) => v > 0 ? Math.max(6, Math.round((v / max) * 100)) : 3;
             const letras = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+            const anioActual = hoy.getFullYear();
             barrasEl.innerHTML = dias.map((d, i) => {
-                const alto = d.total > 0 ? Math.max(6, Math.round((d.total / max) * 100)) : 3;
-                const titulo = `${d.fecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric' })}: ${formatoMoneda.format(d.total)}`;
+                const titulo = `${d.fecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' })}\n` +
+                    `${anioActual}: ${formatoMoneda.format(d.total)}\n${anioActual - 1}: ${formatoMoneda.format(d.anterior)}`;
                 return `<div class="fdb-week-col${i === 6 ? ' is-today' : ''}" title="${titulo}">
-                    <span class="fdb-week-bar" style="height:${alto}%"></span>
+                    <div class="fdb-week-pair">
+                        <span class="fdb-week-bar is-prev" style="height:${altoDe(d.anterior)}%"></span>
+                        <span class="fdb-week-bar" style="height:${altoDe(d.total)}%"></span>
+                    </div>
                     <span class="fdb-week-day">${i === 6 ? 'Hoy' : letras[d.fecha.getDay()]}</span>
                 </div>`;
             }).join('');
+            const leyendaEl = document.getElementById('db-week-legend');
+            if (leyendaEl) {
+                const totalActual = dias.reduce((s, d) => s + d.total, 0);
+                const totalAnt = dias.reduce((s, d) => s + d.anterior, 0);
+                leyendaEl.innerHTML = `
+                    <span><i class="fdb-legend-dot is-prev"></i>${anioActual - 1}: <strong>${formatoMoneda.format(totalAnt)}</strong></span>
+                    <span><i class="fdb-legend-dot"></i>${anioActual}: <strong>${formatoMoneda.format(totalActual)}</strong></span>`;
+            }
             const ayerEl = document.getElementById('db-ventas-ayer');
             if (ayerEl) ayerEl.textContent = formatoMoneda.format(dias[5].total);
         }, (error) => {
