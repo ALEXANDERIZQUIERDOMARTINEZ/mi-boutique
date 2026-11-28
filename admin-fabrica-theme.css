@@ -1279,7 +1279,7 @@ body.fab-page:not(.modal-open) {
   white-space: nowrap;
 }
 .fab-page :is(#registrar-venta, #ventas) .sv-form:has(#fv-cart-with-items[style*="none"]) .sv-checkout-bar .sv-submit-btn {
-  opacity: 0.55;
+  opacity: 0.45;
 }
 
 /* Celular: el formulario ocupa toda la pantalla para que la barra del total
