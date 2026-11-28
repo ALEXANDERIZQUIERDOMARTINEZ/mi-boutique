@@ -282,45 +282,194 @@ body.fab-page::after {
 .db-fabrica .fdb-week-col.is-today .fdb-week-bar {
   background: var(--brand-500);
 }
-/* Boutique: barra del año pasado al lado de la de este año (mismo color,
-   más suave para distinguirlas) */
-.db-fabrica .fdb-week-pair {
+/* ── Boutique: "Últimos 7 días vs. año pasado" ──
+   Este año = rosa de marca (brand-600); año pasado = carbón (texto
+   principal), que contrasta con el rosa en claro y en oscuro. */
+.db-fabrica .fdb-cmp {
+  --cmp-now: var(--brand-600);
+  --cmp-prev: var(--text-primary);
+}
+.db-fabrica .fdb-cmp-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  margin-bottom: 0.9rem;
+}
+.db-fabrica .fdb-cmp-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.db-fabrica .fdb-cmp-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.1rem;
+}
+.db-fabrica .fdb-cmp-legend:empty { display: none; }
+.db-fabrica .fdb-cmp-item {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.db-fabrica .fdb-cmp-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+.db-fabrica .fdb-cmp-item strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.db-fabrica .fdb-cmp-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+.db-fabrica .fdb-cmp-swatch.is-now { background: var(--cmp-now); }
+.db-fabrica .fdb-cmp-swatch.is-prev { background: var(--cmp-prev); }
+
+.db-fabrica .fdb-cmp-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.db-fabrica .fdb-cmp-delta.is-up   { color: #1e7a4c; background: rgba(30, 122, 76, 0.12); }
+.db-fabrica .fdb-cmp-delta.is-down { color: #b4232c; background: rgba(180, 35, 44, 0.1); }
+.db-fabrica .fdb-cmp-delta.is-flat { color: var(--text-secondary); background: var(--border-subtle); }
+body.dark-mode .db-fabrica .fdb-cmp-delta.is-up   { color: #6fd3a0; background: rgba(111, 211, 160, 0.14); }
+body.dark-mode .db-fabrica .fdb-cmp-delta.is-down { color: #ff8a92; background: rgba(255, 138, 146, 0.14); }
+
+.db-fabrica .fdb-cmp-chart { position: relative; }
+.db-fabrica .fdb-week-bars.fdb-cmp-bars {
+  height: 168px;
+  gap: 0.35rem;
+  align-items: stretch;
+  /* líneas guía suaves cada tercio */
+  background-image: linear-gradient(to bottom, var(--border-subtle) 1px, transparent 1px);
+  background-size: 100% calc((100% - 2.1rem) / 3);
+  background-position: 0 1.1rem;
+  background-repeat: repeat-y;
+}
+.db-fabrica .fdb-cmp-col {
+  all: unset;
+  box-sizing: border-box;
+  height: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 10px;
+  padding: 0 0.15rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.db-fabrica .fdb-cmp-col:hover,
+.db-fabrica .fdb-cmp-col.is-active { background: var(--brand-50); }
+.db-fabrica .fdb-cmp-col:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 1px; }
+.db-fabrica .fdb-cmp-val {
+  height: 0.8rem;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.db-fabrica .fdb-cmp-col.is-today .fdb-cmp-val { color: var(--cmp-now); }
+.db-fabrica .fdb-cmp-pair {
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
-  max-width: 40px;
+  max-width: 52px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
+  border-bottom: 1px solid var(--border-subtle);
 }
-.db-fabrica .fdb-week-pair .fdb-week-bar {
+.db-fabrica .fdb-cmp-bar {
   flex: 1 1 0;
-  max-width: 18px;
+  max-width: 22px;
+  border-radius: 5px 5px 0 0;
+  transition: height 0.35s ease;
 }
-.db-fabrica .fdb-week-bar.is-prev {
-  opacity: 0.55;
-}
-.db-fabrica .fdb-week-legend {
-  margin-top: 0.55rem;
+.db-fabrica .fdb-cmp-bar.is-now  { background: var(--cmp-now); }
+.db-fabrica .fdb-cmp-bar.is-prev { background: var(--cmp-prev); }
+.db-fabrica .fdb-cmp-bar.is-zero { height: 2px !important; opacity: 0.25; }
+.db-fabrica .fdb-cmp-day {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 1rem;
-  font-size: 0.72rem;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--text-tertiary);
+}
+.db-fabrica .fdb-cmp-day small {
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+.db-fabrica .fdb-cmp-col.is-today .fdb-cmp-day,
+.db-fabrica .fdb-cmp-col.is-today .fdb-cmp-day small { color: var(--cmp-now); font-weight: 700; }
+
+.db-fabrica .fdb-cmp-tip {
+  position: absolute;
+  bottom: calc(100% - 0.6rem);
+  z-index: 5;
+  min-width: 170px;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  font-size: 0.75rem;
   color: var(--text-secondary);
+  pointer-events: none;
 }
-.db-fabrica .fdb-week-legend:empty { display: none; }
-.db-fabrica .fdb-week-legend strong { color: var(--text-primary); font-weight: 600; }
-.db-fabrica .fdb-legend-dot {
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  border-radius: 3px;
-  margin-right: 0.35rem;
-  vertical-align: -1px;
-  background: var(--brand-500);
+.db-fabrica .fdb-cmp-tip-date {
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: capitalize;
+  margin-bottom: 0.35rem;
 }
-.db-fabrica .fdb-legend-dot.is-prev { opacity: 0.55; }
+.db-fabrica .fdb-cmp-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+.db-fabrica .fdb-cmp-tip-row strong {
+  margin-left: auto;
+  padding-left: 0.75rem;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.db-fabrica .fdb-cmp-tip .fdb-cmp-delta { margin-top: 0.25rem; }
+
+@media (max-width: 575.98px) {
+  .db-fabrica .fdb-week-bars.fdb-cmp-bars { height: 140px; gap: 0.15rem; }
+  .db-fabrica .fdb-cmp-val { visibility: hidden; }
+  .db-fabrica .fdb-cmp-pair { gap: 2px; }
+  .db-fabrica .fdb-cmp-bar { border-radius: 4px 4px 0 0; }
+}
 .db-fabrica .fdb-week-day {
   font-size: 0.62rem;
   font-weight: 600;
