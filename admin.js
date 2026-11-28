@@ -5365,6 +5365,104 @@ document.addEventListener('DOMContentLoaded', () => {
     // transferencia) de ventas al detal no anuladas, más los abonos de
     // apartados de cada día. Mismo diseño que el Dashboard de Fábrica.
     // ================================================================
+    // ================================================================
+    // Gráfica "Últimos 7 días" — este año (rosa de marca) vs. el mismo
+    // día del año pasado (carbón). Misma escala para ambos años, totales
+    // con la variación arriba y un globo con el detalle al pasar el mouse
+    // o tocar cada día.
+    // ================================================================
+    const formatoCompactoSemana = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', notation: 'compact', maximumFractionDigits: 1 });
+    const variacionPct = (actual, anterior) => anterior > 0 ? Math.round(((actual - anterior) / anterior) * 100) : null;
+    const chipVariacion = (pct, sufijo = '') => {
+        if (pct === null) return '';
+        const clase = pct > 0 ? 'is-up' : pct < 0 ? 'is-down' : 'is-flat';
+        const icono = pct > 0 ? 'bi-arrow-up-right' : pct < 0 ? 'bi-arrow-down-right' : 'bi-dash';
+        return `<span class="fdb-cmp-delta ${clase}"><i class="bi ${icono}"></i>${Math.abs(pct)}%${sufijo}</span>`;
+    };
+
+    function renderComparativoSemana(barrasEl, dias, anioActual) {
+        const anioAnt = anioActual - 1;
+        const max = Math.max(1, ...dias.map(d => Math.max(d.total, d.anterior)));
+        const altoDe = (v) => v > 0 ? Math.max(4, (v / max) * 100) : 0;
+        const letras = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+        barrasEl.classList.add('fdb-cmp-bars');
+        barrasEl.innerHTML = dias.map((d, i) => `
+            <button type="button" class="fdb-cmp-col${i === 6 ? ' is-today' : ''}" data-i="${i}"
+                aria-label="${d.fecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}: ${anioActual} ${formatoMoneda.format(d.total)}, ${anioAnt} ${formatoMoneda.format(d.anterior)}">
+                <span class="fdb-cmp-val">${d.total > 0 ? formatoCompactoSemana.format(d.total) : ''}</span>
+                <span class="fdb-cmp-pair">
+                    <span class="fdb-cmp-bar is-prev${d.anterior > 0 ? '' : ' is-zero'}" style="height:${altoDe(d.anterior)}%"></span>
+                    <span class="fdb-cmp-bar is-now${d.total > 0 ? '' : ' is-zero'}" style="height:${altoDe(d.total)}%"></span>
+                </span>
+                <span class="fdb-cmp-day">${i === 6 ? 'Hoy' : letras[d.fecha.getDay()]}<small>${d.fecha.getDate()}</small></span>
+            </button>`).join('');
+
+        // Totales y variación de la semana
+        const leyendaEl = document.getElementById('db-week-legend');
+        if (leyendaEl) {
+            const totalActual = dias.reduce((s, d) => s + d.total, 0);
+            const totalAnt = dias.reduce((s, d) => s + d.anterior, 0);
+            leyendaEl.innerHTML = `
+                <div class="fdb-cmp-item">
+                    <span class="fdb-cmp-key"><i class="fdb-cmp-swatch is-now"></i>${anioActual}</span>
+                    <strong>${formatoMoneda.format(totalActual)}</strong>
+                </div>
+                <div class="fdb-cmp-item">
+                    <span class="fdb-cmp-key"><i class="fdb-cmp-swatch is-prev"></i>${anioAnt}</span>
+                    <strong>${formatoMoneda.format(totalAnt)}</strong>
+                </div>
+                ${chipVariacion(variacionPct(totalActual, totalAnt), ` vs ${anioAnt}`)}`;
+        }
+
+        // Globo con el detalle del día
+        const contenedor = barrasEl.parentElement;
+        let tip = contenedor.querySelector('.fdb-cmp-tip');
+        if (!tip) {
+            tip = document.createElement('div');
+            tip.className = 'fdb-cmp-tip';
+            tip.hidden = true;
+            contenedor.appendChild(tip);
+        }
+        const mostrar = (col) => {
+            const d = dias[Number(col.dataset.i)];
+            tip.innerHTML = `
+                <div class="fdb-cmp-tip-date">${d.fecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' })}</div>
+                <div class="fdb-cmp-tip-row"><i class="fdb-cmp-swatch is-now"></i>${anioActual}<strong>${formatoMoneda.format(d.total)}</strong></div>
+                <div class="fdb-cmp-tip-row"><i class="fdb-cmp-swatch is-prev"></i>${anioAnt}<strong>${formatoMoneda.format(d.anterior)}</strong></div>
+                ${chipVariacion(variacionPct(d.total, d.anterior))}`;
+            tip.hidden = false;
+            const cRect = contenedor.getBoundingClientRect();
+            const colRect = col.getBoundingClientRect();
+            const ancho = tip.offsetWidth;
+            let x = colRect.left - cRect.left + colRect.width / 2 - ancho / 2;
+            x = Math.max(0, Math.min(x, cRect.width - ancho));
+            tip.style.left = `${x}px`;
+            barrasEl.querySelectorAll('.fdb-cmp-col.is-active').forEach(c => c.classList.remove('is-active'));
+            col.classList.add('is-active');
+        };
+        const ocultar = () => {
+            tip.hidden = true;
+            barrasEl.querySelectorAll('.fdb-cmp-col.is-active').forEach(c => c.classList.remove('is-active'));
+        };
+        if (!barrasEl.dataset.tipListo) {
+            barrasEl.dataset.tipListo = '1';
+            barrasEl.addEventListener('pointerover', (e) => {
+                const col = e.target.closest('.fdb-cmp-col');
+                if (col && e.pointerType === 'mouse') mostrar(col);
+            });
+            barrasEl.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') ocultar(); });
+            barrasEl.addEventListener('click', (e) => {
+                const col = e.target.closest('.fdb-cmp-col');
+                if (!col) return;
+                if (col.classList.contains('is-active') && !tip.hidden) ocultar(); else mostrar(col);
+            });
+            document.addEventListener('click', (e) => { if (!barrasEl.contains(e.target)) ocultar(); });
+        }
+        barrasEl._mostrarTip = mostrar;
+        ocultar();
+    }
+
     function calcularUltimos7Dias() {
         const barrasEl = document.getElementById('db-week-bars');
         if (!barrasEl) return;
@@ -5457,30 +5555,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 d.setDate(d.getDate() - i);
                 dias.push({ fecha: d, total: porDia.get(claveDia(d)) || 0, anterior: porDiaAnt.get(claveDia(haceUnAnio(d))) || 0 });
             }
-            // Misma escala para los dos años, para que se puedan comparar.
-            const max = Math.max(1, ...dias.map(d => Math.max(d.total, d.anterior)));
-            const altoDe = (v) => v > 0 ? Math.max(6, Math.round((v / max) * 100)) : 3;
-            const letras = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
-            const anioActual = hoy.getFullYear();
-            barrasEl.innerHTML = dias.map((d, i) => {
-                const titulo = `${d.fecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' })}\n` +
-                    `${anioActual}: ${formatoMoneda.format(d.total)}\n${anioActual - 1}: ${formatoMoneda.format(d.anterior)}`;
-                return `<div class="fdb-week-col${i === 6 ? ' is-today' : ''}" title="${titulo}">
-                    <div class="fdb-week-pair">
-                        <span class="fdb-week-bar is-prev" style="height:${altoDe(d.anterior)}%"></span>
-                        <span class="fdb-week-bar" style="height:${altoDe(d.total)}%"></span>
-                    </div>
-                    <span class="fdb-week-day">${i === 6 ? 'Hoy' : letras[d.fecha.getDay()]}</span>
-                </div>`;
-            }).join('');
-            const leyendaEl = document.getElementById('db-week-legend');
-            if (leyendaEl) {
-                const totalActual = dias.reduce((s, d) => s + d.total, 0);
-                const totalAnt = dias.reduce((s, d) => s + d.anterior, 0);
-                leyendaEl.innerHTML = `
-                    <span><i class="fdb-legend-dot is-prev"></i>${anioActual - 1}: <strong>${formatoMoneda.format(totalAnt)}</strong></span>
-                    <span><i class="fdb-legend-dot"></i>${anioActual}: <strong>${formatoMoneda.format(totalActual)}</strong></span>`;
-            }
+            renderComparativoSemana(barrasEl, dias, hoy.getFullYear());
             const ayerEl = document.getElementById('db-ventas-ayer');
             if (ayerEl) ayerEl.textContent = formatoMoneda.format(dias[5].total);
         }, (error) => {
