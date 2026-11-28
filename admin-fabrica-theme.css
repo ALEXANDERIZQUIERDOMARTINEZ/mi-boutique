@@ -282,6 +282,45 @@ body.fab-page::after {
 .db-fabrica .fdb-week-col.is-today .fdb-week-bar {
   background: var(--brand-500);
 }
+/* Boutique: barra del año pasado al lado de la de este año (mismo color,
+   más suave para distinguirlas) */
+.db-fabrica .fdb-week-pair {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+}
+.db-fabrica .fdb-week-pair .fdb-week-bar {
+  flex: 1 1 0;
+  max-width: 18px;
+}
+.db-fabrica .fdb-week-bar.is-prev {
+  opacity: 0.55;
+}
+.db-fabrica .fdb-week-legend {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+.db-fabrica .fdb-week-legend:empty { display: none; }
+.db-fabrica .fdb-week-legend strong { color: var(--text-primary); font-weight: 600; }
+.db-fabrica .fdb-legend-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  margin-right: 0.35rem;
+  vertical-align: -1px;
+  background: var(--brand-500);
+}
+.db-fabrica .fdb-legend-dot.is-prev { opacity: 0.55; }
 .db-fabrica .fdb-week-day {
   font-size: 0.62rem;
   font-weight: 600;
